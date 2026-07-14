@@ -497,6 +497,263 @@ final class AuthorizationCheckBehaviorTest {
   }
 
   @Test
+  void shouldBeAuthorizedForSecretReferenceWhenUserHasRevealPermissionOnThatReference() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.SECRET;
+    final var permissionType = PermissionType.REVEAL;
+    final var secretReference = "camunda.secrets.MY_KEY";
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        AuthorizationScope.of(secretReference));
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(secretReference)
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldNotBeAuthorizedForSecretReferenceWhenUserHasRevealPermissionOnlyForAnotherReference() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.SECRET;
+    final var permissionType = PermissionType.REVEAL;
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        AuthorizationScope.of("camunda.secrets.OTHER_KEY"));
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId("camunda.secrets.MY_KEY")
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isFalse();
+  }
+
+  @Test
+  void shouldBeAuthorizedForAnySecretReferenceWhenUserHasWildcardRevealPermission() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.SECRET;
+    final var permissionType = PermissionType.REVEAL;
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        AuthorizationScope.WILDCARD);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId("camunda.secrets.ANY_KEY")
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldBeAuthorizedToListSecretReferencesWhenUserHasReadPermission() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.SECRET;
+    final var permissionType = PermissionType.READ;
+    final var secretReference = "camunda.secrets.MY_KEY";
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        AuthorizationScope.of(secretReference));
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId(secretReference)
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void
+      shouldNotBeAuthorizedToListSecretReferenceWhenUserHasReadPermissionOnlyForAnotherReference() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.SECRET;
+    final var permissionType = PermissionType.READ;
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        AuthorizationScope.of("camunda.secrets.OTHER_KEY"));
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId("camunda.secrets.MY_KEY")
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isFalse();
+  }
+
+  @Test
+  void shouldBeAuthorizedToListAnySecretReferenceWhenUserHasWildcardReadPermission() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.SECRET;
+    final var permissionType = PermissionType.READ;
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        AuthorizationScope.WILDCARD);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .addResourceId("camunda.secrets.ANY_KEY")
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
+  void shouldGetAllAuthorizedSecretReferencesWhenUserHasReadPermission() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.SECRET;
+    final var permissionType = PermissionType.READ;
+    final var secretReference1 = AuthorizationScope.of("camunda.secrets.MY_KEY_1");
+    final var secretReference2 = AuthorizationScope.of("camunda.secrets.MY_KEY_2");
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        permissionType,
+        secretReference1,
+        secretReference2);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(permissionType)
+            .build();
+    final var resourceIdentifiers = authorizationCheckBehavior.getAllAuthorizedScopes(request);
+
+    // then
+    assertThat(resourceIdentifiers).containsExactlyInAnyOrder(secretReference1, secretReference2);
+  }
+
+  @Test
+  void shouldNotBeAuthorizedToRevealSecretWhenUserOnlyHasReadPermission() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.SECRET;
+    final var secretReference = "camunda.secrets.MY_KEY";
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        PermissionType.READ,
+        AuthorizationScope.of(secretReference));
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(PermissionType.REVEAL)
+            .addResourceId(secretReference)
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isFalse();
+  }
+
+  @Test
+  void shouldNotBeAuthorizedToListSecretWhenUserOnlyHasRevealPermission() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.SECRET;
+    final var secretReference = "camunda.secrets.MY_KEY";
+    addPermission(
+        user.getUsername(),
+        AuthorizationOwnerType.USER,
+        resourceType,
+        PermissionType.REVEAL,
+        AuthorizationScope.of(secretReference));
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(resourceType)
+            .permissionType(PermissionType.READ)
+            .addResourceId(secretReference)
+            .build();
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isFalse();
+  }
+
+  @Test
   void shouldGetResourceIdentifiersWhenUserHasPermissions() {
     // given
     final var user = createUser();

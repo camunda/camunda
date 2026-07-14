@@ -18,6 +18,7 @@ import io.camunda.security.api.model.authz.PermissionType;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class AuthzModelMapperTest {
@@ -79,5 +80,47 @@ class AuthzModelMapperTest {
     final AuthorizationScope scope =
         new AuthorizationScope(AuthorizationResourceMatcher.PROPERTY, "", "tenantId");
     assertThat(AuthzModelMapper.fromProtocol(AuthzModelMapper.toProtocol(scope))).isEqualTo(scope);
+  }
+
+  @Test
+  void shouldMapEveryCslAuthorizationResourceTypeToProtocol() {
+    for (final AuthorizationResourceType value : AuthorizationResourceType.values()) {
+      assertThat(AuthzModelMapper.fromProtocol(AuthzModelMapper.toProtocol(value)))
+          .as("round trip of %s", value)
+          .isEqualTo(value);
+    }
+  }
+
+  @Test
+  void shouldMapEveryCslPermissionTypeToProtocol() {
+    for (final PermissionType value : PermissionType.values()) {
+      assertThat(AuthzModelMapper.fromProtocol(AuthzModelMapper.toProtocol(value)))
+          .as("round trip of %s", value)
+          .isEqualTo(value);
+    }
+  }
+
+  @Test
+  @Disabled(
+      "Blocked until CSL implementation is released: https://github.com/camunda/camunda-security-library/pull/526")
+  void shouldMapEveryProtocolAuthorizationResourceTypeToCsl() {
+    for (final io.camunda.zeebe.protocol.record.value.AuthorizationResourceType value :
+        io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.values()) {
+      assertThat(AuthzModelMapper.toProtocol(AuthzModelMapper.fromProtocol(value)))
+          .as("round trip of %s", value)
+          .isEqualTo(value);
+    }
+  }
+
+  @Test
+  @Disabled(
+      "Blocked until CSL implementation is released: https://github.com/camunda/camunda-security-library/pull/526")
+  void shouldMapEveryProtocolPermissionTypeToCsl() {
+    for (final io.camunda.zeebe.protocol.record.value.PermissionType value :
+        io.camunda.zeebe.protocol.record.value.PermissionType.values()) {
+      assertThat(AuthzModelMapper.toProtocol(AuthzModelMapper.fromProtocol(value)))
+          .as("round trip of %s", value)
+          .isEqualTo(value);
+    }
   }
 }

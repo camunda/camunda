@@ -58,7 +58,8 @@ public enum PermissionType {
   UPDATE,
   UPDATE_PROCESS_INSTANCE,
   UPDATE_USER_TASK,
-  UPDATE_TASK_LISTENER;
+  UPDATE_TASK_LISTENER,
+  REVEAL;
 
   private final boolean isReadPermission;
 

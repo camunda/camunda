@@ -61,6 +61,7 @@
       "READ"
     ],
     "ROLE": ["CREATE", "DELETE", "READ", "UPDATE"],
+    "SECRET": ["READ", "REVEAL"],
     "SYSTEM": ["READ", "READ_JOB_METRIC", "READ_USAGE_METRIC", "UPDATE"],
     "TENANT": ["CREATE", "DELETE", "READ", "UPDATE"],
     "USER": ["CREATE", "DELETE", "READ", "UPDATE"],
