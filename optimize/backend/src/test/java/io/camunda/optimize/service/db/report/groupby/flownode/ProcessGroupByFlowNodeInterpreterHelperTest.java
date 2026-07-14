@@ -14,6 +14,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
+import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
 import io.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -217,11 +219,14 @@ class ProcessGroupByFlowNodeInterpreterHelperTest {
   }
 
   @Test
-  void shouldSetEveryViewMeasureToDocCountInFrequencyResult() {
-    // given a distributed-by result with two (unset) view measures
+  void shouldSetEveryViewMeasureToDocCountInFrequencyResultWithoutChangingItsAggregationType() {
+    // given a distributed-by result with two view measures, each carrying the report's configured
+    // (default AVERAGE) aggregation type, as produced by the TOOL_CALLS view's createEmptyResult
     underTest = helper();
-    final ViewMeasure measureA = ViewMeasure.builder().value(null).build();
-    final ViewMeasure measureB = ViewMeasure.builder().value(null).build();
+    final ViewMeasure measureA =
+        ViewMeasure.builder().aggregationType(new AggregationDto(AggregationType.AVERAGE)).build();
+    final ViewMeasure measureB =
+        ViewMeasure.builder().aggregationType(new AggregationDto(AggregationType.AVERAGE)).build();
     final DistributedByResult result =
         DistributedByResult.createDistributedByNoneResult(
             ViewResult.builder().viewMeasures(List.of(measureA, measureB)).build());
@@ -230,10 +235,16 @@ class ProcessGroupByFlowNodeInterpreterHelperTest {
     final List<DistributedByResult> frequencyResult =
         underTest.toFrequencyResult(new ArrayList<>(List.of(result)), 7L);
 
-    // then every view measure carries the bucket's document count as its value
+    // then every view measure carries the bucket's document count as its value, and its
+    // aggregation type is left untouched so it keeps matching the sibling agent-node groups'
+    // measure identifier (see toFrequencyResult's javadoc for why)
     assertThat(frequencyResult).hasSize(1);
     assertThat(measureA.getValue()).isEqualTo(7.0);
+    assertThat(measureA.getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.AVERAGE));
     assertThat(measureB.getValue()).isEqualTo(7.0);
+    assertThat(measureB.getAggregationType())
+        .isEqualTo(new AggregationDto(AggregationType.AVERAGE));
   }
 
   @Test

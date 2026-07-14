@@ -166,6 +166,18 @@ public class ProcessGroupByFlowNodeInterpreterHelper {
    * measure to {@code docCount}. Shared by the Elasticsearch and OpenSearch agent flow-node
    * interpreters, which build the per-tool heat of an ad-hoc subprocess from the raw activation
    * counts of its inner tool nodes.
+   *
+   * <p>The measures being overwritten here come from the TOOL_CALLS view's {@code
+   * createEmptyResult}, which tags each one with the report's configured aggregation type (AVERAGE
+   * by default, see {@code SingleReportConfigurationDto}). That labeling is only meaningful for the
+   * real avg/min/max/sum aggregation over the numeric tool-calls field; this value is a plain
+   * activation count, so on paper the label is misleading. It is deliberately left untouched
+   * anyway: {@code CompositeCommandResult#createMeasureMap} pre-seeds its output measures purely
+   * from the report's configured aggregation types (not from what any view interpreter actually
+   * computes), so every measure in this report — including this one — must keep exactly that
+   * identifier or it silently drops into a second, mismatched measure. That previously surfaced as
+   * a spurious aggregation-type selector in the report tile with an empty heatmap under the
+   * "expected" identifier and the real data hidden under the mismatched one.
    */
   public List<DistributedByResult> toFrequencyResult(
       final List<DistributedByResult> emptyDistributedByResult, final long docCount) {
