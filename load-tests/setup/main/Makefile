@@ -70,19 +70,20 @@ platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
+else ifeq ($(secondary_storage), opensearch)
+	# When deploying the OpenSearch secondary storage, Optimize is
+	# configured via the camunda-platform-values-opensearch.yaml file.
+	#
+	# We need to apply specific Optimize related opensearch configs
+	platform_values += -f camunda-platform-values-optimize-opensearch.yaml
 else
-	ifeq ($(filter $(secondary_storage),elasticsearch opensearch),)
-		# When deploying the OpenSearch secondary storage, Optimize is
-		# configured via the camunda-platform-values-opensearch.yaml file.
-		#
-		# If we are not using OpenSearch as a secondary storage, Optimize will
-		# be configured with the Elasticsearch backend, either:
-		# * Using the same Elasticsearch cluster as the secondary storage, if
-		#   the secondary storage is also Elasticsearch.
-		# * Or using its dedicated Elasticsearch cluster, different from the
-		#   configured secondary storage.
-		platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
-	endif
+	# If we are not using OpenSearch as a secondary storage, Optimize will
+	# be configured with the Elasticsearch backend, either:
+	# * Using the same Elasticsearch cluster as the secondary storage, if
+	#   the secondary storage is also Elasticsearch.
+	# * Or using its dedicated Elasticsearch cluster, different from the
+	#   configured secondary storage.
+	platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
 endif
 
 # Platform values with stable configuration
