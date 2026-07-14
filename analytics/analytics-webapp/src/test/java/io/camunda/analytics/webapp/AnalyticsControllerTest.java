@@ -8,15 +8,20 @@
 package io.camunda.analytics.webapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dimension.DimensionKey;
+import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.query.ReportResult;
+import io.camunda.analytics.query.SnapshotQueryExecutor;
 import io.camunda.analytics.report.ReportDefinition;
 import io.camunda.analytics.serving.catalog.DatasetProvisioningService;
 import io.camunda.analytics.serving.catalog.StandardDatasets;
@@ -28,6 +33,7 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
 /**
  * The declare-and-read API's question flow, against the H2-backed serving stack: a question with
@@ -54,6 +60,7 @@ final class AnalyticsControllerTest {
             provisioningService,
             fixture.metadataStore(),
             fixture.executor(),
+            new SnapshotQueryExecutor(fixture.datasetStore().queryClient()),
             new MeasureCatalog(),
             // The heatmap and raw-table endpoints are not under test here.
             null,
@@ -131,6 +138,106 @@ final class AnalyticsControllerTest {
               assertThat(((Number) row.measures().get(datasetName + "#2.count")).longValue())
                   .isEqualTo(2L);
             });
+  }
+
+  @Test
+  void shouldServeASnapshotSeriesWithBaselineAndCarryForward() {
+    // given a snapshot-enabled level dataset with a baseline row and one in-range change point
+    final AnalyticsController.DatasetView created =
+        controller.createDataset(
+            new AnalyticsController.CreateDatasetRequest(
+                "active-instances",
+                FactType.PROCESS_INSTANCE,
+                DatasetKind.AGGREGATED,
+                List.of(),
+                List.of(
+                    new AnalyticsController.DimensionRequest(
+                        "bpmnProcessId", DimensionType.STRING, null)),
+                List.of(
+                    new AnalyticsController.MeterRequest("active", "level", "delta", null, null)),
+                List.of(60_000L),
+                null,
+                null,
+                60_000L));
+    assertThat(created.snapshotEveryMs()).isEqualTo(60_000L);
+    final CompiledDataset dataset = compiledByName("active-instances");
+    final long fromMs = ServingTestSupport.window(60_000L) - 600_000L;
+    seedSnapshot(dataset, fromMs, 5L, "order-process");
+    seedSnapshot(dataset, fromMs + 180_000L, 8L, "order-process");
+
+    // when a 5-bucket snapshot series is read over (fromMs, fromMs + 5m]
+    final List<AnalyticsController.SnapshotSeriesView> series =
+        controller
+            .datasetSnapshots("active-instances", fromMs, fromMs + 300_000L, 60_000L)
+            .getBody();
+
+    // then one key's dense series carries the baseline forward and steps at the change point
+    assertThat(series)
+        .singleElement()
+        .satisfies(
+            view -> {
+              assertThat(view.dimensions()).containsEntry("bpmnProcessId", "order-process");
+              assertThat(view.points())
+                  .extracting(
+                      AnalyticsController.SnapshotPointView::time,
+                      point -> ((Number) point.measures().get("active")).longValue())
+                  .containsExactly(
+                      tuple(fromMs + 60_000L, 5L),
+                      tuple(fromMs + 120_000L, 5L),
+                      tuple(fromMs + 180_000L, 8L),
+                      tuple(fromMs + 240_000L, 8L),
+                      tuple(fromMs + 300_000L, 8L));
+            });
+  }
+
+  @Test
+  void shouldRejectInvalidSnapshotQueriesAndUnknownDatasets() {
+    // given a snapshot-less standard dataset and an off-grid granularity on a snapshot one
+    assertThat(controller.datasetSnapshots("no-such-dataset", 0L, 60_000L, 60_000L).getStatusCode())
+        .isEqualTo(HttpStatus.NOT_FOUND);
+
+    assertThatThrownBy(() -> controller.datasetSnapshots("process-instances", 0L, 60_000L, 60_000L))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("declares no snapshots");
+
+    controller.createDataset(
+        new AnalyticsController.CreateDatasetRequest(
+            "active-instances",
+            FactType.PROCESS_INSTANCE,
+            DatasetKind.AGGREGATED,
+            List.of(),
+            List.of(
+                new AnalyticsController.DimensionRequest(
+                    "bpmnProcessId", DimensionType.STRING, null)),
+            List.of(new AnalyticsController.MeterRequest("active", "level", "delta", null, null)),
+            List.of(60_000L),
+            null,
+            null,
+            60_000L));
+    assertThatThrownBy(() -> controller.datasetSnapshots("active-instances", 0L, 60_000L, 90_000L))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("multiple of the cube's sample interval");
+    assertThatThrownBy(
+            () -> controller.datasetSnapshots("active-instances", 60_000L, 60_000L, 60_000L))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("empty snapshot range");
+  }
+
+  /** Seeds one cumulative snapshot row the way Stage 2's sampler writes them. */
+  private void seedSnapshot(
+      final CompiledDataset dataset, final long sampleTime, final long level, final String key) {
+    fixture
+        .datasetStore()
+        .writer()
+        .upsertSnapshotRow(
+            dataset,
+            DimensionKey.of(dataset.grain(), new Object[] {key}),
+            sampleTime,
+            ServingTestSupport.fold(
+                dataset,
+                List.of(Fact.builder(FactType.PROCESS_INSTANCE).field("delta", level).build())),
+            WriteVersion.SEED);
+    fixture.datasetStore().writer().flush();
   }
 
   private CompiledDataset compiledByName(final String name) {

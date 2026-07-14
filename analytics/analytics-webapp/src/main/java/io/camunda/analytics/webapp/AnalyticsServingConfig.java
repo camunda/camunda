@@ -14,6 +14,7 @@ import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.DatasetQueryPlanner;
+import io.camunda.analytics.query.SnapshotQueryExecutor;
 import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.serving.catalog.DatasetProvisioningService;
 import io.camunda.analytics.serving.catalog.StandardDatasets;
@@ -63,6 +64,12 @@ public class AnalyticsServingConfig {
   @Bean
   public DatasetQueryExecutor datasetQueryExecutor(final DatasetStore datasetStore) {
     return new DatasetQueryExecutor(new DatasetQueryPlanner(), datasetStore.queryClient());
+  }
+
+  /** The SNAPSHOT executor (ADR 0010): baseline + sparse range points + carry-forward walk. */
+  @Bean
+  public SnapshotQueryExecutor snapshotQueryExecutor(final DatasetStore datasetStore) {
+    return new SnapshotQueryExecutor(datasetStore.queryClient());
   }
 
   /**

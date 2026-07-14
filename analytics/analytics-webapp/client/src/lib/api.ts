@@ -178,6 +178,8 @@ export interface Dataset {
   meters: Meter[];
   windowSizesMs: number[];
   keyField?: string | null;
+  /** Periodic-snapshot sample interval (ADR 0010); 0 when the dataset declares none. */
+  snapshotEveryMs: number;
   activationTimestampMs: number;
 }
 
@@ -192,6 +194,8 @@ export interface DatasetDeclaration {
   windowSizesMs: number[];
   keyField?: string | null;
   latenessMs?: number;
+  /** Enables periodic snapshots on this event-time grid (must be a multiple of the finest window). */
+  snapshotEveryMs?: number;
 }
 
 export interface ReportSource {
@@ -223,6 +227,12 @@ export interface ReportRow {
 
 export interface ReportData {
   rows: ReportRow[];
+}
+
+/** One key's dense snapshot series from GET /api/datasets/{name}/snapshots (ADR 0010). */
+export interface SnapshotSeries {
+  dimensions: Record<string, string | null>;
+  points: { time: number; measures: Record<string, unknown> }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -386,6 +396,10 @@ export const api = {
 
   // Dataset / report builder endpoints.
   listDatasets: () => getJson<Dataset[]>("/api/datasets"),
+  datasetSnapshots: (name: string, fromMs: number, toMs: number, granularityMs: number) =>
+    getJson<SnapshotSeries[]>(
+      `/api/datasets/${q(name)}/snapshots?fromMs=${fromMs}&toMs=${toMs}&granularityMs=${granularityMs}`,
+    ),
   createDataset: (declaration: DatasetDeclaration) =>
     postJson<Dataset>("/api/datasets", declaration),
   listReports: () => getJson<Report[]>("/api/reports"),

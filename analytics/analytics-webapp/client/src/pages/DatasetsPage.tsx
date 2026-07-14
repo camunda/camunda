@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Badge,
   Button,
@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@camunda/design-system";
+import { SnapshotSeriesChart } from "../components/SnapshotSeriesChart";
 import {
   api,
   METER_TYPES,
@@ -37,6 +38,7 @@ import {
   type Filter,
   type MeterType,
   type SourceFact,
+  type TimeRange,
 } from "../lib/api";
 
 const SOURCE_FACTS: SourceFact[] = [
@@ -96,7 +98,7 @@ function formatMs(ms: number): string {
 }
 
 /** A dataset builder + list of already-declared datasets. */
-export function DatasetsPage() {
+export function DatasetsPage({ range = null }: { range?: TimeRange | null }) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -110,6 +112,9 @@ export function DatasetsPage() {
   const [customWindow, setCustomWindow] = useState("");
   const [keyField, setKeyField] = useState("");
   const [latenessMs, setLatenessMs] = useState("");
+  const [snapshotEveryMs, setSnapshotEveryMs] = useState("");
+  /** Cube ids whose snapshot chart is expanded in the list below. */
+  const [openSnapshots, setOpenSnapshots] = useState<Record<number, boolean>>({});
 
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -142,6 +147,7 @@ export function DatasetsPage() {
     setCustomWindow("");
     setKeyField("");
     setLatenessMs("");
+    setSnapshotEveryMs("");
   }
 
   function validate(): string | null {
@@ -207,6 +213,9 @@ export function DatasetsPage() {
       windowSizesMs,
       keyField: kind === "TABLE" && keyField.trim() ? keyField.trim() : null,
       ...(latenessMs.trim() ? { latenessMs: Number(latenessMs) } : {}),
+      ...(kind === "AGGREGATED" && snapshotEveryMs.trim()
+        ? { snapshotEveryMs: Number(snapshotEveryMs) }
+        : {}),
     };
   }
 
@@ -667,6 +676,21 @@ export function DatasetsPage() {
                   placeholder="e.g. 60000"
                 />
               </label>
+
+              {kind === "AGGREGATED" ? (
+                <label className="flex max-w-md flex-col gap-1">
+                  <Label>Snapshot interval (ms)</Label>
+                  <Input
+                    value={snapshotEveryMs}
+                    onChange={(e) => setSnapshotEveryMs(e.target.value)}
+                    placeholder="e.g. 60000 — periodic balance-over-time samples"
+                  />
+                  <span className="text-xs text-neutral-foreground-muted">
+                    Records the absolute value of each key on this event-time grid (a multiple of
+                    the finest rollup window). Additive measures only.
+                  </span>
+                </label>
+              ) : null}
             </CollapsibleContent>
           </Collapsible>
 
@@ -698,44 +722,73 @@ export function DatasetsPage() {
                     <th className="py-2 pr-4 font-medium">Group by</th>
                     <th className="py-2 pr-4 font-medium">Measures</th>
                     <th className="py-2 pr-4 font-medium">Rollup</th>
+                    <th className="py-2 pr-4 font-medium">Snapshots</th>
                   </tr>
                 </thead>
                 <tbody>
                   {datasets.map((d) => (
-                    <tr key={d.cubeId} className="border-b border-border/60 align-top">
-                      <td className="py-2 pr-4 font-medium">{d.name}</td>
-                      <td className="py-2 pr-4">
-                        <Badge variant="secondary">{d.sourceFact}</Badge>
-                      </td>
-                      <td className="py-2 pr-4">
-                        <Badge variant="secondary">{d.kind}</Badge>
-                      </td>
-                      <td className="py-2 pr-4">
-                        <div className="flex flex-wrap gap-1">
-                          {d.dimensions.map((dim) => (
-                            <Badge key={dim.name} variant="secondary">
-                              {dim.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-2 pr-4">
-                        <div className="flex flex-wrap gap-1">
-                          {d.meters.map((m) => (
-                            <Badge key={m.name} variant="secondary">
-                              {m.name}:{m.type}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-2 pr-4 tabular-nums">
-                        {d.windowSizesMs.map(formatMs).join(", ")}
-                      </td>
-                    </tr>
+                    <React.Fragment key={d.cubeId}>
+                      <tr className="border-b border-border/60 align-top">
+                        <td className="py-2 pr-4 font-medium">{d.name}</td>
+                        <td className="py-2 pr-4">
+                          <Badge variant="secondary">{d.sourceFact}</Badge>
+                        </td>
+                        <td className="py-2 pr-4">
+                          <Badge variant="secondary">{d.kind}</Badge>
+                        </td>
+                        <td className="py-2 pr-4">
+                          <div className="flex flex-wrap gap-1">
+                            {d.dimensions.map((dim) => (
+                              <Badge key={dim.name} variant="secondary">
+                                {dim.name}
+                              </Badge>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-2 pr-4">
+                          <div className="flex flex-wrap gap-1">
+                            {d.meters.map((m) => (
+                              <Badge key={m.name} variant="secondary">
+                                {m.name}:{m.type}
+                              </Badge>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="py-2 pr-4 tabular-nums">
+                          {d.windowSizesMs.map(formatMs).join(", ")}
+                        </td>
+                        <td className="py-2 pr-4">
+                          {d.snapshotEveryMs > 0 ? (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                setOpenSnapshots((prev) => ({
+                                  ...prev,
+                                  [d.cubeId]: !prev[d.cubeId],
+                                }))
+                              }
+                            >
+                              {openSnapshots[d.cubeId] ? "Hide" : "View"} (every{" "}
+                              {formatMs(d.snapshotEveryMs)})
+                            </Button>
+                          ) : (
+                            <span className="text-neutral-foreground-muted">—</span>
+                          )}
+                        </td>
+                      </tr>
+                      {d.snapshotEveryMs > 0 && openSnapshots[d.cubeId] ? (
+                        <tr className="border-b border-border/60">
+                          <td colSpan={7} className="py-3 pr-4">
+                            <SnapshotSeriesChart dataset={d} range={range} />
+                          </td>
+                        </tr>
+                      ) : null}
+                    </React.Fragment>
                   ))}
                   {datasets.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-6 text-center text-neutral-foreground-muted">
+                      <td colSpan={7} className="py-6 text-center text-neutral-foreground-muted">
                         No datasets declared yet.
                       </td>
                     </tr>

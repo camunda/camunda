@@ -14,12 +14,14 @@ import io.camunda.analytics.dataset.DatasetKind;
 import io.camunda.analytics.dataset.EnrichmentTiming;
 import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.RegisteredDataset;
+import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportExecutor;
 import io.camunda.analytics.query.ReportResult;
+import io.camunda.analytics.query.SnapshotQueryExecutor;
 import io.camunda.analytics.report.Combination;
 import io.camunda.analytics.report.ReportDefinition;
 import io.camunda.analytics.report.ReportSource;
@@ -58,6 +60,7 @@ public class AnalyticsController {
   private final DatasetProvisioningService provisioningService;
   private final MetadataStore metadataStore;
   private final DatasetQueryExecutor datasetQueryExecutor;
+  private final SnapshotQueryExecutor snapshotQueryExecutor;
   private final MeasureCatalog measureCatalog;
   private final AnalyticsRepository repository;
   private final TableRepository tableRepository;
@@ -66,12 +69,14 @@ public class AnalyticsController {
       final DatasetProvisioningService provisioningService,
       final MetadataStore metadataStore,
       final DatasetQueryExecutor datasetQueryExecutor,
+      final SnapshotQueryExecutor snapshotQueryExecutor,
       final MeasureCatalog measureCatalog,
       final AnalyticsRepository repository,
       final TableRepository tableRepository) {
     this.provisioningService = provisioningService;
     this.metadataStore = metadataStore;
     this.datasetQueryExecutor = datasetQueryExecutor;
+    this.snapshotQueryExecutor = snapshotQueryExecutor;
     this.measureCatalog = measureCatalog;
     this.repository = repository;
     this.tableRepository = tableRepository;
@@ -180,6 +185,62 @@ public class AnalyticsController {
     return toView(provisioningService.provision(request.toDeclaration()));
   }
 
+  /**
+   * Runs a SNAPSHOT query (ADR 0010) against a snapshot-enabled dataset: "where did the value stand
+   * at each moment" as a dense per-key series over {@code (fromMs, toMs]} at the requested
+   * granularity (a multiple of the dataset's declared sample interval). The executor's rejections
+   * (no snapshots declared, off-grid granularity, empty range) surface as 400s via the {@link
+   * IllegalArgumentException} handler below; an unknown dataset is a 404.
+   */
+  @GetMapping("/datasets/{name}/snapshots")
+  public ResponseEntity<List<SnapshotSeriesView>> datasetSnapshots(
+      @PathVariable final String name,
+      @RequestParam("fromMs") final long fromMs,
+      @RequestParam("toMs") final long toMs,
+      @RequestParam("granularityMs") final long granularityMs) {
+    // Resolve against the current metadata plane, so a just-defined dataset resolves.
+    CompiledDataset dataset = null;
+    for (final ActiveCube cube : StandardDatasets.loadCubes(metadataStore)) {
+      if (cube.compiled().name().equals(name)) {
+        dataset = cube.compiled();
+        break;
+      }
+    }
+    if (dataset == null) {
+      return ResponseEntity.notFound().build();
+    }
+    final List<SnapshotQueryExecutor.SnapshotSeriesPoint> points =
+        snapshotQueryExecutor.execute(
+            new SnapshotQueryExecutor.SnapshotQuery(fromMs, toMs, granularityMs), dataset);
+
+    // Group the flat per-key points into one series per grain key (points arrive key-grouped,
+    // time-ascending); the key values are named by the grain columns for the client.
+    final List<DimensionColumn> grain = dataset.grain().columns();
+    final Map<List<Object>, SnapshotSeriesView> byKey = new LinkedHashMap<>();
+    for (final SnapshotQueryExecutor.SnapshotSeriesPoint point : points) {
+      byKey
+          .computeIfAbsent(
+              point.keyValues(),
+              key -> {
+                final Map<String, Object> dimensions = new LinkedHashMap<>();
+                for (int i = 0; i < grain.size(); i++) {
+                  dimensions.put(grain.get(i).name(), key.get(i));
+                }
+                return new SnapshotSeriesView(dimensions, new ArrayList<>());
+              })
+          .points()
+          .add(new SnapshotPointView(point.time(), point.measures()));
+    }
+    return ResponseEntity.ok(List.copyOf(byKey.values()));
+  }
+
+  /** One key's dense snapshot series: the grain values and the (time, absolute values) points. */
+  public record SnapshotSeriesView(
+      Map<String, Object> dimensions, List<SnapshotPointView> points) {}
+
+  /** One materialised snapshot point: the bucket end and the absolute measure values. */
+  public record SnapshotPointView(long time, Map<String, Object> measures) {}
+
   // --- reports ---------------------------------------------------------------------------------
 
   @GetMapping("/reports")
@@ -284,6 +345,7 @@ public class AnalyticsController {
             .toList(),
         d.windowSizesMs(),
         d.keyField(),
+        d.snapshotEveryMs(),
         registered.activationTimestampMs());
   }
 
@@ -313,7 +375,8 @@ public class AnalyticsController {
       List<MeterRequest> meters,
       List<Long> windowSizesMs,
       String keyField,
-      Long latenessMs) {
+      Long latenessMs,
+      Long snapshotEveryMs) {
 
     DatasetDeclaration toDeclaration() {
       final DatasetDeclaration.Builder builder = DatasetDeclaration.builder(name, sourceFact);
@@ -340,6 +403,9 @@ public class AnalyticsController {
       }
       if (latenessMs != null) {
         builder.lateness(latenessMs);
+      }
+      if (snapshotEveryMs != null && snapshotEveryMs > 0) {
+        builder.snapshots(snapshotEveryMs);
       }
       return builder.build();
     }
@@ -381,6 +447,7 @@ public class AnalyticsController {
       List<MeterView> meters,
       List<Long> windowSizesMs,
       String keyField,
+      long snapshotEveryMs,
       long activationTimestampMs) {}
 
   public record DimensionView(String name, String type, String enrichment) {}
