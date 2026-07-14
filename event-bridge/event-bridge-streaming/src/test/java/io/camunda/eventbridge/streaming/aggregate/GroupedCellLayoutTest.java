@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.agrona.collections.MutableLong;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -105,7 +106,7 @@ final class GroupedCellLayoutTest {
         };
     final KeyValueStore<DbBytes, DbBytes> store =
         new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
-    final SegmentSealingAggregation<Ev, String, Long> aggregation =
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation =
         new SegmentSealingAggregation<>(
             7,
             new SumAggregateFunction<>(Ev::value),
@@ -117,7 +118,7 @@ final class GroupedCellLayoutTest {
             (cell, partition, segment, delta) -> {},
             store,
             new StringRecordValue(),
-            new LongRecordValue(),
+            new MutableLongRecordValue(),
             Runnable::run);
 
     // when a record from source partition 3 lands in the open segment 0 and is checkpointed

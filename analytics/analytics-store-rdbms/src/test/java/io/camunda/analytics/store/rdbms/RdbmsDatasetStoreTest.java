@@ -38,6 +38,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.agrona.collections.MutableLong;
 import org.assertj.core.groups.Tuple;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
@@ -230,7 +231,8 @@ final class RdbmsDatasetStoreTest {
   }
 
   private byte[] count(final long value) {
-    return new CompositeAccumulatorValue(dataset.meterBounds()).toBytes(new Object[] {value});
+    return new CompositeAccumulatorValue(dataset.meterBounds())
+        .toBytes(new Object[] {new MutableLong(value)});
   }
 
   private int tableRowCount() {

@@ -16,6 +16,7 @@ import io.camunda.analytics.metric.RatioResult;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.agrona.collections.MutableLong;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -67,12 +68,13 @@ final class MeterCatalogPushdownTest {
   void shouldRoundTripCountThroughAStoreAggregate() {
     // given two partial counts; when decomposed, SUMmed, and recomposed
     // then it matches the app-merge + getResult (5)
-    assertRoundTrips(bind(MeterCatalog.COUNT, null), 3L, 2L);
+    assertRoundTrips(bind(MeterCatalog.COUNT, null), new MutableLong(3L), new MutableLong(2L));
   }
 
   @Test
   void shouldRoundTripSumThroughAStoreAggregate() {
-    assertRoundTrips(bind(MeterCatalog.SUM, "durationMs"), 100L, 50L);
+    assertRoundTrips(
+        bind(MeterCatalog.SUM, "durationMs"), new MutableLong(100L), new MutableLong(50L));
   }
 
   @Test

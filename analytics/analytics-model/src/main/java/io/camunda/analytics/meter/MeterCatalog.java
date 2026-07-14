@@ -28,7 +28,7 @@ import io.camunda.analytics.sketch.ItemsSketchValue;
 import io.camunda.analytics.sketch.KllDoublesSketchValue;
 import io.camunda.analytics.sketch.QuantileAggregateFunction;
 import io.camunda.analytics.sketch.TopKAggregateFunction;
-import io.camunda.eventbridge.streaming.aggregate.LongRecordValue;
+import io.camunda.eventbridge.streaming.aggregate.MutableLongRecordValue;
 import io.camunda.eventbridge.streaming.aggregate.SumAggregateFunction;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.agrona.collections.MutableLong;
 
 /**
  * The registry of known meter kinds, resolving a {@link Meter} declaration to its {@link
@@ -108,19 +109,19 @@ public final class MeterCatalog {
             new MeterType<>(
                 COUNT,
                 m -> new SumAggregateFunction<>(fact -> 1L),
-                m -> new LongRecordValue(),
+                m -> new MutableLongRecordValue(),
                 sumSpec()))
         .register(
             new MeterType<>(
                 SUM,
                 m -> new SumAggregateFunction<>(m.requireMeasure()::asLong),
-                m -> new LongRecordValue(),
+                m -> new MutableLongRecordValue(),
                 sumSpec()))
         .register(
             new MeterType<>(
                 LEVEL,
                 m -> new SumAggregateFunction<>(m.requireMeasure()::asLong),
-                m -> new LongRecordValue(),
+                m -> new MutableLongRecordValue(),
                 sumSpec()))
         .register(
             new MeterType<>(
@@ -233,10 +234,10 @@ public final class MeterCatalog {
    * level}): one {@code SUM} column (empty suffix, so the physical column is just the meter's own),
    * decomposing the accumulator to itself and recomposing the summed column back to a {@code long}.
    */
-  private static PushdownSpec<Long, Long> sumSpec() {
+  private static PushdownSpec<MutableLong, Long> sumSpec() {
     return new PushdownSpec<>(
         List.of(new PushdownColumn("", DimensionType.LONG, Agg.SUM)),
-        acc -> List.of(acc),
+        acc -> List.of(acc.value),
         cols -> asLong(cols, 0));
   }
 

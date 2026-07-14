@@ -16,6 +16,7 @@ import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
 import io.camunda.eventbridge.streaming.aggregate.RecordValue;
 import java.util.List;
 import java.util.Map;
+import org.agrona.collections.MutableLong;
 import org.apache.datasketches.frequencies.ItemsSketch;
 import org.apache.datasketches.hll.HllSketch;
 import org.apache.datasketches.kll.KllDoublesSketch;
@@ -50,7 +51,7 @@ final class MeterCatalogTest {
     final Object acc = foldAndRoundTrip(catalog.bind(Meter.of("n", MeterCatalog.COUNT)), facts);
 
     // then
-    assertThat(acc).isEqualTo(3L);
+    assertThat(acc).isEqualTo(new MutableLong(3L));
   }
 
   @Test
@@ -68,8 +69,8 @@ final class MeterCatalogTest {
         foldAndRoundTrip(catalog.bind(Meter.of("open", MeterCatalog.LEVEL, "delta")), deltas);
 
     // then
-    assertThat(sum).isEqualTo(60L);
-    assertThat(level).isEqualTo(1L);
+    assertThat(sum).isEqualTo(new MutableLong(60L));
+    assertThat(level).isEqualTo(new MutableLong(1L));
   }
 
   @Test

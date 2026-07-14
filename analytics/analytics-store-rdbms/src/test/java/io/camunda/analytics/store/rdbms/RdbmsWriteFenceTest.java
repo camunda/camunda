@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.UUID;
+import org.agrona.collections.MutableLong;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -107,7 +108,8 @@ final class RdbmsWriteFenceTest {
   }
 
   private byte[] count(final long value) {
-    return new CompositeAccumulatorValue(dataset.meterBounds()).toBytes(new Object[] {value});
+    return new CompositeAccumulatorValue(dataset.meterBounds())
+        .toBytes(new Object[] {new MutableLong(value)});
   }
 
   private long servedCount() {

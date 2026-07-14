@@ -24,6 +24,7 @@ import io.camunda.analytics.serving.spi.SnapshotPoint;
 import io.camunda.analytics.serving.spi.WriteVersion;
 import java.util.List;
 import java.util.UUID;
+import org.agrona.collections.MutableLong;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,6 +133,7 @@ final class RdbmsSnapshotStoreTest {
   }
 
   private byte[] level(final long value) {
-    return new CompositeAccumulatorValue(dataset.meterBounds()).toBytes(new Object[] {value});
+    return new CompositeAccumulatorValue(dataset.meterBounds())
+        .toBytes(new Object[] {new MutableLong(value)});
   }
 }

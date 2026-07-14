@@ -16,6 +16,7 @@ import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.util.ArrayList;
 import java.util.List;
+import org.agrona.collections.MutableLong;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -32,7 +33,7 @@ final class SegmentDeltaPipelineTest {
 
   private record Cell(Windowed<String> cell, long delta) {}
 
-  private static final AggregateFunction<Ev, Long, Long> SUM =
+  private static final AggregateFunction<Ev, MutableLong, Long> SUM =
       new SumAggregateFunction<>(Ev::value);
   private static final Windows WINDOW = TumblingWindows.ofSizeAndGrace(1_000_000L, 1_000_000L);
 
@@ -56,14 +57,14 @@ final class SegmentDeltaPipelineTest {
     // when the records flow through seal -> dedup -> merge
     final List<Batch> batches = seal(records);
     final SegmentDedup dedup = new SegmentDedup();
-    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
-    final SegmentMergingAggregation<String, Long> merge = merger(sink);
+    final InMemoryResultSink<Windowed<String>, MutableLong> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, MutableLong> merge = merger(sink);
     applyAll(batches, dedup, merge);
     merge.flush();
 
     // then it matches the one-pass reference
-    assertThat(sink.get(a)).hasValue(8L);
-    assertThat(sink.get(b)).hasValue(10L);
+    assertThat(sink.get(a)).hasValue(new MutableLong(8));
+    assertThat(sink.get(b)).hasValue(new MutableLong(10));
 
     // when segment 0's batch is re-emitted (a producer replay) and reapplied
     final Batch segmentZero = batches.get(0);
@@ -71,8 +72,8 @@ final class SegmentDeltaPipelineTest {
     merge.flush();
 
     // then dedup drops it wholesale — no double-count
-    assertThat(sink.get(a)).hasValue(8L);
-    assertThat(sink.get(b)).hasValue(10L);
+    assertThat(sink.get(a)).hasValue(new MutableLong(8));
+    assertThat(sink.get(b)).hasValue(new MutableLong(10));
   }
 
   /** Runs the sealing combiner over the records, capturing one batch per sealed segment. */
@@ -81,7 +82,7 @@ final class SegmentDeltaPipelineTest {
     final List<Cell> current = new ArrayList<>();
     final int[] partition = {-1};
     final long[] segment = {-1};
-    final SegmentSealingAggregation<Ev, String, Long> sealing =
+    final SegmentSealingAggregation<Ev, String, MutableLong> sealing =
         new SegmentSealingAggregation<>(
             SUM,
             Ev::key,
@@ -105,10 +106,10 @@ final class SegmentDeltaPipelineTest {
                   final Windowed<String> cell,
                   final int sourcePartition,
                   final long seg,
-                  final Long delta) {
+                  final MutableLong delta) {
                 partition[0] = sourcePartition;
                 segment[0] = seg;
-                current.add(new Cell(cell, delta));
+                current.add(new Cell(cell, delta.value));
               }
 
               @Override
@@ -126,20 +127,20 @@ final class SegmentDeltaPipelineTest {
   private static void applyAll(
       final List<Batch> batches,
       final SegmentDedup dedup,
-      final SegmentMergingAggregation<String, Long> merge) {
+      final SegmentMergingAggregation<String, MutableLong> merge) {
     for (final Batch batch : batches) {
       // A single-stream pipeline: streamId is fixed (the multiplexing/per-stream dedup is covered
       // by SegmentDedupTest).
       if (dedup.admit(batch.partition(), 0, batch.segment(), 0)) {
         for (final Cell cell : batch.cells()) {
-          merge.merge(cell.cell(), cell.delta());
+          merge.merge(cell.cell(), new MutableLong(cell.delta()));
         }
       }
     }
   }
 
-  private static SegmentMergingAggregation<String, Long> merger(
-      final InMemoryResultSink<Windowed<String>, Long> sink) {
+  private static SegmentMergingAggregation<String, MutableLong> merger(
+      final InMemoryResultSink<Windowed<String>, MutableLong> sink) {
     return new SegmentMergingAggregation<>(
         1,
         SUM,
@@ -147,7 +148,7 @@ final class SegmentDeltaPipelineTest {
         sink,
         new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()),
         new StringRecordValue(),
-        new LongRecordValue(),
+        new MutableLongRecordValue(),
         Runnable::run);
   }
 }

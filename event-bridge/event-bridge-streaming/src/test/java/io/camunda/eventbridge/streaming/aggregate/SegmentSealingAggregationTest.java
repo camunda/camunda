@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.impl.DbBytes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +46,7 @@ final class SegmentSealingAggregationTest {
   private final List<Sealed> emitted = new ArrayList<>();
 
   /** Stride 10, and one huge window so the test isolates segment (not window) behaviour. */
-  private SegmentSealingAggregation<Ev, String, Long> aggregation() {
+  private SegmentSealingAggregation<Ev, String, MutableLong> aggregation() {
     return new SegmentSealingAggregation<>(
         new SumAggregateFunction<>(Ev::value),
         Ev::key,
@@ -57,12 +58,12 @@ final class SegmentSealingAggregationTest {
   }
 
   /** A durable (Model-F) aggregation checkpointing its open segment to {@code store}. */
-  private SegmentSealingAggregation<Ev, String, Long> durable(
+  private SegmentSealingAggregation<Ev, String, MutableLong> durable(
       final KeyValueStore<DbBytes, DbBytes> store) {
     return durable(store, Runnable::run);
   }
 
-  private SegmentSealingAggregation<Ev, String, Long> durable(
+  private SegmentSealingAggregation<Ev, String, MutableLong> durable(
       final KeyValueStore<DbBytes, DbBytes> store, final TransactionRunner tx) {
     return new SegmentSealingAggregation<>(
         1,
@@ -75,13 +76,13 @@ final class SegmentSealingAggregationTest {
         sink(),
         store,
         new StringRecordValue(),
-        new LongRecordValue(),
+        new MutableLongRecordValue(),
         tx);
   }
 
-  private SegmentSink<String, Long> sink() {
+  private SegmentSink<String, MutableLong> sink() {
     return (cell, partition, segment, delta) ->
-        emitted.add(new Sealed(cell.key(), cell.windowStart(), partition, segment, delta));
+        emitted.add(new Sealed(cell.key(), cell.windowStart(), partition, segment, delta.value));
   }
 
   /** Decodes each recorded cell-row key's base string key ({@code group ++ windowStart ++ key}). */
@@ -99,7 +100,7 @@ final class SegmentSealingAggregationTest {
   @Test
   void shouldSealCompletedSegmentAsFromEmptyDelta() {
     // given
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
 
     // when two records land in segment 0 and a third crosses into segment 1
     aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
@@ -115,7 +116,7 @@ final class SegmentSealingAggregationTest {
   @Test
   void shouldSealEachKeySeparately() {
     // given
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
 
     // when two keys accumulate in segment 0, then a record opens segment 1
     aggregation.accept(new Ev(0, 1L, 100L, "a", 2L));
@@ -130,7 +131,7 @@ final class SegmentSealingAggregationTest {
   @Test
   void shouldNotSealOpenSegmentOnFlushOrClose() throws Exception {
     // given records only in segment 0
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
     aggregation.accept(new Ev(0, 3L, 100L, "a", 4L));
 
     // when the freshness/shutdown paths run
@@ -145,7 +146,7 @@ final class SegmentSealingAggregationTest {
   @Test
   void shouldAdvanceSafeOffsetPastSkippedEmptySegments() {
     // given a jump from segment 0 straight to segment 2 (segment 1 sees no records)
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
     aggregation.accept(new Ev(0, 5L, 100L, "a", 1L));
     aggregation.accept(new Ev(0, 25L, 100L, "a", 1L));
 
@@ -157,7 +158,7 @@ final class SegmentSealingAggregationTest {
   @Test
   void shouldSealOpenSegmentWhenTheWatermarkAdvancesPastIt() {
     // given a record folded into segment 0, then the stream goes quiet (no boundary crossing)
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
     aggregation.accept(new Ev(0, 3L, 100L, "a", 4L));
 
     // when the watermark is still inside segment 0, nothing seals
@@ -196,7 +197,7 @@ final class SegmentSealingAggregationTest {
 
   private List<Sealed> replay(final List<Ev> input) {
     emitted.clear();
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
     input.forEach(aggregation::accept);
     return List.copyOf(emitted);
   }
@@ -207,7 +208,7 @@ final class SegmentSealingAggregationTest {
     // checkpointed (Model F: the full offset would commit, so the open partial must survive)
     final KeyValueStore<DbBytes, DbBytes> store =
         new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
-    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> before = durable(store);
     before.accept(new Ev(0, 0L, 100L, "a", 5L));
     before.accept(new Ev(0, 5L, 100L, "a", 3L));
     before.checkpoint();
@@ -215,7 +216,7 @@ final class SegmentSealingAggregationTest {
 
     // when a fresh aggregation recovers from the same store (a crash + replay-from-committed) and a
     // record crosses into segment 1
-    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> after = durable(store);
     after.accept(new Ev(0, 10L, 100L, "a", 100L));
 
     // then the recovered open partial (5 + 3) is included in segment 0's sealed delta — not lost
@@ -229,14 +230,14 @@ final class SegmentSealingAggregationTest {
     // opened segment 1 with a new partial
     final KeyValueStore<DbBytes, DbBytes> store =
         new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
-    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> before = durable(store);
     before.accept(new Ev(0, 0L, 100L, "a", 5L)); // segment 0
     before.accept(new Ev(0, 10L, 100L, "b", 7L)); // seals segment 0, opens segment 1
     before.checkpoint();
     emitted.clear();
 
     // when recovering and crossing into segment 2
-    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> after = durable(store);
     after.accept(new Ev(0, 20L, 100L, "b", 1L));
 
     // then only segment 1's open partial ("b" = 7) is sealed — segment 0's cells were not
@@ -249,7 +250,7 @@ final class SegmentSealingAggregationTest {
     // given a durable aggregation frozen mid-segment
     final KeyValueStore<DbBytes, DbBytes> store =
         new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
-    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> before = durable(store);
     before.accept(new Ev(0, 0L, 100L, "a", 5L));
     before.freeze();
 
@@ -259,7 +260,7 @@ final class SegmentSealingAggregationTest {
     before.completeFrozen(true);
 
     // then a recovery sees exactly the at-freeze partial — the later fold replays from the cut
-    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> after = durable(store);
     after.accept(new Ev(0, 10L, 100L, "a", 100L)); // seals segment 0
     assertThat(emitted).containsExactly(new Sealed("a", 0L, 0, 0L, 5L));
   }
@@ -269,7 +270,7 @@ final class SegmentSealingAggregationTest {
     // given a frozen open segment
     final KeyValueStore<DbBytes, DbBytes> store =
         new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
-    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> before = durable(store);
     before.accept(new Ev(0, 0L, 100L, "a", 5L));
     before.freeze();
 
@@ -281,7 +282,7 @@ final class SegmentSealingAggregationTest {
 
     // then recovery restores the frozen segment-0 partial and the replayed crossing record
     // re-seals it intact
-    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> after = durable(store);
     after.accept(new Ev(0, 10L, 100L, "b", 7L));
     assertThat(emitted).containsExactly(new Sealed("a", 0L, 0, 0L, 5L));
   }
@@ -299,7 +300,7 @@ final class SegmentSealingAggregationTest {
         };
     final KeyValueStore<DbBytes, DbBytes> store =
         new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes());
-    final SegmentSealingAggregation<Ev, String, Long> before = durable(store, tx);
+    final SegmentSealingAggregation<Ev, String, MutableLong> before = durable(store, tx);
     before.accept(new Ev(0, 0L, 100L, "a", 5L));
     before.checkpoint();
     before.accept(new Ev(0, 10L, 100L, "b", 7L)); // seals segment 0, opens segment 1
@@ -313,7 +314,7 @@ final class SegmentSealingAggregationTest {
     // then recovery sees only segment 1's open partial — the stale segment-0 row was deleted by
     // the retried cut, not lost with the failed one
     emitted.clear();
-    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> after = durable(store);
     after.accept(new Ev(0, 20L, 100L, "b", 1L));
     assertThat(emitted).containsExactly(new Sealed("b", 0L, 0, 1L, 7L));
   }
@@ -323,7 +324,7 @@ final class SegmentSealingAggregationTest {
     // given a cell persisted by a completed cut
     final RecordingKeyValueStore store =
         new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = durable(store);
     aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
     aggregation.checkpoint();
     assertThat(cellKeys(store.putCellKeys())).containsExactly("a");
@@ -351,7 +352,7 @@ final class SegmentSealingAggregationTest {
     // following cut
     final RecordingKeyValueStore store =
         new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = durable(store);
     aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
     aggregation.checkpoint(); // cut 1 writes "a"
     aggregation.accept(new Ev(0, 10L, 100L, "b", 7L)); // seals segment 0, opens segment 1
@@ -370,7 +371,7 @@ final class SegmentSealingAggregationTest {
     assertThat(cellKeys(store.putCellKeys())).containsExactly("c");
     assertThat(store.deleteCellKeys()).isEmpty();
     emitted.clear();
-    final SegmentSealingAggregation<Ev, String, Long> recovered = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> recovered = durable(store);
     recovered.accept(new Ev(0, 20L, 100L, "d", 100L)); // seals the recovered segment 1
     assertThat(emitted)
         .containsExactlyInAnyOrder(new Sealed("b", 0L, 0, 1L, 7L), new Sealed("c", 0L, 0, 1L, 1L));
@@ -389,7 +390,7 @@ final class SegmentSealingAggregationTest {
         };
     final RecordingKeyValueStore store =
         new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = durable(store, tx);
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = durable(store, tx);
     aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
     failTransaction.set(true);
     assertThatThrownBy(aggregation::checkpoint).hasMessage("transaction failed");
@@ -403,7 +404,7 @@ final class SegmentSealingAggregationTest {
     // then the failed cut's cell was not dropped from the delta — the retried cut persists its
     // full current total, as a recovery proves
     assertThat(cellKeys(store.putCellKeys())).containsExactly("a");
-    final SegmentSealingAggregation<Ev, String, Long> recovered = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> recovered = durable(store);
     recovered.accept(new Ev(0, 10L, 100L, "b", 100L)); // seals segment 0
     assertThat(emitted).containsExactly(new Sealed("a", 0L, 0, 0L, 8L));
   }
@@ -414,7 +415,7 @@ final class SegmentSealingAggregationTest {
     // second — plus an uncommitted fold after the last cut
     final RecordingKeyValueStore store =
         new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
-    final SegmentSealingAggregation<Ev, String, Long> before = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> before = durable(store);
     before.accept(new Ev(0, 0L, 100L, "a", 5L));
     before.checkpoint();
     before.accept(new Ev(0, 1L, 100L, "b", 7L));
@@ -427,7 +428,7 @@ final class SegmentSealingAggregationTest {
 
     // when a fresh aggregation recovers (a crash) and the uncommitted tail replays from the
     // committed offset
-    final SegmentSealingAggregation<Ev, String, Long> after = durable(store);
+    final SegmentSealingAggregation<Ev, String, MutableLong> after = durable(store);
     after.accept(new Ev(0, 2L, 100L, "a", 2L));
     after.accept(new Ev(0, 10L, 100L, "c", 100L)); // seals segment 0
 
@@ -440,7 +441,7 @@ final class SegmentSealingAggregationTest {
   @Test
   void shouldTreatTheSplitCheckpointAsANoOpWithoutDurableState() {
     // given a Model R aggregation with an open partial
-    final SegmentSealingAggregation<Ev, String, Long> aggregation = aggregation();
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
     aggregation.accept(new Ev(0, 3L, 100L, "a", 4L));
 
     // when the split checkpoint steps run
@@ -456,7 +457,7 @@ final class SegmentSealingAggregationTest {
   @Test
   void shouldRejectOverlappingFreezesAndUnpairedPersistOrComplete() {
     // given a durable aggregation with an outstanding frozen snapshot
-    final SegmentSealingAggregation<Ev, String, Long> aggregation =
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation =
         durable(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
     aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
     aggregation.freeze();

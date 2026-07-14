@@ -13,6 +13,7 @@ import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.metric.ExecutionTimeResult;
 import java.util.List;
+import org.agrona.collections.MutableLong;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -104,7 +105,8 @@ final class CompositeAccumulatorTest {
 
     // then each slot decodes independently with its own meter codec
     assertThat(slots).hasSize(2);
-    assertThat(bounds.get(0).accumulatorCodec().fromBytes(slots.get(0))).isEqualTo(1L);
+    assertThat(bounds.get(0).accumulatorCodec().fromBytes(slots.get(0)))
+        .isEqualTo(new MutableLong(1L));
 
     // and a shorter payload pads missing slots with null
     final List<byte[]> padded = CompositeAccumulatorValue.slotBytes(composite, 3);
@@ -126,11 +128,13 @@ final class CompositeAccumulatorTest {
     final Object[] pureMerged = aggregate.merge(new Object[bounds.size()], delta);
 
     // then no mutable slot of any result is the delta's own object — views are folded, never
-    // adopted. (Slot 0 is a boxed Long whose small values intern, so identity is asserted on the
-    // mutable execution-time accumulator slot; slot 0 is checked by value.)
+    // adopted (both the mutable sum holder and the execution-time accumulator are checked by
+    // identity, and slot 0 by value too)
+    assertThat(merged[0]).isNotSameAs(delta[0]);
+    assertThat(pureMerged[0]).isNotSameAs(delta[0]);
     assertThat(merged[1]).isNotSameAs(delta[1]);
     assertThat(pureMerged[1]).isNotSameAs(delta[1]);
-    assertThat(merged[0]).isEqualTo(1L);
-    assertThat(pureMerged[0]).isEqualTo(1L);
+    assertThat(merged[0]).isEqualTo(new MutableLong(1L));
+    assertThat(pureMerged[0]).isEqualTo(new MutableLong(1L));
   }
 }
