@@ -104,7 +104,8 @@ public final class MultiCamundaClientPropertiesResolver {
     final Map<String, CamundaClientAuthProperties.AuthMethod> methodByClient =
         new LinkedHashMap<>();
     clients.forEach(
-        (name, properties) -> methodByClient.put(name, properties.getAuth().getMethod()));
+        (name, properties) ->
+            methodByClient.put(name, normalizeAuthMethod(properties.getAuth().getMethod())));
     final long distinctMethods = methodByClient.values().stream().distinct().count();
     if (distinctMethods > 1) {
       throw new IllegalArgumentException(
@@ -114,6 +115,16 @@ public final class MultiCamundaClientPropertiesResolver {
                   + "uniform.",
               methodByClient));
     }
+  }
+
+  /**
+   * Normalizes an unset {@code auth.method} to {@link CamundaClientAuthProperties.AuthMethod#none}:
+   * both a {@code null} method and an explicit {@code none} resolve to a {@code
+   * NoopCredentialsProvider}, so they must count as the same auth type.
+   */
+  private static CamundaClientAuthProperties.AuthMethod normalizeAuthMethod(
+      final CamundaClientAuthProperties.AuthMethod method) {
+    return method == null ? CamundaClientAuthProperties.AuthMethod.none : method;
   }
 
   /**
