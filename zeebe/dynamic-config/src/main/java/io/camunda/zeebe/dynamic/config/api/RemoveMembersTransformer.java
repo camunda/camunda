@@ -30,7 +30,7 @@ public class RemoveMembersTransformer implements ConfigurationChangeRequest {
       final ClusterConfiguration clusterConfiguration) {
     final var operations =
         members.stream()
-            // only add members that are not already part of the cluster
+            // only remove members that are already part of the cluster
             .filter(clusterConfiguration::hasMember)
             .map(MemberLeaveOperation::new)
             .map(ClusterConfigurationChangeOperation.class::cast)
