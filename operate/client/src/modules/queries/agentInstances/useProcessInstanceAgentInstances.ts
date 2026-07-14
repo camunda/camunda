@@ -10,9 +10,11 @@ import {useQuery} from '@tanstack/react-query';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {agentInstancesSearchOptions} from './agentInstancesSearch';
 import {ACTIVE_STATUSES_ARRAY} from './agentInstanceStatus';
+import {useIsProcessInstanceRunning} from '../processInstance/useIsProcessInstanceRunning';
 
 const useProcessInstanceAgentInstances = () => {
   const {processInstanceId} = useProcessInstancePageParams();
+  const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
 
   return useQuery({
     ...agentInstancesSearchOptions({
@@ -25,7 +27,7 @@ const useProcessInstanceAgentInstances = () => {
       },
     }),
     enabled: !!processInstanceId,
-    refetchInterval: 5000,
+    refetchInterval: isProcessInstanceRunning ? 5000 : undefined,
     staleTime: 5000,
   });
 };

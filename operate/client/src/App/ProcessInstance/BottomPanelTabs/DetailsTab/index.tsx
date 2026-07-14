@@ -35,6 +35,7 @@ import {
 } from './styled';
 import {StructuredList} from 'modules/components/StructuredList';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useAgentInstancesForElement} from 'modules/queries/agentInstances/useAgentInstancesForElement';
 import {AgentDetails} from './AgentDetails';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
@@ -70,6 +71,7 @@ const DetailsTab: React.FC = () => {
   const isProcessScope = !hasSelection;
 
   const {data: processInstance} = useProcessInstance();
+  const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
   const {data: xmlData} = useProcessInstanceXml({
     processDefinitionKey: processInstance?.processDefinitionKey,
   });
@@ -95,7 +97,7 @@ const DetailsTab: React.FC = () => {
     enabled:
       clientConfig.waitStatesEnabled &&
       !!inspectionElementInstanceKey &&
-      processInstance?.state === 'ACTIVE' &&
+      isProcessInstanceRunning &&
       (isProcessScope || resolvedElementInstance?.state === 'ACTIVE'),
   });
 
@@ -179,7 +181,7 @@ const DetailsTab: React.FC = () => {
     elementId: effectiveElementId ?? '',
     elementInstanceKey,
     enabled: !!processInstance?.processInstanceKey && !!effectiveElementId,
-    enablePeriodicRefetch: true,
+    enablePeriodicRefetch: isProcessInstanceRunning,
   });
   const showAgentInstance =
     (agentInstancesResult && agentInstancesResult.items.length > 0) ||
