@@ -24,8 +24,9 @@ import java.util.Optional;
 /**
  * The document serving {@link DatasetSchemaManager}: derives an index mapping from the compiled
  * dataset and provisions it through the neutral {@link DocumentBasedSchemaClient}. A cube index
- * holds one document per meter-cell (the grain dimensions + window/tier + {@code meter_name} + the
- * {@code accumulator} Base64 blob); a table index holds one document per row (its columns).
+ * holds one document per cell (the grain dimensions + window/tier + every meter's serving fields —
+ * ADR 0009); a snapshot-declaring cube also gets its {@code _snapshots} index (same grain and meter
+ * fields keyed by {@code sample_time} — ADR 0010); a table index holds one document per row.
  */
 public final class DocumentDatasetSchemaManager implements DatasetSchemaManager {
 
@@ -39,34 +40,22 @@ public final class DocumentDatasetSchemaManager implements DatasetSchemaManager 
   @Override
   public void ensure(final CompiledDataset dataset) {
     final Map<String, Object> properties = new LinkedHashMap<>();
-    for (final DimensionColumn column : dataset.grain().columns()) {
-      properties.put(DocumentCubeNames.field(column.name()), property(fieldType(column.type())));
-    }
+    putGrainProperties(properties, dataset);
     properties.put(DocumentCubeNames.WINDOW_START, property("long"));
     properties.put(DocumentCubeNames.WINDOW_SIZE, property("long"));
-    properties.put(DocumentCubeNames.METER_NAME, property("keyword"));
-    properties.put(DocumentCubeNames.ACCUMULATOR, property("binary"));
-    properties.put(DocumentCubeNames.DOC_KEY, property("keyword"));
-
-    // Additive meters map onto native numeric fields the composite aggregation reduces; a
-    // sketch/summary keeps its blob plus a finalized VALUE field for the DIRECT fast path. Fields
-    // are shared across a cube's meter documents (one document per meter), so a name maps once. The
-    // shared VALUE field (single-column additive and the sketch scalar) is a double, so it never
-    // conflicts; multi-column additive fields (matched/total/count/min/max) are longs.
-    properties.put(DocumentCubeNames.VALUE, property("double"));
-    for (final CompiledMeter meter : dataset.meters()) {
-      final Optional<PushdownSpec<?, ?>> spec = meter.pushdown();
-      if (spec.isEmpty()) {
-        continue;
-      }
-      for (final PushdownColumn column : spec.get().columns()) {
-        if (!column.suffix().isEmpty()) {
-          properties.putIfAbsent(
-              DocumentCubeNames.pushdownField(column.suffix()), property("long"));
-        }
-      }
-    }
+    putMeterProperties(properties, dataset);
+    putEnvelopeProperties(properties);
     schemaClient.createIndex(DocumentCubeNames.datasetIndex(dataset.cubeId()), mapping(properties));
+
+    if (dataset.hasSnapshots()) {
+      final Map<String, Object> snapshotProperties = new LinkedHashMap<>();
+      putGrainProperties(snapshotProperties, dataset);
+      snapshotProperties.put(DocumentCubeNames.SAMPLE_TIME, property("long"));
+      putMeterProperties(snapshotProperties, dataset);
+      putEnvelopeProperties(snapshotProperties);
+      schemaClient.createIndex(
+          DocumentCubeNames.snapshotIndex(dataset.cubeId()), mapping(snapshotProperties));
+    }
   }
 
   @Override
@@ -75,7 +64,44 @@ public final class DocumentDatasetSchemaManager implements DatasetSchemaManager 
     for (final DimensionColumn column : table.columns()) {
       properties.put(DocumentCubeNames.field(column.name()), property(fieldType(column.type())));
     }
+    putEnvelopeProperties(properties);
     schemaClient.createIndex(DocumentCubeNames.rowIndex(table.cubeId()), mapping(properties));
+  }
+
+  private static void putGrainProperties(
+      final Map<String, Object> properties, final CompiledDataset dataset) {
+    for (final DimensionColumn column : dataset.grain().columns()) {
+      properties.put(DocumentCubeNames.field(column.name()), property(fieldType(column.type())));
+    }
+  }
+
+  /**
+   * Every meter's serving fields, namespaced per meter (mirroring the RDBMS columns): an additive
+   * meter maps its pushdown columns onto native numeric fields the composite aggregation reduces; a
+   * sketch/summary keeps its blob plus a finalized value field for the DIRECT fast path.
+   */
+  private static void putMeterProperties(
+      final Map<String, Object> properties, final CompiledDataset dataset) {
+    for (final CompiledMeter meter : dataset.meters()) {
+      final Optional<PushdownSpec<?, ?>> spec = meter.pushdown();
+      if (spec.isPresent()) {
+        for (final PushdownColumn column : spec.get().columns()) {
+          properties.put(
+              DocumentCubeNames.pushdownField(meter.meterName(), column.suffix()),
+              property(fieldType(column.type())));
+        }
+      } else {
+        properties.put(DocumentCubeNames.blobField(meter.meterName()), property("binary"));
+        properties.put(DocumentCubeNames.valueField(meter.meterName()), property("double"));
+      }
+    }
+  }
+
+  /** The shared document envelope: the sortable doc key and the diagnostic version fields. */
+  private static void putEnvelopeProperties(final Map<String, Object> properties) {
+    properties.put(DocumentCubeNames.DOC_KEY, property("keyword"));
+    properties.put(DocumentCubeNames.VER_EPOCH, property("long"));
+    properties.put(DocumentCubeNames.VER_OFFSET, property("long"));
   }
 
   private String mapping(final Map<String, Object> properties) {

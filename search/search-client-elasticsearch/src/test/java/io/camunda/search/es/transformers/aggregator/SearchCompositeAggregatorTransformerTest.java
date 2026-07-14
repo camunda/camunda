@@ -45,7 +45,14 @@ public class SearchCompositeAggregatorTransformerTest
                 .sources(List.of(SearchAggregatorBuilders.terms("processId", "processId")))
                 .aggregations(SearchAggregatorBuilders.terms("termsAgg", "field"))
                 .build(),
-            "{'aggregations':{'termsAgg':{'terms':{'field':'field','min_doc_count':1,'size':10}}},'composite':{'size':20,'sources':[{'processId':{'terms':{'field':'processId'}}}]}}"));
+            "{'aggregations':{'termsAgg':{'terms':{'field':'field','min_doc_count':1,'size':10}}},'composite':{'size':20,'sources':[{'processId':{'terms':{'field':'processId'}}}]}}"),
+        Arguments.arguments(
+            SearchAggregatorBuilders.composite()
+                .name("name")
+                .size(10)
+                .sources(List.of(SearchAggregatorBuilders.terms("tenantId", "tenantId", true)))
+                .build(),
+            "{'composite':{'size':10,'sources':[{'tenantId':{'terms':{'field':'tenantId','missing_bucket':true}}}]}}"));
   }
 
   @Test

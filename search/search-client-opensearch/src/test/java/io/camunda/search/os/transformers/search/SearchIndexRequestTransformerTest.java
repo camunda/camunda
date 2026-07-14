@@ -18,6 +18,7 @@ import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch._types.VersionType;
 import org.opensearch.client.opensearch._types.WriteResponseBase;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
@@ -76,6 +77,36 @@ public class SearchIndexRequestTransformerTest {
     assertThat(result.id()).isEqualTo("foo");
     assertThat(result.index()).isEqualTo("bar");
     assertThat(result.result()).isEqualTo(SearchWriteResponse.Result.CREATED);
+  }
+
+  @Test
+  public void shouldCarryTheExternalVersionOntoTheIndexRequest() {
+    // given
+    final var doc = new TestDocument("test");
+    final SearchIndexRequest<TestDocument> searchIndexRequest =
+        SearchIndexRequest.of(
+            b ->
+                b.id("foo")
+                    .index("bar")
+                    .document(doc)
+                    .version(42L)
+                    .versionType(SearchIndexRequest.VersionType.EXTERNAL_GTE));
+
+    // when
+    final var result = requestTransformer.apply(searchIndexRequest);
+
+    // then
+    assertThat(result.version()).isEqualTo(42L);
+    assertThat(result.versionType()).isEqualTo(VersionType.ExternalGte);
+  }
+
+  @Test
+  public void shouldFailToBuildIndexRequestWhenVersionLacksItsType() {
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(
+            () ->
+                SearchIndexRequest.of(
+                    b -> b.index("bar").document(new TestDocument("test")).version(1L)));
   }
 
   @Test

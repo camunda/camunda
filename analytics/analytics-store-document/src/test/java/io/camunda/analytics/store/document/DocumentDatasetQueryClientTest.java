@@ -19,11 +19,15 @@ import io.camunda.analytics.meter.InMemoryMeterIdStore;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.meter.MeterIdRegistry;
+import io.camunda.analytics.serving.spi.AggregatedFetch;
+import io.camunda.analytics.serving.spi.AggregatedRow;
 import io.camunda.analytics.serving.spi.Cell;
 import io.camunda.analytics.serving.spi.DatasetFetch;
+import io.camunda.analytics.serving.spi.ReadStrategy;
 import io.camunda.analytics.serving.spi.TableFetch;
 import io.camunda.analytics.serving.spi.TableRow;
 import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchQueryHit;
@@ -32,6 +36,7 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,10 +45,12 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Pins the read behavior of {@link DocumentDatasetQueryClient} against a canned {@link
- * DocumentBasedSearchClient}: how per-meter documents are reassembled into {@link Cell}s, how
- * source values are coerced to the declared dimension types, the search_after paging of {@code
- * streamCells}, and the search-vs-scroll choice (plus the limit bound) of {@code fetchRows} —
- * mirroring the query-client coverage of the RDBMS store test.
+ * DocumentBasedSearchClient}: how one-document-per-cell sources map to {@link Cell}s (ADR 0009),
+ * how source values are coerced to the declared dimension types, the search_after paging of {@code
+ * streamCells}, the structured composite-key parsing of the pushed-down read (delimiters in a
+ * dimension value, numeric dimensions, null-dimension groups), and the search-vs-scroll choice
+ * (plus the limit bound) of {@code fetchRows} — mirroring the query-client coverage of the RDBMS
+ * store test.
  */
 final class DocumentDatasetQueryClientTest {
 
@@ -57,10 +64,11 @@ final class DocumentDatasetQueryClientTest {
       compiler()
           .compile(
               1L,
-              DatasetDeclaration.builder("pi-count", FactType.PROCESS_INSTANCE)
+              DatasetDeclaration.builder("pi-stats", FactType.PROCESS_INSTANCE)
                   .dimension("bpmnProcessId", DimensionType.STRING)
                   .dimension("version", DimensionType.LONG)
                   .meter(Meter.of("count", MeterCatalog.COUNT))
+                  .meter(Meter.of("p", MeterCatalog.PERCENTILE, "durationMs"))
                   .window(MINUTE)
                   .build());
 
@@ -70,25 +78,21 @@ final class DocumentDatasetQueryClientTest {
   }
 
   @Test
-  void shouldReassembleMeterDocumentsIntoCells() {
-    // given one document per (cell, meter): two meters of the same cell, a second window of one
-    // grain value, a second grain value, and a document of a meter the fetch does not request
+  void shouldMapCellDocumentsToCells() {
+    // given one document per cell — every meter's fields in one source (ADR 0009)
     searchClient.onSearch(
         response(
-            hit(meterDoc("orders", 3, 0L, "count", new byte[] {1})),
-            hit(meterDoc("orders", 3, 0L, "level", new byte[] {2})),
-            hit(meterDoc("orders", 3, MINUTE, "count", new byte[] {3})),
-            hit(meterDoc("ship", 7, 0L, "count", new byte[] {4})),
-            hit(meterDoc("orders", 3, 0L, "other", new byte[] {9}))));
+            hit(cellDoc("orders", 3, 0L, 5L, new byte[] {1})),
+            hit(cellDoc("orders", 3, MINUTE, 2L, new byte[] {2})),
+            hit(cellDoc("ship", 7, 0L, 4L, new byte[] {3}))));
 
-    // when fetched over the whole range
+    // when fetched over the whole range, requesting both meters
     final List<Cell> cells =
         client.fetch(
-            new DatasetFetch(
-                dataset, MINUTE, 0L, 2 * MINUTE, List.of(), List.of("count", "level")));
+            new DatasetFetch(dataset, MINUTE, 0L, 2 * MINUTE, List.of(), List.of("count", "p")));
 
-    // then the per-meter documents regroup into one cell per (grain values, window), the requested
-    // meters' accumulators are Base64-decoded, and the unrequested meter is dropped
+    // then each document is one whole cell; only the sketch meter carries a decoded blob (an
+    // additive meter is pushdown-only and never streamed, as on the RDBMS backend)
     assertThat(cells)
         .extracting(
             c -> c.key().get("bpmnProcessId"), c -> c.key().get("version"), Cell::windowStart)
@@ -96,18 +100,13 @@ final class DocumentDatasetQueryClientTest {
             Tuple.tuple("orders", 3L, 0L),
             Tuple.tuple("orders", 3L, MINUTE),
             Tuple.tuple("ship", 7L, 0L));
-    final Cell merged =
+    final Cell first =
         cells.stream()
             .filter(c -> c.windowStart() == 0L && "orders".equals(c.key().get(0)))
             .findFirst()
             .orElseThrow();
-    assertThat(merged.accumulators())
-        .containsOnlyKeys("count", "level")
-        .satisfies(
-            accumulators -> {
-              assertThat(accumulators.get("count")).containsExactly(1);
-              assertThat(accumulators.get("level")).containsExactly(2);
-            });
+    assertThat(first.accumulators()).containsOnlyKeys("p");
+    assertThat(first.accumulators().get("p")).containsExactly(1);
     assertThat(searchClient.searchRequests).hasSize(1);
     assertThat(searchClient.searchRequests.get(0).index()).containsExactly("dataset_1");
   }
@@ -115,11 +114,11 @@ final class DocumentDatasetQueryClientTest {
   @Test
   void shouldCoerceGrainValuesToDeclaredTypes() {
     // given a document whose numeric grain value deserialized as an Integer (as JSON numbers do)
-    searchClient.onSearch(response(hit(meterDoc("orders", 3, 0L, "count", new byte[] {1}))));
+    searchClient.onSearch(response(hit(cellDoc("orders", 3, 0L, 1L, new byte[] {1}))));
 
     // when fetched
     final List<Cell> cells =
-        client.fetch(new DatasetFetch(dataset, MINUTE, 0L, MINUTE, List.of(), List.of("count")));
+        client.fetch(new DatasetFetch(dataset, MINUTE, 0L, MINUTE, List.of(), List.of("p")));
 
     // then the LONG dimension comes back as a Long, not the raw Integer
     assertThat(cells)
@@ -132,26 +131,104 @@ final class DocumentDatasetQueryClientTest {
     // given a full first page (PAGE_SIZE hits) and a final short page
     final List<SearchQueryHit<Map>> firstPage = new ArrayList<>();
     for (int i = 0; i < PAGE_SIZE; i++) {
-      firstPage.add(
-          hit(meterDoc("orders", 3, i * MINUTE, "count", new byte[] {(byte) i}), "key" + i));
+      firstPage.add(hit(cellDoc("orders", 3, i * MINUTE, 1L, new byte[] {(byte) i}), "key" + i));
     }
     searchClient.onSearch(response(firstPage));
-    searchClient.onSearch(response(hit(meterDoc("ship", 7, 0L, "count", new byte[] {42}), "last")));
+    searchClient.onSearch(response(hit(cellDoc("ship", 7, 0L, 1L, new byte[] {42}), "last")));
 
     // when streamed
     final List<Cell> cells = new ArrayList<>();
     client.streamCells(
-        new DatasetFetch(dataset, MINUTE, 0L, 2000 * MINUTE, List.of(), List.of("count")),
-        cells::add);
+        new DatasetFetch(dataset, MINUTE, 0L, 2000 * MINUTE, List.of(), List.of("p")), cells::add);
 
-    // then every document arrives as a single-meter cell and the second request resumed from the
-    // first page's last sort value
+    // then every document arrives as one cell and the second request resumed from the first
+    // page's last sort value
     assertThat(cells).hasSize(PAGE_SIZE + 1);
-    assertThat(cells.get(0).accumulators()).containsOnlyKeys("count");
+    assertThat(cells.get(0).accumulators()).containsOnlyKeys("p");
     assertThat(cells.get(PAGE_SIZE).key().get("bpmnProcessId")).isEqualTo("ship");
     assertThat(searchClient.searchRequests).hasSize(2);
     assertThat(searchClient.searchRequests.get(0).searchAfter()).isNull();
     assertThat(searchClient.searchRequests.get(1).searchAfter()).containsExactly("key999");
+  }
+
+  @Test
+  void shouldReadCompositeBucketsThroughTheirStructuredKeys() {
+    // given a pushed-down read grouped by a string dimension containing the legacy joined-key
+    // delimiter and by a numeric dimension, plus a null-dimension group (missing_bucket)
+    searchClient.onSearch(
+        aggregationResponse(
+            Map.of(
+                "or__ders31",
+                compositeBucket(
+                    keyValues("or__ders", 3L, 0L), Map.of("agg_mv_count_", metric(5.0))),
+                "ship72",
+                compositeBucket(
+                    keyValues("ship", 7L, MINUTE), Map.of("agg_mv_count_", metric(4.0))),
+                "null",
+                compositeBucket(keyValues(null, 1L, 0L), Map.of("agg_mv_count_", metric(2.0))))));
+
+    // when read PUSH_DOWN
+    final List<AggregatedRow> rows =
+        client.fetchAggregated(
+            new AggregatedFetch(
+                dataset,
+                MINUTE,
+                0L,
+                2 * MINUTE,
+                List.of(),
+                List.of("count"),
+                List.of("bpmnProcessId", "version"),
+                MINUTE,
+                ReadStrategy.PUSH_DOWN));
+
+    // then the group values survive verbatim — the delimiter-carrying string, the typed long, and
+    // the null group — because the structured key is read, never the joined string
+    assertThat(rows)
+        .extracting(
+            r -> r.groupValues().get(0),
+            r -> r.groupValues().get(1),
+            AggregatedRow::bucket,
+            r -> r.measures().get("count"))
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("or__ders", 3L, 0L, 5L),
+            Tuple.tuple("ship", 7L, MINUTE, 4L),
+            Tuple.tuple(null, 1L, 0L, 2L));
+  }
+
+  @Test
+  void shouldDirectReadCellDocumentsWithNullScalarsAbsent() {
+    // given two cell documents, one of whose sketch scalar is null ("no observations")
+    final Map<String, Object> withValue = cellDoc("orders", 3, 0L, 2L, new byte[] {1});
+    withValue.put("mv_p_value", 300.0);
+    final Map<String, Object> withoutValue = cellDoc("ship", 7, MINUTE, 1L, new byte[] {2});
+    withoutValue.remove("mv_p_value");
+    searchClient.onSearch(response(hit(withValue), hit(withoutValue)));
+
+    // when read DIRECT at the tier granularity
+    final List<AggregatedRow> rows =
+        client.fetchAggregated(
+            new AggregatedFetch(
+                dataset,
+                MINUTE,
+                0L,
+                2 * MINUTE,
+                List.of(),
+                List.of("count", "p"),
+                List.of("bpmnProcessId"),
+                MINUTE,
+                ReadStrategy.DIRECT));
+
+    // then each document is one row; the null scalar stays absent — never 0, a legitimate value
+    assertThat(rows)
+        .extracting(
+            r -> r.groupValues().get(0),
+            AggregatedRow::bucket,
+            r -> r.measures().get("count"),
+            r -> r.measures().get("p"))
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("orders", 0L, 2L, 300.0), Tuple.tuple("ship", MINUTE, 1L, null));
+    assertThat(rows.stream().filter(r -> "ship".equals(r.groupValues().get(0))).findFirst())
+        .hasValueSatisfying(row -> assertThat(row.measures()).doesNotContainKey("p"));
   }
 
   @Test
@@ -227,19 +304,21 @@ final class DocumentDatasetQueryClientTest {
                 .build());
   }
 
-  private static Map<String, Object> meterDoc(
+  /** One whole cell document: dims + window + count's native field + p's blob and scalar. */
+  private static Map<String, Object> cellDoc(
       final String process,
       final int version,
       final long windowStart,
-      final String meter,
-      final byte[] accumulator) {
+      final long count,
+      final byte[] pBlob) {
     final Map<String, Object> source = new LinkedHashMap<>();
     source.put("bpmnProcessId", process);
     source.put("version", version); // an Integer, as JSON numbers deserialize
     source.put(DocumentCubeNames.WINDOW_START, windowStart);
     source.put(DocumentCubeNames.WINDOW_SIZE, MINUTE);
-    source.put(DocumentCubeNames.METER_NAME, meter);
-    source.put(DocumentCubeNames.ACCUMULATOR, DocumentCubeNames.encode(accumulator));
+    source.put("mv_count_", count);
+    source.put("mv_p_blob", DocumentCubeNames.encode(pBlob));
+    source.put("mv_p_value", 100.0);
     return source;
   }
 
@@ -251,6 +330,40 @@ final class DocumentDatasetQueryClientTest {
     source.put("retries", retries);
     source.put("active", active);
     return source;
+  }
+
+  /** A composite bucket's structured key over (bpmnProcessId, version, wbucket). */
+  private static Map<String, Object> keyValues(
+      final String process, final Long version, final Long bucket) {
+    final Map<String, Object> keyValues = new HashMap<>();
+    keyValues.put("bpmnProcessId", process);
+    keyValues.put("version", version);
+    keyValues.put("wbucket", bucket);
+    return keyValues;
+  }
+
+  private static AggregationResult compositeBucket(
+      final Map<String, Object> keyValues, final Map<String, AggregationResult> metrics) {
+    return new AggregationResult.Builder()
+        .docCount(1L)
+        .keyValues(keyValues)
+        .aggregations(metrics)
+        .build();
+  }
+
+  private static AggregationResult metric(final double value) {
+    return new AggregationResult.Builder().docCount((long) value).value(value).build();
+  }
+
+  private static SearchQueryResponse<Map> aggregationResponse(
+      final Map<String, AggregationResult> buckets) {
+    return new SearchQueryResponse.Builder<Map>()
+        .totalHits(0)
+        .hits(List.of())
+        .aggregations(
+            Map.of(
+                "cube", new AggregationResult.Builder().docCount(1L).aggregations(buckets).build()))
+        .build();
   }
 
   @SafeVarargs

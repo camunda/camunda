@@ -52,6 +52,7 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
+import org.elasticsearch.client.ResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,10 +202,32 @@ public class ElasticsearchSearchClient
       final var indexResponseTransformer = getSearchWriteResponseTransformer();
       return indexResponseTransformer.apply(rawIndexResponse);
     } catch (final IOException | ElasticsearchException e) {
+      if (isRejectedByExternalVersion(indexRequest, e)) {
+        // The caller opted into external versioning, and the store holds an equal-or-newer
+        // version: the write was fenced, which is an outcome to report, not an error to raise.
+        return SearchWriteResponse.of(
+            b ->
+                b.id(indexRequest.id())
+                    .index(indexRequest.index())
+                    .result(SearchWriteResponse.Result.NOOP));
+      }
       LOGGER.warn(ErrorMessages.ERROR_FAILED_INDEX_REQUEST, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_INDEX_REQUEST, e, searchExceptionToReason(e));
     }
+  }
+
+  private static boolean isRejectedByExternalVersion(
+      final SearchIndexRequest<?> indexRequest, final Exception e) {
+    if (indexRequest.versionType() == null) {
+      return false;
+    }
+    if (e instanceof final ElasticsearchException esException) {
+      return esException.status() == 409;
+    }
+    // the transport surfaces some error responses as the low-level client's ResponseException
+    return e instanceof final ResponseException responseException
+        && responseException.getResponse().getStatusLine().getStatusCode() == 409;
   }
 
   @Override

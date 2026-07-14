@@ -88,6 +88,9 @@ public class SearchCompositeAggregatorTransformer
 
   private Builder buildTerms(final SearchTermsAggregator terms, final Builder termsBuilder) {
     var bulder = termsBuilder.field(terms.field());
+    if (terms.missingBucket() != null) {
+      bulder = bulder.missingBucket(terms.missingBucket());
+    }
     if (terms.sorting() != null && !terms.sorting().isEmpty()) {
       bulder = bulder.order(toSortOrder(terms.field(), terms.sorting()));
     }

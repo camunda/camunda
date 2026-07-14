@@ -72,7 +72,8 @@ public class SearchAggregationResultTransformer<T>
 
   private AggregationResult transformSingleMetricAggregate(
       final SingleMetricAggregateBase aggregate) {
-    return new Builder().docCount((long) aggregate.value()).build();
+    // docCount keeps the historical long rounding; value carries the exact metric double
+    return new Builder().docCount((long) aggregate.value()).value(aggregate.value()).build();
   }
 
   private SearchTopHitsAggregator findTopHitsAggregatorRecursively(
@@ -137,6 +138,10 @@ public class SearchAggregationResultTransformer<T>
       builder.docCount((long) array.size());
       array.forEach(
           bucket -> {
+            // A composite bucket also carries its structured key: source name → raw value (null
+            // for a missing_bucket source), so consumers need not parse the joined-string map key.
+            final Map<String, Object> keyValues =
+                bucket instanceof final CompositeBucket b ? compositeKeyValues(b) : null;
             final String key =
                 switch (bucket) {
                   case final StringTermsBucket b -> b.key().stringValue();
@@ -145,11 +150,7 @@ public class SearchAggregationResultTransformer<T>
                   case final DateHistogramBucket b -> String.valueOf(b.key());
                   case final CompositeBucket b -> {
                     final Map<String, String> keyMap = new HashMap<>();
-                    b.key()
-                        .forEach(
-                            (k, v) ->
-                                keyMap.put(
-                                    k, SearchAggregationResultTransformer.fieldValueToString(v)));
+                    keyValues.forEach((k, v) -> keyMap.put(k, String.valueOf(v)));
                     yield SearchCompositeAggregator.joinKeys(keyMap);
                   }
                   default ->
@@ -159,6 +160,7 @@ public class SearchAggregationResultTransformer<T>
             final var result =
                 new Builder()
                     .docCount(bucket.docCount())
+                    .keyValues(keyValues)
                     .aggregations(transformAggregation(bucket.aggregations()))
                     .build();
             map.put(key, result);
@@ -170,20 +172,29 @@ public class SearchAggregationResultTransformer<T>
   private <B extends MultiBucketBase> Object[] extractSearchAfter(
       final MultiBucketAggregateBase<B> aggregate) {
     if (aggregate instanceof final CompositeAggregate compositeAggregate) {
-      return compositeAggregate.afterKey() != null
-          ? compositeAggregate.afterKey().entrySet().stream()
-              .collect(
-                  Collectors.toMap(
-                      Map.Entry::getKey, entry -> fieldValueToString(entry.getValue())))
-              .entrySet()
-              .toArray()
-          : null;
+      if (compositeAggregate.afterKey() == null) {
+        return null;
+      }
+      // A missing_bucket source's after value is null and must stay null through the cursor —
+      // stringifying it would resume from the literal string "null" and skip buckets.
+      final Map<String, String> afterKey = new HashMap<>();
+      compositeAggregate
+          .afterKey()
+          .forEach((k, v) -> afterKey.put(k, v.isNull() ? null : fieldValueToString(v)));
+      return afterKey.entrySet().toArray();
     }
     return null;
   }
 
   private static String fieldValueToString(final FieldValue fieldValue) {
     return String.valueOf(fieldValue._get());
+  }
+
+  /** The structured composite bucket key: source name → raw value, null for a missing bucket. */
+  private static Map<String, Object> compositeKeyValues(final CompositeBucket bucket) {
+    final Map<String, Object> keyValues = new LinkedHashMap<>();
+    bucket.key().forEach((k, v) -> keyValues.put(k, v.isNull() ? null : v._get()));
+    return keyValues;
   }
 
   private Map<String, AggregationResult> transformAggregation(

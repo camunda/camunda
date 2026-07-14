@@ -7,6 +7,7 @@
  */
 package io.camunda.search.es.transformers.search;
 
+import co.elastic.clients.elasticsearch._types.VersionType;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
 import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
@@ -25,6 +26,25 @@ public class SearchIndexRequestTransformer<T>
     final var index = value.index();
     final var routing = value.routing();
     final var document = value.document();
-    return IndexRequest.of(b -> b.id(id).index(index).routing(routing).document(document));
+    final var version = value.version();
+    final var versionType = toVersionType(value.versionType());
+    return IndexRequest.of(
+        b -> {
+          b.id(id).index(index).routing(routing).document(document);
+          if (version != null) {
+            b.version(version).versionType(versionType);
+          }
+          return b;
+        });
+  }
+
+  private static VersionType toVersionType(final SearchIndexRequest.VersionType versionType) {
+    if (versionType == null) {
+      return null;
+    }
+    return switch (versionType) {
+      case EXTERNAL -> VersionType.External;
+      case EXTERNAL_GTE -> VersionType.ExternalGte;
+    };
   }
 }
