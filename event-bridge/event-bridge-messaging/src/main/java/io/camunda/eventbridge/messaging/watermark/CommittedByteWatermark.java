@@ -33,7 +33,13 @@ public final class CommittedByteWatermark implements HighWatermark {
   // The 'volatile' ensures that when the writer thread updates this reference,
   // the new immutable snapshot is immediately and atomically visible to all reading Virtual
   // Threads. It also acts as a StoreLoad memory barrier, preventing instruction reordering.
-  private volatile PartitionWatermark currentWatermark = new PartitionWatermark(-1, 0);
+  //
+  // The initial commit position is 0: record positions start at 1, so an empty log is "caught up"
+  // at position 0 and the next expected offset is commitPosition + 1 = 1. This keeps the fetch
+  // path's caught-up rule (offset == commitPosition + 1 parks and awaits the first append) intact
+  // before anything has ever been committed; a -1 sentinel would misclassify a from-start fetch
+  // on an empty log as out of range.
+  private volatile PartitionWatermark currentWatermark = new PartitionWatermark(0, 0);
 
   /**
    * @param partitionId the ID of the partition this tracker belongs to

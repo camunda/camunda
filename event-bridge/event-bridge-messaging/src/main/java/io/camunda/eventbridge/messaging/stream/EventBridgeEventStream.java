@@ -58,7 +58,8 @@ public final class EventBridgeEventStream implements AutoCloseable {
     final var nextPosition = lastPosition < 0 ? INITIAL_POSITION : lastPosition + 1;
 
     // Re-seed the high watermark to the recovered tip so a newly elected leader reports the correct
-    // committed position immediately, rather than -1 until its first fresh append.
+    // committed position immediately, rather than the empty-log baseline (0) until its first fresh
+    // append.
     if (lastPosition >= 0) {
       highWatermark.seed(lastPosition);
     }
