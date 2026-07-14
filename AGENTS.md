@@ -302,7 +302,8 @@ Load extra context on demand — only when relevant, only if the files exist.
 
 Automated by a GitHub Action (`korthout/backport-action`, see `.github/workflows/backport.yml`;
 human docs in `CONTRIBUTING.md`). **Never create backport PRs, branches, or cherry-picks yourself,
-and never offer to.** Start a backport only by labelling.
+and never offer to.** Trigger a backport only through the automation — a label, or a `/backport`
+comment — never by hand.
 
 - **Start:** add one `backport stable/X.Y` label per target branch (e.g. `backport stable/8.7`).
   Not-yet-merged PR → runs on merge. Already-merged PR → comment `/backport`. Multiple labels →

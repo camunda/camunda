@@ -359,7 +359,7 @@ When this happens and you're still interested in contributing, please feel free 
 
 ## Backporting changes
 
-Some changes need to be copied to other (often older) versions. We use the [backport](https://github.com/zeebe-io/backport-action) Github Action to automate this process. Please follow these steps to port your changes:
+Some changes need to be copied to other (often older) versions. We use the [backport](https://github.com/korthout/backport-action) Github Action to automate this process. Please follow these steps to port your changes:
 
 1. **Label the pull request** with a backport label (e.g. the label `backport stable/1.0` indicates that we want to port this pull request to the `stable/1.0` branch).
    - if the pull request is _not yet_ merged, it will be automatically ported when it gets merged.
@@ -368,7 +368,7 @@ Some changes need to be copied to other (often older) versions. We use the [back
    - a pull request can have multiple backport labels, in which case the action ports the pull request to each of those branches.
 2. The GitHub actions bot comments on the pull request once it finishes:
    - When _successful_, a new backport pull request was automatically created. A bot will automatically approve and merge it when it passes the CI. If it doesn't, you'll need to fix the problems and request a new review.
-   - If it _fails_, the action provides instructions in a comment that you need to follow. Once ready, please request a new review.
+   - If the cherry-pick hits **conflicts**, the action still opens the backport pull request, but as a _draft_ with the conflicts committed as-is, and comments with instructions to resolve them. Resolve the conflicts on that branch, mark the pull request ready, and request a new review.
 
 ## Commit message guidelines
 
