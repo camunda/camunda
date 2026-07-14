@@ -71,6 +71,7 @@ data.secondary-storage.rdbms.max-varchar-field-length
 license.key
 security.authentication.method
 security.authentication.unprotected-api
+security.cluster-admin.basic.users
 security.csrf
 security.csrf.cookie-http-only
 security.csrf.enabled
