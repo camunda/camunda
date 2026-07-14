@@ -78,13 +78,16 @@ public final class AnalyticsAggregationStage {
     // topology from it at a commit boundary when its version moves (live reload — ADR 0005).
     final DatasetCatalog catalog = new DatasetCatalog(metadataStore);
 
+    // One codec for this runtime's deserializer: the runtime invokes it only on its single
+    // source-loop thread, so the codec's reused decode flyweights are thread-confined.
+    final ShuffleEnvelopeCodec codec = new ShuffleEnvelopeCodec();
     final StreamRuntime<ShuffleEnvelope> runtime =
         StreamRuntime.<ShuffleEnvelope>builder()
             .client(client)
             .group(config.group())
             .instanceId(config.instanceId())
             .sourceTopic(config.factsTopic())
-            .deserializer((payload, partition, offset) -> ShuffleEnvelopeCodec.decode(payload))
+            .deserializer((payload, partition, offset) -> codec.decode(payload))
             // One self-contained task per facts partition: its own RocksDB cells + offset and the
             // per-aggId mergers, owning its durability (restore/commit).
             .taskFactory(

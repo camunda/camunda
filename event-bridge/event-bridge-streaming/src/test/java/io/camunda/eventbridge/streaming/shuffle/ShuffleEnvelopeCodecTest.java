@@ -10,12 +10,13 @@ package io.camunda.eventbridge.streaming.shuffle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class ShuffleEnvelopeCodecTest {
 
-  /** One instance across all encodes — also exercises the reused scratch buffer/flyweights. */
+  /** One instance across all encodes and decodes — exercises the reused flyweights both ways. */
   private final ShuffleEnvelopeCodec codec = new ShuffleEnvelopeCodec();
 
   private static ShuffleEnvelope envelope(
@@ -40,7 +41,7 @@ final class ShuffleEnvelopeCodecTest {
                 new CellDelta(2, 60_000L, new byte[] {3}, new byte[] {8, 8, 8})));
 
     // when
-    final ShuffleEnvelope decoded = ShuffleEnvelopeCodec.decode(codec.encode(original));
+    final ShuffleEnvelope decoded = codec.decode(codec.encode(original));
 
     // then (recursive comparison so the byte[] fields compare by content)
     assertThat(decoded).usingRecursiveComparison().isEqualTo(original);
@@ -62,7 +63,7 @@ final class ShuffleEnvelopeCodecTest {
             List.of(new CellDelta(1, 0L, new byte[] {1}, new byte[] {2})));
 
     // then the "more follows" flag round-trips, so the batch is self-describing on the wire
-    assertThat(ShuffleEnvelopeCodec.decode(codec.encode(original)).moreChunks()).isTrue();
+    assertThat(codec.decode(codec.encode(original)).moreChunks()).isTrue();
   }
 
   @Test
@@ -76,7 +77,7 @@ final class ShuffleEnvelopeCodecTest {
             List.of(new CellDelta(0, 0L, new byte[] {7}, new byte[] {0, 0})));
 
     // then dispatch fields are readable from the header alone
-    final ShuffleEnvelope decoded = ShuffleEnvelopeCodec.decode(codec.encode(original));
+    final ShuffleEnvelope decoded = codec.decode(codec.encode(original));
     assertThat(decoded.payloadKind()).isEqualTo(ShufflePayloadKind.REFERENCE);
     assertThat(decoded.operation()).isEqualTo(ShuffleOperation.UPSERT);
     assertThat(decoded).usingRecursiveComparison().isEqualTo(original);
@@ -86,7 +87,7 @@ final class ShuffleEnvelopeCodecTest {
   void shouldRoundTripAnEmptyBatch() {
     final ShuffleEnvelope original =
         envelope(ShufflePayloadKind.AGGREGATE_DELTA, ShuffleOperation.MERGE, false, List.of());
-    assertThat(ShuffleEnvelopeCodec.decode(codec.encode(original)).cells()).isEmpty();
+    assertThat(codec.decode(codec.encode(original)).cells()).isEmpty();
   }
 
   @Test
@@ -102,7 +103,7 @@ final class ShuffleEnvelopeCodecTest {
     // then the same envelope encodes to identical bytes (re-emit safe), stable across re-encode
     final byte[] first = codec.encode(original);
     assertThat(codec.encode(original)).isEqualTo(first);
-    assertThat(codec.encode(ShuffleEnvelopeCodec.decode(first))).isEqualTo(first);
+    assertThat(codec.encode(codec.decode(first))).isEqualTo(first);
   }
 
   @Test
@@ -128,12 +129,8 @@ final class ShuffleEnvelopeCodecTest {
     final byte[] smallerFrame = codec.encode(smaller);
 
     // then: the first frame is a copy — the second encode must not have clobbered it
-    assertThat(ShuffleEnvelopeCodec.decode(largerFrame))
-        .usingRecursiveComparison()
-        .isEqualTo(larger);
-    assertThat(ShuffleEnvelopeCodec.decode(smallerFrame))
-        .usingRecursiveComparison()
-        .isEqualTo(smaller);
+    assertThat(codec.decode(largerFrame)).usingRecursiveComparison().isEqualTo(larger);
+    assertThat(codec.decode(smallerFrame)).usingRecursiveComparison().isEqualTo(smaller);
   }
 
   @Test
@@ -149,8 +146,153 @@ final class ShuffleEnvelopeCodecTest {
     frame[4] = (byte) 0xFF;
 
     // then decoding refuses rather than mis-reading another schema's message
-    assertThatThrownBy(() -> ShuffleEnvelopeCodec.decode(frame))
+    assertThatThrownBy(() -> codec.decode(frame))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("not a segment shuffle envelope");
+    assertThatThrownBy(() -> codec.decode(frame, new RecordingVisitor()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("not a segment shuffle envelope");
+  }
+
+  @Test
+  void shouldDecodeTheSameFrameThroughTheVisitorAsThroughTheMaterializedPath() {
+    // given a multi-cell frame
+    final ShuffleEnvelope original =
+        envelope(
+            ShufflePayloadKind.AGGREGATE_DELTA,
+            ShuffleOperation.MERGE,
+            true,
+            List.of(
+                new CellDelta(1, 60_000L, new byte[] {1, 2}, new byte[] {9, 9}),
+                new CellDelta(2, 120_000L, new byte[] {3}, new byte[] {8, 8, 8}),
+                new CellDelta(1, 180_000L, new byte[] {4, 5, 6}, new byte[] {7})));
+    final byte[] frame = codec.encode(original);
+
+    // when: decoding once per path
+    final ShuffleEnvelope materialized = codec.decode(frame);
+    final RecordingVisitor visitor = new RecordingVisitor();
+    codec.decode(frame, visitor);
+
+    // then: the visitor observed the same header and the same cells, in order
+    assertThat(visitor.cellCount).isEqualTo(3);
+    assertThat(visitor.asEnvelope()).usingRecursiveComparison().isEqualTo(materialized);
+    assertThat(visitor.asEnvelope()).usingRecursiveComparison().isEqualTo(original);
+  }
+
+  @Test
+  void shouldSkipTheCellsWhenTheVisitorDeclinesTheEnvelope() {
+    // given a frame the consumer dispatches away on the header alone (e.g. a reference upsert)
+    final byte[] frame =
+        codec.encode(
+            envelope(
+                ShufflePayloadKind.REFERENCE,
+                ShuffleOperation.UPSERT,
+                false,
+                List.of(new CellDelta(1, 0L, new byte[] {1}, new byte[] {2}))));
+    final RecordingVisitor visitor = new RecordingVisitor().declining();
+
+    // when
+    codec.decode(frame, visitor);
+
+    // then: the header was observed, but no cell was materialized
+    assertThat(visitor.payloadKind).isEqualTo(ShufflePayloadKind.REFERENCE);
+    assertThat(visitor.operation).isEqualTo(ShuffleOperation.UPSERT);
+    assertThat(visitor.cellCount).isEqualTo(1);
+    assertThat(visitor.cells).isEmpty();
+  }
+
+  @Test
+  void shouldDecodeIndependentEnvelopesWhenReusingTheInstance() {
+    // given two frames of different shapes decoded by the same instance (reused flyweights)
+    final ShuffleEnvelope first =
+        envelope(
+            ShufflePayloadKind.AGGREGATE_DELTA,
+            ShuffleOperation.MERGE,
+            false,
+            List.of(
+                new CellDelta(1, 60_000L, new byte[] {1, 2, 3}, new byte[] {9, 9, 9, 9}),
+                new CellDelta(2, 60_000L, new byte[] {4}, new byte[] {8})));
+    final ShuffleEnvelope second =
+        new ShuffleEnvelope(
+            1_800_000_000_000L,
+            8,
+            5,
+            256L,
+            3,
+            true,
+            ShufflePayloadKind.REFERENCE,
+            ShuffleOperation.DELETE,
+            List.of(new CellDelta(7, 0L, new byte[] {5, 6}, new byte[] {1, 1})));
+
+    // when: decoding back-to-back
+    final ShuffleEnvelope firstDecoded = codec.decode(codec.encode(first));
+    final ShuffleEnvelope secondDecoded = codec.decode(codec.encode(second));
+
+    // then: the earlier decode's result is fully owned — the later decode must not clobber it
+    assertThat(firstDecoded).usingRecursiveComparison().isEqualTo(first);
+    assertThat(secondDecoded).usingRecursiveComparison().isEqualTo(second);
+  }
+
+  /** Rebuilds an envelope from visitor callbacks so equivalence can be asserted structurally. */
+  private static final class RecordingVisitor implements ShuffleEnvelopeCodec.EnvelopeVisitor {
+
+    private long producedAt;
+    private int schemaVersion;
+    private int producerPartition;
+    private long segment;
+    private int chunk;
+    private boolean moreChunks;
+    private ShufflePayloadKind payloadKind;
+    private ShuffleOperation operation;
+    private int cellCount;
+    private final List<CellDelta> cells = new ArrayList<>();
+    private boolean accept = true;
+
+    RecordingVisitor declining() {
+      accept = false;
+      return this;
+    }
+
+    @Override
+    public boolean onEnvelope(
+        final long producedAt,
+        final int schemaVersion,
+        final int producerPartition,
+        final long segment,
+        final int chunk,
+        final boolean moreChunks,
+        final ShufflePayloadKind payloadKind,
+        final ShuffleOperation operation,
+        final int cellCount) {
+      this.producedAt = producedAt;
+      this.schemaVersion = schemaVersion;
+      this.producerPartition = producerPartition;
+      this.segment = segment;
+      this.chunk = chunk;
+      this.moreChunks = moreChunks;
+      this.payloadKind = payloadKind;
+      this.operation = operation;
+      this.cellCount = cellCount;
+      return accept;
+    }
+
+    @Override
+    public void onCell(
+        final int streamId, final long windowStart, final byte[] key, final byte[] payload) {
+      cells.add(new CellDelta(streamId, windowStart, key, payload));
+    }
+
+    ShuffleEnvelope asEnvelope() {
+      return new ShuffleEnvelope(
+          producedAt,
+          schemaVersion,
+          producerPartition,
+          segment,
+          chunk,
+          moreChunks,
+          payloadKind,
+          operation,
+          cells);
+    }
   }
 }

@@ -46,7 +46,7 @@ final class EnvelopePublisherTest {
 
     @Override
     public void send(final int factsPartition, final byte[] frame) {
-      sent.add(new Sent(factsPartition, ShuffleEnvelopeCodec.decode(frame)));
+      sent.add(new Sent(factsPartition, new ShuffleEnvelopeCodec().decode(frame)));
     }
 
     @Override

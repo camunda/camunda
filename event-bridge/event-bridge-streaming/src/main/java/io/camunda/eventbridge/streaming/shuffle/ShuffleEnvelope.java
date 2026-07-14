@@ -24,6 +24,9 @@ import java.util.List;
  * segment)} follows. {@link #schemaVersion} is the payload schema version (distinct from the SBE
  * wire version); {@link #producedAt} is wall-clock observability only and never affects
  * correctness.
+ *
+ * <p>The {@code cells} list is adopted as-is (not defensively copied — decode is the hot path):
+ * constructing an envelope hands ownership of the list, and callers must not mutate it afterwards.
  */
 public record ShuffleEnvelope(
     long producedAt,
@@ -34,9 +37,4 @@ public record ShuffleEnvelope(
     boolean moreChunks,
     ShufflePayloadKind payloadKind,
     ShuffleOperation operation,
-    List<CellDelta> cells) {
-
-  public ShuffleEnvelope {
-    cells = List.copyOf(cells);
-  }
-}
+    List<CellDelta> cells) {}

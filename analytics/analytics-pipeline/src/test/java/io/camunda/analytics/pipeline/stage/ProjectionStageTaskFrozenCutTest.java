@@ -190,7 +190,7 @@ final class ProjectionStageTaskFrozenCutTest {
 
     // then the sealed segment-0 delta is durable at the shuffle before the offset advances
     assertThat(publishedFrames).hasSize(1);
-    final ShuffleEnvelope envelope = ShuffleEnvelopeCodec.decode(publishedFrames.get(0));
+    final ShuffleEnvelope envelope = new ShuffleEnvelopeCodec().decode(publishedFrames.get(0));
     assertThat(envelope.segment()).isZero();
     assertThat(envelope.chunk()).isZero();
     assertThat(durableOffset()).isEmpty();
@@ -213,7 +213,7 @@ final class ProjectionStageTaskFrozenCutTest {
     // then the sealed segment-0 delta left for the facts topic the moment it sealed — before any
     // commit barrier exists
     assertThat(publishedFrames).hasSize(1);
-    final ShuffleEnvelope eager = ShuffleEnvelopeCodec.decode(publishedFrames.get(0));
+    final ShuffleEnvelope eager = new ShuffleEnvelopeCodec().decode(publishedFrames.get(0));
     assertThat(eager.segment()).isZero();
     assertThat(eager.chunk()).isZero();
 

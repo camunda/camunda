@@ -17,7 +17,6 @@ import io.camunda.eventbridge.streaming.shuffle.sbe.ShuffleEnvelopeEncoder;
 import io.camunda.eventbridge.streaming.shuffle.sbe.ShuffleEnvelopeEncoder.CellsEncoder;
 import java.util.ArrayList;
 import java.util.List;
-import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -28,10 +27,12 @@ import org.agrona.concurrent.UnsafeBuffer;
  * is rejected. Deterministic: encoding depends only on the envelope's fields, so a re-emitted batch
  * serialises identically.
  *
- * <p>An <em>instance</em> encodes: it reuses its scratch buffer and encoder flyweights across
- * {@link #encode} calls (the returned frame is always a fresh copy), so an instance must not be
- * shared by concurrently encoding threads — one codec per publisher. {@link #decode(byte[])} is
- * static and allocates per call.
+ * <p>An <em>instance</em> reuses its scratch buffer and encoder/decoder flyweights across {@link
+ * #encode} and {@link #decode} calls (returned frames and decoded envelopes are always fresh, owned
+ * copies), so an instance must be confined to one thread — one codec per publisher on the encode
+ * side, one per decoding thread on the decode side. The stream runtime invokes its {@code
+ * MessageDeserializer} only on its single source-loop thread ({@code SourceLoop#toEntry}), so one
+ * codec per runtime deserializer satisfies this.
  *
  * <p>This codec is the <em>only</em> class that may touch the SBE-generated {@code shuffle.sbe}
  * package: it maps the facade's {@link ShufflePayloadKind}/{@link ShuffleOperation} onto the
@@ -42,6 +43,45 @@ public final class ShuffleEnvelopeCodec {
   private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final ShuffleEnvelopeEncoder encoder = new ShuffleEnvelopeEncoder();
+
+  private final UnsafeBuffer readBuffer = new UnsafeBuffer(0, 0);
+  private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+  private final ShuffleEnvelopeDecoder decoder = new ShuffleEnvelopeDecoder();
+  private final EnvelopeCollector collector = new EnvelopeCollector();
+
+  /**
+   * Receives one decoded envelope without materializing it: the header fields once, then one
+   * callback per cell — the hot-path alternative to {@link #decode(byte[])}, which allocates a
+   * {@link ShuffleEnvelope} plus a {@link CellDelta} per cell.
+   *
+   * <p><b>Ownership.</b> {@code key} and {@code payload} are fresh, owned copies the visitor may
+   * retain indefinitely. That is deliberate: the Stage-2 consumer retains both beyond the call —
+   * the key array backs the merger's in-heap cell key ({@code DimensionKeyValue#fromBytes} takes
+   * ownership), and a cell whose stream has no applier yet is parked durably with its key and
+   * payload — so views would have to be copied by every consumer anyway. All other fields are value
+   * types.
+   */
+  public interface EnvelopeVisitor {
+
+    /**
+     * Called once per frame with the envelope header, before any cell. Return {@code false} to skip
+     * the cells — the header alone decides dispatch (e.g. reference/upsert frames need no merge),
+     * and skipping avoids the per-cell key/payload copies entirely.
+     */
+    boolean onEnvelope(
+        long producedAt,
+        int schemaVersion,
+        int producerPartition,
+        long segment,
+        int chunk,
+        boolean moreChunks,
+        ShufflePayloadKind payloadKind,
+        ShuffleOperation operation,
+        int cellCount);
+
+    /** Called once per cell, in frame order. See the interface contract for ownership. */
+    void onCell(int streamId, long windowStart, byte[] key, byte[] payload);
+  }
 
   public byte[] encode(final ShuffleEnvelope envelope) {
     final CellsEncoder cells =
@@ -68,21 +108,28 @@ public final class ShuffleEnvelopeCodec {
     return frame;
   }
 
-  public static ShuffleEnvelope decode(final byte[] frame) {
-    final DirectBuffer buffer = new UnsafeBuffer(frame);
-    final MessageHeaderDecoder header = new MessageHeaderDecoder();
-    header.wrap(buffer, 0);
-    if (header.schemaId() != ShuffleEnvelopeDecoder.SCHEMA_ID
-        || header.templateId() != ShuffleEnvelopeDecoder.TEMPLATE_ID) {
+  /**
+   * Decodes {@code frame} through the visitor, reusing this instance's decoder flyweights — no
+   * per-frame or per-cell object materializes beyond the owned key/payload copies handed to the
+   * visitor (see {@link EnvelopeVisitor} for the ownership contract).
+   */
+  public void decode(final byte[] frame, final EnvelopeVisitor visitor) {
+    readBuffer.wrap(frame);
+    headerDecoder.wrap(readBuffer, 0);
+    if (headerDecoder.schemaId() != ShuffleEnvelopeDecoder.SCHEMA_ID
+        || headerDecoder.templateId() != ShuffleEnvelopeDecoder.TEMPLATE_ID) {
       throw new IllegalArgumentException(
           "not a segment shuffle envelope: schemaId="
-              + header.schemaId()
+              + headerDecoder.schemaId()
               + " templateId="
-              + header.templateId());
+              + headerDecoder.templateId());
     }
 
-    final ShuffleEnvelopeDecoder decoder = new ShuffleEnvelopeDecoder();
-    decoder.wrap(buffer, header.encodedLength(), header.blockLength(), header.version());
+    decoder.wrap(
+        readBuffer,
+        headerDecoder.encodedLength(),
+        headerDecoder.blockLength(),
+        headerDecoder.version());
     final long producedAt = decoder.producedAt();
     final int schemaVersion = decoder.schemaVersion();
     final int producerPartition = decoder.producerPartition();
@@ -92,18 +139,8 @@ public final class ShuffleEnvelopeCodec {
     final ShufflePayloadKind payloadKind = fromWire(decoder.payloadKind());
     final ShuffleOperation operation = fromWire(decoder.operation());
 
-    final List<CellDelta> cells = new ArrayList<>();
-    for (final CellsDecoder cell : decoder.cells()) {
-      final int streamId = cell.streamId();
-      final long windowStart = cell.windowStart();
-      final byte[] key = new byte[cell.keyLength()];
-      cell.getKey(key, 0, key.length);
-      final byte[] payload = new byte[cell.payloadLength()];
-      cell.getPayload(payload, 0, payload.length);
-      cells.add(new CellDelta(streamId, windowStart, key, payload));
-    }
-
-    return new ShuffleEnvelope(
+    final CellsDecoder cells = decoder.cells();
+    if (!visitor.onEnvelope(
         producedAt,
         schemaVersion,
         producerPartition,
@@ -112,7 +149,89 @@ public final class ShuffleEnvelopeCodec {
         moreChunks,
         payloadKind,
         operation,
-        cells);
+        cells.count())) {
+      return;
+    }
+    for (final CellsDecoder cell : cells) {
+      final int streamId = cell.streamId();
+      final long windowStart = cell.windowStart();
+      final byte[] key = new byte[cell.keyLength()];
+      cell.getKey(key, 0, key.length);
+      final byte[] payload = new byte[cell.payloadLength()];
+      cell.getPayload(payload, 0, payload.length);
+      visitor.onCell(streamId, windowStart, key, payload);
+    }
+  }
+
+  /**
+   * Decodes {@code frame} into a fully owned {@link ShuffleEnvelope} — the compatibility path for
+   * callers that must retain the whole envelope (e.g. the runtime's deserializer, whose result is
+   * queued between the source loop and the partition actor). Built on {@link #decode(byte[],
+   * EnvelopeVisitor)}, so the envelope's cell list is constructed exactly once, never copied.
+   */
+  public ShuffleEnvelope decode(final byte[] frame) {
+    decode(frame, collector);
+    return collector.take();
+  }
+
+  /** Reused visitor shell for {@link #decode(byte[])}; its per-frame state is handed off whole. */
+  private static final class EnvelopeCollector implements EnvelopeVisitor {
+
+    private long producedAt;
+    private int schemaVersion;
+    private int producerPartition;
+    private long segment;
+    private int chunk;
+    private boolean moreChunks;
+    private ShufflePayloadKind payloadKind;
+    private ShuffleOperation operation;
+    private List<CellDelta> cells;
+
+    @Override
+    public boolean onEnvelope(
+        final long producedAt,
+        final int schemaVersion,
+        final int producerPartition,
+        final long segment,
+        final int chunk,
+        final boolean moreChunks,
+        final ShufflePayloadKind payloadKind,
+        final ShuffleOperation operation,
+        final int cellCount) {
+      this.producedAt = producedAt;
+      this.schemaVersion = schemaVersion;
+      this.producerPartition = producerPartition;
+      this.segment = segment;
+      this.chunk = chunk;
+      this.moreChunks = moreChunks;
+      this.payloadKind = payloadKind;
+      this.operation = operation;
+      cells = new ArrayList<>(cellCount);
+      return true;
+    }
+
+    @Override
+    public void onCell(
+        final int streamId, final long windowStart, final byte[] key, final byte[] payload) {
+      cells.add(new CellDelta(streamId, windowStart, key, payload));
+    }
+
+    /** The collected envelope, releasing the cell list so the next decode cannot alias it. */
+    ShuffleEnvelope take() {
+      final ShuffleEnvelope envelope =
+          new ShuffleEnvelope(
+              producedAt,
+              schemaVersion,
+              producerPartition,
+              segment,
+              chunk,
+              moreChunks,
+              payloadKind,
+              operation,
+              cells);
+      cells = null;
+      return envelope;
+    }
   }
 
   // Facade <-> wire mapping: keeps the SBE-generated enums out of the public envelope API. The
