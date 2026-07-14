@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.BackupType;
 import io.camunda.management.backups.CheckpointState;
@@ -58,6 +59,10 @@ import org.springframework.stereotype.Component;
 @Component
 @WebEndpoint(id = "backupRuntime")
 public final class BackupEndpoint {
+  // TODO: the hardcoded default physical tenant will be removed once per-physical-tenant backup
+  //   endpoints exist (https://github.com/camunda/camunda/issues/57009).
+  private static final String DEFAULT_TENANT = PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
   private final BackupApi api;
   private final BackupCfg backupCfg;
 
@@ -89,7 +94,7 @@ public final class BackupEndpoint {
       if (backupId <= 0) {
         return incorrectBackupIdErrorResponse();
       }
-      api.takeBackup(backupId).toCompletableFuture().join();
+      api.takeBackup(DEFAULT_TENANT, backupId).toCompletableFuture().join();
       return successfullyScheduledBackupResponse(backupId);
     } catch (final Exception e) {
       return mapErrorResponse(e);
@@ -103,7 +108,7 @@ public final class BackupEndpoint {
     }
 
     try {
-      final var backupId = api.takeBackup().toCompletableFuture().join();
+      final var backupId = api.takeBackup(DEFAULT_TENANT).toCompletableFuture().join();
       return successfullyScheduledBackupResponse(backupId);
     } catch (final Exception e) {
       return mapErrorResponse(e);
@@ -114,8 +119,9 @@ public final class BackupEndpoint {
   public WebEndpointResponse<?> write(@Selector(match = Match.ALL_REMAINING) final String[] path) {
     if (path.length == 2 && BackupApi.STATE.equals(path[0]) && BackupApi.SYNC.equals(path[1])) {
       try {
-        final var updatedRangesFuture = api.syncMetadata().toCompletableFuture();
-        final var checkpointStateFuture = api.getCheckpointState().toCompletableFuture();
+        final var updatedRangesFuture = api.syncMetadata(DEFAULT_TENANT).toCompletableFuture();
+        final var checkpointStateFuture =
+            api.getCheckpointState(DEFAULT_TENANT).toCompletableFuture();
         final var checkpointState = checkpointStateFuture.join();
         final var ranges = updatedRangesFuture.join();
         return new WebEndpointResponse<>(toCheckpointState(checkpointState, ranges));
@@ -174,7 +180,7 @@ public final class BackupEndpoint {
 
   private WebEndpointResponse<?> deleteBackup(final long id) {
     try {
-      api.deleteBackup(id).toCompletableFuture().join();
+      api.deleteBackup(DEFAULT_TENANT, id).toCompletableFuture().join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final Exception e) {
       return mapErrorResponse(e);
@@ -183,7 +189,7 @@ public final class BackupEndpoint {
 
   private WebEndpointResponse<?> deleteState() {
     try {
-      api.deleteRuntimeState().toCompletableFuture().join();
+      api.deleteRuntimeState(DEFAULT_TENANT).toCompletableFuture().join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final Exception e) {
       return mapErrorResponse(e);
@@ -192,8 +198,9 @@ public final class BackupEndpoint {
 
   private WebEndpointResponse<?> state() {
     final var checkpointStateFuture =
-        api.getCheckpointState().toCompletableFuture().handle((v, e) -> v);
-    final var rangesFuture = api.getBackupRanges().toCompletableFuture().handle((v, e) -> v);
+        api.getCheckpointState(DEFAULT_TENANT).toCompletableFuture().handle((v, e) -> v);
+    final var rangesFuture =
+        api.getBackupRanges(DEFAULT_TENANT).toCompletableFuture().handle((v, e) -> v);
     final var checkpointState = checkpointStateFuture.join();
     final var ranges = rangesFuture.join();
     return new WebEndpointResponse<>(toCheckpointState(checkpointState, ranges));
@@ -306,7 +313,7 @@ public final class BackupEndpoint {
 
   private WebEndpointResponse<?> status(final long id) {
     try {
-      final BackupStatus status = api.getStatus(id).toCompletableFuture().join();
+      final BackupStatus status = api.getStatus(DEFAULT_TENANT, id).toCompletableFuture().join();
       if (status.status() == State.DOES_NOT_EXIST) {
         return doestNotExistResponse(status.backupId());
       }
@@ -319,7 +326,7 @@ public final class BackupEndpoint {
 
   private WebEndpointResponse<?> listPrefix(final String prefix) {
     try {
-      final var backups = api.listBackups(prefix).toCompletableFuture().join();
+      final var backups = api.listBackups(DEFAULT_TENANT, prefix).toCompletableFuture().join();
       final var response = backups.stream().map(this::getBackupInfoFromBackupStatus).toList();
       return new WebEndpointResponse<>(response);
     } catch (final Exception e) {

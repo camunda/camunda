@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.admin.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.backup.client.api.BackupAlreadyExistException;
 import io.camunda.zeebe.backup.client.api.BackupDeleteRequest;
 import io.camunda.zeebe.backup.client.api.BackupListRequest;
@@ -58,7 +59,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.takeBackup(1);
+    final var future = requestHandler.takeBackup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
@@ -73,7 +74,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.takeBackup(1);
+    final var future = requestHandler.takeBackup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -90,7 +91,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.withResponse(new BackupResponse(false, 2), 1);
 
     // when
-    final var future = requestHandler.takeBackup(1);
+    final var future = requestHandler.takeBackup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -114,7 +115,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
             });
 
     // when
-    final var future = requestHandler.takeBackup(1);
+    final var future = requestHandler.takeBackup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -132,7 +133,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.withResponse(new BackupResponse(false, 1), 1);
 
     // when
-    final var future = requestHandler.takeBackup(1);
+    final var future = requestHandler.takeBackup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
@@ -145,7 +146,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.getStatus(1);
+    final var future = requestHandler.getStatus(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -165,7 +166,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.getStatus(1);
+    final var future = requestHandler.getStatus(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -185,7 +186,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.getStatus(1);
+    final var future = requestHandler.getStatus(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -206,7 +207,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.getStatus(1);
+    final var future = requestHandler.getStatus(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -226,7 +227,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.getStatus(1);
+    final var future = requestHandler.getStatus(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -246,7 +247,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.getStatus(1);
+    final var future = requestHandler.getStatus(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -266,7 +267,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.getStatus(1);
+    final var future = requestHandler.getStatus(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -286,7 +287,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     stub.registerWith(brokerClient);
 
     // when
-    final var future = requestHandler.getStatus(1);
+    final var future = requestHandler.getStatus(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1);
 
     // then
     assertThat(future)
@@ -308,7 +309,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
                         getCompletedBackup(2, request.getPartitionId())))));
 
     // when
-    final var future = requestHandler.listBackups();
+    final var future = requestHandler.listBackups(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
@@ -336,7 +337,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
                         getInProgressBackup(1, request.getPartitionId())))));
 
     // when
-    final var future = requestHandler.listBackups();
+    final var future = requestHandler.listBackups(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
@@ -365,7 +366,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
         });
 
     // when
-    final var future = requestHandler.listBackups();
+    final var future = requestHandler.listBackups(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
@@ -396,7 +397,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
         });
 
     // when
-    final var future = requestHandler.listBackups();
+    final var future = requestHandler.listBackups(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
@@ -428,7 +429,8 @@ public class BackupRequestHandlerTest extends GatewayTest {
         });
 
     // when
-    final var future = requestHandler.getCheckpointState();
+    final var future =
+        requestHandler.getCheckpointState(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
@@ -462,7 +464,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
         });
 
     // when
-    final var future = requestHandler.getBackupRanges();
+    final var future = requestHandler.getBackupRanges(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
@@ -487,7 +489,8 @@ public class BackupRequestHandlerTest extends GatewayTest {
                     .setPartitionId(request.getPartitionId())));
 
     // when
-    final var future = requestHandler.deleteBackup(backupId);
+    final var future =
+        requestHandler.deleteBackup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, backupId);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofMillis(500));
@@ -510,7 +513,8 @@ public class BackupRequestHandlerTest extends GatewayTest {
         });
 
     // when
-    final var future = requestHandler.deleteBackup(backupId);
+    final var future =
+        requestHandler.deleteBackup(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, backupId);
 
     // then
     assertThat(future)

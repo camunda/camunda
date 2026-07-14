@@ -11,6 +11,7 @@ import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -421,13 +422,16 @@ class BackupMultiPartitionTest {
 
   private BackupStatus getBackupStatus(final long backupId)
       throws InterruptedException, ExecutionException, TimeoutException {
-    return backupRequestHandler.getStatus(backupId).toCompletableFuture().get(30, TimeUnit.SECONDS);
+    return backupRequestHandler
+        .getStatus(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, backupId)
+        .toCompletableFuture()
+        .get(30, TimeUnit.SECONDS);
   }
 
   private CheckpointStateResponse getCheckpointState()
       throws InterruptedException, ExecutionException, TimeoutException {
     return backupRequestHandler
-        .getCheckpointState()
+        .getCheckpointState(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
         .toCompletableFuture()
         .get(30, TimeUnit.SECONDS);
   }
