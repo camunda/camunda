@@ -72,7 +72,7 @@ graph TD
     SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "scenario: max" --> CORE
     DAILY -- "always profiles first<br/>30min of both runs" --> PROFILE
-    WEEKLY -- "3 parallel calls:<br/>typical, realistic,<br/>rdbms-realistic" --> CORE
+    WEEKLY -- "3 parallel calls:<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
     WEEKLY -- "ECS" --> ECS
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
