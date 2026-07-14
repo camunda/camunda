@@ -51,7 +51,7 @@ class OidcTokenEndpointCustomizerTest {
     // given
     final var customizer =
         new OidcTokenEndpointCustomizer(assertionJwkProvider, RestClient.create());
-    final var request = grantRequest("resource-a");
+    final var request = grantRequest("https://test.com");
 
     // when
     final var parameters = customizer.createResourceParameterConverter().convert(request);
@@ -59,7 +59,7 @@ class OidcTokenEndpointCustomizerTest {
     // then
     assertThat(parameters)
         .isNotNull()
-        .containsEntry(OAuth2ParameterNames.RESOURCE, List.of("resource-a"));
+        .containsEntry(OAuth2ParameterNames.RESOURCE, List.of("https://test.com"));
   }
 
   @Test
@@ -68,6 +68,20 @@ class OidcTokenEndpointCustomizerTest {
     final var customizer =
         new OidcTokenEndpointCustomizer(assertionJwkProvider, RestClient.create());
     final var request = grantRequest(null);
+
+    // when
+    final var parameters = customizer.createResourceParameterConverter().convert(request);
+
+    // then
+    assertThat(parameters).isNull();
+  }
+
+  @Test
+  void shouldNotAddResourceWhenItHasUnsupportedType() {
+    // given
+    final var customizer =
+        new OidcTokenEndpointCustomizer(assertionJwkProvider, RestClient.create());
+    final var request = grantRequest(42);
 
     // when
     final var parameters = customizer.createResourceParameterConverter().convert(request);

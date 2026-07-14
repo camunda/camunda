@@ -12,6 +12,8 @@ import io.camunda.security.spring.oidc.AssertionJwkProvider;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer;
@@ -28,6 +30,8 @@ import org.springframework.web.client.RestClient;
 // implements clause stays fully qualified.
 public class OidcTokenEndpointCustomizer
     implements io.camunda.security.spring.oidc.OidcTokenEndpointCustomizer {
+
+  private static final Logger LOG = LoggerFactory.getLogger(OidcTokenEndpointCustomizer.class);
 
   private final AssertionJwkProvider assertionJwkProvider;
   private final Map<String, JWK> resolvedJwks;
@@ -87,6 +91,14 @@ public class OidcTokenEndpointCustomizer
         final MultiValueMap<String, String> parametersToAdd = new LinkedMultiValueMap<>();
         parametersToAdd.add(OAuth2ParameterNames.RESOURCE, resourceValue);
         return parametersToAdd;
+      }
+      if (resource != null
+          && !(resource instanceof Collection<?>)
+          && !(resource instanceof String)) {
+        LOG.warn(
+            "Ignoring OIDC resource parameter with unsupported type {} for client registration {}",
+            resource.getClass().getName(),
+            request.getClientRegistration().getRegistrationId());
       }
       return null;
     };
