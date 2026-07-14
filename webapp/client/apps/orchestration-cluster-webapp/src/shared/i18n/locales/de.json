@@ -470,6 +470,11 @@
 				"filtersPanel": {
 					"label": "Filter",
 					"resetFilters": "Filter zurücksetzen"
+				},
+				"validators": {
+					"ids": "Schlüssel muss eine 16- bis 19-stellige Zahl sein, getrennt durch Leerzeichen oder Komma",
+					"parentInstanceId": "Schlüssel muss eine 16- bis 19-stellige Zahl sein",
+					"batchOperationKey": "Schlüssel muss eine 16- bis 19-stellige Zahl oder eine UUID sein"
 				}
 			}
 		}
