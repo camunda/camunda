@@ -179,24 +179,38 @@ public final class ProcessInstanceFilterTransformer
   }
 
   private static SearchQuery errorMessageOperationQuery(final Operation<String> operation) {
-    final SearchQuery fieldQuery =
-        switch (operation.operator()) {
-          case EQUALS, NOT_EQUALS -> matchPhrase(ERROR_MSG, operation.value());
-          case EXISTS, NOT_EXISTS -> exists(ERROR_MSG);
-          case IN ->
-              or(operation.values().stream().map(value -> matchPhrase(ERROR_MSG, value)).toList());
-          case LIKE ->
-              wildcardQuery(ERROR_MSG, Objects.requireNonNull(operation.value()).toLowerCase());
-          default ->
-              throw new IllegalStateException(
-                  "Unsupported operator %s for errorMessage filter"
-                      .formatted(operation.operator()));
-        };
+    // NOTE: negation must be applied *per level* alongside an explicit existence check,
+    // not to the OR'd result as a whole - otherwise "not equal to X" also matches process
+    // instances that never had an incident at all (no error message present anywhere).
+    return switch (operation.operator()) {
+      case EQUALS -> matchAnyLevel(operation.value());
+      case NOT_EQUALS -> and(existsAnyLevel(), not(matchAnyLevel(operation.value())));
+      case EXISTS -> existsAnyLevel();
+      case NOT_EXISTS -> not(existsAnyLevel());
+      case IN ->
+          or(operation.values().stream()
+              .map(ProcessInstanceFilterTransformer::matchAnyLevel)
+              .toList());
+      case LIKE -> wildcardAnyLevel(Objects.requireNonNull(operation.value()).toLowerCase());
+      default ->
+          throw new IllegalStateException(
+              "Unsupported operator %s for errorMessage filter"
+                  .formatted(operation.operator()));
+    };
+  }
 
-    final var anyLevelQuery = or(hasChildQuery(ACTIVITIES_JOIN_RELATION, fieldQuery), fieldQuery);
-    final boolean negate =
-        operation.operator() == Operator.NOT_EQUALS || operation.operator() == Operator.NOT_EXISTS;
-    return negate ? not(anyLevelQuery) : anyLevelQuery;
+  private static SearchQuery existsAnyLevel() {
+    return or(hasChildQuery(ACTIVITIES_JOIN_RELATION, exists(ERROR_MSG)), exists(ERROR_MSG));
+  }
+
+  private static SearchQuery matchAnyLevel(final String value) {
+    final SearchQuery fieldQuery = matchPhrase(ERROR_MSG, value);
+    return or(hasChildQuery(ACTIVITIES_JOIN_RELATION, fieldQuery), fieldQuery);
+  }
+
+  private static SearchQuery wildcardAnyLevel(final String value) {
+    final SearchQuery fieldQuery = wildcardQuery(ERROR_MSG, value);
+    return or(hasChildQuery(ACTIVITIES_JOIN_RELATION, fieldQuery), fieldQuery);
   }
 
   private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {
