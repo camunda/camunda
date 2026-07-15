@@ -35,7 +35,7 @@ import org.springframework.test.context.ContextConfiguration;
 @SpringBootTest
 @ContextConfiguration(
     classes = {
-      CamundaAutoConfiguration.class,
+      MultiCamundaClientAutoConfiguration.class,
       CamundaClientStarterAutoConfigurationTest.TestConfig.class
     })
 public class CamundaClientConfigurationDefaultPropertiesTest {

@@ -65,7 +65,7 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 // this pulls in the Configuration NOT as AutoConfiguration but directly creates beans, so the
-// marker is present when the normal CamundaAutoConfiguration is used by the normal
+// marker is present when the normal MultiCamundaClientAutoConfiguration is used by the normal
 // meta-inf/services way
 @Import({CamundaProcessTestAutoConfiguration.class})
 // this listener hooks up into test execution

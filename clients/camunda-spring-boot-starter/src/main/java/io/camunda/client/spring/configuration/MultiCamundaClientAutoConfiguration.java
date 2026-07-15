@@ -16,12 +16,15 @@
 package io.camunda.client.spring.configuration;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.worker.JobExceptionHandler;
+import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.spring.bean.CamundaClientRegistry;
 import io.camunda.client.spring.bean.DefaultCamundaClientRegistry;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
-import io.camunda.client.spring.configuration.condition.OnMultiClientConfigurationCondition;
 import io.camunda.client.spring.event.MultiCamundaLifecycleEventProducer;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.MultiCamundaClientProperties;
 import io.camunda.client.spring.properties.MultiCamundaClientPropertiesResolver;
 import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
@@ -37,21 +40,24 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 
 /**
- * Enables the generic multi-client configuration ({@code camunda.clients.<name>.*}) when at least
- * one client is configured under that prefix. It registers one {@link CamundaClient} bean per
- * configured client (via {@link MultiCamundaClientBeanDefinitionRegistryPostProcessor}) and exposes
- * a {@link CamundaClientRegistry} for looking those clients up by name.
+ * The single auto-configuration path for the starter. Every application is a multi-client
+ * application: a traditional single-client setup ({@code camunda.client.*}) is projected by {@link
+ * io.camunda.client.spring.properties.CamundaClientPropertiesPostProcessor} onto one client named
+ * {@code default}, and explicit {@code camunda.clients.<name>.*} entries add further clients.
  *
- * <p>Like the single-client configuration, this is disabled when {@code camunda.client.enabled} is
- * {@code false}.
+ * <p>It registers one {@link CamundaClient} bean per configured client (via {@link
+ * MultiCamundaClientBeanDefinitionRegistryPostProcessor}, the primary/default one also aliased as
+ * {@code camundaClient}), exposes a {@link CamundaClientRegistry}, and wires full feature parity
+ * (job workers, deployment, {@code @ClusterVariables}, actuator, metrics, lifecycle events).
+ *
+ * <p>Disabled when {@code camunda.client.enabled} is {@code false}.
  */
 @AutoConfiguration
 @ConditionalOnCamundaClientEnabled
-@Conditional(OnMultiClientConfigurationCondition.class)
 @ImportAutoConfiguration({
   // full feature parity with the single-client path: job-worker registration, startup deployment,
   // @ClusterVariables, JsonMapper, the actuator endpoint and metrics. None of these define a
@@ -73,6 +79,39 @@ public class MultiCamundaClientAutoConfiguration {
   public MultiCamundaLifecycleEventProducer multiCamundaLifecycleEventProducer(
       final CamundaClientRegistry registry, final ApplicationEventPublisher publisher) {
     return new MultiCamundaLifecycleEventProducer(registry, publisher);
+  }
+
+  /**
+   * Exposes the primary (default) client's {@link CamundaClientConfiguration} so {@code @Autowired
+   * CamundaClientConfiguration} keeps working as on the single-client path. Built from the primary
+   * client's resolved properties (independent of the client bean), reusing the shared executor.
+   * Lazy so no executor threads are created for applications that never inject it. Returns {@code
+   * null} (no bean) when several clients are configured with no designated primary.
+   */
+  @Bean
+  @Lazy
+  @ConditionalOnMissingBean
+  public CamundaClientConfiguration camundaClientConfiguration(
+      final MultiCamundaClientProperties properties,
+      final CredentialsProviderConfiguration credentialsProviderConfiguration,
+      final ObjectProvider<JsonMapper> jsonMapper,
+      final List<ClientInterceptor> interceptors,
+      final List<AsyncExecChainHandler> chainHandlers,
+      final CamundaClientExecutorService camundaClientExecutorService) {
+    final String primaryClientName = properties.getPrimaryClientName().orElse(null);
+    if (primaryClientName == null) {
+      return null;
+    }
+    final CamundaClientProperties primaryProperties =
+        properties.getClients().get(primaryClientName);
+    return new SpringCamundaClientConfiguration(
+        primaryProperties,
+        jsonMapper.getIfAvailable(),
+        interceptors,
+        chainHandlers,
+        camundaClientExecutorService,
+        credentialsProviderConfiguration.camundaClientCredentialsProvider(primaryProperties),
+        context -> JobExceptionHandler.createDefault());
   }
 
   @Bean

@@ -140,10 +140,16 @@ class MultiCamundaClientAutoConfigurationTest {
   }
 
   @Test
-  void shouldNotConfigureMultiClientWhenNoClientsConfigured() {
+  void shouldAlwaysConfigureTheUnifiedMultiClientPath() {
+    // unification: the multi-client auto-configuration is the single path and is always active
+    // (no longer gated on camunda.clients.* being present)
     contextRunner
         .withPropertyValues("camunda.client.rest-address=https://oc.example.com")
-        .run(context -> assertThat(context).doesNotHaveBean(MultiCamundaClientProperties.class));
+        .run(
+            context ->
+                assertThat(context)
+                    .hasSingleBean(MultiCamundaClientProperties.class)
+                    .hasSingleBean(CamundaClientRegistry.class));
   }
 
   @Test

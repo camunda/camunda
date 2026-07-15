@@ -42,6 +42,9 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
 
   public static final String CAMUNDA_CLIENT_AUTH_METHOD = "camunda.client.auth.method";
   public static final String CAMUNDA_CLIENT_MODE = "camunda.client.mode";
+  private static final String SINGLE_CLIENT_PREFIX = "camunda.client.";
+  private static final String MULTI_CLIENT_PREFIX = "camunda.clients.";
+  private static final String DEFAULT_CLIENT_PREFIX = "camunda.clients.default.";
   private static final String OVERRIDE_PREFIX = "camunda.client.worker.override.";
   private static final List<String> LEGACY_OVERRIDE_PREFIX =
       List.of("camunda.client.zeebe.override.", "zeebe.client.worker.override.");
@@ -69,6 +72,55 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
     mapLegacyOverrides(environment);
     processClientMode(environment);
     processAuthMethod(environment);
+    remapSingleClientToDefault(environment);
+  }
+
+  /**
+   * Unifies on the multi-client configuration path: a single-client application (configured only
+   * under {@code camunda.client.*}) is projected onto a multi-client application with one client
+   * named {@code default}, mirroring the REST API where a {@code default} physical tenant always
+   * exists. The {@code camunda.client.*} keys are kept as the shared overlay base and copied under
+   * {@code camunda.clients.default.*} so the client is discovered by the resolver. Setups that
+   * already declare {@code camunda.clients.<name>.*} are left untouched.
+   */
+  private void remapSingleClientToDefault(final ConfigurableEnvironment environment) {
+    if (hasMultiClientProperties(environment)) {
+      return;
+    }
+    final Map<String, Object> defaultClientProperties = new HashMap<>();
+    for (final PropertySource<?> source : environment.getPropertySources()) {
+      if (source instanceof final EnumerablePropertySource<?> enumerable) {
+        for (final String name : enumerable.getPropertyNames()) {
+          if (name.startsWith(SINGLE_CLIENT_PREFIX) && !name.startsWith(MULTI_CLIENT_PREFIX)) {
+            final String target =
+                DEFAULT_CLIENT_PREFIX + name.substring(SINGLE_CLIENT_PREFIX.length());
+            if (!environment.containsProperty(target)) {
+              defaultClientProperties.putIfAbsent(
+                  target, Objects.requireNonNull(enumerable.getProperty(name)));
+            }
+          }
+        }
+      }
+    }
+    if (!defaultClientProperties.isEmpty()) {
+      log.debug(
+          "Projecting camunda.client.* onto the 'default' client (camunda.clients.default.*)");
+      addMapPropertySourceFirst(
+          "camunda-default-client-mapping", defaultClientProperties, environment);
+    }
+  }
+
+  private boolean hasMultiClientProperties(final ConfigurableEnvironment environment) {
+    for (final PropertySource<?> source : environment.getPropertySources()) {
+      if (source instanceof final EnumerablePropertySource<?> enumerable) {
+        for (final String name : enumerable.getPropertyNames()) {
+          if (name.startsWith(MULTI_CLIENT_PREFIX)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   private void mapLegacyOverrides(final ConfigurableEnvironment environment) {

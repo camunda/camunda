@@ -22,8 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
-import io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration;
+import io.camunda.client.spring.configuration.MultiCamundaClientAutoConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.time.Duration;
 import java.util.Map;
@@ -61,18 +60,16 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ContextConfiguration(
     classes = {
       CamundaClientStarterAutoConfigurationCustomJsonMapperTest.TestConfig.class,
-      CamundaAutoConfiguration.class
+      MultiCamundaClientAutoConfiguration.class
     })
 public class CamundaClientStarterAutoConfigurationCustomJsonMapperTest {
   @MockitoBean CamundaClient camundaClient;
   @Autowired private io.camunda.client.api.JsonMapper jsonMapper;
-  @Autowired private CamundaClientProdAutoConfiguration autoConfiguration;
   @Autowired private ApplicationContext applicationContext;
 
   @Test
   void getJsonMapper() {
     assertThat(jsonMapper).isNotNull();
-    assertThat(autoConfiguration).isNotNull();
 
     final Map<String, io.camunda.client.api.JsonMapper> jsonMapperBeans =
         applicationContext.getBeansOfType(io.camunda.client.api.JsonMapper.class);

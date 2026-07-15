@@ -19,13 +19,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.event.CamundaClientCreatedEvent;
-import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
+import io.camunda.client.spring.configuration.MultiCamundaClientAutoConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.event.EventListener;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@SpringBootTest(classes = CamundaAutoConfiguration.class)
+@SpringBootTest(classes = MultiCamundaClientAutoConfiguration.class)
 public class CamundaClientEventListenerTest {
   @MockitoBean CamundaClient client;
 

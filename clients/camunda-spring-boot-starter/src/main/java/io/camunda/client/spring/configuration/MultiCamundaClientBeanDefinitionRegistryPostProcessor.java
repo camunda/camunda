@@ -50,6 +50,8 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
     implements BeanDefinitionRegistryPostProcessor, EnvironmentAware, BeanFactoryAware {
 
   private static final String BEAN_NAME_SUFFIX = "CamundaClient";
+  // historical single-client bean name, preserved as an alias for the primary client
+  private static final String LEGACY_CLIENT_BEAN_NAME = "camundaClient";
 
   private static final Logger LOG =
       LoggerFactory.getLogger(MultiCamundaClientBeanDefinitionRegistryPostProcessor.class);
@@ -113,6 +115,13 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
 
     final String beanName = beanNameFor(name);
     registry.registerBeanDefinition(beanName, beanDefinition);
+    // preserve the historical public bean name: the primary client is also reachable as
+    // 'camundaClient', so @Qualifier("camundaClient") / getBean("camundaClient") keep working
+    if (primary
+        && !LEGACY_CLIENT_BEAN_NAME.equals(beanName)
+        && !registry.isBeanNameInUse(LEGACY_CLIENT_BEAN_NAME)) {
+      registry.registerAlias(beanName, LEGACY_CLIENT_BEAN_NAME);
+    }
     LOG.debug("Registered CamundaClient bean '{}' (primary={})", beanName, primary);
   }
 
