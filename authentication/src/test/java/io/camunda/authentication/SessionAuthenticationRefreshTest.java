@@ -134,23 +134,11 @@ public class SessionAuthenticationRefreshTest {
       final var result = sendMultipleConcurrentRequests(sessionCookie);
 
       assertThat(result.successfulRequests().get()).isEqualTo(result.threads().length);
-      // CSL's HttpSessionBasedAuthenticationHolder deduplicates concurrent refreshes with
-      // synchronized(session), which only serializes requests that share the exact same in-memory
-      // HttpSession Java object. Concurrent requests here can each resolve a distinct object for
-      // the same underlying session, so more than one request can independently observe the
-      // expired interval and refresh — see camunda/camunda-security-library#510. The guarantee
-      // this test can make is that every request refreshes once, within the same narrow window —
-      // not that they all agree on one identical timestamp.
       final var refreshTimes = result.lastRefreshTimes();
       assertThat(refreshTimes).allSatisfy(refresh -> assertThat(refresh).isAfter(oldRefresh));
-      final Instant earliestRefresh = refreshTimes.stream().min(Instant::compareTo).orElseThrow();
       assertThat(refreshTimes)
-          .as("all concurrent requests refresh within the same interval window")
-          .allSatisfy(
-              refresh ->
-                  assertThat(refresh)
-                      .isCloseTo(
-                          earliestRefresh, within(refreshInterval.toMillis(), ChronoUnit.MILLIS)));
+          .as("only one refresh across all concurrent requests")
+          .containsOnly(refreshTimes.get(0));
     }
 
     /**
