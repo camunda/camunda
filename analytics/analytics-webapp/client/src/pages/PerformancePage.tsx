@@ -17,6 +17,7 @@ import { PercentileTrend } from "../components/PercentileTrend";
 import { ProcessHeatmap } from "../components/ProcessHeatmap";
 import { ReworkHotspots } from "../components/ReworkHotspots";
 import { StatTile } from "../components/StatTile";
+import { TopVariants } from "../components/TopVariants";
 
 /**
  * Performance — "how fast and how predictable": the duration KPIs plus the control chart
@@ -112,6 +113,8 @@ export function PerformancePage({
       </div>
 
       <DurationDistribution points={data.durationBuckets} />
+
+      <TopVariants variants={data.variants} />
 
       <GatewayDecisions gateways={data.branchDistribution} />
 

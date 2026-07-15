@@ -101,7 +101,18 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * their drain, so a crash between drain and cut replays them from here rather than losing the
    * merge.
    */
-  PARKED_DELTAS(10, ColumnFamilyScope.PARTITION_LOCAL);
+  PARKED_DELTAS(10, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * The Model-A per-instance variant accumulator: {@code processInstanceKey(8) ++ elementId(utf8)
+   * -> activation count}. Bumped on every non-process {@code ELEMENT_ACTIVATED} fold, read by a
+   * {@code processInstanceKey} prefix scan when the instance's end fact derives its variant
+   * signature, and cleared when the instance's row is evicted — the {@code VARIABLE_ENTRIES}
+   * pattern, keyed by instance instead of scope. A side family rather than a field on {@code
+   * ElementEntity}: the entity is a fixed-shape flyweight rewritten whole on every mutation, while
+   * these entries grow one-per-executed-element and are touched one at a time.
+   */
+  VARIANT_ELEMENTS(11, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

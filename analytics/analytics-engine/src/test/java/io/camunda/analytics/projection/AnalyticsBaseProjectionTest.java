@@ -195,6 +195,119 @@ final class AnalyticsBaseProjectionTest {
   }
 
   @Test
+  void shouldStampTheVariantSignatureOnTheInstanceEndFact() {
+    // given an instance whose retry loop activates one task twice (distinct element instances)
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    projection.process(element(400L, "register", ProcessInstanceIntent.ELEMENT_ACTIVATED, 11L));
+    projection.process(element(400L, "register", ProcessInstanceIntent.ELEMENT_COMPLETED, 12L));
+    projection.process(element(401L, "assess", ProcessInstanceIntent.ELEMENT_ACTIVATED, 13L));
+    projection.process(element(401L, "assess", ProcessInstanceIntent.ELEMENT_COMPLETED, 14L));
+    projection.process(element(402L, "assess", ProcessInstanceIntent.ELEMENT_ACTIVATED, 15L));
+    projection.process(element(402L, "assess", ProcessInstanceIntent.ELEMENT_COMPLETED, 16L));
+
+    // when the instance completes
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 2000L, 17L));
+
+    // then the end fact carries the signature and the canonical (sorted, bucketed) element list
+    final Fact completed = only(FactType.PROCESS_INSTANCE, Transition.COMPLETED);
+    assertThat(completed.get("variantHash")).isNotNull();
+    assertThat(completed.get("variantElements")).isEqualTo("assess×2-3, register");
+    // and the accumulator is evicted with the instance
+    final List<String> leftover = new ArrayList<>();
+    state.forEachVariantElement(PI_KEY, (elementId, count) -> leftover.add(elementId));
+    assertThat(leftover).as("accumulator cleared on instance evict").isEmpty();
+  }
+
+  @Test
+  void shouldFoldArrivalOrderAndReplayToTheSameVariantHash() {
+    // given the same two-branch element set folded in two different interleavings (a parallel
+    // gateway's branches have no deterministic activation order), plus an exact replay
+    final long forward = variantHashOf(List.of("dispatch", "notify"));
+    final long interleaved = variantHashOf(List.of("notify", "dispatch"));
+    final long replayed = variantHashOf(List.of("dispatch", "notify"));
+
+    // then every fold lands on ONE variant
+    assertThat(interleaved).isEqualTo(forward);
+    assertThat(replayed).isEqualTo(forward);
+  }
+
+  @Test
+  void shouldGiveATerminatedInstanceItsOwnPartialSetVariant() {
+    // given a completed instance that executed both elements
+    final long full = variantHashOf(List.of("register", "payout"));
+
+    // and an instance terminated mid-way, after only the first element (fresh fixture)
+    final StateBackedProjectionState terminatedState = StateBackedProjectionState.inMemory();
+    final CapturingContext terminatedContext = new CapturingContext();
+    final AnalyticsBaseProjection terminated =
+        new AnalyticsBaseProjection(terminatedState, VariableNames.NONE, new CountingMetrics());
+    terminated.init(terminatedContext);
+    terminated.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    terminated.process(element(500L, "register", ProcessInstanceIntent.ELEMENT_ACTIVATED, 11L));
+    terminated.process(element(500L, "register", ProcessInstanceIntent.ELEMENT_TERMINATED, 12L));
+    terminated.process(process(ProcessInstanceIntent.ELEMENT_TERMINATED, 1500L, 13L));
+
+    // then the termination fact carries a variant of its own — the partial element set
+    final Fact fact =
+        terminatedContext.facts.stream()
+            .filter(
+                f ->
+                    f.factType() == FactType.PROCESS_INSTANCE
+                        && Transition.TERMINATED.name().equals(f.get(Fact.TRANSITION)))
+            .findFirst()
+            .orElseThrow();
+    assertThat(fact.get("variantHash")).isNotNull();
+    assertThat(fact.get("variantHash")).isNotEqualTo(full);
+    assertThat(fact.get("variantElements")).isEqualTo("register");
+  }
+
+  /**
+   * Folds a full instance (activation, one pass over each element, completion) through a fresh
+   * projection and returns the end fact's variant hash — the arrival order is the list order.
+   */
+  private static long variantHashOf(final List<String> elementIds) {
+    final StateBackedProjectionState state = StateBackedProjectionState.inMemory();
+    final CapturingContext context = new CapturingContext();
+    final AnalyticsBaseProjection projection =
+        new AnalyticsBaseProjection(state, VariableNames.NONE, new CountingMetrics());
+    projection.init(context);
+    long position = 10L;
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, position++));
+    long elementKey = 600L;
+    for (final String elementId : elementIds) {
+      projection.process(
+          element(elementKey, elementId, ProcessInstanceIntent.ELEMENT_ACTIVATED, position++));
+      projection.process(
+          element(elementKey, elementId, ProcessInstanceIntent.ELEMENT_COMPLETED, position++));
+      elementKey++;
+    }
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 2000L, position));
+    return context.facts.stream()
+        .filter(
+            f ->
+                f.factType() == FactType.PROCESS_INSTANCE
+                    && Transition.COMPLETED.name().equals(f.get(Fact.TRANSITION)))
+        .map(f -> (Long) f.get("variantHash"))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private static SourceRecord element(
+      final long elementInstanceKey,
+      final String elementId,
+      final ProcessInstanceIntent intent,
+      final long position) {
+    return processInstance(
+        elementInstanceKey,
+        PI_KEY,
+        intent,
+        BpmnElementType.SERVICE_TASK,
+        elementId,
+        position * 100,
+        position);
+  }
+
+  @Test
   void shouldStampHadIncidentOnTheElementItOccurredOn() {
     projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
     projection.process(incident(IncidentIntent.CREATED, PI_KEY, 1100L, 11L));

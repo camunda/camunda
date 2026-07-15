@@ -1033,6 +1033,66 @@ public class DashboardRepository {
   /** The bounded fetch backing {@link #openInstances} (the table read has no ORDER BY yet). */
   private static final int OPEN_INSTANCES_FETCH_BOUND = 1_000;
 
+  /** The bounded variant-dictionary fetch backing {@link #variants} (one row per variant). */
+  private static final int VARIANT_CATALOG_FETCH_BOUND = 1_000;
+
+  /**
+   * The top execution variants of a process over the range, by instance count: the process-variants
+   * cube's whole-range totals grouped by {@code variantHash}, joined with the variant-catalog
+   * dictionary for the human-readable element list. {@code share} is against all ended instances
+   * that carried a variant in range; {@code p50/p95} come from the per-variant duration sketch
+   * (terminated instances carry a duration too, so a fast-failing variant reads honestly fast).
+   */
+  public List<VariantRow> variants(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow, final int limit) {
+    final List<ReportRow> rows =
+        total(
+            "process-variants",
+            List.of("variantHash"),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("count", "duration_p"),
+            newMemo());
+    if (rows.isEmpty()) {
+      return List.of();
+    }
+    // The dictionary: variantHash -> canonical element list. One bounded fetch for the process;
+    // a cube row whose dictionary entry has not landed yet joins to "" rather than dropping.
+    final Map<Long, String> elementsByHash = new HashMap<>();
+    for (final TableRow row :
+        tableExecutor.execute(
+            new TableQuery(
+                List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+                VARIANT_CATALOG_FETCH_BOUND),
+            tableCatalog.require("variant-catalog"))) {
+      if (row.values().get("variantElements") instanceof final String elements) {
+        elementsByHash.put(asLong(row.values().get("variantHash")), elements);
+      }
+    }
+    long totalEnded = 0L;
+    for (final ReportRow row : rows) {
+      totalEnded += measureAsLong(row, "count");
+    }
+    final List<VariantRow> out = new ArrayList<>(rows.size());
+    for (final ReportRow row : rows) {
+      final long hash = asLong(row.dimensions().get("variantHash"));
+      final long count = measureAsLong(row, "count");
+      final QuantileResult q =
+          row.measures().get("duration_p") instanceof final QuantileResult result ? result : null;
+      out.add(
+          new VariantRow(
+              hash,
+              elementsByHash.getOrDefault(hash, ""),
+              count,
+              totalEnded == 0 ? 0.0 : (double) count / totalEnded,
+              quantileMs(q, 0.5),
+              quantileMs(q, 0.95)));
+    }
+    out.sort(Comparator.comparingLong(VariantRow::count).reversed());
+    return out.size() > limit ? List.copyOf(out.subList(0, limit)) : out;
+  }
+
   /**
    * The deployed BPMN diagram XML for a process, read from the built-in process-definitions table
    * that {@link ProcessDefinitionSink} writes. Feeds the flow-node and incident heatmaps, which

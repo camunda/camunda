@@ -9,12 +9,14 @@ package io.camunda.analytics.projection.applier;
 
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.state.mutable.MutableProjectionState;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
 /**
  * Upserts an element row {@code {start, ACTIVE, isProcess}} on activation, recording its parent
- * (flow) scope for later variable resolution.
+ * (flow) scope for later variable resolution. A non-process activation additionally bumps the
+ * instance's variant accumulator ({@code (processInstanceKey, elementId) -> count}), the
+ * order-insensitive input of the end fact's variant signature.
  */
 public final class ElementActivatedApplier implements EventApplier {
 
@@ -26,12 +28,15 @@ public final class ElementActivatedApplier implements EventApplier {
 
   @Override
   public void apply(final SourceRecord source) {
-    final ProcessInstanceRecordValue value =
-        (ProcessInstanceRecordValue) source.record().getValue();
+    final ProcessInstanceRecord value = (ProcessInstanceRecord) source.record().getValue();
+    final boolean isProcess = value.getBpmnElementType() == BpmnElementType.PROCESS;
     state.activateElement(
         source.record().getKey(),
         source.record().getTimestamp(),
-        value.getBpmnElementType() == BpmnElementType.PROCESS,
+        isProcess,
         value.getFlowScopeKey());
+    if (!isProcess) {
+      state.countVariantElement(value.getProcessInstanceKey(), value.getElementIdBuffer());
+    }
   }
 }

@@ -206,6 +206,17 @@ export interface BranchDistribution {
   branches: GatewayBranch[];
 }
 
+/** One execution variant: signature hash, canonical element list (may be "" while the dictionary
+ * row is in flight), count, share of ended-with-variant instances, duration percentiles. */
+export interface VariantRow {
+  variantHash: number;
+  elements: string;
+  count: number;
+  share: number;
+  p50Ms: number;
+  p95Ms: number;
+}
+
 // ---------------------------------------------------------------------------
 // Dataset / report builder shapes. These mirror the analytics builder REST
 // contract (DatasetDeclaration / Report records serialized by name).
@@ -509,6 +520,10 @@ export const api = {
   branchDistribution: (process: string, range: TimeRange | null) =>
     getJson<BranchDistribution[]>(
       `/api/dashboard/branch-distribution?process=${q(process)}${rangeQs(range)}`,
+    ),
+  variants: (process: string, range: TimeRange | null, limit = 10) =>
+    getJson<VariantRow[]>(
+      `/api/dashboard/variants?process=${q(process)}&limit=${limit}${rangeQs(range)}`,
     ),
   openInstances: (process: string, limit = 20) =>
     getJson<OpenInstanceRow[]>(

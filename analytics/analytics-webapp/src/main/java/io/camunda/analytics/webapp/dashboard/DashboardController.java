@@ -292,6 +292,19 @@ public class DashboardController {
   }
 
   /**
+   * The top execution variants of a process over the range (by instance count): signature hash,
+   * canonical element list, count, share of ended-with-variant instances, duration p50/p95.
+   */
+  @GetMapping("/variants")
+  public List<VariantRow> variants(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to,
+      @RequestParam(value = "limit", required = false, defaultValue = "10") final int limit) {
+    return repository.variants(bpmnProcessId, from, to, limit);
+  }
+
+  /**
    * Per-gateway branch distribution over the range: the deployed model's exclusive gateways joined
    * with the elements cube's activation counts (activation-based shares; see the caveat on {@link
    * BranchDistribution}).

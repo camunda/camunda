@@ -54,6 +54,16 @@ public interface MutableProjectionState extends ProjectionState {
   /** Drops every variable scoped to an element instance (on its terminal transition). */
   void clearVariables(long scopeKey);
 
+  /**
+   * Bumps the instance's variant accumulator for one executed element ({@code (processInstanceKey,
+   * elementId) -> count + 1}). The element id arrives as a UTF-8 view over the source record's
+   * bytes and is copied into the store key — the buffer is only borrowed for the call.
+   */
+  void countVariantElement(long processInstanceKey, DirectBuffer elementId);
+
+  /** Drops the instance's whole variant accumulator (when the instance's row is evicted). */
+  void clearVariantElements(long processInstanceKey);
+
   /** Opens an incident row {@code {createMs, errorType}}. */
   void openIncident(long elementInstanceKey, long createMs, String errorType);
 

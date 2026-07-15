@@ -26,6 +26,7 @@ import {
   type TimeRange,
   type ValuePoint,
   type ValueSummary,
+  type VariantRow,
 } from "./api";
 
 /** All pre-aggregated metrics for one (process, tenant, range) — fetched once, shared by pages. */
@@ -64,6 +65,8 @@ export interface MetricsData {
   valueSeries: ValuePoint[];
   /** Per-gateway branch split (deployed model joined with the elements cube's activations). */
   branchDistribution: BranchDistribution[];
+  /** Top execution variants by instance count. */
+  variants: VariantRow[];
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -117,6 +120,7 @@ export function useMetrics(
         : Promise.resolve(null),
       api.valueSeries(process, range),
       api.branchDistribution(process, range),
+      api.variants(process, range),
     ])
       .then(
         ([
@@ -146,6 +150,7 @@ export function useMetrics(
           valuePrevious,
           valueSeries,
           branchDistribution,
+          variants,
         ]) => {
           if (!cancelled) {
             setData({
@@ -175,6 +180,7 @@ export function useMetrics(
               valuePrevious,
               valueSeries,
               branchDistribution,
+              variants,
             });
           }
         },

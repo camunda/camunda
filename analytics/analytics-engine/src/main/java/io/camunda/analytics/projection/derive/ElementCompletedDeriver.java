@@ -91,6 +91,15 @@ public final class ElementCompletedDeriver implements FactDeriver {
         // BusinessValue for the field pair and the mid-flight-change caveat).
         fact.field("value", businessValue).field("valueDelta", -businessValue);
       }
+      // The instance's variant, folded from its accumulator (still live — cleared only on evict,
+      // after this derive). COMPLETED and TERMINATED alike: a mid-flight termination is its own
+      // partial-set variant. Absent when no element was recorded (fields stay unset).
+      final VariantSignature signature = new VariantSignature();
+      state.forEachVariantElement(elementInstanceKey, signature::add);
+      final VariantSignature.Variant variant = signature.build();
+      if (variant != null) {
+        fact.field("variantHash", variant.hash()).field("variantElements", variant.elements());
+      }
     } else {
       fact.field("elementId", Utf8View.copyOf(value.getElementIdBuffer()))
           .field("elementType", value.getBpmnElementType().name());
