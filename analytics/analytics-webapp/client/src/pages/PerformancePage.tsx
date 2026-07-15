@@ -8,11 +8,12 @@
 import type { TimeRange } from "../lib/api";
 import { chartColor } from "../lib/chartColors";
 import { formatCount, formatDuration, formatPercent } from "../lib/format";
-import { qualityKpis, useMetrics } from "../lib/useMetrics";
+import { aggregateRatio, qualityKpis, useMetrics } from "../lib/useMetrics";
 import { ActiveInstancesTrend } from "../components/ActiveInstancesTrend";
 import { CountTrend } from "../components/CountTrend";
 import { DurationSpreadTrend } from "../components/DurationSpreadTrend";
 import { DurationDistribution } from "../components/DurationDistribution";
+import { FlowBalanceTrend } from "../components/FlowBalanceTrend";
 import { FrequencyDurationTrend } from "../components/FrequencyDurationTrend";
 import { IncidentHeatmap } from "../components/IncidentHeatmap";
 import { Incidents } from "../components/Incidents";
@@ -20,6 +21,7 @@ import { NoIncidentCohortChart } from "../components/NoIncidentCohortChart";
 import { NoIncidentDonut } from "../components/NoIncidentDonut";
 import { PercentileTrend } from "../components/PercentileTrend";
 import { ProcessHeatmap } from "../components/ProcessHeatmap";
+import { ReworkHotspots } from "../components/ReworkHotspots";
 import { SlaCohortChart } from "../components/SlaCohortChart";
 import { StatTile } from "../components/StatTile";
 
@@ -45,6 +47,7 @@ export function PerformancePage({
     return <p className="text-neutral-foreground-muted">Loading…</p>;
   }
   const { sla, noIncident } = qualityKpis(data.sla, data.noIncident);
+  const stp = aggregateRatio(data.stp);
   const s = data.summary;
   const startedOverTime = data.slaCohorts.map((c) => ({
     windowStart: c.windowStart,
@@ -52,7 +55,7 @@ export function PerformancePage({
   }));
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
         <StatTile
           label="% SLA met"
           value={sla.total ? formatPercent(sla.ratio) : "—"}
@@ -61,6 +64,12 @@ export function PerformancePage({
         <StatTile
           label="% no incidents"
           value={noIncident.total ? formatPercent(noIncident.ratio) : "—"}
+        />
+        <StatTile
+          label="% first-time-right"
+          value={stp.total ? formatPercent(stp.ratio) : "—"}
+          hint="completed in SLA, no incidents"
+          accent={chartColor(4)}
         />
         <StatTile label="p75" value={s.observationCount ? formatDuration(s.p75Ms) : "—"} />
         <StatTile
@@ -74,6 +83,7 @@ export function PerformancePage({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PercentileTrend points={data.duration} />
         <FrequencyDurationTrend points={data.duration} />
+        <FlowBalanceTrend lifecycle={data.lifecycleSeries} active={data.activeSeries} />
         <ActiveInstancesTrend points={data.activeSeries} />
         <DurationSpreadTrend points={data.durationSpread} />
         <CountTrend
@@ -88,6 +98,8 @@ export function PerformancePage({
         <DurationDistribution points={data.durationBuckets} />
         <NoIncidentDonut matched={noIncident.matched} total={noIncident.total} />
       </div>
+
+      <ReworkHotspots rows={data.rework} />
 
       <ProcessHeatmap process={process} elements={data.elements} />
 

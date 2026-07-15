@@ -152,6 +152,7 @@ final class DashboardCohortJoinTest {
     return new DashboardRepository(
         fixture.executor(),
         new DatasetCatalog(byName),
+        fixture.tableCatalog(),
         new TableQueryExecutor(fixture.datasetStore().queryClient()),
         new SnapshotQueryExecutor(fixture.datasetStore().queryClient()));
   }

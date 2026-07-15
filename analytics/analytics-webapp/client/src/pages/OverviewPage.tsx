@@ -11,6 +11,7 @@ import { formatCount } from "../lib/format";
 import { useMetrics } from "../lib/useMetrics";
 import { CountTrend } from "../components/CountTrend";
 import { IncidentHeatmap } from "../components/IncidentHeatmap";
+import { OpenInstancesTable } from "../components/OpenInstancesTable";
 import { ProcessHeatmap } from "../components/ProcessHeatmap";
 import { StatTile } from "../components/StatTile";
 
@@ -65,6 +66,8 @@ export function OverviewPage({
         color={chartColor(0)}
         seriesName="Completed"
       />
+
+      <OpenInstancesTable rows={data.openInstances} />
 
       <ProcessHeatmap process={process} elements={data.elements} />
 

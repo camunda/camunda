@@ -15,8 +15,11 @@ import {
   type DurationPoint,
   type ElementDuration,
   type IncidentFlowNode,
+  type LifecycleSeriesPoint,
   type NoIncidentCohortPoint,
+  type OpenInstanceRow,
   type RatioPoint,
+  type ReworkHotspot,
   type SlaCohortPoint,
   type TimeRange,
   type TopProcess,
@@ -41,6 +44,11 @@ export interface MetricsData {
   ended: number;
   activeSeries: ActiveInstancesPoint[];
   durationSpread: DurationSpreadPoint[];
+  /** The first-time-right (STP) ratio series — the process-stp cube's single matched-form meter. */
+  stp: RatioPoint[];
+  lifecycleSeries: LifecycleSeriesPoint[];
+  rework: ReworkHotspot[];
+  openInstances: OpenInstanceRow[];
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -77,6 +85,10 @@ export function useMetrics(
       api.activeSeries(process, range),
       api.durationSpread(process, range),
       api.noIncidentCohorts(process, range),
+      api.ratios(process, "first_time_right", range),
+      api.lifecycleSeries(process, range),
+      api.rework(process, range),
+      api.openInstances(process),
     ])
       .then(
         ([
@@ -97,6 +109,10 @@ export function useMetrics(
           activeSeries,
           durationSpread,
           noIncidentCohorts,
+          stp,
+          lifecycleSeries,
+          rework,
+          openInstances,
         ]) => {
           if (!cancelled) {
             setData({
@@ -117,6 +133,10 @@ export function useMetrics(
               ended,
               activeSeries,
               durationSpread,
+              stp,
+              lifecycleSeries,
+              rework,
+              openInstances,
             });
           }
         },

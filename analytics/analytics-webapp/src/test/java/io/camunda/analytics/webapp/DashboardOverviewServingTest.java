@@ -57,6 +57,7 @@ final class DashboardOverviewServingTest {
         new DashboardRepository(
             new DatasetQueryExecutor(new DatasetQueryPlanner(), counting),
             fixture.catalog(),
+            fixture.tableCatalog(),
             new TableQueryExecutor(fixture.datasetStore().queryClient()),
             new SnapshotQueryExecutor(fixture.datasetStore().queryClient()));
   }

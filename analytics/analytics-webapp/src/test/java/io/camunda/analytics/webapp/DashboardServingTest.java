@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.data.Offset.offset;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
@@ -27,7 +28,10 @@ import io.camunda.analytics.webapp.dashboard.DistinctPoint;
 import io.camunda.analytics.webapp.dashboard.DurationBucketPoint;
 import io.camunda.analytics.webapp.dashboard.DurationPercentilePoint;
 import io.camunda.analytics.webapp.dashboard.DurationSpreadPoint;
+import io.camunda.analytics.webapp.dashboard.LifecycleSeriesPoint;
+import io.camunda.analytics.webapp.dashboard.OpenInstanceRow;
 import io.camunda.analytics.webapp.dashboard.RatioPoint;
+import io.camunda.analytics.webapp.dashboard.ReworkHotspot;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.collections.MutableLong;
@@ -51,6 +55,7 @@ final class DashboardServingTest {
         new DashboardRepository(
             fixture.executor(),
             fixture.catalog(),
+            fixture.tableCatalog(),
             new TableQueryExecutor(fixture.datasetStore().queryClient()),
             new SnapshotQueryExecutor(fixture.datasetStore().queryClient()));
   }
@@ -223,6 +228,132 @@ final class DashboardServingTest {
               // exact histogram bands [<10s, <30s, <60s, <120s, ≥120s] over the completions only
               assertThat(point.bands()).containsExactly(1L, 1L, 0L, 1L, 0L);
             });
+  }
+
+  @Test
+  void shouldServeTheFirstTimeRightRatioFromTheMatchedFormMeter() {
+    // given ended instances in the STP cube: three straight-through (completed, within the 9s SLA,
+    // incident-free), one in-SLA completion that raised an incident, one terminated
+    final List<Fact> facts = new ArrayList<>();
+    facts.add(ended(Transition.COMPLETED, 4_000L, false));
+    facts.add(ended(Transition.COMPLETED, 6_000L, false));
+    facts.add(ended(Transition.COMPLETED, 9_000L, false));
+    facts.add(ended(Transition.COMPLETED, 5_000L, true));
+    facts.add(ended(Transition.TERMINATED, 3_000L, false));
+    final long window =
+        ServingTestSupport.seed(fixture, "process-stp", "first_time_right", facts, PROCESS);
+
+    // when the ratio is read through the shared meter-name path (no dedicated endpoint needed)
+    final List<RatioPoint> ratios = repository.ratios(PROCESS, "first_time_right", null, null);
+
+    // then the single meter carries matched=3 of total=5
+    assertThat(ratios)
+        .singleElement()
+        .satisfies(
+            point -> {
+              assertThat(point.windowStart()).isEqualTo(window);
+              assertThat(point.matched()).isEqualTo(3L);
+              assertThat(point.total()).isEqualTo(5L);
+              assertThat(point.ratio()).isEqualTo(0.6);
+            });
+  }
+
+  @Test
+  void shouldEstimateReworkFromActivationsVersusDistinctInstances() {
+    // given a flow node activated twice by ONE instance (a loop) and once by another
+    final List<Fact> looped = List.of(activation(100L), activation(100L), activation(200L));
+    ServingTestSupport.seed(fixture, "element-rework", "activations", looped, PROCESS, "Task_A");
+    // and a flow node with one activation per instance (no rework)
+    ServingTestSupport.seed(
+        fixture,
+        "element-rework",
+        "activations",
+        List.of(activation(100L), activation(200L)),
+        PROCESS,
+        "Task_B");
+
+    // when the rework hotspots are read
+    final List<ReworkHotspot> hotspots = repository.rework(PROCESS, null, null);
+
+    // then only the looped node appears: 3 activations across 2 instances = 1 rework
+    assertThat(hotspots)
+        .singleElement()
+        .satisfies(
+            hotspot -> {
+              assertThat(hotspot.elementId()).isEqualTo("Task_A");
+              assertThat(hotspot.activations()).isEqualTo(3L);
+              assertThat(hotspot.instances()).isEqualTo(2L);
+              assertThat(hotspot.rework()).isEqualTo(1L);
+            });
+  }
+
+  @Test
+  void shouldServeTheFlowBalanceSeriesFromTheLifecyclePrimitives() {
+    // given a process-instances window with 5 started, 2 completed, 1 terminated
+    final List<Fact> facts = new ArrayList<>();
+    for (int i = 0; i < 5; i++) {
+      facts.add(Fact.builder(FactType.PROCESS_INSTANCE).transition(Transition.ACTIVATED).build());
+    }
+    facts.addAll(completed(2_000L, 20_000L));
+    facts.add(Fact.builder(FactType.PROCESS_INSTANCE).transition(Transition.TERMINATED).build());
+    final long window =
+        ServingTestSupport.seed(fixture, "process-instances", "activated", facts, PROCESS);
+
+    // when the flow-balance series is read
+    final List<LifecycleSeriesPoint> series = repository.lifecycleSeries(PROCESS, null, null);
+
+    // then the window carries started=5 and ended=3 (completed plus terminated)
+    assertThat(series)
+        .singleElement()
+        .satisfies(
+            point -> {
+              assertThat(point.windowStart()).isEqualTo(window);
+              assertThat(point.started()).isEqualTo(5L);
+              assertThat(point.ended()).isEqualTo(3L);
+            });
+  }
+
+  @Test
+  void shouldServeOpenInstancesOldestFirstWithServerComputedAge() {
+    // given two open rows (the younger inserted first) and one already-evicted instance
+    final long now = System.currentTimeMillis();
+    final CompiledTable table = fixture.tableCatalog().require("open-instances");
+    ServingTestSupport.seedRow(fixture, "open-instances", "2", List.of(2L, PROCESS, now - 60_000L));
+    ServingTestSupport.seedRow(
+        fixture, "open-instances", "1", List.of(1L, PROCESS, now - 3_600_000L));
+    ServingTestSupport.seedRow(
+        fixture, "open-instances", "3", List.of(3L, PROCESS, now - 7_200_000L));
+    fixture.datasetStore().writer().deleteRow(table, "3", WriteVersion.SEED);
+    fixture.datasetStore().writer().flush();
+
+    // when the aging-WIP rows are read
+    final List<OpenInstanceRow> open = repository.openInstances(PROCESS, 10);
+
+    // then the evicted row is gone and the rest come oldest-first with a non-negative age
+    assertThat(open).extracting(OpenInstanceRow::processInstanceKey).containsExactly(1L, 2L);
+    assertThat(open.get(0).ageMs()).isGreaterThanOrEqualTo(3_600_000L);
+    assertThat(open.get(1).ageMs()).isBetween(60_000L, 3_600_000L);
+
+    // and the limit truncates to the oldest rows
+    assertThat(repository.openInstances(PROCESS, 1))
+        .extracting(OpenInstanceRow::processInstanceKey)
+        .containsExactly(1L);
+  }
+
+  private static Fact ended(
+      final Transition transition, final long durationMs, final boolean hadIncident) {
+    return Fact.builder(FactType.PROCESS_INSTANCE)
+        .transition(transition)
+        .field("durationMs", durationMs)
+        .field("hadIncident", hadIncident)
+        .build();
+  }
+
+  private static Fact activation(final long processInstanceKey) {
+    return Fact.builder(FactType.ELEMENT)
+        .transition(Transition.ACTIVATED)
+        .field("processInstanceKey", processInstanceKey)
+        .build();
   }
 
   private static List<Fact> completed(final long... durationsMs) {
