@@ -8,13 +8,17 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Names the inner instance of an ad-hoc subprocess after the element that was initially activated
@@ -30,16 +34,13 @@ import java.util.List;
  * <p>This handler reacts to the <em>entry child's</em> {@code ELEMENT_ACTIVATING} record and writes
  * the child's resolved name onto the parent inner-instance document, so the inner instance reads as
  * the element that was activated (e.g. {@code listUsers} → "List users").
- *
- * <p>NOTE: no-op stub; the naming behaviour is implemented in the green phase.
  */
 public class FlowNodeInstanceNameFromAdHocActivityHandler
     implements ExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
 
   /**
-   * Painless script that sets {@code flowNodeName} only when it is not already set, so that the
-   * first-activated child (the entry element) wins and later activations in the same inner instance
-   * cannot clobber the name.
+   * Painless script that sets {@code flowNodeName} only when it is not already set (first-writer
+   * wins), so re-processing the entry child's record can't overwrite the resolved name.
    */
   public static final String SET_IF_NULL_NAME_SCRIPT =
       """
@@ -69,14 +70,21 @@ public class FlowNodeInstanceNameFromAdHocActivityHandler
 
   @Override
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
-    // stub
-    return false;
+    if (!ProcessInstanceIntent.ELEMENT_ACTIVATING.equals(record.getIntent())) {
+      return false;
+    }
+    final var recordValue = record.getValue();
+    return processCache
+        .get(recordValue.getProcessDefinitionKey())
+        .map(CachedProcessEntity::adHocActivityIds)
+        .map(ids -> ids.contains(recordValue.getElementId()))
+        .orElse(false);
   }
 
   @Override
   public List<String> generateIds(final Record<ProcessInstanceRecordValue> record) {
-    // stub
-    return List.of();
+    // the child's flow scope is the parent inner-instance, whose document we want to name
+    return List.of(String.valueOf(record.getValue().getFlowScopeKey()));
   }
 
   @Override
@@ -87,12 +95,28 @@ public class FlowNodeInstanceNameFromAdHocActivityHandler
   @Override
   public void updateEntity(
       final Record<ProcessInstanceRecordValue> record, final FlowNodeInstanceEntity entity) {
-    // stub
+    // resolve the name from the entry child's element id; keep the parent inner-instance id that
+    // generateIds established on the entity, so flush writes onto the inner-instance document
+    final var recordValue = record.getValue();
+    final var elementId = recordValue.getElementId();
+    entity.setFlowNodeName(
+        ProcessCacheUtil.getFlowNodeName(
+                processCache, recordValue.getProcessDefinitionKey(), elementId)
+            .orElse(elementId));
   }
 
   @Override
   public void flush(final FlowNodeInstanceEntity entity, final BatchRequest batchRequest) {
-    // stub
+    // Only sets the name. The inner-instance document (with its identifying fields) is normally
+    // inserted first by FlowNodeInstanceFromProcessInstanceHandler, since the engine writes the
+    // inner instance's own ELEMENT_ACTIVATING before the entry child's. The upsert here is a
+    // defensive fallback: it lets ES/OS create the document rather than fail if it is missing.
+    batchRequest.upsertWithScript(
+        indexName,
+        entity.getId(),
+        entity,
+        SET_IF_NULL_NAME_SCRIPT,
+        Map.of(FlowNodeInstanceTemplate.FLOW_NODE_NAME, entity.getFlowNodeName()));
   }
 
   @Override

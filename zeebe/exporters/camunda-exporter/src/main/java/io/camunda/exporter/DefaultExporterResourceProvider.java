@@ -32,6 +32,7 @@ import io.camunda.exporter.handlers.EmbeddedFormHandler;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceNameFromAdHocActivityHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GlobalListenerCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GlobalListenerDeletedHandler;
@@ -279,6 +280,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FlowNodeInstanceFromIncidentHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromProcessInstanceHandler(
+                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName(),
+                processCache),
+            new FlowNodeInstanceNameFromAdHocActivityHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName(),
                 processCache),
             new IncidentHandler(
