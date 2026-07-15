@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {TFunction} from 'i18next';
 import {Dropdown} from '@carbon/react';
@@ -61,7 +61,7 @@ type FieldProps = {
 
 const AdvancedStringFilterField: React.FC<FieldProps> = ({input, label, selectableOperators}) => {
 	const {t} = useTranslation();
-	const operatorConfig = getOperatorConfig(t);
+	const operatorConfig = useMemo(() => getOperatorConfig(t), [t]);
 	const filter = splitEncodedFilterOperation(input.value ?? '');
 
 	const [fallbackOperator, setFallbackOperator] = useState<AdvancedStringFilterOperator>('$eq');
