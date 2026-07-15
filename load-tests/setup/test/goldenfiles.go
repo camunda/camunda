@@ -46,9 +46,9 @@ func normalize(input string) string {
 	return strings.TrimSpace(result) + "\n"
 }
 
-// collectManifests walks a helm --output-dir tree and returns each file's
-// normalized content keyed by its path relative to the tree root.
-func collectManifests(t *testing.T, root string) map[string]string {
+// collectManifests walks a helm --output-dir tree and returns each matching
+// file's normalized content keyed by its path relative to the tree root.
+func collectManifests(t *testing.T, root string, pathFilter []string) map[string]string {
 	t.Helper()
 	manifests := map[string]string{}
 	require.NoError(t, filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
@@ -59,33 +59,33 @@ func collectManifests(t *testing.T, root string) map[string]string {
 		if err != nil {
 			return err
 		}
+		rel = filepath.ToSlash(rel)
+		if !matchesPathFilter(rel, pathFilter) {
+			return nil
+		}
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
-		manifests[filepath.ToSlash(rel)] = normalize(string(data))
+		manifests[rel] = normalize(string(data))
 		return nil
 	}))
 	return manifests
 }
 
-// filterManifests keeps only entries whose relative path equals one of
-// prefixes, or sits under one of them as a directory. Returns manifests
-// unchanged if prefixes is empty.
-func filterManifests(manifests map[string]string, prefixes []string) map[string]string {
+// matchesPathFilter returns true when rel equals one of prefixes, or sits under
+// one of them as a directory. An empty filter matches every path.
+func matchesPathFilter(rel string, prefixes []string) bool {
 	if len(prefixes) == 0 {
-		return manifests
+		return true
 	}
-	filtered := make(map[string]string, len(manifests))
-	for rel, content := range manifests {
-		for _, prefix := range prefixes {
-			if rel == prefix || strings.HasPrefix(rel, prefix+"/") {
-				filtered[rel] = content
-				break
-			}
+	for _, prefix := range prefixes {
+		prefix = filepath.ToSlash(prefix)
+		if rel == prefix || strings.HasPrefix(rel, prefix+"/") {
+			return true
 		}
 	}
-	return filtered
+	return false
 }
 
 // assertGoldenDir compares the rendered manifest tree at srcDir against the
@@ -98,7 +98,12 @@ func assertGoldenDir(t *testing.T, version, scenario, chartName, srcDir string, 
 	t.Helper()
 
 	dir := filepath.Join(goldenDir, version, scenario, chartName)
-	rendered := filterManifests(collectManifests(t, srcDir), pathFilter)
+	rendered := collectManifests(t, srcDir, pathFilter)
+	if len(pathFilter) > 0 {
+		require.NotEmpty(t, rendered,
+			"pathFilter %v matched no rendered manifests in %s for golden/%s/%s/%s",
+			pathFilter, srcDir, version, scenario, chartName)
+	}
 
 	if update {
 		require.NoError(t, os.RemoveAll(dir))
@@ -109,14 +114,6 @@ func assertGoldenDir(t *testing.T, version, scenario, chartName, srcDir string, 
 				"failed to write golden file %s", dst)
 		}
 		t.Logf("updated %d golden manifest(s) in %s", len(rendered), dir)
-		return
-	}
-
-	if _, err := os.Stat(dir); os.IsNotExist(err) && len(pathFilter) > 0 && len(rendered) == 0 {
-		// A pathFilter can legitimately match nothing for a given chart (e.g. a
-		// filter scoped to the platform chart's templates has no matches when
-		// rendering load-test-setup). No golden dir was ever committed for this
-		// chart under this filter, and nothing rendered either — consistent.
 		return
 	}
 

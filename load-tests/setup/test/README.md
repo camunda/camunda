@@ -89,31 +89,29 @@ prefixes, relative to each chart's own output tree:
 ```
 
 Only rendered manifests under those prefixes are compared or committed for
-that scenario — everything else is silently skipped, for every chart the
-scenario renders. Leave `PathFilter` unset (the default) to keep comparing
-every rendered file, exactly like today.
+that scenario — everything else is skipped, for every chart the scenario
+renders. A non-empty `PathFilter` must match at least one rendered manifest for
+each chart it renders; otherwise the test fails. That makes typos or filters
+scoped to the wrong chart visible instead of silently removing coverage. Leave
+`PathFilter` unset (the default) to keep comparing every rendered file, exactly
+like today.
 
-A scenario's `PathFilter` can legitimately match nothing for one of the charts
-it renders (e.g. a filter scoped to `platform`'s templates has no matches
-when rendering `load-test-setup`) — that chart's golden subdirectory is then
-simply absent, and the test does not fail on it.
+## Why golden diffs are collapsed in PRs
 
-## If golden diffs become noisy in PRs
+Golden files under `golden/` are generated render snapshots, not hand-authored
+source. The repository marks them as generated in `.gitattributes`:
 
-These files are generated, so a chart or values change can touch many of them at
-once and dominate a PR's diff. Two options, not mutually exclusive:
+```
+load-tests/setup/test/golden/** linguist-generated=true
+```
 
-- If the scenario only needs to verify one narrow area, add a `PathFilter`
-  (above) — the golden tree for that scenario shrinks to just the relevant
-  files, so there's less to commit and less to review in the first place.
-- For diffs across many files that are all genuinely relevant, mark the golden
-  tree as generated so GitHub collapses it in diffs (and excludes it from
-  language stats) via a `.gitattributes` entry, e.g.:
+GitHub therefore collapses these files in PR diffs by default and excludes them
+from language statistics. This keeps reviews focused on the chart, value, or
+Makefile change that produced the snapshot update while still allowing
+reviewers to expand the generated files when they need to inspect the rendered
+manifest changes.
 
-  ```
-  load-tests/setup/test/golden/** linguist-generated=true
-  ```
-
-  See GitHub's [customizing how changed files appear](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github)
-  and [Managing generated files in GitHub](https://medium.com/@clarkbw/managing-generated-files-in-github-1f1989c09dfd).
-  We have not applied this yet — the diffs are reviewed normally for now.
+`PathFilter` is still useful when a scenario genuinely needs to verify only one
+narrow area: it reduces the committed snapshot tree and the test comparison
+scope. Do not add a `PathFilter` only to hide noisy diffs; the generated-file
+attribute already handles that.

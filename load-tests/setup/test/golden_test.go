@@ -3,7 +3,9 @@ package golden
 
 import (
 	"flag"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -274,4 +276,61 @@ func TestNormalize(t *testing.T) {
 
 	// Idempotent.
 	require.Equal(t, got, normalize(got))
+}
+
+func TestShouldCollectAllManifestsWithoutPathFilter(t *testing.T) {
+	// given
+	root := t.TempDir()
+	writeTestManifest(t, root, "Chart.yaml", "name: platform\n")
+	writeTestManifest(t, root, "templates/orchestration/deployment.yaml", "kind: Deployment\n")
+
+	// when
+	manifests := collectManifests(t, root, nil)
+
+	// then
+	require.Equal(t, []string{"Chart.yaml", "templates/orchestration/deployment.yaml"}, sortedKeys(manifests))
+}
+
+func TestShouldCollectOnlyPathFilterMatches(t *testing.T) {
+	// given
+	root := t.TempDir()
+	writeTestManifest(t, root, "templates/orchestration/deployment.yaml", "kind: Deployment\n")
+	writeTestManifest(t, root, "templates/identity/deployment.yaml", "kind: Deployment\n")
+
+	// when
+	manifests := collectManifests(t, root, []string{"templates/orchestration"})
+
+	// then
+	require.Equal(t, []string{"templates/orchestration/deployment.yaml"}, sortedKeys(manifests))
+}
+
+func TestShouldReturnNoManifestsWhenPathFilterMatchesNothing(t *testing.T) {
+	// given
+	root := t.TempDir()
+	writeTestManifest(t, root, "templates/orchestration/deployment.yaml", "kind: Deployment\n")
+
+	// when
+	manifests := collectManifests(t, root, []string{"templates/missing"})
+
+	// then
+	require.Empty(t, manifests)
+}
+
+func TestShouldMatchPathFilterByExactFileOrDirectoryPrefix(t *testing.T) {
+	// given
+	filter := []string{"Chart.yaml", "templates/orchestration"}
+
+	// when / then
+	require.True(t, matchesPathFilter("Chart.yaml", filter))
+	require.True(t, matchesPathFilter("templates/orchestration/deployment.yaml", filter))
+	require.False(t, matchesPathFilter("templates/orchestration-extra/deployment.yaml", filter))
+	require.False(t, matchesPathFilter("templates/identity/deployment.yaml", filter))
+}
+
+func writeTestManifest(t *testing.T, root, rel, content string) {
+	t.Helper()
+
+	path := filepath.Join(root, filepath.FromSlash(rel))
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+	require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
 }
