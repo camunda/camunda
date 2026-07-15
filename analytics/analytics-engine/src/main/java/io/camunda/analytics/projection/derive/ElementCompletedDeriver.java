@@ -83,8 +83,8 @@ public final class ElementCompletedDeriver implements FactDeriver {
             // scope), at most once across all cube-meters.
             .variables(() -> state.variables(elementInstanceKey, variableNames));
     if (isProcess) {
-      fact.field("processInstanceKey", value.getProcessInstanceKey())
-          .field("completedNormally", transition == Transition.COMPLETED);
+      // processInstanceKey is stamped uniformly by ElementFacts.base — never duplicated here.
+      fact.field("completedNormally", transition == Transition.COMPLETED);
     } else {
       fact.field("elementId", Utf8View.copyOf(value.getElementIdBuffer()))
           .field("elementType", value.getBpmnElementType().name());
