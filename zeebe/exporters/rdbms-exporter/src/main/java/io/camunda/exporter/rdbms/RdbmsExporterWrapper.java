@@ -39,6 +39,7 @@ import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
+import io.camunda.exporter.rdbms.handlers.ProcessInstanceBusinessIdExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.ResourceExportHandler;
@@ -251,6 +252,9 @@ public class RdbmsExporterWrapper implements Exporter {
             historyCleanupService,
             cacheRegistry.processCache(),
             rdbmsWriters.getErrorMessageSize()));
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE_BUSINESS_ID,
+        new ProcessInstanceBusinessIdExportHandler(rdbmsWriters.getProcessInstanceWriter()));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new FlowNodeExportHandler(

@@ -476,6 +476,13 @@
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
+  <update id="updateBusinessId"
+    parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$UpdateBusinessIdDto">
+    UPDATE ${prefix}PROCESS_INSTANCE
+    SET BUSINESS_ID = #{businessId}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
   <update id="incrementIncidentCount" parameterType="java.lang.Long">
     UPDATE ${prefix}PROCESS_INSTANCE
     SET NUM_INCIDENTS = NUM_INCIDENTS + 1

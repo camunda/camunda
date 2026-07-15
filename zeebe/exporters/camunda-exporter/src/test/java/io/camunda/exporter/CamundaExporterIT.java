@@ -40,6 +40,7 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -51,9 +52,16 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceBusinessIdRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.ObjectSizeEstimator;
@@ -335,6 +343,93 @@ final class CamundaExporterIT {
                   exportHandler.getClass().getSimpleName(), exportHandler.getHandledValueType())
               .isEqualTo(expectedEntity);
         });
+  }
+
+  @TestTemplate
+  void shouldUpdateBusinessIdOnLateAssignment(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given - a running process instance already exported into the list view
+    config.getConnect().setIndexPrefix(testPrefix);
+    config.getIndex().setNumberOfReplicas(0);
+    createSchemas(config);
+
+    final long processInstanceKey = 4503599627370497L;
+    final Record<ProcessInstanceRecordValue> activatingRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withBrokerVersion("8.8.0")
+                    .withPosition(1L)
+                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withTimestamp(System.currentTimeMillis())
+                    .withValue(
+                        ImmutableProcessInstanceRecordValue.builder()
+                            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withBpmnElementType(BpmnElementType.PROCESS)
+                            .withParentProcessInstanceKey(-1L)
+                            .withElementInstancePath(List.of())
+                            .withBusinessId("")
+                            .build()));
+
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    camundaExporter.configure(
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config)));
+    camundaExporter.open(new ExporterTestController());
+    camundaExporter.export(activatingRecord);
+
+    final var resourceProvider = new DefaultExporterResourceProvider();
+    resourceProvider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new ExporterTestContext(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+    final var listViewIndex =
+        resourceProvider.getExportHandlers().stream()
+            .filter(h -> h.getHandledValueType() == ValueType.PROCESS_INSTANCE_BUSINESS_ID)
+            .findFirst()
+            .orElseThrow()
+            .getIndexName();
+    final var documentId = String.valueOf(processInstanceKey);
+
+    final ProcessInstanceForListViewEntity before =
+        clientAdapter.get(documentId, listViewIndex, ProcessInstanceForListViewEntity.class);
+    assertThat(before).isNotNull();
+    assertThat(before.getBusinessId()).isNull();
+
+    // when - a business id is assigned late to that running instance
+    final Record<ProcessInstanceBusinessIdRecordValue> assignedRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE_BUSINESS_ID,
+            r ->
+                r.withBrokerVersion("8.8.0")
+                    .withPosition(2L)
+                    .withIntent(ProcessInstanceBusinessIdIntent.ASSIGNED)
+                    .withTimestamp(System.currentTimeMillis())
+                    .withValue(
+                        ImmutableProcessInstanceBusinessIdRecordValue.builder()
+                            .from(
+                                factory.generateObject(ProcessInstanceBusinessIdRecordValue.class))
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withBusinessId("late-business-id")
+                            .build()));
+    camundaExporter.export(assignedRecord);
+
+    // then - only the business id of the existing document changed, nothing else
+    final ProcessInstanceForListViewEntity after =
+        clientAdapter.get(documentId, listViewIndex, ProcessInstanceForListViewEntity.class);
+    assertThat(after).isNotNull();
+    assertThat(after.getBusinessId()).isEqualTo("late-business-id");
+    assertThat(after.getState()).isEqualTo(before.getState());
+    assertThat(after.getBpmnProcessId()).isEqualTo(before.getBpmnProcessId());
+    assertThat(after.getProcessDefinitionKey()).isEqualTo(before.getProcessDefinitionKey());
+    assertThat(after.getPosition()).isEqualTo(before.getPosition());
+    assertThat(after.getPartitionId()).isEqualTo(before.getPartitionId());
+    assertThat(after.getTenantId()).isEqualTo(before.getTenantId());
+    assertThat(after.getProcessInstanceKey()).isEqualTo(before.getProcessInstanceKey());
   }
 
   @TestTemplate

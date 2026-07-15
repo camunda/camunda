@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceTagsDto;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateBusinessIdDto;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper.UpdateHistoryCleanupDateDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
@@ -78,6 +79,20 @@ public class ProcessInstanceWriter implements RdbmsWriter {
               key,
               "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
               dto));
+    }
+  }
+
+  public void updateBusinessId(final long key, final String businessId) {
+    final boolean wasMerged = mergeToQueue(key, b -> b.businessId(businessId));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              WriteStatementType.UPDATE,
+              key,
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateBusinessId",
+              new UpdateBusinessIdDto(key, businessId)));
     }
   }
 
