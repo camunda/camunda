@@ -629,6 +629,28 @@ public class DashboardRepository {
     return out;
   }
 
+  /**
+   * Incidents raised per window for a process (summed across its flow nodes) — the quality page's
+   * incident trend, read from the consolidated incidents cube's CREATED-filtered count.
+   */
+  public List<IncidentTrendPoint> incidentTrend(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final List<IncidentTrendPoint> out = new ArrayList<>();
+    for (final ReportRow row :
+        series(
+            "incidents",
+            List.of(),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("count"),
+            newMemo())) {
+      out.add(new IncidentTrendPoint(row.windowStart(), measureAsLong(row, "count")));
+    }
+    out.sort(Comparator.comparingLong(IncidentTrendPoint::windowStart));
+    return out;
+  }
+
   /** Per-start-cohort SLA breakdown, derived from the SLA-compliance ratio series. */
   public List<SlaCohortPoint> slaCohorts(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {

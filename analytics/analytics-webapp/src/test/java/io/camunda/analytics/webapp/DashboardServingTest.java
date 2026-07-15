@@ -28,6 +28,8 @@ import io.camunda.analytics.webapp.dashboard.DistinctPoint;
 import io.camunda.analytics.webapp.dashboard.DurationBucketPoint;
 import io.camunda.analytics.webapp.dashboard.DurationPercentilePoint;
 import io.camunda.analytics.webapp.dashboard.DurationSpreadPoint;
+import io.camunda.analytics.webapp.dashboard.IncidentFlowNode;
+import io.camunda.analytics.webapp.dashboard.IncidentTrendPoint;
 import io.camunda.analytics.webapp.dashboard.LifecycleSeriesPoint;
 import io.camunda.analytics.webapp.dashboard.OpenInstanceRow;
 import io.camunda.analytics.webapp.dashboard.RatioPoint;
@@ -282,6 +284,48 @@ final class DashboardServingTest {
               assertThat(hotspot.instances()).isEqualTo(2L);
               assertThat(hotspot.rework()).isEqualTo(1L);
             });
+  }
+
+  @Test
+  void shouldServeRaisedAndOpenIncidentsFromTheConsolidatedCube() {
+    // given three incidents raised on a flow node, two of them resolved (the fact stream carries
+    // CREATED +1 and RESOLVED −1 facts through the same consolidated cube)
+    final List<Fact> facts =
+        List.of(
+            incident(Transition.CREATED, 1L),
+            incident(Transition.CREATED, 1L),
+            incident(Transition.CREATED, 1L),
+            incident(Transition.RESOLVED, -1L),
+            incident(Transition.RESOLVED, -1L));
+    final long window =
+        ServingTestSupport.seed(fixture, "incidents", "count", facts, PROCESS, "Task_Validate");
+
+    // when the incident widgets read
+    final List<IncidentFlowNode> incidents = repository.incidents(PROCESS, null, null);
+    final long openNow = repository.openIncidents(PROCESS);
+    final List<IncidentTrendPoint> trend = repository.incidentTrend(PROCESS, null, null);
+
+    // then raised counts the CREATED facts only (not the resolutions) and open is the net level
+    assertThat(incidents)
+        .singleElement()
+        .satisfies(
+            node -> {
+              assertThat(node.elementId()).isEqualTo("Task_Validate");
+              assertThat(node.raised()).isEqualTo(3L);
+              assertThat(node.open()).isEqualTo(1L);
+            });
+    assertThat(openNow).isEqualTo(1L);
+    assertThat(trend)
+        .singleElement()
+        .satisfies(
+            point -> {
+              assertThat(point.windowStart()).isEqualTo(window);
+              assertThat(point.raised()).isEqualTo(3L);
+            });
+  }
+
+  private static Fact incident(final Transition transition, final long delta) {
+    return Fact.builder(FactType.INCIDENT).transition(transition).field("delta", delta).build();
   }
 
   @Test

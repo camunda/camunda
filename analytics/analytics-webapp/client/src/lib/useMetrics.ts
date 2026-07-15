@@ -9,12 +9,12 @@ import { useEffect, useState } from "react";
 import {
   api,
   type ActiveInstancesPoint,
-  type DistinctPoint,
   type DurationBucketPoint,
   type DurationSpreadPoint,
   type DurationPoint,
   type ElementDuration,
   type IncidentFlowNode,
+  type IncidentTrendPoint,
   type LifecycleSeriesPoint,
   type NoIncidentCohortPoint,
   type OpenInstanceRow,
@@ -22,7 +22,6 @@ import {
   type ReworkHotspot,
   type SlaCohortPoint,
   type TimeRange,
-  type TopProcess,
 } from "./api";
 
 /** All pre-aggregated metrics for one (process, tenant, range) — fetched once, shared by pages. */
@@ -34,17 +33,17 @@ export interface MetricsData {
   durationBuckets: DurationBucketPoint[];
   noIncident: RatioPoint[];
   noIncidentCohorts: NoIncidentCohortPoint[];
-  distinct: DistinctPoint[];
-  top: TopProcess[];
   elements: ElementDuration[];
   incidents: IncidentFlowNode[];
+  /** Incidents raised per window (the quality page's trend beside the per-node table). */
+  incidentTrend: IncidentTrendPoint[];
   openIncidents: number;
   activeNow: number;
   activated: number;
   ended: number;
   activeSeries: ActiveInstancesPoint[];
   durationSpread: DurationSpreadPoint[];
-  /** The first-time-right (STP) ratio series — the process-stp cube's single matched-form meter. */
+  /** The first-time-right (STP) ratio series — the process-quality cube's matched-form meter. */
   stp: RatioPoint[];
   lifecycleSeries: LifecycleSeriesPoint[];
   rework: ReworkHotspot[];
@@ -74,10 +73,9 @@ export function useMetrics(
       api.slaCohorts(process, range),
       api.durationBuckets(process, range),
       api.ratios(process, "no_incident", range),
-      api.distinct(tenant, range),
-      api.topProcesses(tenant, range),
       api.elementDurations(process, range),
       api.incidents(process, range),
+      api.incidentTrend(process, range),
       api.openIncidents(process),
       api.activeInstances(process, tenant),
       api.activatedInstances(process, range),
@@ -98,10 +96,9 @@ export function useMetrics(
           slaCohorts,
           durationBuckets,
           noIncident,
-          distinct,
-          top,
           elements,
           incidents,
+          incidentTrend,
           openIncidents,
           activeNow,
           activated,
@@ -123,10 +120,9 @@ export function useMetrics(
               durationBuckets,
               noIncident,
               noIncidentCohorts,
-              distinct,
-              top,
               elements,
               incidents,
+              incidentTrend,
               openIncidents,
               activeNow,
               activated,

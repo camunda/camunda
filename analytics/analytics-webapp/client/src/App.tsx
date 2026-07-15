@@ -16,18 +16,22 @@ import {
 import { Dashboard } from "./components/Dashboard";
 import { RangePicker } from "./components/RangePicker";
 import { DatasetsPage } from "./pages/DatasetsPage";
-import { KpiPage } from "./pages/KpiPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { PerformancePage } from "./pages/PerformancePage";
+import { QualityPage } from "./pages/QualityPage";
 import { ReportsPage } from "./pages/ReportsPage";
 import { api, type TimeRange } from "./lib/api";
 
-/** Primary surface: the report builder plus the instant-preview dashboards. */
+/**
+ * Primary surface: the report builder plus the three focused dashboards — Overview ("what's
+ * happening now"), Performance ("how fast and how predictable") and Quality ("how well") — with
+ * the exhaustive single-request render kept under "All metrics".
+ */
 const PRIMARY_PAGES = [
   { hash: "reports", label: "Reports" },
   { hash: "overview", label: "Overview" },
-  { hash: "kpis", label: "KPIs" },
   { hash: "performance", label: "Performance" },
+  { hash: "quality", label: "Quality" },
   { hash: "all", label: "All metrics" },
 ] as const;
 
@@ -175,10 +179,10 @@ export default function App() {
             No analytics data yet. Run the pipeline (or start with <code>-Danalytics.seed=true</code>) and
             reload.
           </p>
-        ) : route === "kpis" ? (
-          <KpiPage process={process} tenant={tenant || "<default>"} range={range} />
         ) : route === "performance" ? (
           <PerformancePage process={process} tenant={tenant || "<default>"} range={range} />
+        ) : route === "quality" ? (
+          <QualityPage process={process} tenant={tenant || "<default>"} range={range} />
         ) : route === "all" ? (
           <Dashboard process={process} tenant={tenant || "<default>"} range={range} />
         ) : (

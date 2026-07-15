@@ -9,16 +9,17 @@ import type { TimeRange } from "../lib/api";
 import { chartColor } from "../lib/chartColors";
 import { formatCount } from "../lib/format";
 import { useMetrics } from "../lib/useMetrics";
-import { CountTrend } from "../components/CountTrend";
+import { ActiveInstancesTrend } from "../components/ActiveInstancesTrend";
+import { FlowBalanceTrend } from "../components/FlowBalanceTrend";
 import { IncidentHeatmap } from "../components/IncidentHeatmap";
 import { OpenInstancesTable } from "../components/OpenInstancesTable";
-import { ProcessHeatmap } from "../components/ProcessHeatmap";
 import { StatTile } from "../components/StatTile";
 
 /**
- * Optimize's process-overview instant-preview dashboard (template 1): operational monitoring —
- * in-progress and open-incident counts, throughput over time, the flow-node frequency/duration
- * heatmap (running load + bottlenecks) and open incidents by flow node.
+ * Overview — "what's happening now": the operational load at a glance. Current WIP and open
+ * incidents, arrivals vs departures (flow balance), the running-instances trend, the oldest open
+ * instances (aging WIP) and where incidents are currently open on the diagram. Speed and quality
+ * live on the Performance and Quality pages.
  */
 export function OverviewPage({
   process,
@@ -36,10 +37,6 @@ export function OverviewPage({
   if (!data) {
     return <p className="text-neutral-foreground-muted">Loading…</p>;
   }
-  const endedOverTime = data.duration.map((d) => ({
-    windowStart: d.windowStart,
-    value: d.observationCount,
-  }));
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -59,17 +56,12 @@ export function OverviewPage({
         />
       </div>
 
-      <CountTrend
-        title="Instances completed over time"
-        description="Completed instances per window (terminated instances count toward Ended only)"
-        points={endedOverTime}
-        color={chartColor(0)}
-        seriesName="Completed"
-      />
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <FlowBalanceTrend lifecycle={data.lifecycleSeries} active={data.activeSeries} />
+        <ActiveInstancesTrend points={data.activeSeries} />
+      </div>
 
       <OpenInstancesTable rows={data.openInstances} />
-
-      <ProcessHeatmap process={process} elements={data.elements} />
 
       <IncidentHeatmap process={process} incidents={data.incidents} />
     </div>

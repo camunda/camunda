@@ -220,6 +220,15 @@ public class DashboardController {
     return repository.incidents(bpmnProcessId, from, to);
   }
 
+  /** Incidents raised per window for a process (the quality page's incident trend). */
+  @GetMapping("/incident-trend")
+  public List<IncidentTrendPoint> incidentTrend(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.incidentTrend(bpmnProcessId, from, to);
+  }
+
   /** Currently-open incident count for a process (range-independent gauge). */
   @GetMapping("/open-incidents")
   public long openIncidents(@RequestParam("process") final String bpmnProcessId) {
