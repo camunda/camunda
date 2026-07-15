@@ -104,10 +104,10 @@ class ProcessInstanceSuspendResumeAuditLogTransformerTest {
                     .withIntent(ProcessInstanceIntent.SUSPEND)
                     .withValue(recordValue));
 
-    // when
-    final var log = transformer.create(record);
+    // when / then
+    assertThat(transformer.supports(record)).isTrue();
 
-    // then
+    final var log = transformer.create(record);
     assertThat(log.getOperationType()).isEqualTo(AuditLogOperationType.SUSPEND);
     assertThat(log.getResult())
         .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
