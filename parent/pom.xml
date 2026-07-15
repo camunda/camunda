@@ -2873,6 +2873,7 @@
                   <dep>com.microsoft.sqlserver:mssql-jdbc</dep>
                   <dep>com.oracle.database.jdbc:ojdbc8</dep>
                   <dep>software.amazon.jdbc:aws-advanced-jdbc-wrapper</dep>
+                  <dep>software.amazon.awssdk:rds</dep>
                   <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>
                   <dep>org.springframework:spring-webflux</dep>
