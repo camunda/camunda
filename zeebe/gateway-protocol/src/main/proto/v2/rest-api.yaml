@@ -46,6 +46,7 @@ tags:
   - name: Audit Log
   - name: Authentication
   - name: Authorization
+  - name: Backup
   - name: Batch operation
   - name: Clock
   - name: Cluster
@@ -112,6 +113,16 @@ paths:
     $ref: 'authorizations.yaml#/paths/~1authorizations~1search'
   /authorizations/{authorizationKey}:
     $ref: 'authorizations.yaml#/paths/~1authorizations~1{authorizationKey}'
+
+  # Backup endpoints
+  /backups/runtime:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime'
+  /backups/runtime/state:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime~1state'
+  /backups/runtime/state/sync:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime~1state~1sync'
+  /backups/runtime/{backupId}:
+    $ref: 'backups.yaml#/paths/~1backups~1runtime~1{backupId}'
 
   # Batch operation endpoints
   /batch-operation-items/search:
