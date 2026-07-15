@@ -59,12 +59,15 @@ async function pickDateTimeRange({
 	await expect.element(screen.getByTestId('date-range-modal')).toHaveClass(/is-visible/);
 	const monthName = document.querySelector('.cur-month')?.textContent;
 	const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;
+	if (!monthName || !year) {
+		throw new Error('Could not read month/year from the flatpickr calendar header');
+	}
 	const month = new Date(`${monthName} 01, ${year}`).getMonth() + 1;
 
 	await screen.getByLabelText('From date').click();
-	clickCalendarDay(monthName ?? '', fromDay, year ?? '');
+	clickCalendarDay(monthName, fromDay, year);
 	await screen.getByLabelText('To date').click();
-	clickCalendarDay(monthName ?? '', toDay, year ?? '');
+	clickCalendarDay(monthName, toDay, year);
 
 	if (fromTime !== undefined) {
 		await screen.getByTestId('fromTime').fill(fromTime);

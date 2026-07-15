@@ -13,7 +13,10 @@ import {MockDateRangeField} from './mocks';
 import {getWrapper} from './getWrapper';
 
 describe('<DateRangeField />', () => {
-	afterEach(cleanup);
+	afterEach(() => {
+		vi.useRealTimers();
+		cleanup();
+	});
 
 	it('should close modal on cancel click', async () => {
 		const screen = await render(<MockDateRangeField />, {wrapper: getWrapper()});
@@ -175,8 +178,5 @@ describe('<DateRangeField />', () => {
 		await expect.element(screen.getByText(TIME_ERROR)).toBeVisible();
 		await expect.element(screen.getByTestId('fromTime')).toBeInvalid();
 		await expect.element(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
-
-		vi.clearAllTimers();
-		vi.useRealTimers();
 	});
 });
