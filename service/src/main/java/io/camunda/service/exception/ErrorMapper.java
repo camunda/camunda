@@ -21,6 +21,7 @@ import io.camunda.document.api.DocumentError.OperationNotSupported;
 import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.service.admin.IncompleteTopologyException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
@@ -186,6 +187,12 @@ public class ErrorMapper {
             "Expected to handle request, but the gateway does not know any partitions yet";
         LOGGER.trace(message, rootError);
         yield new ServiceError(message, UNAVAILABLE);
+      }
+      case final IncompleteTopologyException e -> {
+        LOGGER.debug(
+            "Expected to handle request, but the gateway does not have a complete view of the cluster topology",
+            rootError);
+        yield new ServiceError(e.getMessage(), UNAVAILABLE);
       }
       case final ConnectTimeoutException ignored -> {
         final var message =
