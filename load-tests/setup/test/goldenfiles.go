@@ -69,15 +69,36 @@ func collectManifests(t *testing.T, root string) map[string]string {
 	return manifests
 }
 
+// filterManifests keeps only entries whose relative path equals one of
+// prefixes, or sits under one of them as a directory. Returns manifests
+// unchanged if prefixes is empty.
+func filterManifests(manifests map[string]string, prefixes []string) map[string]string {
+	if len(prefixes) == 0 {
+		return manifests
+	}
+	filtered := make(map[string]string, len(manifests))
+	for rel, content := range manifests {
+		for _, prefix := range prefixes {
+			if rel == prefix || strings.HasPrefix(rel, prefix+"/") {
+				filtered[rel] = content
+				break
+			}
+		}
+	}
+	return filtered
+}
+
 // assertGoldenDir compares the rendered manifest tree at srcDir against the
 // committed golden directory at golden/<version>/<scenario>/<chartName>/, file
 // for file. When update is true the directory is rewritten from the rendered
-// tree instead of compared.
-func assertGoldenDir(t *testing.T, version, scenario, chartName, srcDir string, update bool) {
+// tree instead of compared. pathFilter, when non-empty, narrows both the
+// rendered and (implicitly, since it's all that's ever written) committed
+// sets to paths under those prefixes — see scenario.PathFilter.
+func assertGoldenDir(t *testing.T, version, scenario, chartName, srcDir string, update bool, pathFilter []string) {
 	t.Helper()
 
 	dir := filepath.Join(goldenDir, version, scenario, chartName)
-	rendered := collectManifests(t, srcDir)
+	rendered := filterManifests(collectManifests(t, srcDir), pathFilter)
 
 	if update {
 		require.NoError(t, os.RemoveAll(dir))
@@ -88,6 +109,14 @@ func assertGoldenDir(t *testing.T, version, scenario, chartName, srcDir string, 
 				"failed to write golden file %s", dst)
 		}
 		t.Logf("updated %d golden manifest(s) in %s", len(rendered), dir)
+		return
+	}
+
+	if _, err := os.Stat(dir); os.IsNotExist(err) && len(pathFilter) > 0 && len(rendered) == 0 {
+		// A pathFilter can legitimately match nothing for a given chart (e.g. a
+		// filter scoped to the platform chart's templates has no matches when
+		// rendering load-test-setup). No golden dir was ever committed for this
+		// chart under this filter, and nothing rendered either — consistent.
 		return
 	}
 

@@ -73,17 +73,47 @@ active; the stable entries are commented out. To enable one:
 2. `make update-golden` (or scope it: `go test -update-golden -run 'TestGoldenFiles/stable-89' ./...`).
 3. Commit the generated golden files. No other code change is needed.
 
+## Narrowing a scenario to a subset of files (`PathFilter`)
+
+Some scenarios exist only to verify one narrow area — e.g. a scenario added
+specifically to catch a regression in one template. Committing (and diffing)
+the full rendered tree for those isn't worth the review noise when only a
+handful of files are actually relevant.
+
+Set `PathFilter` on a `scenario` in `golden_test.go` to a list of path
+prefixes, relative to each chart's own output tree:
+
+```go
+{Name: "elasticsearch-no-optimize", Storage: "elasticsearch", Optimize: false,
+	PathFilter: []string{"templates/orchestration"}},
+```
+
+Only rendered manifests under those prefixes are compared or committed for
+that scenario — everything else is silently skipped, for every chart the
+scenario renders. Leave `PathFilter` unset (the default) to keep comparing
+every rendered file, exactly like today.
+
+A scenario's `PathFilter` can legitimately match nothing for one of the charts
+it renders (e.g. a filter scoped to `platform`'s templates has no matches
+when rendering `load-test-setup`) — that chart's golden subdirectory is then
+simply absent, and the test does not fail on it.
+
 ## If golden diffs become noisy in PRs
 
 These files are generated, so a chart or values change can touch many of them at
-once and dominate a PR's diff. If that becomes a review burden, mark the golden
-tree as generated so GitHub collapses it in diffs (and excludes it from language
-stats) via a `.gitattributes` entry, e.g.:
+once and dominate a PR's diff. Two options, not mutually exclusive:
 
-```
-load-tests/setup/test/golden/** linguist-generated=true
-```
+- If the scenario only needs to verify one narrow area, add a `PathFilter`
+  (above) — the golden tree for that scenario shrinks to just the relevant
+  files, so there's less to commit and less to review in the first place.
+- For diffs across many files that are all genuinely relevant, mark the golden
+  tree as generated so GitHub collapses it in diffs (and excludes it from
+  language stats) via a `.gitattributes` entry, e.g.:
 
-See GitHub's [customizing how changed files appear](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github)
-and [Managing generated files in GitHub](https://medium.com/@clarkbw/managing-generated-files-in-github-1f1989c09dfd).
-We have not applied this yet — the diffs are reviewed normally for now.
+  ```
+  load-tests/setup/test/golden/** linguist-generated=true
+  ```
+
+  See GitHub's [customizing how changed files appear](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github)
+  and [Managing generated files in GitHub](https://medium.com/@clarkbw/managing-generated-files-in-github-1f1989c09dfd).
+  We have not applied this yet — the diffs are reviewed normally for now.

@@ -30,6 +30,17 @@ var update = flag.Bool("update-golden", false,
 //
 // PhysicalTenants, when true, passes physical_tenants=true to the platform
 // template target. Only supported for rdbms secondary_storage (main version only).
+//
+// PathFilter, when set, restricts golden comparison (and, under
+// -update-golden, what gets committed) to rendered manifest paths with one of
+// these prefixes, relative to each chart's own output tree — e.g.
+// "templates/orchestration" keeps templates/orchestration/statefulset.yaml
+// but drops everything else. Use this for scenarios whose purpose is
+// verifying one narrow area (a specific bugfix's blast radius): committing
+// and diffing the full rendered tree for every combination isn't worth the
+// review noise when only a handful of files are actually relevant. Leave
+// empty (the default) to keep comparing every rendered file, unchanged from
+// today's behavior.
 type scenario struct {
 	Name            string
 	Storage         string // elasticsearch | opensearch | postgresql | none
@@ -38,6 +49,7 @@ type scenario struct {
 	Workload        string // "" = default profile; e.g. "max", "realistic"
 	SetupTarget     string // named make target for template-load-test-setup variants
 	PhysicalTenants bool
+	PathFilter      []string
 }
 
 // versionedScenario defines a scenario with a specific version
@@ -150,7 +162,7 @@ func TestGoldenFiles(t *testing.T) {
 			defer ns.Cleanup()
 
 			if s.Workload != "" {
-				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload)
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", s.Workload, s.PathFilter)
 				return
 			}
 
@@ -158,7 +170,7 @@ func TestGoldenFiles(t *testing.T) {
 			// via their dedicated Makefile target. They render only that
 			// chart to avoid duplicating the full platform/load-tester matrix.
 			if s.SetupTarget != "" {
-				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, s.SetupTarget, "")
+				renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, s.SetupTarget, "", s.PathFilter)
 				return
 			}
 
@@ -174,8 +186,8 @@ func TestGoldenFiles(t *testing.T) {
 				extraVars = append(extraVars, "physical_tenants=true")
 			}
 
-			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "", extraVars...)
-			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "", extraVars...)
+			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "", s.PathFilter, extraVars...)
+			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "", s.PathFilter, extraVars...)
 		})
 	}
 }
@@ -227,12 +239,14 @@ func TestInstallLoadTestSetupKeepsMakefileFlagsWhenAdditionalConfigurationIsProv
 
 // renderAndAssert renders a chart via the scaffolded Makefile's make target and
 // compares (or writes) the resulting manifest tree against the golden directory.
-// extraVars are additional make variable assignments forwarded to Render.
-func renderAndAssert(t *testing.T, version, scenario, chartName string, ns *ScaffoldedNamespace, makeTarget, workload string, extraVars ...string) {
+// pathFilter, when non-empty, restricts the comparison to that subset of
+// rendered paths (see scenario.PathFilter). extraVars are additional make
+// variable assignments forwarded to Render.
+func renderAndAssert(t *testing.T, version, scenario, chartName string, ns *ScaffoldedNamespace, makeTarget, workload string, pathFilter []string, extraVars ...string) {
 	t.Helper()
 
 	srcDir := ns.Render(t, makeTarget, workload, extraVars...)
-	assertGoldenDir(t, version, scenario, chartName, srcDir, *update)
+	assertGoldenDir(t, version, scenario, chartName, srcDir, *update, pathFilter)
 }
 
 // TestNormalize verifies that the normalize function strips expected fields
