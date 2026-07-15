@@ -27,6 +27,8 @@ import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
@@ -459,6 +461,16 @@ public final class EndpointManager {
         request,
         RequestMapper::toMigrateProcessInstanceRequest,
         ResponseMapper::toMigrateProcessInstanceResponse,
+        responseObserver);
+  }
+
+  public void assignProcessInstanceBusinessId(
+      final AssignProcessInstanceBusinessIdRequest request,
+      final ServerStreamObserver<AssignProcessInstanceBusinessIdResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toAssignProcessInstanceBusinessIdRequest,
+        ResponseMapper::toAssignProcessInstanceBusinessIdResponse,
         responseObserver);
   }
 
