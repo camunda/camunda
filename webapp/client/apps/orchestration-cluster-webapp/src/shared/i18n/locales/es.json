@@ -491,7 +491,9 @@
 				"validators": {
 					"ids": "La clave debe ser un número de 16 a 19 dígitos, separado por un espacio o una coma",
 					"parentInstanceId": "La clave debe ser un número de 16 a 19 dígitos",
-					"batchOperationKey": "La clave debe ser un número de 16 a 19 dígitos o un UUID"
+					"batchOperationKey": "La clave debe ser un número de 16 a 19 dígitos o un UUID",
+					"time": "La hora debe tener el formato hh:mm:ss",
+					"timeRange": "La hora \"desde\" es posterior a la hora \"hasta\""
 				},
 				"tenantField": {
 					"selectTenant": "Seleccionar un Arrendatario",

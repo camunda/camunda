@@ -17,12 +17,17 @@ import {
 	validateParentInstanceIdNotTooLong,
 	validateBatchOperationKeyCharacters,
 	validateBatchOperationKeyComplete,
+	validateTimeComplete,
+	validateTimeRange,
+	validateTimeCharacters,
 } from './validators';
 
 const ERRORS = {
 	ids: i18n.t('operate.shared.validators.ids'),
 	parentInstanceId: i18n.t('operate.shared.validators.parentInstanceId'),
 	batchOperationKey: i18n.t('operate.shared.validators.batchOperationKey'),
+	time: i18n.t('operate.shared.validators.time'),
+	timeRange: i18n.t('operate.shared.validators.timeRange'),
 };
 
 describe('validators', () => {
@@ -126,5 +131,106 @@ describe('validators', () => {
 		expect(validateBatchOperationKeyComplete('1f4d40c3-7cce-4e51-8abe-0cda8d42f04f', {})).toBeUndefined();
 
 		expect(setTimeoutSpy).toHaveBeenCalledTimes(5);
+	});
+
+	it('should validate time with delay', async () => {
+		vi.runAllTimersAsync();
+		const validate = validateTimeComplete('99:99:99', {});
+		vi.runOnlyPendingTimers();
+		await expect(validate).resolves.toBe(ERRORS.time);
+	});
+
+	it('should pass validating time', () => {
+		expect(validateTimeComplete('17:30', {})).toBeUndefined();
+		expect(validateTimeComplete('12:34:56', {})).toBeUndefined();
+	});
+
+	it('should validate invalid characters without delay', () => {
+		expect(validateTimeCharacters('a')).toBe(ERRORS.time);
+		expect(validateTimeCharacters(' ')).toBe(ERRORS.time);
+		expect(validateTimeCharacters('xx:xx:xx')).toBe(ERRORS.time);
+		expect(validateTimeCharacters('--')).toBe(ERRORS.time);
+
+		expect(validateTimeCharacters(':')).toBeUndefined();
+		expect(validateTimeCharacters('')).toBeUndefined();
+	});
+});
+
+describe('validateTimeRange', () => {
+	const mockMeta = {
+		blur: vi.fn(),
+		change: vi.fn(),
+		focus: vi.fn(),
+	};
+	const FROM_TIME_META = {...mockMeta, name: 'fromTime'};
+	const TO_TIME_META = {...mockMeta, name: 'toTime'};
+
+	beforeEach(() => {
+		vi.useFakeTimers({shouldAdvanceTime: true});
+	});
+	afterEach(() => {
+		vi.clearAllTimers();
+		vi.useRealTimers();
+	});
+
+	it('with one of the date/time fields undefined', () => {
+		expect(validateTimeRange('12:00:00', {fromTime: '12:00:00'}, FROM_TIME_META)).toBe(undefined);
+		expect(validateTimeRange('12:00:00', {fromTime: '12:00:00', toTime: '10:00:00'}, FROM_TIME_META)).toBe(undefined);
+		expect(
+			validateTimeRange('12:00:00', {fromTime: '12:00:00', toTime: '10:00:00', fromDate: '2023-03-29'}, FROM_TIME_META),
+		).toBe(undefined);
+	});
+
+	it('with different days and invalid time range', () => {
+		expect(
+			validateTimeRange(
+				'12:12:12',
+				{fromDate: '2023-03-27', toDate: '2023-03-28', fromTime: '12:12:12', toTime: '11:11:11'},
+				FROM_TIME_META,
+			),
+		).toBe(undefined);
+		expect(
+			validateTimeRange(
+				'11:11:11',
+				{fromDate: '2023-03-27', toDate: '2023-03-28', fromTime: '12:12:12', toTime: '11:11:11'},
+				TO_TIME_META,
+			),
+		).toBe(undefined);
+	});
+
+	it('with same day and invalid time range', async () => {
+		await expect(
+			validateTimeRange(
+				'12:12:12',
+				{fromDate: '2023-03-27', toDate: '2023-03-27', fromTime: '12:12:12', toTime: '11:11:11'},
+				FROM_TIME_META,
+			),
+		).resolves.toBe(ERRORS.timeRange);
+
+		await expect(
+			validateTimeRange(
+				'11:11:11',
+				{fromDate: '2023-03-27', toDate: '2023-03-27', fromTime: '12:12:12', toTime: '11:11:11'},
+				TO_TIME_META,
+			),
+		).resolves.toBe(' ');
+	});
+
+	it('with same day and valid time range', () => {
+		expect(
+			validateTimeRange(
+				'11:11:11',
+				{fromDate: '2023-03-27', toDate: '2023-03-27', fromTime: '11:11:11', toTime: '12:12:12'},
+				FROM_TIME_META,
+			),
+		).toBe(undefined);
+
+		expect(
+			validateTimeRange(
+				'12:12:12',
+				{fromDate: '2023-03-27', toDate: '2023-03-27', fromTime: '11:11:11', toTime: '12:12:12'},
+				TO_TIME_META,
+			),
+		).toBe(undefined);
 	});
 });
