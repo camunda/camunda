@@ -146,6 +146,7 @@ public final class RecoveryPartitionManager
     try {
       backupStore = BackupCfg.BackupStoreFactory.createStore(backupCfg);
     } catch (final Exception e) {
+      LOG.error("Failed to create backup store for partition group {}", partitionGroup, e);
       result.completeExceptionally(e);
       return;
     }
@@ -162,14 +163,6 @@ public final class RecoveryPartitionManager
     concurrencyControl.runOnCompletion(
         startAll,
         (ignored, startError) -> {
-          if (recoveryPartitions.isEmpty()) {
-            concurrencyControl.runOnCompletion(
-                closeBackupStore(),
-                (ignoredClose, ignoredCloseError) ->
-                    result.completeExceptionally(
-                        new IllegalStateException("No partitions recovered", startError)));
-            return;
-          }
           if (startError != null) {
             LOG.warn(
                 "Recovered {}/{} partitions for partition group {}",
@@ -184,7 +177,20 @@ public final class RecoveryPartitionManager
           concurrencyControl.runOnCompletion(
               deactivateFutures,
               (ignoredDeactivate, deactivateError) -> {
-                if (deactivateError != null) {
+                if (recoveryPartitions.isEmpty()) {
+                  if (deactivateError != null) {
+                    LOG.error(
+                        "Failed to deactivate local partitions for partition group {} after all"
+                            + " partitions failed to recover",
+                        partitionGroup,
+                        deactivateError);
+                  }
+                  concurrencyControl.runOnCompletion(
+                      closeBackupStore(),
+                      (ignoredClose, ignoredCloseError) ->
+                          result.completeExceptionally(
+                              new IllegalStateException("No partitions recovered", startError)));
+                } else if (deactivateError != null) {
                   result.completeExceptionally(deactivateError);
                 } else {
                   result.complete(null);

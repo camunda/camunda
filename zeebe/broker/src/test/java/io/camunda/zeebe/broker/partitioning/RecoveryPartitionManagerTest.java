@@ -204,15 +204,41 @@ final class RecoveryPartitionManagerTest {
             });
   }
 
-  /** Fails scheduling any actor belonging to {@code failingPartitionId}, delegating otherwise. */
+  @Test
+  void shouldDeactivateAllLocalPartitionsAndFailStartWhenAllPartitionsFail() {
+    // given: both partitions fail to schedule, so none recover
+    partitionManager =
+        buildManager(
+            new BrokerCfg(),
+            new FailingActorSchedulingService(actorScheduler, PARTITION_ID, PARTITION_ID_2));
+
+    // when
+    final var startFuture = partitionManager.start();
+
+    // then: start() fails since no partition recovered, but both partitions are still marked
+    // INACTIVE so nothing assumes they are serving traffic
+    assertThat(startFuture).failsWithin(Duration.ofSeconds(10));
+    await()
+        .untilAsserted(
+            () -> {
+              final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
+              assertThat(publishedInfos)
+                  .anySatisfy(
+                      info ->
+                          assertThat(info.getPartitionRoles())
+                              .containsEntry(PARTITION_ID, PartitionRole.INACTIVE)
+                              .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
+            });
+  }
+
   private static final class FailingActorSchedulingService implements ActorSchedulingService {
     private final ActorSchedulingService delegate;
-    private final int failingPartitionId;
+    private final Set<Integer> failingPartitionIds;
 
     private FailingActorSchedulingService(
-        final ActorSchedulingService delegate, final int failingPartitionId) {
+        final ActorSchedulingService delegate, final Integer... failingPartitionIds) {
       this.delegate = delegate;
-      this.failingPartitionId = failingPartitionId;
+      this.failingPartitionIds = Set.of(failingPartitionIds);
     }
 
     @Override
@@ -226,12 +252,12 @@ final class RecoveryPartitionManagerTest {
     }
 
     private boolean shouldFail(final Actor actor) {
-      return actor.getName().endsWith("-" + failingPartitionId);
+      return failingPartitionIds.stream().anyMatch(id -> actor.getName().endsWith("-" + id));
     }
 
     private ActorFuture<Void> failure() {
       return CompletableActorFuture.completedExceptionally(
-          new RuntimeException("Injected failure for partition " + failingPartitionId));
+          new RuntimeException("Injected failure for partition(s) " + failingPartitionIds));
     }
   }
 
