@@ -33,7 +33,6 @@ final class ExportingEndpointTest {
     // when
     when(service.pauseExporting()).thenThrow(new RuntimeException());
     when(service.resumeExporting()).thenThrow(new RuntimeException());
-    when(service.softPauseExporting()).thenThrow(new RuntimeException());
 
     // then
     assertThat(endpoint.post(operation, false))
@@ -53,8 +52,6 @@ final class ExportingEndpointTest {
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
     when(service.resumeExporting())
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
-    when(service.softPauseExporting())
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
 
     // then
     assertThat(endpoint.post(operation, false))
@@ -72,7 +69,6 @@ final class ExportingEndpointTest {
     // when
     when(service.pauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
     when(service.resumeExporting()).thenReturn(CompletableFuture.completedFuture(null));
-    when(service.softPauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
 
     // then
     assertThat(endpoint.post(operation, false))
