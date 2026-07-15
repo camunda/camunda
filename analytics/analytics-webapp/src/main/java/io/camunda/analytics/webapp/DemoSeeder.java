@@ -80,10 +80,9 @@ public class DemoSeeder implements CommandLineRunner {
     ensureSchemas();
     seedProcessInstances();
     seedProcessDuration();
-    seedProcessSla();
+    seedProcessQuality();
     seedElementCubes();
-    seedDistinct();
-    seedTopProcesses();
+    seedTenantOverview();
     writer.flush();
     LOG.info("Demo analytics data seeded");
   }
@@ -133,7 +132,7 @@ public class DemoSeeder implements CommandLineRunner {
     }
   }
 
-  /** process-duration (p95): completion-duration percentile distribution. */
+  /** process-duration: completion-duration percentiles, execution-time summary and stddev. */
   private void seedProcessDuration() {
     final CompiledDataset dataset = catalog.require("process-duration");
     for (final CompiledTier tier : dataset.tiers()) {
@@ -146,9 +145,9 @@ public class DemoSeeder implements CommandLineRunner {
     }
   }
 
-  /** process-sla (sla_compliance): completed instances under the 300s SLA threshold. */
-  private void seedProcessSla() {
-    final CompiledDataset dataset = catalog.require("process-sla");
+  /** process-quality: the SLA / no-incident / first-time-right ratios over incident-free ends. */
+  private void seedProcessQuality() {
+    final CompiledDataset dataset = catalog.require("process-quality");
     for (final CompiledTier tier : dataset.tiers()) {
       for (final String process : PROCESSES) {
         final DimensionKey key = DimensionKey.of(dataset.grain(), process);
@@ -159,12 +158,10 @@ public class DemoSeeder implements CommandLineRunner {
     }
   }
 
-  /** element-throughput / element-duration / incidents / incident-open per (process, element). */
+  /** elements (throughput + durations) and incidents (raised + open) per (process, element). */
   private void seedElementCubes() {
-    final CompiledDataset throughput = catalog.require("element-throughput");
-    final CompiledDataset elementDuration = catalog.require("element-duration");
+    final CompiledDataset elements = catalog.require("elements");
     final CompiledDataset incidents = catalog.require("incidents");
-    final CompiledDataset incidentOpen = catalog.require("incident-open");
 
     for (final String process : PROCESSES) {
       for (int e = 0; e < ELEMENTS.size(); e++) {
@@ -175,47 +172,33 @@ public class DemoSeeder implements CommandLineRunner {
           final long raised = (e == 1 || e == 2) ? 2L + (w % 3) : 0L;
           final long open = raised > 0 ? 1L : 0L;
 
-          for (final CompiledTier tier : throughput.tiers()) {
-            upsert(
-                throughput,
-                tier,
-                DimensionKey.of(throughput.grain(), process, element),
-                windowStart(tier.windowMs(), w),
-                countFacts(FactType.ELEMENT, executed));
-          }
-          for (final CompiledTier tier : elementDuration.tiers()) {
+          for (final CompiledTier tier : elements.tiers()) {
             final List<Fact> facts = new ArrayList<>();
             for (final long d : durations(elementP50, (int) Math.max(1, executed))) {
               facts.add(elementFact(Transition.COMPLETED, d));
             }
             upsert(
-                elementDuration,
+                elements,
                 tier,
-                DimensionKey.of(elementDuration.grain(), process, element),
+                DimensionKey.of(elements.grain(), process, element),
                 windowStart(tier.windowMs(), w),
                 facts);
           }
           for (final CompiledTier tier : incidents.tiers()) {
+            // Raised incidents are CREATED (+1) facts; all but the open one resolve (−1), so the
+            // CREATED-filtered count reads `raised` and the level gauge reads `open`.
+            final List<Fact> facts = new ArrayList<>();
+            for (long i = 0; i < raised; i++) {
+              facts.add(deltaFact(Transition.CREATED, 1L));
+            }
+            for (long i = 0; i < raised - open; i++) {
+              facts.add(deltaFact(Transition.RESOLVED, -1L));
+            }
             upsert(
                 incidents,
                 tier,
                 DimensionKey.of(incidents.grain(), process, element),
                 windowStart(tier.windowMs(), w),
-                countFacts(FactType.INCIDENT, raised));
-          }
-          for (final CompiledTier tier : incidentOpen.tiers()) {
-            final List<Fact> facts = new ArrayList<>();
-            for (long i = 0; i < raised; i++) {
-              facts.add(deltaFact(1L));
-            }
-            for (long i = 0; i < raised - open; i++) {
-              facts.add(deltaFact(-1L));
-            }
-            upsert(
-                incidentOpen,
-                tier,
-                DimensionKey.of(incidentOpen.grain(), process, element),
-                windowStart(tier.windowMs(), w),
                 facts);
           }
         }
@@ -223,25 +206,9 @@ public class DemoSeeder implements CommandLineRunner {
     }
   }
 
-  /** process-distinct (HLL): distinct active process definitions per tenant. */
-  private void seedDistinct() {
-    final CompiledDataset dataset = catalog.require("process-distinct");
-    for (final CompiledTier tier : dataset.tiers()) {
-      final DimensionKey key = DimensionKey.of(dataset.grain(), TENANT);
-      for (int w = 0; w < WINDOWS; w++) {
-        final List<Fact> facts = new ArrayList<>();
-        for (final String process : PROCESSES) {
-          facts.add(
-              Fact.builder(FactType.PROCESS_INSTANCE).field("bpmnProcessId", process).build());
-        }
-        upsert(dataset, tier, key, windowStart(tier.windowMs(), w), facts);
-      }
-    }
-  }
-
-  /** top-processes (frequent items): heaviest process definitions per tenant. */
-  private void seedTopProcesses() {
-    final CompiledDataset dataset = catalog.require("top-processes");
+  /** tenant-overview: distinct definitions (HLL) + heaviest definitions (frequent items). */
+  private void seedTenantOverview() {
+    final CompiledDataset dataset = catalog.require("tenant-overview");
     for (final CompiledTier tier : dataset.tiers()) {
       final DimensionKey key = DimensionKey.of(dataset.grain(), TENANT);
       for (int w = 0; w < WINDOWS; w++) {
@@ -261,19 +228,17 @@ public class DemoSeeder implements CommandLineRunner {
 
   // --- fact builders -------------------------------------------------------------------------
 
+  /** Incident-free completions (ended facts always carry the {@code hadIncident} flag). */
   private List<Fact> completedFacts(final String process, final int w) {
     final long completed = Math.round(instanceCount(process, w) * 0.9);
     final List<Fact> facts = new ArrayList<>();
     for (final long duration : durations(baseP50(process), (int) completed)) {
-      facts.add(processFact(Transition.COMPLETED, duration));
-    }
-    return facts;
-  }
-
-  private static List<Fact> countFacts(final FactType type, final long n) {
-    final List<Fact> facts = new ArrayList<>();
-    for (long i = 0; i < n; i++) {
-      facts.add(Fact.builder(type).build());
+      facts.add(
+          Fact.builder(FactType.PROCESS_INSTANCE)
+              .transition(Transition.COMPLETED)
+              .field("durationMs", duration)
+              .field("hadIncident", false)
+              .build());
     }
     return facts;
   }
@@ -292,8 +257,8 @@ public class DemoSeeder implements CommandLineRunner {
         .build();
   }
 
-  private static Fact deltaFact(final long delta) {
-    return Fact.builder(FactType.INCIDENT).field("delta", delta).build();
+  private static Fact deltaFact(final Transition transition, final long delta) {
+    return Fact.builder(FactType.INCIDENT).transition(transition).field("delta", delta).build();
   }
 
   /** A spread of durations around {@code baseP50} so percentiles have shape. */

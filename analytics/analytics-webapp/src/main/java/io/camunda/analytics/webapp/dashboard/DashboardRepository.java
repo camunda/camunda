@@ -10,6 +10,7 @@ package io.camunda.analytics.webapp.dashboard;
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.FilterPredicate;
+import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.metric.ExecutionTimeResult;
 import io.camunda.analytics.metric.RatioResult;
 import io.camunda.analytics.query.DatasetQueryExecutor;
@@ -143,12 +144,12 @@ public class DashboardRepository {
     return new ArrayList<>(ids);
   }
 
-  /** Tenants the distinct-process cube has data for. */
+  /** Tenants the tenant-overview cube has data for. */
   public List<String> tenants() {
     final TreeSet<String> ids = new TreeSet<>();
     for (final ReportRow row :
         total(
-            "process-distinct",
+            "tenant-overview",
             List.of("tenantId"),
             null,
             null,
@@ -182,9 +183,9 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("p95"),
+            List.of("percentiles"),
             memo)) {
-      out.add(durationPoint(row.windowStart(), (QuantileResult) row.measures().get("p95")));
+      out.add(durationPoint(row.windowStart(), (QuantileResult) row.measures().get("percentiles")));
     }
     out.sort(Comparator.comparingLong(DurationPercentilePoint::windowStart));
     return out;
@@ -209,12 +210,12 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("p95"),
+            List.of("percentiles"),
             memo);
     if (rows.isEmpty()) {
       return new DurationPercentilePoint(windowStart, 0, 0, 0, 0, 0, 0, 0);
     }
-    return durationPoint(windowStart, (QuantileResult) rows.get(0).measures().get("p95"));
+    return durationPoint(windowStart, (QuantileResult) rows.get(0).measures().get("percentiles"));
   }
 
   private static DurationPercentilePoint durationPoint(
@@ -256,7 +257,12 @@ public class DashboardRepository {
     return ratios(dataset, meter, bpmnProcessId, fromWindow, toWindow, finestTier(dataset), memo);
   }
 
-  /** The ratio series of one dataset's meter, bucketed at an explicit granularity. */
+  /**
+   * The ratio series of one dataset's meter, bucketed at an explicit granularity. The query always
+   * fetches <em>every</em> ratio meter the dataset declares (one shared meter list, like {@link
+   * #LIFECYCLE_SERIES_METERS}), so all ratio widgets and cohort joins over one consolidated cube
+   * collapse onto a single serving query per render.
+   */
   private List<RatioPoint> ratios(
       final CompiledDataset dataset,
       final String meter,
@@ -273,7 +279,7 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of(meter),
+            ratioMeters(dataset),
             granularityMs,
             memo)) {
       if (row.measures().get(meter) instanceof final RatioResult r) {
@@ -283,6 +289,17 @@ public class DashboardRepository {
     }
     out.sort(Comparator.comparingLong(RatioPoint::windowStart));
     return out;
+  }
+
+  /** All ratio meters a dataset declares, in declaration order. */
+  private static List<String> ratioMeters(final CompiledDataset dataset) {
+    final List<String> names = new ArrayList<>();
+    for (final CompiledMeter compiled : dataset.meters()) {
+      if (MeterCatalog.RATIO.equals(compiled.bound().meter().type())) {
+        names.add(compiled.meterName());
+      }
+    }
+    return names;
   }
 
   /**
@@ -327,7 +344,7 @@ public class DashboardRepository {
     final List<DistinctPoint> out = new ArrayList<>();
     for (final ReportRow row :
         series(
-            "process-distinct",
+            "tenant-overview",
             List.of(),
             fromWindow,
             toWindow,
@@ -354,7 +371,7 @@ public class DashboardRepository {
       final Map<QueryKey, List<ReportRow>> memo) {
     final List<ReportRow> rows =
         total(
-            "top-processes",
+            "tenant-overview",
             List.of(),
             fromWindow,
             toWindow,
@@ -390,7 +407,7 @@ public class DashboardRepository {
     final List<ElementDuration> out = new ArrayList<>();
     for (final ReportRow row :
         total(
-            "element-duration",
+            "elements",
             List.of("elementId"),
             fromWindow,
             toWindow,
@@ -464,7 +481,7 @@ public class DashboardRepository {
     final List<DurationSpreadPoint> out = new ArrayList<>();
     for (final ReportRow row :
         series(
-            "process-duration-spread",
+            "process-duration",
             List.of(),
             fromWindow,
             toWindow,
@@ -569,7 +586,7 @@ public class DashboardRepository {
     long open = 0L;
     for (final ReportRow row :
         total(
-            "incident-open",
+            "incidents",
             List.of(),
             null,
             null,
@@ -592,8 +609,9 @@ public class DashboardRepository {
       final Long fromWindow,
       final Long toWindow,
       final Map<QueryKey, List<ReportRow>> memo) {
-    // element -> {raised, open}; avg/max resolution duration are not modeled as a cube.
-    final Map<String, long[]> byElement = new LinkedHashMap<>();
+    // One consolidated read per element: raised (CREATED count over the range) and the open level
+    // gauge live on the same rows now; avg/max resolution duration are not modeled as a cube.
+    final List<IncidentFlowNode> out = new ArrayList<>();
     for (final ReportRow row :
         total(
             "incidents",
@@ -601,25 +619,12 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("count"),
+            List.of("count", "open"),
             memo)) {
-      byElement.computeIfAbsent(elementId(row), k -> new long[2])[0] =
-          ((Number) row.measures().get("count")).longValue();
+      final long raised = measureAsLong(row, "count");
+      final long open = Math.max(0L, measureAsLong(row, "open"));
+      out.add(new IncidentFlowNode(elementId(row), raised, open, 0L, 0L));
     }
-    for (final ReportRow row :
-        total(
-            "incident-open",
-            List.of("elementId"),
-            fromWindow,
-            toWindow,
-            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("open"),
-            memo)) {
-      byElement.computeIfAbsent(elementId(row), k -> new long[2])[1] =
-          Math.max(0L, ((Number) row.measures().get("open")).longValue());
-    }
-    final List<IncidentFlowNode> out = new ArrayList<>();
-    byElement.forEach((id, v) -> out.add(new IncidentFlowNode(id, v[0], v[1], 0L, 0L)));
     out.sort(Comparator.comparingLong(IncidentFlowNode::raised).reversed());
     return out;
   }
@@ -799,17 +804,16 @@ public class DashboardRepository {
 
   /**
    * Rework hotspots per flow node over the range: activations (exact count) versus distinct
-   * instances (HLL estimate over processInstanceKey) from the element-rework cube. The rework
-   * estimate {@code max(0, activations − instances)} is exact while the HLL is exact (small counts)
-   * and an approximation at scale; zero-rework elements are dropped, the rest sorted by rework
-   * descending.
+   * instances (HLL estimate over processInstanceKey) from the elements cube. The rework estimate
+   * {@code max(0, activations − instances)} is exact while the HLL is exact (small counts) and an
+   * approximation at scale; zero-rework elements are dropped, the rest sorted by rework descending.
    */
   public List<ReworkHotspot> rework(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
     final List<ReworkHotspot> out = new ArrayList<>();
     for (final ReportRow row :
         total(
-            "element-rework",
+            "elements",
             List.of("elementId"),
             fromWindow,
             toWindow,

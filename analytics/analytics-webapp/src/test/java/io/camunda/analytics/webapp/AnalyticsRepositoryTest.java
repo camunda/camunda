@@ -100,10 +100,10 @@ final class AnalyticsRepositoryTest {
 
   @Test
   void shouldReadElementHeatmapThroughExecutor() {
-    // given — two executions of one element folded into the element-duration cube
+    // given — two executions of one element folded into the elements cube
     ServingTestSupport.seed(
         fixture,
-        "element-duration",
+        "elements",
         "duration",
         elementDurations(200L, 400L),
         "order-process",

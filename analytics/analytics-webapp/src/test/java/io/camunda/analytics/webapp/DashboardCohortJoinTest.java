@@ -108,7 +108,7 @@ final class DashboardCohortJoinTest {
   @Test
   void shouldRejectAMeterNameOwnedByMoreThanOneDataset() {
     // given a catalog where two datasets both declare a meter named sla_compliance
-    final CompiledDataset standardSla = fixture.catalog().require("process-sla");
+    final CompiledDataset standardSla = fixture.catalog().require("process-quality");
     final CompiledDataset duplicate =
         compile(
             901L,
