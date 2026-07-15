@@ -60,17 +60,24 @@ make update-golden   # regenerate golden files after an intentional change
 make clean           # remove leftover scaffolded namespace directories
 ```
 
+Scope either target to one setup version with `PATTERN=`, e.g. when porting a fix to a
+single stable branch's golden files:
+
+```bash
+make update-golden PATTERN=stable-89
+```
+
 After `make update-golden`, always review `git diff golden/` before committing.
 Never hand-edit golden `.yaml` files — only `make update-golden` applies the
 correct normalization.
 
 ## Adding a stable version
 
-Versions under test are listed explicitly in `golden_test.go`. Only `main` is
-active; the stable entries are commented out. To enable one:
+Versions under test are listed explicitly in the `versions` slice in
+`golden_test.go`. To add a new version:
 
-1. Uncomment its line in the `versions` slice.
-2. `make update-golden` (or scope it: `go test -update-golden -run 'TestGoldenFiles/stable-89' ./...`).
+1. Add its directory name (e.g. `"stable-90"`) to the `versions` slice.
+2. `make update-golden PATTERN=stable-90`.
 3. Commit the generated golden files. No other code change is needed.
 
 ## If golden diffs become noisy in PRs

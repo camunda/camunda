@@ -79,10 +79,9 @@ var defaultScenarios = []scenario{
 // versions lists the setup directories under test, each the name of a directory
 // under load-tests/setup/ that contains a newLoadTest.sh.
 //
-// Only "main" is active for now. The stable versions scaffold identically; to
-// enable one, uncomment its line and run:
+// To add a new version, append its directory name here and run:
 //
-//	go test -update-golden -run 'TestGoldenFiles/<version>' ./...
+//	make update-golden PATTERN=<version>
 //
 // to generate its golden files, then commit them. No other code change is needed.
 var versions = []string{
