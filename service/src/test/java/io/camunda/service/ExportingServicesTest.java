@@ -18,12 +18,12 @@ import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.core.authz.AuthorizationChecker;
-import io.camunda.service.admin.IncompleteTopologyException;
-import io.camunda.service.admin.exporting.ExportingControlApi;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -35,7 +35,8 @@ public class ExportingServicesTest {
   private static final String PHYSICAL_TENANT_ID = "test-tenant";
 
   private ExportingServices services;
-  private final ExportingControlApi exportingControlApi = mock(ExportingControlApi.class);
+  private final ExportingRequestBroadcaster exportingControlService =
+      mock(ExportingRequestBroadcaster.class);
   private final AuthorizationChecker authorizationChecker = mock(AuthorizationChecker.class);
   private final AuthorizationsConfiguration authorizationsConfig =
       new AuthorizationsConfiguration();
@@ -49,7 +50,7 @@ public class ExportingServicesTest {
             PHYSICAL_TENANT_ID,
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
-            exportingControlApi,
+            exportingControlService,
             authorizationChecker,
             authorizationsConfig,
             mock(ApiServicesExecutorProvider.class),
@@ -59,7 +60,7 @@ public class ExportingServicesTest {
   @Test
   public void pauseExportingShouldDelegateWhenAuthorizationsDisabled() {
     // given
-    when(exportingControlApi.pauseExporting(PHYSICAL_TENANT_ID))
+    when(exportingControlService.pauseExporting(PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -67,13 +68,13 @@ public class ExportingServicesTest {
 
     // then
     assertThat(future).succeedsWithin(java.time.Duration.ofSeconds(1));
-    verify(exportingControlApi).pauseExporting(PHYSICAL_TENANT_ID);
+    verify(exportingControlService).pauseExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
   public void softPauseExportingShouldDelegateToSoftPause() {
     // given
-    when(exportingControlApi.softPauseExporting(PHYSICAL_TENANT_ID))
+    when(exportingControlService.softPauseExporting(PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -81,13 +82,13 @@ public class ExportingServicesTest {
 
     // then
     assertThat(future).succeedsWithin(java.time.Duration.ofSeconds(1));
-    verify(exportingControlApi).softPauseExporting(PHYSICAL_TENANT_ID);
+    verify(exportingControlService).softPauseExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
   public void resumeExportingShouldDelegate() {
     // given
-    when(exportingControlApi.resumeExporting(PHYSICAL_TENANT_ID))
+    when(exportingControlService.resumeExporting(PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -95,7 +96,7 @@ public class ExportingServicesTest {
 
     // then
     assertThat(future).succeedsWithin(java.time.Duration.ofSeconds(1));
-    verify(exportingControlApi).resumeExporting(PHYSICAL_TENANT_ID);
+    verify(exportingControlService).resumeExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -110,8 +111,8 @@ public class ExportingServicesTest {
 
     // then
     assertThat(future.isCompletedExceptionally()).isTrue();
-    verify(exportingControlApi, never()).pauseExporting(any());
-    verify(exportingControlApi, never()).softPauseExporting(any());
+    verify(exportingControlService, never()).pauseExporting(any());
+    verify(exportingControlService, never()).softPauseExporting(any());
   }
 
   @Test
@@ -126,13 +127,13 @@ public class ExportingServicesTest {
 
     // then
     assertThat(future.isCompletedExceptionally()).isTrue();
-    verify(exportingControlApi, never()).resumeExporting(any());
+    verify(exportingControlService, never()).resumeExporting(any());
   }
 
   @Test
   public void pauseExportingShouldMapIncompleteTopologyExceptionToUnavailable() {
     // given
-    when(exportingControlApi.pauseExporting(PHYSICAL_TENANT_ID))
+    when(exportingControlService.pauseExporting(PHYSICAL_TENANT_ID))
         .thenThrow(new IncompleteTopologyException("Topology is incomplete"));
 
     // when
