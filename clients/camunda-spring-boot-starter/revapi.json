@@ -57,6 +57,18 @@
       "differences": [
         {
           "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.spring.configuration.CamundaAutoConfiguration",
+          "justification": "Unification onto the single multi-client config path (#57344): the single-client auto-configuration is replaced by MultiCamundaClientAutoConfiguration. These are internal auto-configuration wiring classes; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration",
+          "justification": "Unification onto the single multi-client config path (#57344): the single-client auto-configuration is replaced by MultiCamundaClientAutoConfiguration. These are internal auto-configuration wiring classes; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
           "code": "java.method.removed",
           "old": "method java.util.Optional<io.camunda.client.annotation.value.DeploymentValue> io.camunda.client.annotation.AnnotationUtil::getDeploymentValue(io.camunda.client.bean.BeanInfo)",
           "justification": "Internal refactor; compatibility impact accepted for this release."
