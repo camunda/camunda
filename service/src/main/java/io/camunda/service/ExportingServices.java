@@ -15,15 +15,15 @@ import io.camunda.security.api.model.config.AuthorizationsConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationChecker;
-import io.camunda.service.admin.exporting.ExportingControlApi;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import java.util.concurrent.CompletableFuture;
 
 public final class ExportingServices extends PhysicalTenantScopedApiServices<ExportingServices> {
 
-  private final ExportingControlApi exportingControlApi;
+  private final ExportingRequestBroadcaster exportingRequestBroadcaster;
   private final AuthorizationChecker authorizationChecker;
   private final AuthorizationsConfiguration authorizationsConfig;
 
@@ -31,7 +31,7 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
       final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ExportingControlApi exportingControlApi,
+      final ExportingRequestBroadcaster exportingControlService,
       final AuthorizationChecker authorizationChecker,
       final AuthorizationsConfiguration authorizationsConfig,
       final ApiServicesExecutorProvider executorProvider,
@@ -42,7 +42,7 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
         securityContextProvider,
         executorProvider,
         brokerRequestAuthorizationConverter);
-    this.exportingControlApi = exportingControlApi;
+    exportingRequestBroadcaster = exportingControlService;
     this.authorizationChecker = authorizationChecker;
     this.authorizationsConfig = authorizationsConfig;
   }
@@ -57,8 +57,8 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
 
     try {
       return soft
-          ? exportingControlApi.softPauseExporting(getPhysicalTenantId())
-          : exportingControlApi.pauseExporting(getPhysicalTenantId());
+          ? exportingRequestBroadcaster.softPauseExporting(getPhysicalTenantId())
+          : exportingRequestBroadcaster.pauseExporting(getPhysicalTenantId());
     } catch (final RuntimeException e) {
       return CompletableFuture.failedFuture(ErrorMapper.mapError(e));
     }
@@ -72,7 +72,7 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
     }
 
     try {
-      return exportingControlApi.resumeExporting(getPhysicalTenantId());
+      return exportingRequestBroadcaster.resumeExporting(getPhysicalTenantId());
     } catch (final RuntimeException e) {
       return CompletableFuture.failedFuture(ErrorMapper.mapError(e));
     }

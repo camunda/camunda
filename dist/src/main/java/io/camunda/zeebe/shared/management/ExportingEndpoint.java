@@ -9,7 +9,8 @@ package io.camunda.zeebe.shared.management;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
-import io.camunda.service.admin.exporting.ExportingControlApi;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
@@ -24,10 +25,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
-  final ExportingControlApi exportingService;
+  final ExportingRequestBroadcaster exportingService;
 
   @Autowired
-  public ExportingEndpoint(final ExportingControlApi exportingService) {
+  public ExportingEndpoint(final BrokerClient brokerClient) {
+    this(new ExportingRequestBroadcaster(brokerClient));
+  }
+
+  ExportingEndpoint(final ExportingRequestBroadcaster exportingService) {
     this.exportingService = exportingService;
   }
 

@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.service.admin.exporting;
+package io.camunda.zeebe.gateway.admin.exporting;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-import static io.camunda.service.admin.exporting.ExportingControlServiceTest.RequestMatcher.requestTo;
+import static io.camunda.zeebe.gateway.admin.exporting.ExportingRequestBroadcasterTest.RequestMatcher.requestTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Named.named;
@@ -20,13 +20,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.BrokerMemberId;
-import io.camunda.service.admin.IncompleteTopologyException;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
+import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.time.Duration;
@@ -47,14 +48,14 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatcher;
 
-public class ExportingControlServiceTest {
+public class ExportingRequestBroadcasterTest {
 
   @ParameterizedTest
   @MethodSource("validTopologies")
   void shouldPauseOnAllBrokersAndPartitions(final BrokerClusterState topology) {
     // given
     final var client = setupBrokerClient(topology);
-    final var service = new ExportingControlService(client);
+    final var service = new ExportingRequestBroadcaster(client);
 
     // when
     service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID).join();
@@ -79,7 +80,7 @@ public class ExportingControlServiceTest {
   void shouldFailOnIncompleteTopology(final BrokerClusterState topology) {
     // given
     final var client = setupBrokerClient(topology);
-    final var service = new ExportingControlService(client);
+    final var service = new ExportingRequestBroadcaster(client);
 
     // then
     assertThatExceptionOfType(IncompleteTopologyException.class)
@@ -91,7 +92,7 @@ public class ExportingControlServiceTest {
   void shouldSucceedIfAllRequestsFinish(final BrokerClusterState topology) {
     // given
     final var client = setupBrokerClient(topology);
-    final var service = new ExportingControlService(client);
+    final var service = new ExportingRequestBroadcaster(client);
 
     // then
     assertThat(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
@@ -103,7 +104,7 @@ public class ExportingControlServiceTest {
   void shouldFailIfAnyRequestFails(final BrokerClusterState topology) {
     // given
     final var client = setupBrokerClient(topology);
-    final var service = new ExportingControlService(client);
+    final var service = new ExportingRequestBroadcaster(client);
 
     // when
     when(client.sendRequest(requestTo(1, BrokerMemberId.from(1))))

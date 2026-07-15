@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.shared.management;
 
-import io.camunda.service.admin.BrokerAdminRequest;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
