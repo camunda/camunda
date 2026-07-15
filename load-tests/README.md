@@ -72,7 +72,7 @@ graph TD
     SCHEDULED -- "verify + delete namespace" --> VERIFY
     DAILY -- "scenario: max" --> CORE
     DAILY -- "always profiles first<br/>30min of both runs" --> PROFILE
-    WEEKLY -- "4 parallel calls:<br/>typical, realistic,<br/>rdbms-realistic, latency" --> CORE
+    WEEKLY -- "3 parallel calls:<br/>realistic, opensearch-realistic,<br/>rdbms-realistic" --> CORE
     WEEKLY -- "ECS" --> ECS
     ROLLING -- "latest release tag<br/>custom helm values" --> CORE
     RELEASE -- "scenario: realistic<br/>orchestration-tag" --> CORE
@@ -328,7 +328,7 @@ Results are posted to the `#reliability-testing-alerts` Slack channel.
 
 Weekly load tests run against the state of the **main** branch via the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml). They are automatically created every Monday and run for 4 weeks, then cleaned up by the [TTL checker](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test-ttl-cleanup.yml). This results in several concurrent weekly tests (multiple variants × four weeks).
 
-The weekly tests cover, for example, the [realistic load](../docs/testing/reliability-testing.md#realistic-load) variants (one with Elasticsearch, one with OpenSearch, and one with PostgreSQL) plus the [latency test](../docs/testing/reliability-testing.md#latency-load-test).
+The weekly tests cover, for example, the [realistic load](../docs/testing/reliability-testing.md#realistic-load) variants (one with Elasticsearch, one with OpenSearch, and one with PostgreSQL).
 
 **Goal:** Validating the reliability of the current main, detecting newly introduced instabilities, memory leaks, and performance degradation.
 
@@ -336,7 +336,6 @@ The weekly tests cover, for example, the [realistic load](../docs/testing/reliab
 
 Example running tests (naming pattern: `medic-y-<year>-cw-<week>-<sha>-<variant>`):
 
-- `medic-y-2025-cw-22-a60d64da-test-latency`
 - `medic-y-2025-cw-22-a60d64da-test-realistic`
 - `medic-y-2025-cw-22-a60d64da-test-rdbms-realistic`
 
