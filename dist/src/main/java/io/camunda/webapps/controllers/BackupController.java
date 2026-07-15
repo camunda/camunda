@@ -14,6 +14,7 @@ import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
+import io.camunda.management.backups.HistoryBackupTenantInfo;
 import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.webapps.backup.BackupException;
@@ -26,10 +27,17 @@ import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -45,14 +53,25 @@ import org.springframework.stereotype.Component;
 public class BackupController {
   private static final Logger LOG = LoggerFactory.getLogger(BackupController.class);
 
-  private final BackupService backupService;
-  private final BackupRepositoryProps backupRepositoryProps;
+  private static final List<BackupStateDto> STATE_PRECEDENCE =
+      List.of(
+          BackupStateDto.FAILED,
+          BackupStateDto.INCOMPATIBLE,
+          BackupStateDto.INCOMPLETE,
+          BackupStateDto.IN_PROGRESS,
+          BackupStateDto.COMPLETED);
+
+  private final Map<String, BackupService> backupServicesByPhysicalTenant;
+  private final Map<String, BackupRepositoryProps> backupRepositoryPropsByPhysicalTenant;
 
   @Autowired
   public BackupController(
-      final BackupService backupService, final BackupRepositoryProps backupProperties) {
-    this.backupService = backupService;
-    backupRepositoryProps = backupProperties;
+      @Qualifier("backupServicesByTenant")
+          final Map<String, BackupService> backupServicesByPhysicalTenant,
+      @Qualifier("backupRepositoryPropsByTenant")
+          final Map<String, BackupRepositoryProps> backupRepositoryPropsByPhysicalTenant) {
+    this.backupServicesByPhysicalTenant = backupServicesByPhysicalTenant;
+    this.backupRepositoryPropsByPhysicalTenant = backupRepositoryPropsByPhysicalTenant;
   }
 
   @WriteOperation
@@ -60,10 +79,14 @@ public class BackupController {
     try {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();
-      final var respDTO =
-          backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-      final var response =
-          new TakeBackupHistoryResponse().scheduledSnapshots(respDTO.getScheduledSnapshots());
+      final var scheduledSnapshots = new ArrayList<String>();
+      for (final BackupService backupService : backupServicesByPhysicalTenant.values()) {
+        scheduledSnapshots.addAll(
+            backupService
+                .takeBackup(new TakeBackupRequestDto().setBackupId(backupId))
+                .getScheduledSnapshots());
+      }
+      final var response = new TakeBackupHistoryResponse().scheduledSnapshots(scheduledSnapshots);
       return new WebEndpointResponse<>(response);
     } catch (final Exception e) {
       LOG.warn("Error when taking backup", e);
@@ -76,8 +99,14 @@ public class BackupController {
     try {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();
-      final var respDTO = backupService.getBackupState(backupId);
-      final var resp = mapTo(respDTO);
+      final var perPhysicalTenantStates =
+          backupServicesByPhysicalTenant.entrySet().stream()
+              .map(
+                  entry ->
+                      new TenantBackupState(
+                          entry.getKey(), entry.getValue().getBackupState(backupId)))
+              .toList();
+      final var resp = mapTo(aggregate(perPhysicalTenantStates));
       return new WebEndpointResponse<>(resp);
     } catch (final Exception e) {
       LOG.warn("Error when trying to get a backup", e);
@@ -92,8 +121,16 @@ public class BackupController {
       final boolean verboseValue = verbose != null ? verbose : true;
       final String patternValue = pattern != null ? pattern : "*";
       validateRepositoryNameIsConfigured();
-      final var respDTO = backupService.getBackups(verboseValue, patternValue);
-      final var resp = respDTO.stream().map(this::mapTo).toList();
+      final var byBackupId =
+          backupServicesByPhysicalTenant.entrySet().stream()
+              .flatMap(
+                  entry ->
+                      entry.getValue().getBackups(verboseValue, patternValue).stream()
+                          .map(dto -> new TenantBackupState(entry.getKey(), dto)))
+              .collect(
+                  Collectors.groupingBy(
+                      state -> state.dto().getBackupId(), LinkedHashMap::new, Collectors.toList()));
+      final var resp = byBackupId.values().stream().map(this::aggregate).map(this::mapTo).toList();
       return new WebEndpointResponse<>(resp);
     } catch (final Exception e) {
       LOG.warn("Error when trying to get all backup", e);
@@ -106,7 +143,7 @@ public class BackupController {
     try {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();
-      backupService.deleteBackup(backupId);
+      backupServicesByPhysicalTenant.values().forEach(service -> service.deleteBackup(backupId));
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final Exception e) {
       LOG.warn("Error when trying to delete a backup", e);
@@ -115,11 +152,51 @@ public class BackupController {
   }
 
   private void validateRepositoryNameIsConfigured() {
-    if (backupRepositoryProps == null
-        || backupRepositoryProps.repositoryName() == null
-        || backupRepositoryProps.repositoryName().isEmpty()) {
+    if (backupRepositoryPropsByPhysicalTenant.isEmpty()) {
       throw new InvalidRequestException("No backup repository configured.");
     }
+    final var tenantsMissingRepository =
+        backupRepositoryPropsByPhysicalTenant.entrySet().stream()
+            .filter(
+                entry ->
+                    entry.getValue().repositoryName() == null
+                        || entry.getValue().repositoryName().isEmpty())
+            .map(Map.Entry::getKey)
+            .toList();
+    if (!tenantsMissingRepository.isEmpty()) {
+      throw new InvalidRequestException(
+          "No backup repository configured for physical tenant(s): " + tenantsMissingRepository);
+    }
+  }
+
+  private AggregatedBackupState aggregate(final List<TenantBackupState> perTenantStates) {
+    final var states = perTenantStates.stream().map(TenantBackupState::dto).toList();
+    final var aggregated = new GetBackupStateResponseDto(states.getFirst().getBackupId());
+    aggregated.setState(worstStateOf(states));
+    aggregated.setDetails(
+        states.stream()
+            .flatMap(dto -> dto.getDetails() == null ? Stream.empty() : dto.getDetails().stream())
+            .toList());
+    final var failureReasons =
+        states.stream()
+            .map(GetBackupStateResponseDto::getFailureReason)
+            .filter(reason -> reason != null && !reason.isEmpty())
+            .toList();
+    if (!failureReasons.isEmpty()) {
+      aggregated.setFailureReason(String.join("; ", failureReasons));
+    }
+    return new AggregatedBackupState(aggregated, perTenantStates);
+  }
+
+  private BackupStateDto worstStateOf(final List<GetBackupStateResponseDto> states) {
+    final var statesPresent =
+        states.stream().map(GetBackupStateResponseDto::getState).collect(Collectors.toSet());
+    for (final BackupStateDto candidate : STATE_PRECEDENCE) {
+      if (statesPresent.contains(candidate)) {
+        return candidate;
+      }
+    }
+    return BackupStateDto.COMPLETED;
   }
 
   private void validateBackupId(final Long backupId) {
@@ -148,7 +225,8 @@ public class BackupController {
         detail.getFailures() != null ? Arrays.asList(detail.getFailures()) : null);
   }
 
-  private HistoryBackupInfo mapTo(final GetBackupStateResponseDto detail) {
+  private HistoryBackupInfo mapTo(final AggregatedBackupState aggregated) {
+    final var detail = aggregated.overall();
     final var info =
         new HistoryBackupInfo(
             new BigDecimal(detail.getBackupId()),
@@ -157,8 +235,24 @@ public class BackupController {
     if (detail.getFailureReason() != null) {
       info.setFailureReason(detail.getFailureReason());
     }
+    info.setPhysicalTenants(aggregated.perTenant().stream().map(this::mapTo).toList());
 
     return info;
+  }
+
+  private HistoryBackupTenantInfo mapTo(final TenantBackupState tenantState) {
+    final var detail = tenantState.dto();
+    final var details =
+        detail.getDetails() == null
+            ? List.<HistoryBackupDetail>of()
+            : detail.getDetails().stream().map(this::mapTo).toList();
+    final var tenantInfo =
+        new HistoryBackupTenantInfo(
+            tenantState.physicalTenantId(), mapState(detail.getState()), details);
+    if (detail.getFailureReason() != null) {
+      tenantInfo.setFailureReason(detail.getFailureReason());
+    }
+    return tenantInfo;
   }
 
   private WebEndpointResponse<?> mapErrorResponse(final Exception exception) {
@@ -176,4 +270,9 @@ public class BackupController {
     }
     return new WebEndpointResponse<>(new Error().message(message), errorCode);
   }
+
+  private record TenantBackupState(String physicalTenantId, GetBackupStateResponseDto dto) {}
+
+  private record AggregatedBackupState(
+      GetBackupStateResponseDto overall, List<TenantBackupState> perTenant) {}
 }
