@@ -21,6 +21,7 @@ import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.DirectAncestorKeyInstruction;
 import io.camunda.gateway.protocol.model.MigrateProcessInstanceMappingInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
@@ -188,6 +189,18 @@ public class ProcessInstanceRequestValidator {
             validateMappingInstructions(request.getMappingInstructions(), violations);
           }
           validateOperationReference(request.getOperationReference(), violations);
+        });
+  }
+
+  public static Optional<ProblemDetail> validateAssignProcessInstanceBusinessIdRequest(
+      final ProcessInstanceBusinessIdAssignmentInstruction request) {
+    return validate(
+        violations -> {
+          if (StringUtils.isBlank(request.getBusinessId())) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("businessId"));
+          } else {
+            validateBusinessId(request.getBusinessId(), violations);
+          }
         });
   }
 
