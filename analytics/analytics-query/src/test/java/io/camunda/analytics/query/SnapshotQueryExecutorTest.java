@@ -9,6 +9,7 @@ package io.camunda.analytics.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.DatasetCompiler;
@@ -69,11 +70,11 @@ final class SnapshotQueryExecutorTest {
     assertThat(series)
         .extracting(SnapshotSeriesPoint::time, p -> p.measures().get("active"))
         .containsExactly(
-            org.assertj.core.groups.Tuple.tuple(MINUTE, 2L),
-            org.assertj.core.groups.Tuple.tuple(2 * MINUTE, 2L),
-            org.assertj.core.groups.Tuple.tuple(3 * MINUTE, 5L),
-            org.assertj.core.groups.Tuple.tuple(4 * MINUTE, 5L),
-            org.assertj.core.groups.Tuple.tuple(5 * MINUTE, 5L));
+            tuple(MINUTE, 2L),
+            tuple(2 * MINUTE, 2L),
+            tuple(3 * MINUTE, 5L),
+            tuple(4 * MINUTE, 5L),
+            tuple(5 * MINUTE, 5L));
   }
 
   @Test
@@ -92,11 +93,11 @@ final class SnapshotQueryExecutorTest {
         .extracting(
             p -> p.keyValues().get(0), SnapshotSeriesPoint::time, p -> p.measures().get("active"))
         .containsExactly(
-            org.assertj.core.groups.Tuple.tuple("steady", MINUTE, 9L),
-            org.assertj.core.groups.Tuple.tuple("steady", 2 * MINUTE, 9L),
-            org.assertj.core.groups.Tuple.tuple("steady", 3 * MINUTE, 9L),
-            org.assertj.core.groups.Tuple.tuple("late", 2 * MINUTE, 1L),
-            org.assertj.core.groups.Tuple.tuple("late", 3 * MINUTE, 1L));
+            tuple("steady", MINUTE, 9L),
+            tuple("steady", 2 * MINUTE, 9L),
+            tuple("steady", 3 * MINUTE, 9L),
+            tuple("late", 2 * MINUTE, 1L),
+            tuple("late", 3 * MINUTE, 1L));
   }
 
   @Test

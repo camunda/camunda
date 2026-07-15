@@ -8,6 +8,8 @@
 package io.camunda.analytics.webapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.data.Offset.offset;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dimension.DimensionKey;
@@ -171,16 +173,12 @@ final class DashboardServingTest {
     assertThat(series)
         .extracting(ActiveInstancesPoint::time, ActiveInstancesPoint::active)
         .containsExactly(
-            org.assertj.core.groups.Tuple.tuple(minute, 3L),
-            org.assertj.core.groups.Tuple.tuple(2 * minute, 3L),
-            org.assertj.core.groups.Tuple.tuple(3 * minute, 5L),
-            org.assertj.core.groups.Tuple.tuple(4 * minute, 5L));
+            tuple(minute, 3L), tuple(2 * minute, 3L), tuple(3 * minute, 5L), tuple(4 * minute, 5L));
     // and the spread window carries the exact extrema and the population stddev of the durations
     assertThat(spread).hasSize(1);
     assertThat(spread.get(0).minMs()).isEqualTo(100_000L);
     assertThat(spread.get(0).maxMs()).isEqualTo(300_000L);
-    assertThat(spread.get(0).stddevMs())
-        .isCloseTo(81_649.66, org.assertj.core.data.Offset.offset(0.1));
+    assertThat(spread.get(0).stddevMs()).isCloseTo(81_649.66, offset(0.1));
   }
 
   /** The active-instances cube's single LEVEL slot as composite accumulator bytes. */

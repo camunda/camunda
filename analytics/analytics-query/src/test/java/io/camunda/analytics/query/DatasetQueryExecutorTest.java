@@ -9,6 +9,7 @@ package io.camunda.analytics.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
@@ -196,9 +197,7 @@ final class DatasetQueryExecutorTest {
     assertThat(result.rows())
         .extracting(
             row -> row.dimensions().get("bpmnProcessId"), row -> row.measures().get("count"))
-        .containsExactlyInAnyOrder(
-            org.assertj.core.groups.Tuple.tuple(null, 5L),
-            org.assertj.core.groups.Tuple.tuple("orders", 3L));
+        .containsExactlyInAnyOrder(tuple(null, 5L), tuple("orders", 3L));
   }
 
   @Test

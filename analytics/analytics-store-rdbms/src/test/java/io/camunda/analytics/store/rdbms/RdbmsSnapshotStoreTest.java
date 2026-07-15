@@ -8,6 +8,7 @@
 package io.camunda.analytics.store.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.DatasetCompiler;
@@ -83,9 +84,7 @@ final class RdbmsSnapshotStoreTest {
     assertThat(baseline)
         .extracting(
             p -> p.keyValues().get(0), SnapshotPoint::sampleTime, p -> p.measures().get("active"))
-        .containsExactlyInAnyOrder(
-            org.assertj.core.groups.Tuple.tuple("order", MINUTE, 3L),
-            org.assertj.core.groups.Tuple.tuple("claim", 2 * MINUTE, 1L));
+        .containsExactlyInAnyOrder(tuple("order", MINUTE, 3L), tuple("claim", 2 * MINUTE, 1L));
   }
 
   @Test
@@ -98,9 +97,7 @@ final class RdbmsSnapshotStoreTest {
     assertThat(range)
         .extracting(
             p -> p.keyValues().get(0), SnapshotPoint::sampleTime, p -> p.measures().get("active"))
-        .containsExactly(
-            org.assertj.core.groups.Tuple.tuple("claim", 2 * MINUTE, 1L),
-            org.assertj.core.groups.Tuple.tuple("order", 5 * MINUTE, 7L));
+        .containsExactly(tuple("claim", 2 * MINUTE, 1L), tuple("order", 5 * MINUTE, 7L));
   }
 
   @Test

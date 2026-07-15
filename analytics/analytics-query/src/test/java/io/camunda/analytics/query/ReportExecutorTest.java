@@ -9,6 +9,7 @@ package io.camunda.analytics.query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.DatasetCompiler;
@@ -89,13 +90,11 @@ final class ReportExecutorTest {
     assertThat(result.rows())
         .extracting(ReportRow::dimensions, ReportRow::measures)
         .containsExactly(
-            org.assertj.core.groups.Tuple.tuple(
+            tuple(
                 Map.of("bpmnProcessId", "invoice"),
                 Map.of("throughput.count", 5L, "incidents.count", 2L)),
-            org.assertj.core.groups.Tuple.tuple(
-                Map.of("bpmnProcessId", "order"), Map.of("throughput.count", 3L)),
-            org.assertj.core.groups.Tuple.tuple(
-                Map.of("bpmnProcessId", "refund"), Map.of("incidents.count", 1L)));
+            tuple(Map.of("bpmnProcessId", "order"), Map.of("throughput.count", 3L)),
+            tuple(Map.of("bpmnProcessId", "refund"), Map.of("incidents.count", 1L)));
   }
 
   @Test
