@@ -673,13 +673,17 @@ jobs:
             --jq '[.artifacts[] | select(.name | startswith("playwright-results-json"))] | length' \
             2>/dev/null || echo 0)
           if [[ "$E2E_ARTIFACTS" -gt 0 ]]; then
-            echo "failure_category=test-infra"    >> "$GITHUB_OUTPUT"
-            echo "owner_team=@camunda/test-automation-team" >> "$GITHUB_OUTPUT"
-            echo "evidence=Playwright E2E tests failed after Helm install." >> "$GITHUB_OUTPUT"
+            {
+              echo "failure_category=test-infra"
+              echo "owner_team=@camunda/test-automation-team"
+              echo "evidence=Playwright E2E tests failed after Helm install."
+            } >> "$GITHUB_OUTPUT"
           else
-            echo "failure_category=test-infra"    >> "$GITHUB_OUTPUT"
-            echo "owner_team=@camunda/distribution" >> "$GITHUB_OUTPUT"
-            echo "evidence=Helm chart Integration Tests failed." >> "$GITHUB_OUTPUT"
+            {
+              echo "failure_category=test-infra"
+              echo "owner_team=@camunda/distribution"
+              echo "evidence=Helm chart Integration Tests failed."
+            } >> "$GITHUB_OUTPUT"
           fi
       - name: Post AlwaysGreen failure feedback
         if: failure()
