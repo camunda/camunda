@@ -299,29 +299,28 @@ and bulk single-JVM resolution hit Gradle 9 walls (config-phase resolution locks
 config-cache `Task.project` restrictions, per-project resolution locks). Not worth the
 complexity for the parity payoff; run it per module on the module you're fixing.
 
-### `compare-dist.py` — packaged distribution JAR diff
+### `compare-dist.py` — packaged distribution parity
 
-Compares the JARs bundled in the final distribution produced by the `dist/` project between
-Gradle and Maven. `compare-module-deps.py` diffs a single module's resolved classpath;
-`compare-dist.py` diffs the actual `lib/` contents of the shipped distribution — the
-end-to-end artifact parity check.
+Compares the packaged distribution produced by the `dist/` project between Gradle and Maven.
+`compare-module-deps.py` diffs a single module's resolved classpath; `compare-dist.py` checks
+the actual shipped distribution. In ZIP mode it compares the versioned root and JAR
+names/versions under `lib/`; other file-content differences are intentionally ignored. In the
+legacy tar/directory mode it compares the JAR names and versions under `lib/`.
 
 ```bash
-python3 .claude/skills/gradle-build-parity/compare-dist.py <gradle-tar.gz> <maven-dist-dir>
+# Full ZIP archive comparison
+python3 .claude/skills/gradle-build-parity/compare-dist.py \
+    dist/build/distributions/camunda-zeebe-*.zip \
+    dist/target/camunda-zeebe-*.zip
 
-# Example: build both dists, then compare
+# JAR/version comparison against an exploded Maven distribution
 python3 .claude/skills/gradle-build-parity/compare-dist.py \
     dist/build/distributions/camunda-zeebe-*.tar.gz \
     dist/target/camunda-zeebe
 ```
 
-- **Gradle side** — reads JARs under `*/lib/` inside the `distTar` `.tar.gz`.
-- **Maven side** — reads JARs under `lib/*.jar` in the unpacked Maven dist directory.
-
-Artifacts are matched by version-stripped name, so it reports three classes of diff:
-**version mismatches** (same artifact, different version bundled), **Gradle-only**, and
-**Maven-only** JARs. Use it after a module-level fix to confirm the change actually lands in
-the shipped distribution, and to catch packaging gaps that per-module classpath diffs miss
+Use it after a module-level fix to compare the versions and dependency set that actually land
+in the shipped distribution, and to catch packaging gaps that per-module classpath diffs miss
 (e.g. a dep present on a classpath but excluded from the assembly).
 
 ## Reference Files
