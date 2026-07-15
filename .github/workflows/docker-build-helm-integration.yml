@@ -686,9 +686,9 @@ jobs:
           # → test-automation-team owns. If absent, the install/setup failed
           # before tests ever ran → distribution owns.
           E2E_ARTIFACTS=$(gh api \
-            "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
+            "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts?per_page=100" \
             --jq '[.artifacts[] | select(.name | startswith("playwright-results-json"))] | length' \
-            2>/dev/null || echo 0)
+            || echo 0)
           if [[ "$E2E_ARTIFACTS" -gt 0 ]]; then
             {
               echo "failure_category=test-infra"
@@ -699,7 +699,7 @@ jobs:
             {
               echo "failure_category=test-infra"
               echo "owner_team=@camunda/distribution"
-              echo "evidence=Helm chart Integration Tests failed."
+              echo "evidence=Helm install or setup failed before E2E tests could run."
             } >> "$GITHUB_OUTPUT"
           fi
       - name: Post AlwaysGreen failure feedback
