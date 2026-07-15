@@ -13,6 +13,7 @@ import { DeltaBadge } from "../components/DeltaBadge";
 import { DurationDistribution } from "../components/DurationDistribution";
 import { GatewayDecisions } from "../components/GatewayDecisions";
 import { DurationSpreadTrend } from "../components/DurationSpreadTrend";
+import { OutlierCorrelation } from "../components/OutlierCorrelation";
 import { OutlierTable } from "../components/OutlierTable";
 import { PercentileTrend } from "../components/PercentileTrend";
 import { ProcessHeatmap } from "../components/ProcessHeatmap";
@@ -116,6 +117,8 @@ export function PerformancePage({
       <DurationDistribution points={data.durationBuckets} />
 
       <OutlierTable rows={data.outliers} />
+
+      <OutlierCorrelation rows={data.variableCorrelation} />
 
       <TopVariants variants={data.variants} />
 

@@ -381,6 +381,50 @@ public final class StandardDatasets {
             .window(ONE_MINUTE_MS)
             .window(ONE_HOUR_MS)
             .lateness(GRACE_MS)
+            .build(),
+        // Completed-instance count + duration percentiles grouped by the 'route' process variable —
+        // a correlation cube for the outlier-analysis feature (task #27): "which variable values
+        // are
+        // over-represented among duration outliers" needs a per-value duration sketch to answer, on
+        // top of the overall fence process-duration's 'percentiles' meter already exposes.
+        // Correlation cubes are discovered by naming convention rather than a registry: a catalog
+        // dataset named 'corr-*' with exactly one 'var.*' dimension is a duration-correlation cube
+        // (see the read side's CorrelationCubes classifier). Only root-scope (start-payload)
+        // variables are visible to PROCESS_INSTANCE facts, like dispute-types. GUARDRAIL
+        // (documented,
+        // not enforced): keep per-variable cardinality low — this cube is one row per distinct
+        // value,
+        // not per instance. APPENDED.
+        DatasetDeclaration.builder("corr-route", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .filterNotNull("var.route")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("var.route", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .meter(
+                new Meter(
+                    "duration_p",
+                    MeterCatalog.PERCENTILE,
+                    "durationMs",
+                    Map.of("ranks", "0.25,0.5,0.75,0.95")))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .build(),
+        // Same shape as corr-route, grouped by 'region' instead. APPENDED.
+        DatasetDeclaration.builder("corr-region", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .filterNotNull("var.region")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("var.region", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .meter(
+                new Meter(
+                    "duration_p",
+                    MeterCatalog.PERCENTILE,
+                    "durationMs",
+                    Map.of("ranks", "0.25,0.5,0.75,0.95")))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build());
   }
 

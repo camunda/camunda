@@ -228,6 +228,17 @@ export interface ElementOutlier {
   count: number;
 }
 
+/** How over-represented one variable value is among duration outliers: `lift = share /
+ * overallShare`; lift >> 1 means this value is disproportionately likely to be an outlier.
+ * Declared variables only (corr-* cubes); approximate (sketch-based). */
+export interface VariableCorrelation {
+  variable: string;
+  value: string;
+  n: number;
+  share: number;
+  lift: number;
+}
+
 // ---------------------------------------------------------------------------
 // Dataset / report builder shapes. These mirror the analytics builder REST
 // contract (DatasetDeclaration / Report records serialized by name).
@@ -564,6 +575,10 @@ export const api = {
     ),
   outliers: (process: string, range: TimeRange | null) =>
     getJson<ElementOutlier[]>(`/api/dashboard/outliers?process=${q(process)}${rangeQs(range)}`),
+  variableCorrelation: (process: string, range: TimeRange | null) =>
+    getJson<VariableCorrelation[]>(
+      `/api/dashboard/variable-correlation?process=${q(process)}${rangeQs(range)}`,
+    ),
 
   // Dataset / report builder endpoints.
   listDatasets: () => getJson<Dataset[]>("/api/datasets"),

@@ -27,6 +27,7 @@ import {
   type TimeRange,
   type ValuePoint,
   type ValueSummary,
+  type VariableCorrelation,
   type VariantRow,
 } from "./api";
 
@@ -70,6 +71,8 @@ export interface MetricsData {
   variants: VariantRow[];
   /** Per-flow-node duration outliers (boxplot fence, approximate/sketch-based). */
   outliers: ElementOutlier[];
+  /** Which declared variable values are over-represented among duration outliers. */
+  variableCorrelation: VariableCorrelation[];
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -125,6 +128,7 @@ export function useMetrics(
       api.branchDistribution(process, range),
       api.variants(process, range),
       api.outliers(process, range),
+      api.variableCorrelation(process, range),
     ])
       .then(
         ([
@@ -156,6 +160,7 @@ export function useMetrics(
           branchDistribution,
           variants,
           outliers,
+          variableCorrelation,
         ]) => {
           if (!cancelled) {
             setData({
@@ -187,6 +192,7 @@ export function useMetrics(
               branchDistribution,
               variants,
               outliers,
+              variableCorrelation,
             });
           }
         },

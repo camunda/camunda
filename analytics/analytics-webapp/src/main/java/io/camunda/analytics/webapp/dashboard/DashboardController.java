@@ -330,6 +330,19 @@ public class DashboardController {
     return repository.elementOutliers(bpmnProcessId, from, to);
   }
 
+  /**
+   * Duration-variable correlation over the range: for each declared {@code corr-*} variable value,
+   * how over-represented it is among duration outliers (approximate, sketch-based, declared
+   * variables only). Empty when there is no overall outlier share, or no {@code corr-*} cubes.
+   */
+  @GetMapping("/variable-correlation")
+  public List<VariableCorrelation> variableCorrelation(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.variableCorrelations(bpmnProcessId, from, to);
+  }
+
   @GetMapping(value = "/diagram", produces = MediaType.APPLICATION_XML_VALUE)
   public ResponseEntity<String> diagram(@RequestParam("process") final String bpmnProcessId) {
     return repository

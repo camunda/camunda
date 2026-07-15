@@ -9,7 +9,9 @@ package io.camunda.analytics.webapp.dashboard;
 
 import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
+import io.camunda.analytics.dataset.DimensionSpec;
 import io.camunda.analytics.dataset.FilterPredicate;
+import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.metric.ExecutionTimeResult;
 import io.camunda.analytics.metric.RatioResult;
@@ -591,9 +593,120 @@ public class DashboardRepository {
    */
   private boolean hasMeter(final String datasetName, final String meterName) {
     final CompiledDataset dataset = catalog.byName().get(datasetName);
-    if (dataset == null) {
-      return false;
+    return dataset != null && hasMeter(dataset, meterName);
+  }
+
+  /** The cap on rows a variable-correlation read returns, ranked by lift descending. */
+  private static final int MAX_CORRELATION_ROWS = 20;
+
+  /**
+   * Duration-variable correlation over the range: for each value of each declared {@code corr-*}
+   * variable, how over-represented it is among duration outliers relative to the process's overall
+   * outlier share (see {@link VariableCorrelation}). Reads the overall boxplot fence from the
+   * process-duration cube's percentile sketch (the same one the p50–p99 trend reads), then asks
+   * every {@code corr-*} cube's per-value sketch what share of ITS observations sit above that
+   * fence — a cross-sketch query only possible because {@link QuantileResult} exposes its sketch.
+   * Empty when there is no overall outlier share to correlate against, or when the metadata store
+   * has no {@code corr-*} cubes (never a 500). Sorted by lift descending, capped at {@link
+   * #MAX_CORRELATION_ROWS}.
+   */
+  public List<VariableCorrelation> variableCorrelations(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final OutlierStats overall = overallDurationOutlierStats(bpmnProcessId, fromWindow, toWindow);
+    if (overall == null || overall.share() == 0.0) {
+      // no outliers to correlate against — dividing by a zero overall share is meaningless, not
+      // just unsafe
+      return List.of();
     }
+    final List<VariableCorrelation> out = new ArrayList<>();
+    for (final CompiledDataset dataset : catalog.byName().values()) {
+      final String variableDimension = durationCorrelationVariable(dataset);
+      if (variableDimension == null) {
+        continue;
+      }
+      final String variable = variableDimension.substring(DimensionSpec.VARIABLE_PREFIX.length());
+      for (final ReportRow row :
+          total(
+              dataset.name(),
+              List.of(variableDimension),
+              fromWindow,
+              toWindow,
+              List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+              List.of("count", "duration_p"),
+              newMemo())) {
+        final long n = measureAsLong(row, "count");
+        if (n < MIN_OBSERVATIONS) {
+          continue;
+        }
+        final QuantileResult q =
+            row.measures().get("duration_p") instanceof final QuantileResult result ? result : null;
+        final double share = q == null ? Double.NaN : q.shareAbove(overall.fence());
+        if (Double.isNaN(share)) {
+          continue;
+        }
+        final Object value = row.dimensions().get(variableDimension);
+        out.add(
+            new VariableCorrelation(
+                variable,
+                value == null ? "" : value.toString(),
+                n,
+                share,
+                share / overall.share()));
+      }
+    }
+    out.sort(Comparator.comparingDouble(VariableCorrelation::lift).reversed());
+    return out.size() > MAX_CORRELATION_ROWS
+        ? List.copyOf(out.subList(0, MAX_CORRELATION_ROWS))
+        : out;
+  }
+
+  /** The overall process's boxplot outlier stats over the range, or {@code null} without data. */
+  private OutlierStats overallDurationOutlierStats(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final List<ReportRow> rows =
+        total(
+            "process-duration",
+            List.of(),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("percentiles"),
+            newMemo());
+    if (rows.isEmpty()) {
+      return null;
+    }
+    final QuantileResult q =
+        rows.get(0).measures().get("percentiles") instanceof final QuantileResult result
+            ? result
+            : null;
+    return q == null ? null : q.outlierStats();
+  }
+
+  /**
+   * The {@code var.*} dimension name of {@code dataset} if it is a duration-correlation cube — a
+   * catalog dataset named {@code corr-*} declaring a {@code duration_p} sketch meter and exactly
+   * one variable dimension — or {@code null} otherwise. The {@code duration_p} meter is the signal
+   * that separates this cube shape from the variant/branch correlation cubes (which carry only
+   * counts).
+   */
+  private static String durationCorrelationVariable(final CompiledDataset dataset) {
+    if (!dataset.name().startsWith("corr-") || !hasMeter(dataset, "duration_p")) {
+      return null;
+    }
+    String variableDimension = null;
+    for (final DimensionColumn column : dataset.grain().columns()) {
+      if (column.name().startsWith(DimensionSpec.VARIABLE_PREFIX)) {
+        if (variableDimension != null) {
+          return null; // more than one variable dimension — not the duration-correlation shape
+        }
+        variableDimension = column.name();
+      }
+    }
+    return variableDimension;
+  }
+
+  /** Whether {@code dataset} declares a meter named {@code meterName}. */
+  private static boolean hasMeter(final CompiledDataset dataset, final String meterName) {
     for (final CompiledMeter compiled : dataset.meters()) {
       if (compiled.meterName().equals(meterName)) {
         return true;
