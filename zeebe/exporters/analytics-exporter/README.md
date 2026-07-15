@@ -154,7 +154,7 @@ variables, or any other end-user data.
 
 These attributes are set on every log record:
 
-|            Attribute           |  Type  |                                               Description                                                |
+|            Attribute            |  Type  |                                               Description                                                |
 |---------------------------------|--------|----------------------------------------------------------------------------------------------------------|
 | `event.name`                    | string | Event type identifier (one of the names in the table above).                                             |
 | `camunda.log.position`          | long   | Log stream position. Used as a deduplication key.                                                        |
@@ -166,45 +166,45 @@ Beyond the common attributes above, each event type carries its own additional f
 
 **`process_instance_created`**
 
-|             Attribute              |  Type  |                Description                |
-|-------------------------------------|--------|--------------------------------------------|
-| `camunda.process.id`                | string | BPMN process ID.                            |
-| `camunda.process.version`           | long   | Deployed process version.                   |
-| `camunda.process.definition_key`    | long   | Process definition key.                     |
-| `camunda.process.instance_key`      | long   | Process instance key.                       |
+|              Attribute              |  Type  |                  Description                   |
+|-------------------------------------|--------|------------------------------------------------|
+| `camunda.process.id`                | string | BPMN process ID.                               |
+| `camunda.process.version`           | long   | Deployed process version.                      |
+| `camunda.process.definition_key`    | long   | Process definition key.                        |
+| `camunda.process.instance_key`      | long   | Process instance key.                          |
 | `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes). |
-| `camunda.tenant.id`                 | string | Tenant ID.                                  |
+| `camunda.tenant.id`                 | string | Tenant ID.                                     |
 
 **`user_task_created`**
 
-|          Attribute           |  Type  |             Description             |
-|-------------------------------|--------|----------------------------------------|
-| `camunda.process.id`          | string | BPMN process ID.                        |
-| `camunda.process.definition_key` | long | Process definition key.               |
-| `camunda.process.instance_key`  | long | Process instance key.                 |
-| `camunda.element.id`          | string | BPMN element ID of the user task.       |
-| `camunda.tenant.id`           | string | Tenant ID.                              |
+|            Attribute             |  Type  |            Description            |
+|----------------------------------|--------|-----------------------------------|
+| `camunda.process.id`             | string | BPMN process ID.                  |
+| `camunda.process.definition_key` | long   | Process definition key.           |
+| `camunda.process.instance_key`   | long   | Process instance key.             |
+| `camunda.element.id`             | string | BPMN element ID of the user task. |
+| `camunda.tenant.id`              | string | Tenant ID.                        |
 
 Note: unlike `process_instance_created`, this event does not carry `camunda.process.version`.
 
 **`adhoc_subprocess_activated`**
 
-|          Attribute           |  Type  |             Description             |
-|-------------------------------|--------|----------------------------------------|
-| `camunda.process.id`          | string | BPMN process ID.                        |
-| `camunda.process.definition_key` | long | Process definition key.               |
-| `camunda.process.instance_key`  | long | Process instance key.                 |
-| `camunda.element.id`          | string | BPMN element ID of the ad-hoc sub-process. |
-| `camunda.tenant.id`           | string | Tenant ID.                              |
+|            Attribute             |  Type  |                Description                 |
+|----------------------------------|--------|--------------------------------------------|
+| `camunda.process.id`             | string | BPMN process ID.                           |
+| `camunda.process.definition_key` | long   | Process definition key.                    |
+| `camunda.process.instance_key`   | long   | Process instance key.                      |
+| `camunda.element.id`             | string | BPMN element ID of the ad-hoc sub-process. |
+| `camunda.tenant.id`              | string | Tenant ID.                                 |
 
 **`usage_metric_exported`**
 
-|              Attribute               |  Type  |                     Description                     |
-|----------------------------------------|--------|--------------------------------------------------------|
-| `camunda.usage_metric.event_type`      | string | Metric type: `RPI` (running process instances), `EDI` (executed decision instances), or `TU` (task users). |
-| `camunda.usage_metric.count`           | long   | Count for this metric type in this export interval.     |
-| `camunda.usage_metric.interval_start`  | long   | Epoch-ms start of the export window.                    |
-| `camunda.usage_metric.interval_end`    | long   | Epoch-ms end of the export window.                      |
+|               Attribute               |  Type  |                                                Description                                                 |
+|---------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
+| `camunda.usage_metric.event_type`     | string | Metric type: `RPI` (running process instances), `EDI` (executed decision instances), or `TU` (task users). |
+| `camunda.usage_metric.count`          | long   | Count for this metric type in this export interval.                                                        |
+| `camunda.usage_metric.interval_start` | long   | Epoch-ms start of the export window.                                                                       |
+| `camunda.usage_metric.interval_end`   | long   | Epoch-ms end of the export window.                                                                         |
 
 ### Heartbeat attributes
 
