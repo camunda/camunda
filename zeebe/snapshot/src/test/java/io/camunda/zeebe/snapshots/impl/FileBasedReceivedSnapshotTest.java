@@ -347,6 +347,24 @@ public class FileBasedReceivedSnapshotTest {
     }
   }
 
+  @Test
+  public void shouldRejectDuplicatedChunks() {
+    // given
+    final var senderSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(senderSnapshot.getId()).join();
+
+    try (final var reader = senderSnapshot.newChunkReader()) {
+      final var chunk = reader.next();
+      receivedSnapshot.apply(chunk).join();
+
+      // when/then
+      assertThatThrownBy(() -> receivedSnapshot.apply(chunk).join())
+          .hasCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Expected next chunk at offset");
+    }
+  }
+
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
