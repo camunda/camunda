@@ -102,11 +102,22 @@ public final class ProcessInstanceResumeProcessor
                   elementInstance.getValue().getProcessInstanceKey(),
                   "such process")
               : rejection.reason();
+      enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
       responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
       return false;
     }
 
     return true;
+  }
+
+  /**
+   * Enriches the command value with fields from the element instance to ensure rejection records
+   * have the proper context for audit logs export.
+   */
+  private void enrichRejectionCommand(
+      final TypedRecord<ProcessInstanceRecord> command,
+      final ProcessInstanceRecord processInstanceRecord) {
+    command.getValue().setTenantId(processInstanceRecord.getTenantId());
   }
 }

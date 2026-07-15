@@ -33,6 +33,7 @@ import org.junit.Test;
 
 public class ProcessInstanceResumeAuthorizationTest {
   private static final String PROCESS_ID = "processId";
+  private static final String TENANT = "custom-tenant";
 
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
@@ -125,6 +126,38 @@ public class ProcessInstanceResumeAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'SUSPEND_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+  }
+
+  @Test
+  public void shouldEnrichRejectionWithTenantIdWhenUnauthorized() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            "tenant-process.bpmn",
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done())
+        .withTenantId(TENANT)
+        .deploy(DEFAULT_USER.getUsername());
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withTenantId(TENANT)
+            .create(DEFAULT_USER.getUsername());
+    final var user = createUser();
+
+    // when
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .forAuthorizedTenants(TENANT)
+            .expectResumeRejection()
+            .resume(user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    Assertions.assertThat(rejection.getValue()).hasTenantId(TENANT);
   }
 
   private UserRecordValue createUser() {
