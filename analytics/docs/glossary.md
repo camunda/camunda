@@ -96,9 +96,10 @@ source record → base projection → fact → (per dataset) subscribe + aggrega
 
 ## How the layers map
 
-| Layer | Module | Holds |
-|---|---|---|
-| L1 substrate | `event-bridge-streaming` | Processor/ProcessorTopology, windows, segment/dedup, shuffle codec, StreamRuntime, state stores, owning-Task durability |
-| L2 engine | `analytics-engine` | base projection (appliers/derivers), meters, the cube-meter aggregate node — the domain operators |
-| L2 model / serving | `analytics-model`, `analytics-serving` | facts, datasets (cube/table), dimensions, meters; the serving store SPIs + query planner |
-| L3 app | `event-bridge-analytics` | declares the topologies, owns IO (publisher/transport, backends), runs the runtime |
+|       Layer        |                 Module                 |                                                          Holds                                                          |
+|--------------------|----------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| L1 substrate       | `event-bridge-streaming`               | Processor/ProcessorTopology, windows, segment/dedup, shuffle codec, StreamRuntime, state stores, owning-Task durability |
+| L2 engine          | `analytics-engine`                     | base projection (appliers/derivers), meters, the cube-meter aggregate node — the domain operators                       |
+| L2 model / serving | `analytics-model`, `analytics-serving` | facts, datasets (cube/table), dimensions, meters; the serving store SPIs + query planner                                |
+| L3 app             | `event-bridge-analytics`               | declares the topologies, owns IO (publisher/transport, backends), runs the runtime                                      |
+

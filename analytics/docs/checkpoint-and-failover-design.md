@@ -71,13 +71,13 @@ for (ZeebeRecord r : batch) consumer.commit(r).join(); // advance the coordinato
 
 Notes:
 - ZeebeDb `runInTransaction` is reentrant: each `KeyValueStore.put` (which wraps its own
-  `runInTransaction`) joins the ambient batch transaction. Reads inside the txn see prior writes in
-  the same txn (read-your-writes) — required because record N+1 in a batch may read what record N
-  wrote (e.g. activate then complete the same element).
+`runInTransaction`) joins the ambient batch transaction. Reads inside the txn see prior writes in
+the same txn (read-your-writes) — required because record N+1 in a batch may read what record N
+wrote (e.g. activate then complete the same element).
 - **Sink upserts happen inside the txn block** but are JDBC, not part of the RocksDB txn. This is
-  intentional: if a sink upsert throws, the RocksDB txn aborts → the whole batch (incl. offset)
-  rolls back → clean retry. If the RocksDB commit fails after a sink upsert, replay re-upserts
-  (idempotent). Net: effectively all-or-nothing.
+intentional: if a sink upsert throws, the RocksDB txn aborts → the whole batch (incl. offset)
+rolls back → clean retry. If the RocksDB commit fails after a sink upsert, replay re-upserts
+(idempotent). Net: effectively all-or-nothing.
 
 ### Simplify the rollup
 
@@ -100,16 +100,16 @@ DurableMaterializedRollup(
 
 Behavior:
 - `accept(fact)`: `pending.merge(windowedKey, add(fact), merge)`; advance heap `maxEventTime`. **No
-  dedup** (single cut → no replay → not needed).
+dedup** (single cut → no replay → not needed).
 - `flush()`: for each `pending` cell → `mergeIntoDurableCell` (get+merge+put in `cells`, prefixed by
-  `rollupId`) → `sink.upsert(fullValue)`; clear pending; `finalizeClosedWindows()`.
+`rollupId`) → `sink.upsert(fullValue)`; clear pending; `finalizeClosedWindows()`.
 - `finalizeClosedWindows()`: `cells.prefixScan(rollupId)`; for cells with `windowEnd <= maxEventTime
-  - lateness` → final `sink.upsert` + `cells.delete`.
+- lateness` → final `sink.upsert` + `cells.delete`.
 - **No own transaction** — cell puts join the driver's ambient txn. **No offset/watermark
-  persistence**: `maxEventTime` is heap-only; after a restart it rebuilds from new facts. The sink
-  already holds each cell's latest value, so a not-yet-finalized window is still correct in the
-  sink; it just isn't evicted until the watermark advances again (bounded leak on idle partitions
-  only).
+persistence**: `maxEventTime` is heap-only; after a restart it rebuilds from new facts. The sink
+already holds each cell's latest value, so a not-yet-finalized window is still correct in the
+sink; it just isn't evicted until the watermark advances again (bounded leak on idle partitions
+only).
 
 Remove the `SourceCoordinate` constructor arg and `appliedPosition`/offset code. **Keep
 `SourceCoordinate.java`** in the library (cross-shuffle idempotency key, Part-B-of-the-future).
@@ -117,10 +117,12 @@ Remove the `SourceCoordinate` constructor arg and `appliedPosition`/offset code.
 ### Store changes (`StateBackedProjectionStore`)
 
 Add, both delegating to the shared provider:
+
 ```java
 KeyValueStore<DbBytes, DbBytes> rollupCells();          // provider.keyValueStore(ROLLUP_CELLS, new DbBytes(), new DbBytes())
 void runInTransaction(Runnable operations);             // provider.runInTransaction(...)
 ```
+
 Add `runInTransaction(Runnable)` to the `BaseProjectionStore` interface (in-memory provider
 implements it too).
 
@@ -265,3 +267,4 @@ large — at which point reuse ZeebeDb's snapshot support and the pending→move
 2. Part B (low-watermark + cold-start seek) — smaller; adds the failover story.
 3. Defer: strict no-dip restore mode; transactional-sink co-commit; ES external-version fence;
    snapshots; per-dataset offsets (parked) — which reuse `rollupId` and per-dataset start offsets.
+

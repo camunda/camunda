@@ -11,6 +11,7 @@ import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.projection.SourceRecord;
+import io.camunda.analytics.state.ElementEntity;
 import io.camunda.analytics.state.immutable.ProjectionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -44,10 +45,12 @@ public final class ElementActivatedDeriver implements FactDeriver {
     if (value.getBpmnElementType() != BpmnElementType.PROCESS) {
       fact.field("elementId", Utf8View.copyOf(value.getElementIdBuffer()));
     } else {
-      final Long businessValue = BusinessValue.read(state, source.record().getKey());
-      if (businessValue != null) {
+      // The applier just materialized the activation-time business value on the row; stamp that
+      // (never a re-read — see BusinessValue for the exact-balance contract with the end fact).
+      final ElementEntity row = state.element(source.record().getKey());
+      if (row != null && row.hasValue()) {
         // +value: the instance's worth enters the system (see BusinessValue for the field pair).
-        fact.field("value", businessValue).field("valueDelta", businessValue);
+        fact.field("value", row.value()).field("valueDelta", row.value());
       }
     }
     facts.accept(fact.build());

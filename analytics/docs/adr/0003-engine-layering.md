@@ -104,12 +104,12 @@ reconcile**. Sealed partial-aggregate deltas are **published before** the offset
 Provide the reusable node types so the domain declares a topology instead of hand-wiring:
 - **source** — feeds the deserialized source record in;
 - **stateful process node** — a `Processor` with attached `KeyValueStore`s (the base-projection
-  home);
+home);
 - **windowed segment-sealing aggregate node** — wraps `AggregateFunction` + the segment/seal/dedup
-  machinery, **checkpoints its open segment** (Model F), and forwards sealed partial-aggregate
-  deltas;
+machinery, **checkpoints its open segment** (Model F), and forwards sealed partial-aggregate
+deltas;
 - **sink node** — `Processor<In, Void>` that publishes (to the shuffle topic, or a serving store),
-  flushing its output before the offset commits (produce-before-commit).
+flushing its output before the offset commits (produce-before-commit).
 
 ### 3. Three layers with hard boundaries
 
@@ -168,3 +168,4 @@ replay-determinism motive is N/A because recovery is offset-refold).
 4. **L2 aggregation** — express cube meters as windowed segment-seal aggregate nodes.
 5. **L3 topology** — declare the analytics `ProcessorTopology`; delete the shards; retire
    `Projector`/`Aggregation`/`ProjectionStage`.
+

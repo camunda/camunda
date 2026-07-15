@@ -68,3 +68,4 @@ deleting** (ClickHouse TTL GROUP BY). We adopt the first, as a first-class decla
   reads are RDBMS.
 - Write amplification: one row per changed key per sample boundary — opt-in per dataset, and
   sparse emission keeps silent keys free.
+

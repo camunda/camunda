@@ -73,14 +73,14 @@ final class DashboardVariantsServingTest {
     // element chains join in from the catalog
     assertThat(variants).hasSize(2);
     final VariantRow top = variants.get(0);
-    assertThat(top.variantHash()).isEqualTo(HAPPY_PATH);
+    assertThat(top.variantHash()).isEqualTo(String.valueOf(HAPPY_PATH));
     assertThat(top.count()).isEqualTo(3L);
     assertThat(top.share()).isEqualTo(0.75);
     assertThat(top.elements()).isEqualTo("assess-auto, payout, register");
     assertThat(top.p50Ms()).isBetween(1_000L, 3_000L);
     assertThat(top.p95Ms()).isGreaterThanOrEqualTo(top.p50Ms());
     final VariantRow second = variants.get(1);
-    assertThat(second.variantHash()).isEqualTo(RETRY_LOOP);
+    assertThat(second.variantHash()).isEqualTo(String.valueOf(RETRY_LOOP));
     assertThat(second.count()).isEqualTo(1L);
     assertThat(second.share()).isEqualTo(0.25);
     assertThat(second.elements()).isEqualTo("assess-manual×2-3, payout, register");
@@ -100,7 +100,7 @@ final class DashboardVariantsServingTest {
         .singleElement()
         .satisfies(
             variant -> {
-              assertThat(variant.variantHash()).isEqualTo(HAPPY_PATH);
+              assertThat(variant.variantHash()).isEqualTo(String.valueOf(HAPPY_PATH));
               assertThat(variant.elements()).isEmpty();
               assertThat(variant.share()).isEqualTo(1.0);
             });
@@ -119,7 +119,7 @@ final class DashboardVariantsServingTest {
     final List<VariantRow> variants = repository.variants(PROCESS, null, null, 2);
 
     // then the list truncates by rank while shares stay against ALL ended-with-variant instances
-    assertThat(variants).extracting(VariantRow::variantHash).containsExactly(1L, 2L);
+    assertThat(variants).extracting(VariantRow::variantHash).containsExactly("1", "2");
     assertThat(variants.get(0).share()).isEqualTo(0.5); // 3 of 6, not 3 of 5
   }
 

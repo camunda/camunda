@@ -32,16 +32,22 @@ public final class ElementEntity extends UnpackedObject implements DbValue {
       new EnumProperty<>("status", ElementStatus.class, ElementStatus.ACTIVE);
   private final BooleanProperty isProcessProp = new BooleanProperty("isProcess", false);
   private final BooleanProperty hadIncidentProp = new BooleanProperty("hadIncident", false);
+  // The business value read at ACTIVATION time (process rows only; unset when the value variable
+  // was absent or non-numeric then). The end fact subtracts exactly this, never the variable's
+  // current value — otherwise a value created or changed mid-flight would leave a permanent
+  // residue on the value-in-flight level.
+  private final LongProperty valueProp = new LongProperty("value", UNSET);
 
   public ElementEntity() {
-    super(7);
+    super(8);
     declareProperty(startProp)
         .declareProperty(endProp)
         .declareProperty(durationProp)
         .declareProperty(parentScopeProp)
         .declareProperty(statusProp)
         .declareProperty(isProcessProp)
-        .declareProperty(hadIncidentProp);
+        .declareProperty(hadIncidentProp)
+        .declareProperty(valueProp);
   }
 
   /**
@@ -70,6 +76,20 @@ public final class ElementEntity extends UnpackedObject implements DbValue {
   public ElementEntity hadIncident(final boolean hadIncident) {
     hadIncidentProp.setValue(hadIncident);
     return this;
+  }
+
+  /** Materializes the activation-time business value (see the field comment). */
+  public ElementEntity value(final long value) {
+    valueProp.setValue(value);
+    return this;
+  }
+
+  public boolean hasValue() {
+    return valueProp.getValue() != UNSET;
+  }
+
+  public long value() {
+    return valueProp.getValue();
   }
 
   public long start() {

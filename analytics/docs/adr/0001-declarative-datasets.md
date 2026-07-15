@@ -91,28 +91,28 @@ become the same mechanism.
 
    Meter kinds are organised by **merge semantics**, not observability-instrument names:
    - **additive** — `COUNT`, `SUM`, `MIN`, `MAX`, `AVG`, and `LEVEL` (a running level = `SUM` of
-     signed ±1 deltas). This is where "counter" and *level-gauges* live: active-instances /
-     open-incidents are `LEVEL` over a delta measure, exactly as the current code already does — no
-     separate gauge type.
+   signed ±1 deltas). This is where "counter" and *level-gauges* live: active-instances /
+   open-incidents are `LEVEL` over a delta measure, exactly as the current code already does — no
+   separate gauge type.
    - **mergeable-sketch** — `PERCENTILE` (KLL), `DISTINCT` (HLL), `TOPK` (frequent-items); the
-     timer/summary/histogram family.
+   timer/summary/histogram family.
    - **ratio / cohort** — matched/total, a derived additive. **Implemented** (`RATIO`): a fact
-     increments `total` and, when its measure satisfies a threshold comparison
-     (`le`/`lt`/`ge`/`gt`/`eq`/`ne`), also `matched`; the ratio is derived on read. The classic
-     cohorts are declarations, not bespoke Java — SLA-compliant share is `duration <= sla`,
-     no-incident share is `incidentCount == 0`.
+   increments `total` and, when its measure satisfies a threshold comparison
+   (`le`/`lt`/`ge`/`gt`/`eq`/`ne`), also `matched`; the ratio is derived on read. The classic
+   cohorts are declarations, not bespoke Java — SLA-compliant share is `duration <= sla`,
+   no-incident share is `incidentCount == 0`.
    - **`LAST_VALUE`** / `FIRST_VALUE` (value-as-of gauge, e.g. "latest `amount`/`status` per
-     instance") is a **mergeable max-by/min-by monoid**, not a heavy non-additive kind: carry the
-     value with its source position (or event-time + tiebreak) and merge keeps the larger/smaller
-     position. Exact, commutative + associative, and segment-delta-safe — no sketch, no
-     non-commutative shuffle. A **strong near-term candidate** for the meter set (process analytics is
-     full of "value as of" semantics), not a speculative deferral.
+   instance") is a **mergeable max-by/min-by monoid**, not a heavy non-additive kind: carry the
+   value with its source position (or event-time + tiebreak) and merge keeps the larger/smaller
+   position. Exact, commutative + associative, and segment-delta-safe — no sketch, no
+   non-commutative shuffle. A **strong near-term candidate** for the meter set (process analytics is
+   full of "value as of" semantics), not a speculative deferral.
    - **Positional / sequential state** ("Nth retry", loop count) is **per-instance base-projection
-     state** (like the incident flags / element starts already persisted), not a meter; a running
-     total is a read-time `SUM() OVER (ORDER BY window)` over an additive meter. **Session/gap
-     windows** are deferred — BPMN gives explicit lifecycle boundaries, so gap-inference is only
-     needed if analytics expands to user-behavior (Tasklist clickstreams), where the interval-merge +
-     watermark cost would be justified.
+   state** (like the incident flags / element starts already persisted), not a meter; a running
+   total is a read-time `SUM() OVER (ORDER BY window)` over an additive meter. **Session/gap
+   windows** are deferred — BPMN gives explicit lifecycle boundaries, so gap-inference is only
+   needed if analytics expands to user-behavior (Tasklist clickstreams), where the interval-merge +
+   watermark cost would be justified.
 
 2. **Fact (generic).** The base projection keeps its domain fold but emits a generic
    `Fact = (factType, dimensions: Map, measures: Map, eventTime, sourceCoordinate)` for a small set
@@ -164,9 +164,10 @@ become the same mechanism.
    activation/deactivation vector}` mapping is bit-identical across restarts.
 
 4. **Report.** A `ReportDefinition` (dataset + selected dimensions ⊆ the dataset's + metric selection
+
    + filters + time range/tier + viz) executes as a **generated query over the pre-aggregated
-   dataset** — sum counts / merge sketches. Reports are logical views; no new storage. Replaces the
-   per-tile `DashboardRepository`.
+     dataset** — sum counts / merge sketches. Reports are logical views; no new storage. Replaces the
+     per-tile `DashboardRepository`.
 
 ### Avoiding dataset/meter explosion: shared base-grain cubes + logical views
 
@@ -233,7 +234,7 @@ the dimension is low-card *and* enough declarations benefit, and prefers a dedic
 otherwise. The pipeline folds by whatever grain the registry currently pins; it never decides
 cardinality itself.
 - A curated process-instance cube (standard dims + a small set of user-opted-in low-card variable
-  dimensions) can be the default, materialized once; the long tail of declarations are views over it.
+dimensions) can be the default, materialized once; the long tail of declarations are views over it.
 
 ### Serving-store abstraction — mirror OC's `search-client` (RDBMS + ES + OS)
 
@@ -372,4 +373,5 @@ thin front-end).
   `ResultSink` contract for that store.
 - Dimension backfill demand (deck: forward-only vs backfill) — promote Phase 6 and add a
   reprocessing path over the base projection.
-</content>
+  </content>
+

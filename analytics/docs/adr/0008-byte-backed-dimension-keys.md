@@ -36,16 +36,16 @@ equality, so semantics are unchanged.
 
 Consequences by hop:
 - **Selector (Stage 1)**: encodes each column straight from the fact's value views into a reusable
-  encoder buffer — no lists, no boxing, no `String` materialization for string-typed fields.
+encoder buffer — no lists, no boxing, no `String` materialization for string-typed fields.
 - **Heap cell maps / `Windowed` probe**: a scratch probe key wraps the encoder buffer for the
-  lookup; an owned copy is allocated only when a new cell is inserted (get-then-copy-on-insert).
+lookup; an owned copy is allocated only when a new cell is inserted (get-then-copy-on-insert).
 - **Shuffle**: `keyCodec.toBytes(key)` returns the already-encoded bytes (a slice copy at the
-  envelope boundary, which must own its buffer anyway).
+envelope boundary, which must own its buffer anyway).
 - **Stage 2**: the received key bytes are wrapped, not decoded — the applier's `Windowed` key and
-  the RocksDB cell key reuse the same bytes. The per-cell decode-to-`String` disappears.
+the RocksDB cell key reuse the same bytes. The per-cell decode-to-`String` disappears.
 - **Serving edge**: `values()`/`get(name)` decode lazily, per column, only where a materialized
-  value is genuinely needed — the `cell_key` render and the JDBC binds — using the schema to walk
-  the encoding. This is the one place UTF-8 decode remains, once per written cell.
+value is genuinely needed — the `cell_key` render and the JDBC binds — using the schema to walk
+the encoding. This is the one place UTF-8 decode remains, once per written cell.
 
 ### 2. Value views end-to-end feed the selector without Strings
 

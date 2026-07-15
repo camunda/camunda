@@ -78,3 +78,4 @@ above; any anomaly with its onset time.
 - The load generator, not analytics, is the first bottleneck above ~1.5 instance/s on a laptop:
   don't tune worker completion delay (300 ms is benchmark-faithful and shortening it weakens
   the test); add worker threads or spread gateway connections instead.
+

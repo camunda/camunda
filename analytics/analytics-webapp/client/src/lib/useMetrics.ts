@@ -57,7 +57,7 @@ export interface MetricsData {
   comparison: KpiComparison | null;
   /** Previous-period percentile series re-timestamped onto the current grid; null without range. */
   durationPrevious: DurationPoint[] | null;
-  /** Business value processed in range (null processed = the process has no value variable). */
+  /** Business value processed in range (null processed = no value-carrying instance completed in range). */
   valueSummary: ValueSummary;
   /** Value processed in the previous period, for the tile's delta badge; null without range. */
   valuePrevious: ValueSummary | null;

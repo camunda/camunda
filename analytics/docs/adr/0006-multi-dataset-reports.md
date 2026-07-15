@@ -102,3 +102,4 @@ projection to the shared dimension. Deferred behind UNION; the `combination` fie
   fallback to fact stream / base projection) — out of scope here.
 - Report result volume large enough that per-source app-merge is a bottleneck — push the union into a
   backend view where sources share a table/index.
+

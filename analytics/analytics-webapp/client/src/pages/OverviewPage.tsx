@@ -83,7 +83,7 @@ export function OverviewPage({
         <StatTile
           label="Value processed"
           value={data.valueSummary.processed == null ? "—" : formatCount(data.valueSummary.processed)}
-          hint={data.valueSummary.processed == null ? "no value variable" : "sum of 'amount' in range"}
+          hint={data.valueSummary.processed == null ? "no value data in range" : "sum of 'amount' in range"}
           delta={
             data.valueSummary.processed != null && data.valuePrevious?.processed != null ? (
               <DeltaBadge

@@ -311,7 +311,11 @@ public class DashboardRepository {
     if (to <= from) {
       throw new IllegalArgumentException("empty comparison range [" + from + ", " + to + ")");
     }
-    final long period = to - from;
+    // Snap the shift to the cube's window grid: cube windows sit on a fixed epoch grid, so an
+    // unaligned P (a free-form range, or two Date.now() calls a millisecond apart) would land the
+    // previous points BETWEEN the current grid's points and shred the overlaid chart into gaps.
+    final long window = finestTier(catalog.require("process-duration"));
+    final long period = Math.max(window, to - from - Math.floorMod(to - from, window));
     final Map<QueryKey, List<ReportRow>> memo = newMemo();
     final List<DurationPercentilePoint> previous = new ArrayList<>();
     for (final DurationPercentilePoint p :
@@ -556,10 +560,11 @@ public class DashboardRepository {
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
     final CompiledDataset dataset = catalog.require("active-instances");
     final long everyMs = dataset.snapshots().everyMs();
-    final long toMs =
-        toWindow != null
-            ? toWindow
-            : System.currentTimeMillis() - dataset.finestTier().windows().graceMs();
+    // Explicit range ends are clamped to the same newest-releasable boundary: the dashboard sends
+    // to = "now", and carrying the last snapshot into the still-unreleasable grace stretch would
+    // fabricate the exact flat tail the null-range default exists to avoid.
+    final long releasable = System.currentTimeMillis() - dataset.finestTier().windows().graceMs();
+    final long toMs = toWindow != null ? Math.min(toWindow, releasable) : releasable;
     final long fromMs = fromWindow == null ? toMs - ACTIVE_SERIES_LOOKBACK_MS : fromWindow;
     final List<ActiveInstancesPoint> out = new ArrayList<>();
     for (final SnapshotSeriesPoint point :
@@ -580,6 +585,10 @@ public class DashboardRepository {
    */
   public ValueSummary valueSummary(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    if (!catalog.byName().containsKey("value-throughput")) {
+      // not provisioned on this metadata store — a dash, not a dashboard-blanking 500
+      return new ValueSummary(null);
+    }
     for (final ReportRow row :
         total(
             "value-throughput",
@@ -603,12 +612,16 @@ public class DashboardRepository {
    */
   public List<ValuePoint> valueSeries(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
-    final CompiledDataset dataset = catalog.require("value-in-flight");
+    final CompiledDataset dataset = catalog.byName().get("value-in-flight");
+    if (dataset == null || dataset.snapshots() == null) {
+      // dataset not provisioned on this metadata store (bootstrapped before this cube existed) —
+      // an empty series, not a 500 that would blank the whole dashboard render
+      return List.of();
+    }
     final long everyMs = dataset.snapshots().everyMs();
-    final long toMs =
-        toWindow != null
-            ? toWindow
-            : System.currentTimeMillis() - dataset.finestTier().windows().graceMs();
+    // explicit range ends clamp to the newest-releasable boundary, like activeSeries
+    final long releasable = System.currentTimeMillis() - dataset.finestTier().windows().graceMs();
+    final long toMs = toWindow != null ? Math.min(toWindow, releasable) : releasable;
     final long fromMs = fromWindow == null ? toMs - ACTIVE_SERIES_LOOKBACK_MS : fromWindow;
     final List<ValuePoint> out = new ArrayList<>();
     for (final SnapshotSeriesPoint point :
@@ -1045,6 +1058,13 @@ public class DashboardRepository {
    */
   public List<VariantRow> variants(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow, final int limit) {
+    if (limit < 0) {
+      throw new IllegalArgumentException("limit must be >= 0: " + limit);
+    }
+    if (!catalog.byName().containsKey("process-variants") || !tableCatalog.has("variant-catalog")) {
+      // not provisioned on this metadata store — an empty card, not a dashboard-blanking 500
+      return List.of();
+    }
     final List<ReportRow> rows =
         total(
             "process-variants",
@@ -1081,8 +1101,11 @@ public class DashboardRepository {
       final QuantileResult q =
           row.measures().get("duration_p") instanceof final QuantileResult result ? result : null;
       out.add(
+          // The hash travels as a STRING: a 64-bit long rendered as a JSON number would silently
+          // lose precision in the client (JS doubles carry 53 bits), corrupting any future
+          // drill-down that echoes it back.
           new VariantRow(
-              hash,
+              Long.toString(hash),
               elementsByHash.getOrDefault(hash, ""),
               count,
               totalEnded == 0 ? 0.0 : (double) count / totalEnded,

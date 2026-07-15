@@ -108,3 +108,4 @@ with a stable durable-cell group id from the same `MeterIdRegistry`).
 - The facts-topic payload, `CUBE_CELLS`/`OPEN_SEGMENT` layouts, and allocated `aggId` semantics
   change incompatibly — a one-time re-seed cut (fresh topics + state dirs), same precedent as the
   ADR 0007 frame change. Pre-GA, topics re-seedable, no dual-format support.
+

@@ -85,16 +85,16 @@ public final class ElementCompletedDeriver implements FactDeriver {
     if (isProcess) {
       // processInstanceKey is stamped uniformly by ElementFacts.base — never duplicated here.
       fact.field("completedNormally", transition == Transition.COMPLETED);
-      final Long businessValue = BusinessValue.read(state, elementInstanceKey);
-      if (businessValue != null) {
-        // −value: the instance's worth leaves the system on either terminal transition (see
-        // BusinessValue for the field pair and the mid-flight-change caveat).
-        fact.field("value", businessValue).field("valueDelta", -businessValue);
+      if (row.hasValue()) {
+        // −value: the instance's worth leaves the system on either terminal transition. Exactly
+        // the activation-materialized value — never a re-read of the variable, so the in-flight
+        // level balances even when the value changed mid-flight (see BusinessValue).
+        fact.field("value", row.value()).field("valueDelta", -row.value());
       }
       // The instance's variant, folded from its accumulator (still live — cleared only on evict,
       // after this derive). COMPLETED and TERMINATED alike: a mid-flight termination is its own
       // partial-set variant. Absent when no element was recorded (fields stay unset).
-      final VariantSignature signature = new VariantSignature();
+      final VariantSignature signature = new VariantSignature(value.getBpmnProcessId());
       state.forEachVariantElement(elementInstanceKey, signature::add);
       final VariantSignature.Variant variant = signature.build();
       if (variant != null) {

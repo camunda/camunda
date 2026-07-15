@@ -32,11 +32,11 @@ Each **entity** (friendly name for a `FactType`) offers a curated set of **measu
 for a meter template) and **group-bys** (friendly name for a dimension). A measure carries the
 engine mapping so the client never sees it.
 
-| Entity | Measures (friendly → engine) | Group-bys |
-|---|---|---|
+|                 Entity                 |                                                                                                                                       Measures (friendly → engine)                                                                                                                                        |                              Group-bys                               |
+|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------|
 | Process instances (`PROCESS_INSTANCE`) | Number of instances→`count`; Average duration→`execution_time_summary(durationMs)`; Duration percentile→`percentile(durationMs)` (param: percentile); % within SLA→`ratio(durationMs, le, target)` (param: SLA target); Currently running→`level`; Distinct process definitions→`distinct(bpmnProcessId)` | Process (`bpmnProcessId`), Version, Tenant, Variable… (`var.<name>`) |
-| Flow nodes / tasks (`ELEMENT`) | Times executed→`count`; Average duration→`execution_time_summary(durationMs)`; Duration percentile→`percentile(durationMs)` | Process, Flow node (`elementId`), Variable… |
-| Incidents (`INCIDENT`) | Number of incidents→`count`; Currently open→`level(delta)` | Process, Flow node |
+| Flow nodes / tasks (`ELEMENT`)         | Times executed→`count`; Average duration→`execution_time_summary(durationMs)`; Duration percentile→`percentile(durationMs)`                                                                                                                                                                               | Process, Flow node (`elementId`), Variable…                          |
+| Incidents (`INCIDENT`)                 | Number of incidents→`count`; Currently open→`level(delta)`                                                                                                                                                                                                                                                | Process, Flow node                                                   |
 
 Params surfaced in friendly terms: *Percentile* (default 95), *SLA target* (a duration, default 5
 min). Enrichment timing for variable group-bys defaults to a sensible value and is only shown under
@@ -47,7 +47,7 @@ Advanced. Window tiers are derived from the offered granularities, never hand-en
 `question → DatasetDeclaration`:
 - `sourceFact` = entity's fact type.
 - `meters` = the measure's template, with a **deterministic meter name** (e.g. `avg-duration` measure
-  → meter `duration`) so the report can reference it.
+→ meter `duration`) so the report can reference it.
 - `dimensions` = group-bys (a variable group-by becomes `var.<name>` with the default enrichment).
 - `filters` = the where-clauses (EQUALS today).
 - `windowSizesMs` = the measure's default tiers (∪ the chosen granularity).

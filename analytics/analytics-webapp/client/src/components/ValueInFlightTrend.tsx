@@ -33,7 +33,7 @@ export function ValueInFlightTrend({ points }: { points: ValuePoint[] }) {
     >
       {data.length === 0 ? (
         <div className="flex h-full items-center justify-center text-sm text-neutral-foreground-muted">
-          No value data — this process sets no value variable.
+          No value data in range — the process may not set a value variable.
         </div>
       ) : (
         <ResponsiveContainer width="100%" height="100%">

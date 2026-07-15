@@ -208,9 +208,14 @@ public final class StateBackedProjectionState implements MutableProjectionState,
       final long elementInstanceKey,
       final long startTimeMs,
       final boolean isProcess,
-      final long parentScopeKey) {
+      final long parentScopeKey,
+      final Long businessValue) {
     elementKey.wrapLong(elementInstanceKey);
-    elements.put(elementKey, elementWrite.activate(startTimeMs, isProcess, parentScopeKey));
+    elementWrite.activate(startTimeMs, isProcess, parentScopeKey);
+    if (businessValue != null) {
+      elementWrite.value(businessValue);
+    }
+    elements.put(elementKey, elementWrite);
   }
 
   @Override
@@ -225,13 +230,16 @@ public final class StateBackedProjectionState implements MutableProjectionState,
     final boolean isProcess = current.isProcess();
     final boolean hadIncident = current.hadIncident();
     final long parentScope = current.parentScopeKey();
+    final boolean hasValue = current.hasValue();
+    final long value = hasValue ? current.value() : 0L;
     elementKey.wrapLong(elementInstanceKey);
-    elements.put(
-        elementKey,
-        elementWrite
-            .activate(start, isProcess, parentScope)
-            .hadIncident(hadIncident)
-            .complete(endTimeMs, status));
+    // activate() resets the flyweight, so every surviving field must be carried over explicitly —
+    // dropping one here silently erases it from the finalized row (the end fact reads this row)
+    elementWrite.activate(start, isProcess, parentScope).hadIncident(hadIncident);
+    if (hasValue) {
+      elementWrite.value(value);
+    }
+    elements.put(elementKey, elementWrite.complete(endTimeMs, status));
     return true;
   }
 
@@ -245,9 +253,14 @@ public final class StateBackedProjectionState implements MutableProjectionState,
     final long start = current.start();
     final boolean isProcess = current.isProcess();
     final long parentScope = current.parentScopeKey();
+    final boolean hasValue = current.hasValue();
+    final long value = hasValue ? current.value() : 0L;
     elementKey.wrapLong(elementInstanceKey);
-    elements.put(
-        elementKey, elementWrite.activate(start, isProcess, parentScope).hadIncident(true));
+    elementWrite.activate(start, isProcess, parentScope).hadIncident(true);
+    if (hasValue) {
+      elementWrite.value(value);
+    }
+    elements.put(elementKey, elementWrite);
     return true;
   }
 

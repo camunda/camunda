@@ -108,25 +108,25 @@ partial's `(count, total, min, max)`, rather than `+1, +dur, dur, dur`.
 
 ## Correctness invariants
 
-| Invariant | Mechanism |
-|---|---|
-| Deterministic fold | pure function of the in-order per-partition stream |
-| Single-writer-per-key | one consumer owns a source partition's keys |
-| Mergeable aggregate | `AggregateFunction.merge`, commutative + associative |
-| Effectively-once | offset advances only at flush + source-coordinate dedup in the sink |
-| Finalization | event-time watermark (max seen) − allowed lateness ≥ window end (lazy, read-time) |
+|       Invariant       |                                     Mechanism                                     |
+|-----------------------|-----------------------------------------------------------------------------------|
+| Deterministic fold    | pure function of the in-order per-partition stream                                |
+| Single-writer-per-key | one consumer owns a source partition's keys                                       |
+| Mergeable aggregate   | `AggregateFunction.merge`, commutative + associative                              |
+| Effectively-once      | offset advances only at flush + source-coordinate dedup in the sink               |
+| Finalization          | event-time watermark (max seen) − allowed lateness ≥ window end (lazy, read-time) |
 
 ## Design lineage (borrowed concepts)
 
-| Concern | Streaming framework | Flink | Ours |
-|---|---|---|---|
-| Fold step | `Processor.process` + `ProcessorContext` | `KeyedProcessFunction.processElement` | `Projector.apply(record, Collector)` |
-| Collect | `ProcessorContext.forward` | `Collector.collect` | `Collector<F>` |
-| Aggregate | `Initializer`+`Aggregator`(+`Merger`) | `AggregateFunction<IN,ACC,OUT>` | same shape |
-| Group key | implicit `groupBy` key | `KeySelector<IN,KEY>` | `GroupKey` record + `KeySelector` |
-| Pre-aggregate | record cache + `commit.interval.ms` | mini-batch / local-global two-phase agg | in-memory combiner buffer + flush |
-| State store | changelog-backed store | keyed state backend | `analytics-state-store` |
-| Finalize / retention | `Suppressed` / `Punctuator` | event-time timers + `onTimer` | lazy `finalized` (now); timers later |
+|       Concern        |           Streaming framework            |                  Flink                  |                 Ours                 |
+|----------------------|------------------------------------------|-----------------------------------------|--------------------------------------|
+| Fold step            | `Processor.process` + `ProcessorContext` | `KeyedProcessFunction.processElement`   | `Projector.apply(record, Collector)` |
+| Collect              | `ProcessorContext.forward`               | `Collector.collect`                     | `Collector<F>`                       |
+| Aggregate            | `Initializer`+`Aggregator`(+`Merger`)    | `AggregateFunction<IN,ACC,OUT>`         | same shape                           |
+| Group key            | implicit `groupBy` key                   | `KeySelector<IN,KEY>`                   | `GroupKey` record + `KeySelector`    |
+| Pre-aggregate        | record cache + `commit.interval.ms`      | mini-batch / local-global two-phase agg | in-memory combiner buffer + flush    |
+| State store          | changelog-backed store                   | keyed state backend                     | `analytics-state-store`              |
+| Finalize / retention | `Suppressed` / `Punctuator`              | event-time timers + `onTimer`           | lazy `finalized` (now); timers later |
 
 ## What must be added now (detected from the Flink API)
 
@@ -162,3 +162,4 @@ Pre-aggregation forces a couple of pieces that lazy per-record writing let us sk
 - Retention / delete-on-completion via event-time timers (with `WatermarkStrategy`).
 - Batch transaction boundary tuning (per-record vs per-batch flush) — knob, not a redesign.
 - Route B (facts over a fact-topic) for non-mergeable metrics — needs fact codec + serializable acc.
+

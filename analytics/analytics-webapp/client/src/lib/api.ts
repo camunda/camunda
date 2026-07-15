@@ -176,7 +176,7 @@ export interface PercentileComparison {
   previous: DurationPoint[];
 }
 
-/** Business value processed in range; null = the process carries no value variable (show a dash). */
+/** Business value processed in range; null = no value-carrying instance completed in range (show a dash). */
 export interface ValueSummary {
   processed: number | null;
 }
@@ -204,10 +204,11 @@ export interface BranchDistribution {
   branches: GatewayBranch[];
 }
 
-/** One execution variant: signature hash, canonical element list (may be "" while the dictionary
- * row is in flight), count, share of ended-with-variant instances, duration percentiles. */
+/** One execution variant: signature hash (a decimal string — 64-bit, unsafe as a JS number),
+ * canonical element list (may be "" while the dictionary row is in flight), count, share of
+ * ended-with-variant instances, duration percentiles. */
 export interface VariantRow {
-  variantHash: number;
+  variantHash: string;
   elements: string;
   count: number;
   share: number;

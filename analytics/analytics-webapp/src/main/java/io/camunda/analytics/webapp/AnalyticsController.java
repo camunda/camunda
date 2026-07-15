@@ -278,6 +278,12 @@ public class AnalyticsController {
               if (!compareWithPrevious) {
                 return ResponseEntity.ok(current);
               }
+              if (toMs <= fromMs) {
+                // a zero period would "compare" the range with itself; a negative one would shift
+                // rows backwards — same guard as the dashboard comparison endpoints
+                throw new IllegalArgumentException(
+                    "compareWithPrevious needs a non-empty range [" + fromMs + ", " + toMs + ")");
+              }
               final long period = toMs - fromMs;
               final ReportResult previous = runReport(report, fromMs - period, toMs - period);
               return ResponseEntity.ok(

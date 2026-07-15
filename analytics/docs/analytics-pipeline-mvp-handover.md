@@ -31,7 +31,7 @@ from Phase 1 on top of the existing module.
 **Correctness lives in the data model, not the transport** — nail these and the shuffle mechanism
 becomes a swappable optimization:
 1. deterministic, replayable derivation (a fact is a pure function of the source — no wall-clock /
-   randomness / nondeterministic lookups in the fold);
+randomness / nondeterministic lookups in the fold);
 2. every fact carries its source coordinate `(sourcePartitionId, sourcePosition)` (done);
 3. idempotent sink keyed by that coordinate (the per-source-partition watermark — done);
 4. rewindable source + checkpointed offsets/state as the recovery backbone;
@@ -40,31 +40,31 @@ becomes a swappable optimization:
 
 **Shuffle / aggregation is a swappable strategy:**
 - **Route A — DB-as-merge (default, what's built):** each instance pre-aggregates locally and upserts
-  partials into H2 (commutative count/sum/min/max), committing `{partial + watermark}` atomically
-  with its own source offset. No shuffle, no fact-topic required, exactly-once into H2. Correct for
-  all *commutative* rollups — keep it as the fast path.
+partials into H2 (commutative count/sum/min/max), committing `{partial + watermark}` atomically
+with its own source offset. No shuffle, no fact-topic required, exactly-once into H2. Correct for
+all *commutative* rollups — keep it as the fast path.
 - **Route B — in-engine shuffle (only when needed):** joins, windows, non-commutative metrics
-  (p95/distinct/sessions/top-N/CEP) need co-located keyed state, so they require a re-key shuffle
-  (one shared `defKey`-typed fact-topic, or direct transport) + keyed state + event-time timers +
-  watermarks. **DO NOT build this until the first operator that needs it.** When built, copy
-  **Spark's micro-batch checkpoint model** (per-batch `{offset range → run → state → sink →
-  commit}`, re-run uncommitted batch on crash) — NOT Flink's aligned barriers. The invariant:
-  **never commit a source offset past what is durably captured downstream** (aggregate watermark +
-  the base projection's open-instance state). Build the **micro-batch** model first and **benchmark
-  the real workload** before investing in Flink-style continuous + credit-based backpressure — the
-  durable bridge absorbs bursts as consumer lag (events wait in the topic, no memory blow-up), so a
-  backlog is non-catastrophic; go continuous only if micro-batch demonstrably can't stay balanced
-  under sustained rate (the deck's "PoC + benchmark" gate).
-  - **Coordination — prefer decentralized, NOT a global batch driver.** Our aggregations are
-    **per-key independent** (no metric needs a consistent cut across all `defKey`s at one instant),
-    so skip Spark's global synchronized batch + driver. Instead: each downstream operator
-    checkpoints `{its keyed state + per-source-partition watermark}` on its own schedule and reports
-    its durable watermark back; each source commits its offset only up to `min(downstream
-    watermarks)`; recovery = rewind to the watermark, replay, and the source-coordinate dedup drops
-    anything already applied. This works for non-commutative state too (replay is deterministic +
-    single-writer per key). Reuse the bridge's existing consumer-group/metadata coordinator for
-    **assignment only**; add just a small watermark-feedback path. Build a Spark-style global-batch
-    coordinator ONLY if a future metric genuinely needs cross-key consistency (rare here).
+(p95/distinct/sessions/top-N/CEP) need co-located keyed state, so they require a re-key shuffle
+(one shared `defKey`-typed fact-topic, or direct transport) + keyed state + event-time timers +
+watermarks. **DO NOT build this until the first operator that needs it.** When built, copy
+**Spark's micro-batch checkpoint model** (per-batch `{offset range → run → state → sink →
+commit}`, re-run uncommitted batch on crash) — NOT Flink's aligned barriers. The invariant:
+**never commit a source offset past what is durably captured downstream** (aggregate watermark +
+the base projection's open-instance state). Build the **micro-batch** model first and **benchmark
+the real workload** before investing in Flink-style continuous + credit-based backpressure — the
+durable bridge absorbs bursts as consumer lag (events wait in the topic, no memory blow-up), so a
+backlog is non-catastrophic; go continuous only if micro-batch demonstrably can't stay balanced
+under sustained rate (the deck's "PoC + benchmark" gate).
+- **Coordination — prefer decentralized, NOT a global batch driver.** Our aggregations are
+**per-key independent** (no metric needs a consistent cut across all `defKey`s at one instant),
+so skip Spark's global synchronized batch + driver. Instead: each downstream operator
+checkpoints `{its keyed state + per-source-partition watermark}` on its own schedule and reports
+its durable watermark back; each source commits its offset only up to `min(downstream
+watermarks)`; recovery = rewind to the watermark, replay, and the source-coordinate dedup drops
+anything already applied. This works for non-commutative state too (replay is deterministic +
+single-writer per key). Reuse the bridge's existing consumer-group/metadata coordinator for
+**assignment only**; add just a small watermark-feedback path. Build a Spark-style global-batch
+coordinator ONLY if a future metric genuinely needs cross-key consistency (rare here).
 
 **Do NOT build:** in-broker partition wiring; a log of what the leader emitted (emitted-watermark
 control-record) — both are artifacts of the rejected in-broker/follower-replay model.
@@ -165,7 +165,7 @@ operational simplicity, which this delivers.
     consumed position lives in the store, written near-atomically with state. This is the path for
     long-running instances whose start entry may be evicted from the hot cache but still lives in
     the store. With write-back, advance the consumed-position checkpoint only once state is durable.
-  Earlier "RocksDB *and* RDBMS both" is now **one SPI, two backings/modes**, not two pipelines.
+    Earlier "RocksDB *and* RDBMS both" is now **one SPI, two backings/modes**, not two pipelines.
 - **Fact stream backend** is pluggable: Event-Bridge topic (default) or RDBMS (low workload).
 - **Hot followers are inherent, not a later stage.** Every replica of the partition folds the
   committed log into its own co-located state, so followers are warm by construction (the bridge's
@@ -187,24 +187,24 @@ operational simplicity, which this delivers.
 **Stage 1 — Base Projection** (in-broker, keyed RocksDB state)
 - Read committed `zeebe-records`-P entries on the leader; deserialize via `ZeebeRecordCodec`.
 - Act only on the **root process element**: `bpmnElementType == PROCESS`
-  (`processInstanceKey == elementInstanceKey`).
-  - `ProcessInstanceIntent.ELEMENT_ACTIVATED` → `startTime = record.getTimestamp()`.
-  - `ELEMENT_COMPLETED` / `ELEMENT_TERMINATED` → `endTime`, set outcome.
+(`processInstanceKey == elementInstanceKey`).
+- `ProcessInstanceIntent.ELEMENT_ACTIVATED` → `startTime = record.getTimestamp()`.
+- `ELEMENT_COMPLETED` / `ELEMENT_TERMINATED` → `endTime`, set outcome.
 - State keyed by `processInstanceKey` → `{ bpmnProcessId, processDefinitionKey, version, tenantId,
-  startTime, endTime, terminated, factEmitted }`. Persist consumed source position in the same state.
+startTime, endTime, terminated, factEmitted }`. Persist consumed source position in the same state.
 
 **Stage 2 — Fact derivation → fact topic** (in-process produce)
 - On first transition to complete (have both timestamps), emit immutable
-  `ProcessInstanceExecutionTimeFact { processInstanceKey, processDefinitionKey, bpmnProcessId,
-  version, tenantId, startTime, endTime, durationMs, completedNormally }`.
+`ProcessInstanceExecutionTimeFact { processInstanceKey, processDefinitionKey, bpmnProcessId,
+version, tenantId, startTime, endTime, durationMs, completedNormally }`.
 - `factEmitted` flag guards against re-emission on replay.
 - Produce to **fact-topic** keyed by `processDefinitionKey`. MVP serialization: JSON.
 
 **Stage 3 — Aggregated Dataset** (in-broker on fact-topic, → H2)
 - Aggregate per `(processDefinitionKey, version, tenantId)`: `instance_count`, `total_duration_ms`,
-  `min/max_duration_ms` (avg derived at read).
+`min/max_duration_ms` (avg derived at read).
 - H2 tables: `proc_inst_exec_time_agg(process_definition_key, bpmn_process_id, version, tenant_id,
-  instance_count, total_duration_ms, min_duration_ms, max_duration_ms)`.
+instance_count, total_duration_ms, min_duration_ms, max_duration_ms)`.
 
 ## Correctness
 
@@ -272,11 +272,11 @@ threaded through `PartitionBootstrapper.startDataPartition` → `PartitionLifecy
 programmatic cross-partition producer: publishes only arrive via the gateway HTTP API → routed by
 MessagingService → `PublishRequestHandler`. Two options:
 - (loopback-messaging) replicate the gateway's publish path internally — build a `PublishRequest`,
-  look up the fact-topic partition leader from topology, send via `MessagingService`. No extra hop,
-  but non-trivial and the PublishRequest wire format + leader-lookup APIs need mapping.
+look up the fact-topic partition leader from topology, send via `MessagingService`. No extra hop,
+but non-trivial and the PublishRequest wire format + leader-lookup APIs need mapping.
 - (client) use `EventBridgeClient` against the local gateway — fully-known API
-  (`publishToTopic`/`fetchFromTopic`), simplest to land, but an HTTP hop + client dep inside the
-  broker.
+(`publishToTopic`/`fetchFromTopic`), simplest to land, but an HTTP hop + client dep inside the
+broker.
 The cheap consumer-side equivalent fork: standalone `ZeebeRecordListener` consumer (easy, testable,
 but consumer-group-based, not partition-leadership-based) vs the in-broker committed-log reader
 (matches the chosen architecture, needs the shared-broker surgery above + a running cluster to
@@ -313,12 +313,12 @@ Items 2–6 plus a runnable pipeline are DONE and committed on `roman/optimize` 
 green):
 - `d53faf5dffd` original event timestamp carried through the connector codec.
 - `049a6f54d2a` Stage-1 fold (`ProcessInstanceProjector`, `BaseProjectionStore` SPI +
-  `InMemoryBaseProjectionStore`, fact/projection records).
+`InMemoryBaseProjectionStore`, fact/projection records).
 - `8ef8b68530f` Stage-3 `ExecutionTimeAggregator` → H2 with per-source-partition exactly-once dedup.
 - `fb922c26922` fact codec + offline end-to-end test (records → projection → fact stream → H2).
 - `5c51b172def` `RocksDbBaseProjectionStore` (local cache; ZeebeDb; flush-on-close; reopen-tested).
 - `a5ae32fcb09` `FactSink` seam + `EventBridgeFactPublisher` + `AnalyticsPipeline` +
-  `StandaloneAnalyticsPipeline` — the whole pipeline runs against a gateway as a standalone process.
+`StandaloneAnalyticsPipeline` — the whole pipeline runs against a gateway as a standalone process.
 
 **Remaining = item 7, the in-broker embedding** (so leadership/HA come from the source partition's
 Raft rather than a consumer group): `AnalyticsProcessorStep` + actor reading the committed log via
@@ -346,16 +346,19 @@ smoke): **declare dataset → build report → view** returns N-completed + avg-
 window, with an optional process filter; the page serves at `/`.
 
 Run it:
+
 ```
 mvn -q -pl analytics/analytics-webapp dependency:build-classpath -Dmdep.outputFile=/tmp/wcp.txt
 java -cp "analytics/analytics-webapp/target/classes:$(cat /tmp/wcp.txt)" \
   -Danalytics.dataset.url='jdbc:h2:file:./data/analytics-dataset' -Danalytics.dataset.user=sa \
   io.camunda.analytics.webapp.AnalyticsWebappApplication      # open http://localhost:8090
 ```
+
 **Live-data wiring — DONE (commit `4fd4ed37d39`).** The webapp hosts an H2 TCP server over its data
 dir; the pipeline writes to the same DB over TCP, and the UI reflects it live (verified: external
 writer over TCP → report endpoint updates with no restart). The report view also renders an SVG bar
 chart of completed-per-process-per-window. Run both, sharing the DB:
+
 ```
 # webapp: host the H2 server + serve the UI
 java -cp "analytics/analytics-webapp/target/classes:$(cat /tmp/wcp.txt)" \
@@ -367,6 +370,7 @@ java <jvm-flags> -cp "analytics/event-bridge-analytics/target/classes:$(cat /tmp
   -DjdbcUrl='jdbc:h2:tcp://localhost:9092/analytics-dataset' -DjdbcUser=sa \
   io.camunda.eventbridge.analytics.StandaloneAnalyticsPipeline
 ```
+
 Production integration into the OC webapp (React/TS) is the follow-up; this standalone app is the
 demoable loop.
 
@@ -388,16 +392,16 @@ forward-only vs backfill), **Step D** the SQL-like declaration parser.
 This is a new **frontend + a thin read/declare API** track on top of the analytics serving store
 (the queryable RDBMS dataset Phase 1 produces). Minimum viable shape:
 - **Declare-dataset**: a small form/spec choosing the fact (execution time), the grouping dimensions
-  (definition, optionally version/tenant), and the window (e.g. hourly). For v1 this can map to the
-  existing `proc_inst_exec_time_window` table (or a named view over it) rather than a full SQL-like
-  parser — the parser ("think backwards" declaration) is the later, richer version.
+(definition, optionally version/tenant), and the window (e.g. hourly). For v1 this can map to the
+existing `proc_inst_exec_time_window` table (or a named view over it) rather than a full SQL-like
+parser — the parser ("think backwards" declaration) is the later, richer version.
 - **Build-report**: pick a dataset + a visualization (a table or a simple bar/line of
-  `completed_count` / avg duration per definition per window) + basic filters (definition, time
-  range).
+`completed_count` / avg duration per definition per window) + basic filters (definition, time
+range).
 - **Serve**: a read API over the serving RDBMS (`SELECT … GROUP BY definition, window` — the
-  GROUP-BY-over-partials view discussed) feeding the report; near-real-time as the pipeline updates.
+GROUP-BY-over-partials view discussed) feeding the report; near-real-time as the pipeline updates.
 - **Where**: align with the repo's frontend conventions (`webapp/client` / Optimize frontend) and a
-  read controller in a `service`/REST layer; reuse the H2/RDBMS dataset as the query source.
+read controller in a `service`/REST layer; reuse the H2/RDBMS dataset as the query source.
 
 Keep it minimal: one fact, one dataset shape, one or two chart types. The point is the full loop —
 declare → pipeline fills the dataset → report renders — working end to end.
@@ -437,3 +441,4 @@ commits. jspecify `@Nullable`/`@NullMarked` in a separate `refactor:` commit.
 - **Codec / records:** `event-bridge-zeebe-connector/.../ZeebeRecordCodec.java` (frame above),
   `ZeebeRecord.java`.
 - **Config:** `event-bridge-core/.../config/EventBridgeProperties.java` (prefix `event-bridge`).
+

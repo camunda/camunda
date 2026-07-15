@@ -175,6 +175,52 @@ final class AnalyticsBaseProjectionTest {
   }
 
   @Test
+  void shouldNotSubtractAValueThatOnlyAppearedMidFlight() {
+    // given an instance that activates WITHOUT the value variable and computes it mid-flight
+    // (an order total calculated by a service task)
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    projection.process(numericVariable(PI_KEY, "amount", "999", 11L));
+
+    // when it completes
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 12L));
+
+    // then the end fact carries NO value fields — activation added nothing, so subtracting the
+    // mid-flight value would leave a permanent -999 residue on the value-in-flight level
+    final Fact completed = only(FactType.PROCESS_INSTANCE, Transition.COMPLETED);
+    assertThat(completed.get("value")).isNull();
+    assertThat(completed.get("valueDelta")).isNull();
+  }
+
+  @Test
+  void shouldSubtractTheActivationValueEvenWhenTheVariableChangedMidFlight() {
+    // given a valued instance whose amount is overwritten while it runs
+    projection.process(numericVariable(PI_KEY, "amount", "100", 9L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    projection.process(numericVariable(PI_KEY, "amount", "700", 11L));
+
+    // when it completes
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 12L));
+
+    // then the end fact subtracts exactly what activation added — the level nets to zero
+    final Fact completed = only(FactType.PROCESS_INSTANCE, Transition.COMPLETED);
+    assertThat(completed.get("value")).isEqualTo(100L);
+    assertThat(completed.get("valueDelta")).isEqualTo(-100L);
+  }
+
+  @Test
+  void shouldIgnoreANonFiniteBusinessValue() {
+    // given an "amount" that is valid JSON but overflows a double to infinity
+    projection.process(numericVariable(PI_KEY, "amount", "1e309", 9L));
+
+    // when the instance activates
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+
+    // then no value fields are stamped — Math.round(Infinity) would poison the SUM/LEVEL cubes
+    // with Long.MAX_VALUE
+    assertThat(only(FactType.PROCESS_INSTANCE, Transition.ACTIVATED).get("value")).isNull();
+  }
+
+  @Test
   void shouldOmitBusinessValueWhenAbsentOrNonNumeric() {
     // given one instance without the value variable and one with a non-numeric value
     projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));

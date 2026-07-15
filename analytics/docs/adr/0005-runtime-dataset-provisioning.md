@@ -165,3 +165,4 @@ separate reprocessing path, deferred (see ADR 0001 Phase 6).
   bump.
 - A reload that must not drop even boundary facts — sequence Stage 2's rebuild before Stage 1's, or
   park unknown-`aggId` deltas in Stage 2 until its merger exists.
+

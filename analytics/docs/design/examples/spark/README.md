@@ -20,34 +20,34 @@ The pipeline is identical across all three examples:
 
 ## Files
 
-| File | Role |
-|------|------|
-| `pom.xml` | Standalone POM (spark-sql + spark-core). Not in any reactor. |
-| `SourceEvent.java` | Input record (JavaBean, for `Encoders.bean`). |
-| `InstanceState.java` | Per-instance projection held in `GroupState`. |
-| `CompletionFact.java` | Fact derived by Stage A; input to the Stage B/C aggregation. |
-| `Cell.java` | Serving-side output shape. |
+|            File            |                                            Role                                             |
+|----------------------------|---------------------------------------------------------------------------------------------|
+| `pom.xml`                  | Standalone POM (spark-sql + spark-core). Not in any reactor.                                |
+| `SourceEvent.java`         | Input record (JavaBean, for `Encoders.bean`).                                               |
+| `InstanceState.java`       | Per-instance projection held in `GroupState`.                                               |
+| `CompletionFact.java`      | Fact derived by Stage A; input to the Stage B/C aggregation.                                |
+| `Cell.java`                | Serving-side output shape.                                                                  |
 | `BaseProjectionState.java` | The `FlatMapGroupsWithStateFunction` — Stage A logic (state + transitions + timer + evict). |
-| `AnalyticsPipeline.java` | Builds the whole streaming query (Stage A → shuffle → Stage B/C → sink). |
-| `Main.java` | `SparkSession` + a synthetic source + starts the query. |
+| `AnalyticsPipeline.java`   | Builds the whole streaming query (Stage A → shuffle → Stage B/C → sink).                    |
+| `Main.java`                | `SparkSession` + a synthetic source + starts the query.                                     |
 
 ## Framework ownership map
 
-| Concern | Spark primitive | Spark owns | You hand-write |
-|---|---|---|---|
-| **Base projection (Stage A)** | `KeyValueGroupedDataset.flatMapGroupsWithState(fn, Append, stateEnc, outEnc, EventTimeTimeout)` | Keying, delivering events grouped by key per batch, invoking `fn` | The `fn` body: state shape + every transition rule |
-| **Keyed state** | `GroupState<InstanceState>` backed by the **state store** (RocksDB or in-memory) | State persistence, per-batch snapshot/delta checkpoint, replay on restart | The `InstanceState` model; when to `update` / `get` / `remove` |
-| **Derive** | Returning `Iterator<CompletionFact>` from `flatMapGroupsWithState` | Plumbing the emitted rows downstream | Building the `CompletionFact` (floor-to-minute, duration, incident flag) |
-| **Timer / SLA** | `state.setTimeoutTimestamp(...)` + `GroupStateTimeout.EventTimeTimeout()` + `state.hasTimedOut()` | Firing the callback once the **watermark** crosses the registered timestamp | Choosing the deadline (`start + 5 min`), building the breach fact |
-| **Eviction** | `GroupState.remove()` | Actually dropping the state store entry | Deciding *when* to evict (terminal reached, or timeout) |
-| **Local aggregate (Stage B)** | `groupBy(...).agg(count, avg)` (declarative) | Partial aggregation on each input partition | The metric choice; for **sketches** (pctl/distinct/top-k) you'd swap to a second `flatMapGroupsWithState` / custom `Aggregator` holding the sketch as state |
-| **Shuffle** | The `groupBy(window, processId)` **Exchange** | Hash-partitioning by grouping key, network transfer, spill | Nothing — Spark inserts and sizes the exchange (`spark.sql.shuffle.partitions`) |
-| **Global aggregate (Stage C)** | Final `agg` after the exchange | partial → shuffle → **final** merge | Projecting the result `Row` into the `Cell` schema |
-| **Windowing** | `window(col("startWindow"), "1 minute")` + `withWatermark(...)` | Bucketing rows into tumbling windows, closing them by watermark, retaining/expiring window state | Window size, event-time column, allowed lateness |
-| **Checkpoint** | `.option("checkpointLocation", path)` | Offset log + commit log + state store checkpoint written per micro-batch | Choosing a durable, per-query path |
-| **Exactly-once** | checkpoint (replay) + idempotent/transactional sink | Recording read/committed offsets, deterministic replay of a failed batch | Making the **sink** idempotent (key by window+processId) and the source **replayable** |
-| **State backend** | `spark.sql.streaming.stateStore.providerClass` (RocksDB) | Off-heap keyed state, compaction, checkpoint upload | Just the config choice |
-| **Micro-batch vs. continuous** | Structured Streaming micro-batch engine (default) | Slicing input into batches, running the DAG incrementally, advancing offsets | Trigger interval (`Trigger.ProcessingTime` / `AvailableNow`); note continuous mode can't run arbitrary stateful ops, so it's not usable here |
+|            Concern             |                                          Spark primitive                                          |                                            Spark owns                                            |                                                                       You hand-write                                                                        |
+|--------------------------------|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Base projection (Stage A)**  | `KeyValueGroupedDataset.flatMapGroupsWithState(fn, Append, stateEnc, outEnc, EventTimeTimeout)`   | Keying, delivering events grouped by key per batch, invoking `fn`                                | The `fn` body: state shape + every transition rule                                                                                                          |
+| **Keyed state**                | `GroupState<InstanceState>` backed by the **state store** (RocksDB or in-memory)                  | State persistence, per-batch snapshot/delta checkpoint, replay on restart                        | The `InstanceState` model; when to `update` / `get` / `remove`                                                                                              |
+| **Derive**                     | Returning `Iterator<CompletionFact>` from `flatMapGroupsWithState`                                | Plumbing the emitted rows downstream                                                             | Building the `CompletionFact` (floor-to-minute, duration, incident flag)                                                                                    |
+| **Timer / SLA**                | `state.setTimeoutTimestamp(...)` + `GroupStateTimeout.EventTimeTimeout()` + `state.hasTimedOut()` | Firing the callback once the **watermark** crosses the registered timestamp                      | Choosing the deadline (`start + 5 min`), building the breach fact                                                                                           |
+| **Eviction**                   | `GroupState.remove()`                                                                             | Actually dropping the state store entry                                                          | Deciding *when* to evict (terminal reached, or timeout)                                                                                                     |
+| **Local aggregate (Stage B)**  | `groupBy(...).agg(count, avg)` (declarative)                                                      | Partial aggregation on each input partition                                                      | The metric choice; for **sketches** (pctl/distinct/top-k) you'd swap to a second `flatMapGroupsWithState` / custom `Aggregator` holding the sketch as state |
+| **Shuffle**                    | The `groupBy(window, processId)` **Exchange**                                                     | Hash-partitioning by grouping key, network transfer, spill                                       | Nothing — Spark inserts and sizes the exchange (`spark.sql.shuffle.partitions`)                                                                             |
+| **Global aggregate (Stage C)** | Final `agg` after the exchange                                                                    | partial → shuffle → **final** merge                                                              | Projecting the result `Row` into the `Cell` schema                                                                                                          |
+| **Windowing**                  | `window(col("startWindow"), "1 minute")` + `withWatermark(...)`                                   | Bucketing rows into tumbling windows, closing them by watermark, retaining/expiring window state | Window size, event-time column, allowed lateness                                                                                                            |
+| **Checkpoint**                 | `.option("checkpointLocation", path)`                                                             | Offset log + commit log + state store checkpoint written per micro-batch                         | Choosing a durable, per-query path                                                                                                                          |
+| **Exactly-once**               | checkpoint (replay) + idempotent/transactional sink                                               | Recording read/committed offsets, deterministic replay of a failed batch                         | Making the **sink** idempotent (key by window+processId) and the source **replayable**                                                                      |
+| **State backend**              | `spark.sql.streaming.stateStore.providerClass` (RocksDB)                                          | Off-heap keyed state, compaction, checkpoint upload                                              | Just the config choice                                                                                                                                      |
+| **Micro-batch vs. continuous** | Structured Streaming micro-batch engine (default)                                                 | Slicing input into batches, running the DAG incrementally, advancing offsets                     | Trigger interval (`Trigger.ProcessingTime` / `AvailableNow`); note continuous mode can't run arbitrary stateful ops, so it's not usable here                |
 
 ### The short version
 

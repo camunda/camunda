@@ -14,8 +14,10 @@ import java.util.List;
 
 /**
  * The variant signature of one process instance: an order-insensitive commutative fold over its
- * distinct executed elements with <em>bucketed</em> loop counts — {@code signature ⊕=
- * hash64(elementId, bucket)} where the bucket collapses activation counts to {@code 1 / 2–3 / 4+}.
+ * distinct executed elements with <em>bucketed</em> loop counts — {@code signature =
+ * hash64(bpmnProcessId) ⊕ hash64(elementId, bucket) ⊕ …} where the bucket collapses activation
+ * counts to {@code 1 / 2–3 / 4+} and the process-id seed keeps hashes distinct across processes
+ * with identical element-id sets.
  *
  * <p>Why this shape:
  *
@@ -28,7 +30,8 @@ import java.util.List;
  *       the same story ("needed a few passes"), while 1 vs. 2 is a different path; buckets keep the
  *       variant space small without erasing the loop signal.
  *   <li><b>Deterministic:</b> FNV-1a over the element id's UTF-8 bytes plus a final avalanche mix —
- *       stable across JVMs, replays and partitions; no seed, no platform hash.
+ *       stable across JVMs, replays and partitions; the only seed is the (deterministic) process
+ *       id, no platform hash.
  * </ul>
  *
  * <p>The canonical element list is a display companion, not the identity: distinct element ids
@@ -44,7 +47,18 @@ public final class VariantSignature {
   private static final long FNV_OFFSET = 0xcbf29ce484222325L;
   private static final long FNV_PRIME = 0x100000001b3L;
 
+  private final long seed;
   private final List<ElementCount> elements = new ArrayList<>();
+
+  /**
+   * @param bpmnProcessId folded into the signature as a seed, so identical element-id sets in
+   *     different processes (copied models, default Modeler ids like {@code Activity_1}) never
+   *     share a hash — the variant dictionary is keyed by the hash alone, and a cross-process
+   *     collision would let the processes overwrite each other's catalog row.
+   */
+  public VariantSignature(final String bpmnProcessId) {
+    seed = hash64(bpmnProcessId, 0);
+  }
 
   /** One distinct executed element with its raw activation count. */
   private record ElementCount(String elementId, long count) {}
@@ -63,7 +77,7 @@ public final class VariantSignature {
     if (elements.isEmpty()) {
       return null;
     }
-    long signature = 0L;
+    long signature = seed;
     for (final ElementCount element : elements) {
       signature ^= hash64(element.elementId(), bucket(element.count()));
     }

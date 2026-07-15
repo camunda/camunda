@@ -345,8 +345,10 @@ public final class StandardDatasets {
         // Business value currently in flight per definition, mirroring active-instances: a LEVEL
         // gauge over the signed 'valueDelta' enrichment (+value on ACTIVATED, −value on either
         // end), sampled as periodic snapshots with the same deliberately tight lateness (the
-        // snapshot-freshness trade-off documented on active-instances). An instance whose value
-        // variable is absent contributes nothing on either side, so the level stays balanced.
+        // snapshot-freshness trade-off documented on active-instances). The engine materializes
+        // the ACTIVATION-time value on the instance row and stamps exactly that on both sides, so
+        // the level stays balanced even when the variable appears or changes mid-flight (such an
+        // instance contributes nothing).
         // APPENDED.
         DatasetDeclaration.builder("value-in-flight", FactType.PROCESS_INSTANCE)
             .dimension("bpmnProcessId", DimensionType.STRING)
@@ -411,7 +413,9 @@ public final class StandardDatasets {
         // The variant dictionary: one row per observed variantHash carrying its human-readable
         // canonical element list (the hash's display companion — the cube stores only the LONG).
         // Upserted from every end fact that carries a variant; idempotent by key, and every
-        // instance of a variant writes the identical row, so replays and races are harmless.
+        // instance of a variant writes the identical row, so replays and races are harmless (the
+        // signature folds the bpmnProcessId in as a seed, so the hash-only key cannot collide
+        // across processes with identical element-id sets).
         // Tiny by construction: one row per distinct variant, not per instance. variantHash
         // doubles as a column because a fetched TableRow carries only its declared columns.
         // APPENDED.

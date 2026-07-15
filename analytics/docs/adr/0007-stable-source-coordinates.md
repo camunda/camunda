@@ -101,3 +101,4 @@ because the EB topic is immutable and replays are deterministic:
   inflated counts.
 - `PartitionActor`'s EB-offset baseline stays as the consumption dedup; the watermark is the
   producer dedup. Both are needed; they answer different questions.
+

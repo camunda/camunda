@@ -111,6 +111,11 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * pattern, keyed by instance instead of scope. A side family rather than a field on {@code
    * ElementEntity}: the entity is a fixed-shape flyweight rewritten whole on every mutation, while
    * these entries grow one-per-executed-element and are touched one at a time.
+   *
+   * <p>Known leak: an instance that never folds a terminal PROCESS record (banned instance, source
+   * stream ends mid-flight) strands its entries — the same pre-existing gap as its element rows,
+   * amplified to one entry per distinct executed element. A sweep/TTL is deliberately deferred
+   * until it shows up in state-size numbers.
    */
   VARIANT_ELEMENTS(11, ColumnFamilyScope.PARTITION_LOCAL);
 

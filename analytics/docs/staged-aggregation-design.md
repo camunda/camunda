@@ -66,12 +66,12 @@ The reduce is a **merge** of accumulators; merge is associative+commutative but 
 
 Make the Stage-2 merge strategy pluggable per `aggId`:
 
-| Accumulator | merge | strategy | large-P cost |
-|---|---|---|---|
-| count / sum | add | **incremental**: per-(cell,P) last value + `global += new−old` | P longs, O(1) — free |
-| HLL distinct | max registers (**idempotent**) | **single cell, no slots**, merge partials directly | free |
-| KLL quantiles | union (not invertible) | **per-writer slots** now → **segment deltas** at high P | see numbers |
-| top-k / freq-items | add freqs (not invertible) | **per-writer slots** now → **segment deltas** at high P | see numbers |
+|    Accumulator     |             merge              |                            strategy                            |     large-P cost     |
+|--------------------|--------------------------------|----------------------------------------------------------------|----------------------|
+| count / sum        | add                            | **incremental**: per-(cell,P) last value + `global += new−old` | P longs, O(1) — free |
+| HLL distinct       | max registers (**idempotent**) | **single cell, no slots**, merge partials directly             | free                 |
+| KLL quantiles      | union (not invertible)         | **per-writer slots** now → **segment deltas** at high P        | see numbers          |
+| top-k / freq-items | add freqs (not invertible)     | **per-writer slots** now → **segment deltas** at high P        | see numbers          |
 
 ## Slots vs segments — concrete numbers
 
@@ -89,11 +89,11 @@ number covers every cell.
 
 **Per cell:**
 
-| | per-writer **slots** | **segment** deltas | ratio |
-|---|---|---|---|
-| KLL memory | 128 × 3 KB = **384 KB** | **3 KB** (+ P longs per *task*) | ~128× |
-| top-k memory | 128 × 10 KB = **1,280 KB** | **10 KB** (+ P longs per *task*) | ~128× |
-| merge/flush | re-merge all P slots (O(P)) | merge each delta once (O(1), running total) | — |
+|              |    per-writer **slots**     |             **segment** deltas              | ratio |
+|--------------|-----------------------------|---------------------------------------------|-------|
+| KLL memory   | 128 × 3 KB = **384 KB**     | **3 KB** (+ P longs per *task*)             | ~128× |
+| top-k memory | 128 × 10 KB = **1,280 KB**  | **10 KB** (+ P longs per *task*)            | ~128× |
+| merge/flush  | re-merge all P slots (O(P)) | merge each delta once (O(1), running total) | —     |
 
 **Totals (5,000 cells):** KLL slots ≈ **1.9 GB** vs segments ≈ **15 MB** (+ ~1 KB/task); top-k slots
 ≈ **6.4 GB** vs ≈ **50 MB**. Over 32 Stage-2 consumers: KLL ~60 MB vs ~0.5 MB/consumer; top-k ~200 MB
@@ -159,3 +159,4 @@ all-time tiers). Snapshot interval = the RTO knob. No cross-stage coordination (
    OC single-partition (P=1) slots are degenerate (1/cell) — correct and simple, scale-ready.
 2. Then: bounded-LRU cache, async client, per-partition parallelism (Stage 1 sharding).
 3. Then: snapshots/failover; segment-delta strategy for KLL/top-k when P grows into the tens; salting.
+

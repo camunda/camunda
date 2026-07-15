@@ -5,6 +5,7 @@
 > coordinated cutover, green at the end, no hacks / shims / parallel cruft**.
 
 ## 0. Branch & working conventions
+
 - Branch `roman/optimize`. Commit per coherent green step. Commit trailer:
   `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
 - Before every commit touching Java/pom/md: `./mvnw license:format spotless:apply -T1C`, then the
@@ -15,6 +16,7 @@
   (stale `target/` classes give phantom `NoClassDefFoundError`s — hit twice already).
 
 ## 1. Read first (context is already written down)
+
 - **ADR 0003** `analytics/docs/adr/0003-engine-layering.md` — layering + operator model + Model‑F
   durability (authoritative). ADR 0002 = engine internal structure.
 - **Memory** `analytics-engine-structure-plan.md` — the full cutover plan + critical findings.
@@ -23,6 +25,7 @@
   pipeline in each engine + an "ownership map" README. Flink is the closest analogue.
 
 ## 2. Design (decided — do not re‑litigate)
+
 - **Three layers.** L1 `event-bridge-streaming` = substrate (operator SPI, DAG, windows,
   AggregateFunction, segment/dedup, state, CommitBarrier, StreamRuntime — already Flink/KS‑shaped).
   L2 `analytics-engine` = domain operators + vocabulary, workflow‑engine internal structure. L3
@@ -68,19 +71,19 @@ node.
 internals (all in `analytics-engine`):
 - `record/` — `SourceRecord` + the canonical `Fact` (Fact stays in `analytics-model`).
 - `state/immutable/ProjectionState` (read) + `state/mutable/MutableProjectionState` (write) +
-  `StateBackedProjectionState` (refactor of `StateBackedProjectionStore`) + move
-  `AnalyticsColumnFamilies` here + **zeebe‑style variables per `(instanceKey, name)`** (reshape
-  `PersistedVariable(s)`, today a per‑instance map blob).
+`StateBackedProjectionState` (refactor of `StateBackedProjectionStore`) + move
+`AnalyticsColumnFamilies` here + **zeebe‑style variables per `(instanceKey, name)`** (reshape
+`PersistedVariable(s)`, today a per‑instance map blob).
 - `projection/` — `AnalyticsBaseProjection implements Processor` + `dispatch/` (a `(ValueType,
-  Intent)` registry) + `applier/` (sole mutators; upsert the element entity row) + `derive/` (read
-  the updated row → `context.forward(fact)`) + `behavior/VariableEnricher`.
+Intent)` registry) + `applier/` (sole mutators; upsert the element entity row) + `derive/` (read
+the updated row → `context.forward(fact)`) + `behavior/VariableEnricher`.
 - Model A: materialized element entity `{start, end, status, isProcess}`; apply‑then‑derive;
-  evict‑after‑emit; **event‑time SLA sweep** via a `STREAM_TIME` punctuator over a **deadline
-  secondary‑index CF** (KS has no per‑key timer → scan; the index avoids full scans, per the
-  event‑bridge control‑plane engines).
+evict‑after‑emit; **event‑time SLA sweep** via a `STREAM_TIME` punctuator over a **deadline
+secondary‑index CF** (KS has no per‑key timer → scan; the index avoids full scans, per the
+event‑bridge control‑plane engines).
 - Fact API: `Fact.builder(FactType).eventTime(ts).source(part,pos).transition(Transition).field(name,val).build()`;
-  `FactType {PROCESS_INSTANCE, ELEMENT, INCIDENT, PROCESS_DEFINITION}`;
-  `Transition {ACTIVATED, COMPLETED, TERMINATED, CREATED, RESOLVED, DEPLOYED}`.
+`FactType {PROCESS_INSTANCE, ELEMENT, INCIDENT, PROCESS_DEFINITION}`;
+`Transition {ACTIVATED, COMPLETED, TERMINATED, CREATED, RESOLVED, DEPLOYED}`.
 
 **Step 4 — #41: cutover.**
 `event-bridge-analytics` builds the analytics `ProcessorTopology` (Stage 1: source → base‑projection
@@ -92,6 +95,7 @@ ownsDurability=false). **Delete**: `ProjectionStageTask`, `AggregationStageTask`
 green.
 
 ## 4. Verify
+
 - Module: `./mvnw verify -pl <module> -DskipTests=false -DskipITs -Dquickly` (clean first after
   moves).
 - Full repo: `./mvnw install -Dquickly -T1C`.
@@ -99,6 +103,7 @@ green.
   executor. ES/OS end‑to‑end parity remains the deferred joint e2e — do not attempt it here.
 
 ## 5. Already done this arc (committed green, don't redo)
+
 ADRs 0002/0003; KS/Flink/Spark examples; `Processor` operator lifecycle; Model‑F durability decision
 (fold‑ahead bug retired). The module restructure (model/serving/engine/stores/app), engine
 legibility (`FactDeriver` registry), backend selection, and the webapp read rewire were all landed

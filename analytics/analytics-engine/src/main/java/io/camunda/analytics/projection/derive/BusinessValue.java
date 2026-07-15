@@ -33,12 +33,14 @@ import java.util.List;
  * process element activates (the creation command persists them first), so the activation-side read
  * is safe.
  *
- * <p>Caveat: the in-flight level assumes the variable does not change while the instance runs — the
- * end fact reads the <em>current</em> value, so a mid-flight change would leave the difference
- * permanently on the level. Business-value variables are start-payload facts in practice; a
- * mutable-value design would need the activation-time value materialized on the instance row.
+ * <p>The variable is read <em>once</em>, at activation, and materialized on the process row ({@code
+ * ElementEntity.value}); both the activation fact and the end fact stamp that materialized value.
+ * The end side deliberately never re-reads the variable — a value created or changed mid-flight
+ * would otherwise subtract something different from what activation added and leave a permanent
+ * residue on the in-flight level. Consequence: a value that only appears mid-flight contributes
+ * nothing to either KPI.
  */
-final class BusinessValue {
+public final class BusinessValue {
 
   private static final String VALUE_VARIABLE =
       System.getProperty("analytics.valueVariable", "amount");
@@ -49,10 +51,10 @@ final class BusinessValue {
   private BusinessValue() {}
 
   /**
-   * The designated value variable of the given scope as a long, or {@code null} when absent or
-   * non-numeric (the variable store keeps raw text; a fractional value rounds).
+   * The designated value variable of the given scope as a long, or {@code null} when absent,
+   * non-numeric or non-finite (the variable store keeps raw text; a fractional value rounds).
    */
-  static Long read(final ProjectionState state, final long scopeKey) {
+  public static Long read(final ProjectionState state, final long scopeKey) {
     final Utf8View raw = state.variables(scopeKey, NAME).get(VALUE_VARIABLE);
     if (raw == null) {
       return null;
@@ -65,7 +67,10 @@ final class BusinessValue {
       return Long.parseLong(text);
     } catch (final NumberFormatException notALong) {
       try {
-        return Math.round(Double.parseDouble(text));
+        final double parsed = Double.parseDouble(text);
+        // Double.parseDouble accepts "Infinity"/"NaN"/"1e309"; Math.round would turn those into
+        // Long.MAX_VALUE or a phantom 0 — one poisoned instance would wreck both value KPIs.
+        return Double.isFinite(parsed) ? Math.round(parsed) : null;
       } catch (final NumberFormatException notANumber) {
         return null;
       }

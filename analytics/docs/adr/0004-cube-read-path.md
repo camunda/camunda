@@ -115,12 +115,12 @@ record PushdownSpec(List<PushdownColumn> columns) {}   // e.g. count -> [count_ 
 record PushdownColumn(String suffix, DimensionType type, Agg agg) {}   // Agg = SUM | MIN | MAX
 ```
 
-| Meter | Pushdown |
-|---|---|
-| count, sum, level | one column, `SUM` |
-| max / min | one column, `MAX` / `MIN` |
-| avg | two columns `sum_`,`count_`, both `SUM`; result = `SUM(sum_)/SUM(count_)` |
-| percentile, distinct (HLL), top-k | **none** — sketch state, stays blob + app-merge |
+|               Meter               |                                 Pushdown                                  |
+|-----------------------------------|---------------------------------------------------------------------------|
+| count, sum, level                 | one column, `SUM`                                                         |
+| max / min                         | one column, `MAX` / `MIN`                                                 |
+| avg                               | two columns `sum_`,`count_`, both `SUM`; result = `SUM(sum_)/SUM(count_)` |
+| percentile, distinct (HLL), top-k | **none** — sketch state, stays blob + app-merge                           |
 
 **Storage.** A pushable meter is stored as its `PushdownColumn`s (native numeric columns). A sketch
 meter is stored as its binary **blob** *plus* a finalized **`<meter>_value`** column (a cheap
@@ -148,11 +148,11 @@ Meters sharing a (tier, strategy) share one fetch.
 
 **Backends.**
 - **RDBMS:** `SELECT dims, window_start − MOD(window_start, :g) AS bucket, SUM(count_), MAX(max_) …
-  WHERE window_size=? AND window_start ∈ [..] AND filters GROUP BY dims, bucket` → **O(result)**;
-  `DIRECT` is the same `SELECT` without the aggregation. Rollup granularity is the derived `bucket`.
+WHERE window_size=? AND window_start ∈ [..] AND filters GROUP BY dims, bucket` → **O(result)**;
+`DIRECT` is the same `SELECT` without the aggregation. Rollup granularity is the derived `bucket`.
 - **ES/OS:** a **`composite`** aggregation (terms on the group-by dims + a `date_histogram` source
-  at the granularity, paged via `after`) with `sum`/`min`/`max` sub-aggregations → in-engine
-  reduction, paged.
+at the granularity, paged via `after`) with `sum`/`min`/`max` sub-aggregations → in-engine
+reduction, paged.
 
 **Executor.** Runs each strategy's fetch, then unions on `(group-by, bucket)`: `DIRECT`/`PUSH_DOWN`
 rows come finalized from the store; `STREAM_MERGE` rows are the streamed-and-merged sketches (Layer
@@ -287,3 +287,4 @@ parallel across shards, single-threaded reads may be fast enough.
   time-partitioned indices.
 - Deferred: grain-hash slicing (skew escape hatch), built only when a real skewed query shows the
   densest band ≫ average.
+

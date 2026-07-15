@@ -23,8 +23,26 @@ public interface MutableProjectionState extends ProjectionState {
    * Upserts an element row {@code {start, ACTIVE, isProcess}} on activation, recording its parent
    * (flow) scope so a completion can resolve variables up the scope hierarchy.
    */
+  default void activateElement(
+      final long elementInstanceKey,
+      final long startTimeMs,
+      final boolean isProcess,
+      final long parentScopeKey) {
+    activateElement(elementInstanceKey, startTimeMs, isProcess, parentScopeKey, null);
+  }
+
+  /**
+   * Upserts an element row on activation, additionally materializing the instance's activation-time
+   * business value ({@code null} when absent or non-numeric — process rows only). The end fact
+   * subtracts exactly this materialized value, so the value-in-flight level stays balanced even
+   * when the variable is created or changed mid-flight.
+   */
   void activateElement(
-      long elementInstanceKey, long startTimeMs, boolean isProcess, long parentScopeKey);
+      long elementInstanceKey,
+      long startTimeMs,
+      boolean isProcess,
+      long parentScopeKey,
+      Long businessValue);
 
   /**
    * Finalizes an element row {@code {end, status, durationMs}} on a terminal transition.
