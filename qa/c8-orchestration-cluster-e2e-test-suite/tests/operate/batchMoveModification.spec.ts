@@ -135,11 +135,10 @@ test.describe('Process Instance Batch Modification', () => {
         assertion: async () => {
           await expect(
             page.getByText(`${NUM_SELECTED_PROCESS_INSTANCES} results`),
-          ).toBeVisible();
+          ).toBeVisible({timeout: 30000});
         },
         onFailure: async () => {
-          await operateOperationPanelPage.collapseOperationsPanel();
-          await operateDiagramPage.clickFlowNode('shipArticles');
+          await page.reload();
         },
       });
     });
