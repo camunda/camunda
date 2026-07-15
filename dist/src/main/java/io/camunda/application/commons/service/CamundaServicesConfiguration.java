@@ -33,6 +33,7 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ExportingServices;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GlobalListenerServices;
@@ -55,6 +56,8 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
+import io.camunda.service.admin.exporting.ExportingControlApi;
+import io.camunda.service.admin.exporting.ExportingControlService;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.service.registry.ServiceRegistry;
@@ -127,6 +130,7 @@ public class CamundaServicesConfiguration {
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
+    final ExportingControlApi exportingControlApi = new ExportingControlService(brokerClient);
 
     final var builder = new DefaultServiceRegistry.Builder();
     builder.managementServices(managementServices);
@@ -318,6 +322,17 @@ public class CamundaServicesConfiguration {
                           executor,
                           converter))
                   .elementInstanceServices(tenantId, elementInstance)
+                  .exportingServices(
+                      tenantId,
+                      new ExportingServices(
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          exportingControlApi,
+                          authorizationChecker,
+                          cslProperties.getAuthorizations(),
+                          executor,
+                          converter))
                   .expressionServices(
                       tenantId,
                       new ExpressionServices(
