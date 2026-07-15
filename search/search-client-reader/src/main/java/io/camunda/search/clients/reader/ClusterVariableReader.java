@@ -10,13 +10,14 @@ package io.camunda.search.clients.reader;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import org.jspecify.annotations.Nullable;
 
 public interface ClusterVariableReader
     extends SearchEntityReader<ClusterVariableEntity, ClusterVariableQuery> {
 
-  ClusterVariableEntity getTenantScopedClusterVariable(
+  @Nullable ClusterVariableEntity getTenantScopedClusterVariable(
       String name, String tenant, ResourceAccessChecks resourceAccessChecks);
 
-  ClusterVariableEntity getGloballyScopedClusterVariable(
+  @Nullable ClusterVariableEntity getGloballyScopedClusterVariable(
       String name, ResourceAccessChecks resourceAccessChecks);
 }

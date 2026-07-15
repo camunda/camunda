@@ -10,12 +10,14 @@ package io.camunda.search.clients.reader;
 import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.search.query.DeployedResourceQuery;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import org.jspecify.annotations.Nullable;
 
 public interface DeployedResourceReader
     extends SearchEntityReader<DeployedResourceEntity, DeployedResourceQuery> {
 
-  DeployedResourceEntity getByKey(long key, ResourceAccessChecks resourceAccessChecks);
+  @Nullable DeployedResourceEntity getByKey(long key, ResourceAccessChecks resourceAccessChecks);
 
   /** Like {@link #getByKey} but omits the resource content payload. */
-  DeployedResourceEntity getByKeyMetadata(long key, ResourceAccessChecks resourceAccessChecks);
+  @Nullable DeployedResourceEntity getByKeyMetadata(
+      long key, ResourceAccessChecks resourceAccessChecks);
 }
