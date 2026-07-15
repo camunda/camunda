@@ -1748,6 +1748,12 @@
       </dependency>
 
       <dependency>
+        <groupId>net.jqwik</groupId>
+        <artifactId>jqwik-time</artifactId>
+        <version>${version.jqwik}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.jmock</groupId>
         <artifactId>jmock</artifactId>
         <version>${version.jmock}</version>

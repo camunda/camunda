@@ -39,6 +39,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.Active
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -54,6 +55,7 @@ import net.jqwik.api.domains.DomainContextBase;
 import net.jqwik.api.providers.ArbitraryProvider;
 import net.jqwik.api.providers.TypeUsage;
 import net.jqwik.api.support.CollectorsSupport;
+import net.jqwik.time.api.DateTimes;
 
 /**
  * Contains all arbitraries needed to generate a {@link ClusterConfiguration}. The topology is not
@@ -253,7 +255,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   Arbitrary<BrokerState> brokerStates() {
     final var version = Arbitraries.longs().greaterOrEqual(0);
     final var state = Arbitraries.of(BrokerState.State.values());
-    return Combinators.combine(version, instants(), state)
+    return Combinators.combine(version, nanoPrecisionInstants(), state)
         .as((v, lastUpdated, s) -> new BrokerState(v, lastUpdated, s));
   }
 
@@ -266,7 +268,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
                 Arbitraries.forType(PartitionState.class).enableRecursion())
             .ofMaxSize(4);
     final var mode = Arbitraries.of(Mode.values());
-    return Combinators.combine(version, instants(), partitions, mode)
+    return Combinators.combine(version, nanoPrecisionInstants(), partitions, mode)
         .as((v, lastUpdated, p, m) -> new BrokerPartitionState(v, lastUpdated, p, m));
   }
 
@@ -287,7 +289,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   Arbitrary<PhasedChangePlan> phasedChangePlans(final long minId) {
     final var id = Arbitraries.longs().between(minId, minId + 1000);
     final var phases = phases().list().ofMinSize(1).ofMaxSize(4);
-    return Combinators.combine(id, phases, instants())
+    return Combinators.combine(id, phases, nanoPrecisionInstants())
         .flatAs(
             (planId, phaseList, startedAt) ->
                 Arbitraries.integers()
@@ -310,7 +312,7 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   Arbitrary<CompletedPhasedChange> completedPhasedChanges() {
     final var id = Arbitraries.longs().between(0, 500);
     final var status = Arbitraries.of(PhasedChangePlanStatus.values());
-    return Combinators.combine(id, status, instants(), instants())
+    return Combinators.combine(id, status, nanoPrecisionInstants(), nanoPrecisionInstants())
         .as(
             (planId, s, startedAt, completedAt) ->
                 new CompletedPhasedChange(planId, s, startedAt, completedAt));
@@ -335,12 +337,12 @@ public final class ClusterTopologyDomain extends DomainContextBase {
     return Arbitraries.strings().alpha().ofMinLength(1).ofMaxLength(10);
   }
 
-  /**
-   * Whole-second instants. Serialization preserves nanos, but some reused legacy sub-type decoders
-   * read seconds only; whole-second fixtures keep every round-trip exact.
-   */
-  Arbitrary<Instant> instants() {
-    return Arbitraries.longs().between(0, 4_000_000_000L).map(Instant::ofEpochSecond);
+  /** Nanosecond-precision instants. The default precision in jqwik is seconds. */
+  @Provide
+  Arbitrary<Instant> nanoPrecisionInstants() {
+    return DateTimes.instants()
+        .between(Instant.ofEpochSecond(0), Instant.ofEpochSecond(4_000_000_000L))
+        .ofPrecision(ChronoUnit.NANOS);
   }
 
   @SuppressWarnings("unused")
