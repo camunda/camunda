@@ -501,6 +501,11 @@
 				"filtersPanel": {
 					"label": "Filter",
 					"resetFilters": "Reset filters"
+				},
+				"validators": {
+					"ids": "Key has to be a 16 to 19 digit number, separated by a space or a comma",
+					"parentInstanceId": "Key has to be a 16 to 19 digit number",
+					"batchOperationKey": "Key has to be a 16 to 19 digit number or a UUID"
 				}
 			}
 		}
