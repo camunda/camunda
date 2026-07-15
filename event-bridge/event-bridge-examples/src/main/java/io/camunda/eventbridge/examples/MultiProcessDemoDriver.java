@@ -47,7 +47,8 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code order-process} — start → service task ({@code order-collect}) → end.
  *   <li>{@code payment-process} — start → service task ({@code payment-authorize}) → exclusive
  *       gateway → (approved) service task ({@code payment-capture}) → end / (declined) → end.
- *   <li>{@code shipping-process} — start → service task ({@code shipping-dispatch}) → end.
+ *   <li>{@code shipping-process} — start → parallel fork → dispatch ∥ notify-customer → join → end;
+ *       the parallel branches exercise the variant signature's interleaving-insensitivity.
  *   <li>{@code claim-process} — the variant showcase: a triage gateway (auto / manual / fraud
  *       routes, weighted by start variables incl. a claim {@code amount}), a genuine retry loop on
  *       the manual assessment (feeds rework hotspots), and a fraud rejection end. See {@link
@@ -133,6 +134,7 @@ public final class MultiProcessDemoDriver {
     final List<JobWorker> workers = new ArrayList<>();
     workers.add(worker(client, canceller, "order-collect"));
     workers.add(worker(client, canceller, "shipping-dispatch"));
+    workers.add(worker(client, canceller, "shipping-notify"));
     workers.add(worker(client, canceller, "payment-capture"));
     workers.add(worker(client, canceller, "claim-register"));
     workers.add(worker(client, canceller, "claim-assess-auto"));
@@ -236,6 +238,14 @@ public final class MultiProcessDemoDriver {
     final String region = REGIONS[rnd.nextInt(REGIONS.length)];
     final Map<String, Object> vars = new HashMap<>();
     vars.put("region", region);
+    // Order and payment carry a business amount too, so the value KPIs (value processed /
+    // value in flight) tell a story across the whole demo, not only for claims.
+    if (process.equals("order-process")) {
+      vars.put("amount", 20L + rnd.nextLong(480L));
+    }
+    if (process.equals("payment-process")) {
+      vars.put("amount", 10L + rnd.nextLong(1_990L));
+    }
     if (process.equals("claim-process")) {
       // Weighted triage route (the variant driver) and a claim amount: high claims skew toward
       // manual review, so the amount is a correlation hook, not just a value-KPI input.
@@ -298,11 +308,19 @@ public final class MultiProcessDemoDriver {
         .done();
   }
 
+  // dispatch and the customer notification run on PARALLEL branches: their completion facts
+  // interleave arbitrarily, which is exactly what the variant signature's order-insensitivity
+  // must absorb — every shipping instance forms ONE variant regardless of interleaving.
   private static BpmnModelInstance shippingProcess() {
     return Bpmn.createExecutableProcess("shipping-process")
         .startEvent("shipment-requested")
+        .parallelGateway("fork")
         .serviceTask("dispatch", t -> t.zeebeJobType("shipping-dispatch"))
-        .endEvent()
+        .parallelGateway("join")
+        .endEvent("shipped")
+        .moveToNode("fork")
+        .serviceTask("notify-customer", t -> t.zeebeJobType("shipping-notify"))
+        .connectTo("join")
         .done();
   }
 
