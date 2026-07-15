@@ -25,20 +25,20 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
+import org.jspecify.annotations.Nullable;
 
-public final class BackupServices extends PhysicalTenantScopedApiServices<BackupServices> {
+public final class RuntimeBackupServices
+    extends PhysicalTenantScopedApiServices<RuntimeBackupServices> {
 
   private final BackupApi backupApi;
   private final AuthorizationChecker authorizationChecker;
   private final AuthorizationsConfiguration authorizationsConfig;
   private final boolean backupIdGenerated;
 
-  public BackupServices(
+  public RuntimeBackupServices(
       final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
@@ -61,13 +61,13 @@ public final class BackupServices extends PhysicalTenantScopedApiServices<Backup
   }
 
   public CompletableFuture<Long> takeBackup(
-      final OptionalLong backupId, final CamundaAuthentication authentication) {
+      @Nullable final Long backupId, final CamundaAuthentication authentication) {
     if (!hasPermission(PermissionType.UPDATE, authentication)) {
       return failedFuture(PermissionType.UPDATE);
     }
 
     if (backupIdGenerated) {
-      if (backupId.isPresent()) {
+      if (backupId != null) {
         return CompletableFuture.failedFuture(
             new ServiceException(
                 "Cannot take backup with an explicit backupId when continuous backups and/or a "
@@ -76,20 +76,17 @@ public final class BackupServices extends PhysicalTenantScopedApiServices<Backup
                 ServiceException.Status.INVALID_ARGUMENT));
       }
       return mapErrors(() -> backupApi.takeBackup(getPhysicalTenantId()).toCompletableFuture());
-    }
+    } else {
+      if (backupId == null || backupId <= 0) {
+        return CompletableFuture.failedFuture(
+            new ServiceException(
+                "A backupId must be provided and it must be > 0",
+                ServiceException.Status.INVALID_ARGUMENT));
+      }
 
-    if (backupId.isEmpty() || backupId.getAsLong() <= 0) {
-      return CompletableFuture.failedFuture(
-          new ServiceException(
-              "A backupId must be provided and it must be > 0",
-              ServiceException.Status.INVALID_ARGUMENT));
+      return mapErrors(
+          () -> backupApi.takeBackup(getPhysicalTenantId(), backupId).toCompletableFuture());
     }
-
-    return mapErrors(
-        () ->
-            backupApi
-                .takeBackup(getPhysicalTenantId(), backupId.getAsLong())
-                .toCompletableFuture());
   }
 
   public CompletableFuture<BackupStatus> getBackupStatus(
@@ -113,22 +110,22 @@ public final class BackupServices extends PhysicalTenantScopedApiServices<Backup
   }
 
   public CompletableFuture<List<BackupStatus>> listBackups(
-      final Optional<String> prefix, final CamundaAuthentication authentication) {
+      final @Nullable String prefix, final CamundaAuthentication authentication) {
     if (!hasPermission(PermissionType.READ, authentication)) {
       return failedFuture(PermissionType.READ);
     }
 
-    if (prefix.isPresent() && !prefix.get().endsWith(BackupApi.WILDCARD)) {
+    if (prefix != null && !prefix.endsWith(BackupApi.WILDCARD)) {
       return CompletableFuture.failedFuture(
           new ServiceException(
-              "Expected a prefix ending with '*', but got '%s'".formatted(prefix.get()),
+              "Expected a prefix ending with '*', but got '%s'".formatted(prefix),
               ServiceException.Status.INVALID_ARGUMENT));
     }
 
     return mapErrors(
         () ->
             backupApi
-                .listBackups(getPhysicalTenantId(), prefix.orElse(BackupApi.WILDCARD))
+                .listBackups(getPhysicalTenantId(), prefix != null ? prefix : BackupApi.WILDCARD)
                 .toCompletableFuture());
   }
 

@@ -17,7 +17,6 @@ import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.mapper.BackupResponseMapper;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,12 +27,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @CamundaRestController
 @RequestMapping("/v2/backups/runtime")
-public class BackupController {
+public class RuntimeBackupController {
 
   private final ServiceRegistry serviceRegistry;
   private final CamundaAuthenticationProvider authenticationProvider;
 
-  public BackupController(
+  public RuntimeBackupController(
       final ServiceRegistry serviceRegistry,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.serviceRegistry = serviceRegistry;
@@ -45,12 +44,15 @@ public class BackupController {
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody(required = false) final TakeRuntimeBackupRequest request) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
-    final var backupId =
-        request != null && request.getBackupId() != null
-            ? OptionalLong.of(request.getBackupId())
-            : OptionalLong.empty();
     return RequestExecutor.executeServiceMethod(
-        () -> serviceRegistry.backupServices(physicalTenantId).takeBackup(backupId, authentication),
+        () ->
+            serviceRegistry
+                .backupServices(physicalTenantId)
+                .takeBackup(
+                    Optional.ofNullable(request)
+                        .map(TakeRuntimeBackupRequest::getBackupId)
+                        .orElse(null),
+                    authentication),
         BackupResponseMapper::toTakeBackupResponse,
         HttpStatus.ACCEPTED);
   }
@@ -61,10 +63,7 @@ public class BackupController {
       @RequestParam(required = false) final String prefix) {
     final var authentication = authenticationProvider.getCamundaAuthentication();
     return RequestExecutor.executeServiceMethod(
-        () ->
-            serviceRegistry
-                .backupServices(physicalTenantId)
-                .listBackups(Optional.ofNullable(prefix), authentication),
+        () -> serviceRegistry.backupServices(physicalTenantId).listBackups(prefix, authentication),
         BackupResponseMapper::toBackupInfoList,
         HttpStatus.OK);
   }

@@ -9,11 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
-import io.camunda.service.BackupServices;
+import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.registry.ServiceRegistry;
@@ -24,7 +25,6 @@ import io.camunda.zeebe.protocol.impl.encoding.BackupRangesResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,18 +33,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(BackupController.class)
-public class BackupControllerTest extends RestControllerTest {
+@WebMvcTest(RuntimeBackupController.class)
+public class RuntimeBackupControllerTest extends RestControllerTest {
 
   private static final String BASE_URL = "/v2/backups/runtime";
 
-  @MockitoBean private BackupServices backupServices;
+  @MockitoBean private RuntimeBackupServices runtimeBackupServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
   @MockitoBean private ServiceRegistry serviceRegistry;
 
   @BeforeEach
   void setup() {
-    when(serviceRegistry.backupServices(any())).thenReturn(backupServices);
+    when(serviceRegistry.backupServices(any())).thenReturn(runtimeBackupServices);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
@@ -52,7 +52,7 @@ public class BackupControllerTest extends RestControllerTest {
   @Test
   void takeBackupShouldReturnAcceptedWithGeneratedId() {
     // given
-    when(backupServices.takeBackup(eq(OptionalLong.empty()), any()))
+    when(runtimeBackupServices.takeBackup(isNull(), any()))
         .thenReturn(CompletableFuture.completedFuture(42L));
 
     // when - then
@@ -67,13 +67,13 @@ public class BackupControllerTest extends RestControllerTest {
         .jsonPath("$.backupId")
         .isEqualTo(42);
 
-    verify(backupServices).takeBackup(eq(OptionalLong.empty()), any());
+    verify(runtimeBackupServices).takeBackup(isNull(), any());
   }
 
   @Test
   void takeBackupShouldForwardExplicitBackupId() {
     // given
-    when(backupServices.takeBackup(eq(OptionalLong.of(17L)), any()))
+    when(runtimeBackupServices.takeBackup(eq(17L), any()))
         .thenReturn(CompletableFuture.completedFuture(17L));
 
     // when - then
@@ -87,13 +87,13 @@ public class BackupControllerTest extends RestControllerTest {
         .expectStatus()
         .isEqualTo(HttpStatus.ACCEPTED);
 
-    verify(backupServices).takeBackup(eq(OptionalLong.of(17L)), any());
+    verify(runtimeBackupServices).takeBackup(eq(17L), any());
   }
 
   @Test
   void takeBackupShouldReturnBadRequestOnInvalidArgument() {
     // given
-    when(backupServices.takeBackup(any(), any()))
+    when(runtimeBackupServices.takeBackup(any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException("must be > 0", Status.INVALID_ARGUMENT)));
@@ -111,7 +111,7 @@ public class BackupControllerTest extends RestControllerTest {
   @Test
   void takeBackupShouldReturnConflictOnAlreadyExists() {
     // given
-    when(backupServices.takeBackup(any(), any()))
+    when(runtimeBackupServices.takeBackup(any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException("already exists", Status.ALREADY_EXISTS)));
@@ -129,7 +129,7 @@ public class BackupControllerTest extends RestControllerTest {
   @Test
   void takeBackupShouldReturnForbiddenWhenUnauthorized() {
     // given
-    when(backupServices.takeBackup(any(), any()))
+    when(runtimeBackupServices.takeBackup(any(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException("Unauthorized to perform operation", Status.FORBIDDEN)));
@@ -148,7 +148,7 @@ public class BackupControllerTest extends RestControllerTest {
   void getBackupShouldReturnOk() {
     // given
     final var status = new BackupStatus(42L, State.COMPLETED, Optional.empty(), List.of());
-    when(backupServices.getBackupStatus(eq(42L), any()))
+    when(runtimeBackupServices.getBackupStatus(eq(42L), any()))
         .thenReturn(CompletableFuture.completedFuture(status));
 
     // when - then
@@ -169,7 +169,7 @@ public class BackupControllerTest extends RestControllerTest {
   @Test
   void getBackupShouldReturnNotFoundWhenAbsent() {
     // given
-    when(backupServices.getBackupStatus(eq(42L), any()))
+    when(runtimeBackupServices.getBackupStatus(eq(42L), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException("does not exist", Status.NOT_FOUND)));
@@ -187,7 +187,7 @@ public class BackupControllerTest extends RestControllerTest {
   @Test
   void listBackupsShouldDefaultToEmptyPrefix() {
     // given
-    when(backupServices.listBackups(eq(Optional.empty()), any()))
+    when(runtimeBackupServices.listBackups(isNull(), any()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when - then
@@ -199,13 +199,13 @@ public class BackupControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(backupServices).listBackups(eq(Optional.empty()), any());
+    verify(runtimeBackupServices).listBackups(isNull(), any());
   }
 
   @Test
   void listBackupsShouldForwardPrefix() {
     // given
-    when(backupServices.listBackups(eq(Optional.of("12*")), any()))
+    when(runtimeBackupServices.listBackups(eq("12*"), any()))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when - then
@@ -217,13 +217,13 @@ public class BackupControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(backupServices).listBackups(eq(Optional.of("12*")), any());
+    verify(runtimeBackupServices).listBackups(eq("12*"), any());
   }
 
   @Test
   void deleteBackupShouldReturnNoContent() {
     // given
-    when(backupServices.deleteBackup(eq(42L), any()))
+    when(runtimeBackupServices.deleteBackup(eq(42L), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when - then
@@ -235,16 +235,16 @@ public class BackupControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(backupServices).deleteBackup(eq(42L), any());
+    verify(runtimeBackupServices).deleteBackup(eq(42L), any());
   }
 
   @Test
   void getRuntimeBackupStateShouldReturnOk() {
     // given
     final var state =
-        new BackupServices.RuntimeBackupState(
+        new RuntimeBackupServices.RuntimeBackupState(
             new CheckpointStateResponse(), new BackupRangesResponse());
-    when(backupServices.getRuntimeState(any()))
+    when(runtimeBackupServices.getRuntimeState(any()))
         .thenReturn(CompletableFuture.completedFuture(state));
 
     // when - then
@@ -260,7 +260,7 @@ public class BackupControllerTest extends RestControllerTest {
   @Test
   void getRuntimeBackupStateShouldReturnServiceUnavailableOnIncompleteTopology() {
     // given
-    when(backupServices.getRuntimeState(any()))
+    when(runtimeBackupServices.getRuntimeState(any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new ServiceException("Topology is incomplete", Status.UNAVAILABLE)));
@@ -279,9 +279,9 @@ public class BackupControllerTest extends RestControllerTest {
   void syncRuntimeBackupStateShouldReturnOk() {
     // given
     final var state =
-        new BackupServices.RuntimeBackupState(
+        new RuntimeBackupServices.RuntimeBackupState(
             new CheckpointStateResponse(), new BackupRangesResponse());
-    when(backupServices.syncRuntimeState(any()))
+    when(runtimeBackupServices.syncRuntimeState(any()))
         .thenReturn(CompletableFuture.completedFuture(state));
 
     // when - then
@@ -297,7 +297,7 @@ public class BackupControllerTest extends RestControllerTest {
   @Test
   void deleteRuntimeBackupStateShouldReturnNoContent() {
     // given
-    when(backupServices.deleteRuntimeState(any()))
+    when(runtimeBackupServices.deleteRuntimeState(any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when - then
@@ -309,6 +309,6 @@ public class BackupControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(backupServices).deleteRuntimeState(any());
+    verify(runtimeBackupServices).deleteRuntimeState(any());
   }
 }
