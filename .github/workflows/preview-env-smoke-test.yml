@@ -397,10 +397,10 @@ jobs:
       always() &&
       github.event_name == 'schedule' &&
       (
-        needs.deploy-8-8.result == 'failure' ||
-        needs.deploy-8-9.result == 'failure' ||
-        needs.deploy-8-10.result == 'failure' ||
-        needs.test.result == 'failure'
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-8.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-9.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.deploy-8-10.result) ||
+        contains(fromJSON('["failure", "cancelled"]'), needs.test.result)
       )
     needs:
     - deploy-8-8
@@ -436,11 +436,11 @@ jobs:
             echo "jobs<<EOF"
             gh api "repos/${REPO}/actions/runs/${RUN_ID}/jobs" --jq '
               .jobs
-              | map(select(.conclusion == "failure"))
+              | map(select(.conclusion == "failure" or .conclusion == "cancelled"))
               | map(
-                  (.name | capture("(?<v>8\\.[0-9]+)").v) as $ver |
+                  (try (.name | capture("(?<v>8\\.[0-9]+)").v) // .name) as $ver |
                   (if .name | test("Deploy") then "deploy" elif .name | test("Test") then "tests" else "job" end) as $type |
-                  "• *\($ver)* <\(.html_url)|\($type) failed>"
+                  "• *\($ver)* <\(.html_url)|\($type) \(if .conclusion == "cancelled" then "cancelled" else "failed" end)>"
                 )
               | join("\n")
             '
