@@ -26,6 +26,7 @@ import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.InTransactionHook;
 import io.camunda.db.rdbms.write.queue.PostFlushListener;
@@ -856,6 +857,14 @@ class RdbmsExporterTest {
       final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction,
       final boolean schemaInitialized,
       final boolean openExporter) {
+    createExporter(builderFunction, schemaInitialized, openExporter, null);
+  }
+
+  private void createExporter(
+      final Function<RdbmsExporter.Builder, RdbmsExporter.Builder> builderFunction,
+      final boolean schemaInitialized,
+      final boolean openExporter,
+      final ExporterPositionModel exporterPositionModel) {
     flushTask = mock(ScheduledTask.class);
     cleanupTask = mock(ScheduledTask.class);
     usageMetricsCleanupTask = mock(ScheduledTask.class);
@@ -874,7 +883,7 @@ class RdbmsExporterTest {
     rdbmsWriters = mock(RdbmsWriters.class);
     executionQueue = Mockito.spy(new StubExecutionQueue());
     positionService = mock(ExporterPositionService.class);
-    when(positionService.findOne(anyInt())).thenReturn(null);
+    when(positionService.findOne(anyInt())).thenReturn(exporterPositionModel);
     rdbmsPurger = mock(RdbmsPurger.class);
 
     historyCleanupService = mock(HistoryCleanupService.class);

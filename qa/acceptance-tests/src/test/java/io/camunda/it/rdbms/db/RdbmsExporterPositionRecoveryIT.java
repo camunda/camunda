@@ -9,7 +9,10 @@ package io.camunda.it.rdbms.db;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitForUser;
+import static io.camunda.zeebe.test.StableValuePredicate.hasStableValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Iterables;
@@ -26,12 +29,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -51,11 +55,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
  *   <li><b>DB position ahead of broker</b> – simulates another exporter instance writing ahead (the
  *       original bug in issue #52460). The mismatch causes a reopen; the exporter re-syncs to the
  *       DB position and continues.
- *   <li><b>DB position behind broker</b> – simulates a DB rollback or manual admin tamper that left
- *       the position counter lower than expected. The mismatch triggers the same reopen path; on
- *       reopen the exporter requests a replay from the DB position. If log segments are available
- *       the replay succeeds; if not, the exporter fails hard. This test is disabled because the
- *       acceptance-test setup rejects the replay request.
+ *   <li><b>DB position behind broker</b> – simulates a DB rollback, or an automated failover to a
+ *       lagging async replica, that left the position counter lower than expected. The mismatch
+ *       triggers the same reopen path; on reopen the exporter requests a replay from the DB
+ *       position, which rewinds the shared log reader and redelivers the missing records so the
+ *       exporter re-syncs and continues.
  * </ol>
  */
 @Tag("rdbms")
@@ -171,59 +175,73 @@ class RdbmsExporterPositionRecoveryIT {
    * <p>The in-transaction row-lock hook detects the divergence (DB &lt; {@code
    * lastFlushedPosition}) and raises a {@link
    * io.camunda.db.rdbms.exception.ExporterPositionMismatchException}. On reopen the exporter finds
-   * DB &lt; broker and attempts a replay; but in this test environment the exporter is already in
-   * the exporting phase and replay is rejected. The exporter then fails hard with an {@link
-   * io.camunda.zeebe.exporter.api.ExporterException} rather than silently accepting a stale
-   * baseline (which would risk data loss). This scenario requires log segments to be available in
-   * production for automatic recovery.
+   * DB &lt; broker and requests a replay from the DB position; the exporter director rewinds the
+   * shared log reader to that position and redelivers the missing records, allowing the exporter to
+   * re-sync and continue without any manual intervention or data loss.
    *
-   * <p>Disabled: replay is not available while the exporter is in the exporting phase; the
-   * hard-fail path cannot be fully verified in the acceptance-test setup. A manual integration test
-   * with log-segment availability is required to cover the replay-succeeds path.
+   * <p>A few users are created and then deleted directly from the database before rewinding the
+   * position, so replaying their creation records re-inserts them rather than hitting a primary
+   * key/unique constraint violation (which would occur if the rows were still present when the
+   * exporter replays their INSERTs).
    */
   @Test
   @Order(2)
-  @Disabled(
-      "Replay is not available while the exporter is in the exporting phase; "
-          + "this scenario requires log segments that are not present in this test setup")
   void shouldRecoverWhenRdbmsPositionIsLowerThanBrokerPosition() throws Exception {
     // given — wait until the position has stabilised after the previous test
-    Awaitility.await("position stabilises after previous test")
-        .atMost(Duration.ofMinutes(2))
-        .until(
-            () -> {
-              final long acknowledged = getCurrentAcknowledgedExporterPosition();
-              final long db = getCurrentDbExporterPosition();
-              // both sides agree and are advancing (non-trivially ahead of 0)
-              return acknowledged > 0 && Math.abs(acknowledged - db) <= 10;
-            });
+    awaitExporterPositionStabilises();
 
-    final long positionBeforeTamper = getCurrentDbExporterPosition();
-    assertThat(positionBeforeTamper).isGreaterThan(0);
+    final long positionBeforeUsers = getCurrentDbExporterPosition();
+    assertThat(positionBeforeUsers).isGreaterThan(0);
 
-    // Set the DB position below the broker's acknowledged position to simulate a DB rollback or
-    // an admin mistake that left the position counter behind the actual data state.
-    final long tamperedPosition = positionBeforeTamper - 5;
-    setDbExporterPosition(tamperedPosition);
-
-    assertThat(getCurrentDbExporterPosition()).isEqualTo(tamperedPosition);
-
-    // when — generate traffic so the exporter flushes and detects the mismatch
-    for (int i = 0; i < 20; i++) {
-      startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"foo\"}");
+    // create a few users; their creation records are exactly what the replay below must
+    // redeliver once the exporter position is rewound to before they existed
+    final var usernames =
+        List.of(
+            "recovery-user-1-" + UUID.randomUUID(),
+            "recovery-user-2-" + UUID.randomUUID(),
+            "recovery-user-3-" + UUID.randomUUID());
+    for (final var username : usernames) {
+      camundaClient
+          .newCreateUserCommand()
+          .username(username)
+          .name(username)
+          .password("password")
+          .email(username + "@example.com")
+          .send()
+          .join();
+    }
+    for (final var username : usernames) {
+      waitForUser(camundaClient, username);
     }
 
-    // then — the exporter reopens, accepts the DB position as the new baseline, and eventually
-    // advances the DB position past the pre-tamper value (proving it did not get stuck)
-    Awaitility.await("exporter recovers from lower-than-expected DB position")
-        .atMost(Duration.ofMinutes(3))
-        .untilAsserted(
-            () ->
-                assertThat(getCurrentDbExporterPosition())
-                    .as(
-                        "DB exporter position must eventually exceed the pre-tamper value, "
-                            + "proving the exporter recovered and continued exporting after the gap")
-                    .isGreaterThan(positionBeforeTamper));
+    // Delete the users directly from the database, simulating that their INSERTs were never
+    // durably persisted downstream (consistent with rewinding the position past their records
+    // below). Without this, replaying their creation would fail with a PK/unique constraint
+    // violation instead of exercising the recovery path.
+    for (final var username : usernames) {
+      deleteUserFromDb(username);
+    }
+
+    // Rewind the DB position to before the users were created, simulating a DB rollback or an
+    // automated failover to a lagging async replica that left the position counter behind the
+    // actual data state.
+    setDbExporterPosition(positionBeforeUsers);
+    assertThat(getCurrentDbExporterPosition()).isEqualTo(positionBeforeUsers);
+
+    // when — generate traffic so the exporter flushes and detects the mismatch
+    final var processInstance =
+        startProcessInstance(camundaClient, "service_tasks_v1", "{\"xyz\":\"foo\"}");
+
+    // then — the exporter reopens, replays from the rewound position (re-inserting the users it
+    // missed), and continues on to export the new process instance; all of it must become visible
+    // again through the client, proving no records were lost or permanently skipped
+    for (final var username : usernames) {
+      waitForUser(camundaClient, username);
+    }
+    waitForProcessInstance(
+        camundaClient,
+        f -> f.processInstanceKey(processInstance.getProcessInstanceKey()),
+        instances -> assertThat(instances).isNotEmpty());
   }
 
   // -----------------------------------------------------------------------
@@ -231,13 +249,10 @@ class RdbmsExporterPositionRecoveryIT {
   // -----------------------------------------------------------------------
 
   private void awaitExporterPositionStabilises() {
-    Awaitility.await("initial export stabilises")
+    Awaitility.await("RDBMS exporter position stabilises")
         .atMost(Duration.ofMinutes(1))
-        .until(
-            () -> {
-              final long pos = getCurrentAcknowledgedExporterPosition();
-              return pos > 0;
-            });
+        .during(Duration.ofSeconds(5))
+        .until(this::getCurrentAcknowledgedExporterPosition, hasStableValue());
   }
 
   private long getCurrentAcknowledgedExporterPosition() {
@@ -298,6 +313,15 @@ class RdbmsExporterPositionRecoveryIT {
         throw new IllegalStateException(
             "setDbExporterPosition updated 0 rows — EXPORTER_POSITION row not found for PARTITION_ID=1");
       }
+    }
+  }
+
+  private void deleteUserFromDb(final String username) throws Exception {
+    try (final Connection conn = directPostgresConnection();
+        final PreparedStatement ps =
+            conn.prepareStatement("DELETE FROM USER_ WHERE USERNAME = ?")) {
+      ps.setString(1, username);
+      ps.executeUpdate();
     }
   }
 }
