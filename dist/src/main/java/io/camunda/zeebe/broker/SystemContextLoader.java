@@ -8,9 +8,9 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
@@ -31,7 +31,6 @@ import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -63,14 +62,13 @@ public final class SystemContextLoader {
   private AtomixCluster cluster;
   private BrokerClient brokerClient;
   private MeterRegistry meterRegistry;
-  private Map<String, Camunda> physicalTenants;
+  private PhysicalTenantResolver physicalTenantResolver;
   private Function<String, UserServices> userServicesForTenant;
   private PasswordEncoder passwordEncoder;
   private Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
   private Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private SearchClientsProxy searchClientsProxy;
   private NodeIdProvider nodeIdProvider;
-  private PhysicalTenantIds physicalTenantIds;
   private Path workingDirectory;
   private List<ExporterDescriptor> exporterDescriptors;
 
@@ -119,9 +117,14 @@ public final class SystemContextLoader {
     return this;
   }
 
-  /** The resolved per-tenant configuration, keyed by physical tenant id. */
-  public SystemContextLoader withPhysicalTenants(final Map<String, Camunda> physicalTenants) {
-    this.physicalTenants = physicalTenants;
+  /**
+   * The resolver holding the per-tenant {@link Camunda} configuration, keyed by physical tenant id.
+   * Also passed to {@link SystemContext} as the {@link io.camunda.cluster.PhysicalTenantIds} of
+   * known tenants, since {@link PhysicalTenantResolver} implements that interface.
+   */
+  public SystemContextLoader withPhysicalTenantResolver(
+      final PhysicalTenantResolver physicalTenantResolver) {
+    this.physicalTenantResolver = physicalTenantResolver;
     return this;
   }
 
@@ -158,11 +161,6 @@ public final class SystemContextLoader {
     return this;
   }
 
-  public SystemContextLoader withPhysicalTenantIds(final PhysicalTenantIds physicalTenantIds) {
-    this.physicalTenantIds = physicalTenantIds;
-    return this;
-  }
-
   /** The broker working directory, used to resolve relative paths in overridden tenant configs. */
   public SystemContextLoader withWorkingDirectory(final Path workingDirectory) {
     this.workingDirectory = workingDirectory;
@@ -176,10 +174,8 @@ public final class SystemContextLoader {
   }
 
   public SystemContext createSystemContext() {
-    final Map<String, PhysicalTenantContext> physicalTenantContexts = new LinkedHashMap<>();
-    physicalTenants.forEach(
-        (physicalTenantId, camunda) ->
-            physicalTenantContexts.put(physicalTenantId, buildPhysicalTenantContext(camunda)));
+    final Map<String, PhysicalTenantContext> physicalTenantContexts =
+        physicalTenantResolver.mapValues(this::buildPhysicalTenantContext);
 
     return new SystemContext(
         shutdownTimeout,
@@ -195,7 +191,7 @@ public final class SystemContextLoader {
         oidcClaimsProviderFactory,
         searchClientsProxy,
         nodeIdProvider,
-        physicalTenantIds);
+        physicalTenantResolver);
   }
 
   private PhysicalTenantContext buildPhysicalTenantContext(final Camunda camunda) {

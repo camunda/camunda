@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -16,10 +17,12 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -29,8 +32,9 @@ import io.camunda.zeebe.dynamic.nodeid.Version;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -119,8 +123,7 @@ final class SystemContextLoaderTest {
                 PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
                 rootCamunda,
                 "tenanta",
-                tenantCamunda),
-            () -> Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, "tenanta"));
+                tenantCamunda));
 
     // when
     final SystemContext systemContext = loader.createSystemContext();
@@ -139,16 +142,19 @@ final class SystemContextLoaderTest {
       final Camunda rootCamunda,
       final BrokerCfg rootBrokerCfg,
       final Map<String, Camunda> physicalTenants) {
-    return newLoader(rootCamunda, rootBrokerCfg, physicalTenants, PhysicalTenantIds.DEFAULT);
-  }
-
-  private SystemContextLoader newLoader(
-      final Camunda rootCamunda,
-      final BrokerCfg rootBrokerCfg,
-      final Map<String, Camunda> physicalTenants,
-      final PhysicalTenantIds physicalTenantIds) {
     final var nodeIdProvider = mock(NodeIdProvider.class);
     when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(0, Version.zero()));
+    final var physicalTenantResolver = mock(PhysicalTenantResolver.class);
+    when(physicalTenantResolver.getAll()).thenReturn(physicalTenants);
+    when(physicalTenantResolver.mapValues(any()))
+        .thenAnswer(
+            invocation -> {
+              final Function<Camunda, PhysicalTenantContext> mapper = invocation.getArgument(0);
+              final Map<String, PhysicalTenantContext> out = new LinkedHashMap<>();
+              physicalTenants.forEach(
+                  (tenantId, camunda) -> out.put(tenantId, mapper.apply(camunda)));
+              return out;
+            });
 
     return new SystemContextLoader()
         .withShutdownTimeout(SystemContext.DEFAULT_SHUTDOWN_TIMEOUT)
@@ -158,7 +164,7 @@ final class SystemContextLoaderTest {
         .withCluster(mock(AtomixCluster.class))
         .withBrokerClient(mock(BrokerClient.class))
         .withMeterRegistry(new SimpleMeterRegistry())
-        .withPhysicalTenants(physicalTenants)
+        .withPhysicalTenantResolver(physicalTenantResolver)
         .withUserServicesForTenant(tenantId -> mock(UserServices.class))
         .withPasswordEncoder(mock(PasswordEncoder.class))
         .withJwtDecoderFactory(authentication -> mock(JwtDecoder.class))
@@ -166,7 +172,6 @@ final class SystemContextLoaderTest {
             authentication -> (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims)
         .withSearchClientsProxy(mock(SearchClientsProxy.class))
         .withNodeIdProvider(nodeIdProvider)
-        .withPhysicalTenantIds(physicalTenantIds)
         .withWorkingDirectory(workingDirectory)
         .withExporterDescriptors(null);
   }
