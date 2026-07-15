@@ -48,7 +48,7 @@ Operate has ~20 stores. Most are transient UI state and do not need porting. Map
 | `processInstanceMigration.ts` | Migration wizard state | `useState` + URL params for step |
 | `diagramOverlays.ts` | Diagram overlay data | `useState` inside BPMN component |
 | `networkReconnectionHandler.ts` | Connectivity polling | Port to a standalone hook with `useEffect` |
-| `notifications.tsx` | Toast queue | Already handled by the toast notifications PR (wait for merge) |
+| `notifications.tsx` | Toast queue | `notificationsStore` from `#/shared/notifications/notifications.store` — already exists, reuse |
 
 **Decision rule:** Ask "Would the user want to share/bookmark this state?" → URL search params. "Is it ephemeral per-visit?" → `useState`. "Is it server data?" → TanStack Query.
 
@@ -66,7 +66,7 @@ These belong in the component or a component-local hook.
 | Multi-page fetching | Local hook — export a `queryOptions` function for route prefetching + a `useSomething()` hook for the component |
 | Aggregation / data transformation | `select` option on `useSuspenseQuery`, or inside the local hook's `queryFn` |
 
-**Reference implementation:** `operate/pages/Dashboard/useRunningInstancesCount.ts` — exports both `runningInstancesCountQuery()` (used in `beforeLoad` for prefetching) and `useRunningInstancesCount()` (used in the component). The route imports the query function; the component imports the hook. `queries.ts` stays thin.
+**Reference implementation:** `operate/pages/Dashboard/useRunningInstancesCount.ts` — exports both `runningInstancesCountQuery()` (used in the route `loader` for prefetching — data goes in `loader`, never `beforeLoad`, which is reserved for guards/redirects; see `routes/_auth/operate/index.tsx` and `docs/monorepo-docs/frontend/data-loading.md`) and `useRunningInstancesCount()` (used in the component). The route imports the query function; the component imports the hook. `queries.ts` stays thin.
 
 Pattern (copy from existing entries in those files):
 
@@ -104,6 +104,19 @@ const queries = {
 
 **Check `@camunda/camunda-api-zod-schemas/8.10` first** before writing a custom endpoint — many Operate endpoints are already there. Import `endpoints` from the package to get the URL and method.
 
+## Writes (operations, mutations)
+
+The codebase does not use TanStack Query's `useMutation`. Follow the Tasklist patterns by write complexity:
+
+- **Simple write, then refresh:** call `request(endpoints.xxx(...))` in the event handler, then `queryClient.invalidateQueries({queryKey: [...]})` for affected lists.
+- **Write with a lifecycle** (the API returns 202/accepted and the resource transitions through pending states before settling): model it as an XState machine (`setup` + `fromPromise` actors) that receives `queryClient` as input. Reference: `tasklist/modules/task-details/taskCompletionMachine.ts` —
+  - optimistic update via `queryClient.setQueryData(...)`, with rollback on failure
+  - poll the resource via `queryClient.fetchQuery(queries.xxx())` until it leaves the transitional state
+  - `queryClient.invalidateQueries(...)` for affected list queries on completion
+  - the route can also poll transitional states via `refetchInterval` (see `POLLING_STATES` in `routes/_auth/tasklist/_tasks/$userTaskKey/route.tsx`)
+
+Operate's batch operations (cancel/retry/delete, batch modification) follow the accepted → pending → completed lifecycle, so expect the machine pattern there. Do not put write logic in `queries.ts` — it stays a read-only registry.
+
 ## i18n
 
 Operate strings go under `operate.*` inside the shared `translation` namespace:
@@ -129,23 +142,32 @@ Add all 4 locales (en/de/fr/es) — LLM-translate de/fr/es and note "LLM-transla
 // SomePage.test.tsx
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {mockSomeEndpoint} from 'shared-test-modules/mock-handlers';
+import {mockSomeEndpoint} from '#/shared-test-modules/mock-handlers';
+import {createSomeEntity} from '#/shared-test-modules/api-mocks/some-entities';
+import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 
 // worker is injected and auto-managed by the `it` fixture — no beforeAll/afterAll needed
 
 it('should display process instances', async ({worker}) => {
   worker.use(
-    mockSomeEndpoint({successResponse: HttpResponse.json({items: [], totalCount: 0})}),
+    mockSomeEndpoint({successResponse: HttpResponse.json({items: [createSomeEntity()], totalCount: 1})}),
   );
 
   const screen = await renderWithRouter(SomePage, {path: '/operate'});
 
+  await userEvent.click(screen.getByRole('button', {name: 'Expand'}));
   await expect.element(screen.getByText('Dashboard')).toBeVisible();
 });
 ```
 
 **Add new endpoint mocks to `shared-test-modules/mock-handlers.ts`** using `createEndpointMock()`. Never inline `http.post(...)` directly in test files.
+
+**Response fixtures come from factories in `shared-test-modules/api-mocks/`** (`createBatchOperation`, `createUserTask`, …). Add a factory there when mocking a new entity — never build response literals inline in tests.
+
+**POST/PUT/PATCH mocks must validate the request payload:** pass `{schema, successResponse, failureResponse}` — the mock returns `failureResponse` when the request body fails the Zod schema, so tests catch malformed payloads instead of green-lighting them. See `mockCompleteTaskEndpoint` usage in `tasklist/pages/TaskDetailsTaskPage.test.tsx` (it extends the API schema to pin exact expected variables).
+
+**Interactions use `userEvent` from `'vitest/browser'`** (`userEvent.click`, `userEvent.fill`, `userEvent.keyboard`); direct `locator.click()` is acceptable for simple clicks.
 
 ## Definition of Done (9 gates)
 
