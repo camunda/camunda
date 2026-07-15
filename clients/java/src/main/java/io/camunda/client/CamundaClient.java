@@ -76,6 +76,7 @@ import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
+import io.camunda.client.api.command.ResumeProcessInstanceCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
@@ -450,6 +451,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   SuspendProcessInstanceCommandStep1 newSuspendProcessInstanceCommand(long processInstanceKey);
+
+  /**
+   * Command to resume a process instance.
+   *
+   * <pre>
+   * camundaClient
+   *  .newResumeProcessInstanceCommand(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key which identifies the corresponding process instance
+   * @return a builder for the command
+   */
+  ResumeProcessInstanceCommandStep1 newResumeProcessInstanceCommand(long processInstanceKey);
 
   /**
    * Command to delete a process instance history.

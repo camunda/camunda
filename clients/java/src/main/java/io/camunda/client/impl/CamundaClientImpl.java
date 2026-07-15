@@ -85,6 +85,7 @@ import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
+import io.camunda.client.api.command.ResumeProcessInstanceCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.StreamJobsCommandStep1;
@@ -279,6 +280,7 @@ import io.camunda.client.impl.command.ResetClockCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.ResolveProcessInstanceIncidentsCommandImpl;
 import io.camunda.client.impl.command.ResumeBatchOperationCommandImpl;
+import io.camunda.client.impl.command.ResumeProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.client.impl.command.StatusRequestImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
@@ -772,6 +774,12 @@ public final class CamundaClientImpl implements CamundaClient {
       final long processInstanceKey) {
     return new SuspendProcessInstanceCommandImpl(
         processInstanceKey, config, httpClient, jsonMapper);
+  }
+
+  @Override
+  public ResumeProcessInstanceCommandStep1 newResumeProcessInstanceCommand(
+      final long processInstanceKey) {
+    return new ResumeProcessInstanceCommandImpl(processInstanceKey, config, httpClient, jsonMapper);
   }
 
   @Override
