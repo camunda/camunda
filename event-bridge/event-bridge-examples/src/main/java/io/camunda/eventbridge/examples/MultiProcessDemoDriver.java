@@ -9,6 +9,7 @@ package io.camunda.eventbridge.examples;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -71,14 +72,18 @@ public final class MultiProcessDemoDriver {
 
   // Instances run a few seconds (never longer), so completions keep pace with arrival and every
   // process's cube windows stay dense. ~15% do deliberately slow work that blows the ~9s SLA (and
-  // lifts p90/p99); ~8%
-  // raise a real Zeebe incident (job failed with no retries left). A faulted instance is cancelled
-  // shortly after so it terminates and registers as "did not finish cleanly" in the no-incident
-  // ratio — otherwise a real incident just hangs the instance and never completes.
+  // lifts p90/p99); ~8% raise a real Zeebe incident (job failed with no retries left). Most
+  // faulted instances are cancelled shortly after, so they terminate and register as "did not
+  // finish cleanly" in the no-incident ratio; the rest keep their incident open for a while (the
+  // open-incidents gauge) and are then recovered like an operator would — retries restored,
+  // incident resolved — so the instance eventually completes instead of hanging forever.
   private static final int SLA_BREACH_PCT = 15;
   private static final int FAULT_PCT = 8;
-  private static final int INCIDENT_LEFT_OPEN_PCT = 30; // of faults: left open instead of cancelled
+  private static final int INCIDENT_LEFT_OPEN_PCT = 30; // of faults: recovered later, not cancelled
   private static final long FAULT_CANCEL_DELAY_MS = 2_000L;
+  // how long a recovering incident stays open before the "operator" fixes it
+  private static final long INCIDENT_RECOVERY_MIN_MS = 30_000L;
+  private static final long INCIDENT_RECOVERY_MAX_MS = 90_000L;
   // Ample execution threads so jobs run concurrently instead of serialising into a queue (the
   // client
   // defaults to ONE). Sized well above the expected in-flight job count (arrival rate × work time)
@@ -400,9 +405,10 @@ public final class MultiProcessDemoDriver {
   /**
    * Completes the job after some work, except for {@link #FAULT_PCT}% of jobs which fail with no
    * retries left — raising a real incident. Most faulted instances are then cancelled after a short
-   * delay (resolving the incident, so it counts toward incident duration and the no-incident
-   * ratio); a share ({@link #INCIDENT_LEFT_OPEN_PCT}%) are left alone, so their incident stays open
-   * and the open-incidents gauge is non-zero.
+   * delay (so they terminate and count against the no-incident ratio); a share ({@link
+   * #INCIDENT_LEFT_OPEN_PCT}%) recover instead: after a longer "operator reaction" delay the job's
+   * retries are restored and the incident resolved, so the instance resumes and completes normally.
+   * While waiting they keep the open-incidents gauge non-zero.
    */
   private static void handleJob(
       final CamundaClient client,
@@ -418,10 +424,16 @@ public final class MultiProcessDemoDriver {
           .errorMessage("injected fault: downstream dependency unavailable")
           .send()
           .join();
-      if (rnd.nextInt(100) < INCIDENT_LEFT_OPEN_PCT) {
-        return; // leave the incident open — feeds the open-incidents gauge/heatmap
-      }
       final long instanceKey = job.getProcessInstanceKey();
+      if (rnd.nextInt(100) < INCIDENT_LEFT_OPEN_PCT) {
+        // leave the incident open for a while (feeds the open-incidents gauge/heatmap), then
+        // recover it like an operator would — the instance completes instead of hanging forever
+        canceller.schedule(
+            () -> recoverIncident(client, instanceKey, job.getKey()),
+            rnd.nextLong(INCIDENT_RECOVERY_MIN_MS, INCIDENT_RECOVERY_MAX_MS),
+            TimeUnit.MILLISECONDS);
+        return;
+      }
       canceller.schedule(
           () -> {
             try {
@@ -436,5 +448,29 @@ public final class MultiProcessDemoDriver {
     }
     sleepWork();
     jobClient.newCompleteCommand(job.getKey()).send().join();
+  }
+
+  /**
+   * The "operator" reaction to a lingering incident: restore the job's retries, then resolve the
+   * instance's open incidents so the job is handed back to its worker and the instance completes
+   * through its normal path. Best effort — the instance may have been cancelled meanwhile.
+   */
+  private static void recoverIncident(
+      final CamundaClient client, final long instanceKey, final long jobKey) {
+    try {
+      client.newUpdateRetriesCommand(jobKey).retries(1).send().join();
+      client
+          .newIncidentSearchRequest()
+          .filter(f -> f.processInstanceKey(instanceKey).state(IncidentState.ACTIVE))
+          .send()
+          .join()
+          .items()
+          .forEach(
+              incident ->
+                  client.newResolveIncidentCommand(incident.getIncidentKey()).send().join());
+    } catch (final Exception e) {
+      System.err.println(
+          "incident recovery for instance " + instanceKey + " failed: " + e.getMessage());
+    }
   }
 }
