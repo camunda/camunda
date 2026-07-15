@@ -13,9 +13,9 @@ import {MockDateRangeField} from './mocks';
 import {getWrapper} from './getWrapper';
 
 describe('<DateRangeField />', () => {
-	afterEach(() => {
+	afterEach(async () => {
 		vi.useRealTimers();
-		cleanup();
+		await cleanup();
 	});
 
 	it('should close modal on cancel click', async () => {
