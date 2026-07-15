@@ -278,11 +278,14 @@ public final class StandardDatasets {
         // Currently-active instances per definition (a level gauge: the facts' ±1 lifecycle
         // delta), sampled as periodic snapshots — "how many were running at each moment", the
         // canonical semi-additive series (ADR 0010). APPENDED: declaration order fixes cube ids.
+        // Deliberately tight lateness: a snapshot exists only once its boundary is provably
+        // final, so the grace is the series' floor staleness — one minute keeps the widget ~2
+        // minutes behind now instead of ~6, and the late-drop alarm makes any overrun visible.
         DatasetDeclaration.builder("active-instances", FactType.PROCESS_INSTANCE)
             .dimension("bpmnProcessId", DimensionType.STRING)
             .meter(Meter.of("active", MeterCatalog.LEVEL, "delta"))
             .window(ONE_MINUTE_MS)
-            .lateness(GRACE_MS)
+            .lateness(ONE_MINUTE_MS)
             .snapshots(ONE_MINUTE_MS)
             .build(),
         // Completion-duration spread per definition: the average with its population standard
