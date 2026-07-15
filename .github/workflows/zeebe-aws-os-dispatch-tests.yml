@@ -102,7 +102,7 @@ jobs:
       # event queue timeouts, search_phase_execution_exception, and jobs hanging
       # until the job timeout). This is a nightly/manual job, so trading some
       # wall-clock time for reliability is an acceptable tradeoff.
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
         group:
