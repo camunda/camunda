@@ -14,6 +14,7 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {parseIds} from 'modules/utils/filter';
+import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 
 function mapFiltersToRequest(
   filters: ProcessInstanceFilters,
@@ -126,14 +127,19 @@ function mapFiltersToRequest(
   }
 
   if (variableName && variableValues) {
-    const variableNames = variableName.split(',');
-    const variableVals = variableValues.split(',');
-    request.filter.variables = variableNames
-      .map((name, index) => ({
-        name,
-        value: variableVals[index] || '',
-      }))
-      .filter((variable) => variable.value !== '');
+    const values =
+      getValidVariableValues(variableValues)?.map((value) =>
+        JSON.stringify(value),
+      ) ?? [];
+
+    if (values.length > 0) {
+      request.filter.variables = [
+        {
+          name: variableName,
+          value: values.length === 1 ? values[0] : {$in: values},
+        },
+      ];
+    }
   }
 
   return request;
