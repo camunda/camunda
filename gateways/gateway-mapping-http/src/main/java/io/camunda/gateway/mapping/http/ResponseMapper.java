@@ -63,9 +63,13 @@ import io.camunda.gateway.protocol.model.Partition.HealthEnum;
 import io.camunda.gateway.protocol.model.Partition.RoleEnum;
 import io.camunda.gateway.protocol.model.Partition.StateEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceReference;
+import io.camunda.gateway.protocol.model.ResolvedSecret;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.RoleCreateResult;
 import io.camunda.gateway.protocol.model.RoleUpdateResult;
+import io.camunda.gateway.protocol.model.SecretErrorCode;
+import io.camunda.gateway.protocol.model.SecretResolutionError;
+import io.camunda.gateway.protocol.model.SecretResolveResult;
 import io.camunda.gateway.protocol.model.SignalBroadcastResult;
 import io.camunda.gateway.protocol.model.TenantCreateResult;
 import io.camunda.gateway.protocol.model.TenantUpdateResult;
@@ -77,6 +81,8 @@ import io.camunda.search.entities.DeployedResourceEntity;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.service.SecretServices;
+import io.camunda.service.SecretServices.SecretResolution;
 import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Topology;
@@ -664,6 +670,38 @@ public final class ResponseMapper {
     return AuthorizationCreateResult.Builder.create()
         .authorizationKey(keyToString(authorizationRecord.getAuthorizationKey()))
         .build();
+  }
+
+  public static SecretResolveResult toSecretResolveResult(final SecretResolution resolution) {
+    final var resolved =
+        resolution.resolved().stream()
+            .map(
+                secret ->
+                    ResolvedSecret.Builder.create()
+                        .reference(secret.reference())
+                        .value(secret.value())
+                        .build())
+            .toList();
+    final var errors =
+        resolution.errors().stream().map(ResponseMapper::toSecretResolutionError).toList();
+    return SecretResolveResult.Builder.create().resolved(resolved).errors(errors).build();
+  }
+
+  private static SecretResolutionError toSecretResolutionError(
+      final SecretServices.SecretResolutionError error) {
+    return SecretResolutionError.Builder.create()
+        .reference(error.reference())
+        .code(toSecretErrorCode(error.code()))
+        .message(error.message())
+        .build();
+  }
+
+  private static SecretErrorCode toSecretErrorCode(final SecretServices.SecretErrorCode code) {
+    return switch (code) {
+      case NOT_FOUND -> SecretErrorCode.NOT_FOUND;
+      case ACCESS_DENIED -> SecretErrorCode.ACCESS_DENIED;
+      case INVALID_REF -> SecretErrorCode.INVALID_REF;
+    };
   }
 
   public static UserCreateResult toUserCreateResponse(final UserRecord userRecord) {

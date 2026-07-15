@@ -35,6 +35,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TopologyServices;
@@ -79,6 +80,7 @@ public record DefaultServiceRegistry(
     Map<String, ProcessInstanceServices> processInstanceByTenant,
     Map<String, ResourceServices> resourceByTenant,
     Map<String, RoleServices> roleByTenant,
+    Map<String, SecretServices> secretByTenant,
     Map<String, SignalServices> signalByTenant,
     Map<String, TenantServices> tenantByTenant,
     Map<String, TopologyServices> topologyByTenant,
@@ -235,6 +237,11 @@ public record DefaultServiceRegistry(
   }
 
   @Override
+  public SecretServices secretServices(final String physicalTenantId) {
+    return byTenant(secretByTenant, physicalTenantId);
+  }
+
+  @Override
   public SignalServices signalServices(final String physicalTenantId) {
     return byTenant(signalByTenant, physicalTenantId);
   }
@@ -340,6 +347,7 @@ public record DefaultServiceRegistry(
     private final Map<String, ProcessInstanceServices> processInstanceByTenant = new HashMap<>();
     private final Map<String, ResourceServices> resourceByTenant = new HashMap<>();
     private final Map<String, RoleServices> roleByTenant = new HashMap<>();
+    private final Map<String, SecretServices> secretByTenant = new HashMap<>();
     private final Map<String, SignalServices> signalByTenant = new HashMap<>();
     private final Map<String, TenantServices> tenantByTenant = new HashMap<>();
     private final Map<String, TopologyServices> topologyByTenant = new HashMap<>();
@@ -497,6 +505,11 @@ public record DefaultServiceRegistry(
       return this;
     }
 
+    public Builder secretServices(final String tenantId, final SecretServices service) {
+      secretByTenant.put(tenantId, service);
+      return this;
+    }
+
     public Builder signalServices(final String tenantId, final SignalServices service) {
       signalByTenant.put(tenantId, service);
       return this;
@@ -566,6 +579,7 @@ public record DefaultServiceRegistry(
           Map.copyOf(processInstanceByTenant),
           Map.copyOf(resourceByTenant),
           Map.copyOf(roleByTenant),
+          Map.copyOf(secretByTenant),
           Map.copyOf(signalByTenant),
           Map.copyOf(tenantByTenant),
           Map.copyOf(topologyByTenant),

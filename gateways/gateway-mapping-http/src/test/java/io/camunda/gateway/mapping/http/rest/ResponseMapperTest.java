@@ -12,6 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.protocol.model.ActivatedJobResult;
 import io.camunda.gateway.protocol.model.UserTaskProperties;
+import io.camunda.service.SecretServices;
+import io.camunda.service.SecretServices.SecretResolution;
+import io.camunda.service.SecretServices.SecretResolutionError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -25,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -33,6 +37,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ResponseMapperTest {
@@ -733,6 +738,33 @@ class ResponseMapperTest {
       assertThat(response.getBatchOperation().getBatchOperationType()).isNotNull();
       assertThat(response.getBatchOperation().getBatchOperationType().name())
           .isEqualTo(batchOperationType.name());
+    }
+  }
+
+  @Nested
+  class SecretMappingTest {
+
+    /**
+     * The service and the generated REST model each declare their own {@code SecretErrorCode} enum,
+     * bridged by {@link ResponseMapper#toSecretResolveResult}. Keep them in sync: mapping drift is
+     * expected to be caught at build time (exhaustive switch / missing enum symbols), and this test
+     * additionally pins each service code to a REST code with the identical name.
+     */
+    @ParameterizedTest
+    @EnumSource(SecretServices.SecretErrorCode.class)
+    void shouldMapEverySecretErrorCodeToMatchingRestCode(
+        final SecretServices.SecretErrorCode code) {
+      // given a resolution carrying an error for the code
+      final var resolution =
+          new SecretResolution(
+              List.of(), List.of(new SecretResolutionError("camunda.secrets.x", code, "message")));
+
+      // when
+      final var result = ResponseMapper.toSecretResolveResult(resolution);
+
+      // then the mapped REST code exists and has the identical name
+      assertThat(result.getErrors()).hasSize(1);
+      assertThat(result.getErrors().get(0).getCode().name()).isEqualTo(code.name());
     }
   }
 }

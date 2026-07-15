@@ -72,6 +72,7 @@ tags:
   - name: Recovery
   - name: Resource
   - name: Role
+  - name: Secret
   - name: Setup
   - name: Signal
   - name: System
@@ -408,6 +409,10 @@ paths:
     $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1users~1search'
   /roles/{roleId}/users/{username}:
     $ref: 'roles.yaml#/paths/~1roles~1{roleId}~1users~1{username}'
+
+  # Secret endpoints
+  /secrets/resolve:
+    $ref: 'secrets.yaml#/paths/~1secrets~1resolve'
 
   # Setup endpoints
   /setup/user:

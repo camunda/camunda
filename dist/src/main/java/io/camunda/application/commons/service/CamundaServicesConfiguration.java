@@ -47,6 +47,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TopologyServices;
@@ -400,6 +401,16 @@ public class CamundaServicesConfiguration {
                           brokerClient,
                           securityContextProvider,
                           search,
+                          executor,
+                          converter))
+                  .secretServices(
+                      tenantId,
+                      new SecretServices(
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          authorizationChecker,
+                          cslProperties.getAuthorizations(),
                           executor,
                           converter))
                   .signalServices(
