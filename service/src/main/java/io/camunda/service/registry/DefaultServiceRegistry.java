@@ -12,7 +12,6 @@ import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.service.BackupServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterVariableServices;
@@ -37,6 +36,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
@@ -60,7 +60,7 @@ public record DefaultServiceRegistry(
     Map<String, AgentInstanceServices> agentInstanceByTenant,
     Map<String, AuditLogServices> auditLogByTenant,
     Map<String, AuthorizationServices> authorizationByTenant,
-    Map<String, BackupServices> backupByTenant,
+    Map<String, RuntimeBackupServices> backupByTenant,
     Map<String, BatchOperationServices> batchOperationByTenant,
     Map<String, ClockServices> clockByTenant,
     Map<String, ClusterVariableServices> clusterVariableByTenant,
@@ -130,7 +130,7 @@ public record DefaultServiceRegistry(
   }
 
   @Override
-  public BackupServices backupServices(final String physicalTenantId) {
+  public RuntimeBackupServices backupServices(final String physicalTenantId) {
     return byTenant(backupByTenant, physicalTenantId);
   }
 
@@ -335,7 +335,7 @@ public record DefaultServiceRegistry(
     private final Map<String, AgentInstanceServices> agentInstanceByTenant = new HashMap<>();
     private final Map<String, AuditLogServices> auditLogByTenant = new HashMap<>();
     private final Map<String, AuthorizationServices> authorizationByTenant = new HashMap<>();
-    private final Map<String, BackupServices> backupByTenant = new HashMap<>();
+    private final Map<String, RuntimeBackupServices> backupByTenant = new HashMap<>();
     private final Map<String, BatchOperationServices> batchOperationByTenant = new HashMap<>();
     private final Map<String, ClockServices> clockByTenant = new HashMap<>();
     private final Map<String, ClusterVariableServices> clusterVariableByTenant = new HashMap<>();
@@ -401,7 +401,7 @@ public record DefaultServiceRegistry(
       return this;
     }
 
-    public Builder backupServices(final String tenantId, final BackupServices service) {
+    public Builder backupServices(final String tenantId, final RuntimeBackupServices service) {
       backupByTenant.put(tenantId, service);
       return this;
     }

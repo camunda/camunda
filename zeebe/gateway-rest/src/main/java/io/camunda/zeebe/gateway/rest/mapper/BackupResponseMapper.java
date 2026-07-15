@@ -18,7 +18,7 @@ import io.camunda.gateway.protocol.model.PartitionCheckpointState;
 import io.camunda.gateway.protocol.model.RuntimeBackupState;
 import io.camunda.gateway.protocol.model.StateCode;
 import io.camunda.gateway.protocol.model.TakeRuntimeBackupResponse;
-import io.camunda.service.BackupServices;
+import io.camunda.service.RuntimeBackupServices;
 import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.PartitionBackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
@@ -108,7 +108,7 @@ public final class BackupResponseMapper {
   }
 
   public static RuntimeBackupState toRuntimeBackupState(
-      final BackupServices.RuntimeBackupState state) {
+      final RuntimeBackupServices.RuntimeBackupState state) {
     final var checkpointState = state.checkpointState();
     final var ranges = state.ranges();
 

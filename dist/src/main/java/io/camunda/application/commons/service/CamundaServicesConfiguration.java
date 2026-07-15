@@ -24,7 +24,6 @@ import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.service.BackupServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterVariableServices;
@@ -49,6 +48,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
@@ -280,7 +280,7 @@ public class CamundaServicesConfiguration {
                           converter))
                   .backupServices(
                       tenantId,
-                      new BackupServices(
+                      new RuntimeBackupServices(
                           tenantId,
                           brokerClient,
                           securityContextProvider,

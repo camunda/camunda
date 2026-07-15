@@ -34,13 +34,12 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class BackupServicesTest {
+public class RuntimeBackupServicesTest {
 
   private static final String PHYSICAL_TENANT_ID = "test-tenant";
 
@@ -49,8 +48,8 @@ public class BackupServicesTest {
   private final AuthorizationsConfiguration authorizationsConfig =
       new AuthorizationsConfiguration();
   private final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
-  private BackupServices manualModeServices;
-  private BackupServices generatedIdServices;
+  private RuntimeBackupServices manualModeServices;
+  private RuntimeBackupServices generatedIdServices;
 
   @BeforeEach
   public void before() {
@@ -59,8 +58,8 @@ public class BackupServicesTest {
     generatedIdServices = services(true);
   }
 
-  private BackupServices services(final boolean backupIdGenerated) {
-    return new BackupServices(
+  private RuntimeBackupServices services(final boolean backupIdGenerated) {
+    return new RuntimeBackupServices(
         PHYSICAL_TENANT_ID,
         mock(BrokerClient.class),
         mock(SecurityContextProvider.class),
@@ -79,7 +78,7 @@ public class BackupServicesTest {
         .thenReturn(CompletableFuture.completedFuture(42L));
 
     // when
-    final var future = manualModeServices.takeBackup(OptionalLong.of(42L), authentication);
+    final var future = manualModeServices.takeBackup(42L, authentication);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofSeconds(1));
@@ -89,7 +88,7 @@ public class BackupServicesTest {
   @Test
   public void takeBackupShouldRejectMissingIdInManualMode() {
     // when
-    final var future = manualModeServices.takeBackup(OptionalLong.empty(), authentication);
+    final var future = manualModeServices.takeBackup(null, authentication);
 
     // then
     assertThat(future.isCompletedExceptionally()).isTrue();
@@ -100,7 +99,7 @@ public class BackupServicesTest {
   @Test
   public void takeBackupShouldRejectNonPositiveIdInManualMode() {
     // when
-    final var future = manualModeServices.takeBackup(OptionalLong.of(0L), authentication);
+    final var future = manualModeServices.takeBackup(0L, authentication);
 
     // then
     assertThat(future.isCompletedExceptionally()).isTrue();
@@ -114,7 +113,7 @@ public class BackupServicesTest {
         .thenReturn(CompletableFuture.completedFuture(123L));
 
     // when
-    final var future = generatedIdServices.takeBackup(OptionalLong.empty(), authentication);
+    final var future = generatedIdServices.takeBackup(null, authentication);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofSeconds(1));
@@ -124,7 +123,7 @@ public class BackupServicesTest {
   @Test
   public void takeBackupShouldRejectExplicitIdWhenBackupIdGenerated() {
     // when
-    final var future = generatedIdServices.takeBackup(OptionalLong.of(1L), authentication);
+    final var future = generatedIdServices.takeBackup(1L, authentication);
 
     // then
     assertThat(future.isCompletedExceptionally()).isTrue();
@@ -139,7 +138,7 @@ public class BackupServicesTest {
         .thenReturn(CompletableFuture.failedFuture(new BackupAlreadyExistException(42L, 43L)));
 
     // when
-    final var future = manualModeServices.takeBackup(OptionalLong.of(42L), authentication);
+    final var future = manualModeServices.takeBackup(42L, authentication);
 
     // then
     assertThat(future.isCompletedExceptionally()).isTrue();
@@ -153,7 +152,7 @@ public class BackupServicesTest {
         .thenThrow(new IncompleteTopologyException("incomplete"));
 
     // when
-    final var future = manualModeServices.takeBackup(OptionalLong.of(42L), authentication);
+    final var future = manualModeServices.takeBackup(42L, authentication);
 
     // then
     assertThat(future.isCompletedExceptionally()).isTrue();
@@ -168,7 +167,7 @@ public class BackupServicesTest {
         .thenReturn(Collections.emptySet());
 
     // when
-    final var future = manualModeServices.takeBackup(OptionalLong.of(42L), authentication);
+    final var future = manualModeServices.takeBackup(42L, authentication);
 
     // then
     assertServiceExceptionStatus(future, Status.FORBIDDEN);
@@ -228,7 +227,7 @@ public class BackupServicesTest {
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
-    final var future = manualModeServices.listBackups(Optional.empty(), authentication);
+    final var future = manualModeServices.listBackups(null, authentication);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofSeconds(1));
@@ -238,7 +237,7 @@ public class BackupServicesTest {
   @Test
   public void listBackupsShouldRejectPrefixNotEndingInWildcard() {
     // when
-    final var future = manualModeServices.listBackups(Optional.of("12"), authentication);
+    final var future = manualModeServices.listBackups("12", authentication);
 
     // then
     assertServiceExceptionStatus(future, Status.INVALID_ARGUMENT);
@@ -252,7 +251,7 @@ public class BackupServicesTest {
         .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
-    final var future = manualModeServices.listBackups(Optional.of("12*"), authentication);
+    final var future = manualModeServices.listBackups("12*", authentication);
 
     // then
     assertThat(future).succeedsWithin(Duration.ofSeconds(1));
