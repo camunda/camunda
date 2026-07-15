@@ -4,6 +4,7 @@ package golden
 import (
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -46,9 +47,9 @@ func normalize(input string) string {
 	return strings.TrimSpace(result) + "\n"
 }
 
-// collectManifests walks a helm --output-dir tree and returns each file's
-// normalized content keyed by its path relative to the tree root.
-func collectManifests(t *testing.T, root string) map[string]string {
+// collectManifests walks a helm --output-dir tree and returns each matching
+// file's normalized content keyed by its path relative to the tree root.
+func collectManifests(t *testing.T, root string, pathFilter []string) map[string]string {
 	t.Helper()
 	manifests := map[string]string{}
 	require.NoError(t, filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
@@ -59,25 +60,51 @@ func collectManifests(t *testing.T, root string) map[string]string {
 		if err != nil {
 			return err
 		}
+		rel = filepath.ToSlash(rel)
+		if !matchesPathFilter(rel, pathFilter) {
+			return nil
+		}
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
-		manifests[filepath.ToSlash(rel)] = normalize(string(data))
+		manifests[rel] = normalize(string(data))
 		return nil
 	}))
 	return manifests
 }
 
+// matchesPathFilter returns true when rel equals one of prefixes, or sits under
+// one of them as a directory. An empty filter matches every path.
+func matchesPathFilter(rel string, prefixes []string) bool {
+	if len(prefixes) == 0 {
+		return true
+	}
+	for _, prefix := range prefixes {
+		prefix = path.Clean(filepath.ToSlash(prefix))
+		if rel == prefix || strings.HasPrefix(rel, prefix+"/") {
+			return true
+		}
+	}
+	return false
+}
+
 // assertGoldenDir compares the rendered manifest tree at srcDir against the
 // committed golden directory at golden/<version>/<scenario>/<chartName>/, file
 // for file. When update is true the directory is rewritten from the rendered
-// tree instead of compared.
-func assertGoldenDir(t *testing.T, version, scenario, chartName, srcDir string, update bool) {
+// tree instead of compared. pathFilter, when non-empty, narrows both the
+// rendered and (implicitly, since it's all that's ever written) committed
+// sets to paths under those prefixes — see scenario.PathFilter.
+func assertGoldenDir(t *testing.T, version, scenario, chartName, srcDir string, update bool, pathFilter []string) {
 	t.Helper()
 
 	dir := filepath.Join(goldenDir, version, scenario, chartName)
-	rendered := collectManifests(t, srcDir)
+	rendered := collectManifests(t, srcDir, pathFilter)
+	if len(pathFilter) > 0 {
+		require.NotEmpty(t, rendered,
+			"pathFilter %v matched no rendered manifests in %s for golden/%s/%s/%s",
+			pathFilter, srcDir, version, scenario, chartName)
+	}
 
 	if update {
 		require.NoError(t, os.RemoveAll(dir))

@@ -80,17 +80,45 @@ Versions under test are listed explicitly in the `versions` slice in
 2. `make update-golden PATTERN=stable-90`.
 3. Commit the generated golden files. No other code change is needed.
 
-## If golden diffs become noisy in PRs
+## Narrowing a scenario to a subset of files (`PathFilter`)
 
-These files are generated, so a chart or values change can touch many of them at
-once and dominate a PR's diff. If that becomes a review burden, mark the golden
-tree as generated so GitHub collapses it in diffs (and excludes it from language
-stats) via a `.gitattributes` entry, e.g.:
+Some scenarios exist only to verify one narrow area — e.g. a scenario added
+specifically to catch a regression in one template. Committing (and diffing)
+the full rendered tree for those isn't worth the review noise when only a
+handful of files are actually relevant.
+
+Set `PathFilter` on a `scenario` in `golden_test.go` to a list of path
+prefixes, relative to each chart's own output tree:
+
+```go
+{Name: "elasticsearch-no-optimize", Storage: "elasticsearch", Optimize: false,
+	PathFilter: []string{"templates/orchestration"}},
+```
+
+Only rendered manifests under those prefixes are compared or committed for
+that scenario — everything else is skipped, for every chart the scenario
+renders. A non-empty `PathFilter` must match at least one rendered manifest for
+each chart it renders; otherwise the test fails. That makes typos or filters
+scoped to the wrong chart visible instead of silently removing coverage. Leave
+`PathFilter` unset (the default) to keep comparing every rendered file, exactly
+like today.
+
+## Why golden diffs are collapsed in PRs
+
+Golden files under `golden/` are generated render snapshots, not hand-authored
+source. The repository marks them as generated in `.gitattributes`:
 
 ```
 load-tests/setup/test/golden/** linguist-generated=true
 ```
 
-See GitHub's [customizing how changed files appear](https://docs.github.com/en/repositories/working-with-files/managing-files/customizing-how-changed-files-appear-on-github)
-and [Managing generated files in GitHub](https://medium.com/@clarkbw/managing-generated-files-in-github-1f1989c09dfd).
-We have not applied this yet — the diffs are reviewed normally for now.
+GitHub therefore collapses these files in PR diffs by default and excludes them
+from language statistics. This keeps reviews focused on the chart, value, or
+Makefile change that produced the snapshot update while still allowing
+reviewers to expand the generated files when they need to inspect the rendered
+manifest changes.
+
+`PathFilter` is still useful when a scenario genuinely needs to verify only one
+narrow area: it reduces the committed snapshot tree and the test comparison
+scope. Do not add a `PathFilter` only to hide noisy diffs; the generated-file
+attribute already handles that.
