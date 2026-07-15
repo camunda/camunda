@@ -610,7 +610,7 @@ public class DashboardRepository {
       final Long toWindow,
       final Map<QueryKey, List<ReportRow>> memo) {
     // One consolidated read per element: raised (CREATED count over the range) and the open level
-    // gauge live on the same rows now; avg/max resolution duration are not modeled as a cube.
+    // gauge live on the same rows.
     final List<IncidentFlowNode> out = new ArrayList<>();
     for (final ReportRow row :
         total(
@@ -623,7 +623,7 @@ public class DashboardRepository {
             memo)) {
       final long raised = measureAsLong(row, "count");
       final long open = Math.max(0L, measureAsLong(row, "open"));
-      out.add(new IncidentFlowNode(elementId(row), raised, open, 0L, 0L));
+      out.add(new IncidentFlowNode(elementId(row), raised, open));
     }
     out.sort(Comparator.comparingLong(IncidentFlowNode::raised).reversed());
     return out;

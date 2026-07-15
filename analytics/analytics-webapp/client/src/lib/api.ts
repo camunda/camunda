@@ -85,8 +85,6 @@ export interface IncidentFlowNode {
   elementId: string;
   raised: number;
   open: number;
-  avgDurationMs: number;
-  maxDurationMs: number;
 }
 
 export interface ElementDuration {
