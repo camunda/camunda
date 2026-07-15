@@ -35,6 +35,8 @@ orchestration:
   env:
     - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
       value: "1"
+    - name: COPILOT_GOLDEN_UPDATE_TEST
+      value: renovate-branch
 
     ## The values below are duplicated from
     ## camunda-platform-values-defaults.yaml. Keep them in sync.
