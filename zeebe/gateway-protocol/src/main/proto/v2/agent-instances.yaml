@@ -637,7 +637,7 @@ components:
       properties:
         elementInstanceKey:
           description: |
-            The key of the AHSP or AI Agent Task element instance.
+            The key of the AI Agent Sub-process or AI Agent Task element instance.
             The engine uses this key to infer processInstanceKey, elementId,
             processDefinitionKey, and tenantId.
           allOf:
