@@ -45,6 +45,12 @@
       <groupId>org.apache.datasketches</groupId>
       <artifactId>datasketches-java</artifactId>
     </dependency>
+    <!-- @JsonIgnore on QuantileResult's sketch field, so it never rides the JSON the serving layer
+         returns even though the model module does no serialization itself -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -54,6 +60,12 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- Asserts QuantileResult's JSON shape is unchanged by the sketch field (test-only) -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

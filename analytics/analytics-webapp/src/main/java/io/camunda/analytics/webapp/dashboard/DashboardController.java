@@ -317,6 +317,19 @@ public class DashboardController {
     return repository.branchDistribution(bpmnProcessId, from, to);
   }
 
+  /**
+   * Per-flow-node duration outliers over the range: the boxplot fence and how many/what share of a
+   * node's completions sit above it (approximate, sketch-based). Empty when the metadata store
+   * predates the {@code duration_p} meter, never a 500.
+   */
+  @GetMapping("/outliers")
+  public List<ElementOutlier> outliers(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.elementOutliers(bpmnProcessId, from, to);
+  }
+
   @GetMapping(value = "/diagram", produces = MediaType.APPLICATION_XML_VALUE)
   public ResponseEntity<String> diagram(@RequestParam("process") final String bpmnProcessId) {
     return repository

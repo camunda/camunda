@@ -137,4 +137,18 @@ final class QuantileAggregateFunctionTest {
     assertThat(result.count()).isZero();
     assertThat(result.valueAt(0.5)).isNaN();
   }
+
+  @Test
+  void shouldCarryTheMergedSketchOnTheResult() {
+    // given the low and high halves folded and merged separately (the STREAM_MERGE read path)
+    final KllDoublesSketch merged = quantile.merge(fold(1, 50), fold(51, 100));
+
+    // when the result is built from the merge
+    final QuantileResult result = quantile.getResult(merged);
+
+    // then the result answers an arbitrary rank and a share query straight off the merged sketch,
+    // not just the declared ranks
+    assertThat(result.quantile(0.25)).isCloseTo(25.0, within(3.0));
+    assertThat(result.shareAbove(90.0)).isCloseTo(0.10, within(0.05));
+  }
 }

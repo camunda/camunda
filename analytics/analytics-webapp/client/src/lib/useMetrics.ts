@@ -14,6 +14,7 @@ import {
   type DurationSpreadPoint,
   type DurationPoint,
   type ElementDuration,
+  type ElementOutlier,
   type IncidentFlowNode,
   type IncidentTrendPoint,
   type KpiComparison,
@@ -67,6 +68,8 @@ export interface MetricsData {
   branchDistribution: BranchDistribution[];
   /** Top execution variants by instance count. */
   variants: VariantRow[];
+  /** Per-flow-node duration outliers (boxplot fence, approximate/sketch-based). */
+  outliers: ElementOutlier[];
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -121,6 +124,7 @@ export function useMetrics(
       api.valueSeries(process, range),
       api.branchDistribution(process, range),
       api.variants(process, range),
+      api.outliers(process, range),
     ])
       .then(
         ([
@@ -151,6 +155,7 @@ export function useMetrics(
           valueSeries,
           branchDistribution,
           variants,
+          outliers,
         ]) => {
           if (!cancelled) {
             setData({
@@ -181,6 +186,7 @@ export function useMetrics(
               valueSeries,
               branchDistribution,
               variants,
+              outliers,
             });
           }
         },

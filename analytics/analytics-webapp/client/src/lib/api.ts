@@ -216,6 +216,18 @@ export interface VariantRow {
   p95Ms: number;
 }
 
+/** One flow node's duration outliers: the boxplot fence (Q3 + 1.5*IQR) from the completion-duration
+ * sketch, and how many/what share of its completions sit above it. Approximate (sketch-based). */
+export interface ElementOutlier {
+  elementId: string;
+  n: number;
+  medianMs: number;
+  q3Ms: number;
+  fenceMs: number;
+  share: number;
+  count: number;
+}
+
 // ---------------------------------------------------------------------------
 // Dataset / report builder shapes. These mirror the analytics builder REST
 // contract (DatasetDeclaration / Report records serialized by name).
@@ -550,6 +562,8 @@ export const api = {
     getJson<ElementDuration[]>(
       `/api/dashboard/element-durations?process=${q(process)}${rangeQs(range)}`,
     ),
+  outliers: (process: string, range: TimeRange | null) =>
+    getJson<ElementOutlier[]>(`/api/dashboard/outliers?process=${q(process)}${rangeQs(range)}`),
 
   // Dataset / report builder endpoints.
   listDatasets: () => getJson<Dataset[]>("/api/datasets"),

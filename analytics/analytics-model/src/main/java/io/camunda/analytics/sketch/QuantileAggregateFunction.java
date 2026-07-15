@@ -85,6 +85,6 @@ public final class QuantileAggregateFunction<F>
       values[i] = sketch.getQuantile(ranks[i], QuantileSearchCriteria.INCLUSIVE);
     }
     return new QuantileResult(
-        sketch.getN(), sketch.getMinItem(), sketch.getMaxItem(), ranks.clone(), values);
+        sketch.getN(), sketch.getMinItem(), sketch.getMaxItem(), ranks.clone(), values, sketch);
   }
 }

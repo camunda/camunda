@@ -23,6 +23,7 @@ import io.camunda.analytics.query.TableQuery;
 import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.serving.spi.TableRow;
 import io.camunda.analytics.sketch.DistinctCountResult;
+import io.camunda.analytics.sketch.OutlierStats;
 import io.camunda.analytics.sketch.QuantileResult;
 import io.camunda.analytics.sketch.TopKResult;
 import io.camunda.analytics.table.ProcessDefinitionSink;
@@ -530,6 +531,75 @@ public class DashboardRepository {
     }
     out.sort(Comparator.comparingLong(ElementDuration::executedCount).reversed());
     return out;
+  }
+
+  /**
+   * The minimum sketch observation count before a boxplot fence is trusted: below it, a quartile
+   * split is mostly noise (few observations spread across Q1/Q3). Rows below this are excluded from
+   * {@link #elementOutliers} rather than shown with a misleading fence.
+   */
+  private static final long MIN_OBSERVATIONS = 20;
+
+  /**
+   * Per-flow-node duration outliers over the range: the boxplot fence ({@code Q3 + 1.5 * IQR})
+   * computed from the elements cube's completion-duration percentile sketch, and how many/what
+   * share of a node's completions sit above it (see {@link OutlierStats}). Zero new pipeline state
+   * — this reads the same {@code duration_p} sketch {@link #elementDurations} already reads, just
+   * asking the merged sketch an arbitrary-rank question instead of only its declared ranks. Sorted
+   * by outlier count descending; nodes with fewer than {@link #MIN_OBSERVATIONS} completions are
+   * excluded.
+   */
+  public List<ElementOutlier> elementOutliers(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    if (!hasMeter("elements", "duration_p")) {
+      // not provisioned on this metadata store (bootstrapped before duration_p existed) — an empty
+      // card, not a dashboard-blanking 500: the client fetches ~30 endpoints in one Promise.all
+      return List.of();
+    }
+    final List<ElementOutlier> out = new ArrayList<>();
+    for (final ReportRow row :
+        total(
+            "elements",
+            List.of("elementId"),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("duration_p"),
+            newMemo())) {
+      final QuantileResult q =
+          row.measures().get("duration_p") instanceof final QuantileResult result ? result : null;
+      final OutlierStats stats = q == null ? null : q.outlierStats();
+      if (stats == null || stats.n() < MIN_OBSERVATIONS) {
+        continue;
+      }
+      out.add(
+          new ElementOutlier(
+              elementId(row),
+              stats.n(),
+              Math.round(stats.median()),
+              Math.round(stats.q3()),
+              Math.round(stats.fence()),
+              stats.share(),
+              stats.count()));
+    }
+    out.sort(Comparator.comparingLong(ElementOutlier::count).reversed());
+    return out;
+  }
+
+  /**
+   * Whether the catalog holds {@code datasetName} and it declares a meter named {@code meterName}.
+   */
+  private boolean hasMeter(final String datasetName, final String meterName) {
+    final CompiledDataset dataset = catalog.byName().get(datasetName);
+    if (dataset == null) {
+      return false;
+    }
+    for (final CompiledMeter compiled : dataset.meters()) {
+      if (compiled.meterName().equals(meterName)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Instances started (activated) for a process over the range. */
