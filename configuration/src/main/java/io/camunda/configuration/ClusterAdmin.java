@@ -17,11 +17,22 @@ public class ClusterAdmin {
   /** HTTP Basic authentication for the cluster-admin API. */
   @NestedConfigurationProperty private ClusterAdminBasic basic = new ClusterAdminBasic();
 
+  /** OIDC authorization for the cluster-admin API. */
+  @NestedConfigurationProperty private ClusterAdminOidc oidc = new ClusterAdminOidc();
+
   public ClusterAdminBasic getBasic() {
     return basic;
   }
 
   public void setBasic(final ClusterAdminBasic basic) {
     this.basic = basic == null ? new ClusterAdminBasic() : basic;
+  }
+
+  public ClusterAdminOidc getOidc() {
+    return oidc;
+  }
+
+  public void setOidc(final ClusterAdminOidc oidc) {
+    this.oidc = oidc == null ? new ClusterAdminOidc() : oidc;
   }
 }
