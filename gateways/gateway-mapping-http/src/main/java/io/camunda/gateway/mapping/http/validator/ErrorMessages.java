@@ -52,4 +52,10 @@ public final class ErrorMessages {
       "When using isLatestVersion filter, pagination is limited to forward pagination using 'after' and 'limit'. The field '%s' is not supported.";
   public static final String ERROR_MESSAGE_UNSUPPORTED_SORT_FIELD_WITH_IS_LATEST_VERSION =
       "When using isLatestVersion filter, sorting is limited to 'processDefinitionId' and 'tenantId' fields only. The field '%s' is not supported.";
+  public static final String ERROR_MESSAGE_INVALID_METADATA_VALUE_TYPE =
+      "The metadata value for key '%s' is of type '%s' but must be a string or a number";
+  public static final String ERROR_MESSAGE_TOO_MANY_METADATA_ENTRIES =
+      "The provided metadata has %d entries but must not exceed %d entries";
+  public static final String ERROR_MESSAGE_METADATA_TOO_LARGE =
+      "The provided metadata exceeds the maximum serialized size of %d characters";
 }

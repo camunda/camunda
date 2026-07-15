@@ -97,7 +97,7 @@ public class ClusterVariableCreatedUpdatedHandler
                 e ->
                     new MetadataEntry(
                         e.getKey(),
-                        String.valueOf(e.getValue()),
+                        e.getValue() == null ? "" : String.valueOf(e.getValue()),
                         e.getValue() instanceof Number n ? n.doubleValue() : null))
             .toList());
   }

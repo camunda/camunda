@@ -22,16 +22,24 @@ import io.camunda.service.ClusterVariableServices;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -47,6 +55,9 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   static final String GLOBAL_WITH_NAME_URL = GLOBAL_URL + "/%s";
   static final String TENANT_URL = CLUSTER_VARIABLE_PREFIX_URL + "/tenants/%s";
   static final String TENANT_WITH_NAME_URL = TENANT_URL + "/%s";
+  // large enough that 101 minimal metadata entries (~1.8k serialized chars) don't also trip
+  // this limit, so the too-many-entries test exercises only the entry-count check
+  static final int TEST_MAX_CLUSTER_VARIABLE_METADATA_SIZE = 2000;
 
   @Captor ArgumentCaptor<ClusterVariableRequest> createRequestCaptor;
   @MockitoBean ClusterVariableServices clusterVariableServices;
@@ -153,6 +164,157 @@ public class ClusterVariableControllerTest extends RestControllerTest {
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isEqualTo("bar");
     assertThat(capturedRequest.tenantId()).isNull();
+  }
+
+  @Test
+  void shouldCreateGlobalClusterVariableWithMetadata() {
+    // given
+    final var metadata = Map.<String, Object>of("kind", "CREDENTIAL", "schemaVersion", 2);
+    when(clusterVariableServices.createGloballyScopedClusterVariable(
+            any(ClusterVariableRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new ClusterVariableRecord()
+                    .setName("foo")
+                    .setMetadata(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(metadata)))));
+
+    final var request =
+        """
+        {
+            "name": "foo",
+            "value": "bar",
+            "metadata": {
+                "kind": "CREDENTIAL",
+                "schemaVersion": 2
+            }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(GLOBAL_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.metadata.kind")
+        .isEqualTo("CREDENTIAL")
+        .jsonPath("$.metadata.schemaVersion")
+        .isEqualTo(2);
+
+    verify(clusterVariableServices)
+        .createGloballyScopedClusterVariable(createRequestCaptor.capture(), any());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.metadata()).containsExactlyInAnyOrderEntriesOf(metadata);
+  }
+
+  @Test
+  void shouldRejectCreationWithNonScalarMetadataValue() {
+    // given
+    final var request =
+        """
+        {
+            "name": "foo",
+            "value": "bar",
+            "metadata": {
+                "kind": ["CREDENTIAL"]
+            }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "The metadata value for key 'kind' is of type 'ArrayList' but must be a string or a number.",
+              "instance": "%s"
+            }"""
+            .formatted(GLOBAL_URL);
+
+    // when / then
+    webClient
+        .post()
+        .uri(GLOBAL_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectCreationWithTooManyMetadataEntries() {
+    // given
+    final var metadataEntries =
+        IntStream.range(0, 101)
+            .mapToObj(i -> "\"%d\": \"%d\"".formatted(i, i))
+            .collect(Collectors.joining(","));
+    final var request =
+        """
+        {
+            "name": "foo",
+            "value": "bar",
+            "metadata": { %s }
+        }"""
+            .formatted(metadataEntries);
+
+    // when / then
+    webClient
+        .post()
+        .uri(GLOBAL_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("The provided metadata has 101 entries but must not exceed 100 entries.");
+  }
+
+  @Test
+  void shouldRejectCreationWithOversizedMetadata() {
+    // given: exceeds the test-configured metadata size limit (see TestConfig) without needing a
+    // huge payload
+    final var largeValue = "x".repeat(TEST_MAX_CLUSTER_VARIABLE_METADATA_SIZE);
+    final var request =
+        """
+        {
+            "name": "foo",
+            "value": "bar",
+            "metadata": { "key": "%s" }
+        }"""
+            .formatted(largeValue);
+
+    // when / then
+    webClient
+        .post()
+        .uri(GLOBAL_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo(
+            "The provided metadata exceeds the maximum serialized size of %d characters."
+                .formatted(TEST_MAX_CLUSTER_VARIABLE_METADATA_SIZE));
   }
 
   @Test
@@ -896,5 +1058,16 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    GatewayRestConfiguration gatewayRestConfiguration() {
+      final var config = new GatewayRestConfiguration();
+      // kept small so oversized-metadata tests don't need huge payloads
+      config.setMaxClusterVariableMetadataSize(TEST_MAX_CLUSTER_VARIABLE_METADATA_SIZE);
+      return config;
+    }
   }
 }

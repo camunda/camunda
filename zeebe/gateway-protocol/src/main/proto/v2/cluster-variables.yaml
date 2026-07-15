@@ -472,6 +472,16 @@ components:
         value:
           type: object
           description: The value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
+        metadata:
+          description: >-
+            A generic key-value metadata bag attached to the cluster variable, e.g. to let
+            consumers discover and filter variables by semantic metadata without inspecting the
+            value. Values must be strings or numbers; booleans, arrays, and objects are rejected.
+            Limited to 100 entries and a configurable maximum serialized size (defaults to
+            100 entries at the maximum key length of a cluster variable name, 256 characters,
+            plus the maximum value length, 8191 characters).
+          type: object
+          additionalProperties: true
     UpdateClusterVariableRequest:
       type: object
       required:
@@ -480,6 +490,16 @@ components:
         value:
           type: object
           description: The new value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
+        metadata:
+          description: >-
+            A generic key-value metadata bag attached to the cluster variable, e.g. to let
+            consumers discover and filter variables by semantic metadata without inspecting the
+            value. Values must be strings or numbers; booleans, arrays, and objects are rejected.
+            Limited to 100 entries and a configurable maximum serialized size (defaults to
+            100 entries at the maximum key length of a cluster variable name, 256 characters,
+            plus the maximum value length, 8191 characters).
+          type: object
+          additionalProperties: true
     ClusterVariableResult:
       type: object
       required:
@@ -523,6 +543,12 @@ components:
           type: string
           nullable: true
           description: Only provided if the cluster variable scope is TENANT. Null for global scope variables.
+        metadata:
+          description: >-
+            A generic key-value metadata bag attached to the cluster variable. Values are
+            strings or numbers.
+          type: object
+          additionalProperties: true
     ClusterVariableSearchQueryRequest:
       description: Cluster variable search query request.
       additionalProperties: false

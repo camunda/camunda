@@ -13,8 +13,32 @@ public class GatewayRestConfiguration {
 
   private static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
 
+  /** Maximum number of entries allowed in a cluster variable's metadata bag. */
+  private static final int MAX_CLUSTER_VARIABLE_METADATA_ENTRIES = 100;
+
+  /**
+   * Matches the default length of the {@code CLUSTER_VARIABLE.VAR_NAME} RDBMS column ({@code
+   * NVARCHAR(256)}).
+   */
+  private static final int MAX_CLUSTER_VARIABLE_METADATA_KEY_LENGTH = 256;
+
+  /**
+   * Matches the default length of the {@code CLUSTER_VARIABLE.VAR_VALUE} RDBMS column ({@code
+   * VARCHAR(8192)}, and the {@code ignore_above: 8191} ES/OS mapping limit).
+   */
+  private static final int MAX_CLUSTER_VARIABLE_METADATA_VALUE_LENGTH = 8191;
+
+  /**
+   * Worst case: every entry uses the maximum key and value length allowed by the RDBMS/ES/OS
+   * schemas, up to the maximum number of entries.
+   */
+  private static final int DEFAULT_MAX_CLUSTER_VARIABLE_METADATA_SIZE =
+      MAX_CLUSTER_VARIABLE_METADATA_ENTRIES
+          * (MAX_CLUSTER_VARIABLE_METADATA_KEY_LENGTH + MAX_CLUSTER_VARIABLE_METADATA_VALUE_LENGTH);
+
   private final JobMetricsConfiguration jobMetrics = new JobMetricsConfiguration();
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
+  private int maxClusterVariableMetadataSize = DEFAULT_MAX_CLUSTER_VARIABLE_METADATA_SIZE;
 
   public JobMetricsConfiguration getJobMetrics() {
     return jobMetrics;
@@ -32,6 +56,19 @@ public class GatewayRestConfiguration {
 
   public void setMaxNameFieldLength(final int maxNameFieldLength) {
     this.maxNameFieldLength = maxNameFieldLength;
+  }
+
+  /**
+   * Maximum allowed length (in characters) of a cluster variable's serialized metadata JSON.
+   *
+   * <p>Defaults to {@link #DEFAULT_MAX_CLUSTER_VARIABLE_METADATA_SIZE}.
+   */
+  public int getMaxClusterVariableMetadataSize() {
+    return maxClusterVariableMetadataSize;
+  }
+
+  public void setMaxClusterVariableMetadataSize(final int maxClusterVariableMetadataSize) {
+    this.maxClusterVariableMetadataSize = maxClusterVariableMetadataSize;
   }
 
   /** Configuration for job metrics export settings. */
