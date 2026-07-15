@@ -503,6 +503,18 @@
 				},
 				"optionalFiltersMenu": {
 					"moreFilters": "Plus de filtres"
+				},
+				"advancedStringFilter": {
+					"operatorEquals": "est égal à",
+					"operatorNotEquals": "n'est pas égal à",
+					"operatorContains": "contient",
+					"operatorIsOneOf": "correspond à l'un de",
+					"operatorIsNotOneOf": "ne correspond à aucun de",
+					"operatorExists": "existe",
+					"operatorListPlaceholder": "séparés par un espace ou une virgule",
+					"operatorExistsPlaceholder": "true ou false",
+					"operatorTypeLabel": "Type de filtre {{label}}",
+					"selectOperator": "Sélectionner un opérateur"
 				}
 			}
 		}

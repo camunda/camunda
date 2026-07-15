@@ -500,6 +500,18 @@
 				},
 				"optionalFiltersMenu": {
 					"moreFilters": "Más filtros"
+				},
+				"advancedStringFilter": {
+					"operatorEquals": "es igual a",
+					"operatorNotEquals": "no es igual a",
+					"operatorContains": "contiene",
+					"operatorIsOneOf": "es uno de",
+					"operatorIsNotOneOf": "no es ninguno de",
+					"operatorExists": "existe",
+					"operatorListPlaceholder": "separados por espacio o coma",
+					"operatorExistsPlaceholder": "true o false",
+					"operatorTypeLabel": "Tipo de filtro {{label}}",
+					"selectOperator": "Seleccionar operador"
 				}
 			}
 		}
