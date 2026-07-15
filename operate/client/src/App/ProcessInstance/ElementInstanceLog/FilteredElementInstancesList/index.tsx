@@ -177,21 +177,23 @@ const FilteredElementInstancesList: React.FC<Props> = ({
         {query.data?.totalCount ?? 0} matching elements
       </StatusRegion>
       <ScrollContainer ref={scrollableContainerRef}>
-        <InfiniteScroller
-          scrollableContainerRef={scrollableContainerRef}
-          onVerticalScrollEndReach={scroll.handleScrollEndReach}
-          onVerticalScrollStartReach={scroll.handleScrollStartReach}
-        >
-          <TreeView label="Search results" hideLabel>
-            {query.data?.items.map((item) => (
-              <Row
-                key={item.elementInstanceKey}
-                item={item}
-                businessObjects={businessObjects}
-              />
-            ))}
-          </TreeView>
-        </InfiniteScroller>
+        <TreeView label="Search results" hideLabel>
+          <InfiniteScroller
+            scrollableContainerRef={scrollableContainerRef}
+            onVerticalScrollEndReach={scroll.handleScrollEndReach}
+            onVerticalScrollStartReach={scroll.handleScrollStartReach}
+          >
+            <ul>
+              {query.data?.items.map((item) => (
+                <Row
+                  key={item.elementInstanceKey}
+                  item={item}
+                  businessObjects={businessObjects}
+                />
+              ))}
+            </ul>
+          </InfiniteScroller>
+        </TreeView>
       </ScrollContainer>
     </>
   );
