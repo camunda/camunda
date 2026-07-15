@@ -21,8 +21,10 @@ import io.camunda.client.spring.bean.CamundaClientRegistry;
 import io.camunda.client.spring.bean.DefaultCamundaClientRegistry;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.client.spring.configuration.condition.OnMultiClientConfigurationCondition;
+import io.camunda.client.spring.event.MultiCamundaLifecycleEventProducer;
 import io.camunda.client.spring.properties.MultiCamundaClientProperties;
 import io.camunda.client.spring.properties.MultiCamundaClientPropertiesResolver;
+import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import io.grpc.ClientInterceptor;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,7 +33,9 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.env.Environment;
@@ -48,7 +52,28 @@ import org.springframework.core.env.Environment;
 @AutoConfiguration
 @ConditionalOnCamundaClientEnabled
 @Conditional(OnMultiClientConfigurationCondition.class)
+@ImportAutoConfiguration({
+  // full feature parity with the single-client path: job-worker registration, startup deployment,
+  // @ClusterVariables, JsonMapper, the actuator endpoint and metrics. None of these define a
+  // CamundaClient bean (the per-client beans come from the registry post-processor); the shared
+  // worker infrastructure binds its configuration from the camunda.client.* base.
+  CamundaClientAllAutoConfiguration.class,
+  CamundaActuatorConfiguration.class,
+  MetricsDefaultConfiguration.class
+})
 public class MultiCamundaClientAutoConfiguration {
+
+  /**
+   * Publishes one created/closing lifecycle event per configured client so the annotation
+   * processors register their work (e.g. {@code @JobWorker}s) on every client. Skipped in tests,
+   * where the lifecycle is driven by {@link CamundaSpringProcessTestContext}.
+   */
+  @Bean
+  @ConditionalOnMissingBean(CamundaSpringProcessTestContext.class)
+  public MultiCamundaLifecycleEventProducer multiCamundaLifecycleEventProducer(
+      final CamundaClientRegistry registry, final ApplicationEventPublisher publisher) {
+    return new MultiCamundaLifecycleEventProducer(registry, publisher);
+  }
 
   @Bean
   @ConditionalOnMissingBean
