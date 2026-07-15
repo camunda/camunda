@@ -144,6 +144,10 @@ type Events =
 				timeInput: boolean;
 			};
 			filterName: string;
+	  }
+	| {
+			eventName: 'operate:date-range-popover-opened';
+			filterName: string;
 	  };
 
 const STAGE_ENV = getStage(window.location.host);
