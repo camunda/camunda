@@ -9,6 +9,7 @@ import type { TimeRange } from "../lib/api";
 import { chartColor } from "../lib/chartColors";
 import { formatCount, formatDuration, formatPercent } from "../lib/format";
 import { aggregateRatio, useMetrics } from "../lib/useMetrics";
+import { DeltaBadge } from "../components/DeltaBadge";
 import { DurationDistribution } from "../components/DurationDistribution";
 import { DurationSpreadTrend } from "../components/DurationSpreadTrend";
 import { PercentileTrend } from "../components/PercentileTrend";
@@ -40,30 +41,72 @@ export function PerformancePage({
   }
   const stp = aggregateRatio(data.stp);
   const s = data.summary;
+  const cmp = data.comparison;
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="p75" value={s.observationCount ? formatDuration(s.p75Ms) : "—"} />
+        <StatTile
+          label="p75"
+          value={s.observationCount ? formatDuration(s.p75Ms) : "—"}
+          delta={
+            cmp && s.observationCount ? (
+              <DeltaBadge
+                current={cmp.current.duration.p75Ms}
+                previous={cmp.previous.duration.p75Ms}
+                downIsGood
+              />
+            ) : undefined
+          }
+        />
         <StatTile
           label="p99"
           value={s.observationCount ? formatDuration(s.p99Ms) : "—"}
           accent={chartColor(1)}
+          delta={
+            cmp && s.observationCount ? (
+              <DeltaBadge
+                current={cmp.current.duration.p99Ms}
+                previous={cmp.previous.duration.p99Ms}
+                downIsGood
+              />
+            ) : undefined
+          }
         />
         <StatTile
           label="Throughput"
           value={formatCount(s.observationCount)}
           hint="completed in range"
+          delta={
+            cmp ? (
+              <DeltaBadge
+                current={cmp.current.duration.observationCount}
+                previous={cmp.previous.duration.observationCount}
+              />
+            ) : undefined
+          }
         />
         <StatTile
           label="% first-time-right"
           value={stp.total ? formatPercent(stp.ratio) : "—"}
           hint="completed in SLA, no incidents"
           accent={chartColor(4)}
+          delta={
+            cmp && cmp.current.firstTimeRight.total > 0 ? (
+              <DeltaBadge
+                current={cmp.current.firstTimeRight.ratio}
+                previous={
+                  cmp.previous.firstTimeRight.total > 0
+                    ? cmp.previous.firstTimeRight.ratio
+                    : undefined
+                }
+              />
+            ) : undefined
+          }
         />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <PercentileTrend points={data.duration} />
+        <PercentileTrend points={data.duration} previous={data.durationPrevious} />
         <DurationSpreadTrend points={data.durationSpread} />
       </div>
 

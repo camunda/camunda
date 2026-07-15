@@ -8,11 +8,14 @@
 package io.camunda.analytics.webapp.dashboard;
 
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -28,6 +31,13 @@ public class DashboardController {
 
   public DashboardController(final DashboardRepository repository) {
     this.repository = repository;
+  }
+
+  /** A malformed read (e.g. an empty comparison range) is the caller's error, not a 500. */
+  @ExceptionHandler(IllegalArgumentException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public String badRequest(final IllegalArgumentException e) {
+    return e.getMessage();
   }
 
   /**
@@ -69,6 +79,31 @@ public class DashboardController {
       @RequestParam(value = "from", required = false) final Long from,
       @RequestParam(value = "to", required = false) final Long to) {
     return repository.durationSummary(bpmnProcessId, from, to);
+  }
+
+  /**
+   * The period-over-period KPI comparison for the delta badges: the same whole-range aggregation
+   * over {@code [from, to)} and over the preceding same-length range. Both bounds are mandatory —
+   * an open range has no "previous period" (the client hides the badges then).
+   */
+  @GetMapping("/kpi-comparison")
+  public KpiComparison kpiComparison(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam("from") final long from,
+      @RequestParam("to") final long to) {
+    return repository.kpiComparison(bpmnProcessId, from, to);
+  }
+
+  /**
+   * The percentile trend plus its previous-period overlay (previous points re-timestamped onto the
+   * current grid). Both bounds are mandatory, like {@link #kpiComparison}.
+   */
+  @GetMapping("/duration-percentiles-compare")
+  public PercentileComparison durationPercentilesCompare(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam("from") final long from,
+      @RequestParam("to") final long to) {
+    return repository.durationPercentilesCompare(bpmnProcessId, from, to);
   }
 
   @GetMapping("/ratios")

@@ -111,15 +111,26 @@ final class ServingTestSupport {
       final List<Fact> facts,
       final Object... keyValues) {
     final CompiledDataset dataset = fixture.catalog().require(cubeName);
+    final long windowStart = window(dataset.finestTier().windowMs());
+    seedAt(fixture, cubeName, windowStart, facts, keyValues);
+    return windowStart;
+  }
+
+  /** Seeds one cube cell at an explicit finest-tier window start (period-comparison tests). */
+  static void seedAt(
+      final Fixture fixture,
+      final String cubeName,
+      final long windowStart,
+      final List<Fact> facts,
+      final Object... keyValues) {
+    final CompiledDataset dataset = fixture.catalog().require(cubeName);
     final long windowMs = dataset.finestTier().windowMs();
-    final long windowStart = window(windowMs);
     final DimensionKey key = DimensionKey.of(dataset.grain(), keyValues);
     fixture
         .datasetStore()
         .writer()
         .upsertCell(dataset, key, windowStart, windowMs, fold(dataset, facts), WriteVersion.SEED);
     fixture.datasetStore().writer().flush();
-    return windowStart;
   }
 
   record Fixture(

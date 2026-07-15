@@ -10,6 +10,7 @@ import { chartColor } from "../lib/chartColors";
 import { formatCount } from "../lib/format";
 import { useMetrics } from "../lib/useMetrics";
 import { ActiveInstancesTrend } from "../components/ActiveInstancesTrend";
+import { DeltaBadge } from "../components/DeltaBadge";
 import { FlowBalanceTrend } from "../components/FlowBalanceTrend";
 import { IncidentHeatmap } from "../components/IncidentHeatmap";
 import { OpenInstancesTable } from "../components/OpenInstancesTable";
@@ -46,8 +47,32 @@ export function OverviewPage({
           hint="running now"
           accent={chartColor(0)}
         />
-        <StatTile label="Started" value={formatCount(data.activated)} hint="in range" />
-        <StatTile label="Ended" value={formatCount(data.ended)} hint="in range" />
+        <StatTile
+          label="Started"
+          value={formatCount(data.activated)}
+          hint="in range"
+          delta={
+            data.comparison ? (
+              <DeltaBadge
+                current={data.comparison.current.activated}
+                previous={data.comparison.previous.activated}
+              />
+            ) : undefined
+          }
+        />
+        <StatTile
+          label="Ended"
+          value={formatCount(data.ended)}
+          hint="in range"
+          delta={
+            data.comparison ? (
+              <DeltaBadge
+                current={data.comparison.current.ended}
+                previous={data.comparison.previous.ended}
+              />
+            ) : undefined
+          }
+        />
         <StatTile
           label="Open incidents"
           value={formatCount(data.openIncidents)}

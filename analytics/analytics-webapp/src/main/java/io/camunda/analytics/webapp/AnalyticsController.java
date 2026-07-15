@@ -21,6 +21,7 @@ import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportExecutor;
 import io.camunda.analytics.query.ReportResult;
+import io.camunda.analytics.query.ReportRow;
 import io.camunda.analytics.query.SnapshotQueryExecutor;
 import io.camunda.analytics.report.Combination;
 import io.camunda.analytics.report.ReportDefinition;
@@ -254,16 +255,49 @@ public class AnalyticsController {
     return metadataStore.reportSpecStore().create(report);
   }
 
+  /**
+   * Runs a saved report over {@code [fromMs, toMs)}. With {@code compareWithPrevious=true} the same
+   * report also runs over the immediately preceding same-length range and the response carries both
+   * row sets; the previous rows are re-timestamped onto the current period's grid ({@code
+   * windowStart + P}) so consumers overlay them directly. Without the flag the response shape is
+   * unchanged.
+   */
   @GetMapping("/reports/{id}/data")
-  public ResponseEntity<ReportResult> reportData(
+  public ResponseEntity<?> reportData(
       @PathVariable final long id,
       @RequestParam("fromMs") final long fromMs,
-      @RequestParam("toMs") final long toMs) {
+      @RequestParam("toMs") final long toMs,
+      @RequestParam(value = "compareWithPrevious", defaultValue = "false")
+          final boolean compareWithPrevious) {
     return metadataStore
         .reportSpecStore()
         .read(id)
-        .map(report -> ResponseEntity.ok(runReport(report, fromMs, toMs)))
+        .<ResponseEntity<?>>map(
+            report -> {
+              final ReportResult current = runReport(report, fromMs, toMs);
+              if (!compareWithPrevious) {
+                return ResponseEntity.ok(current);
+              }
+              final long period = toMs - fromMs;
+              final ReportResult previous = runReport(report, fromMs - period, toMs - period);
+              return ResponseEntity.ok(
+                  new ComparedReportResult(current.rows(), shiftWindows(previous.rows(), period)));
+            })
         .orElseGet(() -> ResponseEntity.notFound().build());
+  }
+
+  /**
+   * A saved report run twice — the requested range and the preceding same-length range — for the
+   * compare-to-previous-period option. {@code previousRows} ride on the current period's time grid.
+   */
+  public record ComparedReportResult(List<ReportRow> rows, List<ReportRow> previousRows) {}
+
+  private static List<ReportRow> shiftWindows(final List<ReportRow> rows, final long period) {
+    final List<ReportRow> shifted = new ArrayList<>(rows.size());
+    for (final ReportRow row : rows) {
+      shifted.add(new ReportRow(row.dimensions(), row.windowStart() + period, row.measures()));
+    }
+    return shifted;
   }
 
   private ReportResult runReport(

@@ -125,7 +125,8 @@ final class AnalyticsControllerTest {
 
     // when the report runs over the seeded window
     final ReportResult result =
-        controller.reportData(report.reportId(), 0L, windowStart + 60_000L).getBody();
+        (ReportResult)
+            controller.reportData(report.reportId(), 0L, windowStart + 60_000L, false).getBody();
 
     // then one row carries the baseline under the plain namespace and the slice under #2
     assertThat(result).isNotNull();
@@ -136,6 +137,56 @@ final class AnalyticsControllerTest {
               assertThat(((Number) row.measures().get(datasetName + ".count")).longValue())
                   .isEqualTo(5L);
               assertThat(((Number) row.measures().get(datasetName + "#2.count")).longValue())
+                  .isEqualTo(2L);
+            });
+  }
+
+  @Test
+  void shouldRunASavedReportAgainstThePreviousPeriodWhenComparing() {
+    // given a saved report and one seeded window per period (current: 3 facts, previous: 2)
+    final ReportDefinition report =
+        controller.createReportFromQuestion(
+            new AnalyticsController.QuestionRequest(
+                "count trend",
+                "process-instances",
+                "instance-count",
+                Map.of(),
+                List.of(),
+                List.of(),
+                List.of(new MeasureCatalog.QuestionFilter("tenantId", "eu")),
+                60_000L,
+                "line"));
+    final String datasetName = report.sources().get(0).datasetName();
+    final CompiledDataset derived = compiledByName(datasetName);
+    final long windowStart = ServingTestSupport.window(60_000L);
+    final long period = 60_000L;
+    seedCell(derived, windowStart, facts(3), "eu");
+    seedCell(derived, windowStart - period, facts(2), "eu");
+
+    // when the report runs with the compare-to-previous-period option
+    final AnalyticsController.ComparedReportResult compared =
+        (AnalyticsController.ComparedReportResult)
+            controller
+                .reportData(report.reportId(), windowStart, windowStart + period, true)
+                .getBody();
+
+    // then the current rows cover only the requested range and the previous rows carry the
+    // preceding same-length range, re-timestamped onto the current period's grid
+    assertThat(compared).isNotNull();
+    assertThat(compared.rows())
+        .singleElement()
+        .satisfies(
+            row -> {
+              assertThat(row.windowStart()).isEqualTo(windowStart);
+              assertThat(((Number) row.measures().get(datasetName + ".count")).longValue())
+                  .isEqualTo(3L);
+            });
+    assertThat(compared.previousRows())
+        .singleElement()
+        .satisfies(
+            row -> {
+              assertThat(row.windowStart()).isEqualTo(windowStart);
+              assertThat(((Number) row.measures().get(datasetName + ".count")).longValue())
                   .isEqualTo(2L);
             });
   }

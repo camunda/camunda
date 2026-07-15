@@ -149,6 +149,35 @@ export interface TimeRange {
   to: number;
 }
 
+/** One ratio meter collapsed to a single whole-period number; total 0 means "no data". */
+export interface RatioKpi {
+  matched: number;
+  total: number;
+  ratio: number;
+}
+
+/** One period's KPI-tile aggregates (whole-range totals, not series). */
+export interface PeriodKpis {
+  activated: number;
+  ended: number;
+  duration: DurationPoint;
+  slaCompliance: RatioKpi;
+  noIncident: RatioKpi;
+  firstTimeRight: RatioKpi;
+}
+
+/** The same KPI aggregation over [from, to) and over the preceding same-length range. */
+export interface KpiComparison {
+  current: PeriodKpis;
+  previous: PeriodKpis;
+}
+
+/** The percentile trend plus the previous period's series, re-timestamped onto the current grid. */
+export interface PercentileComparison {
+  current: DurationPoint[];
+  previous: DurationPoint[];
+}
+
 // ---------------------------------------------------------------------------
 // Dataset / report builder shapes. These mirror the analytics builder REST
 // contract (DatasetDeclaration / Report records serialized by name).
@@ -411,6 +440,16 @@ export const api = {
     ),
   durationSummary: (process: string, range: TimeRange | null) =>
     getJson<DurationPoint>(`/api/dashboard/duration-summary?process=${q(process)}${rangeQs(range)}`),
+  // Period-over-period comparison reads: both need an explicit range (a null range has no
+  // "previous period" — callers skip the fetch and hide the badges/overlay then).
+  kpiComparison: (process: string, range: TimeRange) =>
+    getJson<KpiComparison>(
+      `/api/dashboard/kpi-comparison?process=${q(process)}&from=${range.from}&to=${range.to}`,
+    ),
+  durationPercentilesCompare: (process: string, range: TimeRange) =>
+    getJson<PercentileComparison>(
+      `/api/dashboard/duration-percentiles-compare?process=${q(process)}&from=${range.from}&to=${range.to}`,
+    ),
   ratios: (process: string, metric: string, range: TimeRange | null) =>
     getJson<RatioPoint[]>(
       `/api/dashboard/ratios?process=${q(process)}&metric=${q(metric)}${rangeQs(range)}`,

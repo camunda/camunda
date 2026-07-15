@@ -235,6 +235,102 @@ public class DashboardRepository {
   }
 
   /**
+   * The period-over-period KPI comparison: the whole-range KPI aggregates over {@code [from, to)}
+   * and over the immediately preceding same-length range {@code [from − P, to − P)}, {@code P = to
+   * − from}. Requires an explicit range — a null bound has no well-defined "previous period". Both
+   * periods run against one shared memo, so a widget read the current period already answered is
+   * not re-executed.
+   */
+  public KpiComparison kpiComparison(final String bpmnProcessId, final long from, final long to) {
+    if (to <= from) {
+      throw new IllegalArgumentException("empty comparison range [" + from + ", " + to + ")");
+    }
+    final long period = to - from;
+    final Map<QueryKey, List<ReportRow>> memo = newMemo();
+    return new KpiComparison(
+        periodKpis(bpmnProcessId, from, to, memo),
+        periodKpis(bpmnProcessId, from - period, to - period, memo));
+  }
+
+  /** One period's KPI-tile aggregates: lifecycle counts, duration summary, quality ratios. */
+  private PeriodKpis periodKpis(
+      final String bpmnProcessId,
+      final long from,
+      final long to,
+      final Map<QueryKey, List<ReportRow>> memo) {
+    final LifecycleCounts lifecycle = lifecycle(bpmnProcessId, from, to, memo);
+    return new PeriodKpis(
+        lifecycle == null ? 0L : lifecycle.activated(),
+        lifecycle == null ? 0L : lifecycle.completed() + lifecycle.terminated(),
+        durationSummary(bpmnProcessId, from, to, memo),
+        ratioKpi(bpmnProcessId, "sla_compliance", from, to, memo),
+        ratioKpi(bpmnProcessId, "no_incident", from, to, memo),
+        ratioKpi(bpmnProcessId, "first_time_right", from, to, memo));
+  }
+
+  /**
+   * One ratio meter collapsed to a single whole-range total (a single-bucket read, not a series):
+   * the exact {@code matched / total} over the period. Reads every ratio meter of the owning
+   * dataset (the shared meter list), so the three quality KPIs of one period are one query.
+   */
+  private RatioKpi ratioKpi(
+      final String bpmnProcessId,
+      final String meter,
+      final Long from,
+      final Long to,
+      final Map<QueryKey, List<ReportRow>> memo) {
+    final CompiledDataset dataset = datasetWithMeter(meter);
+    if (dataset == null) {
+      return RatioKpi.EMPTY;
+    }
+    for (final ReportRow row :
+        total(
+            dataset.name(),
+            List.of(),
+            from,
+            to,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            ratioMeters(dataset),
+            memo)) {
+      if (row.measures().get(meter) instanceof final RatioResult r) {
+        return new RatioKpi(r.matched(), r.total(), r.ratio());
+      }
+    }
+    return RatioKpi.EMPTY;
+  }
+
+  /**
+   * The percentile control chart with its previous-period overlay: the current series plus the
+   * preceding same-length range's series re-timestamped onto the current grid ({@code windowStart +
+   * P}), so the two overlay on one time axis. Requires an explicit range, like {@link
+   * #kpiComparison}.
+   */
+  public PercentileComparison durationPercentilesCompare(
+      final String bpmnProcessId, final long from, final long to) {
+    if (to <= from) {
+      throw new IllegalArgumentException("empty comparison range [" + from + ", " + to + ")");
+    }
+    final long period = to - from;
+    final Map<QueryKey, List<ReportRow>> memo = newMemo();
+    final List<DurationPercentilePoint> previous = new ArrayList<>();
+    for (final DurationPercentilePoint p :
+        durationPercentiles(bpmnProcessId, from - period, to - period, memo)) {
+      previous.add(
+          new DurationPercentilePoint(
+              p.windowStart() + period,
+              p.observationCount(),
+              p.minMs(),
+              p.maxMs(),
+              p.p50Ms(),
+              p.p75Ms(),
+              p.p90Ms(),
+              p.p99Ms()));
+    }
+    return new PercentileComparison(
+        durationPercentiles(bpmnProcessId, from, to, memo), List.copyOf(previous));
+  }
+
+  /**
    * The per-window ratio series for a process, keyed by the declared ratio meter name (e.g. {@code
    * sla_compliance}, {@code no_incident}). The owning dataset is resolved from the catalog rather
    * than hard-coded, so any ratio meter a declaration adds is served without touching this class.

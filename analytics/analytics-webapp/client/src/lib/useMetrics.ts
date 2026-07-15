@@ -15,6 +15,7 @@ import {
   type ElementDuration,
   type IncidentFlowNode,
   type IncidentTrendPoint,
+  type KpiComparison,
   type LifecycleSeriesPoint,
   type NoIncidentCohortPoint,
   type OpenInstanceRow,
@@ -48,6 +49,10 @@ export interface MetricsData {
   lifecycleSeries: LifecycleSeriesPoint[];
   rework: ReworkHotspot[];
   openInstances: OpenInstanceRow[];
+  /** Period-over-period KPIs (delta badges); null while no explicit range is selected. */
+  comparison: KpiComparison | null;
+  /** Previous-period percentile series re-timestamped onto the current grid; null without range. */
+  durationPrevious: DurationPoint[] | null;
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -87,6 +92,11 @@ export function useMetrics(
       api.lifecycleSeries(process, range),
       api.rework(process, range),
       api.openInstances(process),
+      // A null range has no "previous period": skip the comparison reads and hide the badges.
+      range ? api.kpiComparison(process, range) : Promise.resolve(null),
+      range
+        ? api.durationPercentilesCompare(process, range).then((c) => c.previous)
+        : Promise.resolve(null),
     ])
       .then(
         ([
@@ -110,6 +120,8 @@ export function useMetrics(
           lifecycleSeries,
           rework,
           openInstances,
+          comparison,
+          durationPrevious,
         ]) => {
           if (!cancelled) {
             setData({
@@ -133,6 +145,8 @@ export function useMetrics(
               lifecycleSeries,
               rework,
               openInstances,
+              comparison,
+              durationPrevious,
             });
           }
         },
