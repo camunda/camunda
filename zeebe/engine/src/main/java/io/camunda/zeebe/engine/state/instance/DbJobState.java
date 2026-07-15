@@ -167,7 +167,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     updateJobState(key, State.ACTIVATED);
 
-    makeJobNotActivatable(record);
+    makeJobNotActivatable(key, record);
 
     addJobDeadline(key, deadline);
   }
@@ -210,13 +210,13 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void disable(final long key, final JobRecord record) {
     updateJob(key, record, State.FAILED);
-    makeJobNotActivatable(record);
+    makeJobNotActivatable(key, record);
   }
 
   @Override
   public void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
-    makeJobNotActivatable(updatedValue);
+    makeJobNotActivatable(key, updatedValue);
   }
 
   @Override
@@ -226,7 +226,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
     statesJobColumnFamily.deleteExisting(fkJob);
 
-    makeJobNotActivatable(record);
+    makeJobNotActivatable(key, record);
 
     removeJobDeadline(key, record.getDeadline());
     removeJobBackoff(key, record.getRecurringTime());
@@ -242,13 +242,13 @@ public final class DbJobState implements JobState, MutableJobState {
       if (updatedValue.getRetryBackoff() > 0) {
         addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
-        makeJobNotActivatable(updatedValue);
+        makeJobNotActivatable(key, updatedValue);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
       }
     } else {
       updateJob(key, updatedValue, State.FAILED);
-      makeJobNotActivatable(updatedValue);
+      makeJobNotActivatable(key, updatedValue);
     }
   }
 
@@ -430,10 +430,9 @@ public final class DbJobState implements JobState, MutableJobState {
     priorityActivatableColumnFamily.upsert(tenantAwarePriorityKey, DbNil.INSTANCE);
   }
 
-  // makeJobNotActivatable does NOT set jobKey. Callers are responsible for setting it
-  // (via jobKey.wrapLong or via updateJobRecord) before calling it.
   @Override
-  public void makeJobNotActivatable(final JobRecord record) {
+  public void makeJobNotActivatable(final long key, final JobRecord record) {
+    jobKey.wrapLong(key);
     makeJobNotActivatable(record.getTypeBuffer(), record.getTenantId(), record.getPriority());
   }
 

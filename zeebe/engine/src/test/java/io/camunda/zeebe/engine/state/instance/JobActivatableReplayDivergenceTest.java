@@ -162,7 +162,7 @@ final class JobActivatableReplayDivergenceTest {
     assertThat(priorityActivatableColumnFamily.count()).isEqualTo(1L);
 
     // when removed the first time
-    jobState.makeJobNotActivatable(jobRecord);
+    jobState.makeJobNotActivatable(key, jobRecord);
 
     // then both column families are empty
     assertThat(priorityActivatableColumnFamily.count())
@@ -173,7 +173,7 @@ final class JobActivatableReplayDivergenceTest {
         .isEqualTo(0L);
 
     // when removed a second time (idempotency, e.g. re-applied during replay)
-    jobState.makeJobNotActivatable(jobRecord);
+    jobState.makeJobNotActivatable(key, jobRecord);
 
     // then no error occurs and both column families remain empty
     assertThat(priorityActivatableColumnFamily.count()).isEqualTo(0L);

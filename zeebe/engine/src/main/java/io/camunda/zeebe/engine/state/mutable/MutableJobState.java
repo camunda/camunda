@@ -102,7 +102,7 @@ public interface MutableJobState extends JobState {
    * Removes from both legacy {@code JOB_ACTIVATABLE} and {@code JOB_ACTIVATABLE_BY_PRIORITY} column
    * families.
    */
-  void makeJobNotActivatable(JobRecord record);
+  void makeJobNotActivatable(long key, JobRecord record);
 
   /** Inserts into the {@code JOB_BACKOFF} column family. */
   void addJobBackoff(long job, long backoff);
