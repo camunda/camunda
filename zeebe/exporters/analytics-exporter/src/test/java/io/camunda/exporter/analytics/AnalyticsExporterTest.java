@@ -84,7 +84,8 @@ class AnalyticsExporterTest {
                   .containsEntry(AnalyticsAttributes.Process.VERSION, (long) value.getVersion())
                   .containsEntry(
                       AnalyticsAttributes.Process.DEFINITION_KEY, value.getProcessDefinitionKey())
-                  .containsEntry(AnalyticsAttributes.Process.INSTANCE_KEY, record.getKey())
+                  .containsEntry(
+                      AnalyticsAttributes.Process.INSTANCE_KEY, value.getProcessInstanceKey())
                   .containsEntry(
                       AnalyticsAttributes.Process.ROOT_INSTANCE_KEY,
                       value.getRootProcessInstanceKey())
