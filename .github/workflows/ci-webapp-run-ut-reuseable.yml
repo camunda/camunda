@@ -21,8 +21,12 @@ on:
         required: true
         type: string
       owner:
+        type: string
         description: "Canonical GitHub team handle owning the suite under test, e.g. '@camunda/data-layer'"
-        required: true
+      modules:
+        description: "Space-separated Gradle subproject names to test when gradle-build label is set (e.g. 'operate-common operate-schema')"
+        required: false
+        default: ""
         type: string
       use-shared-distball:
         required: false
@@ -33,6 +37,26 @@ on:
           artifact produced by ci.yml's build-distball job instead of running a
           local build-zeebe reactor. Only safe when the run has a build-distball
           job (i.e. via ci.yml). See #52693.
+      gradleTestTaskName:
+        description: "Gradle test task name (default: test)"
+        required: false
+        default: "test"
+        type: string
+      gradleSuiteAsTask:
+        description: >
+          When true, run a dedicated per-suite Gradle task named '<gradleTestTaskName><suite>'
+          (e.g. 'testCoreFeatures') instead of filtering a generic task with --tests. This avoids
+          the junit-platform-suite stranding bug where a --tests filter matching one suite empties
+          the sibling suite and fails with NoTestsDiscoveredException. Requires the module to
+          define those tasks (Optimize does via buildlogic.optimize-conventions).
+        required: false
+        default: false
+        type: boolean
+      build-tool:
+        description: "Build tool to use ('maven' or 'gradle'). Gradle is PR-only opt-in via the 'gradle-build' label."
+        required: false
+        default: maven
+        type: string
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
@@ -66,27 +90,35 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-be-${{inputs.componentName}}
+          skip-maven-cache: ${{ inputs.build-tool == 'gradle' }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           # Authenticate gcloud when consuming the shared distball (see restore step below)
-          gcs-build-cache-auth: ${{ inputs.use-shared-distball }}
+          gcs-build-cache-auth: ${{ inputs.use-shared-distball && inputs.build-tool == 'maven' }}
       # When called from ci.yml (use-shared-distball=true) restore the io.camunda SNAPSHOTs
       # build-distball archived to GCS instead of re-running the ~2 min reactor in each of the
       # operate/tasklist/optimize back-end UT entries. github.run_id is stable across nested
       # workflow_call, addressing the same run-scoped prefix build-distball wrote. See #52693.
       # (gcloud is authenticated by setup-build's gcs-build-cache-auth above.)
-      - if: ${{ inputs.use-shared-distball }}
+      # Gradle relies on its own remote build cache to supply the io.camunda SNAPSHOTs, so the
+      # distball restore and the build-zeebe fallback below are Maven-only.
+      - if: ${{ inputs.use-shared-distball && inputs.build-tool == 'maven' }}
         uses: ./.github/actions/restore-shared-m2
       # Fallback when the run has no build-distball job: build the platform locally.
       - uses: ./.github/actions/build-zeebe
-        if: ${{ !inputs.use-shared-distball }}
+        if: ${{ !inputs.use-shared-distball && inputs.build-tool == 'maven' }}
         id: build-zeebe
         with:
           maven-extra-args: -T1C -Dquickly
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        if: ${{ inputs.build-tool == 'gradle' }}
+        with:
+          cache-read-only: true
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test
+        if: ${{ inputs.build-tool == 'maven' }}
         shell: bash
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
@@ -97,6 +129,25 @@ jobs:
           -D surefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }} -D junitThreadCount=16 -P skipFrontendBuild
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Gradle Run Test
+        if: ${{ inputs.build-tool == 'gradle' }}
+        shell: bash
+        run: |
+          if [[ -z "${{ inputs.modules }}" ]]; then
+            printf 'No Gradle unit test tasks configured for %s %s\n' "${{ inputs.componentName }}" "${{ inputs.suite }}" | tee "${BUILD_OUTPUT_FILE_PATH}";
+          else
+            GRADLE_ARGS=(--no-daemon --console=plain --parallel -Pskip.fe.build)
+            for module in ${{ inputs.modules }}; do
+              if [[ "${{ inputs.gradleSuiteAsTask }}" == "true" ]]; then
+                # Dedicated per-suite task (e.g. :optimize-commons:testCoreFeatures) selects a single
+                # @Suite class, so the sibling suite is never discovered and cannot be stranded.
+                GRADLE_ARGS+=(":${module}:${{ inputs.gradleTestTaskName }}${{ inputs.suite }}")
+              else
+                GRADLE_ARGS+=(":${module}:${{ inputs.gradleTestTaskName }}" --tests "*${{ inputs.componentName }}${{ inputs.suite }}TestSuite")
+              fi
+            done
+            ./gradlew "${GRADLE_ARGS[@]}" | tee "${BUILD_OUTPUT_FILE_PATH}";
+          fi
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
