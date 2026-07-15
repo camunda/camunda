@@ -318,7 +318,7 @@ func TestShouldReturnNoManifestsWhenPathFilterMatchesNothing(t *testing.T) {
 
 func TestShouldMatchPathFilterByExactFileOrDirectoryPrefix(t *testing.T) {
 	// given
-	filter := []string{"Chart.yaml", "templates/orchestration"}
+	filter := []string{"./Chart.yaml", "templates/orchestration/"}
 
 	// when / then
 	require.True(t, matchesPathFilter("Chart.yaml", filter))

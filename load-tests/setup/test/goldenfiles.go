@@ -4,6 +4,7 @@ package golden
 import (
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -80,7 +81,7 @@ func matchesPathFilter(rel string, prefixes []string) bool {
 		return true
 	}
 	for _, prefix := range prefixes {
-		prefix = filepath.ToSlash(prefix)
+		prefix = path.Clean(filepath.ToSlash(prefix))
 		if rel == prefix || strings.HasPrefix(rel, prefix+"/") {
 			return true
 		}
