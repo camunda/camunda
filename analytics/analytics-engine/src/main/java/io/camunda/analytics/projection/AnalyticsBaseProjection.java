@@ -87,7 +87,7 @@ public final class AnalyticsBaseProjection implements Processor<SourceRecord, Fa
             ValueType.PROCESS_INSTANCE,
             ProcessInstanceIntent.ELEMENT_ACTIVATED,
             RecordHandler.applyDerive(
-                new ElementActivatedApplier(state), new ElementActivatedDeriver(facts)))
+                new ElementActivatedApplier(state), new ElementActivatedDeriver(state, facts)))
         .on(
             ValueType.PROCESS_INSTANCE,
             ProcessInstanceIntent.ELEMENT_COMPLETED,

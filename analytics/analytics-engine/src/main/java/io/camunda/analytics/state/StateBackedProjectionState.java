@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.ObjLongConsumer;
 import org.agrona.DirectBuffer;
 
 /**
@@ -57,6 +58,7 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   private final CachingKeyValueStore<DbBytes, DbString> variables;
   private final CachingKeyValueStore<DbLong, DbNil> variableScopes;
   private final CachingKeyValueStore<DbLong, IncidentEntity> incidents;
+  private final CachingKeyValueStore<DbBytes, DbLong> variantElements;
   private final List<CachingKeyValueStore<?, ?>> caches;
 
   private final DbLong elementKey = new DbLong();
@@ -67,6 +69,9 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   private final DbString variableValue = new DbString();
   private final DbBytes variablePrefix = new DbBytes();
   private final DbLong variableScopeKey = new DbLong();
+  private final DbBytes variantKey = new DbBytes();
+  private final DbLong variantCount = new DbLong();
+  private final DbBytes variantPrefix = new DbBytes();
 
   private StateBackedProjectionState(
       final StateStoreProvider<AnalyticsColumnFamilies> provider,
@@ -98,7 +103,13 @@ public final class StateBackedProjectionState implements MutableProjectionState,
             .withCaching(cacheBytesPerStore)
             .withDeleteAbsorption()
             .buildCache(provider);
-    caches = List.of(elements, variables, variableScopes, incidents);
+    variantElements =
+        StoreBuilder.keyValueStore(
+                AnalyticsColumnFamilies.VARIANT_ELEMENTS, DbBytes::new, DbLong::new)
+            .withCaching(cacheBytesPerStore)
+            .withDeleteAbsorption()
+            .buildCache(provider);
+    caches = List.of(elements, variables, variableScopes, incidents, variantElements);
   }
 
   /** Shares an already-open provider (the caller owns its lifecycle) — the production wiring. */
@@ -278,6 +289,36 @@ public final class StateBackedProjectionState implements MutableProjectionState,
     // checkpoint cut (a single transaction) — no per-key transaction here.
     variableScopeKey.wrapLong(scopeKey);
     variableScopes.delete(variableScopeKey);
+  }
+
+  @Override
+  public void countVariantElement(final long processInstanceKey, final DirectBuffer elementId) {
+    variantKey.wrapBytes(variableKey(processInstanceKey, elementId));
+    final long current = variantElements.get(variantKey).map(DbLong::getValue).orElse(0L);
+    variantCount.wrapLong(current + 1);
+    variantElements.put(variantKey, variantCount);
+  }
+
+  @Override
+  public void clearVariantElements(final long processInstanceKey) {
+    // Called only for the PROCESS row's eviction (once per instance), so no marker is needed —
+    // unlike clearVariables, which runs per element and must dodge the scan for the common case.
+    variantPrefix.wrapBytes(instancePrefix(processInstanceKey));
+    final List<byte[]> keys = new ArrayList<>();
+    variantElements.prefixScanKeys(variantPrefix, key -> keys.add(key.getBytes().clone()));
+    for (final byte[] key : keys) {
+      variantKey.wrapBytes(key);
+      variantElements.delete(variantKey);
+    }
+  }
+
+  @Override
+  public void forEachVariantElement(
+      final long processInstanceKey, final ObjLongConsumer<String> visitor) {
+    variantPrefix.wrapBytes(instancePrefix(processInstanceKey));
+    variantElements.prefixScan(
+        variantPrefix,
+        (key, count) -> visitor.accept(variableName(key.getBytes()), count.getValue()));
   }
 
   @Override

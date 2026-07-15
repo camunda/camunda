@@ -8,11 +8,14 @@
 package io.camunda.analytics.webapp.dashboard;
 
 import java.util.List;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -28,6 +31,13 @@ public class DashboardController {
 
   public DashboardController(final DashboardRepository repository) {
     this.repository = repository;
+  }
+
+  /** A malformed read (e.g. an empty comparison range) is the caller's error, not a 500. */
+  @ExceptionHandler(IllegalArgumentException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public String badRequest(final IllegalArgumentException e) {
+    return e.getMessage();
   }
 
   /**
@@ -69,6 +79,31 @@ public class DashboardController {
       @RequestParam(value = "from", required = false) final Long from,
       @RequestParam(value = "to", required = false) final Long to) {
     return repository.durationSummary(bpmnProcessId, from, to);
+  }
+
+  /**
+   * The period-over-period KPI comparison for the delta badges: the same whole-range aggregation
+   * over {@code [from, to)} and over the preceding same-length range. Both bounds are mandatory —
+   * an open range has no "previous period" (the client hides the badges then).
+   */
+  @GetMapping("/kpi-comparison")
+  public KpiComparison kpiComparison(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam("from") final long from,
+      @RequestParam("to") final long to) {
+    return repository.kpiComparison(bpmnProcessId, from, to);
+  }
+
+  /**
+   * The percentile trend plus its previous-period overlay (previous points re-timestamped onto the
+   * current grid). Both bounds are mandatory, like {@link #kpiComparison}.
+   */
+  @GetMapping("/duration-percentiles-compare")
+  public PercentileComparison durationPercentilesCompare(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam("from") final long from,
+      @RequestParam("to") final long to) {
+    return repository.durationPercentilesCompare(bpmnProcessId, from, to);
   }
 
   @GetMapping("/ratios")
@@ -160,6 +195,27 @@ public class DashboardController {
     return repository.endedInstances(bpmnProcessId, from, to);
   }
 
+  /**
+   * Business value processed (sum of the value variable over COMPLETED instances) in the range;
+   * {@code processed} is null when the process carries no value variable.
+   */
+  @GetMapping("/value-summary")
+  public ValueSummary valueSummary(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.valueSummary(bpmnProcessId, from, to);
+  }
+
+  /** Business value in flight at each moment (the value-in-flight cube's periodic snapshots). */
+  @GetMapping("/value-series")
+  public List<ValuePoint> valueSeries(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.valueSeries(bpmnProcessId, from, to);
+  }
+
   /** Running instances at each moment (the active-instances cube's periodic snapshots). */
   @GetMapping("/active-series")
   public List<ActiveInstancesPoint> activeSeries(
@@ -233,6 +289,32 @@ public class DashboardController {
   @GetMapping("/open-incidents")
   public long openIncidents(@RequestParam("process") final String bpmnProcessId) {
     return repository.openIncidents(bpmnProcessId);
+  }
+
+  /**
+   * The top execution variants of a process over the range (by instance count): signature hash,
+   * canonical element list, count, share of ended-with-variant instances, duration p50/p95.
+   */
+  @GetMapping("/variants")
+  public List<VariantRow> variants(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to,
+      @RequestParam(value = "limit", required = false, defaultValue = "10") final int limit) {
+    return repository.variants(bpmnProcessId, from, to, limit);
+  }
+
+  /**
+   * Per-gateway branch distribution over the range: the deployed model's exclusive gateways joined
+   * with the elements cube's activation counts (activation-based shares; see the caveat on {@link
+   * BranchDistribution}).
+   */
+  @GetMapping("/branch-distribution")
+  public List<BranchDistribution> branchDistribution(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.branchDistribution(bpmnProcessId, from, to);
   }
 
   @GetMapping(value = "/diagram", produces = MediaType.APPLICATION_XML_VALUE)

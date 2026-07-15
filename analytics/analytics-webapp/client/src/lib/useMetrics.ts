@@ -9,12 +9,14 @@ import { useEffect, useState } from "react";
 import {
   api,
   type ActiveInstancesPoint,
+  type BranchDistribution,
   type DurationBucketPoint,
   type DurationSpreadPoint,
   type DurationPoint,
   type ElementDuration,
   type IncidentFlowNode,
   type IncidentTrendPoint,
+  type KpiComparison,
   type LifecycleSeriesPoint,
   type NoIncidentCohortPoint,
   type OpenInstanceRow,
@@ -22,6 +24,9 @@ import {
   type ReworkHotspot,
   type SlaCohortPoint,
   type TimeRange,
+  type ValuePoint,
+  type ValueSummary,
+  type VariantRow,
 } from "./api";
 
 /** All pre-aggregated metrics for one (process, tenant, range) — fetched once, shared by pages. */
@@ -48,6 +53,20 @@ export interface MetricsData {
   lifecycleSeries: LifecycleSeriesPoint[];
   rework: ReworkHotspot[];
   openInstances: OpenInstanceRow[];
+  /** Period-over-period KPIs (delta badges); null while no explicit range is selected. */
+  comparison: KpiComparison | null;
+  /** Previous-period percentile series re-timestamped onto the current grid; null without range. */
+  durationPrevious: DurationPoint[] | null;
+  /** Business value processed in range (null processed = the process has no value variable). */
+  valueSummary: ValueSummary;
+  /** Value processed in the previous period, for the tile's delta badge; null without range. */
+  valuePrevious: ValueSummary | null;
+  /** Business value in flight over time (periodic snapshots). */
+  valueSeries: ValuePoint[];
+  /** Per-gateway branch split (deployed model joined with the elements cube's activations). */
+  branchDistribution: BranchDistribution[];
+  /** Top execution variants by instance count. */
+  variants: VariantRow[];
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -87,6 +106,21 @@ export function useMetrics(
       api.lifecycleSeries(process, range),
       api.rework(process, range),
       api.openInstances(process),
+      // A null range has no "previous period": skip the comparison reads and hide the badges.
+      range ? api.kpiComparison(process, range) : Promise.resolve(null),
+      range
+        ? api.durationPercentilesCompare(process, range).then((c) => c.previous)
+        : Promise.resolve(null),
+      api.valueSummary(process, range),
+      range
+        ? api.valueSummary(process, {
+            from: range.from - (range.to - range.from),
+            to: range.from,
+          })
+        : Promise.resolve(null),
+      api.valueSeries(process, range),
+      api.branchDistribution(process, range),
+      api.variants(process, range),
     ])
       .then(
         ([
@@ -110,6 +144,13 @@ export function useMetrics(
           lifecycleSeries,
           rework,
           openInstances,
+          comparison,
+          durationPrevious,
+          valueSummary,
+          valuePrevious,
+          valueSeries,
+          branchDistribution,
+          variants,
         ]) => {
           if (!cancelled) {
             setData({
@@ -133,6 +174,13 @@ export function useMetrics(
               lifecycleSeries,
               rework,
               openInstances,
+              comparison,
+              durationPrevious,
+              valueSummary,
+              valuePrevious,
+              valueSeries,
+              branchDistribution,
+              variants,
             });
           }
         },

@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -232,6 +233,102 @@ public class DashboardRepository {
         Math.round(q.valueAt(0.75)),
         Math.round(q.valueAt(0.9)),
         Math.round(q.valueAt(0.99)));
+  }
+
+  /**
+   * The period-over-period KPI comparison: the whole-range KPI aggregates over {@code [from, to)}
+   * and over the immediately preceding same-length range {@code [from − P, to − P)}, {@code P = to
+   * − from}. Requires an explicit range — a null bound has no well-defined "previous period". Both
+   * periods run against one shared memo, so a widget read the current period already answered is
+   * not re-executed.
+   */
+  public KpiComparison kpiComparison(final String bpmnProcessId, final long from, final long to) {
+    if (to <= from) {
+      throw new IllegalArgumentException("empty comparison range [" + from + ", " + to + ")");
+    }
+    final long period = to - from;
+    final Map<QueryKey, List<ReportRow>> memo = newMemo();
+    return new KpiComparison(
+        periodKpis(bpmnProcessId, from, to, memo),
+        periodKpis(bpmnProcessId, from - period, to - period, memo));
+  }
+
+  /** One period's KPI-tile aggregates: lifecycle counts, duration summary, quality ratios. */
+  private PeriodKpis periodKpis(
+      final String bpmnProcessId,
+      final long from,
+      final long to,
+      final Map<QueryKey, List<ReportRow>> memo) {
+    final LifecycleCounts lifecycle = lifecycle(bpmnProcessId, from, to, memo);
+    return new PeriodKpis(
+        lifecycle == null ? 0L : lifecycle.activated(),
+        lifecycle == null ? 0L : lifecycle.completed() + lifecycle.terminated(),
+        durationSummary(bpmnProcessId, from, to, memo),
+        ratioKpi(bpmnProcessId, "sla_compliance", from, to, memo),
+        ratioKpi(bpmnProcessId, "no_incident", from, to, memo),
+        ratioKpi(bpmnProcessId, "first_time_right", from, to, memo));
+  }
+
+  /**
+   * One ratio meter collapsed to a single whole-range total (a single-bucket read, not a series):
+   * the exact {@code matched / total} over the period. Reads every ratio meter of the owning
+   * dataset (the shared meter list), so the three quality KPIs of one period are one query.
+   */
+  private RatioKpi ratioKpi(
+      final String bpmnProcessId,
+      final String meter,
+      final Long from,
+      final Long to,
+      final Map<QueryKey, List<ReportRow>> memo) {
+    final CompiledDataset dataset = datasetWithMeter(meter);
+    if (dataset == null) {
+      return RatioKpi.EMPTY;
+    }
+    for (final ReportRow row :
+        total(
+            dataset.name(),
+            List.of(),
+            from,
+            to,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            ratioMeters(dataset),
+            memo)) {
+      if (row.measures().get(meter) instanceof final RatioResult r) {
+        return new RatioKpi(r.matched(), r.total(), r.ratio());
+      }
+    }
+    return RatioKpi.EMPTY;
+  }
+
+  /**
+   * The percentile control chart with its previous-period overlay: the current series plus the
+   * preceding same-length range's series re-timestamped onto the current grid ({@code windowStart +
+   * P}), so the two overlay on one time axis. Requires an explicit range, like {@link
+   * #kpiComparison}.
+   */
+  public PercentileComparison durationPercentilesCompare(
+      final String bpmnProcessId, final long from, final long to) {
+    if (to <= from) {
+      throw new IllegalArgumentException("empty comparison range [" + from + ", " + to + ")");
+    }
+    final long period = to - from;
+    final Map<QueryKey, List<ReportRow>> memo = newMemo();
+    final List<DurationPercentilePoint> previous = new ArrayList<>();
+    for (final DurationPercentilePoint p :
+        durationPercentiles(bpmnProcessId, from - period, to - period, memo)) {
+      previous.add(
+          new DurationPercentilePoint(
+              p.windowStart() + period,
+              p.observationCount(),
+              p.minMs(),
+              p.maxMs(),
+              p.p50Ms(),
+              p.p75Ms(),
+              p.p90Ms(),
+              p.p99Ms()));
+    }
+    return new PercentileComparison(
+        durationPercentiles(bpmnProcessId, from, to, memo), List.copyOf(previous));
   }
 
   /**
@@ -470,6 +567,55 @@ public class DashboardRepository {
       if (bpmnProcessId.equals(point.keyValues().get(0))
           && point.measures().get("active") instanceof final Number active) {
         out.add(new ActiveInstancesPoint(point.time(), active.longValue()));
+      }
+    }
+    return out;
+  }
+
+  /**
+   * The business value processed over the range: the whole-range sum of the value-throughput cube's
+   * COMPLETED-filtered SUM. {@code processed} stays {@code null} when no row exists — the process
+   * never carried the value variable in range — so the tile can show a dash instead of a misleading
+   * 0.
+   */
+  public ValueSummary valueSummary(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    for (final ReportRow row :
+        total(
+            "value-throughput",
+            List.of(),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("processed"),
+            newMemo())) {
+      if (row.measures().get("processed") instanceof final Number processed) {
+        return new ValueSummary(processed.longValue());
+      }
+    }
+    return new ValueSummary(null);
+  }
+
+  /**
+   * The business value in flight at each moment of the range — the value-in-flight cube's periodic
+   * snapshots, carried forward exactly like {@link #activeSeries} (same lookback clamp, same
+   * newest-releasable default end). Empty when the process never carried the value variable.
+   */
+  public List<ValuePoint> valueSeries(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final CompiledDataset dataset = catalog.require("value-in-flight");
+    final long everyMs = dataset.snapshots().everyMs();
+    final long toMs =
+        toWindow != null
+            ? toWindow
+            : System.currentTimeMillis() - dataset.finestTier().windows().graceMs();
+    final long fromMs = fromWindow == null ? toMs - ACTIVE_SERIES_LOOKBACK_MS : fromWindow;
+    final List<ValuePoint> out = new ArrayList<>();
+    for (final SnapshotSeriesPoint point :
+        snapshotExecutor.execute(new SnapshotQuery(fromMs, toMs, everyMs), dataset)) {
+      if (bpmnProcessId.equals(point.keyValues().get(0))
+          && point.measures().get("value") instanceof final Number value) {
+        out.add(new ValuePoint(point.time(), value.longValue()));
       }
     }
     return out;
@@ -887,6 +1033,66 @@ public class DashboardRepository {
   /** The bounded fetch backing {@link #openInstances} (the table read has no ORDER BY yet). */
   private static final int OPEN_INSTANCES_FETCH_BOUND = 1_000;
 
+  /** The bounded variant-dictionary fetch backing {@link #variants} (one row per variant). */
+  private static final int VARIANT_CATALOG_FETCH_BOUND = 1_000;
+
+  /**
+   * The top execution variants of a process over the range, by instance count: the process-variants
+   * cube's whole-range totals grouped by {@code variantHash}, joined with the variant-catalog
+   * dictionary for the human-readable element list. {@code share} is against all ended instances
+   * that carried a variant in range; {@code p50/p95} come from the per-variant duration sketch
+   * (terminated instances carry a duration too, so a fast-failing variant reads honestly fast).
+   */
+  public List<VariantRow> variants(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow, final int limit) {
+    final List<ReportRow> rows =
+        total(
+            "process-variants",
+            List.of("variantHash"),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("count", "duration_p"),
+            newMemo());
+    if (rows.isEmpty()) {
+      return List.of();
+    }
+    // The dictionary: variantHash -> canonical element list. One bounded fetch for the process;
+    // a cube row whose dictionary entry has not landed yet joins to "" rather than dropping.
+    final Map<Long, String> elementsByHash = new HashMap<>();
+    for (final TableRow row :
+        tableExecutor.execute(
+            new TableQuery(
+                List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+                VARIANT_CATALOG_FETCH_BOUND),
+            tableCatalog.require("variant-catalog"))) {
+      if (row.values().get("variantElements") instanceof final String elements) {
+        elementsByHash.put(asLong(row.values().get("variantHash")), elements);
+      }
+    }
+    long totalEnded = 0L;
+    for (final ReportRow row : rows) {
+      totalEnded += measureAsLong(row, "count");
+    }
+    final List<VariantRow> out = new ArrayList<>(rows.size());
+    for (final ReportRow row : rows) {
+      final long hash = asLong(row.dimensions().get("variantHash"));
+      final long count = measureAsLong(row, "count");
+      final QuantileResult q =
+          row.measures().get("duration_p") instanceof final QuantileResult result ? result : null;
+      out.add(
+          new VariantRow(
+              hash,
+              elementsByHash.getOrDefault(hash, ""),
+              count,
+              totalEnded == 0 ? 0.0 : (double) count / totalEnded,
+              quantileMs(q, 0.5),
+              quantileMs(q, 0.95)));
+    }
+    out.sort(Comparator.comparingLong(VariantRow::count).reversed());
+    return out.size() > limit ? List.copyOf(out.subList(0, limit)) : out;
+  }
+
   /**
    * The deployed BPMN diagram XML for a process, read from the built-in process-definitions table
    * that {@link ProcessDefinitionSink} writes. Feeds the flow-node and incident heatmaps, which
@@ -894,15 +1100,79 @@ public class DashboardRepository {
    * process was redeployed; empty if the definition has not been observed yet.
    */
   public Optional<String> diagramXml(final String bpmnProcessId) {
+    return latestDefinition(bpmnProcessId)
+        .map(r -> r.values().get("bpmnXml"))
+        .filter(String.class::isInstance)
+        .map(String.class::cast);
+  }
+
+  /** The highest-version process-definitions row for a process, if one has been observed. */
+  private Optional<TableRow> latestDefinition(final String bpmnProcessId) {
     final List<TableRow> rows =
         tableExecutor.execute(
             new TableQuery(List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)), 100),
             ProcessDefinitionSink.TABLE);
-    return rows.stream()
-        .max(Comparator.comparingLong(r -> asLong(r.values().get("version"))))
-        .map(r -> r.values().get("bpmnXml"))
-        .filter(String.class::isInstance)
-        .map(String.class::cast);
+    return rows.stream().max(Comparator.comparingLong(r -> asLong(r.values().get("version"))));
+  }
+
+  /**
+   * Parsed decision gateways per process definition. A definition key is immutable (a redeploy
+   * mints a new key and this map is keyed by it), so a model is parsed exactly once per deploy; the
+   * map stays tiny — one entry per observed definition.
+   */
+  private final Map<Long, List<GatewayTopology.GatewaySpec>> gatewaysByDefinition =
+      new ConcurrentHashMap<>();
+
+  /**
+   * How each exclusive gateway's traffic split over its outgoing branches in the range: the
+   * deployed model's decision gateways (see {@link GatewayTopology}, cached per definition) joined
+   * with the elements cube's per-element activation counts. Share semantics and the multi-inflow
+   * over-attribution caveat are documented on {@link BranchDistribution}.
+   */
+  public List<BranchDistribution> branchDistribution(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final TableRow definition = latestDefinition(bpmnProcessId).orElse(null);
+    if (definition == null || !(definition.values().get("bpmnXml") instanceof final String xml)) {
+      return List.of();
+    }
+    final long definitionKey = asLong(definition.values().get("processDefinitionKey"));
+    final List<GatewayTopology.GatewaySpec> gateways =
+        gatewaysByDefinition.computeIfAbsent(definitionKey, key -> GatewayTopology.parse(xml));
+    if (gateways.isEmpty()) {
+      return List.of();
+    }
+    // One activations-by-element read serves every gateway (and reuses the rework/hotspot query
+    // shape). Missing elements read as 0 — an unexecuted branch is still listed with share 0.
+    final Map<String, Long> activationsByElement = new HashMap<>();
+    for (final ReportRow row :
+        total(
+            "elements",
+            List.of("elementId"),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("activations"),
+            newMemo())) {
+      activationsByElement.put(elementId(row), measureAsLong(row, "activations"));
+    }
+    final List<BranchDistribution> out = new ArrayList<>(gateways.size());
+    for (final GatewayTopology.GatewaySpec gateway : gateways) {
+      final long gatewayActivations = activationsByElement.getOrDefault(gateway.gatewayId(), 0L);
+      final List<BranchDistribution.Branch> branches = new ArrayList<>(gateway.branches().size());
+      for (final GatewayTopology.BranchSpec branch : gateway.branches()) {
+        final long targetActivations = activationsByElement.getOrDefault(branch.targetId(), 0L);
+        branches.add(
+            new BranchDistribution.Branch(
+                branch.targetId(),
+                branch.targetLabel(),
+                targetActivations,
+                gatewayActivations == 0 ? 0.0 : (double) targetActivations / gatewayActivations));
+      }
+      out.add(
+          new BranchDistribution(
+              gateway.gatewayId(), gateway.gatewayLabel(), gatewayActivations, branches));
+    }
+    return out;
   }
 
   private static long asLong(final Object value) {

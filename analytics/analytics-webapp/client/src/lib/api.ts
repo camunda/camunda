@@ -147,6 +147,74 @@ export interface TimeRange {
   to: number;
 }
 
+/** One ratio meter collapsed to a single whole-period number; total 0 means "no data". */
+export interface RatioKpi {
+  matched: number;
+  total: number;
+  ratio: number;
+}
+
+/** One period's KPI-tile aggregates (whole-range totals, not series). */
+export interface PeriodKpis {
+  activated: number;
+  ended: number;
+  duration: DurationPoint;
+  slaCompliance: RatioKpi;
+  noIncident: RatioKpi;
+  firstTimeRight: RatioKpi;
+}
+
+/** The same KPI aggregation over [from, to) and over the preceding same-length range. */
+export interface KpiComparison {
+  current: PeriodKpis;
+  previous: PeriodKpis;
+}
+
+/** The percentile trend plus the previous period's series, re-timestamped onto the current grid. */
+export interface PercentileComparison {
+  current: DurationPoint[];
+  previous: DurationPoint[];
+}
+
+/** Business value processed in range; null = the process carries no value variable (show a dash). */
+export interface ValueSummary {
+  processed: number | null;
+}
+
+/** One sample of the value-in-flight series (periodic snapshots, like ActiveInstancesPoint). */
+export interface ValuePoint {
+  time: number;
+  value: number;
+}
+
+/** One outgoing branch of a decision gateway (activation-based; shares can over-attribute a
+ * multi-inflow target and need not sum to 1). */
+export interface GatewayBranch {
+  targetId: string;
+  targetLabel: string;
+  activations: number;
+  share: number;
+}
+
+/** One exclusive gateway's traffic split over its outgoing branches in the range. */
+export interface BranchDistribution {
+  gatewayId: string;
+  gatewayLabel: string;
+  activations: number;
+  branches: GatewayBranch[];
+}
+
+/** One execution variant: signature hash, canonical element list (may be "" while the dictionary
+ * row is in flight), count, share of ended-with-variant instances, duration percentiles. */
+export interface VariantRow {
+  variantHash: number;
+  elements: string;
+  count: number;
+  share: number;
+  p50Ms: number;
+  p95Ms: number;
+}
+
 // ---------------------------------------------------------------------------
 // Dataset / report builder shapes. These mirror the analytics builder REST
 // contract (DatasetDeclaration / Report records serialized by name).
@@ -409,6 +477,16 @@ export const api = {
     ),
   durationSummary: (process: string, range: TimeRange | null) =>
     getJson<DurationPoint>(`/api/dashboard/duration-summary?process=${q(process)}${rangeQs(range)}`),
+  // Period-over-period comparison reads: both need an explicit range (a null range has no
+  // "previous period" — callers skip the fetch and hide the badges/overlay then).
+  kpiComparison: (process: string, range: TimeRange) =>
+    getJson<KpiComparison>(
+      `/api/dashboard/kpi-comparison?process=${q(process)}&from=${range.from}&to=${range.to}`,
+    ),
+  durationPercentilesCompare: (process: string, range: TimeRange) =>
+    getJson<PercentileComparison>(
+      `/api/dashboard/duration-percentiles-compare?process=${q(process)}&from=${range.from}&to=${range.to}`,
+    ),
   ratios: (process: string, metric: string, range: TimeRange | null) =>
     getJson<RatioPoint[]>(
       `/api/dashboard/ratios?process=${q(process)}&metric=${q(metric)}${rangeQs(range)}`,
@@ -425,6 +503,10 @@ export const api = {
     getJson<number>(`/api/dashboard/ended-instances?process=${q(process)}${rangeQs(range)}`),
   activeSeries: (process: string, range: TimeRange | null) =>
     getJson<ActiveInstancesPoint[]>(`/api/dashboard/active-series?process=${q(process)}${rangeQs(range)}`),
+  valueSummary: (process: string, range: TimeRange | null) =>
+    getJson<ValueSummary>(`/api/dashboard/value-summary?process=${q(process)}${rangeQs(range)}`),
+  valueSeries: (process: string, range: TimeRange | null) =>
+    getJson<ValuePoint[]>(`/api/dashboard/value-series?process=${q(process)}${rangeQs(range)}`),
   durationSpread: (process: string, range: TimeRange | null) =>
     getJson<DurationSpreadPoint[]>(`/api/dashboard/duration-spread?process=${q(process)}${rangeQs(range)}`),
   lifecycleSeries: (process: string, range: TimeRange | null) =>
@@ -433,6 +515,14 @@ export const api = {
     ),
   rework: (process: string, range: TimeRange | null) =>
     getJson<ReworkHotspot[]>(`/api/dashboard/rework?process=${q(process)}${rangeQs(range)}`),
+  branchDistribution: (process: string, range: TimeRange | null) =>
+    getJson<BranchDistribution[]>(
+      `/api/dashboard/branch-distribution?process=${q(process)}${rangeQs(range)}`,
+    ),
+  variants: (process: string, range: TimeRange | null, limit = 10) =>
+    getJson<VariantRow[]>(
+      `/api/dashboard/variants?process=${q(process)}&limit=${limit}${rangeQs(range)}`,
+    ),
   openInstances: (process: string, limit = 20) =>
     getJson<OpenInstanceRow[]>(
       `/api/dashboard/open-instances?process=${q(process)}&limit=${limit}`,

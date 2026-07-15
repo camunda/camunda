@@ -19,15 +19,22 @@ interface ChartCardProps {
   description?: string;
   children: ReactNode;
   className?: string;
+  /** Optional header control (e.g. a compare toggle), rendered right of the title block. */
+  action?: ReactNode;
 }
 
 /** A titled card that holds one chart, with a fixed-height plot area. */
-export function ChartCard({ title, description, children, className }: ChartCardProps) {
+export function ChartCard({ title, description, children, className, action }: ChartCardProps) {
   return (
     <Card className={className}>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-1.5">
+            <CardTitle>{title}</CardTitle>
+            {description ? <CardDescription>{description}</CardDescription> : null}
+          </div>
+          {action ?? null}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-72 w-full">{children}</div>

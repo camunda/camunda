@@ -141,6 +141,173 @@ final class AnalyticsBaseProjectionTest {
   }
 
   @Test
+  void shouldStampBusinessValueOnInstanceFacts() {
+    // given the start-payload 'amount' variable folded before the process activates (the
+    // creation command persists variables first, so this mirrors the real record order)
+    projection.process(numericVariable(PI_KEY, "amount", "4200", 9L));
+
+    // when the instance activates and completes
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L));
+
+    // then the activation carries +value and the completion −value (the in-flight level nets to
+    // zero), with the positive value on both for the throughput sum
+    final Fact activated = only(FactType.PROCESS_INSTANCE, Transition.ACTIVATED);
+    assertThat(activated.get("value")).isEqualTo(4200L);
+    assertThat(activated.get("valueDelta")).isEqualTo(4200L);
+    final Fact completed = only(FactType.PROCESS_INSTANCE, Transition.COMPLETED);
+    assertThat(completed.get("value")).isEqualTo(4200L);
+    assertThat(completed.get("valueDelta")).isEqualTo(-4200L);
+  }
+
+  @Test
+  void shouldBalanceTheValueDeltaOnTermination() {
+    // given a valued instance
+    projection.process(numericVariable(PI_KEY, "amount", "150", 9L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+
+    // when it terminates instead of completing
+    projection.process(process(ProcessInstanceIntent.ELEMENT_TERMINATED, 1200L, 11L));
+
+    // then the termination also carries −value — terminated work leaves the in-flight level too
+    final Fact terminated = only(FactType.PROCESS_INSTANCE, Transition.TERMINATED);
+    assertThat(terminated.get("valueDelta")).isEqualTo(-150L);
+  }
+
+  @Test
+  void shouldOmitBusinessValueWhenAbsentOrNonNumeric() {
+    // given one instance without the value variable and one with a non-numeric value
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L));
+
+    // then no value fields are stamped — absence keeps the fact out of the value meters via
+    // their implicit NOT_NULL(measure) filters, instead of folding a phantom 0
+    assertThat(only(FactType.PROCESS_INSTANCE, Transition.ACTIVATED).get("value")).isNull();
+    final Fact completed = only(FactType.PROCESS_INSTANCE, Transition.COMPLETED);
+    assertThat(completed.get("value")).isNull();
+    assertThat(completed.get("valueDelta")).isNull();
+
+    // and a non-numeric amount is ignored the same way
+    context.facts.clear();
+    projection.process(variable(PI_KEY, "amount", "not-a-number", 12L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 2000L, 13L));
+    assertThat(only(FactType.PROCESS_INSTANCE, Transition.ACTIVATED).get("value")).isNull();
+  }
+
+  @Test
+  void shouldStampTheVariantSignatureOnTheInstanceEndFact() {
+    // given an instance whose retry loop activates one task twice (distinct element instances)
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    projection.process(element(400L, "register", ProcessInstanceIntent.ELEMENT_ACTIVATED, 11L));
+    projection.process(element(400L, "register", ProcessInstanceIntent.ELEMENT_COMPLETED, 12L));
+    projection.process(element(401L, "assess", ProcessInstanceIntent.ELEMENT_ACTIVATED, 13L));
+    projection.process(element(401L, "assess", ProcessInstanceIntent.ELEMENT_COMPLETED, 14L));
+    projection.process(element(402L, "assess", ProcessInstanceIntent.ELEMENT_ACTIVATED, 15L));
+    projection.process(element(402L, "assess", ProcessInstanceIntent.ELEMENT_COMPLETED, 16L));
+
+    // when the instance completes
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 2000L, 17L));
+
+    // then the end fact carries the signature and the canonical (sorted, bucketed) element list
+    final Fact completed = only(FactType.PROCESS_INSTANCE, Transition.COMPLETED);
+    assertThat(completed.get("variantHash")).isNotNull();
+    assertThat(completed.get("variantElements")).isEqualTo("assess×2-3, register");
+    // and the accumulator is evicted with the instance
+    final List<String> leftover = new ArrayList<>();
+    state.forEachVariantElement(PI_KEY, (elementId, count) -> leftover.add(elementId));
+    assertThat(leftover).as("accumulator cleared on instance evict").isEmpty();
+  }
+
+  @Test
+  void shouldFoldArrivalOrderAndReplayToTheSameVariantHash() {
+    // given the same two-branch element set folded in two different interleavings (a parallel
+    // gateway's branches have no deterministic activation order), plus an exact replay
+    final long forward = variantHashOf(List.of("dispatch", "notify"));
+    final long interleaved = variantHashOf(List.of("notify", "dispatch"));
+    final long replayed = variantHashOf(List.of("dispatch", "notify"));
+
+    // then every fold lands on ONE variant
+    assertThat(interleaved).isEqualTo(forward);
+    assertThat(replayed).isEqualTo(forward);
+  }
+
+  @Test
+  void shouldGiveATerminatedInstanceItsOwnPartialSetVariant() {
+    // given a completed instance that executed both elements
+    final long full = variantHashOf(List.of("register", "payout"));
+
+    // and an instance terminated mid-way, after only the first element (fresh fixture)
+    final StateBackedProjectionState terminatedState = StateBackedProjectionState.inMemory();
+    final CapturingContext terminatedContext = new CapturingContext();
+    final AnalyticsBaseProjection terminated =
+        new AnalyticsBaseProjection(terminatedState, VariableNames.NONE, new CountingMetrics());
+    terminated.init(terminatedContext);
+    terminated.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    terminated.process(element(500L, "register", ProcessInstanceIntent.ELEMENT_ACTIVATED, 11L));
+    terminated.process(element(500L, "register", ProcessInstanceIntent.ELEMENT_TERMINATED, 12L));
+    terminated.process(process(ProcessInstanceIntent.ELEMENT_TERMINATED, 1500L, 13L));
+
+    // then the termination fact carries a variant of its own — the partial element set
+    final Fact fact =
+        terminatedContext.facts.stream()
+            .filter(
+                f ->
+                    f.factType() == FactType.PROCESS_INSTANCE
+                        && Transition.TERMINATED.name().equals(f.get(Fact.TRANSITION)))
+            .findFirst()
+            .orElseThrow();
+    assertThat(fact.get("variantHash")).isNotNull();
+    assertThat(fact.get("variantHash")).isNotEqualTo(full);
+    assertThat(fact.get("variantElements")).isEqualTo("register");
+  }
+
+  /**
+   * Folds a full instance (activation, one pass over each element, completion) through a fresh
+   * projection and returns the end fact's variant hash — the arrival order is the list order.
+   */
+  private static long variantHashOf(final List<String> elementIds) {
+    final StateBackedProjectionState state = StateBackedProjectionState.inMemory();
+    final CapturingContext context = new CapturingContext();
+    final AnalyticsBaseProjection projection =
+        new AnalyticsBaseProjection(state, VariableNames.NONE, new CountingMetrics());
+    projection.init(context);
+    long position = 10L;
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, position++));
+    long elementKey = 600L;
+    for (final String elementId : elementIds) {
+      projection.process(
+          element(elementKey, elementId, ProcessInstanceIntent.ELEMENT_ACTIVATED, position++));
+      projection.process(
+          element(elementKey, elementId, ProcessInstanceIntent.ELEMENT_COMPLETED, position++));
+      elementKey++;
+    }
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 2000L, position));
+    return context.facts.stream()
+        .filter(
+            f ->
+                f.factType() == FactType.PROCESS_INSTANCE
+                    && Transition.COMPLETED.name().equals(f.get(Fact.TRANSITION)))
+        .map(f -> (Long) f.get("variantHash"))
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private static SourceRecord element(
+      final long elementInstanceKey,
+      final String elementId,
+      final ProcessInstanceIntent intent,
+      final long position) {
+    return processInstance(
+        elementInstanceKey,
+        PI_KEY,
+        intent,
+        BpmnElementType.SERVICE_TASK,
+        elementId,
+        position * 100,
+        position);
+  }
+
+  @Test
   void shouldStampHadIncidentOnTheElementItOccurredOn() {
     projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
     projection.process(incident(IncidentIntent.CREATED, PI_KEY, 1100L, 11L));
@@ -228,12 +395,23 @@ final class AnalyticsBaseProjectionTest {
 
   private static SourceRecord variable(
       final long scopeKey, final String name, final String value, final long position) {
+    return variableRecord(scopeKey, name, "\"" + value + "\"", position);
+  }
+
+  /** A msgpack-number variable (e.g. the 'amount' start payload), not a string. */
+  private static SourceRecord numericVariable(
+      final long scopeKey, final String name, final String number, final long position) {
+    return variableRecord(scopeKey, name, number, position);
+  }
+
+  private static SourceRecord variableRecord(
+      final long scopeKey, final String name, final String json, final long position) {
     final VariableRecord variable =
         new VariableRecord()
             .setProcessInstanceKey(PI_KEY)
             .setScopeKey(scopeKey)
             .setName(BufferUtil.wrapString(name))
-            .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("\"" + value + "\"")));
+            .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(json)));
     return record(
         variable, ValueType.VARIABLE, VariableIntent.CREATED, scopeKey, position, position);
   }

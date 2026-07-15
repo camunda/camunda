@@ -13,10 +13,12 @@ interface StatTileProps {
   value: string;
   hint?: ReactNode;
   accent?: string;
+  /** Optional period-over-period badge (a `DeltaBadge`), rendered between value and hint. */
+  delta?: ReactNode;
 }
 
 /** A single-number KPI tile (median, p99, SLA-met %, …) for the top row of the dashboard. */
-export function StatTile({ label, value, hint, accent }: StatTileProps) {
+export function StatTile({ label, value, hint, accent, delta }: StatTileProps) {
   return (
     <Card className="h-full">
       <CardContent className="flex flex-col gap-1 py-4">
@@ -29,6 +31,7 @@ export function StatTile({ label, value, hint, accent }: StatTileProps) {
         >
           {value}
         </span>
+        {delta ?? null}
         {hint ? (
           <span className="text-xs text-neutral-foreground-muted">{hint}</span>
         ) : null}

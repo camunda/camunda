@@ -10,6 +10,7 @@ import { chartColor } from "../lib/chartColors";
 import { formatCount, formatPercent } from "../lib/format";
 import { qualityKpis, useMetrics } from "../lib/useMetrics";
 import { CountTrend } from "../components/CountTrend";
+import { DeltaBadge } from "../components/DeltaBadge";
 import { Incidents } from "../components/Incidents";
 import { NoIncidentCohortChart } from "../components/NoIncidentCohortChart";
 import { NoIncidentDonut } from "../components/NoIncidentDonut";
@@ -39,6 +40,7 @@ export function QualityPage({
     return <p className="text-neutral-foreground-muted">Loading…</p>;
   }
   const { sla, noIncident } = qualityKpis(data.sla, data.noIncident);
+  const cmp = data.comparison;
   const incidentsOverTime = data.incidentTrend.map((p) => ({
     windowStart: p.windowStart,
     value: p.raised,
@@ -55,6 +57,18 @@ export function QualityPage({
               : undefined
           }
           accent={chartColor(2)}
+          delta={
+            cmp && cmp.current.slaCompliance.total > 0 ? (
+              <DeltaBadge
+                current={cmp.current.slaCompliance.ratio}
+                previous={
+                  cmp.previous.slaCompliance.total > 0
+                    ? cmp.previous.slaCompliance.ratio
+                    : undefined
+                }
+              />
+            ) : undefined
+          }
         />
         <StatTile
           label="% no incidents"
@@ -63,6 +77,16 @@ export function QualityPage({
             noIncident.total
               ? `${formatCount(noIncident.matched)} / ${formatCount(noIncident.total)} started`
               : undefined
+          }
+          delta={
+            cmp && cmp.current.noIncident.total > 0 ? (
+              <DeltaBadge
+                current={cmp.current.noIncident.ratio}
+                previous={
+                  cmp.previous.noIncident.total > 0 ? cmp.previous.noIncident.ratio : undefined
+                }
+              />
+            ) : undefined
           }
         />
         <StatTile

@@ -34,6 +34,8 @@ import io.camunda.analytics.webapp.dashboard.LifecycleSeriesPoint;
 import io.camunda.analytics.webapp.dashboard.OpenInstanceRow;
 import io.camunda.analytics.webapp.dashboard.RatioPoint;
 import io.camunda.analytics.webapp.dashboard.ReworkHotspot;
+import io.camunda.analytics.webapp.dashboard.ValuePoint;
+import io.camunda.analytics.webapp.dashboard.ValueSummary;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.collections.MutableLong;
@@ -379,6 +381,61 @@ final class DashboardServingTest {
     assertThat(repository.openInstances(PROCESS, 1))
         .extracting(OpenInstanceRow::processInstanceKey)
         .containsExactly(1L);
+  }
+
+  @Test
+  void shouldServeValueProcessedAndValueInFlight() {
+    // given two completed instances carrying the deriver-enriched 'value' field (500 + 1500)
+    final List<Fact> valued = new ArrayList<>();
+    for (final long value : new long[] {500L, 1_500L}) {
+      valued.add(
+          Fact.builder(FactType.PROCESS_INSTANCE)
+              .transition(Transition.COMPLETED)
+              .field("value", value)
+              .build());
+    }
+    ServingTestSupport.seed(fixture, "value-throughput", "processed", valued, PROCESS);
+    // and value-in-flight snapshots (2000 in flight at 1m, 700 at 3m)
+    final long minute = 60_000L;
+    final CompiledDataset inFlight = fixture.catalog().require("value-in-flight");
+    final DimensionKey key = DimensionKey.of(inFlight.grain(), PROCESS);
+    fixture
+        .datasetStore()
+        .writer()
+        .upsertSnapshotRow(inFlight, key, minute, level(inFlight, 2_000L), new WriteVersion(1, 1));
+    fixture
+        .datasetStore()
+        .writer()
+        .upsertSnapshotRow(
+            inFlight, key, 3 * minute, level(inFlight, 700L), new WriteVersion(1, 2));
+    fixture.datasetStore().writer().flush();
+
+    // when the value widgets read
+    final ValueSummary summary = repository.valueSummary(PROCESS, null, null);
+    final List<ValuePoint> series = repository.valueSeries(PROCESS, 0L, 4 * minute);
+
+    // then the tile carries the sum and the series carries the snapshots forward
+    assertThat(summary.processed()).isEqualTo(2_000L);
+    assertThat(series)
+        .extracting(ValuePoint::time, ValuePoint::value)
+        .containsExactly(
+            tuple(minute, 2_000L),
+            tuple(2 * minute, 2_000L),
+            tuple(3 * minute, 700L),
+            tuple(4 * minute, 700L));
+  }
+
+  @Test
+  void shouldReportNoValueDataAsNullNotZero() {
+    // given no value-throughput rows for the process (it sets no value variable)
+
+    // when the tile reads
+    final ValueSummary summary = repository.valueSummary(PROCESS, null, null);
+
+    // then "no value data" is null — distinguishable from a genuine total of 0
+    assertThat(summary.processed()).isNull();
+    // and the in-flight series is simply empty
+    assertThat(repository.valueSeries(PROCESS, 0L, 60_000L)).isEmpty();
   }
 
   private static Fact ended(

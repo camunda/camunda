@@ -12,6 +12,7 @@ import io.camunda.analytics.state.ElementEntity;
 import io.camunda.analytics.state.IncidentEntity;
 import io.camunda.analytics.state.VariableNames;
 import java.util.Map;
+import java.util.function.ObjLongConsumer;
 
 /**
  * The read view of the Model-A base projection: the materialized rows a deriver reads to build a
@@ -43,4 +44,12 @@ public interface ProjectionState {
    * meter actually reads — and gets them as value slices, not {@code String}s.
    */
   Map<String, Utf8View> variables(long scopeKey, VariableNames names);
+
+  /**
+   * Visits the instance's variant accumulator — each distinct executed element id with its
+   * activation count, in store (element-id byte) order. Nothing is visited for an instance that
+   * activated no elements (or was already cleared). Read once per instance end, when the variant
+   * signature is derived.
+   */
+  void forEachVariantElement(long processInstanceKey, ObjLongConsumer<String> visitor);
 }

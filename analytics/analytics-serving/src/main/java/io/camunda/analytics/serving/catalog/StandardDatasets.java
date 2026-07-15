@@ -329,6 +329,56 @@ public final class StandardDatasets {
             .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
+            .build(),
+        // Business value processed per definition: the sum of the deriver-enriched 'value' field
+        // (the designated value variable, default 'amount') over COMPLETED instances. The field is
+        // an eager numeric enrichment — a var.* field rides facts as lazily-resolved TEXT, which
+        // SUM cannot measure — and is absent on value-less processes, so the implicit
+        // NOT_NULL(value) filter keeps them out instead of folding phantom zeroes. APPENDED.
+        DatasetDeclaration.builder("value-throughput", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("processed", MeterCatalog.SUM, "value"))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .build(),
+        // Business value currently in flight per definition, mirroring active-instances: a LEVEL
+        // gauge over the signed 'valueDelta' enrichment (+value on ACTIVATED, −value on either
+        // end), sampled as periodic snapshots with the same deliberately tight lateness (the
+        // snapshot-freshness trade-off documented on active-instances). An instance whose value
+        // variable is absent contributes nothing on either side, so the level stays balanced.
+        // APPENDED.
+        DatasetDeclaration.builder("value-in-flight", FactType.PROCESS_INSTANCE)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("value", MeterCatalog.LEVEL, "valueDelta"))
+            .window(ONE_MINUTE_MS)
+            .lateness(ONE_MINUTE_MS)
+            .snapshots(ONE_MINUTE_MS)
+            .build(),
+        // Execution variants per definition: instance counts and duration percentiles on the
+        // (bpmnProcessId, variantHash) grain. variantHash is the deriver's order-insensitive
+        // commutative signature over the instance's distinct executed elements with bucketed loop
+        // counts (see the engine's VariantSignature) — a LONG dimension, so grouping needs no
+        // string key. Only end facts carry it (NOT_NULL keeps ACTIVATED facts out), and both
+        // COMPLETED and TERMINATED count: a mid-flight termination is its own partial-set
+        // variant. Tiered like process-duration — the top-variants read is a range total.
+        // APPENDED.
+        DatasetDeclaration.builder("process-variants", FactType.PROCESS_INSTANCE)
+            .filterNotNull("variantHash")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("variantHash", DimensionType.LONG)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            // Explicit ranks: the variants card compares variants at p50/p95, and a sketch result
+            // answers only the ranks it was declared with (valueAt on any other rank is NaN).
+            .meter(
+                new Meter(
+                    "duration_p",
+                    MeterCatalog.PERCENTILE,
+                    "durationMs",
+                    Map.of("ranks", "0.5,0.95")))
+            .window(ONE_MINUTE_MS)
+            .window(ONE_HOUR_MS)
+            .lateness(GRACE_MS)
             .build());
   }
 
@@ -357,6 +407,20 @@ public final class StandardDatasets {
             .dimension("processInstanceKey", DimensionType.LONG)
             .dimension("bpmnProcessId", DimensionType.STRING)
             .dimension("startTime", DimensionType.LONG)
+            .build(),
+        // The variant dictionary: one row per observed variantHash carrying its human-readable
+        // canonical element list (the hash's display companion — the cube stores only the LONG).
+        // Upserted from every end fact that carries a variant; idempotent by key, and every
+        // instance of a variant writes the identical row, so replays and races are harmless.
+        // Tiny by construction: one row per distinct variant, not per instance. variantHash
+        // doubles as a column because a fetched TableRow carries only its declared columns.
+        // APPENDED.
+        DatasetDeclaration.builder("variant-catalog", FactType.PROCESS_INSTANCE)
+            .filterNotNull("variantHash")
+            .asTable("variantHash")
+            .dimension("variantHash", DimensionType.LONG)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("variantElements", DimensionType.TEXT)
             .build());
   }
 }
