@@ -56,12 +56,4 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     return !initializedMembers.isEmpty()
         && initializedMembers.stream().allMatch(member -> member.state() == State.RECOVERING);
   }
-
-  /**
-   * Backup compatibility and resolution will happen before the change plan is generated. This
-   * operation will be synchronous for better UX.
-   *
-   * <p>Placeholder
-   */
-  private void resolveBackups() {}
 }

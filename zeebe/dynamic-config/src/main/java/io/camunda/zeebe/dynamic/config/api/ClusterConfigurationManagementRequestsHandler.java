@@ -41,7 +41,6 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Handles the requests for the configuration management. This is expected be running on the
@@ -247,25 +246,32 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> restore(final RestoreRequest request) {
     return validated(
-        request, () -> handleRequest(request.dryRun(), new RestoreRequestTransformer(request)));
+        request,
+        validated ->
+            handleRequest(
+                request.dryRun(), new RestoreRequestTransformer((RestoreRequest) validated)));
   }
 
   /**
    * Runs the (optional, blocking) validator registered for the request type before delegating to
-   * {@code onValid}. A validation failure is mapped to a failed future carrying the validator's
-   * error message so it propagates to the caller.
+   * {@code onValid} with the value it produced. That value need not be the same type as {@code
+   * request}: a validator may rewrite the request or resolve it into a different downstream type,
+   * so callers are responsible for casting to whatever type their validator is known to produce. A
+   * validation failure is mapped to a failed future carrying the validator's error message so it
+   * propagates to the caller.
    */
   private ActorFuture<ClusterConfigurationChangeResponse> validated(
       final ClusterConfigurationManagementRequest request,
-      final Supplier<ActorFuture<ClusterConfigurationChangeResponse>> onValid) {
+      final Function<Object, ActorFuture<ClusterConfigurationChangeResponse>> onValid) {
+    final Object validated;
     try {
-      requestValidator.validate(request);
+      validated = requestValidator.validate(request);
     } catch (final IllegalArgumentException e) {
       return failedFuture(new InvalidRequest(e.getMessage()));
     } catch (final RuntimeException e) {
       return failedFuture(e);
     }
-    return onValid.get();
+    return onValid.apply(validated);
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> failedFuture(final Throwable error) {

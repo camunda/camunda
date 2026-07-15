@@ -144,7 +144,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   }
 
   @Override
-  public void registerRequestValidator(final ClusterConfigurationRequestValidator<?> validator) {
+  public void registerRequestValidator(final ClusterConfigurationRequestValidator<?, ?> validator) {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.registerRequestValidator(validator);
     } else {

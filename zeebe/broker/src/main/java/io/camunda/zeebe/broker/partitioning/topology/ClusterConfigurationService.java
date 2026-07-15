@@ -42,7 +42,7 @@ public interface ClusterConfigurationService extends AsyncClosable {
 
   void removeInconsistentConfigurationListener();
 
-  void registerRequestValidator(ClusterConfigurationRequestValidator<?> validator);
+  void registerRequestValidator(ClusterConfigurationRequestValidator<?, ?> validator);
 
   void removeRequestValidator(Class<? extends ClusterConfigurationManagementRequest> requestType);
 

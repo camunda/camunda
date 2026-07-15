@@ -98,7 +98,7 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
         .thenReturn(
             CompletableActorFuture.completed(
                 new ConfigurationChangeResult(config, config, 1L, List.of())));
-    final var handler = handler(request -> {});
+    final var handler = handler(request -> request);
 
     // when
     final ActorFuture<ClusterConfigurationChangeResponse> result =
@@ -115,7 +115,12 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
     // given
     final var request = restoreRequest();
     final var received = new AtomicReference<ClusterConfigurationManagementRequest>();
-    final var handler = handler(received::set);
+    final var handler =
+        handler(
+            r -> {
+              received.set(r);
+              return r;
+            });
     when(coordinator.applyOperations(any()))
         .thenReturn(
             CompletableActorFuture.completed(

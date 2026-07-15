@@ -8,7 +8,6 @@
 package io.camunda.zeebe.restore.validation;
 
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.util.Preconditions;
@@ -23,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * is in recovery mode.
  */
 public final class RestoreValidator
-    implements ClusterConfigurationRequestValidator<RestoreRequest> {
+    implements ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest> {
 
   private final @Nullable BackupStore backupStore;
 
@@ -37,12 +36,13 @@ public final class RestoreValidator
   }
 
   @Override
-  public void validate(final ClusterConfigurationManagementRequest request) {
+  public RestoreRequest validate(final RestoreRequest request) {
     if (backupStore == null) {
       throw new IllegalArgumentException(
           "Cannot restore: no backup store is configured on this broker.");
     }
-    validateParameters((RestoreRequest) request);
+    validateParameters(request);
+    return request;
   }
 
   @VisibleForTesting

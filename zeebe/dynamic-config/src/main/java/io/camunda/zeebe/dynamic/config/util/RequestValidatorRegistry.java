@@ -24,10 +24,10 @@ public final class RequestValidatorRegistry {
 
   private final Map<
           Class<? extends ClusterConfigurationManagementRequest>,
-          ClusterConfigurationRequestValidator<? extends ClusterConfigurationManagementRequest>>
+          ClusterConfigurationRequestValidator<? extends ClusterConfigurationManagementRequest, ?>>
       validators = new HashMap<>();
 
-  public void registerValidator(final ClusterConfigurationRequestValidator<?> validator) {
+  public void registerValidator(final ClusterConfigurationRequestValidator<?, ?> validator) {
     validators.put(validator.requestType(), validator);
   }
 
@@ -41,17 +41,21 @@ public final class RequestValidatorRegistry {
    * validation completes and propagates any exception thrown by the validator.
    *
    * @param request the request to validate
+   * @return the value produced by the registered validator (which may be a different type than the
+   *     request, e.g. a rewritten request or a resolved downstream value), or the original request
+   *     unchanged if none is registered for its type
    */
-  public void validateRequest(final ClusterConfigurationManagementRequest request) {
-    final var validator = validators.get(request.getClass());
-    if (validator != null) {
-      validator.validate(request);
-    }
+  @SuppressWarnings("unchecked")
+  public Object validateRequest(final ClusterConfigurationManagementRequest request) {
+    final var validator =
+        (ClusterConfigurationRequestValidator<ClusterConfigurationManagementRequest, ?>)
+            validators.get(request.getClass());
+    return validator != null ? validator.validate(request) : request;
   }
 
   /** Blocking validation hook handed to the request handler. */
   @FunctionalInterface
   public interface RequestValidator {
-    void validate(ClusterConfigurationManagementRequest request);
+    Object validate(ClusterConfigurationManagementRequest request);
   }
 }

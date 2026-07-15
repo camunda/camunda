@@ -290,7 +290,7 @@ public final class ClusterConfigurationManagerService
     clusterConfigurationManager.removeTopologyChangedListener();
   }
 
-  public void registerRequestValidator(final ClusterConfigurationRequestValidator<?> validator) {
+  public void registerRequestValidator(final ClusterConfigurationRequestValidator<?, ?> validator) {
     validators.registerValidator(validator);
   }
 
