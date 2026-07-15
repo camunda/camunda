@@ -417,10 +417,6 @@ public class AuditLogEntry {
     return this;
   }
 
-  public static <R extends RecordValue> String getEntityKey(final Record<R> record) {
-    return String.valueOf(record.getKey());
-  }
-
   public static <R extends RecordValue> AuditLogEntityType getEntityType(final Record<R> record) {
     return AuditLogInfo.getEntityType(record);
   }
@@ -430,7 +426,7 @@ public class AuditLogEntry {
 
     final AuditLogEntry log =
         new AuditLogEntry()
-            .setEntityKey(getEntityKey(record))
+            .setEntityKey(String.valueOf(record.getKey()))
             .setEntityType(info.entityType())
             .setCategory(info.category())
             .setOperationType(info.operationType())

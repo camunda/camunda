@@ -39,11 +39,11 @@ public class AuditLogCleanupHandler<R extends RecordValue>
 
   @Override
   public void updateEntity(final Record<R> record, final AuditLogCleanupEntity entity) {
-    final AuditLogEntityType auditLogEntityType = AuditLogEntry.getEntityType(record);
+    final var log = transformer.create(record);
     entity
-        .setKey(AuditLogEntry.getEntityKey(record))
+        .setKey(log.getEntityKey())
         .setKeyField(AuditLogTemplate.ENTITY_KEY)
-        .setEntityType(mapEntityType(auditLogEntityType))
+        .setEntityType(mapEntityType(log.getEntityType()))
         .setPartitionId(record.getPartitionId());
   }
 

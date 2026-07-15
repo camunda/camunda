@@ -161,9 +161,10 @@ public class AuditLogCleanupHandlerTest {
     final var entity = new AuditLogCleanupEntity().setId(ENTITY_ID);
 
     // Create a properly populated AuditLogEntry that the transformer will return
-    // final var entry = createAuditLogEntry();
+    final var entry = createAuditLogEntry();
 
-    // when(transformer.create(record)).thenReturn(entry);
+    when(transformer.create(record)).thenReturn(entry);
+
     handler.updateEntity(record, entity);
 
     // Verify all fields are properly mapped
