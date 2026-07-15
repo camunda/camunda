@@ -25,8 +25,11 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import java.io.IOException;
@@ -166,6 +169,8 @@ public class AuditLogsIT {
   }
 
   private List<TestParameter> provideTestParameters() {
+    // this is not a complete this - just trying to get enough to cover the main audit log and
+    // cleanup scenarios for now
     return List.of(
         TestParameter.record(
                 ImmutableRecord.builder()
@@ -290,6 +295,45 @@ public class AuditLogsIT {
                     Map.entry("result", "SUCCESS"),
                     Map.entry("tenantScope", "TENANT"),
                     Map.entry("timestamp", "2026-07-15T14:05:00.000+0000")))
+            .build(),
+        TestParameter.record(
+                ImmutableRecord.builder()
+                    .withRecordType(RecordType.EVENT)
+                    .withValueType(ValueType.HISTORY_DELETION)
+                    .withIntent(HistoryDeletionIntent.DELETED)
+                    .withValue(
+                        ImmutableHistoryDeletionRecordValue.builder()
+                            .withResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                            .withResourceKey(3456L)
+                            .build())
+                    .withKey(4567L)
+                    .withPosition(803L)
+                    .withPartitionId(1)
+                    .withTimestamp(Instant.parse("2026-07-15T15:00:00Z").toEpochMilli())
+                    .build())
+            .expectedAuditLog(
+                Map.ofEntries(
+                    Map.entry("id", "1-803"),
+                    Map.entry("actorType", "UNKNOWN"),
+                    Map.entry("category", "DEPLOYED_RESOURCES"),
+                    Map.entry("entityDescription", "PROCESS_INSTANCE"),
+                    Map.entry("entityKey", "3456"),
+                    Map.entry("entityOperationIntent", (int) HistoryDeletionIntent.DELETED.value()),
+                    Map.entry("entityType", "PROCESS_INSTANCE"),
+                    Map.entry("entityValueType", (int) ValueType.HISTORY_DELETION.value()),
+                    Map.entry("entityVersion", 0),
+                    Map.entry("operationType", "DELETE"),
+                    Map.entry("processInstanceKey", 3456),
+                    Map.entry("result", "SUCCESS"),
+                    Map.entry("tenantScope", "TENANT"),
+                    Map.entry("timestamp", "2026-07-15T15:00:00.000+0000")))
+            .expectedCleanup(
+                Map.ofEntries(
+                    Map.entry("id", "1-803"),
+                    Map.entry("entityType", "PROCESS_INSTANCE"),
+                    Map.entry("key", "3456"),
+                    Map.entry("keyField", "entityKey"),
+                    Map.entry("partitionId", 1)))
             .build());
   }
 
