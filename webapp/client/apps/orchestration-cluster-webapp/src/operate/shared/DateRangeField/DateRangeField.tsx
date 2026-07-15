@@ -10,7 +10,7 @@ import {useRef} from 'react';
 import {Field, useField, useForm} from 'react-final-form';
 import {Calendar} from '@carbon/react/icons';
 import {tracking} from '#/shared/tracking';
-import {IconTextInput} from '#/operate/shared/IconInput';
+import {IconTextInput} from '#/operate/shared/IconInput/IconTextInput';
 import {formatDate, formatISODate, formatTime} from './formatDate';
 import {DateRangeModal} from './DateRangeModal/DateRangeModal';
 
