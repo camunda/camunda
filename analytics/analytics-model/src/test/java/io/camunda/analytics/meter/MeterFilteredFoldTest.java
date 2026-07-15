@@ -147,6 +147,44 @@ final class MeterFilteredFoldTest {
   }
 
   @Test
+  void shouldCountAMatchedFormRatioAgainstItsPredicateConjunction() {
+    // given a first-time-right-style ratio: matched = completed AND in-SLA AND incident-free.
+    // The matched form is measure-less — the meter measures no numeric field.
+    final List<BoundMeter<?, ?>> bounds =
+        List.of(
+            catalog.bind(
+                Meter.of("first_time_right", MeterCatalog.RATIO)
+                    .matched(
+                        FilterPredicate.equals(Fact.TRANSITION, Transition.COMPLETED.name()),
+                        FilterPredicate.lessOrEqual("durationMs", "9000"),
+                        FilterPredicate.equals("hadIncident", "false"))));
+    final CompositeAggregateFunction aggregate = new CompositeAggregateFunction(bounds);
+
+    // when facts matching all, some, and none of the conjunction fold
+    Object[] acc = aggregate.createAccumulator();
+    acc = aggregate.add(ended(Transition.COMPLETED, 5_000L, false), acc); // all three — matched
+    acc = aggregate.add(ended(Transition.COMPLETED, 5_000L, true), acc); // had an incident
+    acc = aggregate.add(ended(Transition.COMPLETED, 12_000L, false), acc); // breached the SLA
+    acc = aggregate.add(ended(Transition.TERMINATED, 5_000L, false), acc); // not completed
+    acc = aggregate.add(activated(), acc); // none of the three
+
+    // then only the fully-matching fact hit the numerator while the denominator counted them all
+    final RatioResult ratio = (RatioResult) aggregate.getResult(acc)[0];
+    assertThat(ratio.matched()).isEqualTo(1L);
+    assertThat(ratio.total()).isEqualTo(5L);
+    assertThat(ratio.ratio()).isEqualTo(0.2);
+  }
+
+  private static Fact ended(
+      final Transition transition, final long durationMs, final boolean hadIncident) {
+    return Fact.builder(FactType.PROCESS_INSTANCE)
+        .transition(transition)
+        .field("durationMs", durationMs)
+        .field("hadIncident", hadIncident)
+        .build();
+  }
+
+  @Test
   void shouldKeepFilteredSlotsMergeCompatibleWithUnfilteredDeltas() {
     // given two segments folded under the same filtered declaration
     final List<BoundMeter<?, ?>> bounds =

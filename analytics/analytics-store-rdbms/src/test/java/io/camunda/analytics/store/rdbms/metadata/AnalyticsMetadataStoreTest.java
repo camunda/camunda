@@ -126,6 +126,60 @@ final class AnalyticsMetadataStoreTest {
   }
 
   @Test
+  void shouldDeserializeSpecsPersistedWithoutMeterMatched() {
+    // given the JSON of a spec persisted before ratio meters carried the matched conjunction
+    // (no "matched" property)
+    final SpecJson json = new SpecJson();
+    final RegisteredDataset spec =
+        new DatasetRegistry()
+            .admit(
+                DatasetDeclaration.builder("legacy-ratio", FactType.PROCESS_INSTANCE)
+                    .dimension("bpmnProcessId", DimensionType.STRING)
+                    .meter(
+                        new Meter(
+                            "sla", "ratio", "durationMs", Map.of("op", "le", "threshold", "9000")))
+                    .window(60_000L)
+                    .build(),
+                Map.of(),
+                0L);
+    final String legacyJson = json.toJson(spec).replace(",\"matched\":[]", "");
+
+    // when deserialized under the matched-carrying shape
+    final RegisteredDataset reloaded = json.fromJson(legacyJson);
+
+    // then the meter normalizes to the legacy (op/threshold) form rather than failing
+    assertThat(reloaded.declaration().meters().get(0).matched()).isEmpty();
+    assertThat(reloaded).isEqualTo(spec);
+  }
+
+  @Test
+  void shouldRoundTripAMatchedFormRatioSpec() {
+    // given a spec whose ratio declares the matched predicate conjunction (measure-less)
+    final RegisteredDataset spec =
+        new DatasetRegistry()
+            .admit(
+                DatasetDeclaration.builder("stp", FactType.PROCESS_INSTANCE)
+                    .filterNotEquals("transition", "ACTIVATED")
+                    .dimension("bpmnProcessId", DimensionType.STRING)
+                    .meter(
+                        Meter.of("first_time_right", "ratio")
+                            .matched(
+                                FilterPredicate.equals("transition", "COMPLETED"),
+                                FilterPredicate.lessOrEqual("durationMs", "9000"),
+                                FilterPredicate.equals("hadIncident", "false")))
+                    .window(60_000L)
+                    .build(),
+                Map.of(),
+                0L);
+
+    // when persisted and reloaded
+    store.datasetSpecStore().create(spec);
+
+    // then the matched predicates survive the round trip
+    assertThat(store.datasetSpecStore().read(spec.cubeId())).contains(spec);
+  }
+
+  @Test
   void shouldRoundTripReportSpecs() {
     // given a multi-dataset report over two sources (each with meters + a local filter)
     final ReportDefinition report =

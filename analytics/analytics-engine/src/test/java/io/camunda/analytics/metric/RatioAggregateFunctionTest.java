@@ -37,6 +37,23 @@ final class RatioAggregateFunctionTest {
   }
 
   @Test
+  void shouldCountMatchedUnderAGeneralPredicate() {
+    // given — the general (predicate) form: matched = even values
+    final RatioAggregateFunction<Long> fn = new RatioAggregateFunction<>(value -> value % 2 == 0);
+
+    // when — two even, three odd
+    RatioAccumulator acc = fn.createAccumulator();
+    for (final long value : new long[] {1, 2, 3, 4, 5}) {
+      acc = fn.add(value, acc);
+    }
+
+    // then — the denominator counted every fact, matching or not
+    assertThat(acc.matched()).isEqualTo(2L);
+    assertThat(acc.total()).isEqualTo(5L);
+    assertThat(fn.getResult(acc).ratio()).isCloseTo(0.4, within(1e-9));
+  }
+
+  @Test
   void shouldMergeCommutativelyAndAssociatively() {
     // given
     final RatioAggregateFunction<Long> fn =

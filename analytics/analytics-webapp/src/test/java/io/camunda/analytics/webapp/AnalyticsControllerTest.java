@@ -154,7 +154,8 @@ final class AnalyticsControllerTest {
                     new AnalyticsController.DimensionRequest(
                         "bpmnProcessId", DimensionType.STRING, null)),
                 List.of(
-                    new AnalyticsController.MeterRequest("active", "level", "delta", null, null)),
+                    new AnalyticsController.MeterRequest(
+                        "active", "level", "delta", null, null, null)),
                 List.of(60_000L),
                 null,
                 null,
@@ -209,7 +210,8 @@ final class AnalyticsControllerTest {
             List.of(
                 new AnalyticsController.DimensionRequest(
                     "bpmnProcessId", DimensionType.STRING, null)),
-            List.of(new AnalyticsController.MeterRequest("active", "level", "delta", null, null)),
+            List.of(
+                new AnalyticsController.MeterRequest("active", "level", "delta", null, null, null)),
             List.of(60_000L),
             null,
             null,

@@ -173,6 +173,9 @@ export interface Meter {
   params?: Record<string, string>;
   /** Per-meter fold predicates (SQL FILTER-clause semantics); all must match. */
   filters?: Filter[];
+  /** Ratio-only numerator predicates: a fact counts as matched when ALL of them hold. The general
+   * form of the legacy op/threshold params; a matched-form ratio declares no measureField. */
+  matched?: Filter[];
 }
 
 export interface Filter {

@@ -27,24 +27,46 @@ import java.util.Objects;
  * fewer facts. A meter measuring field X can filter {@code NOT_NULL(X)} to skip facts missing the
  * measure instead of folding {@link MeasureRef}'s null-as-0 (the canonical fix for that skew).
  *
+ * <p>{@code matched} is the {@link MeterCatalog#RATIO ratio} meters' numerator predicate
+ * conjunction, the general form of the legacy single {@code (measureField, op, threshold)}
+ * comparison: the denominator counts every fact the slot admits (dataset filters ∧ {@code
+ * filters}), the numerator those additionally satisfying <em>all</em> {@code matched} predicates. A
+ * matched-form ratio measures no numeric field, so it is declared measure-less; the legacy form
+ * (params {@code op}/{@code threshold} over {@code measureField}) keeps working untouched. Only
+ * ratio meters may declare {@code matched} (validated at compile/provisioning).
+ *
  * @param name the output name of this metric within its dataset
  * @param type the meter-type id resolved against the {@link MeterCatalog}
  * @param measureField the fact field measured, or {@code null} for measure-less meters (e.g. count)
  * @param params type-specific parameters as strings
  * @param filters per-meter fold predicates, all of which a fact must satisfy (empty = fold all)
+ * @param matched ratio-only numerator predicates, all of which a fact must satisfy to count as
+ *     matched (empty = the legacy op/threshold form)
  */
 public record Meter(
     String name,
     String type,
     String measureField,
     Map<String, String> params,
-    List<FilterPredicate> filters) {
+    List<FilterPredicate> filters,
+    List<FilterPredicate> matched) {
 
   public Meter {
     Objects.requireNonNull(name, "name");
     Objects.requireNonNull(type, "type");
     params = params == null ? Map.of() : Map.copyOf(params);
     filters = filters == null ? List.of() : List.copyOf(filters);
+    matched = matched == null ? List.of() : List.copyOf(matched);
+  }
+
+  /** Matched-less form, for the existing declaration surface (and older persisted specs). */
+  public Meter(
+      final String name,
+      final String type,
+      final String measureField,
+      final Map<String, String> params,
+      final List<FilterPredicate> filters) {
+    this(name, type, measureField, params, filters, List.of());
   }
 
   /** Unfiltered form, for the existing declaration surface (and older persisted specs). */
@@ -53,7 +75,7 @@ public record Meter(
       final String type,
       final String measureField,
       final Map<String, String> params) {
-    this(name, type, measureField, params, List.of());
+    this(name, type, measureField, params, List.of(), List.of());
   }
 
   public static Meter of(final String name, final String type) {
@@ -66,7 +88,15 @@ public record Meter(
 
   /** A copy of this meter whose slot folds only facts satisfying all {@code filters}. */
   public Meter filtered(final FilterPredicate... filters) {
-    return new Meter(name, type, measureField, params, List.of(filters));
+    return new Meter(name, type, measureField, params, List.of(filters), matched);
+  }
+
+  /**
+   * A copy of this (ratio) meter whose numerator counts the facts satisfying all {@code matched}
+   * predicates — the general form of the legacy op/threshold comparison.
+   */
+  public Meter matched(final FilterPredicate... matched) {
+    return new Meter(name, type, measureField, params, filters, List.of(matched));
   }
 
   /** The measure reference, or throws if this meter declared no measured field. */

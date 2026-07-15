@@ -7,9 +7,11 @@
  */
 package io.camunda.analytics.meter;
 
+import io.camunda.analytics.dataset.CompiledFilter;
 import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dataset.FilterPredicate.Operator;
 import io.camunda.analytics.dimension.DimensionType;
+import io.camunda.analytics.dimension.FactRow;
 import io.camunda.analytics.metric.ExecutionTimeAccumulator;
 import io.camunda.analytics.metric.ExecutionTimeAccumulatorValue;
 import io.camunda.analytics.metric.ExecutionTimeAggregateFunction;
@@ -62,8 +64,10 @@ import org.agrona.collections.MutableLong;
  *       #HISTOGRAM} (bucket counts over thresholds);
  *   <li><b>mergeable-sketch</b> — {@link #PERCENTILE} (KLL), {@link #DISTINCT} (HLL), {@link
  *       #TOP_K} (frequent-items);
- *   <li><b>ratio</b> — {@link #RATIO} (matched/total under a threshold predicate), the generic
- *       part-of-whole meter that expresses SLA-compliance and no-incident cohorts as declarations.
+ *   <li><b>ratio</b> — {@link #RATIO} (matched/total under a numerator predicate: the legacy
+ *       measured-value threshold comparison, or a {@code matched} predicate conjunction), the
+ *       generic part-of-whole meter that expresses SLA-compliance, no-incident and first-time-right
+ *       cohorts as declarations.
  * </ul>
  *
  * A non-additive last-value gauge is deferred to the declaration-driven metric port.
@@ -160,7 +164,8 @@ public final class MeterCatalog {
     final List<FilterPredicate> filters = new ArrayList<>(meter.filters().size() + 1);
     filters.add(FilterPredicate.notNull(meter.measureField()));
     filters.addAll(meter.filters());
-    return new Meter(meter.name(), meter.type(), meter.measureField(), meter.params(), filters);
+    return new Meter(
+        meter.name(), meter.type(), meter.measureField(), meter.params(), filters, meter.matched());
   }
 
   private static boolean declaresMeasurePresence(final Meter meter) {
@@ -267,13 +272,35 @@ public final class MeterCatalog {
         .register(
             new MeterType<>(
                 RATIO,
-                m ->
-                    new RatioAggregateFunction<>(
-                        m.requireMeasure()::asDouble,
-                        comparison(m),
-                        m.doubleParam("threshold", 0.0)),
+                MeterCatalog::ratioAggregate,
                 m -> new RatioAccumulatorValue(),
                 ratioSpec()));
+  }
+
+  /**
+   * The {@code ratio} aggregate for either declaration form. A meter declaring {@code matched}
+   * predicates counts a fact as matched when <em>all</em> of them admit it — compiled once here,
+   * exactly like per-meter filters — and is measure-less (it measures no numeric field, so no
+   * measure is required or read). Without {@code matched}, the legacy single-comparison form
+   * applies: the measured value against the {@code op}/{@code threshold} params.
+   */
+  private static RatioAggregateFunction<FactRow> ratioAggregate(final Meter meter) {
+    if (!meter.matched().isEmpty()) {
+      final CompiledFilter[] matched =
+          meter.matched().stream().map(CompiledFilter::new).toArray(CompiledFilter[]::new);
+      return new RatioAggregateFunction<>(fact -> matchesAll(matched, fact));
+    }
+    return new RatioAggregateFunction<>(
+        meter.requireMeasure()::asDouble, comparison(meter), meter.doubleParam("threshold", 0.0));
+  }
+
+  private static boolean matchesAll(final CompiledFilter[] filters, final FactRow fact) {
+    for (final CompiledFilter filter : filters) {
+      if (!filter.matches(fact)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /** The {@code ratio} numerator predicate; rejects an unknown op naming the known values. */

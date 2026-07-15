@@ -309,6 +309,77 @@ final class DatasetCompilerTest {
   }
 
   @Test
+  void shouldCompileAMatchedFormRatioWithoutAMeasure() {
+    // given a measure-less ratio whose numerator is a matched predicate conjunction
+    final Meter meter =
+        Meter.of("first_time_right", MeterCatalog.RATIO)
+            .matched(
+                FilterPredicate.equals("transition", "COMPLETED"),
+                FilterPredicate.lessOrEqual("durationMs", "9000"),
+                FilterPredicate.equals("hadIncident", "false"));
+
+    // when / then it binds without requiring a measured field or the op/threshold params
+    assertThat(compiler.compile(1L, withMeter(meter)).meters()).hasSize(1);
+  }
+
+  @Test
+  void shouldRejectMatchedPredicatesOnANonRatioMeterAtCompileTime() {
+    // given a count meter carrying a matched numerator
+    final Meter meter =
+        Meter.of("count", MeterCatalog.COUNT)
+            .matched(FilterPredicate.equals("transition", "COMPLETED"));
+
+    // when compiled, then it is rejected naming the meter — matched is ratio-only
+    assertThatThrownBy(() -> compiler.compile(1L, withMeter(meter)))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("dataset 'param-check'")
+        .hasMessageContaining("meter 'count'")
+        .hasMessageContaining("only ratio meters take a matched numerator");
+  }
+
+  @Test
+  void shouldRejectARatioDeclaringNoNumeratorFormAtCompileTime() {
+    // given a ratio with neither matched predicates nor the legacy op/threshold params
+    final Meter meter = Meter.of("sla", MeterCatalog.RATIO, "durationMs");
+
+    // when compiled, then it is rejected with a message naming both accepted forms
+    assertThatThrownBy(() -> compiler.compile(1L, withMeter(meter)))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("meter 'sla'")
+        .hasMessageContaining("matched predicates")
+        .hasMessageContaining("op/threshold");
+  }
+
+  @Test
+  void shouldRejectARatioDeclaringBothNumeratorFormsAtCompileTime() {
+    // given a ratio declaring the matched conjunction AND the legacy measured comparison
+    final Meter meter =
+        new Meter("sla", MeterCatalog.RATIO, "durationMs", Map.of("op", "le", "threshold", "9000"))
+            .matched(FilterPredicate.equals("transition", "COMPLETED"));
+
+    // when compiled, then the ambiguity is rejected rather than one form silently winning
+    assertThatThrownBy(() -> compiler.compile(1L, withMeter(meter)))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("meter 'sla'")
+        .hasMessageContaining("exactly one numerator form");
+  }
+
+  @Test
+  void shouldRejectAnInvalidMatchedPredicateAtCompileTime() {
+    // given a matched predicate whose ordering bound is not numeric
+    final Meter meter =
+        Meter.of("ratio", MeterCatalog.RATIO)
+            .matched(FilterPredicate.lessOrEqual("durationMs", "fast"));
+
+    // when compiled, then the same value-shape gate as filters rejects it with meter context
+    assertThatThrownBy(() -> compiler.compile(1L, withMeter(meter)))
+        .isInstanceOf(DatasetValidationException.class)
+        .hasMessageContaining("meter 'ratio'")
+        .hasMessageContaining("filter on 'durationMs'")
+        .hasMessageContaining("'fast'");
+  }
+
+  @Test
   void shouldCompileWellFormedPerMeterFilters() {
     // given a meter filtered to present, bounded measures
     final Meter meter =

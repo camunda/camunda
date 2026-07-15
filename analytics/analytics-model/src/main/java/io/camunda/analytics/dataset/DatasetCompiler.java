@@ -146,9 +146,9 @@ public final class DatasetCompiler {
    * The compile-time validation gate for the stringly typed filter values — an ordering operator
    * needs a numeric bound, {@code IN} a non-empty list (see {@link
    * FilterPredicate#validateValue()}). Covers the dataset-level filters and every meter's per-meter
-   * filters. A failure is rethrown as a {@link DatasetValidationException} carrying the dataset (+
-   * meter) + filter context, the same admission gate as meter params: a bad declaration is rejected
-   * at compile/provisioning time instead of silently never matching a fact.
+   * filters and matched predicates. A failure is rethrown as a {@link DatasetValidationException}
+   * carrying the dataset (+ meter) + filter context, the same admission gate as meter params: a bad
+   * declaration is rejected at compile/provisioning time instead of silently never matching a fact.
    */
   private static void validateFilters(final DatasetDeclaration declaration) {
     for (final FilterPredicate filter : declaration.filters()) {
@@ -161,23 +161,65 @@ public final class DatasetCompiler {
       }
     }
     for (final Meter meter : declaration.meters()) {
+      validateMatchedShape(declaration, meter);
       for (final FilterPredicate filter : meter.filters()) {
-        try {
-          filter.validateValue();
-        } catch (final RuntimeException e) {
-          // reads: dataset 'x' meter 'm' (count) declares an invalid filter on 'f' (GT): ...
-          throw new DatasetValidationException(
-              "dataset '"
-                  + declaration.name()
-                  + "' meter '"
-                  + meter.name()
-                  + "' ("
-                  + meter.type()
-                  + ") declares an invalid "
-                  + e.getMessage(),
-              e);
-        }
+        validateMeterPredicate(declaration, meter, filter);
       }
+      for (final FilterPredicate filter : meter.matched()) {
+        validateMeterPredicate(declaration, meter, filter);
+      }
+    }
+  }
+
+  /**
+   * The structural gate for a meter's {@code matched} numerator (see {@link Meter#matched()}): only
+   * ratio meters take one, a ratio must declare exactly one numerator form (the {@code matched}
+   * conjunction or the legacy measured op/threshold comparison — declaring neither computes
+   * nothing, declaring both is ambiguous), and the matched form is measure-less.
+   */
+  private static void validateMatchedShape(
+      final DatasetDeclaration declaration, final Meter meter) {
+    final String context =
+        "dataset '" + declaration.name() + "' meter '" + meter.name() + "' (" + meter.type() + ") ";
+    final boolean ratio = MeterCatalog.RATIO.equals(meter.type());
+    if (!meter.matched().isEmpty() && !ratio) {
+      throw new DatasetValidationException(
+          context + "declares matched predicates, but only ratio meters take a matched numerator");
+    }
+    if (!ratio) {
+      return;
+    }
+    final boolean legacyForm = meter.params().containsKey("op");
+    if (meter.matched().isEmpty() && !legacyForm) {
+      throw new DatasetValidationException(
+          context
+              + "declares no numerator: a ratio needs either matched predicates or the legacy"
+              + " op/threshold params over a measured field");
+    }
+    if (!meter.matched().isEmpty() && (legacyForm || meter.measureField() != null)) {
+      throw new DatasetValidationException(
+          context
+              + "declares both matched predicates and the legacy measure/op form — a matched-form"
+              + " ratio is measure-less; declare exactly one numerator form");
+    }
+  }
+
+  private static void validateMeterPredicate(
+      final DatasetDeclaration declaration, final Meter meter, final FilterPredicate filter) {
+    try {
+      filter.validateValue();
+    } catch (final RuntimeException e) {
+      // reads: dataset 'x' meter 'm' (count) declares an invalid filter on 'f' (GT): ...
+      throw new DatasetValidationException(
+          "dataset '"
+              + declaration.name()
+              + "' meter '"
+              + meter.name()
+              + "' ("
+              + meter.type()
+              + ") declares an invalid "
+              + e.getMessage(),
+          e);
     }
   }
 
