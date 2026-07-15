@@ -12,12 +12,13 @@ import { SearchResponse } from "src/utility/api";
 import { ApiDefinition, unwrap } from "src/utility/api/request";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
 import useTranslate from "src/utility/localization";
+import { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type OwnerSelectionProps<T> = {
   id: string;
   onChange: (OwnerId: string) => void;
   onBlur: () => void;
-  searchFn: ApiDefinition<SearchResponse<T>>;
+  searchFn: ApiDefinition<SearchResponse<T>, { page: QueryPage }>;
   getId: (item: T) => string;
   itemToString: (item: T) => string;
   isEmpty?: boolean;
@@ -35,7 +36,9 @@ const OwnerSelection = <T,>({
   const { t } = useTranslate("authorizations");
   const { data, isLoading: loading } = useQuery({
     queryKey: ["ownerSelection", searchFn.name],
-    queryFn: () => unwrap(searchFn(undefined)(getApiBaseUrl())),
+    queryFn: () =>
+      // passing in the maximum limit supported by the API is a temporary fix for https://github.com/camunda/camunda/issues/56452
+      unwrap(searchFn({ page: { limit: 10000 } })(getApiBaseUrl())),
   });
 
   if (loading) {
