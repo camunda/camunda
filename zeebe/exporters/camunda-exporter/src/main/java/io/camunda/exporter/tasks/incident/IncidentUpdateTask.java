@@ -201,6 +201,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
             .map(IncidentDocument::incident)
             .map(IncidentEntity::getFlowNodeInstanceKey)
             .map(String::valueOf)
+            .distinct()
             .toList();
     repository
         .getFlowNodesInListView(flowNodeKeys)
@@ -282,6 +283,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
             .map(IncidentDocument::incident)
             .map(IncidentEntity::getProcessInstanceKey)
             .map(String::valueOf)
+            .distinct()
             .toList();
 
     final var instances =
