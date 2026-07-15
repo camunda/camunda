@@ -8,8 +8,9 @@
 package io.camunda.analytics.webapp.dashboard;
 
 /**
- * One window of the completion-duration spread: the exact extrema and the population standard
- * deviation of the durations completed in the window (the {@code process-duration-spread} cube's
- * stddev/min/max primitives).
+ * One window of the completion-duration spread: the average with its population standard deviation
+ * (the control-chart band) and the exact extrema of the durations completed in the window (the
+ * {@code process-duration-spread} cube's execution-time + stddev primitives).
  */
-public record DurationSpreadPoint(long windowStart, long minMs, long maxMs, double stddevMs) {}
+public record DurationSpreadPoint(
+    long windowStart, double avgMs, long minMs, long maxMs, double stddevMs) {}

@@ -285,14 +285,14 @@ public final class StandardDatasets {
             .lateness(GRACE_MS)
             .snapshots(ONE_MINUTE_MS)
             .build(),
-        // Completion-duration spread per definition: the standalone extrema and the population
-        // standard deviation beside the average the duration cube already serves. APPENDED.
+        // Completion-duration spread per definition: the average with its population standard
+        // deviation (the control-chart band) plus the exact extrema — execution_time carries
+        // count/avg/min/max in one meter, stddev adds the deviation. APPENDED.
         DatasetDeclaration.builder("process-duration-spread", FactType.PROCESS_INSTANCE)
             .filterEquals("transition", Transition.COMPLETED.name())
             .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs"))
             .meter(Meter.of("stddev", MeterCatalog.STDDEV, "durationMs"))
-            .meter(Meter.of("min", MeterCatalog.MIN, "durationMs"))
-            .meter(Meter.of("max", MeterCatalog.MAX, "durationMs"))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
             .build());

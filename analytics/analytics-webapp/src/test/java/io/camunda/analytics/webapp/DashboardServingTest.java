@@ -174,8 +174,10 @@ final class DashboardServingTest {
         .extracting(ActiveInstancesPoint::time, ActiveInstancesPoint::active)
         .containsExactly(
             tuple(minute, 3L), tuple(2 * minute, 3L), tuple(3 * minute, 5L), tuple(4 * minute, 5L));
-    // and the spread window carries the exact extrema and the population stddev of the durations
+    // and the spread window carries the control-band inputs: the exact average and extrema plus
+    // the population stddev of the durations
     assertThat(spread).hasSize(1);
+    assertThat(spread.get(0).avgMs()).isEqualTo(200_000.0);
     assertThat(spread.get(0).minMs()).isEqualTo(100_000L);
     assertThat(spread.get(0).maxMs()).isEqualTo(300_000L);
     assertThat(spread.get(0).stddevMs()).isCloseTo(81_649.66, offset(0.1));

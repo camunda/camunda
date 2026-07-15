@@ -107,6 +107,7 @@ export interface ActiveInstancesPoint {
 
 export interface DurationSpreadPoint {
   windowStart: number;
+  avgMs: number;
   minMs: number;
   maxMs: number;
   stddevMs: number;

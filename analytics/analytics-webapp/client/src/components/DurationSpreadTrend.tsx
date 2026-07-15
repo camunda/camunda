@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -20,46 +21,76 @@ import { chartColor } from "../lib/chartColors";
 import { formatDuration, formatWindow } from "../lib/format";
 import { ChartCard } from "./ChartCard";
 
-const SERIES: { key: keyof DurationSpreadPoint; label: string; color: number }[] = [
-  { key: "minMs", label: "min", color: 2 },
-  { key: "stddevMs", label: "std dev", color: 0 },
-  { key: "maxMs", label: "max", color: 1 },
-];
-
 /**
- * The completion-duration spread per window: exact extrema plus the population standard deviation
- * (the process-duration-spread cube's stddev/min/max primitive meters).
+ * The completion-duration control chart: the per-window average with its ±1σ band (population
+ * standard deviation) and the exact extrema as light bounds — a widening band means less
+ * predictable durations even when the average holds.
  */
 export function DurationSpreadTrend({ points }: { points: DurationSpreadPoint[] }) {
-  const data = points.map((p) => ({ ...p, label: formatWindow(p.windowStart) }));
+  const data = points.map((p) => ({
+    label: formatWindow(p.windowStart),
+    avg: p.avgMs,
+    band: [Math.max(0, p.avgMs - p.stddevMs), p.avgMs + p.stddevMs],
+    min: p.minMs,
+    max: p.maxMs,
+  }));
   return (
     <ChartCard
       title="Duration spread over time"
-      description="min / standard deviation / max of completion duration, per window"
+      description="average ±1σ band with exact min/max, per window"
     >
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: 8 }}>
+        <ComposedChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, #e5e7eb)" />
           <XAxis dataKey="label" tick={{ fontSize: 12 }} />
           <YAxis tickFormatter={(v: number) => formatDuration(v)} width={64} tick={{ fontSize: 12 }} />
           <Tooltip
-            formatter={(value: number, name: string) => [formatDuration(value), name]}
+            formatter={(value: number | number[], name: string) =>
+              Array.isArray(value)
+                ? [`${formatDuration(value[0])} – ${formatDuration(value[1])}`, name]
+                : [formatDuration(value), name]
+            }
             labelFormatter={(label: string) => `Window ${label}`}
           />
           <Legend />
-          {SERIES.map((s) => (
-            <Line
-              key={s.key}
-              type="monotone"
-              dataKey={s.key}
-              name={s.label}
-              stroke={chartColor(s.color)}
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
-          ))}
-        </LineChart>
+          <Area
+            dataKey="band"
+            name="avg ±1σ"
+            stroke="none"
+            fill={chartColor(0)}
+            fillOpacity={0.25}
+            isAnimationActive={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="avg"
+            name="average"
+            stroke={chartColor(0)}
+            strokeWidth={2}
+            dot={false}
+            isAnimationActive={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="min"
+            name="min"
+            stroke={chartColor(2)}
+            strokeWidth={1}
+            strokeDasharray="4 4"
+            dot={false}
+            isAnimationActive={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="max"
+            name="max"
+            stroke={chartColor(1)}
+            strokeWidth={1}
+            strokeDasharray="4 4"
+            dot={false}
+            isAnimationActive={false}
+          />
+        </ComposedChart>
       </ResponsiveContainer>
     </ChartCard>
   );

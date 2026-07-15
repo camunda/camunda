@@ -429,13 +429,19 @@ public class DashboardRepository {
    * How many instances of the process were running at each moment of the range — the
    * active-instances cube's periodic snapshots (ADR 0010), carried forward at the cube's sample
    * interval. Absolute values, not per-window flows. A null range start defaults to a bounded
-   * lookback: the carry-forward walk is O(buckets), so "since forever" must not mean epoch 0.
+   * lookback (the carry-forward walk is O(buckets), so "since forever" must not mean epoch 0); a
+   * null range end defaults to the newest <em>releasable</em> boundary, {@code now − grace} —
+   * beyond it no snapshot can exist yet, and carrying the last value into that unknowable stretch
+   * would render a misleading flat tail.
    */
   public List<ActiveInstancesPoint> activeSeries(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
     final CompiledDataset dataset = catalog.require("active-instances");
     final long everyMs = dataset.snapshots().everyMs();
-    final long toMs = toMs(toWindow);
+    final long toMs =
+        toWindow != null
+            ? toWindow
+            : System.currentTimeMillis() - dataset.finestTier().windows().graceMs();
     final long fromMs = fromWindow == null ? toMs - ACTIVE_SERIES_LOOKBACK_MS : fromWindow;
     final List<ActiveInstancesPoint> out = new ArrayList<>();
     for (final SnapshotSeriesPoint point :
@@ -448,7 +454,7 @@ public class DashboardRepository {
     return out;
   }
 
-  /** The per-window completion-duration spread (stddev/min/max) for a process over the range. */
+  /** The per-window completion-duration spread (avg±stddev band and the exact extrema). */
   public List<DurationSpreadPoint> durationSpread(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
     final List<DurationSpreadPoint> out = new ArrayList<>();
@@ -459,16 +465,19 @@ public class DashboardRepository {
             fromWindow,
             toWindow,
             List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
-            List.of("stddev", "min", "max"),
+            List.of("duration", "stddev"),
             newMemo())) {
-      out.add(
-          new DurationSpreadPoint(
-              row.windowStart(),
-              measureAsLong(row, "min"),
-              measureAsLong(row, "max"),
-              row.measures().get("stddev") instanceof final Number stddev
-                  ? stddev.doubleValue()
-                  : 0.0));
+      if (row.measures().get("duration") instanceof final ExecutionTimeResult duration) {
+        out.add(
+            new DurationSpreadPoint(
+                row.windowStart(),
+                duration.averageMs(),
+                duration.minMs(),
+                duration.maxMs(),
+                row.measures().get("stddev") instanceof final Number stddev
+                    ? stddev.doubleValue()
+                    : 0.0));
+      }
     }
     out.sort(Comparator.comparingLong(DurationSpreadPoint::windowStart));
     return out;
