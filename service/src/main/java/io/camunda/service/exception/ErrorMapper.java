@@ -194,6 +194,16 @@ public class ErrorMapper {
             rootError);
         yield new ServiceError(e.getMessage(), UNAVAILABLE);
       }
+      case final io.camunda.zeebe.backup.client.api.IncompleteTopologyException e -> {
+        LOGGER.debug(
+            "Expected to handle request, but the gateway does not have a complete view of the cluster topology",
+            rootError);
+        yield new ServiceError(e.getMessage(), UNAVAILABLE);
+      }
+      case final io.camunda.zeebe.backup.client.api.BackupAlreadyExistException e -> {
+        LOGGER.debug(e.getMessage(), rootError);
+        yield new ServiceError(e.getMessage(), ALREADY_EXISTS);
+      }
       case final ConnectTimeoutException ignored -> {
         final var message =
             "Expected to handle request, but a connection timeout exception occurred";

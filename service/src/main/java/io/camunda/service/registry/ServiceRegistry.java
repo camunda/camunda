@@ -12,6 +12,7 @@ import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
 import io.camunda.service.AuditLogServices;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.BackupServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.ClusterVariableServices;
@@ -65,6 +66,8 @@ public interface ServiceRegistry {
   AuditLogServices auditLogServices(String physicalTenantId);
 
   AuthorizationServices authorizationServices(String physicalTenantId);
+
+  BackupServices backupServices(String physicalTenantId);
 
   BatchOperationServices batchOperationServices(String physicalTenantId);
 
