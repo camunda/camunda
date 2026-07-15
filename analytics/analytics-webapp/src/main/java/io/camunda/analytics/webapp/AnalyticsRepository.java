@@ -30,8 +30,8 @@ import org.springframework.stereotype.Repository;
 /**
  * Stores dataset/report <em>definitions</em> in H2 (its own tables, unrelated to the serving store)
  * and runs a report/heatmap by querying the neutral serving executor. A report reads the
- * process-instances lifecycle cube grouped by process and window; the heatmap reads the
- * element-duration cube grouped by element.
+ * process-instances lifecycle cube grouped by process and window; the heatmap reads the elements
+ * cube grouped by element.
  */
 @Repository
 public class AnalyticsRepository {
@@ -183,9 +183,9 @@ public class AnalyticsRepository {
     return rows;
   }
 
-  /** The process definitions the element-duration cube has data for (for the filter dropdown). */
+  /** The process definitions the elements cube has data for (for the filter dropdown). */
   public List<String> heatmapProcesses() {
-    final CompiledDataset dataset = catalog.require("element-duration");
+    final CompiledDataset dataset = catalog.require("elements");
     final TreeSet<String> ids = new TreeSet<>();
     for (final var row :
         executor.execute(total(dataset, "bpmnProcessId", "duration"), dataset).rows()) {
@@ -199,7 +199,7 @@ public class AnalyticsRepository {
 
   /** The element heatmap for one process: per element, execution count + duration stats. */
   public List<HeatmapCell> elementHeatmap(final String bpmnProcessId) {
-    final CompiledDataset dataset = catalog.require("element-duration");
+    final CompiledDataset dataset = catalog.require("elements");
     final long toMs = System.currentTimeMillis() + ONE_HOUR_MS;
     final ReportQuery query =
         new ReportQuery(

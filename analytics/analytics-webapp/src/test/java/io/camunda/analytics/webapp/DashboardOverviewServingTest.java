@@ -74,7 +74,7 @@ final class DashboardOverviewServingTest {
     ServingTestSupport.seed(
         fixture, "process-duration", "p95", completed(100_000L, 200_000L), PROCESS);
     ServingTestSupport.seed(
-        fixture, "process-sla", "sla_compliance", completed(100_000L, 400_000L), PROCESS);
+        fixture, "process-quality", "sla_compliance", completed(100_000L, 400_000L), PROCESS);
 
     // and the store cost of each shared query when it runs exactly once
     counting.reset();
@@ -85,13 +85,13 @@ final class DashboardOverviewServingTest {
     final int oneLifecycleTotal = counting.count("process-instances");
     counting.reset();
     repository.ratios(PROCESS, "sla_compliance", null, null);
-    final int oneSlaSeries = counting.count("process-sla");
+    final int oneSlaSeries = counting.count("process-quality");
 
     // when one overview render runs
     counting.reset();
     final DashboardOverview overview = repository.overview(PROCESS, TENANT, null, null);
     final int lifecycleFetches = counting.count("process-instances");
-    final int slaFetches = counting.count("process-sla");
+    final int slaFetches = counting.count("process-quality");
 
     // then the lifecycle series (feeding slaCohorts, noIncidentCohorts and durationBuckets) and
     // the lifecycle total (feeding activated and activeNow) each ran once, and the SLA ratio

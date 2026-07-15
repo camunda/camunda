@@ -8,7 +8,7 @@
 package io.camunda.analytics.webapp.dashboard;
 
 /**
- * One heavy hitter from the top-processes rollup: its rank (1-based), the process id, and the
+ * One heavy hitter from the tenant-overview rollup: its rank (1-based), the process id, and the
  * estimated occurrence count with the sketch's guaranteed bounds.
  */
 public record TopProcess(

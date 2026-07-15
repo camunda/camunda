@@ -130,6 +130,12 @@ export interface ReworkHotspot {
   rework: number;
 }
 
+/** One window of the incident trend: incidents raised (CREATED facts) across the process's nodes. */
+export interface IncidentTrendPoint {
+  windowStart: number;
+  raised: number;
+}
+
 /** One currently-open instance (aging WIP); ageMs is computed server-side against one "now". */
 export interface OpenInstanceRow {
   processInstanceKey: number;
@@ -445,6 +451,10 @@ export const api = {
     ),
   incidents: (process: string, range: TimeRange | null) =>
     getJson<IncidentFlowNode[]>(`/api/dashboard/incidents?process=${q(process)}${rangeQs(range)}`),
+  incidentTrend: (process: string, range: TimeRange | null) =>
+    getJson<IncidentTrendPoint[]>(
+      `/api/dashboard/incident-trend?process=${q(process)}${rangeQs(range)}`,
+    ),
   openIncidents: (process: string) =>
     getJson<number>(`/api/dashboard/open-incidents?process=${q(process)}`),
   elementDurations: (process: string, range: TimeRange | null) =>

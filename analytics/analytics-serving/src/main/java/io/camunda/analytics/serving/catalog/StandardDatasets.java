@@ -41,12 +41,21 @@ import java.util.Map;
  * datasets are only ever <em>appended</em>. Declarations start from the beginning of history (an
  * empty activation vector); the control plane supplies per-partition activation watermarks when
  * datasets are provisioned at runtime.
+ *
+ * <p><b>Catalog revision (breaking, supersedes the append-only rule once).</b> The catalog grew
+ * three clusters of cubes differing only by meter on an identical grain — from before per-meter
+ * filters and the matched-form ratio existed. This revision consolidates them (process-duration
+ * absorbs process-duration-spread; process-quality absorbs process-sla, process-no-incident and
+ * process-stp; elements absorbs element-throughput, element-duration and element-rework; incidents
+ * absorbs incident-open; tenant-overview absorbs process-distinct and top-processes), which
+ * re-mints every {@code cubeId}/{@code aggId}. Existing stores are incompatible and must be wiped
+ * before deploying this revision; from here on the append-only rule applies again.
  */
 public final class StandardDatasets {
 
   private static final long ONE_MINUTE_MS = 60_000L;
   private static final long ONE_HOUR_MS = 3_600_000L;
-  // The completion-time SLA the process-sla cohort measures against (durationMs <= threshold).
+  // The completion-time SLA the sla_compliance cohort measures against (durationMs <= threshold).
   // Read from the {@code slaMs} property so the deployment picks it; the 9s default matches the
   // demo driver, whose deliberately-slow instances run 10-16s to breach it (a 5-minute default
   // would never be exceeded, showing a misleading 100%-met cohort).
@@ -137,7 +146,9 @@ public final class StandardDatasets {
         // bundle: one COUNT per transition, plus the duration family (count/avg/min/max and the
         // fixed completion-time bands) over the ended events. The duration meters skip the
         // duration-less ACTIVATED facts via the catalog's implicit NOT_NULL(measure) filter on
-        // numeric-measure kinds — no explicit declaration needed.
+        // numeric-measure kinds — no explicit declaration needed. The plain duration meter stays
+        // here (despite process-duration also carrying one) because the saved-report read composes
+        // completed counts and duration stats from the SAME rows in one query.
         DatasetDeclaration.builder("process-instances", FactType.PROCESS_INSTANCE)
             .dimension("bpmnProcessId", DimensionType.STRING)
             .meter(
@@ -160,108 +171,126 @@ public final class StandardDatasets {
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
             .build(),
-        // Completed-instance duration percentiles per process definition (mergeable sketch:
-        // tiered).
+        // Completed-instance duration distribution per process definition, consolidated onto one
+        // COMPLETED-filtered grain (absorbs the former process-duration-spread): the percentile
+        // sketch (default ranks p50/p75/p90/p99 — the dashboard's control chart and KPI tiles),
+        // the additive execution-time summary (count/avg/min/max) and the population stddev (the
+        // control-chart band). Percentiles are a mergeable sketch, so the cube is tiered.
         DatasetDeclaration.builder("process-duration", FactType.PROCESS_INSTANCE)
             .filterEquals("transition", Transition.COMPLETED.name())
             .dimension("bpmnProcessId", DimensionType.STRING)
-            .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
+            .meter(Meter.of("percentiles", MeterCatalog.PERCENTILE, "durationMs"))
+            .meter(Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs"))
+            .meter(Meter.of("stddev", MeterCatalog.STDDEV, "durationMs"))
             .window(ONE_MINUTE_MS)
             .window(ONE_HOUR_MS)
             .lateness(GRACE_MS)
             .build(),
-        // SLA-compliant share of completed instances per process definition (a ratio cohort).
-        DatasetDeclaration.builder("process-sla", FactType.PROCESS_INSTANCE)
-            .filterEquals("transition", Transition.COMPLETED.name())
+        // Outcome-quality ratios per process definition, consolidated onto one unfiltered grain
+        // (absorbs the former process-sla, process-no-incident and process-stp): each ratio scopes
+        // its own population via a per-meter filter, so one cube serves three denominators.
+        //  - sla_compliance: of COMPLETED instances, the share within the SLA (durationMs <=
+        //    threshold) — completions only, mirroring the original process-sla population.
+        //  - no_incident: of ENDED instances (transition != ACTIVATED — a faulted instance is
+        //    cancelled and terminates, so restricting to COMPLETED would drop exactly the ones
+        //    that had an incident and make the ratio a trivial 100%), the share that raised no
+        //    incident (hadIncident == 0).
+        //  - first_time_right: of ENDED instances, the matched-form conjunction "completed AND
+        //    within the SLA AND incident-free". hadIncident compares EQUALS "false": ended facts
+        //    ALWAYS carry the flag (the completion deriver reads it off the finalized row, whose
+        //    BooleanProperty defaults to false), so the absent-field-never-matches-EQUALS trap
+        //    does not apply here.
+        DatasetDeclaration.builder("process-quality", FactType.PROCESS_INSTANCE)
             .dimension("bpmnProcessId", DimensionType.STRING)
             .meter(
                 new Meter(
-                    "sla_compliance",
-                    MeterCatalog.RATIO,
-                    "durationMs",
-                    Map.of("op", "le", "threshold", Long.toString(SLA_THRESHOLD_MS))))
+                        "sla_compliance",
+                        MeterCatalog.RATIO,
+                        "durationMs",
+                        Map.of("op", "le", "threshold", Long.toString(SLA_THRESHOLD_MS)))
+                    .filtered(FilterPredicate.equals(Fact.TRANSITION, Transition.COMPLETED.name())))
+            .meter(
+                new Meter(
+                        "no_incident",
+                        MeterCatalog.RATIO,
+                        "hadIncident",
+                        Map.of("op", "eq", "threshold", "0"))
+                    .filtered(
+                        FilterPredicate.notEquals(Fact.TRANSITION, Transition.ACTIVATED.name())))
+            .meter(
+                Meter.of("first_time_right", MeterCatalog.RATIO)
+                    .filtered(
+                        FilterPredicate.notEquals(Fact.TRANSITION, Transition.ACTIVATED.name()))
+                    .matched(
+                        FilterPredicate.equals(Fact.TRANSITION, Transition.COMPLETED.name()),
+                        FilterPredicate.lessOrEqual("durationMs", Long.toString(SLA_THRESHOLD_MS)),
+                        FilterPredicate.equals("hadIncident", "false")))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
             .build(),
-        // Flow-node execution counts per (process, element).
-        DatasetDeclaration.builder("element-throughput", FactType.ELEMENT)
-            .filterEquals("transition", Transition.COMPLETED.name())
+        // Flow-node execution metrics per (process, element), consolidated onto one unfiltered
+        // grain (absorbs the former element-throughput, element-duration and element-rework):
+        // throughput and the duration family over completions, plus the rework pair over
+        // activations. Rework per element is derived on read as max(0, activations − instances) —
+        // exact while the HLL is exact (small counts; it stores hashes exactly up to its sketch
+        // threshold), an approximation at scale, and never negative by construction of the read.
+        // The duration meters' COMPLETED filter also keeps the duration-less ACTIVATED facts out
+        // of their slots.
+        DatasetDeclaration.builder("elements", FactType.ELEMENT)
             .dimension("bpmnProcessId", DimensionType.STRING)
             .dimension("elementId", DimensionType.STRING)
-            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .meter(
+                Meter.of("completed", MeterCatalog.COUNT)
+                    .filtered(FilterPredicate.equals(Fact.TRANSITION, Transition.COMPLETED.name())))
+            .meter(
+                Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs")
+                    .filtered(FilterPredicate.equals(Fact.TRANSITION, Transition.COMPLETED.name())))
+            .meter(
+                Meter.of("duration_p", MeterCatalog.PERCENTILE, "durationMs")
+                    .filtered(FilterPredicate.equals(Fact.TRANSITION, Transition.COMPLETED.name())))
+            .meter(
+                Meter.of("activations", MeterCatalog.COUNT)
+                    .filtered(FilterPredicate.equals(Fact.TRANSITION, Transition.ACTIVATED.name())))
+            .meter(
+                Meter.of("instances", MeterCatalog.DISTINCT, "processInstanceKey")
+                    .filtered(FilterPredicate.equals(Fact.TRANSITION, Transition.ACTIVATED.name())))
             .window(ONE_MINUTE_MS)
+            .window(ONE_HOUR_MS)
             .lateness(GRACE_MS)
             .build(),
-        // Incident counts per (process, element).
+        // Incident metrics per (process, element), consolidated (absorbs the former
+        // incident-open): raised counts CREATED facts only (the incident fact stream also carries
+        // RESOLVED facts — an unfiltered count would report raised + resolved), and the open
+        // gauge is the running sum of the ±1 incident delta (CREATED +1 / RESOLVED −1), so a sum
+        // over windows is the current open count.
         DatasetDeclaration.builder("incidents", FactType.INCIDENT)
             .dimension("bpmnProcessId", DimensionType.STRING)
             .dimension("elementId", DimensionType.STRING)
-            .meter(Meter.of("count", MeterCatalog.COUNT))
-            .window(ONE_MINUTE_MS)
-            .lateness(GRACE_MS)
-            .build(),
-        // --- appended for the dashboard read layer (stable ids: never reorder above) ---
-        // Distinct active process definitions per tenant (HLL, tiered hourly).
-        DatasetDeclaration.builder("process-distinct", FactType.PROCESS_INSTANCE)
-            .dimension("tenantId", DimensionType.STRING)
-            .meter(Meter.of("distinct", MeterCatalog.DISTINCT, "bpmnProcessId"))
-            .window(ONE_HOUR_MS)
-            .lateness(GRACE_MS)
-            .build(),
-        // Heaviest process definitions per tenant (frequent-items, tiered).
-        DatasetDeclaration.builder("top-processes", FactType.PROCESS_INSTANCE)
-            .dimension("tenantId", DimensionType.STRING)
-            .meter(Meter.of("top", MeterCatalog.TOP_K, "bpmnProcessId"))
-            .window(ONE_MINUTE_MS)
-            .window(ONE_HOUR_MS)
-            .lateness(GRACE_MS)
-            .build(),
-        // Completed flow-node duration summary per (process, element), composed from primitives
-        // rather than the deprecated execution_time_summary bundle: count/avg/min/max as an
-        // additive execution-time meter (pushdown), percentiles as their own sketch. The dataset
-        // filter already restricts to completions (whose duration is always present), so no
-        // per-meter NOT_NULL is needed here.
-        DatasetDeclaration.builder("element-duration", FactType.ELEMENT)
-            .filterEquals("transition", Transition.COMPLETED.name())
-            .dimension("bpmnProcessId", DimensionType.STRING)
-            .dimension("elementId", DimensionType.STRING)
-            .meter(Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs"))
-            .meter(Meter.of("duration_p", MeterCatalog.PERCENTILE, "durationMs"))
-            .window(ONE_MINUTE_MS)
-            .window(ONE_HOUR_MS)
-            .lateness(GRACE_MS)
-            .build(),
-        // Open-incident gauge per (process, element): running sum of the ±1 incident delta
-        // (CREATED +1 / RESOLVED −1), so a sum over windows is the current open count.
-        DatasetDeclaration.builder("incident-open", FactType.INCIDENT)
-            .dimension("bpmnProcessId", DimensionType.STRING)
-            .dimension("elementId", DimensionType.STRING)
+            .meter(
+                Meter.of("count", MeterCatalog.COUNT)
+                    .filtered(FilterPredicate.equals(Fact.TRANSITION, Transition.CREATED.name())))
             .meter(Meter.of("open", MeterCatalog.LEVEL, "delta"))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
             .build(),
-        // No-incident share of ENDED instances per process definition (a ratio cohort): the matched
-        // numerator is ended instances that raised no incident (hadIncident == 0). Ended means
-        // completed OR terminated (transition != ACTIVATED) — a faulted instance is cancelled and
-        // terminates, so restricting to COMPLETED would drop exactly the ones that had an incident
-        // and make the ratio a trivial 100%.
-        DatasetDeclaration.builder("process-no-incident", FactType.PROCESS_INSTANCE)
-            .filterNotEquals("transition", Transition.ACTIVATED.name())
-            .dimension("bpmnProcessId", DimensionType.STRING)
-            .meter(
-                new Meter(
-                    "no_incident",
-                    MeterCatalog.RATIO,
-                    "hadIncident",
-                    Map.of("op", "eq", "threshold", "0")))
-            .window(ONE_MINUTE_MS)
+        // Tenant-level rollups, consolidated onto one grain (absorbs the former process-distinct
+        // and top-processes): distinct active process definitions (HLL) and the heaviest
+        // definitions (frequent-items). Both are mergeable sketches read hourly (the distinct
+        // trend) or as range totals (the top-k ranking), so a single hourly tier serves both.
+        DatasetDeclaration.builder("tenant-overview", FactType.PROCESS_INSTANCE)
+            .dimension("tenantId", DimensionType.STRING)
+            .meter(Meter.of("distinct", MeterCatalog.DISTINCT, "bpmnProcessId"))
+            .meter(Meter.of("top", MeterCatalog.TOP_K, "bpmnProcessId"))
+            .window(ONE_HOUR_MS)
             .lateness(GRACE_MS)
             .build(),
         // Completed-dispute counts and duration percentiles grouped by the process-set 'type'
         // variable (the bank-dispute classification) — the standard exerciser of the name-targeted
-        // variable enrichment (grouping AND filtering by var.* fields) on the realistic load. The
-        // filter must reference a ROOT-scoped variable: an output-mapping target lives (and dies)
-        // in its element's flow scope, so a subprocess-mapped variable (e.g. this process's
+        // variable enrichment (grouping AND filtering by var.* fields) on the realistic load.
+        // Load-run-specific: it only fills when the realistic-load driver's bank-dispute processes
+        // run, and it stays in the standard catalog to keep that driver's variable path covered.
+        // The filter must reference a ROOT-scoped variable: an output-mapping target lives (and
+        // dies) in its element's flow scope, so a subprocess-mapped variable (e.g. this process's
         // isRefund) is never visible from the process-instance completion fact and an EQUALS
         // filter on it would silently reject every fact. customerId comes from the start payload,
         // which always lands at the root scope.
@@ -288,36 +317,6 @@ public final class StandardDatasets {
             .lateness(ONE_MINUTE_MS)
             .snapshots(ONE_MINUTE_MS)
             .build(),
-        // Completion-duration spread per definition: the average with its population standard
-        // deviation (the control-chart band) plus the exact extrema — execution_time carries
-        // count/avg/min/max in one meter, stddev adds the deviation. APPENDED.
-        DatasetDeclaration.builder("process-duration-spread", FactType.PROCESS_INSTANCE)
-            .filterEquals("transition", Transition.COMPLETED.name())
-            .dimension("bpmnProcessId", DimensionType.STRING)
-            .meter(Meter.of("duration", MeterCatalog.EXECUTION_TIME, "durationMs"))
-            .meter(Meter.of("stddev", MeterCatalog.STDDEV, "durationMs"))
-            .window(ONE_MINUTE_MS)
-            .lateness(GRACE_MS)
-            .build(),
-        // First-time-right / straight-through-processing share per definition: ONE matched-form
-        // ratio over ended instances (transition != ACTIVATED — a faulted instance terminates, so
-        // completions alone would flatter the rate). The numerator is the conjunction "completed
-        // AND within the SLA AND incident-free". hadIncident compares EQUALS "false": ended facts
-        // ALWAYS carry the flag (the completion deriver reads it off the finalized row, whose
-        // BooleanProperty defaults to false), so the absent-field-never-matches-EQUALS trap does
-        // not apply here. APPENDED: declaration order fixes cube ids.
-        DatasetDeclaration.builder("process-stp", FactType.PROCESS_INSTANCE)
-            .filterNotEquals("transition", Transition.ACTIVATED.name())
-            .dimension("bpmnProcessId", DimensionType.STRING)
-            .meter(
-                Meter.of("first_time_right", MeterCatalog.RATIO)
-                    .matched(
-                        FilterPredicate.equals(Fact.TRANSITION, Transition.COMPLETED.name()),
-                        FilterPredicate.lessOrEqual("durationMs", Long.toString(SLA_THRESHOLD_MS)),
-                        FilterPredicate.equals("hadIncident", "false")))
-            .window(ONE_MINUTE_MS)
-            .lateness(GRACE_MS)
-            .build(),
         // Completed-instance count + duration p95 segmented by the 'region' process variable (set
         // by the demo's region-exec-time-demo process) — the default "duration by segment" report
         // source. NOT_NULL(var.region) keeps region-less processes out of the cube. APPENDED.
@@ -328,20 +327,6 @@ public final class StandardDatasets {
             .dimension("var.region", DimensionType.STRING)
             .meter(Meter.of("count", MeterCatalog.COUNT))
             .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
-            .window(ONE_MINUTE_MS)
-            .lateness(GRACE_MS)
-            .build(),
-        // Rework hotspots per (process, element), with zero new state: activations counted exactly,
-        // distinct instances estimated (HLL over processInstanceKey). Rework per element is derived
-        // on read as max(0, activations − instances) — exact while the HLL is exact (small counts;
-        // it stores hashes exactly up to its sketch threshold), an approximation at scale, and
-        // never negative by construction of the read. APPENDED.
-        DatasetDeclaration.builder("element-rework", FactType.ELEMENT)
-            .filterEquals("transition", Transition.ACTIVATED.name())
-            .dimension("bpmnProcessId", DimensionType.STRING)
-            .dimension("elementId", DimensionType.STRING)
-            .meter(Meter.of("activations", MeterCatalog.COUNT))
-            .meter(Meter.of("instances", MeterCatalog.DISTINCT, "processInstanceKey"))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
             .build());

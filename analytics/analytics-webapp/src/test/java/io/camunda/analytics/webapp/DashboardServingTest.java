@@ -28,6 +28,8 @@ import io.camunda.analytics.webapp.dashboard.DistinctPoint;
 import io.camunda.analytics.webapp.dashboard.DurationBucketPoint;
 import io.camunda.analytics.webapp.dashboard.DurationPercentilePoint;
 import io.camunda.analytics.webapp.dashboard.DurationSpreadPoint;
+import io.camunda.analytics.webapp.dashboard.IncidentFlowNode;
+import io.camunda.analytics.webapp.dashboard.IncidentTrendPoint;
 import io.camunda.analytics.webapp.dashboard.LifecycleSeriesPoint;
 import io.camunda.analytics.webapp.dashboard.OpenInstanceRow;
 import io.camunda.analytics.webapp.dashboard.RatioPoint;
@@ -72,7 +74,7 @@ final class DashboardServingTest {
     ServingTestSupport.seed(
         fixture,
         "process-duration",
-        "p95",
+        "percentiles",
         completed(100_000L, 200_000L, 300_000L, 400_000L),
         PROCESS);
 
@@ -93,7 +95,7 @@ final class DashboardServingTest {
     final long window =
         ServingTestSupport.seed(
             fixture,
-            "process-sla",
+            "process-quality",
             "sla_compliance",
             completed(4_000L, 6_000L, 9_000L, 12_000L),
             PROCESS);
@@ -117,7 +119,8 @@ final class DashboardServingTest {
   @Test
   void shouldReturnUnmodeledRatioAsEmpty() {
     // given a seeded SLA cube but a meter name no declared dataset owns
-    ServingTestSupport.seed(fixture, "process-sla", "sla_compliance", completed(100_000L), PROCESS);
+    ServingTestSupport.seed(
+        fixture, "process-quality", "sla_compliance", completed(100_000L), PROCESS);
 
     // when / then — no dataset declares this meter, so it reads empty
     assertThat(repository.ratios(PROCESS, "unmodeled_ratio", null, null)).isEmpty();
@@ -131,7 +134,7 @@ final class DashboardServingTest {
       facts.add(Fact.builder(FactType.PROCESS_INSTANCE).field("bpmnProcessId", process).build());
     }
     final long window =
-        ServingTestSupport.seed(fixture, "process-distinct", "distinct", facts, TENANT);
+        ServingTestSupport.seed(fixture, "tenant-overview", "distinct", facts, TENANT);
 
     // when the distinct series is read
     final List<DistinctPoint> distinct = repository.distinct(TENANT, null, null);
@@ -164,11 +167,7 @@ final class DashboardServingTest {
         .upsertSnapshotRow(active, key, 3 * minute, level(active, 5L), new WriteVersion(1, 2));
     // and one window of completions (100s/200s/300s) in the spread cube
     ServingTestSupport.seed(
-        fixture,
-        "process-duration-spread",
-        "stddev",
-        completed(100_000L, 200_000L, 300_000L),
-        PROCESS);
+        fixture, "process-duration", "stddev", completed(100_000L, 200_000L, 300_000L), PROCESS);
 
     // when both widgets read
     final List<ActiveInstancesPoint> series = repository.activeSeries(PROCESS, 0L, 4 * minute);
@@ -241,7 +240,7 @@ final class DashboardServingTest {
     facts.add(ended(Transition.COMPLETED, 5_000L, true));
     facts.add(ended(Transition.TERMINATED, 3_000L, false));
     final long window =
-        ServingTestSupport.seed(fixture, "process-stp", "first_time_right", facts, PROCESS);
+        ServingTestSupport.seed(fixture, "process-quality", "first_time_right", facts, PROCESS);
 
     // when the ratio is read through the shared meter-name path (no dedicated endpoint needed)
     final List<RatioPoint> ratios = repository.ratios(PROCESS, "first_time_right", null, null);
@@ -262,11 +261,11 @@ final class DashboardServingTest {
   void shouldEstimateReworkFromActivationsVersusDistinctInstances() {
     // given a flow node activated twice by ONE instance (a loop) and once by another
     final List<Fact> looped = List.of(activation(100L), activation(100L), activation(200L));
-    ServingTestSupport.seed(fixture, "element-rework", "activations", looped, PROCESS, "Task_A");
+    ServingTestSupport.seed(fixture, "elements", "activations", looped, PROCESS, "Task_A");
     // and a flow node with one activation per instance (no rework)
     ServingTestSupport.seed(
         fixture,
-        "element-rework",
+        "elements",
         "activations",
         List.of(activation(100L), activation(200L)),
         PROCESS,
@@ -285,6 +284,48 @@ final class DashboardServingTest {
               assertThat(hotspot.instances()).isEqualTo(2L);
               assertThat(hotspot.rework()).isEqualTo(1L);
             });
+  }
+
+  @Test
+  void shouldServeRaisedAndOpenIncidentsFromTheConsolidatedCube() {
+    // given three incidents raised on a flow node, two of them resolved (the fact stream carries
+    // CREATED +1 and RESOLVED −1 facts through the same consolidated cube)
+    final List<Fact> facts =
+        List.of(
+            incident(Transition.CREATED, 1L),
+            incident(Transition.CREATED, 1L),
+            incident(Transition.CREATED, 1L),
+            incident(Transition.RESOLVED, -1L),
+            incident(Transition.RESOLVED, -1L));
+    final long window =
+        ServingTestSupport.seed(fixture, "incidents", "count", facts, PROCESS, "Task_Validate");
+
+    // when the incident widgets read
+    final List<IncidentFlowNode> incidents = repository.incidents(PROCESS, null, null);
+    final long openNow = repository.openIncidents(PROCESS);
+    final List<IncidentTrendPoint> trend = repository.incidentTrend(PROCESS, null, null);
+
+    // then raised counts the CREATED facts only (not the resolutions) and open is the net level
+    assertThat(incidents)
+        .singleElement()
+        .satisfies(
+            node -> {
+              assertThat(node.elementId()).isEqualTo("Task_Validate");
+              assertThat(node.raised()).isEqualTo(3L);
+              assertThat(node.open()).isEqualTo(1L);
+            });
+    assertThat(openNow).isEqualTo(1L);
+    assertThat(trend)
+        .singleElement()
+        .satisfies(
+            point -> {
+              assertThat(point.windowStart()).isEqualTo(window);
+              assertThat(point.raised()).isEqualTo(3L);
+            });
+  }
+
+  private static Fact incident(final Transition transition, final long delta) {
+    return Fact.builder(FactType.INCIDENT).transition(transition).field("delta", delta).build();
   }
 
   @Test

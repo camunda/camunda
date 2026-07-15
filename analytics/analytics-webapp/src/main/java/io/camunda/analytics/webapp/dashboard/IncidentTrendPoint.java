@@ -8,9 +8,8 @@
 package io.camunda.analytics.webapp.dashboard;
 
 /**
- * One window of the completion-duration spread: the average with its population standard deviation
- * (the control-chart band) and the exact extrema of the durations completed in the window (the
- * {@code process-duration} cube's execution-time + stddev primitives).
+ * One window of the incident trend: how many incidents were {@code raised} (CREATED facts) in it,
+ * summed across the process's flow nodes. The quality page renders this beside the per-node
+ * incidents table to show whether incidents are a burst or a steady leak.
  */
-public record DurationSpreadPoint(
-    long windowStart, double avgMs, long minMs, long maxMs, double stddevMs) {}
+public record IncidentTrendPoint(long windowStart, long raised) {}
