@@ -55,7 +55,7 @@ public final class StandardDatasets {
 
   private static final long ONE_MINUTE_MS = 60_000L;
   private static final long ONE_HOUR_MS = 3_600_000L;
-  // The completion-time SLA the process-sla cohort measures against (durationMs <= threshold).
+  // The completion-time SLA the sla_compliance cohort measures against (durationMs <= threshold).
   // Read from the {@code slaMs} property so the deployment picks it; the 9s default matches the
   // demo driver, whose deliberately-slow instances run 10-16s to breach it (a 5-minute default
   // would never be exceeded, showing a misleading 100%-met cohort).
@@ -289,9 +289,8 @@ public final class StandardDatasets {
         // variable enrichment (grouping AND filtering by var.* fields) on the realistic load.
         // Load-run-specific: it only fills when the realistic-load driver's bank-dispute processes
         // run, and it stays in the standard catalog to keep that driver's variable path covered.
-        // The
-        // filter must reference a ROOT-scoped variable: an output-mapping target lives (and dies)
-        // in its element's flow scope, so a subprocess-mapped variable (e.g. this process's
+        // The filter must reference a ROOT-scoped variable: an output-mapping target lives (and
+        // dies) in its element's flow scope, so a subprocess-mapped variable (e.g. this process's
         // isRefund) is never visible from the process-instance completion fact and an EQUALS
         // filter on it would silently reject every fact. customerId comes from the start payload,
         // which always lands at the root scope.
