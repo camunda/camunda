@@ -482,6 +482,9 @@ components:
             plus the maximum value length, 8191 characters).
           type: object
           additionalProperties: true
+      x-properties-added-in-version:
+        - propertyName: "metadata"
+          addedInVersion: "8.10"
     UpdateClusterVariableRequest:
       type: object
       required:
@@ -500,6 +503,9 @@ components:
             plus the maximum value length, 8191 characters).
           type: object
           additionalProperties: true
+      x-properties-added-in-version:
+        - propertyName: "metadata"
+          addedInVersion: "8.10"
     ClusterVariableResult:
       type: object
       required:
@@ -532,6 +538,7 @@ components:
         - name
         - scope
         - tenantId
+        - metadata
       properties:
         name:
           description: The name of the cluster variable. Unique within its scope (global or tenant-specific).
@@ -549,6 +556,9 @@ components:
             strings or numbers.
           type: object
           additionalProperties: true
+      x-properties-added-in-version:
+        - propertyName: "metadata"
+          addedInVersion: "8.10"
     ClusterVariableSearchQueryRequest:
       description: Cluster variable search query request.
       additionalProperties: false
