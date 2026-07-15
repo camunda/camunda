@@ -754,7 +754,7 @@ public final class DbJobState implements JobState, MutableJobState {
   private void makeJobNotActivatable(
       final DirectBuffer type, final String tenantId, final int priority) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
-    EnsureUtil.ensureNotNullOrEmpty("tenantid", tenantId);
+    EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
     jobTypeKey.wrapBuffer(type);
     tenantIdKey.wrapString(tenantId);
