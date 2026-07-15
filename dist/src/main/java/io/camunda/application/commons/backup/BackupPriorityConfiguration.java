@@ -10,9 +10,9 @@ package io.camunda.application.commons.backup;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
-import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
@@ -59,6 +59,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -69,20 +70,21 @@ import org.springframework.context.annotation.Configuration;
 public class BackupPriorityConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupPriorityConfiguration.class);
-  private final SecondaryStorage secondaryStorage;
-
-  public BackupPriorityConfiguration(final Camunda configuration) {
-    secondaryStorage = configuration.getData().getSecondaryStorage();
-  }
 
   @Bean
-  public BackupPriorities backupPriorities() {
-    final boolean isElasticsearch = secondaryStorage.getType().isElasticSearch();
-    final var indexPrefix =
-        isElasticsearch
-            ? secondaryStorage.getElasticsearch().getIndexPrefix()
-            : secondaryStorage.getOpensearch().getIndexPrefix();
-    return getBackupPriorities(indexPrefix, isElasticsearch);
+  public Map<String, BackupPriorities> backupPrioritiesByTenant(
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return physicalTenantResolver.mapValues(
+        physicalTenantConfig -> {
+          final SecondaryStorage secondaryStorage =
+              physicalTenantConfig.getData().getSecondaryStorage();
+          final boolean isElasticsearch = secondaryStorage.getType().isElasticSearch();
+          final var indexPrefix =
+              isElasticsearch
+                  ? secondaryStorage.getElasticsearch().getIndexPrefix()
+                  : secondaryStorage.getOpensearch().getIndexPrefix();
+          return getBackupPriorities(indexPrefix, isElasticsearch);
+        });
   }
 
   private BackupPriorities getBackupPriorities(

@@ -8,41 +8,52 @@
 package io.camunda.application.commons.backup;
 
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
-import java.util.concurrent.Executor;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-@ConditionalOnSecondaryStorageType(elasticsearch)
+@ConditionalOnSecondaryStorageType({elasticsearch, opensearch})
 @Configuration
 public class ElasticsearchBackupRepository {
 
-  private final ElasticsearchClient elasticsearchClient;
-  private final BackupRepositoryProps backupRepositoryProps;
-  private final Executor threadPoolTaskExecutor;
+  private final SearchClients searchClients;
+  private final Map<String, BackupRepositoryProps> backupRepositoryPropsByPhysicalTenant;
+  private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
 
   public ElasticsearchBackupRepository(
-      final ElasticsearchClient elasticsearchClient,
-      final BackupRepositoryProps backupRepositoryProps,
+      final SearchClients searchClients,
+      @Qualifier("backupRepositoryPropsByTenant")
+          final Map<String, BackupRepositoryProps> backupRepositoryPropsByPhysicalTenant,
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
-    this.elasticsearchClient = elasticsearchClient;
-    this.backupRepositoryProps = backupRepositoryProps;
+    this.searchClients = searchClients;
+    this.backupRepositoryPropsByPhysicalTenant = backupRepositoryPropsByPhysicalTenant;
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
   }
 
-  @Bean
-  public BackupRepository backupRepository() {
-    return new io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository(
-        elasticsearchClient,
-        backupRepositoryProps,
-        new WebappsSnapshotNameProvider(),
-        threadPoolTaskExecutor);
+  @Bean("elasticsearchBackupRepositoriesByTenant")
+  public Map<String, BackupRepository> elasticsearchBackupRepositoriesByTenant() {
+    final var byPhysicalTenant = new LinkedHashMap<String, BackupRepository>();
+    searchClients
+        .esClients()
+        .forEach(
+            (physicalTenantId, client) ->
+                byPhysicalTenant.put(
+                    physicalTenantId,
+                    new io.camunda.webapps.backup.repository.elasticsearch
+                        .ElasticsearchBackupRepository(
+                        client,
+                        backupRepositoryPropsByPhysicalTenant.get(physicalTenantId),
+                        BackupConfig.snapshotNameProvider(physicalTenantId),
+                        threadPoolTaskExecutor)));
+    return Map.copyOf(byPhysicalTenant);
   }
 }

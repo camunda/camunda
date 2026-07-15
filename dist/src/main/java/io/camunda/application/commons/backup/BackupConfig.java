@@ -10,15 +10,21 @@ package io.camunda.application.commons.backup;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
-import io.camunda.configuration.Camunda;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.zeebe.util.VersionUtil;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -30,19 +36,36 @@ public class BackupConfig {
   private static final Logger LOG = LoggerFactory.getLogger(BackupConfig.class);
 
   @Bean
-  public BackupRepositoryProps backupRepositoryProps(final Camunda camunda) {
-    final SecondaryStorage secondaryStorage = camunda.getData().getSecondaryStorage();
-    final DocumentBasedSecondaryStorageBackup backupConfig = backupConfig(secondaryStorage);
-    final String repositoryName = backupConfig.getRepositoryName();
-    if (repositoryName == null || repositoryName.isBlank()) {
-      LOG.warn(
-          "No backup repository configured for {} secondary storage. Backup endpoints are active"
-              + " but will reject all requests until a repository is configured via"
-              + " 'camunda.data.secondary-storage.{}.backup.repository-name'.",
-          secondaryStorage.getType(),
-          secondaryStorage.getType());
-    }
-    return props(VersionUtil.getVersion(), backupConfig);
+  public Map<String, BackupRepositoryProps> backupRepositoryPropsByTenant(
+      final PhysicalTenantResolver physicalTenantResolver) {
+    return physicalTenantResolver.mapValues(
+        physicalTenantConfig -> {
+          final SecondaryStorage secondaryStorage =
+              physicalTenantConfig.getData().getSecondaryStorage();
+          final DocumentBasedSecondaryStorageBackup backupConfig = backupConfig(secondaryStorage);
+          final String repositoryName = backupConfig.getRepositoryName();
+          if (repositoryName == null || repositoryName.isBlank()) {
+            LOG.warn(
+                "No backup repository configured for {} secondary storage. Backup endpoints are"
+                    + " active but will reject all requests until a repository is configured via"
+                    + " 'camunda.data.secondary-storage.{}.backup.repository-name'.",
+                secondaryStorage.getType(),
+                secondaryStorage.getType());
+          }
+          return props(VersionUtil.getVersion(), backupConfig);
+        });
+  }
+
+  @Bean("backupRepositoriesByTenant")
+  public Map<String, BackupRepository> backupRepositoriesByTenant(
+      @Qualifier("elasticsearchBackupRepositoriesByTenant")
+          final Map<String, BackupRepository> elasticsearchBackupRepositoriesByTenant,
+      @Qualifier("opensearchBackupRepositoriesByTenant")
+          final Map<String, BackupRepository> opensearchBackupRepositoriesByTenant) {
+    final var byPhysicalTenant = new LinkedHashMap<String, BackupRepository>();
+    byPhysicalTenant.putAll(elasticsearchBackupRepositoriesByTenant);
+    byPhysicalTenant.putAll(opensearchBackupRepositoriesByTenant);
+    return Map.copyOf(byPhysicalTenant);
   }
 
   @Bean("backupThreadPoolExecutor")
@@ -56,6 +79,12 @@ public class BackupConfig {
     executor.setQueueCapacity(4096);
     executor.initialize();
     return executor;
+  }
+
+  public static WebappsSnapshotNameProvider snapshotNameProvider(final String physicalTenantId) {
+    return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
+        ? new WebappsSnapshotNameProvider()
+        : new WebappsSnapshotNameProvider(physicalTenantId);
   }
 
   public static BackupRepositoryProps props(

@@ -15,9 +15,14 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupServiceImpl;
+import io.camunda.webapps.backup.BackupWiring;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,39 +35,53 @@ import org.springframework.stereotype.Component;
 public class HistoryBackupComponent {
 
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
-  private final BackupPriorities backupPriorities;
-  private final BackupRepositoryProps backupRepositoryProps;
-  private final BackupRepository backupRepository;
-  private final SearchEngineConfiguration searchEngineConfiguration;
+  private final Map<String, BackupWiring> backupWiringByPhysicalTenant;
+  private final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant;
+  private final Map<String, IndexDescriptors> indexDescriptorsByPhysicalTenant;
 
   public HistoryBackupComponent(
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor,
-      final BackupPriorities backupPriorities,
-      final BackupRepositoryProps backupRepositoryProps,
-      final BackupRepository backupRepository,
-      final SearchEngineConfiguration searchEngineConfiguration) {
+      @Qualifier("backupPrioritiesByTenant")
+          final Map<String, BackupPriorities> backupPrioritiesByPhysicalTenant,
+      @Qualifier("backupRepositoryPropsByTenant")
+          final Map<String, BackupRepositoryProps> backupRepositoryPropsByPhysicalTenant,
+      @Qualifier("backupRepositoriesByTenant")
+          final Map<String, BackupRepository> backupRepositoriesByPhysicalTenant,
+      @Qualifier("searchEngineConfigurationsByTenant")
+          final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant,
+      @Qualifier("physicalTenantScopedIndexDescriptors")
+          final Map<String, IndexDescriptors> indexDescriptorsByPhysicalTenant) {
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
-    this.backupPriorities = backupPriorities;
-    this.backupRepositoryProps = backupRepositoryProps;
-    this.backupRepository = backupRepository;
-    this.searchEngineConfiguration = searchEngineConfiguration;
+    backupWiringByPhysicalTenant =
+        backupRepositoryPropsByPhysicalTenant.keySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    tenantId ->
+                        new BackupWiring(
+                            backupPrioritiesByPhysicalTenant.get(tenantId),
+                            backupRepositoryPropsByPhysicalTenant.get(tenantId),
+                            backupRepositoriesByPhysicalTenant.get(tenantId))));
+    this.searchEngineConfigurationsByTenant = searchEngineConfigurationsByTenant;
+    this.indexDescriptorsByPhysicalTenant = indexDescriptorsByPhysicalTenant;
   }
 
   @Bean
-  public BackupService backupService() {
-
-    final var indexDescriptors =
-        new IndexDescriptors(
-            searchEngineConfiguration.connect().getIndexPrefix(),
-            searchEngineConfiguration.connect().getTypeEnum().isElasticSearch());
-
-    return new BackupServiceImpl(
-        threadPoolTaskExecutor,
-        backupPriorities,
-        backupRepositoryProps,
-        backupRepository,
-        searchEngineConfiguration,
-        indexDescriptors.indices(),
-        indexDescriptors.templates());
+  public Map<String, BackupService> backupServicesByTenant() {
+    final var byPhysicalTenant = new LinkedHashMap<String, BackupService>();
+    searchEngineConfigurationsByTenant.forEach(
+        (physicalTenantId, searchEngineConfiguration) -> {
+          final var indexDescriptors = indexDescriptorsByPhysicalTenant.get(physicalTenantId);
+          final var wiring = backupWiringByPhysicalTenant.get(physicalTenantId);
+          byPhysicalTenant.put(
+              physicalTenantId,
+              new BackupServiceImpl(
+                  threadPoolTaskExecutor,
+                  wiring,
+                  searchEngineConfiguration,
+                  indexDescriptors.indices(),
+                  indexDescriptors.templates()));
+        });
+    return Map.copyOf(byPhysicalTenant);
   }
 }

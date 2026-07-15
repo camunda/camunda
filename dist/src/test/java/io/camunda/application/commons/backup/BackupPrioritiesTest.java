@@ -14,7 +14,9 @@ import static org.mockito.Mockito.mock;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import java.util.HashSet;
 import java.util.List;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
+import org.springframework.mock.env.MockEnvironment;
 
 class BackupPrioritiesTest {
 
@@ -71,8 +74,12 @@ class BackupPrioritiesTest {
 
   @Test
   public void testBackupPriorities() {
-    final var configuration = new BackupPriorityConfiguration(new Camunda());
-    final var priorities = configuration.backupPriorities();
+    final var camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    final var priorities =
+        new BackupPriorityConfiguration()
+            .backupPrioritiesByTenant(PhysicalTenantResolver.of(new MockEnvironment(), camunda))
+            .get("default");
 
     final Set<String> allPriorities =
         priorities.allPriorities().map(obj -> obj.getClass().getName()).collect(Collectors.toSet());
@@ -91,8 +98,12 @@ class BackupPrioritiesTest {
 
   @Test
   public void testBackupPrioritiesIndicesSplitBySnapshot() {
-    final var configuration = new BackupPriorityConfiguration(new Camunda());
-    final var priorities = configuration.backupPriorities();
+    final var camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    final var priorities =
+        new BackupPriorityConfiguration()
+            .backupPrioritiesByTenant(PhysicalTenantResolver.of(new MockEnvironment(), camunda))
+            .get("default");
 
     final var indices = priorities.indicesSplitBySnapshot().toList();
 

@@ -7,37 +7,48 @@
  */
 package io.camunda.application.commons.backup;
 
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.search.connect.tenant.SearchClients;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
-import org.opensearch.client.opensearch.OpenSearchClient;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@ConditionalOnSecondaryStorageType(opensearch)
+@ConditionalOnSecondaryStorageType({elasticsearch, opensearch})
 @Configuration
 public class OpensearchBackupRepository {
 
-  private final OpenSearchClient openSearchClient;
-  private final OpenSearchAsyncClient openSearchAsyncClient;
-  private final BackupRepositoryProps backupProps;
+  private final SearchClients searchClients;
+  private final Map<String, BackupRepositoryProps> backupRepositoryPropsByPhysicalTenant;
 
   public OpensearchBackupRepository(
-      final OpenSearchClient openSearchClient,
-      final OpenSearchAsyncClient openSearchAsyncClient,
-      final BackupRepositoryProps backupProps) {
-    this.openSearchClient = openSearchClient;
-    this.openSearchAsyncClient = openSearchAsyncClient;
-    this.backupProps = backupProps;
+      final SearchClients searchClients,
+      @Qualifier("backupRepositoryPropsByTenant")
+          final Map<String, BackupRepositoryProps> backupRepositoryPropsByPhysicalTenant) {
+    this.searchClients = searchClients;
+    this.backupRepositoryPropsByPhysicalTenant = backupRepositoryPropsByPhysicalTenant;
   }
 
-  @Bean
-  public BackupRepository backupRepository() {
-    return new io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository(
-        openSearchClient, openSearchAsyncClient, backupProps, new WebappsSnapshotNameProvider());
+  @Bean("opensearchBackupRepositoriesByTenant")
+  public Map<String, BackupRepository> opensearchBackupRepositoriesByTenant() {
+    final var byPhysicalTenant = new LinkedHashMap<String, BackupRepository>();
+    searchClients
+        .osClients()
+        .forEach(
+            (physicalTenantId, client) ->
+                byPhysicalTenant.put(
+                    physicalTenantId,
+                    new io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository(
+                        client,
+                        searchClients.osAsyncClients().get(physicalTenantId),
+                        backupRepositoryPropsByPhysicalTenant.get(physicalTenantId),
+                        BackupConfig.snapshotNameProvider(physicalTenantId))));
+    return Map.copyOf(byPhysicalTenant);
   }
 }
