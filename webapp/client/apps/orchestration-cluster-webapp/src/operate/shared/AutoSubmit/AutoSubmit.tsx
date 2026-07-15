@@ -12,14 +12,21 @@ import {useForm, useFormState} from 'react-final-form';
 // ponytail: trailing-only throttle, replaces lodash/throttle(fn, wait, {leading: false}) — lodash is not a dependency of this app
 function throttleTrailing(fn: () => void, wait: number) {
 	let timeoutId: ReturnType<typeof setTimeout> | undefined;
-	return () => {
+	function throttled() {
 		if (timeoutId === undefined) {
 			timeoutId = setTimeout(() => {
 				timeoutId = undefined;
 				fn();
 			}, wait);
 		}
+	}
+	throttled.cancel = () => {
+		if (timeoutId !== undefined) {
+			clearTimeout(timeoutId);
+			timeoutId = undefined;
+		}
 	};
+	return throttled;
 }
 
 type Props = {
@@ -42,9 +49,10 @@ const AutoSubmit: React.FC<Props> = ({fieldsToSkipTimeout = []}) => {
 
 	useEffect(() => {
 		if (isDirty && shouldSkipTimeout) {
-			throttledSubmit.current();
+			const throttled = throttledSubmit.current;
+			throttled();
 
-			return;
+			return () => throttled.cancel();
 		}
 
 		const timeoutId = isDirty ? setTimeout(form.submit, 750) : undefined;
