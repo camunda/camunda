@@ -36,12 +36,14 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -81,11 +83,8 @@ public final class ProcessInstanceFilterTransformer
       queries.add(processVariableQuery);
     }
 
-    if (filter.errorMessageOperations() != null && !filter.errorMessageOperations().isEmpty()) {
-      queries.add(
-          stringMatchPhraseInSingleHasChild(
-              ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION));
-    }
+    Optional.ofNullable(getErrorMessageQuery(filter.errorMessageOperations()))
+        .ifPresent(queries::add);
 
     queries.addAll(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()));
 
@@ -163,6 +162,54 @@ public final class ProcessInstanceFilterTransformer
       return term(INCIDENT, hasIncident);
     }
     return null;
+  }
+
+  // an incident's error message is stored either on the child activity document (element-level
+  // incidents) or directly on the process instance document itself (process-level incidents, e.g.
+  // a failed execution listener on the process start event), so both locations must be checked
+  private static SearchQuery getErrorMessageQuery(final List<Operation<String>> operations) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    }
+    return and(
+        operations.stream()
+            .map(ProcessInstanceFilterTransformer::errorMessageOperationQuery)
+            .toList());
+  }
+
+  private static SearchQuery errorMessageOperationQuery(final Operation<String> operation) {
+    // NOTE: negation must be applied *per level* alongside an explicit existence check,
+    // not to the OR'd result as a whole - otherwise "not equal to X" also matches process
+    // instances that never had an incident at all (no error message present anywhere).
+    return switch (operation.operator()) {
+      case EQUALS -> matchAnyLevel(operation.value());
+      case NOT_EQUALS -> and(existsAnyLevel(), not(matchAnyLevel(operation.value())));
+      case EXISTS -> existsAnyLevel();
+      case NOT_EXISTS -> not(existsAnyLevel());
+      case IN ->
+          or(
+              operation.values().stream()
+                  .map(ProcessInstanceFilterTransformer::matchAnyLevel)
+                  .toList());
+      case LIKE -> wildcardAnyLevel(Objects.requireNonNull(operation.value()).toLowerCase());
+      default ->
+          throw new IllegalStateException(
+              "Unsupported operator %s for errorMessage filter".formatted(operation.operator()));
+    };
+  }
+
+  private static SearchQuery existsAnyLevel() {
+    return or(hasChildQuery(ACTIVITIES_JOIN_RELATION, exists(ERROR_MSG)), exists(ERROR_MSG));
+  }
+
+  private static SearchQuery matchAnyLevel(final String value) {
+    final SearchQuery fieldQuery = matchPhrase(ERROR_MSG, value);
+    return or(hasChildQuery(ACTIVITIES_JOIN_RELATION, fieldQuery), fieldQuery);
+  }
+
+  private static SearchQuery wildcardAnyLevel(final String value) {
+    final SearchQuery fieldQuery = wildcardQuery(ERROR_MSG, value);
+    return or(hasChildQuery(ACTIVITIES_JOIN_RELATION, fieldQuery), fieldQuery);
   }
 
   private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {

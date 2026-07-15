@@ -50,6 +50,8 @@ public class ProcessInstanceForListViewEntity
 
   @BeforeVersion880 private boolean incident;
 
+  @BeforeVersion880 private String errorMessage;
+
   @BeforeVersion880 private String tenantId = DEFAULT_TENANT_IDENTIFIER;
 
   @BeforeVersion880
@@ -231,6 +233,17 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  // only set for incidents raised directly on the process instance (no element instance), not
+  // aggregated from child flow node incidents
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public ProcessInstanceForListViewEntity setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+    return this;
+  }
+
   @Override
   public String getTenantId() {
     return tenantId;
@@ -315,6 +328,7 @@ public class ProcessInstanceForListViewEntity
         parentFlowNodeInstanceKey,
         treePath,
         incident,
+        errorMessage,
         tenantId,
         joinRelation,
         position,
@@ -349,6 +363,7 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(parentProcessInstanceKey, that.parentProcessInstanceKey)
         && Objects.equals(parentFlowNodeInstanceKey, that.parentFlowNodeInstanceKey)
         && Objects.equals(treePath, that.treePath)
+        && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
         && Objects.equals(position, that.position)

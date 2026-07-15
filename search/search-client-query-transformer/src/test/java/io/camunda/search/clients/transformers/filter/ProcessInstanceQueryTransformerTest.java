@@ -384,39 +384,48 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
         FilterBuilders.processInstance(
             f -> f.errorMessageOperations(List.of(Operation.eq(expectedError))));
 
-    // when: transform the filter into a SearchQuery
+    // when
     final var searchRequest = transformQuery(filter);
 
-    // then: the overall query should be a SearchBoolQuery with two must clauses.
+    // then
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
     final SearchBoolQuery boolQuery = (SearchBoolQuery) queryVariant;
-
-    // Expect two must clauses: one for joinRelation and one for errorMessage.
     assertThat(boolQuery.must()).hasSize(2);
 
-    // First must clause: joinRelation term query.
     assertIsSearchTermQuery(
         boolQuery.must().get(0).queryOption(), "joinRelation", "processInstance");
 
+    // errorMessage must now match at either the child (activity) level
+    // or directly on the process instance (process-level incidents)
     assertThat(boolQuery.must().get(1).queryOption())
-        .isInstanceOf(SearchHasChildQuery.class)
-        .satisfies(
-            queryOption -> {
-              final SearchHasChildQuery hasChildQuery = (SearchHasChildQuery) queryOption;
-              assertThat(hasChildQuery.type()).isEqualTo("activity");
-              assertThat(hasChildQuery.query().queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            anyLevelQuery -> {
+              assertThat(anyLevelQuery.should()).hasSize(2);
+
+              // branch 1: has-child query against activity documents
+              assertThat(anyLevelQuery.should().get(0).queryOption())
                   .isInstanceOfSatisfying(
-                      SearchBoolQuery.class,
-                      innerBool -> {
-                        assertThat(innerBool.must()).hasSize(1);
-                        assertThat(innerBool.must().get(0).queryOption())
+                      SearchHasChildQuery.class,
+                      hasChildQuery -> {
+                        assertThat(hasChildQuery.type()).isEqualTo("activity");
+                        assertThat(hasChildQuery.query().queryOption())
                             .isInstanceOfSatisfying(
                                 SearchMatchPhraseQuery.class,
-                                searchMatchQuery -> {
-                                  assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
-                                  assertThat(searchMatchQuery.query()).isEqualTo(expectedError);
+                                m -> {
+                                  assertThat(m.field()).isEqualTo("errorMessage");
+                                  assertThat(m.query()).isEqualTo(expectedError);
                                 });
+                      });
+
+              // branch 2: direct match on the process instance document itself
+              assertThat(anyLevelQuery.should().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchMatchPhraseQuery.class,
+                      m -> {
+                        assertThat(m.field()).isEqualTo("errorMessage");
+                        assertThat(m.query()).isEqualTo(expectedError);
                       });
             });
   }
