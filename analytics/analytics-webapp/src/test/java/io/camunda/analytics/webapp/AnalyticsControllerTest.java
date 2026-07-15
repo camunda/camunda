@@ -146,7 +146,7 @@ final class AnalyticsControllerTest {
     final AnalyticsController.DatasetView created =
         controller.createDataset(
             new AnalyticsController.CreateDatasetRequest(
-                "active-instances",
+                "controller-active",
                 FactType.PROCESS_INSTANCE,
                 DatasetKind.AGGREGATED,
                 List.of(),
@@ -160,7 +160,7 @@ final class AnalyticsControllerTest {
                 null,
                 60_000L));
     assertThat(created.snapshotEveryMs()).isEqualTo(60_000L);
-    final CompiledDataset dataset = compiledByName("active-instances");
+    final CompiledDataset dataset = compiledByName("controller-active");
     final long fromMs = ServingTestSupport.window(60_000L) - 600_000L;
     seedSnapshot(dataset, fromMs, 5L, "order-process");
     seedSnapshot(dataset, fromMs + 180_000L, 8L, "order-process");
@@ -168,7 +168,7 @@ final class AnalyticsControllerTest {
     // when a 5-bucket snapshot series is read over (fromMs, fromMs + 5m]
     final List<AnalyticsController.SnapshotSeriesView> series =
         controller
-            .datasetSnapshots("active-instances", fromMs, fromMs + 300_000L, 60_000L)
+            .datasetSnapshots("controller-active", fromMs, fromMs + 300_000L, 60_000L)
             .getBody();
 
     // then one key's dense series carries the baseline forward and steps at the change point
@@ -202,7 +202,7 @@ final class AnalyticsControllerTest {
 
     controller.createDataset(
         new AnalyticsController.CreateDatasetRequest(
-            "active-instances",
+            "controller-active",
             FactType.PROCESS_INSTANCE,
             DatasetKind.AGGREGATED,
             List.of(),
@@ -214,11 +214,11 @@ final class AnalyticsControllerTest {
             null,
             null,
             60_000L));
-    assertThatThrownBy(() -> controller.datasetSnapshots("active-instances", 0L, 60_000L, 90_000L))
+    assertThatThrownBy(() -> controller.datasetSnapshots("controller-active", 0L, 60_000L, 90_000L))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("multiple of the cube's sample interval");
     assertThatThrownBy(
-            () -> controller.datasetSnapshots("active-instances", 60_000L, 60_000L, 60_000L))
+            () -> controller.datasetSnapshots("controller-active", 60_000L, 60_000L, 60_000L))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("empty snapshot range");
   }

@@ -34,6 +34,9 @@ final class ElementFacts {
         .field("bpmnProcessId", Utf8View.copyOf(value.getBpmnProcessIdBuffer()))
         .field("processDefinitionKey", value.getProcessDefinitionKey())
         .field("version", value.getVersion())
-        .field("tenantId", value.getTenantId());
+        .field("tenantId", value.getTenantId())
+        // The ±1 lifecycle delta (the incident facts' convention): a LEVEL meter summing it is
+        // the currently-active gauge, and its periodic snapshots are "active over time".
+        .field("delta", transition == Transition.ACTIVATED ? 1L : -1L);
   }
 }

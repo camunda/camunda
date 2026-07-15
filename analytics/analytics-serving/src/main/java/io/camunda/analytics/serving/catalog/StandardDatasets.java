@@ -274,6 +274,27 @@ public final class StandardDatasets {
             .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
+            .build(),
+        // Currently-active instances per definition (a level gauge: the facts' ±1 lifecycle
+        // delta), sampled as periodic snapshots — "how many were running at each moment", the
+        // canonical semi-additive series (ADR 0010). APPENDED: declaration order fixes cube ids.
+        DatasetDeclaration.builder("active-instances", FactType.PROCESS_INSTANCE)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("active", MeterCatalog.LEVEL, "delta"))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .snapshots(ONE_MINUTE_MS)
+            .build(),
+        // Completion-duration spread per definition: the standalone extrema and the population
+        // standard deviation beside the average the duration cube already serves. APPENDED.
+        DatasetDeclaration.builder("process-duration-spread", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("stddev", MeterCatalog.STDDEV, "durationMs"))
+            .meter(Meter.of("min", MeterCatalog.MIN, "durationMs"))
+            .meter(Meter.of("max", MeterCatalog.MAX, "durationMs"))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build());
   }
 
