@@ -236,16 +236,35 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   }
 
   /**
-   * Closes all pending registrations for this server, and removes them from the in-memory cache.
+   * Closes and removes the pending registrations for this server that belong to {@code
+   * physicalTenantId}, leaving any registrations for other physical tenants the server may still
+   * serve untouched.
    */
-  void onServerRemoved(final MemberId serverId) {
-    final var perHost = registrations.remove(serverId);
+  void onServerRemoved(final MemberId serverId, final String physicalTenantId) {
+    final var perHost = registrations.get(serverId);
     if (perHost == null) {
       return;
     }
 
-    LOGGER.trace("Closing all registrations for server {}", serverId);
-    perHost.values().forEach(ClientStreamRegistration::transitionToClosed);
+    final var toClose =
+        perHost.values().stream()
+            .filter(registration -> physicalTenantId.equals(registration.physicalTenantId()))
+            .toList();
+    if (toClose.isEmpty()) {
+      return;
+    }
+
+    LOGGER.trace(
+        "Closing registrations for server {} and physical tenant {}", serverId, physicalTenantId);
+    toClose.forEach(
+        registration -> {
+          registration.transitionToClosed();
+          perHost.remove(registration.streamId());
+        });
+
+    if (perHost.isEmpty()) {
+      registrations.remove(serverId);
+    }
   }
 
   @VisibleForTesting("Allows easier test set up and validation")

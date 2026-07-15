@@ -36,7 +36,8 @@ public final class JobStreamClientImpl implements JobStreamClient {
     streamService =
         new TransportFactory(schedulingService)
             .createRemoteStreamClient(
-                clusterCommunicationService, new JobClientStreamMetrics(meterRegistry));
+                clusterCommunicationService,
+                physicalTenantId -> new JobClientStreamMetrics(meterRegistry, physicalTenantId));
   }
 
   @Override
@@ -46,7 +47,7 @@ public final class JobStreamClientImpl implements JobStreamClient {
 
   @Override
   public void brokerRemoved(final BrokerMemberId memberId, final String physicalTenantId) {
-    streamService.onServerRemoved(memberId.memberId());
+    streamService.onServerRemoved(memberId.memberId(), physicalTenantId);
   }
 
   @Override

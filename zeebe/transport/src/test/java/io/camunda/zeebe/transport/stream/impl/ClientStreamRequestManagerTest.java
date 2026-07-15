@@ -688,6 +688,39 @@ final class ClientStreamRequestManagerTest {
     assertThat(tenantStream.isConnected(serverId)).isFalse();
   }
 
+  @Test
+  void shouldOnlyCloseRegistrationsForMatchingPhysicalTenantOnServerRemoved() {
+    // given - the same server serves both the default and a second physical tenant
+    final String otherPhysicalTenantId = "tenant1";
+    final var otherStream =
+        new AggregatedClientStream<>(
+            UUID.randomUUID(),
+            new LogicalId<>(new UnsafeBuffer(BufferUtil.wrapString("other")), new TestMetadata()),
+            otherPhysicalTenantId);
+    otherStream.open(requestManager, Collections.emptySet());
+
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.send(
+            eq(StreamTopics.ADD.topic(otherPhysicalTenantId)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+    requestManager.add(clientStream, serverId);
+    requestManager.add(otherStream, serverId);
+    assertThat(clientStream.isConnected(serverId)).isTrue();
+    assertThat(otherStream.isConnected(serverId)).isTrue();
+
+    // when - the server is removed only from the default physical tenant
+    requestManager.onServerRemoved(serverId, DEFAULT_PHYSICAL_TENANT_ID);
+
+    // then - only the default-tenant registration is torn down
+    assertThat(clientStream.isConnected(serverId)).isFalse();
+    assertThat(otherStream.isConnected(serverId)).isTrue();
+  }
+
   private static Stream<MessagingException> provideMessagingFailures() {
     return Stream.of(
         new NoSuchMemberException("failed"),

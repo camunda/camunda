@@ -71,7 +71,7 @@ public final class TransportFactory {
 
   public <M extends BufferWriter> ClientStreamService<M> createRemoteStreamClient(
       final ClusterCommunicationService clusterCommunicationService,
-      final ClientStreamMetrics metrics) {
-    return new ClientStreamServiceImpl<>(clusterCommunicationService, metrics);
+      final Function<String, ClientStreamMetrics> metricsFactory) {
+    return new ClientStreamServiceImpl<>(clusterCommunicationService, metricsFactory);
   }
 }

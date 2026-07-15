@@ -40,8 +40,17 @@ final class ClientStreamApiHandler {
     return responseFuture;
   }
 
-  byte[] handleRestartRequest(final MemberId sender, final byte[] ignored) {
-    clientStreamManager.onServerRestarted(MemberId.from(sender.id()));
+  /**
+   * The RESTART_STREAMS topic is physicalTenantId-scoped, so this only affects registrations for
+   * {@code physicalTenantId}; the sender may still serve other physical tenants unaffected by this
+   * restart. Reuses the remove+join pair rather than a blanket reset, since a restart is just a
+   * forced re-registration scoped to the one group that signaled it.
+   */
+  byte[] handleRestartRequest(
+      final MemberId sender, final String physicalTenantId, final byte[] ignored) {
+    final var serverId = MemberId.from(sender.id());
+    clientStreamManager.onServerRemoved(serverId, physicalTenantId);
+    clientStreamManager.onServerJoined(serverId, physicalTenantId);
     return ArrayUtil.EMPTY_BYTE_ARRAY;
   }
 
