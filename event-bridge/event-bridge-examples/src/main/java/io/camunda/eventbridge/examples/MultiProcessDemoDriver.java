@@ -48,6 +48,10 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code payment-process} — start → service task ({@code payment-authorize}) → exclusive
  *       gateway → (approved) service task ({@code payment-capture}) → end / (declined) → end.
  *   <li>{@code shipping-process} — start → service task ({@code shipping-dispatch}) → end.
+ *   <li>{@code claim-process} — the variant showcase: a triage gateway (auto / manual / fraud
+ *       routes, weighted by start variables incl. a claim {@code amount}), a genuine retry loop on
+ *       the manual assessment (feeds rework hotspots), and a fraud rejection end. See {@link
+ *       #claimProcess()}.
  *   <li>{@code region-exec-time-demo} — a laid-out, timer-based model deployed from the bundled
  *       {@code region-exec-time-demo.bpmn}; completes on its own via region-dependent timers.
  * </ul>
@@ -99,6 +103,7 @@ public final class MultiProcessDemoDriver {
     deploy(client, "order-process", orderProcess());
     deploy(client, "payment-process", paymentProcess());
     deploy(client, "shipping-process", shippingProcess());
+    deploy(client, "claim-process", claimProcess());
     // a laid-out, timer-based model deployed from its bundled resource (completes on its own)
     client.newDeployResourceCommand().addResourceFromClasspath(REGION_DEMO + ".bpmn").send().join();
     System.out.println("Deployed '" + REGION_DEMO + "'");
@@ -115,6 +120,9 @@ public final class MultiProcessDemoDriver {
             "payment-process",
             "shipping-process",
             "shipping-process",
+            "claim-process",
+            "claim-process",
+            "claim-process",
             REGION_DEMO,
             REGION_DEMO);
 
@@ -126,6 +134,49 @@ public final class MultiProcessDemoDriver {
     workers.add(worker(client, canceller, "order-collect"));
     workers.add(worker(client, canceller, "shipping-dispatch"));
     workers.add(worker(client, canceller, "payment-capture"));
+    workers.add(worker(client, canceller, "claim-register"));
+    workers.add(worker(client, canceller, "claim-assess-auto"));
+    workers.add(worker(client, canceller, "claim-payout"));
+    // the manual assessor drives the retry loop: resolved only once the planned passes are done
+    workers.add(
+        client
+            .newWorker()
+            .jobType("claim-assess-manual")
+            .handler(
+                (jobClient, job) -> {
+                  sleepWork();
+                  final var vars = job.getVariablesAsMap();
+                  final int pass = ((Number) vars.getOrDefault("pass", 0)).intValue() + 1;
+                  final int planned = ((Number) vars.getOrDefault("plannedPasses", 1)).intValue();
+                  jobClient
+                      .newCompleteCommand(job.getKey())
+                      .variables(Map.of("pass", pass, "resolved", pass >= planned))
+                      .send()
+                      .join();
+                })
+            .name("claim-assess-manual-worker")
+            .maxJobsActive(WORKER_THREADS)
+            .timeout(JOB_TIMEOUT)
+            .open());
+    // the fraud check rejects a share of its (already rare) route outright
+    workers.add(
+        client
+            .newWorker()
+            .jobType("claim-fraud-check")
+            .handler(
+                (jobClient, job) -> {
+                  sleepWork();
+                  final boolean fraudulent = ThreadLocalRandom.current().nextInt(100) < 40;
+                  jobClient
+                      .newCompleteCommand(job.getKey())
+                      .variables(Map.of("fraudulent", fraudulent))
+                      .send()
+                      .join();
+                })
+            .name("claim-fraud-check-worker")
+            .maxJobsActive(WORKER_THREADS)
+            .timeout(JOB_TIMEOUT)
+            .open());
     // the authorize task decides the gateway branch by setting the `approved` variable
     workers.add(
         client
@@ -185,6 +236,19 @@ public final class MultiProcessDemoDriver {
     final String region = REGIONS[rnd.nextInt(REGIONS.length)];
     final Map<String, Object> vars = new HashMap<>();
     vars.put("region", region);
+    if (process.equals("claim-process")) {
+      // Weighted triage route (the variant driver) and a claim amount: high claims skew toward
+      // manual review, so the amount is a correlation hook, not just a value-KPI input.
+      final long amount = 50L + rnd.nextLong(5_000L);
+      final int roll = rnd.nextInt(100);
+      final String route = roll < 5 ? "fraud" : roll < 30 || amount > 4_000L ? "manual" : "auto";
+      vars.put("route", route);
+      vars.put("amount", amount);
+      // How many assessment passes a manual claim needs (the loop count): mostly one, some two,
+      // few three — the source of the loop variants and the rework hotspot.
+      vars.put("plannedPasses", rnd.nextInt(100) < 60 ? 1 : rnd.nextInt(100) < 70 ? 2 : 3);
+      vars.put("pass", 0);
+    }
     if (process.equals(REGION_DEMO)) {
       // region-dependent timer durations so per-element execution times differ on the heatmap
       final double processSecs = 0.5 + rnd.nextInt(REGIONS.length + region.length() % 3) * 0.5;
@@ -254,6 +318,52 @@ public final class MultiProcessDemoDriver {
         .moveToLastGateway()
         .conditionExpression("=not(approved)")
         .endEvent("declined")
+        .done();
+  }
+
+  /**
+   * The variant-analysis showcase: one process whose instances genuinely walk different paths.
+   * Start variables pick a triage route (auto / manual / fraud-check); the manual route loops the
+   * assessment until resolved (a real retry loop — it also feeds the rework hotspots, since {@code
+   * assess-manual} activates more often than its instance count), and the fraud route can reject
+   * outright. Every branch except a rejection converges on the payout.
+   *
+   * <pre>
+   *   register → [triage] ─ auto ──→ assess-auto ────────────────→ [merge] → payout → paid
+   *                       ├ manual → assess-manual → [resolved?] ─ yes ──↑
+   *                       │              ↑____________ no ______________│
+   *                       └ fraud ──→ fraud-check → [fraud?] ─ no ──────↑
+   *                                                          └ yes → rejected
+   * </pre>
+   */
+  private static BpmnModelInstance claimProcess() {
+    return Bpmn.createExecutableProcess("claim-process")
+        .startEvent()
+        .serviceTask("register", t -> t.zeebeJobType("claim-register"))
+        .exclusiveGateway("triage")
+        .conditionExpression("=route = \"auto\"")
+        .serviceTask("assess-auto", t -> t.zeebeJobType("claim-assess-auto"))
+        .exclusiveGateway("merge")
+        .serviceTask("payout", t -> t.zeebeJobType("claim-payout"))
+        .endEvent("paid")
+        .moveToNode("triage")
+        .conditionExpression("=route = \"manual\"")
+        .serviceTask("assess-manual", t -> t.zeebeJobType("claim-assess-manual"))
+        .exclusiveGateway("resolved-check")
+        .conditionExpression("=resolved")
+        .connectTo("merge")
+        .moveToNode("resolved-check")
+        .conditionExpression("=not(resolved)")
+        .connectTo("assess-manual")
+        .moveToNode("triage")
+        .conditionExpression("=route = \"fraud\"")
+        .serviceTask("fraud-check", t -> t.zeebeJobType("claim-fraud-check"))
+        .exclusiveGateway("fraud-decision")
+        .conditionExpression("=fraudulent")
+        .endEvent("rejected")
+        .moveToNode("fraud-decision")
+        .conditionExpression("=not(fraudulent)")
+        .connectTo("merge")
         .done();
   }
 
