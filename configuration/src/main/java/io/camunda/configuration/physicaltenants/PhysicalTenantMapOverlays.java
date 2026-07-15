@@ -29,7 +29,8 @@ final class PhysicalTenantMapOverlays {
   static final List<MapOverlaySpec<?>> REGISTRY =
       List.of(
           PhysicalTenantDocumentConfigurations.SPEC,
-          PhysicalTenantAuthenticationProviderConfigurations.SPEC);
+          PhysicalTenantAuthenticationProviderConfigurations.SPEC,
+          PhysicalTenantSecretConfigurations.SPEC);
 
   private PhysicalTenantMapOverlays() {}
 
