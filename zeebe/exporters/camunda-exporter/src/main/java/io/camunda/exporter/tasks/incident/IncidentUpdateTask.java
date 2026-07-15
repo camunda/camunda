@@ -619,6 +619,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
         updatedIds.stream()
             .filter(incidentUpdatesById::containsKey)
             .filter(id -> shouldNotifyAboutUpdate(incidentUpdatesById.get(id).getFirst()))
+            .distinct()
             .map(incidentsById::get)
             .map(List::getFirst)
             .toList();
