@@ -28,6 +28,8 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperati
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
+import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -90,6 +92,40 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> cancelProcessInstance(physicalTenantId, mapped));
+  }
+
+  @CamundaPostMapping(path = "/{processInstanceKey}/suspension")
+  public CompletableFuture<ResponseEntity<Object>> suspendProcessInstance(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long processInstanceKey,
+      @RequestBody(required = false) final SuspendProcessInstanceRequest suspendRequest) {
+    return RequestMapper.toSuspendProcessInstance(processInstanceKey, suspendRequest)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            // TODO(#57518): dispatch to suspendProcessInstance(physicalTenantId, mapped) — see
+            // ProcessInstanceServices.suspendProcessInstance — once the zeebe/engine SUSPEND
+            // processor exists. Until then, a real dispatch would time out at 504 with no
+            // SUSPEND_PROCESS_INSTANCE check (that check lives in the not-yet-existing processor).
+            ignored ->
+                CompletableFuture.completedFuture(
+                    ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()));
+  }
+
+  @CamundaPostMapping(path = "/{processInstanceKey}/resumption")
+  public CompletableFuture<ResponseEntity<Object>> resumeProcessInstance(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long processInstanceKey,
+      @RequestBody(required = false) final ResumeProcessInstanceRequest resumeRequest) {
+    return RequestMapper.toResumeProcessInstance(processInstanceKey, resumeRequest)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            // TODO(#57518): dispatch to resumeProcessInstance(physicalTenantId, mapped) — see
+            // ProcessInstanceServices.resumeProcessInstance — once the zeebe/engine RESUME
+            // processor exists. Until then, a real dispatch would time out at 504 with no
+            // SUSPEND_PROCESS_INSTANCE check (that check lives in the not-yet-existing processor).
+            ignored ->
+                CompletableFuture.completedFuture(
+                    ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/migration")
