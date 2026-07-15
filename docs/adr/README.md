@@ -67,4 +67,8 @@ ADR for that domain is written.
   provider selection, authorization routing, gRPC authentication, configuration
   resolution, exporter assignment, and async context propagation. See
   [`orchestration-cluster/README.md`](orchestration-cluster/README.md).
+- `gradle/001-gradle-experimental-ci-integration.md` — how the experimental
+  Gradle build is exercised in CI while requiring Maven tests for Java and Maven
+  changes, with a non-blocking PR-only Gradle parity job and deferred nightly
+  and automated-repair workflows.
 
