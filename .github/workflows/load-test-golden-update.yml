@@ -61,6 +61,17 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
           token: ${{ steps.github-token.outputs.token }}
 
+      - name: Checkout commit action
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: camunda/action-git-commit
+          ref: add863d7ff2eb91becdbb216ee8024e7f52f6ddb # v1
+          path: .github/actions/action-git-commit
+          token: ${{ steps.github-token.outputs.token }}
+
+      - name: Exclude checked-out commit action from generated commits
+        run: echo ".github/actions/action-git-commit/" >> .git/info/exclude
+
       - name: Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
@@ -74,7 +85,7 @@ jobs:
         run: make -C load-tests/setup/test update-golden
 
       - name: Commit and push golden files
-        uses: camunda/action-git-commit@v1
+        uses: ./.github/actions/action-git-commit
         with:
           commit-message: "test: update load-test golden files"
 
