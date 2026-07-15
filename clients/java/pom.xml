@@ -32,6 +32,15 @@
   </properties>
 
   <dependencies>
+    <!-- DO NOT MERGE: intentionally vulnerable dependency to exercise the
+         pr-vuln-check gate's true-positive path. commons-text 1.9 carries
+         CVE-2022-42889 (Text4Shell, critical, fixable in 1.10.0). -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.9</version>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
