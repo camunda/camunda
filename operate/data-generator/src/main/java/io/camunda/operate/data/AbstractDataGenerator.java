@@ -84,6 +84,9 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   @Autowired(required = false)
   private SearchClientsProxy searchClientsProxy;
 
+  @Autowired(required = false)
+  private PhysicalTenantIds physicalTenantIds;
+
   @PostConstruct
   private void startDataGenerator() {
     startGeneratingData();
@@ -265,16 +268,29 @@ public abstract class AbstractDataGenerator implements DataGenerator {
       for (final String classpathResource : classpathResources) {
         resources.put(classpathResource, readClasspathResource(classpathResource));
       }
-      return executeCamundaServiceAnonymously(
-          authentication ->
-              serviceRegistry
-                  .resourceServices(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
-                  .deployResources(
-                      new DeployResourcesRequest(resources, tenantId), authentication));
+      DeploymentRecord deploymentRecord = null;
+      // Deploy to every known physical tenant so demo processes are visible regardless of which
+      // physical tenant a client (e.g. in physical-tenant test/deployment scenarios) queries.
+      for (final String physicalTenantId : knownPhysicalTenants()) {
+        deploymentRecord =
+            executeCamundaServiceAnonymously(
+                authentication ->
+                    serviceRegistry
+                        .resourceServices(physicalTenantId)
+                        .deployResources(
+                            new DeployResourcesRequest(resources, tenantId), authentication));
+      }
+      return deploymentRecord;
     } catch (final IOException e) {
       throw new OperateRuntimeException(
           "Cannot deploy resource from classpath. " + e.getMessage(), e);
     }
+  }
+
+  private Set<String> knownPhysicalTenants() {
+    return physicalTenantIds == null
+        ? Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        : physicalTenantIds.known();
   }
 
   private byte[] readClasspathResource(final String classpathResource) throws IOException {
