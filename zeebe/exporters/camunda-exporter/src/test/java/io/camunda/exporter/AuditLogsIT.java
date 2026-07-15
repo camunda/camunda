@@ -25,9 +25,12 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -222,6 +225,71 @@ public class AuditLogsIT {
                     Map.entry("key", "user-1"),
                     Map.entry("keyField", "entityKey"),
                     Map.entry("partitionId", 1)))
+            .build(),
+        TestParameter.record(
+                ImmutableRecord.builder()
+                    .withRecordType(RecordType.EVENT)
+                    .withValueType(ValueType.PROCESS)
+                    .withIntent(ProcessIntent.CREATED)
+                    .withValue(
+                        ImmutableProcess.builder()
+                            .withProcessDefinitionKey(2345L)
+                            .withBpmnProcessId("my-process")
+                            .withResource("<processdef />".getBytes(StandardCharsets.UTF_8))
+                            .build())
+                    .withKey(2345L)
+                    .withPosition(801L)
+                    .withPartitionId(1)
+                    .withTimestamp(Instant.parse("2026-07-15T14:00:00Z").toEpochMilli())
+                    .build())
+            .expectedAuditLog(
+                Map.ofEntries(
+                    Map.entry("id", "1-801"),
+                    Map.entry("actorType", "UNKNOWN"),
+                    Map.entry("category", "DEPLOYED_RESOURCES"),
+                    Map.entry("entityKey", "2345"),
+                    Map.entry("entityOperationIntent", (int) ProcessIntent.CREATED.value()),
+                    Map.entry("entityType", "RESOURCE"),
+                    Map.entry("entityValueType", (int) ValueType.PROCESS.value()),
+                    Map.entry("entityVersion", 0),
+                    Map.entry("operationType", "CREATE"),
+                    Map.entry("processDefinitionId", "my-process"),
+                    Map.entry("processDefinitionKey", 2345),
+                    Map.entry("result", "SUCCESS"),
+                    Map.entry("tenantScope", "TENANT"),
+                    Map.entry("timestamp", "2026-07-15T14:00:00.000+0000")))
+            .build(),
+        TestParameter.record(
+                ImmutableRecord.builder()
+                    .withRecordType(RecordType.EVENT)
+                    .withValueType(ValueType.PROCESS)
+                    .withIntent(ProcessIntent.DELETED)
+                    .withValue(
+                        ImmutableProcess.builder()
+                            .withProcessDefinitionKey(2345L)
+                            .withBpmnProcessId("my-process")
+                            .build())
+                    .withKey(2345L)
+                    .withPosition(802L)
+                    .withPartitionId(1)
+                    .withTimestamp(Instant.parse("2026-07-15T14:05:00Z").toEpochMilli())
+                    .build())
+            .expectedAuditLog(
+                Map.ofEntries(
+                    Map.entry("id", "1-802"),
+                    Map.entry("actorType", "UNKNOWN"),
+                    Map.entry("category", "DEPLOYED_RESOURCES"),
+                    Map.entry("entityKey", "2345"),
+                    Map.entry("entityOperationIntent", (int) ProcessIntent.DELETED.value()),
+                    Map.entry("entityType", "RESOURCE"),
+                    Map.entry("entityValueType", (int) ValueType.PROCESS.value()),
+                    Map.entry("entityVersion", 0),
+                    Map.entry("operationType", "DELETE"),
+                    Map.entry("processDefinitionId", "my-process"),
+                    Map.entry("processDefinitionKey", 2345),
+                    Map.entry("result", "SUCCESS"),
+                    Map.entry("tenantScope", "TENANT"),
+                    Map.entry("timestamp", "2026-07-15T14:05:00.000+0000")))
             .build());
   }
 
