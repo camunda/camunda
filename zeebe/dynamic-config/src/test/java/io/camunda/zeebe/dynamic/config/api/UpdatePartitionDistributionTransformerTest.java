@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.dynamic.config.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -36,12 +37,9 @@ class UpdatePartitionDistributionTransformerTest {
   // 3 partitions, 2 zones: zone-a (1 replica, priority 1000), zone-b (1 replica, priority 500)
   // Members: zone-a_0, zone-a_1, zone-b_0 — RF = 2
   private static final ZoneAwareConfig INITIAL_CONFIG =
-      new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1000), new ZoneSpec("zone-b", 1, 500)));
+      new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000), new ZoneSpec(ZONE_B, 1, 500)));
 
   // Coordinator = lexicographically smallest member ID = zone-a_0
-  private static final MemberId ZONE_A_0 = MemberId.from("zone-a", 0);
-  private static final MemberId ZONE_A_1 = MemberId.from("zone-a", 1);
-  private static final MemberId ZONE_B_0 = MemberId.from("zone-b", 0);
   private static final MemberId COORDINATOR = ZONE_A_0;
 
   private static final Set<MemberId> MEMBERS = Set.of(ZONE_A_0, ZONE_A_1, ZONE_B_0);
@@ -70,8 +68,7 @@ class UpdatePartitionDistributionTransformerTest {
     // new replica joins at priority 2.
     final var currentTopology = buildTopology(INITIAL_CONFIG, MEMBERS);
     final var newConfig =
-        new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 2, 1000), new ZoneSpec(ZONE_B, 1, 500)));
 
     // when
     final var result =
@@ -92,11 +89,16 @@ class UpdatePartitionDistributionTransformerTest {
 
   @Test
   void shouldPrependConfigOpAndEmitLeaveOpsWhenRfDecreases() {
-    // given: initial RF=2, new RF=1 (remove zone-b, keep only zone-a)
-    // The single-zone distributor reassigns zone-a replicas, causing some zone-a brokers to
-    // move partitions (P2: zone-a_1→leaves, P3: zone-a_1 joins, zone-a_0 and zone-b_0 leave).
-    final var currentTopology = buildTopology(INITIAL_CONFIG, MEMBERS);
-    final var newConfig = new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1000)));
+    // given: initial RF=3 (zone-a x2, zone-b x1), new RF=2 (zone-a x1, zone-b x1)
+    // Each partition drops its second zone-a replica; the remaining zone-a and zone-b replicas
+    // stay in place with only their priority adjusted.
+    final var currentTopology =
+        buildTopology(
+            new ZoneAwareConfig(
+                List.of(new ZoneSpec(ZONE_A, 2, 1000), new ZoneSpec(ZONE_B, 1, 500))),
+            MEMBERS);
+    final var newConfig =
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000), new ZoneSpec(ZONE_B, 1, 500)));
 
     // when
     final var result =
@@ -107,12 +109,12 @@ class UpdatePartitionDistributionTransformerTest {
     assertThat(result.get())
         .containsExactly(
             new UpdatePartitionDistributorConfigOperation(COORDINATOR, newConfig),
-            new PartitionLeaveOperation(ZONE_B_0, 1, 1),
-            new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 1),
-            new PartitionLeaveOperation(ZONE_A_1, 2, 1),
-            new PartitionJoinOperation(ZONE_A_1, 3, 1),
-            new PartitionLeaveOperation(ZONE_A_0, 3, 1),
-            new PartitionLeaveOperation(ZONE_B_0, 3, 1));
+            new PartitionLeaveOperation(ZONE_A_1, 1, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_0, 1, 2),
+            new PartitionLeaveOperation(ZONE_A_0, 2, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_1, 2, 2),
+            new PartitionLeaveOperation(ZONE_A_1, 3, 1),
+            new PartitionReconfigurePriorityOperation(ZONE_A_0, 3, 2));
   }
 
   @Test
@@ -121,8 +123,7 @@ class UpdatePartitionDistributionTransformerTest {
     // zone-b replicas get promoted to priority 2, zone-a replicas demoted to priority 1.
     final var currentTopology = buildTopology(INITIAL_CONFIG, MEMBERS);
     final var newConfig =
-        new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 1, 500), new ZoneSpec("zone-b", 1, 1000)));
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 500), new ZoneSpec(ZONE_B, 1, 1000)));
 
     // when
     final var result =
@@ -142,7 +143,7 @@ class UpdatePartitionDistributionTransformerTest {
   }
 
   @Test
-  void shouldRejectNonZoneAwareCluster() {
+  void shouldPersistConfigWithoutRedistributionOnBareCluster() {
     // given: a plain round-robin cluster with plain-integer member IDs (no zone)
     final var plainMembers = Set.of(MemberId.from("0"), MemberId.from("1"), MemberId.from("2"));
     final var distribution =
@@ -150,12 +151,35 @@ class UpdatePartitionDistributionTransformerTest {
     final var roundRobinTopology =
         ConfigurationUtil.getClusterConfigFrom(distribution, PARTITION_CONFIG, "c");
     final var newConfig =
-        new ZoneAwareConfig(
-            List.of(new ZoneSpec("zone-a", 2, 1000), new ZoneSpec("zone-b", 1, 500)));
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000), new ZoneSpec(ZONE_B, 1, 500)));
     final var transformer = new UpdatePartitionDistributionTransformer(newConfig);
 
     // when
     final var result = transformer.operations(roundRobinTopology);
+
+    // then
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .containsExactly(
+            new UpdatePartitionDistributorConfigOperation(MemberId.from("0"), newConfig));
+  }
+
+  @Test
+  void shouldRejectPartiallyZoneAwareCluster() {
+    // given
+    final var mixedMembers = Set.of(MemberId.from(0), MemberId.from(2), MemberId.from(ZONE_B, 0));
+    final var mixedDistribution =
+        new RoundRobinPartitionDistributor(List.of(ZONE_A, ZONE_B))
+            .distributePartitions(mixedMembers, PARTITION_IDS, 2);
+    final var mixedTopology =
+        ConfigurationUtil.getClusterConfigFrom(mixedDistribution, PARTITION_CONFIG, "c")
+            .setPartitionDistributorConfig(INITIAL_CONFIG);
+    final var newConfig =
+        new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 500), new ZoneSpec(ZONE_B, 1, 1000)));
+
+    // when
+    final var result =
+        new UpdatePartitionDistributionTransformer(newConfig).operations(mixedTopology);
 
     // then
     EitherAssert.assertThat(result)

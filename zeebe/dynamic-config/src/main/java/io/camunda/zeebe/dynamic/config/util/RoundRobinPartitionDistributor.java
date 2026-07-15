@@ -11,6 +11,7 @@ import com.google.common.collect.Sets;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
+import io.camunda.cluster.ZoneLayout;
 import io.camunda.zeebe.dynamic.config.PartitionDistributor;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,17 +40,31 @@ import java.util.Set;
  */
 public final class RoundRobinPartitionDistributor implements PartitionDistributor {
 
+  /**
+   * Explicit zone tiebreak order (zone name -&gt; rank). When empty, members are ordered by zone
+   * name alphabetically (the default).
+   *
+   * <p>When set, zoned members are ordered by their effective global slot {@code localNodeIdx *
+   * zoneCount + zoneRank}. Bare members keep their global slot {@code nodeIdx}. This lets the
+   * distributor preserve the original round-robin slot layout for both fully zoned and mixed
+   * bare/zoned topologies during staged zone migration.
+   */
+  private final List<String> zoneOrder;
+
+  public RoundRobinPartitionDistributor() {
+    this(List.of());
+  }
+
+  public RoundRobinPartitionDistributor(final List<String> zoneOrder) {
+    this.zoneOrder = List.copyOf(zoneOrder);
+  }
+
   @Override
   public Set<PartitionMetadata> distributePartitions(
       final Set<MemberId> clusterMembers,
       final List<PartitionId> sortedPartitionIds,
       final int replicationFactor) {
-    final List<MemberId> sorted =
-        clusterMembers.stream()
-            .sorted(
-                Comparator.comparingInt(MemberId::nodeIdx)
-                    .thenComparing(id -> id.zone() != null ? id.zone() : ""))
-            .toList();
+    final List<MemberId> sorted = clusterMembers.stream().sorted(memberComparator()).toList();
 
     final int length = sorted.size();
     final int count = Math.min(replicationFactor, length);
@@ -74,6 +89,23 @@ public final class RoundRobinPartitionDistributor implements PartitionDistributo
               primary));
     }
     return metadata;
+  }
+
+  private Comparator<MemberId> memberComparator() {
+    if (zoneOrder.isEmpty()) {
+      return Comparator.comparingInt(MemberId::nodeIdx)
+          .thenComparing(id -> id.zone() != null ? id.zone() : "");
+    }
+
+    return Comparator.comparingInt(this::effectiveSlot)
+        .thenComparingInt(MemberId::nodeIdx)
+        .thenComparing(id -> id.zone() != null ? id.zone() : "");
+  }
+
+  /** Translate zoned ids into "bare" ids so they can be sorted as before they were zoned. */
+  private int effectiveSlot(final MemberId memberId) {
+    return ZoneLayout.effectiveSlot(memberId.zone(), memberId.nodeIdx(), zoneOrder)
+        .orElse(Integer.MAX_VALUE);
   }
 
   private Map<MemberId, Integer> getPriorities(

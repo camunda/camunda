@@ -13,25 +13,23 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.util.CollectionUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Computes the operations needed to apply a new {@link ZoneAwareConfig} to a zone-aware cluster.
+ * Computes the operations needed to apply a new {@link ZoneAwareConfig}. It persists the new config
+ * first and then redistributes partitions accordingly. When migrating from {@link RoundRobinConfig}
+ * the same {@link ZoneAwareConfig} no partition reassignment is expected if the new configuration
+ * is correct.
  *
- * <p>The transformer:
- *
- * <ol>
- *   <li>Validates that the cluster is currently zone-aware.
- *   <li>Validates that the requested config is a {@link ZoneAwareConfig} (no type switches).
- *   <li>Prepends an {@link UpdatePartitionDistributorConfigOperation} so the new config is
- *       persisted before redistribution begins.
- *   <li>Delegates to {@link PartitionReassignRequestTransformer} against a temporary configuration
- *       that already carries the new distributor, so the diff reflects the new placement strategy.
- * </ol>
+ * <p>When migrating to {@link ZoneAwareConfig} the order of the zones is used to identify primary
+ * and secondary zone: the first zone is primary, the second is secondary.
  */
 public class UpdatePartitionDistributionTransformer implements ConfigurationChangeRequest {
 
@@ -45,28 +43,49 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration currentConfiguration) {
 
-    if (!currentConfiguration.isFullyZoneAware()) {
-      return Either.left(
-          new InvalidRequest(
-              "Partition distribution changes are only supported on zone-aware clusters."));
-    }
-
     if (!(newConfig instanceof final ZoneAwareConfig zoneAwareConfig)) {
       return Either.left(
           new InvalidRequest(
               "Only ZONE_AWARE partition distribution config is supported. Received: "
                   + newConfig.getClass().getSimpleName()));
     }
+    final var zones = zoneAwareConfig.zones();
 
-    if (zoneAwareConfig.zones().isEmpty()) {
+    if (zones.isEmpty()) {
       return Either.left(
           new InvalidRequest(
-              "Expected partition distribution config to be contain at least one zone, but was empty"));
+              "Expected partition distribution config to contain at least one zone, but was empty"));
+    }
+
+    if (CollectionUtil.containsDuplicates(zones, ZoneSpec::name)) {
+      return Either.left(
+          new InvalidRequest(
+              "Expected zone names to be unique, but got duplicates: "
+                  + zones.stream().map(ZoneSpec::name).toList()));
+    }
+
+    final int targetReplicationFactor = zoneAwareConfig.replicationFactor();
+    final int currentReplicationFactor = currentConfiguration.minReplicationFactor();
+    if (!currentConfiguration.isFullyZoneAware()
+        && targetReplicationFactor != currentReplicationFactor) {
+      return Either.left(
+          new InvalidRequest(
+              String.format(
+                  "Sum of zone replicas [%d] must equal the current replication factor [%d] "
+                      + "before zone migration starts.",
+                  targetReplicationFactor, currentReplicationFactor)));
     }
 
     final var coordinator =
         ClusterConfigurationCoordinatorSupplier.of(() -> currentConfiguration)
             .getDefaultCoordinator();
+
+    if (currentConfiguration.isPartiallyZoneAware()) {
+      return Either.left(
+          new InvalidRequest(
+              "Partition distribution changes are only supported on fully zone-aware clusters or "
+                  + "on fully bare clusters before zone migration starts."));
+    }
 
     // Apply the new config to produce a temporary configuration whose partitionDistributor()
     // returns the new ZoneAwarePartitionDistributor. This is only used for distribution
@@ -81,7 +100,9 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
         .map(
             ops -> {
               final var allOps = new ArrayList<ClusterConfigurationChangeOperation>(ops.size() + 1);
-              allOps.add(new UpdatePartitionDistributorConfigOperation(coordinator, newConfig));
+              final var updateConfigOperation =
+                  new UpdatePartitionDistributorConfigOperation(coordinator, newConfig);
+              allOps.add(updateConfigOperation);
               allOps.addAll(ops);
               return allOps;
             });
