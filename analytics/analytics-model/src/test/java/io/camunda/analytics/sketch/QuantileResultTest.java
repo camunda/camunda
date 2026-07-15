@@ -53,8 +53,9 @@ final class QuantileResultTest {
     final QuantileResult result = quantile.getResult(fold(1, 100));
 
     // when the share above ~90 is asked
-    // then roughly 10% of the observations sit above it
-    assertThat(result.shareAbove(90.0)).isCloseTo(0.10, within(0.05));
+    // then roughly 10% of the observations sit above it — tight enough to tell the INCLUSIVE
+    // contract (0.10, values == 90 count as "not above") apart from an EXCLUSIVE one (0.11)
+    assertThat(result.shareAbove(90.0)).isCloseTo(0.10, within(0.005));
   }
 
   @Test
@@ -72,6 +73,27 @@ final class QuantileResultTest {
     final QuantileResult result = quantile.getResult(quantile.createAccumulator());
 
     // then outlierStats degrades to null rather than throwing or dividing by zero
+    assertThat(result.outlierStats()).isNull();
+  }
+
+  @Test
+  void shouldDegradeGracefullyForANonNullButEmptySketch() {
+    // given a result constructed directly with a non-null EMPTY sketch — getResult() never
+    // produces this shape (it special-cases isEmpty() into null), but the guards must not assume
+    // that: a fresh, never-updated KllDoublesSketch has no defined rank or quantile and would
+    // throw if asked one
+    final QuantileResult result =
+        new QuantileResult(
+            0L,
+            Double.NaN,
+            Double.NaN,
+            new double[] {0.5},
+            new double[] {Double.NaN},
+            KllDoublesSketch.newHeapInstance());
+
+    // then every sketch-consuming method degrades exactly like the null-sketch case, never throws
+    assertThat(result.quantile(0.25)).isNaN();
+    assertThat(result.shareAbove(10.0)).isNaN();
     assertThat(result.outlierStats()).isNull();
   }
 

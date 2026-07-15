@@ -24,9 +24,14 @@ import org.apache.datasketches.quantilescommon.QuantileSearchCriteria;
  * JsonIgnore} keeps it out of the JSON this record rides inside (report-row measures), and it is
  * {@code null} for an empty result ({@link #empty}) or after any hypothetical deserialization —
  * every sketch-consuming method degrades gracefully (a declared-rank fallback or {@code NaN}/{@code
- * null}) rather than throwing. Because of that, {@code quantile}/{@code shareAbove}/{@code
- * outlierStats} are meant for server-side callers only (the dashboard read layer) — a client never
- * has the sketch to ask them with.
+ * null}) rather than throwing — including a non-null but empty sketch, which has no defined rank or
+ * quantile either. Because of that, {@code quantile}/{@code shareAbove}/{@code outlierStats} are
+ * meant for server-side callers only (the dashboard read layer) — a client never has the sketch to
+ * ask them with.
+ *
+ * <p>Rank and quantile reads lazily build a cached sorted view inside the sketch (a read mutates
+ * it), so one {@code QuantileResult} must not be shared across threads — every current caller is
+ * per-request and synchronous, which this relies on.
  *
  * @param count the number of observations folded in
  * @param min the smallest observed value ({@code NaN} when empty)
@@ -66,28 +71,29 @@ public record QuantileResult(
    * an undeclared rank without a sketch.
    */
   public double quantile(final double rank) {
-    return sketch != null
+    return sketch != null && !sketch.isEmpty()
         ? sketch.getQuantile(rank, QuantileSearchCriteria.INCLUSIVE)
         : valueAt(rank);
   }
 
   /**
    * The estimated share of observations strictly above {@code value} ({@code 1 - rank(value)}),
-   * server-side only. {@code NaN} without a sketch.
+   * server-side only. {@code NaN} without a sketch (absent, or non-null but empty — neither has a
+   * defined rank).
    */
   public double shareAbove(final double value) {
-    return sketch != null
+    return sketch != null && !sketch.isEmpty()
         ? 1.0 - sketch.getRank(value, QuantileSearchCriteria.INCLUSIVE)
         : Double.NaN;
   }
 
   /**
    * The boxplot outlier statistics derived from this distribution (Q1/Q3/fence/share/count),
-   * server-side only, or {@code null} when the sketch is absent (an empty result, or after a
-   * hypothetical JSON round-trip). See {@link OutlierStats} for the fence formula.
+   * server-side only, or {@code null} when the sketch is absent or empty (an empty result, or after
+   * a hypothetical JSON round-trip). See {@link OutlierStats} for the fence formula.
    */
   public OutlierStats outlierStats() {
-    if (sketch == null) {
+    if (sketch == null || sketch.isEmpty()) {
       return null;
     }
     final double q1 = quantile(0.25);

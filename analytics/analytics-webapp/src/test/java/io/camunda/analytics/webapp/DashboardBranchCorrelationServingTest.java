@@ -133,6 +133,47 @@ final class DashboardBranchCorrelationServingTest {
     assertThat(repository.branchCorrelations(PROCESS, null, null)).isEmpty();
   }
 
+  @Test
+  void shouldComputeLiftWithinEachGatewaysOwnProbabilitySpace() {
+    // given two independent gateways (g1, g2) that both route into the SAME downstream target
+    // ("shared" is a converging flow reached from both) — g1's restricted traffic is {shared:
+    // x=30, mid: y=20} (total 50); g2's is {shared: x=30, b2: z=15} (total 45). The two gateways
+    // carry DIFFERENT total traffic, so pooling them into one joint map (the pre-fix behavior)
+    // would distort every marginal instead of scoping each gateway to its own traffic.
+    seedDefinition(88L, twoGatewayModelXml());
+    seedBranchRoute("shared", "x", 30);
+    seedBranchRoute("mid", "y", 20);
+    seedBranchRoute("b2", "z", 15);
+
+    // when the correlation reads
+    final List<BranchCorrelation> correlations = repository.branchCorrelations(PROCESS, null, null);
+
+    // then "shared" yields one row PER GATEWAY (the (gatewayId, targetId) key fix — neither
+    // gateway's chip is lost), each lift computed within its own gateway's traffic:
+    // g1: P(shared)=30/50=0.6,   share(x)=30/30=1.0 -> lift=1/0.6   ~= 1.667
+    // g1: P(mid)=20/50=0.4,     share(y)=20/20=1.0 -> lift=1/0.4   =  2.5
+    // g2: P(shared)=30/45=0.667, share(x)=30/30=1.0 -> lift=1/0.667 ~= 1.5
+    // g2: P(b2)=15/45=0.333,    share(z)=15/15=1.0 -> lift=1/0.333 ~= 3.0
+    assertThat(correlations).hasSize(4);
+    final List<BranchCorrelation> sharedRows =
+        correlations.stream().filter(c -> c.targetId().equals("shared")).toList();
+    assertThat(sharedRows).hasSize(2);
+    final BranchCorrelation sharedFromG1 =
+        sharedRows.stream().filter(c -> c.gatewayId().equals("g1")).findFirst().orElseThrow();
+    assertThat(sharedFromG1.lift()).isCloseTo(1.667, within(0.01));
+    final BranchCorrelation sharedFromG2 =
+        sharedRows.stream().filter(c -> c.gatewayId().equals("g2")).findFirst().orElseThrow();
+    assertThat(sharedFromG2.lift()).isCloseTo(1.5, within(0.01));
+    final BranchCorrelation mid =
+        correlations.stream().filter(c -> c.targetId().equals("mid")).findFirst().orElseThrow();
+    assertThat(mid.gatewayId()).isEqualTo("g1");
+    assertThat(mid.lift()).isCloseTo(2.5, within(0.01));
+    final BranchCorrelation b2 =
+        correlations.stream().filter(c -> c.targetId().equals("b2")).findFirst().orElseThrow();
+    assertThat(b2.gatewayId()).isEqualTo("g2");
+    assertThat(b2.lift()).isCloseTo(3.0, within(0.01));
+  }
+
   /** start -> authorize -> decision (2-out XOR: capture / declined) -> passthrough (1-out XOR). */
   private static String modelXml() {
     final BpmnModelInstance model =
@@ -147,6 +188,34 @@ final class DashboardBranchCorrelationServingTest {
             .moveToNode("decision")
             .conditionExpression("=not(approved)")
             .endEvent("declined")
+            .done();
+    return Bpmn.convertToString(model);
+  }
+
+  /**
+   * start -> authorize -> g1 (2-out XOR: shared / mid), mid -> g2 (2-out XOR: shared / b2) — g2's
+   * first branch converges back onto "shared", the same target g1's first branch reaches, so
+   * "shared" is reachable from two different gateways.
+   */
+  private static String twoGatewayModelXml() {
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(PROCESS)
+            .startEvent("started")
+            .serviceTask("authorize", t -> t.zeebeJobType("authorize"))
+            .exclusiveGateway("g1")
+            .conditionExpression("=toShared")
+            .serviceTask("shared", t -> t.zeebeJobType("shared"))
+            .endEvent("shared-end")
+            .moveToNode("g1")
+            .conditionExpression("=toMid")
+            .serviceTask("mid", t -> t.zeebeJobType("mid"))
+            .exclusiveGateway("g2")
+            .conditionExpression("=g2ToShared")
+            .connectTo("shared")
+            .moveToNode("g2")
+            .conditionExpression("=g2ToB2")
+            .serviceTask("b2", t -> t.zeebeJobType("b2"))
+            .endEvent("b2-end")
             .done();
     return Bpmn.convertToString(model);
   }

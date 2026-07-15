@@ -125,6 +125,120 @@ final class CorrelationCubesTest {
   }
 
   @Test
+  void shouldRejectADurationCubeMissingTheCountMeter() {
+    // given a corr-* cube with the duration_p marker but no count meter — classified-but-malformed
+    // would 400 the read forever once the planner rejects the undeclared 'count' meter
+    final CompiledDataset dataset =
+        compile(
+            DatasetDeclaration.builder("corr-route", FactType.PROCESS_INSTANCE)
+                .filterEquals("transition", Transition.COMPLETED.name())
+                .filterNotNull("var.route")
+                .dimension("bpmnProcessId", DimensionType.STRING)
+                .dimension("var.route", DimensionType.STRING)
+                .meter(Meter.of("duration_p", MeterCatalog.PERCENTILE, "durationMs"))
+                .window(60_000L)
+                .build());
+
+    // when / then
+    assertThat(CorrelationCubes.classify(dataset)).isNull();
+  }
+
+  @Test
+  void shouldRejectAVariantCubeMissingTheCountMeter() {
+    // given a corr-* cube with variantHash + var.* but no count meter (a declaration needs at
+    // least one meter, so an unrelated one stands in for "none of them is named count")
+    final CompiledDataset dataset =
+        compile(
+            DatasetDeclaration.builder("corr-variant-route", FactType.PROCESS_INSTANCE)
+                .filterNotNull("variantHash")
+                .filterNotNull("var.route")
+                .dimension("bpmnProcessId", DimensionType.STRING)
+                .dimension("variantHash", DimensionType.LONG)
+                .dimension("var.route", DimensionType.STRING)
+                .meter(Meter.of("other", MeterCatalog.COUNT))
+                .window(60_000L)
+                .build());
+
+    // when / then
+    assertThat(CorrelationCubes.classify(dataset)).isNull();
+  }
+
+  @Test
+  void shouldRejectABranchCubeMissingTheCountMeter() {
+    // given a corr-* cube with elementId + var.* but no count meter (see the comment above)
+    final CompiledDataset dataset =
+        compile(
+            DatasetDeclaration.builder("corr-branch-route", FactType.ELEMENT)
+                .filterEquals("transition", Transition.COMPLETED.name())
+                .filterNotNull("var.route")
+                .dimension("bpmnProcessId", DimensionType.STRING)
+                .dimension("elementId", DimensionType.STRING)
+                .dimension("var.route", DimensionType.STRING)
+                .meter(Meter.of("other", MeterCatalog.COUNT))
+                .window(60_000L)
+                .build());
+
+    // when / then
+    assertThat(CorrelationCubes.classify(dataset)).isNull();
+  }
+
+  @Test
+  void shouldRejectAStringTypedVariantHash() {
+    // given a corr-* cube whose variantHash is typed STRING instead of LONG — the read path's
+    // asLong would silently collapse every value to 0 rather than the real hash
+    final CompiledDataset dataset =
+        compile(
+            DatasetDeclaration.builder("corr-variant-route", FactType.PROCESS_INSTANCE)
+                .filterNotNull("variantHash")
+                .filterNotNull("var.route")
+                .dimension("bpmnProcessId", DimensionType.STRING)
+                .dimension("variantHash", DimensionType.STRING)
+                .dimension("var.route", DimensionType.STRING)
+                .meter(Meter.of("count", MeterCatalog.COUNT))
+                .window(60_000L)
+                .build());
+
+    // when / then
+    assertThat(CorrelationCubes.classify(dataset)).isNull();
+  }
+
+  @Test
+  void shouldRejectACubeWithBothVariantHashAndElementIdMarkers() {
+    // given a corr-* cube declaring both markers — ambiguous, not one of the three shapes
+    final CompiledDataset dataset =
+        compile(
+            DatasetDeclaration.builder("corr-both", FactType.PROCESS_INSTANCE)
+                .dimension("bpmnProcessId", DimensionType.STRING)
+                .dimension("variantHash", DimensionType.LONG)
+                .dimension("elementId", DimensionType.STRING)
+                .dimension("var.route", DimensionType.STRING)
+                .meter(Meter.of("count", MeterCatalog.COUNT))
+                .window(60_000L)
+                .build());
+
+    // when / then
+    assertThat(CorrelationCubes.classify(dataset)).isNull();
+  }
+
+  @Test
+  void shouldRejectACorrPrefixedCubeWithNoMarkerAndNoDurationMeter() {
+    // given a corr-* cube with exactly one var.* dimension but neither a variantHash/elementId
+    // marker nor a duration_p meter — not a recognized shape even though it has a count meter
+    final CompiledDataset dataset =
+        compile(
+            DatasetDeclaration.builder("corr-orphan-shape", FactType.PROCESS_INSTANCE)
+                .filterNotNull("var.route")
+                .dimension("bpmnProcessId", DimensionType.STRING)
+                .dimension("var.route", DimensionType.STRING)
+                .meter(Meter.of("count", MeterCatalog.COUNT))
+                .window(60_000L)
+                .build());
+
+    // when / then
+    assertThat(CorrelationCubes.classify(dataset)).isNull();
+  }
+
+  @Test
   void shouldRejectACubeWithoutTheCorrPrefix() {
     // given a var.*-grouped cube not named corr-* (e.g. the standard dispute-types cube)
     final CompiledDataset dataset =

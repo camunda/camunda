@@ -607,22 +607,34 @@ public class DashboardRepository {
   private static final int MAX_CORRELATION_ROWS = 20;
 
   /**
+   * The minimum estimated overall outlier count ({@link OutlierStats#count()}) before a correlation
+   * read trusts the overall share as a lift denominator. A sketch is approximate near its tails: a
+   * single stray observation can round the overall share up from truly-zero to something tiny (e.g.
+   * {@code 0.001}), and every per-value lift — which divides by that share — would then explode
+   * into an astronomical, meaningless magnitude. Below this floor the overall outlier population is
+   * noise, not evidence, so correlation is skipped entirely rather than ranked on it.
+   */
+  private static final long MIN_OUTLIER_EVIDENCE = 5;
+
+  /**
    * Duration-variable correlation over the range: for each value of each declared {@code corr-*}
    * variable, how over-represented it is among duration outliers relative to the process's overall
    * outlier share (see {@link VariableCorrelation}). Reads the overall boxplot fence from the
    * process-duration cube's percentile sketch (the same one the p50–p99 trend reads), then asks
    * every {@code corr-*} cube's per-value sketch what share of ITS observations sit above that
    * fence — a cross-sketch query only possible because {@link QuantileResult} exposes its sketch.
-   * Empty when there is no overall outlier share to correlate against, or when the metadata store
-   * has no {@code corr-*} cubes (never a 500). Sorted by lift descending, capped at {@link
-   * #MAX_CORRELATION_ROWS}.
+   * Empty when there is no overall outlier share to correlate against, when the estimated overall
+   * outlier count is below {@link #MIN_OUTLIER_EVIDENCE} (too little evidence to trust as a lift
+   * denominator), or when the metadata store has no {@code process-duration}/{@code corr-*} cubes
+   * (never a 500). Sorted by lift descending, capped at {@link #MAX_CORRELATION_ROWS}.
    */
   public List<VariableCorrelation> variableCorrelations(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
     final OutlierStats overall = overallDurationOutlierStats(bpmnProcessId, fromWindow, toWindow);
-    if (overall == null || overall.share() == 0.0) {
-      // no outliers to correlate against — dividing by a zero overall share is meaningless, not
-      // just unsafe
+    if (overall == null || overall.share() == 0.0 || overall.count() < MIN_OUTLIER_EVIDENCE) {
+      // no outliers to correlate against (dividing by a zero overall share is meaningless, not
+      // just unsafe), or too few estimated outliers to trust as a lift denominator (see
+      // MIN_OUTLIER_EVIDENCE)
       return List.of();
     }
     final List<VariableCorrelation> out = new ArrayList<>();
@@ -667,9 +679,18 @@ public class DashboardRepository {
         : out;
   }
 
-  /** The overall process's boxplot outlier stats over the range, or {@code null} without data. */
+  /**
+   * The overall process's boxplot outlier stats over the range, or {@code null} without data —
+   * including when the metadata store has no {@code process-duration} cube or percentile meter at
+   * all (a store bootstrapped before this feature, or the standard datasets were never installed):
+   * the same never-500 guard {@link #hasMeter} gives every other endpoint, since {@code total(...)}
+   * would otherwise throw through {@code catalog.require} and blank the whole dashboard render.
+   */
   private OutlierStats overallDurationOutlierStats(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    if (!hasMeter("process-duration", "percentiles")) {
+      return null;
+    }
     final List<ReportRow> rows =
         total(
             "process-duration",
@@ -1378,7 +1399,8 @@ public class DashboardRepository {
    * Marginals come from the corr cube itself — it only sees instances that HAVE the variable, so
    * they are self-consistent and never mixed with the process-variants cube's totals. Pairs below
    * {@link #MIN_SUPPORT} are skipped, as is a variant whose overall population is zero (a zero lift
-   * denominator). Sorted by lift descending.
+   * denominator). Sorted by lift descending, capped at {@link #MAX_CORRELATION_ROWS} like {@link
+   * #variableCorrelations} — one row per (variant, variable) pair is otherwise unbounded.
    */
   public List<VariantCorrelation> variantCorrelations(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
@@ -1420,17 +1442,27 @@ public class DashboardRepository {
       }
     }
     out.sort(Comparator.comparingDouble(VariantCorrelation::lift).reversed());
-    return out;
+    return out.size() > MAX_CORRELATION_ROWS
+        ? List.copyOf(out.subList(0, MAX_CORRELATION_ROWS))
+        : out;
   }
 
   /**
    * Which declared variable values drive which gateway branch, one row per branch — the single
    * strongest driver across every declared variable, by lift. Outcomes are restricted to the
    * deployed model's actual gateway outgoing targets (see {@link GatewayTopology}, cached per
-   * definition), so a pass-through element's counts never pollute the ranking or the marginals.
-   * COMPLETED element facts only carry variables (the ACTIVATED deriver does not attach them), so
-   * counts skew low against the branch card's activation-based counts — documented, not reconciled.
-   * Same {@link #MIN_SUPPORT}/zero-denominator guards as {@link #variantCorrelations}.
+   * definition), so a pass-through element's counts never pollute the ranking or the marginals. The
+   * driver math runs <em>per gateway</em>: {@link #topDriverPerOutcome}'s marginals ({@code
+   * n(value)}, {@code n(outcome)}, {@code N}) are scoped to one gateway's own traffic, never pooled
+   * across gateways — with G gateways, pooling would let an instance that traverses several of them
+   * contribute G completions to the shared marginals, reading {@code share} at roughly {@code 1/G}
+   * of its true value and distorting lift whenever gateways are traversed unequally (loops,
+   * optional branches). A target reachable from more than one gateway (a converging flow) is keyed
+   * by the {@code (gatewayId, targetId)} pair rather than the target alone, so it yields one row
+   * per gateway instead of one gateway's chip silently overwriting the other's. COMPLETED element
+   * facts only carry variables (the ACTIVATED deriver does not attach them), so counts skew low
+   * against the branch card's activation-based counts — documented, not reconciled. Same {@link
+   * #MIN_SUPPORT}/zero-denominator guards as {@link #variantCorrelations}.
    */
   public List<BranchCorrelation> branchCorrelations(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
@@ -1444,22 +1476,29 @@ public class DashboardRepository {
     if (gateways.isEmpty()) {
       return List.of();
     }
-    final Map<String, String> gatewayByTarget = new HashMap<>();
+    // A target can be the outgoing branch of more than one gateway (a converging flow) — collect
+    // every owning gateway rather than the single winner a target-only map would keep.
+    final Map<String, List<String>> gatewaysByTarget = new HashMap<>();
     for (final GatewayTopology.GatewaySpec gateway : gateways) {
       for (final GatewayTopology.BranchSpec branch : gateway.branches()) {
-        gatewayByTarget.put(branch.targetId(), gateway.gatewayId());
+        gatewaysByTarget
+            .computeIfAbsent(branch.targetId(), key -> new ArrayList<>())
+            .add(gateway.gatewayId());
       }
     }
-    // The strongest driver per target survives across every corr-branch-* cube (a target can have
-    // both a route and a region driver in the catalog; only one row per branch reaches the client).
-    final Map<String, DriverPick<String>> bestByTarget = new LinkedHashMap<>();
+    // The strongest driver per (gateway, target) survives across every corr-branch-* cube (a
+    // target can have both a route and a region driver in the catalog; only one row per branch
+    // per gateway reaches the client).
+    final Map<GatewayTarget, DriverPick<GatewayTarget>> bestByTarget = new LinkedHashMap<>();
     for (final CompiledDataset dataset : catalog.byName().values()) {
       if (CorrelationCubes.classify(dataset) != CorrelationCubes.Kind.BRANCH) {
         continue;
       }
       final String variableDimension = CorrelationCubes.variableDimension(dataset);
       final String variable = variableDimension.substring(DimensionSpec.VARIABLE_PREFIX.length());
-      final Map<String, Map<String, Long>> jointByTarget = new LinkedHashMap<>();
+      // Joint counts partitioned by (gateway, target): one probability space per gateway, so a
+      // target shared by two gateways contributes its counts independently to each.
+      final Map<GatewayTarget, Map<String, Long>> jointByGatewayTarget = new LinkedHashMap<>();
       for (final ReportRow row :
           total(
               dataset.name(),
@@ -1470,30 +1509,46 @@ public class DashboardRepository {
               List.of("count"),
               newMemo())) {
         final String target = elementId(row);
-        if (!gatewayByTarget.containsKey(target)) {
+        final List<String> owningGateways = gatewaysByTarget.get(target);
+        if (owningGateways == null) {
           continue; // a pass-through element, not a decision outcome — excluded, not just hidden
         }
         final Object valueObject = row.dimensions().get(variableDimension);
         if (valueObject == null) {
           continue;
         }
-        jointByTarget
-            .computeIfAbsent(target, key -> new LinkedHashMap<>())
-            .merge(valueObject.toString(), measureAsLong(row, "count"), Long::sum);
+        final long count = measureAsLong(row, "count");
+        for (final String gatewayId : owningGateways) {
+          jointByGatewayTarget
+              .computeIfAbsent(new GatewayTarget(gatewayId, target), key -> new LinkedHashMap<>())
+              .merge(valueObject.toString(), count, Long::sum);
+        }
       }
-      for (final DriverPick<String> pick : topDriverPerOutcome(jointByTarget, variable)) {
-        final DriverPick<String> current = bestByTarget.get(pick.outcome());
-        if (current == null || pick.lift() > current.lift()) {
-          bestByTarget.put(pick.outcome(), pick);
+      // Group by gateway before ranking, so topDriverPerOutcome's marginals never mix two
+      // gateways' traffic.
+      final Map<String, Map<GatewayTarget, Map<String, Long>>> byGateway = new LinkedHashMap<>();
+      for (final Map.Entry<GatewayTarget, Map<String, Long>> entry :
+          jointByGatewayTarget.entrySet()) {
+        byGateway
+            .computeIfAbsent(entry.getKey().gatewayId(), key -> new LinkedHashMap<>())
+            .put(entry.getKey(), entry.getValue());
+      }
+      for (final Map<GatewayTarget, Map<String, Long>> jointForGateway : byGateway.values()) {
+        for (final DriverPick<GatewayTarget> pick :
+            topDriverPerOutcome(jointForGateway, variable)) {
+          final DriverPick<GatewayTarget> current = bestByTarget.get(pick.outcome());
+          if (current == null || pick.lift() > current.lift()) {
+            bestByTarget.put(pick.outcome(), pick);
+          }
         }
       }
     }
     final List<BranchCorrelation> out = new ArrayList<>(bestByTarget.size());
-    for (final DriverPick<String> pick : bestByTarget.values()) {
+    for (final DriverPick<GatewayTarget> pick : bestByTarget.values()) {
       out.add(
           new BranchCorrelation(
-              gatewayByTarget.get(pick.outcome()),
-              pick.outcome(),
+              pick.outcome().gatewayId(),
+              pick.outcome().targetId(),
               pick.variable(),
               pick.value(),
               pick.n(),
@@ -1503,6 +1558,9 @@ public class DashboardRepository {
     out.sort(Comparator.comparingDouble(BranchCorrelation::lift).reversed());
     return out;
   }
+
+  /** One gateway's outgoing branch target — the outcome key {@link #branchCorrelations} ranks. */
+  private record GatewayTarget(String gatewayId, String targetId) {}
 
   /**
    * One outcome's strongest driver: the (variable, value) pair with the highest lift among its

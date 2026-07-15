@@ -138,6 +138,24 @@ final class DashboardCorrelationServingTest {
   }
 
   @Test
+  void shouldServeEmptyWhenTheOverallOutlierEvidenceIsBelowTheFloor() {
+    // given a tight distribution of 100 completions plus exactly ONE far outlier: the share is
+    // nonzero (~1%) but the *estimated outlier count* rounds to 1, below MIN_OUTLIER_EVIDENCE (5)
+    // — trusting it as a lift denominator would let one sketch-roundoff residual explode every
+    // per-value lift into a meaningless magnitude
+    final List<Fact> overall = new ArrayList<>();
+    for (int i = 0; i < 100; i++) {
+      overall.add(completed(900L + i * 2L));
+    }
+    overall.add(completed(50_000L));
+    ServingTestSupport.seed(fixture, "process-duration", "percentiles", overall, PROCESS);
+    ServingTestSupport.seed(fixture, "corr-route", "duration_p", overall, PROCESS, "onlyValue");
+
+    // when / then — the floor short-circuits before any corr-* cube is even read
+    assertThat(repository.variableCorrelations(PROCESS, null, null)).isEmpty();
+  }
+
+  @Test
   void shouldServeEmptyWhenThereIsNoCorrCubeInTheCatalog() {
     // given a catalog with only process-duration — no corr-* cube provisioned on this store
     final CompiledDataset processDuration = fixture.catalog().require("process-duration");
@@ -161,6 +179,31 @@ final class DashboardCorrelationServingTest {
 
     // when / then — never a 500, just an empty read
     assertThat(withoutCorrCubes.variableCorrelations(PROCESS, null, null)).isEmpty();
+  }
+
+  @Test
+  void shouldServeEmptyWhenTheProcessDurationCubeIsMissing() {
+    // given a catalog with only a corr-route cube — no process-duration cube provisioned (the
+    // mirror direction of shouldServeEmptyWhenThereIsNoCorrCubeInTheCatalog): total("process-
+    // duration", ...) would otherwise throw through catalog.require and 500 the whole render
+    final CompiledDataset corrRoute = fixture.catalog().require("corr-route");
+    final Map<String, CompiledDataset> byName = new LinkedHashMap<>();
+    byName.put(corrRoute.name(), corrRoute);
+    final DashboardRepository withoutProcessDuration =
+        new DashboardRepository(
+            fixture.executor(),
+            new DatasetCatalog(byName),
+            fixture.tableCatalog(),
+            new TableQueryExecutor(fixture.datasetStore().queryClient()),
+            new SnapshotQueryExecutor(fixture.datasetStore().queryClient()));
+    final List<Fact> manual = new ArrayList<>();
+    for (int i = 0; i < 20; i++) {
+      manual.add(routeCompleted(49_000L + i * 100L, "manual"));
+    }
+    ServingTestSupport.seed(fixture, "corr-route", "duration_p", manual, PROCESS, "manual");
+
+    // when / then — never a 500, just an empty read
+    assertThat(withoutProcessDuration.variableCorrelations(PROCESS, null, null)).isEmpty();
   }
 
   private static Fact completed(final long durationMs) {

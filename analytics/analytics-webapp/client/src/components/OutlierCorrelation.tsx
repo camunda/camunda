@@ -43,8 +43,8 @@ export function OutlierCorrelation({ rows }: { rows: VariableCorrelation[] }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={`${r.variable}=${r.value}`} className="border-b border-border/60">
+              {rows.map((r, i) => (
+                <tr key={`${i}-${r.variable}=${r.value}`} className="border-b border-border/60">
                   <td className="py-2 pr-4 font-mono text-xs">
                     {r.variable}={r.value}
                   </td>

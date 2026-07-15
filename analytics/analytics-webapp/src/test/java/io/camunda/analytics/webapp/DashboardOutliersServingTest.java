@@ -90,8 +90,8 @@ final class DashboardOutliersServingTest {
   }
 
   @Test
-  void shouldExcludeAnElementRightAtTheObservationBoundary() {
-    // given exactly 20 observations — MIN_OBSERVATIONS is a floor, and 19 must still be excluded
+  void shouldExcludeAnElementBelowTheObservationBoundary() {
+    // given 19 observations — one short of MIN_OBSERVATIONS (20), still excluded
     final List<Fact> nineteen = new ArrayList<>();
     for (int i = 0; i < 19; i++) {
       nineteen.add(completed(1_000L + i));
@@ -103,6 +103,23 @@ final class DashboardOutliersServingTest {
 
     // then the element stays hidden below the trust threshold
     assertThat(outliers).isEmpty();
+  }
+
+  @Test
+  void shouldIncludeAnElementAtExactlyTheObservationBoundary() {
+    // given exactly 20 observations — MIN_OBSERVATIONS is a floor (n < MIN_OBSERVATIONS is
+    // excluded), so the boundary value itself must be included
+    final List<Fact> twenty = new ArrayList<>();
+    for (int i = 0; i < 20; i++) {
+      twenty.add(completed(1_000L + i));
+    }
+    ServingTestSupport.seed(fixture, "elements", "duration_p", twenty, PROCESS, "borderline");
+
+    // when read
+    final List<ElementOutlier> outliers = repository.elementOutliers(PROCESS, null, null);
+
+    // then the element is trusted at exactly the boundary
+    assertThat(outliers).singleElement().satisfies(o -> assertThat(o.n()).isEqualTo(20L));
   }
 
   @Test

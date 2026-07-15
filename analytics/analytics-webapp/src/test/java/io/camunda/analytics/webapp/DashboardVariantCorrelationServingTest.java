@@ -112,6 +112,33 @@ final class DashboardVariantCorrelationServingTest {
   }
 
   @Test
+  void shouldCapAtTheMaximumCorrelationRows() {
+    // given 25 distinct (variant, variable) pairs, each with its own route value used by only
+    // that one variant: n(o)=count, n(x)=count -> share=1.0, lift = N / count. Counts run
+    // 100 down to 76 (variantHash 1000+i, count 100-i), so lift is strictly increasing in i and
+    // the top-20-by-lift ranking is unambiguous.
+    for (int i = 0; i < 25; i++) {
+      seedVariantRoute(1000L + i, "v" + i, 100 - i);
+    }
+
+    // when read
+    final List<VariantCorrelation> correlations =
+        repository.variantCorrelations(PROCESS, null, null);
+
+    // then capped at 20, keeping the highest-lift rows (the smallest counts here) rather than an
+    // arbitrary uncapped list
+    assertThat(correlations).hasSize(20);
+    assertThat(correlations)
+        .extracting(VariantCorrelation::variantHash)
+        .doesNotContain(
+            String.valueOf(1000L),
+            String.valueOf(1001L),
+            String.valueOf(1002L),
+            String.valueOf(1003L),
+            String.valueOf(1004L));
+  }
+
+  @Test
   void shouldServeEmptyWhenThereIsNoVariantCorrCube() {
     // given a catalog with no corr-variant-* cube provisioned
     final CompiledDataset processVariants = fixture.catalog().require("process-variants");

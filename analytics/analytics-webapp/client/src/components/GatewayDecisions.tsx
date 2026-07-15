@@ -36,51 +36,67 @@ export function GatewayDecisions({
       <CardHeader>
         <CardTitle>Gateway decisions</CardTitle>
         <CardDescription>
-          Branch split per exclusive gateway (activation-based; loop targets can over-count)
+          Branch split per exclusive gateway (activation-based; loop targets can over-count).
+          Driver chips are computed from completed executions only, so their counts can
+          undercount the activation-based branch totals above.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
-        {gateways.map((g) => (
-          <div key={g.gatewayId} className="flex flex-col gap-2">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm font-medium">{g.gatewayLabel}</span>
-              <span className="text-xs text-neutral-foreground-muted">
-                {formatCount(g.activations)} decisions
-              </span>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {g.branches.map((b, i) => {
-                const driver = correlations.find(
-                  (c) => c.gatewayId === g.gatewayId && c.targetId === b.targetId,
-                );
-                return (
-                  <div key={b.targetId} className="flex items-center gap-2 text-sm">
-                    <span className="w-40 truncate" title={b.targetId}>
-                      {b.targetLabel}
-                    </span>
-                    <div className="h-2.5 flex-1 rounded bg-neutral-background-subtle">
-                      <div
-                        className="h-2.5 rounded"
-                        style={{
-                          width: `${Math.min(100, Math.max(b.activations > 0 ? 4 : 0, b.share * 100))}%`,
-                          backgroundColor: chartColor(i),
-                        }}
-                      />
-                    </div>
-                    <span className="w-24 text-right text-xs tabular-nums text-neutral-foreground-muted">
-                      {formatCount(b.activations)} · {formatPercent(b.share)}
-                    </span>
-                    {driver ? (
-                      <span className="inline-flex items-center rounded-full bg-neutral-background-subtle px-2 py-0.5 font-mono text-xs">
-                        {driver.variable}={driver.value} ×{driver.lift.toFixed(1)}
+        {gateways.map((g) => {
+          // Additive/optional column, gated per gateway: with no correlation data at all for
+          // THIS gateway, the chip column disappears entirely rather than reserving its width on
+          // every row. When it IS reserved, it stays a fixed width on every row of the gateway
+          // (chip or not), so the flex-1 bar tracks stay comparable within the gateway instead of
+          // shrinking only on the rows that happen to have a chip.
+          const hasDrivers = correlations.some((c) => c.gatewayId === g.gatewayId);
+          return (
+            <div key={g.gatewayId} className="flex flex-col gap-2">
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-medium">{g.gatewayLabel}</span>
+                <span className="text-xs text-neutral-foreground-muted">
+                  {formatCount(g.activations)} decisions
+                </span>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {g.branches.map((b, i) => {
+                  const driver = hasDrivers
+                    ? correlations.find(
+                        (c) => c.gatewayId === g.gatewayId && c.targetId === b.targetId,
+                      )
+                    : undefined;
+                  return (
+                    <div key={b.targetId} className="flex items-center gap-2 text-sm">
+                      <span className="w-40 truncate" title={b.targetId}>
+                        {b.targetLabel}
                       </span>
-                    ) : null}
-                  </div>
-                );
-              })}
+                      <div className="h-2.5 flex-1 rounded bg-neutral-background-subtle">
+                        <div
+                          className="h-2.5 rounded"
+                          style={{
+                            width: `${Math.min(100, Math.max(b.activations > 0 ? 4 : 0, b.share * 100))}%`,
+                            backgroundColor: chartColor(i),
+                          }}
+                        />
+                      </div>
+                      <span className="w-24 text-right text-xs tabular-nums text-neutral-foreground-muted">
+                        {formatCount(b.activations)} · {formatPercent(b.share)}
+                      </span>
+                      {hasDrivers ? (
+                        <span className="w-32 shrink-0">
+                          {driver ? (
+                            <span className="inline-flex items-center rounded-full bg-neutral-background-subtle px-2 py-0.5 font-mono text-xs">
+                              {driver.variable}={driver.value} ×{driver.lift.toFixed(1)}
+                            </span>
+                          ) : null}
+                        </span>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {gateways.length === 0 ? (
           <p className="py-4 text-center text-sm text-neutral-foreground-muted">
             No decision gateways in this process model.
