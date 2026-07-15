@@ -638,6 +638,7 @@ jobs:
     continue-on-error: ${{ github.event_name == 'merge_group' }}
     permissions:
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - run: |
@@ -675,17 +676,45 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: camunda
+      - name: Classify helm failure type
+        id: classify
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # playwright-results-json-* artifacts are uploaded only when the E2E step ran.
+          # If they exist, the Helm install succeeded but the E2E tests failed
+          # → test-automation-team owns. If absent, the install/setup failed
+          # before tests ever ran → distribution owns.
+          E2E_ARTIFACTS=$(gh api \
+            "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" \
+            --jq '[.artifacts[] | select(.name | startswith("playwright-results-json"))] | length' \
+            2>/dev/null || echo 0)
+          if [[ "$E2E_ARTIFACTS" -gt 0 ]]; then
+            {
+              echo "failure_category=test-infra"
+              echo "owner_team=@camunda/test-automation-team"
+              echo "evidence=Playwright E2E tests failed after Helm install."
+            } >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "failure_category=test-infra"
+              echo "owner_team=@camunda/distribution"
+              echo "evidence=Helm chart Integration Tests failed."
+            } >> "$GITHUB_OUTPUT"
+          fi
       - name: Post AlwaysGreen failure feedback
         if: failure()
         continue-on-error: true
         uses: ./.github/actions/post-failure-feedback
         with:
-          failure_category: test-infra
+          failure_category: ${{ steps.classify.outputs.failure_category || 'test-infra' }}
           stage: helm-integration
-          owner_team: "@camunda/distribution"
+          owner_team: ${{ steps.classify.outputs.owner_team || '@camunda/distribution' }}
           run_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           status: failure
-          evidence: "Helm chart Integration Tests failed."
+          evidence: ${{ steps.classify.outputs.evidence || 'Helm chart Integration Tests failed.' }}
           pr: ${{ github.event.merge_group.head_ref || github.event.pull_request.number }}
           slack_channel: "C0AK0AVKRL0"
           slack_bot_token: ${{ steps.slack-secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
@@ -707,7 +736,7 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ needs.helm-deploy.result }}" == "failure" || "${{ needs.helm-deploy.result }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/distribution"
+            OWNER_TEAM="${{ steps.classify.outputs.owner_team || '@camunda/distribution' }}"
             FAILURE_CATEGORY="helm_install_or_it"
           fi
           jq -n \
