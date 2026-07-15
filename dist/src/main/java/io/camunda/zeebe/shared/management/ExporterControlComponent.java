@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.service.admin.exporting.ExportingControlApi;
+import io.camunda.service.admin.exporting.ExportingControlService;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.admin.exporting.ExportingControlApi;
-import io.camunda.zeebe.gateway.admin.exporting.ExportingControlService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 

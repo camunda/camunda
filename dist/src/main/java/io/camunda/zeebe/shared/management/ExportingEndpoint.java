@@ -9,7 +9,7 @@ package io.camunda.zeebe.shared.management;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 
-import io.camunda.zeebe.gateway.admin.exporting.ExportingControlApi;
+import io.camunda.service.admin.exporting.ExportingControlApi;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;

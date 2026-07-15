@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin;
+package io.camunda.service.admin;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
