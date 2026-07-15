@@ -166,14 +166,14 @@ Beyond the common attributes above, each event type carries its own additional f
 
 **`process_instance_created`**
 
-|              Attribute              |  Type  |                  Description                   |
-|-------------------------------------|--------|------------------------------------------------|
-| `camunda.process.id`                | string | BPMN process ID.                               |
-| `camunda.process.version`           | long   | Deployed process version.                      |
-| `camunda.process.definition_key`    | long   | Process definition key.                        |
-| `camunda.process.instance_key`      | long   | Process instance key.                          |
-| `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes). |
-| `camunda.tenant.id`                 | string | Tenant ID.                                     |
+|              Attribute              |  Type  |                                                                                                 Description                                                                                                 |
+|-------------------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `camunda.process.id`                | string | BPMN process ID.                                                                                                                                                                                            |
+| `camunda.process.version`           | long   | Deployed process version.                                                                                                                                                                                   |
+| `camunda.process.definition_key`    | long   | Process definition key.                                                                                                                                                                                     |
+| `camunda.process.instance_key`      | long   | Process instance key. **Known issue:** currently populated from the creation command record's own key, not the actual process instance key — see [#57838](https://github.com/camunda/camunda/issues/57838). |
+| `camunda.process.root_instance_key` | long   | Root process instance key (for sub-processes).                                                                                                                                                              |
+| `camunda.tenant.id`                 | string | Tenant ID.                                                                                                                                                                                                  |
 
 **`user_task_created`**
 

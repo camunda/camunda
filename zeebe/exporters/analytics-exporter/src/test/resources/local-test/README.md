@@ -107,7 +107,9 @@ Open http://localhost:3333 → **Explore**
 The exporter follows the OTel events convention and leaves the log body empty — `event.name`
 and every other attribute arrive as Loki **structured metadata**, not as text in the log line.
 Use a structured-metadata filter (`|`), not a line-content filter (`|=`) — the latter will
-never match and silently returns zero results.
+never match and silently returns zero results. Note that Loki sanitizes dots to underscores
+in structured metadata field names, so `event.name` is queried as `event_name` below (same
+applies to every other dotted attribute name).
 
 |                                   Query                                   |        What it shows         |
 |---------------------------------------------------------------------------|------------------------------|
