@@ -19,11 +19,13 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.MultiCamundaClientProperties;
 import io.camunda.client.spring.properties.MultiCamundaClientPropertiesResolver;
+import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -72,6 +74,16 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
   @Override
   public void postProcessBeanDefinitionRegistry(final BeanDefinitionRegistry registry)
       throws BeansException {
+    if (isProcessTestSupportPresent(registry)) {
+      // In process-test-support mode the test framework provides its own (primary, proxied)
+      // CamundaClient; registering per-client beans here would create a second @Primary
+      // CamundaClient and break the context. Mirrors the single-client path, whose client bean was
+      // @ConditionalOnMissingBean(CamundaSpringProcessTestContext.class).
+      LOG.debug(
+          "CamundaSpringProcessTestContext present; skipping multi-client CamundaClient bean "
+              + "registration (the test framework provides the client)");
+      return;
+    }
     final MultiCamundaClientProperties properties =
         MultiCamundaClientPropertiesResolver.resolve(environment);
     if (properties.getClients().isEmpty()) {
@@ -93,6 +105,15 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
   public void postProcessBeanFactory(final ConfigurableListableBeanFactory beanFactory)
       throws BeansException {
     // no-op: only bean definitions are registered
+  }
+
+  private static boolean isProcessTestSupportPresent(final BeanDefinitionRegistry registry) {
+    // the process-test-support auto-configuration registers a CamundaSpringProcessTestContext bean
+    // before this post-processor runs; detect it by type without instantiating any bean
+    return registry instanceof final ListableBeanFactory beanFactory
+        && beanFactory.getBeanNamesForType(CamundaSpringProcessTestContext.class, false, false)
+                .length
+            > 0;
   }
 
   private void registerClientBean(
