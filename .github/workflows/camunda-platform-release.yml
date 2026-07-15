@@ -353,7 +353,14 @@ jobs:
           github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
           github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
       - name: Push Changes to Release branch
-        run: git push ${{ inputs.dryRun && '--dry-run' || '' }} origin "${RELEASE_BRANCH}"
+        # retry is needed because the new token propagation is not instantaneous and can lead to a 403 error on the first push attempt
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          retry_on: error
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: git push ${{ inputs.dryRun && '--dry-run' || '' }} origin "${RELEASE_BRANCH}"
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
