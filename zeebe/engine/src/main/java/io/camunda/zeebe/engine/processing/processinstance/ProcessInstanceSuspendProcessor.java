@@ -14,11 +14,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -27,14 +29,20 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 public final class ProcessInstanceSuspendProcessor
     implements TypedRecordProcessor<ProcessInstanceRecord> {
 
+  private static final String MESSAGE_PREFIX =
+      "Expected to suspend a process instance with key '%d', but ";
+
   private static final String PROCESS_NOT_FOUND_MESSAGE =
-      "Expected to suspend a process instance with key '%d', but no such process was found";
+      MESSAGE_PREFIX + "no such process was found";
+  private static final String PROCESS_CANCEL_IN_PROGRESS_MESSAGE =
+      MESSAGE_PREFIX + "a cancel request is already in progress";
 
   private final ElementInstanceState elementInstanceState;
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final AsyncRequestState asyncRequestState;
 
   public ProcessInstanceSuspendProcessor(
       final ProcessingState processingState,
@@ -45,6 +53,7 @@ public final class ProcessInstanceSuspendProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.authCheckBehavior = authCheckBehavior;
+    asyncRequestState = processingState.getAsyncRequestState();
   }
 
   @Override
@@ -64,7 +73,7 @@ public final class ProcessInstanceSuspendProcessor
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 
-    if (elementInstance == null) {
+    if (elementInstance == null || elementInstance.isTerminating()) {
       final var reason = String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
@@ -89,8 +98,20 @@ public final class ProcessInstanceSuspendProcessor
                   elementInstance.getValue().getProcessInstanceKey(),
                   "such process")
               : rejection.reason();
+      enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
       responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      return false;
+    }
+
+    final var existingCancelRequest =
+        asyncRequestState.findRequest(
+            command.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
+    if (existingCancelRequest.isPresent()) {
+      final var reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
+      enrichRejectionCommand(command, elementInstance.getValue());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
       return false;
     }
 
@@ -98,5 +119,12 @@ public final class ProcessInstanceSuspendProcessor
     // instance is already suspended.
 
     return true;
+  }
+
+  private void enrichRejectionCommand(
+      final TypedRecord<ProcessInstanceRecord> command,
+      final ProcessInstanceRecord processInstanceRecord) {
+    command.getValue().setTenantId(processInstanceRecord.getTenantId());
+    command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
   }
 }
