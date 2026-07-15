@@ -50,6 +50,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -422,6 +423,36 @@ public class AuditLogProcessOperationsIT {
         processInstanceKey,
         processInstance.getProcessDefinitionKey(),
         SERVICE_TASKS_PROCESS_ID);
+  }
+
+  @Test
+  @Disabled(
+      "Blocked on the process-instance SUSPEND/RESUME REST endpoint and CamundaClient command "
+          + "(tracked by phase issue https://github.com/camunda/camunda/issues/57508); "
+          + "CamundaClient has no newSuspendProcessInstanceCommand yet, so a real test body "
+          + "would not compile. Enable once the client command lands.")
+  void shouldTrackProcessInstanceSuspension(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // TODO(#57508): once client.newSuspendProcessInstanceCommand(processInstanceKey) exists,
+    // mirror shouldTrackProcessInstanceCancellation above: start a process instance, send the
+    // suspend command, then assert an AuditLogOperationTypeEnum.SUSPEND entry for
+    // AuditLogEntityTypeEnum.PROCESS_INSTANCE via awaitAuditLogEntry(...) +
+    // assertProcessInstanceAuditLog(...).
+  }
+
+  @Test
+  @Disabled(
+      "Blocked on the process-instance SUSPEND/RESUME REST endpoint and CamundaClient command "
+          + "(tracked by phase issue https://github.com/camunda/camunda/issues/57508); "
+          + "CamundaClient has no newResumeProcessInstanceCommand yet, so a real test body "
+          + "would not compile. Enable once the client command lands.")
+  void shouldTrackProcessInstanceResumption(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // TODO(#57508): once client.newResumeProcessInstanceCommand(processInstanceKey) exists,
+    // mirror shouldTrackProcessInstanceCancellation above: start and suspend a process instance,
+    // send the resume command, then assert an AuditLogOperationTypeEnum.RESUME entry for
+    // AuditLogEntityTypeEnum.PROCESS_INSTANCE via awaitAuditLogEntry(...) +
+    // assertProcessInstanceAuditLog(...).
   }
 
   // ========================================================================================
