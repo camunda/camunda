@@ -713,12 +713,9 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <systemProperties>
-            <property>
-              <name>identity.docker.image.version</name>
-              <value>${version.identity}</value>
-            </property>
-          </systemProperties>
+          <systemPropertyVariables>
+            <identity.docker.image.version>${version.identity}</identity.docker.image.version>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
       <plugin>

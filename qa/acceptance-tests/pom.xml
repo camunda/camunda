@@ -733,12 +733,9 @@
             <printStderrOnFailure>true</printStderrOnFailure>
             <printStderrOnSuccess>false</printStderrOnSuccess>
           </statelessTestsetInfoReporter>
-          <systemProperties>
-            <property>
-              <name>identity.docker.image.version</name>
-              <value>${version.identity}</value>
-            </property>
-          </systemProperties>
+          <systemPropertyVariables>
+            <identity.docker.image.version>${version.identity}</identity.docker.image.version>
+          </systemPropertyVariables>
           <excludedGroups>rdbms, rdbms-aurora, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
         </configuration>
         <dependencies>
