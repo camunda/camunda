@@ -33,8 +33,7 @@ const DateInput = forwardRef<HTMLDivElement, Props>(({type, onChange, ...props},
 						ref={ref}
 						placeholder="YYYY-MM-DD"
 						pattern="\\d{4}-\\d{1,2}-\\d{1,2}"
-						// @ts-expect-error - Carbon types are wrong
-						value={input.value}
+						// @ts-expect-error - Carbon types omit maxLength even though it's a plain <input>
 						maxLength={10}
 						autoComplete="off"
 					/>

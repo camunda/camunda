@@ -91,7 +91,7 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, filt
 
 	return (
 		<Form onSubmit={handleApply} initialValues={defaultValues}>
-			{({handleSubmit, form}) => (
+			{({handleSubmit, form, values}) => (
 				<Layer level={0}>
 					<>
 						{createPortal(
@@ -117,6 +117,10 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, filt
 										<DatePicker
 											datePickerType="range"
 											locale={englishLocale}
+											// Carbon's `DatePickerInput` explicitly doesn't support a `value` prop on
+											// itself for range pickers; the parent `DatePicker` is the supported,
+											// documented way to control the selected dates.
+											value={[values.fromDate, values.toDate].filter((date): date is string => Boolean(date))}
 											onChange={(event) => {
 												const [fromDateTime, toDateTime] = event;
 												if (fromDateTime !== undefined) {
