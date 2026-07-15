@@ -63,11 +63,6 @@ on:
         type: boolean
         required: false
         default: true
-      enable-webapps:
-        description: 'Enable Operate and Tasklist for load testing'
-        type: boolean
-        required: false
-        default: true
       build-frontend:
         description: 'Build frontend assets as part of the load test image build'
         type: boolean
@@ -155,11 +150,6 @@ on:
         default: false
       enable-optimize:
         description: 'Enable Optimize for load testing'
-        type: boolean
-        required: false
-        default: true
-      enable-webapps:
-        description: 'Enable Operate and Tasklist for load testing'
         type: boolean
         required: false
         default: true
@@ -280,7 +270,6 @@ jobs:
           ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
           ENABLE_OPTIMIZE: ${{ inputs.enable-optimize }}
           OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
-          ENABLE_WEBAPPS: ${{ inputs.enable-webapps }}
           OPERATE_TAG: ${{ inputs.operate-tag }}
           TASKLIST_TAG: ${{ inputs.tasklist-tag }}
           IDENTITY_TAG: ${{ inputs.identity-tag }}
@@ -327,11 +316,11 @@ jobs:
             validate_image "camunda/optimize:${OPTIMIZE_TAG}" || exit 1
           fi
 
-          if [[ "${ENABLE_WEBAPPS}" == "true" && -n "${OPERATE_TAG}" ]]; then
+          if [[ -n "${OPERATE_TAG}" ]]; then
             validate_image "camunda/operate:${OPERATE_TAG}" || exit 1
           fi
 
-          if [[ "${ENABLE_WEBAPPS}" == "true" && -n "${TASKLIST_TAG}" ]]; then
+          if [[ -n "${TASKLIST_TAG}" ]]; then
             validate_image "camunda/tasklist:${TASKLIST_TAG}" || exit 1
           fi
 
@@ -366,12 +355,12 @@ jobs:
           minimus: true
       - uses: ./.github/actions/build-frontend
         name: Build Operate Frontend
-        if: ${{ inputs.build-frontend && inputs.enable-webapps }}
+        if: ${{ inputs.build-frontend }}
         with:
           directory: ./operate/client
       - uses: ./.github/actions/build-frontend
         name: Build Tasklist Frontend
-        if: ${{ inputs.build-frontend && inputs.enable-webapps }}
+        if: ${{ inputs.build-frontend }}
         with:
           directory: ./tasklist/client
       - uses: ./.github/actions/build-frontend
@@ -395,7 +384,6 @@ jobs:
           dockerfile: 'Dockerfile'
       - uses: ./.github/actions/build-platform-docker
         name: Build Operate Docker Image
-        if: ${{ inputs.enable-webapps }}
         with:
           repository: '${{ env.IMAGE_REPOSITORY }}/operate'
           revision: ${{ inputs.ref }}
@@ -405,7 +393,6 @@ jobs:
           dockerfile: 'operate.Dockerfile'
       - uses: ./.github/actions/build-platform-docker
         name: Build Tasklist Docker Image
-        if: ${{ inputs.enable-webapps }}
         with:
           repository: '${{ env.IMAGE_REPOSITORY }}/tasklist'
           revision: ${{ inputs.ref }}
@@ -611,7 +598,7 @@ jobs:
           git config user.name ${{ github.actor }}
           # Render the load-test folder. newLoadTest.sh no longer creates the namespace — that
           # happens on `make install` via `kubectl apply -f resources/namespace.yaml`.
-          ./newLoadTest.sh --target-version stable-87 ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }} ${{ inputs.enable-webapps }}
+          ./newLoadTest.sh --target-version stable-87 ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ env.NAMESPACE }}
@@ -655,34 +642,30 @@ jobs:
             fi
           fi
 
-          # Inject Operate image configuration when enabled
-          if [[ "${{ inputs.enable-webapps }}" == "true" ]]; then
-            if [[ -n "${{ inputs.operate-tag }}" ]]; then
-              # Explicit operate tag: use it directly (Docker Hub image)
-              additional_platform_config+=" \
-                --set operate.image.tag=${{ inputs.operate-tag }}"
-            elif [[ -z "${{ inputs.orchestration-tag }}" ]]; then
-              # Custom build or reuse-tag: use internal registry image
-              additional_platform_config+=" \
-                --set operate.image.registry=${image_registry} \
-                --set operate.image.repository=${operate_repo} \
-                --set operate.image.tag=${image_tag}"
-            fi
+          # Inject Operate image configuration
+          if [[ -n "${{ inputs.operate-tag }}" ]]; then
+            # Explicit operate tag: use it directly (Docker Hub image)
+            additional_platform_config+=" \
+              --set operate.image.tag=${{ inputs.operate-tag }}"
+          elif [[ -z "${{ inputs.orchestration-tag }}" ]]; then
+            # Custom build or reuse-tag: use internal registry image
+            additional_platform_config+=" \
+              --set operate.image.registry=${image_registry} \
+              --set operate.image.repository=${operate_repo} \
+              --set operate.image.tag=${image_tag}"
           fi
 
-          # Inject Tasklist image configuration when enabled
-          if [[ "${{ inputs.enable-webapps }}" == "true" ]]; then
-            if [[ -n "${{ inputs.tasklist-tag }}" ]]; then
-              # Explicit tasklist tag: use it directly (Docker Hub image)
-              additional_platform_config+=" \
-                --set tasklist.image.tag=${{ inputs.tasklist-tag }}"
-            elif [[ -z "${{ inputs.orchestration-tag }}" ]]; then
-              # Custom build or reuse-tag: use internal registry image
-              additional_platform_config+=" \
-                --set tasklist.image.registry=${image_registry} \
-                --set tasklist.image.repository=${tasklist_repo} \
-                --set tasklist.image.tag=${image_tag}"
-            fi
+          # Inject Tasklist image configuration
+          if [[ -n "${{ inputs.tasklist-tag }}" ]]; then
+            # Explicit tasklist tag: use it directly (Docker Hub image)
+            additional_platform_config+=" \
+              --set tasklist.image.tag=${{ inputs.tasklist-tag }}"
+          elif [[ -z "${{ inputs.orchestration-tag }}" ]]; then
+            # Custom build or reuse-tag: use internal registry image
+            additional_platform_config+=" \
+              --set tasklist.image.registry=${image_registry} \
+              --set tasklist.image.repository=${tasklist_repo} \
+              --set tasklist.image.tag=${image_tag}"
           fi
 
           # Append identity image config if a dedicated tag is provided
@@ -706,7 +689,6 @@ jobs:
             scenario=${{ inputs.scenario }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
-            enable_webapps=${{ inputs.enable-webapps }} \
             additional_platform_configuration="$additional_platform_config" \
             additional_load_test_configuration="$load_test_config"
       - name: Annotate namespace with workflow run URL
