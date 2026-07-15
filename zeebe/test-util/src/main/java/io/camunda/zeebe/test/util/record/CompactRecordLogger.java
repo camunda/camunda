@@ -119,6 +119,7 @@ import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBusinessIdRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
@@ -283,6 +284,8 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
+    valueLoggers.put(
+        ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND, this::summarizeProcessInstanceBufferedCommand);
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_BUSINESS_ID, this::summarizeProcessInstanceBusinessId);
     valueLoggers.put(
@@ -2008,6 +2011,18 @@ public class CompactRecordLogger {
     }
 
     return summary.toString();
+  }
+
+  private String summarizeProcessInstanceBufferedCommand(final Record<?> record) {
+    final var value = (ProcessInstanceBufferedCommandRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append(shortenKey(value.getProcessInstanceKey()))
+        .append(" elementInstanceKey: ")
+        .append(shortenKey(value.getElementInstanceKey()))
+        .append(" intent: ")
+        .append(value.getIntent())
+        .toString();
   }
 
   private String summarizeProcessInstanceBusinessId(final Record<?> record) {
