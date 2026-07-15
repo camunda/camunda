@@ -112,7 +112,10 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           }
         }
       })}
-      <DocumentContent content={content} />
+      <DocumentContent
+        content={content}
+        modalTitleSuffix="conversation message"
+      />
       <ToolCalls toolCalls={toolCalls} />
       {messageDetails.state === 'visible' && (
         <MessageDetailsModal

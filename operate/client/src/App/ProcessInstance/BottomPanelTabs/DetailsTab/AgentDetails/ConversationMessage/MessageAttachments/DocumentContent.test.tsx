@@ -36,7 +36,10 @@ function createDocumentContent(id: string, fileName: string): ContentItem {
 describe('<DocumentContent />', () => {
   it('should render nothing when there are no document entries', () => {
     const {container} = render(
-      <DocumentContent content={[{contentType: 'TEXT', text: 'hello'}]} />,
+      <DocumentContent
+        content={[{contentType: 'TEXT', text: 'hello'}]}
+        modalTitleSuffix="conversation message"
+      />,
     );
 
     expect(container).toBeEmptyDOMElement();
@@ -45,7 +48,12 @@ describe('<DocumentContent />', () => {
   it('should render a chip for each document entry', () => {
     const doc1 = createDocumentContent('doc-1', 'report.txt');
     const doc2 = createDocumentContent('doc-2', 'screenshot.png');
-    render(<DocumentContent content={[doc1, doc2]} />);
+    render(
+      <DocumentContent
+        content={[doc1, doc2]}
+        modalTitleSuffix="conversation message"
+      />,
+    );
 
     expect(
       screen.getByRole('listitem', {name: 'report.txt'}),
@@ -60,7 +68,12 @@ describe('<DocumentContent />', () => {
       'doc-1',
       'a-very-long-document-name.txt',
     );
-    render(<DocumentContent content={[doc1]} />);
+    render(
+      <DocumentContent
+        content={[doc1]}
+        modalTitleSuffix="conversation message"
+      />,
+    );
 
     const chip = screen.getByRole('listitem', {
       name: 'a-very-long-document-name.txt',
@@ -75,7 +88,12 @@ describe('<DocumentContent />', () => {
       createDocumentContent('doc-3', 'third.txt'),
       createDocumentContent('doc-4', 'fourth.txt'),
     ];
-    render(<DocumentContent content={content} />);
+    render(
+      <DocumentContent
+        content={content}
+        modalTitleSuffix="conversation message"
+      />,
+    );
 
     expect(
       screen.getByRole('listitem', {name: 'first.txt'}),
@@ -95,7 +113,12 @@ describe('<DocumentContent />', () => {
   it('should open the document list modal when the view-documents button is clicked', async () => {
     const doc1 = createDocumentContent('doc-1', 'report.txt');
     const doc2 = createDocumentContent('doc-2', 'screenshot.png');
-    const {user} = render(<DocumentContent content={[doc1, doc2]} />);
+    const {user} = render(
+      <DocumentContent
+        content={[doc1, doc2]}
+        modalTitleSuffix="conversation message"
+      />,
+    );
 
     await user.click(screen.getByLabelText('View documents'));
 
@@ -104,6 +127,21 @@ describe('<DocumentContent />', () => {
       dialog.getByRole('heading', {
         name: '2 documents in conversation message',
       }),
+    ).toBeInTheDocument();
+  });
+
+  it('should use the modal title suffix in the document list modal heading', async () => {
+    const doc1 = createDocumentContent('doc-1', 'report.txt');
+    const doc2 = createDocumentContent('doc-2', 'screenshot.png');
+    const {user} = render(
+      <DocumentContent content={[doc1, doc2]} modalTitleSuffix="tool result" />,
+    );
+
+    await user.click(screen.getByLabelText('View documents'));
+
+    const dialog = within(screen.getByRole('dialog'));
+    expect(
+      dialog.getByRole('heading', {name: '2 documents in tool result'}),
     ).toBeInTheDocument();
   });
 });

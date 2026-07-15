@@ -27,10 +27,12 @@ type ContentItem = AgentInstanceHistoryItem['content'][number];
 
 type Props = {
   content: ContentItem[];
+  modalTitleSuffix: string;
 };
 
 const DocumentContent: React.FC<Props> = memo(function DocumentContent({
   content,
+  modalTitleSuffix,
 }) {
   const id = useId();
 
@@ -81,7 +83,7 @@ const DocumentContent: React.FC<Props> = memo(function DocumentContent({
             isFullyLoaded
             isError={false}
             isLoading={false}
-            variableName="conversation message"
+            variableName={modalTitleSuffix}
           />
         )}
       </ModalStateManager>
