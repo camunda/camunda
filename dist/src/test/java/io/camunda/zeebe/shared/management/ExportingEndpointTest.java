@@ -34,7 +34,6 @@ final class ExportingEndpointTest {
     // when
     when(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
     when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
-    when(service.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)).thenThrow(new RuntimeException());
 
     // then
     assertThat(endpoint.post(operation, false))
@@ -54,8 +53,6 @@ final class ExportingEndpointTest {
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
     when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
-    when(service.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
 
     // then
     assertThat(endpoint.post(operation, false))
@@ -74,8 +71,6 @@ final class ExportingEndpointTest {
     when(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(service.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID))
-        .thenReturn(CompletableFuture.completedFuture(null));
-    when(service.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // then
