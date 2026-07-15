@@ -243,7 +243,6 @@ jobs:
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./operate/client
-          package-manager: "npm"
       - name: Upload Operate frontend artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -299,7 +298,6 @@ jobs:
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./tasklist/client
-          package-manager: "npm"
       - name: Upload Tasklist frontend artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -355,7 +353,6 @@ jobs:
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./identity/client
-          package-manager: "npm"
       - name: Upload Identity frontend artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
