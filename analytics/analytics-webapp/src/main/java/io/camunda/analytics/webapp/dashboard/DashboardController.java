@@ -169,6 +169,39 @@ public class DashboardController {
     return repository.activeSeries(bpmnProcessId, from, to);
   }
 
+  /**
+   * Per-window flow balance: instances started and ended (completed + terminated) per window, the
+   * bars the flow-balance widget renders under the active-instances WIP line.
+   */
+  @GetMapping("/lifecycle-series")
+  public List<LifecycleSeriesPoint> lifecycleSeries(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.lifecycleSeries(bpmnProcessId, from, to);
+  }
+
+  /**
+   * Rework hotspots per flow node: {@code rework = max(0, activations − instances)} — activations
+   * are exact, distinct instances an HLL estimate, so the rework figure is exact for small counts
+   * and an approximation at scale; zero-rework elements are omitted, sorted by rework descending.
+   */
+  @GetMapping("/rework")
+  public List<ReworkHotspot> rework(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.rework(bpmnProcessId, from, to);
+  }
+
+  /** The oldest currently-open instances (aging WIP), oldest first, with server-computed age. */
+  @GetMapping("/open-instances")
+  public List<OpenInstanceRow> openInstances(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "limit", required = false, defaultValue = "20") final int limit) {
+    return repository.openInstances(bpmnProcessId, limit);
+  }
+
   /** Per-window completion-duration spread (stddev/min/max) for a process. */
   @GetMapping("/duration-spread")
   public List<DurationSpreadPoint> durationSpread(

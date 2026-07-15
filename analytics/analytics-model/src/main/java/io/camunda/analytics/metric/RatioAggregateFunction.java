@@ -8,14 +8,18 @@
 package io.camunda.analytics.metric;
 
 import io.camunda.eventbridge.streaming.aggregate.AggregateFunction;
+import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
 /**
- * A mergeable part-of-whole ratio: every folded fact increments {@code total}, and a fact whose
- * measured value satisfies the {@link Comparison numerator predicate} (a comparison against a
- * threshold) also increments {@code matched}. The classic Optimize cohorts are ratio declarations —
- * an SLA-compliant share is {@code duration <= sla}, a no-incident share is {@code incidentCount ==
- * 0} — so there is one generic meter, not a class per cohort.
+ * A mergeable part-of-whole ratio: every folded fact increments {@code total}, and a fact
+ * satisfying the numerator predicate also increments {@code matched}. The predicate is either a
+ * general fact predicate (the declaration's {@code matched} conjunction, compiled once at bind) or
+ * the legacy single {@link Comparison comparison} of a measured value against a threshold. The
+ * classic Optimize cohorts are ratio declarations — an SLA-compliant share is {@code duration <=
+ * sla}, a no-incident share is {@code incidentCount == 0}, a first-time-right share is {@code
+ * completed ∧ in-SLA ∧ incident-free} — so there is one generic meter, not a class per cohort.
  *
  * <p>{@code merge} is component-wise addition of the two counters: commutative and associative, so
  * it pre-aggregates per source partition and combines across partitions exactly, like {@code
@@ -56,15 +60,17 @@ public final class RatioAggregateFunction<F>
     }
   }
 
-  private final ToDoubleFunction<F> measure;
-  private final Comparison comparison;
-  private final double threshold;
+  private final Predicate<F> matched;
 
+  /** The general form: a fact counts as matched when the predicate admits it. */
+  public RatioAggregateFunction(final Predicate<F> matched) {
+    this.matched = Objects.requireNonNull(matched, "matched");
+  }
+
+  /** The legacy form: a fact counts as matched when its measured value passes the comparison. */
   public RatioAggregateFunction(
       final ToDoubleFunction<F> measure, final Comparison comparison, final double threshold) {
-    this.measure = measure;
-    this.comparison = comparison;
-    this.threshold = threshold;
+    this(value -> comparison.test(measure.applyAsDouble(value), threshold));
   }
 
   @Override
@@ -74,8 +80,7 @@ public final class RatioAggregateFunction<F>
 
   @Override
   public RatioAccumulator add(final F value, final RatioAccumulator acc) {
-    final long matched = comparison.test(measure.applyAsDouble(value), threshold) ? 1L : 0L;
-    return new RatioAccumulator(acc.matched() + matched, acc.total() + 1L);
+    return new RatioAccumulator(acc.matched() + (matched.test(value) ? 1L : 0L), acc.total() + 1L);
   }
 
   @Override

@@ -339,9 +339,8 @@ public class AnalyticsController {
                         m.type(),
                         m.measureField(),
                         m.params(),
-                        m.filters().stream()
-                            .map(f -> new FilterRequest(f.field(), f.operator(), f.value()))
-                            .toList()))
+                        toFilterViews(m.filters()),
+                        toFilterViews(m.matched())))
             .toList(),
         d.windowSizesMs(),
         d.keyField(),
@@ -413,18 +412,27 @@ public class AnalyticsController {
 
   public record DimensionRequest(String name, DimensionType type, EnrichmentTiming enrichment) {}
 
-  /** One declared meter; {@code filters} are the per-meter fold predicates (may be omitted). */
+  /**
+   * One declared meter; {@code filters} are the per-meter fold predicates and {@code matched} the
+   * ratio-only numerator predicates (either may be omitted).
+   */
   public record MeterRequest(
       String name,
       String type,
       String measureField,
       Map<String, String> params,
-      List<FilterRequest> filters) {
+      List<FilterRequest> filters,
+      List<FilterRequest> matched) {
 
     Meter toMeter() {
-      final List<FilterPredicate> predicates =
-          filters == null ? List.of() : filters.stream().map(FilterRequest::toPredicate).toList();
-      return new Meter(name, type, measureField, params, predicates);
+      return new Meter(
+          name, type, measureField, params, toPredicates(filters), toPredicates(matched));
+    }
+
+    private static List<FilterPredicate> toPredicates(final List<FilterRequest> filters) {
+      return filters == null
+          ? List.of()
+          : filters.stream().map(FilterRequest::toPredicate).toList();
     }
   }
 
@@ -457,5 +465,12 @@ public class AnalyticsController {
       String type,
       String measureField,
       Map<String, String> params,
-      List<FilterRequest> filters) {}
+      List<FilterRequest> filters,
+      List<FilterRequest> matched) {}
+
+  private static List<FilterRequest> toFilterViews(final List<FilterPredicate> predicates) {
+    return predicates.stream()
+        .map(f -> new FilterRequest(f.field(), f.operator(), f.value()))
+        .toList();
+  }
 }

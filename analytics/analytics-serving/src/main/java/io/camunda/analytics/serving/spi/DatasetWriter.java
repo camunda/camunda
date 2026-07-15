@@ -43,6 +43,13 @@ public interface DatasetWriter extends AutoCloseable {
   void upsertRow(CompiledTable table, String rowKey, List<Object> values);
 
   /**
+   * Deletes the row keyed by {@code rowKey} from a projected dataset — the eviction counterpart of
+   * {@link #upsertRow} (see {@code DatasetDeclaration#evictionFilters()}). Idempotent: deleting an
+   * absent row is a no-op, so a replayed eviction never fails.
+   */
+  void deleteRow(CompiledTable table, String rowKey);
+
+  /**
    * Upserts one periodic-snapshot row (ADR 0010): the cube's <em>cumulative</em> meter values for
    * {@code key} as of the event-time boundary {@code sampleTime}, encoded as a composite
    * accumulator. Written to the cube's {@code _snapshots} table — the Kimball periodic-snapshot

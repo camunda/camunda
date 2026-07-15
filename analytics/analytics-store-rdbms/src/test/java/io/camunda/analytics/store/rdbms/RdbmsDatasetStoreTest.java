@@ -187,6 +187,57 @@ final class RdbmsDatasetStoreTest {
   }
 
   @Test
+  void shouldDeleteTableRowsByKeyIdempotently() {
+    // given a table with two written rows
+    final CompiledTable table = rawInstancesTable();
+    store.schemaManager().ensureTable(table);
+    store.writer().upsertRow(table, "1001", List.of("order", 1_500L), WriteVersion.SEED);
+    store.writer().upsertRow(table, "1002", List.of("ship", 42_000L), WriteVersion.SEED);
+    store.writer().flush();
+
+    // when one row is deleted (twice — the replayed eviction is a no-op)
+    store.writer().deleteRow(table, "1001", WriteVersion.SEED);
+    store.writer().deleteRow(table, "1001", WriteVersion.SEED);
+    store.writer().flush();
+
+    // then only the other row remains, and the absent-row deletes were not counted as fenced
+    assertThat(
+            new TableQueryExecutor(store.queryClient())
+                .execute(new TableQuery(List.of(), 100), table))
+        .singleElement()
+        .satisfies(r -> assertThat(r.values().get("bpmnProcessId")).isEqualTo("ship"));
+    assertThat(store.writer().fencedWrites()).isZero();
+  }
+
+  @Test
+  void shouldFenceAStaleDeleteAndOrderDeletesAfterUpsertsWithinOneFlush() {
+    // given a row owned at (epoch 5, offset 100)
+    final CompiledTable table = rawInstancesTable();
+    store.schemaManager().ensureTable(table);
+    store.writer().upsertRow(table, "1001", List.of("order", 1_500L), new WriteVersion(5, 100));
+    store.writer().flush();
+
+    // when a fenced zombie's stale delete arrives (older epoch)
+    store.writer().deleteRow(table, "1001", new WriteVersion(4, 999));
+    store.writer().flush();
+
+    // then the row survives — the delete is fenced by the stored version
+    assertThat(tableRowCount()).isEqualTo(1);
+
+    // when one flush carries the upsert-then-evict of a fresh key (a short-lived instance)
+    store.writer().upsertRow(table, "1002", List.of("ship", 42_000L), new WriteVersion(5, 200));
+    store.writer().deleteRow(table, "1002", new WriteVersion(5, 201));
+    store.writer().flush();
+
+    // then the delete ran after the upsert: the short-lived row is gone, the owned one remains
+    assertThat(
+            new TableQueryExecutor(store.queryClient())
+                .execute(new TableQuery(List.of(), 100), table))
+        .singleElement()
+        .satisfies(r -> assertThat(r.values().get("bpmnProcessId")).isEqualTo("order"));
+  }
+
+  @Test
   void shouldStoreAndReadALargeTextColumnBeyondVarcharBound() {
     // given a table with a TEXT column (CLOB/TEXT), like process definitions holding BPMN XML
     final CompiledTable table =

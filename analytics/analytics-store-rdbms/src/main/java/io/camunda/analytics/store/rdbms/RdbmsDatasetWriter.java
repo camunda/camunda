@@ -26,8 +26,8 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.time.YearMonth;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,9 +72,18 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
   private final Set<String> ensuredPartitions = new HashSet<>();
 
   /**
-   * One open {@link PreparedStatement} per distinct upsert SQL, reused across flushes for batching.
+   * One open {@link PreparedStatement} per distinct upsert/delete SQL, reused across flushes for
+   * batching; insertion-ordered so batch execution is deterministic.
    */
-  private final Map<String, PreparedStatement> statements = new HashMap<>();
+  private final Map<String, PreparedStatement> statements = new LinkedHashMap<>();
+
+  /**
+   * The SQLs that are row deletes. Their batches run <em>after</em> every upsert batch — per key an
+   * eviction always follows the activation in source order, so deletes-last preserves the net
+   * effect within one flush — and their zero-row executions are not counted as fenced writes (a
+   * delete of an absent row is normal, not a fence rejection).
+   */
+  private final Set<String> deleteStatements = new HashSet<>();
 
   private SqlSession session;
 
@@ -354,6 +363,34 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
         "table " + table.name());
   }
 
+  /**
+   * A fenced DELETE by key: the row goes away only when the write's version is at-or-above the
+   * stored one, mirroring the upsert fence. Idempotent — deleting an absent row affects zero rows,
+   * which is <em>not</em> counted as a fenced write (an absent row and a fenced delete are
+   * indistinguishable at this level, and eviction of a never-projected key is normal). Note the
+   * shared eviction caveat: a delete forgets the row's version, so a zombie's stale upsert after it
+   * can resurrect the row until the eviction replays (see {@link
+   * VersionedDatasetWriter#deleteRow}).
+   */
+  @Override
+  public void deleteRow(
+      final CompiledTable table, final String rowKey, final WriteVersion version) {
+    final String sql =
+        "DELETE FROM "
+            + RdbmsNames.rowTable(table.cubeId())
+            + " WHERE row_key = ? AND (ver_epoch < ? OR (ver_epoch = ? AND ver_offset <= ?))";
+    execute(
+        sql,
+        statement -> {
+          statement.setString(1, rowKey);
+          statement.setLong(2, version.epoch());
+          statement.setLong(3, version.epoch());
+          statement.setLong(4, version.offset());
+        },
+        "table " + table.name());
+    deleteStatements.add(sql);
+  }
+
   @Override
   public void flush() {
     if (session == null) {
@@ -392,20 +429,37 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
     return fencedWrites.sum();
   }
 
-  /** Runs the accumulated batch on every open statement (an empty batch is a harmless no-op). */
+  /**
+   * Runs the accumulated batch on every open statement (an empty batch is a harmless no-op) —
+   * upsert batches first, delete batches last (see {@link #deleteStatements}).
+   */
   private void executeBatches() {
-    for (final PreparedStatement statement : statements.values()) {
-      try {
-        // A fenced write matches an existing row but fails the version predicate: it affects
-        // zero rows. That is the fence working, not an error — count it as the signal it is.
-        for (final int updated : statement.executeBatch()) {
-          if (updated == 0) {
-            fencedWrites.increment();
+    statements.forEach(
+        (sql, statement) -> {
+          if (!deleteStatements.contains(sql)) {
+            executeBatch(statement, true);
           }
+        });
+    statements.forEach(
+        (sql, statement) -> {
+          if (deleteStatements.contains(sql)) {
+            executeBatch(statement, false);
+          }
+        });
+  }
+
+  private void executeBatch(final PreparedStatement statement, final boolean countFenced) {
+    try {
+      // A fenced write matches an existing row but fails the version predicate: it affects
+      // zero rows. That is the fence working, not an error — count it as the signal it is.
+      // (Deletes skip the count: an absent row is indistinguishable from a fenced one here.)
+      for (final int updated : statement.executeBatch()) {
+        if (updated == 0 && countFenced) {
+          fencedWrites.increment();
         }
-      } catch (final SQLException e) {
-        throw new IllegalStateException("failed to execute upsert batch", e);
       }
+    } catch (final SQLException e) {
+      throw new IllegalStateException("failed to execute upsert batch", e);
     }
   }
 

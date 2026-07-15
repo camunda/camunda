@@ -44,6 +44,17 @@ public interface VersionedDatasetWriter extends AutoCloseable {
   void upsertRow(CompiledTable table, String rowKey, List<Object> values, WriteVersion version);
 
   /**
+   * Deletes the row keyed by {@code rowKey} (see {@link DatasetWriter#deleteRow}); idempotent —
+   * deleting an absent row is a no-op. Backends fence it where cheap ({@code version} at-or-above
+   * the stored one), but with a shared caveat either way: a delete <em>forgets</em> the row's
+   * stored version (RDBMS drops the row; a document store garbage-collects deleted-doc versions
+   * after {@code gc_deletes}), so a zombie's stale upsert arriving after the delete can transiently
+   * resurrect the row until the eviction replays. Within one owner the staged-cut protocol replays
+   * deletes after their preceding upserts, so the net state converges.
+   */
+  void deleteRow(CompiledTable table, String rowKey, WriteVersion version);
+
+  /**
    * Upserts one periodic-snapshot row (see {@link DatasetWriter#upsertSnapshotRow}), applied only
    * when {@code version} is at-or-above the row's stored version.
    */

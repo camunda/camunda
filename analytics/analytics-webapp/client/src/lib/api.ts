@@ -113,6 +113,31 @@ export interface DurationSpreadPoint {
   stddevMs: number;
 }
 
+/** One window of the flow-balance (Little's law) series: arrivals vs completions. */
+export interface LifecycleSeriesPoint {
+  windowStart: number;
+  started: number;
+  /** Completed plus terminated — everything that left the system in the window. */
+  ended: number;
+}
+
+/** One flow node's rework estimate: max(0, activations − distinct instances); approximate at
+ * scale (the instance count is an HLL estimate), exact for small counts. */
+export interface ReworkHotspot {
+  elementId: string;
+  activations: number;
+  instances: number;
+  rework: number;
+}
+
+/** One currently-open instance (aging WIP); ageMs is computed server-side against one "now". */
+export interface OpenInstanceRow {
+  processInstanceKey: number;
+  bpmnProcessId: string;
+  startedAt: number;
+  ageMs: number;
+}
+
 export interface TimeRange {
   from: number;
   to: number;
@@ -173,6 +198,9 @@ export interface Meter {
   params?: Record<string, string>;
   /** Per-meter fold predicates (SQL FILTER-clause semantics); all must match. */
   filters?: Filter[];
+  /** Ratio-only numerator predicates: a fact counts as matched when ALL of them hold. The general
+   * form of the legacy op/threshold params; a matched-form ratio declares no measureField. */
+  matched?: Filter[];
 }
 
 export interface Filter {
@@ -395,6 +423,16 @@ export const api = {
     getJson<ActiveInstancesPoint[]>(`/api/dashboard/active-series?process=${q(process)}${rangeQs(range)}`),
   durationSpread: (process: string, range: TimeRange | null) =>
     getJson<DurationSpreadPoint[]>(`/api/dashboard/duration-spread?process=${q(process)}${rangeQs(range)}`),
+  lifecycleSeries: (process: string, range: TimeRange | null) =>
+    getJson<LifecycleSeriesPoint[]>(
+      `/api/dashboard/lifecycle-series?process=${q(process)}${rangeQs(range)}`,
+    ),
+  rework: (process: string, range: TimeRange | null) =>
+    getJson<ReworkHotspot[]>(`/api/dashboard/rework?process=${q(process)}${rangeQs(range)}`),
+  openInstances: (process: string, limit = 20) =>
+    getJson<OpenInstanceRow[]>(
+      `/api/dashboard/open-instances?process=${q(process)}&limit=${limit}`,
+    ),
   slaCohorts: (process: string, range: TimeRange | null) =>
     getJson<SlaCohortPoint[]>(`/api/dashboard/sla-cohorts?process=${q(process)}${rangeQs(range)}`),
   noIncidentCohorts: (process: string, range: TimeRange | null) =>

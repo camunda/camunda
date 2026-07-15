@@ -26,6 +26,7 @@ import io.camunda.analytics.sketch.QuantileResult;
 import io.camunda.analytics.sketch.TopKResult;
 import io.camunda.analytics.table.ProcessDefinitionSink;
 import io.camunda.analytics.webapp.DatasetCatalog;
+import io.camunda.analytics.webapp.TableCatalog;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -76,16 +77,19 @@ public class DashboardRepository {
 
   private final DatasetQueryExecutor executor;
   private final DatasetCatalog catalog;
+  private final TableCatalog tableCatalog;
   private final TableQueryExecutor tableExecutor;
   private final SnapshotQueryExecutor snapshotExecutor;
 
   public DashboardRepository(
       final DatasetQueryExecutor executor,
       final DatasetCatalog catalog,
+      final TableCatalog tableCatalog,
       final TableQueryExecutor tableExecutor,
       final SnapshotQueryExecutor snapshotExecutor) {
     this.executor = executor;
     this.catalog = catalog;
+    this.tableCatalog = tableCatalog;
     this.tableExecutor = tableExecutor;
     this.snapshotExecutor = snapshotExecutor;
   }
@@ -766,6 +770,96 @@ public class DashboardRepository {
     out.sort(Comparator.comparingLong(DurationBucketPoint::windowStart));
     return out;
   }
+
+  /**
+   * The per-window flow-balance series (Little's law triple minus the WIP, which the widget reads
+   * from {@link #activeSeries}): instances started and ended per window, derived from the
+   * process-instances cube's per-transition primitive meters through the same memoized lifecycle
+   * query the cohort widgets share.
+   */
+  public List<LifecycleSeriesPoint> lifecycleSeries(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final List<LifecycleSeriesPoint> out = new ArrayList<>();
+    lifecycleByWindow(
+            bpmnProcessId,
+            fromWindow,
+            toWindow,
+            finestTier(catalog.require(LIFECYCLE_CUBE)),
+            newMemo())
+        .forEach(
+            (windowStart, lc) ->
+                out.add(
+                    new LifecycleSeriesPoint(
+                        windowStart,
+                        lc.counts().activated(),
+                        lc.counts().completed() + lc.counts().terminated())));
+    out.sort(Comparator.comparingLong(LifecycleSeriesPoint::windowStart));
+    return out;
+  }
+
+  /**
+   * Rework hotspots per flow node over the range: activations (exact count) versus distinct
+   * instances (HLL estimate over processInstanceKey) from the element-rework cube. The rework
+   * estimate {@code max(0, activations − instances)} is exact while the HLL is exact (small counts)
+   * and an approximation at scale; zero-rework elements are dropped, the rest sorted by rework
+   * descending.
+   */
+  public List<ReworkHotspot> rework(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final List<ReworkHotspot> out = new ArrayList<>();
+    for (final ReportRow row :
+        total(
+            "element-rework",
+            List.of("elementId"),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("activations", "instances"),
+            newMemo())) {
+      final long activations = measureAsLong(row, "activations");
+      final long instances =
+          row.measures().get("instances") instanceof final DistinctCountResult d
+              ? d.estimate()
+              : 0L;
+      final long rework = Math.max(0L, activations - instances);
+      if (rework > 0L) {
+        out.add(new ReworkHotspot(elementId(row), activations, instances, rework));
+      }
+    }
+    out.sort(Comparator.comparingLong(ReworkHotspot::rework).reversed());
+    return out;
+  }
+
+  /**
+   * The oldest currently-open instances of a process (aging WIP), from the open-instances
+   * working-set table. {@code ageMs} is computed here against one shared "now". The table read path
+   * has no ordering or paging yet ({@link TableQuery} carries filters + limit only), so this
+   * fetches a bounded page ({@value #OPEN_INSTANCES_FETCH_BOUND} rows) and sorts oldest-first
+   * server-side — beyond the bound the oldest rows are best-effort.
+   */
+  public List<OpenInstanceRow> openInstances(final String bpmnProcessId, final int limit) {
+    final long now = System.currentTimeMillis();
+    final List<OpenInstanceRow> out = new ArrayList<>();
+    for (final TableRow row :
+        tableExecutor.execute(
+            new TableQuery(
+                List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+                OPEN_INSTANCES_FETCH_BOUND),
+            tableCatalog.require("open-instances"))) {
+      final long startedAt = asLong(row.values().get("startTime"));
+      out.add(
+          new OpenInstanceRow(
+              asLong(row.values().get("processInstanceKey")),
+              bpmnProcessId,
+              startedAt,
+              Math.max(0L, now - startedAt)));
+    }
+    out.sort(Comparator.comparingLong(OpenInstanceRow::startedAt));
+    return out.size() > limit ? List.copyOf(out.subList(0, limit)) : out;
+  }
+
+  /** The bounded fetch backing {@link #openInstances} (the table read has no ORDER BY yet). */
+  private static final int OPEN_INSTANCES_FETCH_BOUND = 1_000;
 
   /**
    * The deployed BPMN diagram XML for a process, read from the built-in process-definitions table

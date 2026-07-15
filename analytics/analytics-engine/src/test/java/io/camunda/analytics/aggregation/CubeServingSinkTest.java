@@ -73,6 +73,9 @@ final class CubeServingSinkTest {
         final CompiledTable table, final String rowKey, final List<Object> values) {}
 
     @Override
+    public void deleteRow(final CompiledTable table, final String rowKey) {}
+
+    @Override
     public void upsertSnapshotRow(
         final CompiledDataset dataset,
         final DimensionKey key,

@@ -23,6 +23,12 @@ import java.util.regex.Pattern;
  * composite accumulator's slots), the cube's stream and tier ids, and the physical serving schema;
  * a new metric or grouping is a new declaration, not new Java. Pure data — the "think backwards"
  * declaration the deck describes.
+ *
+ * <p>{@code evictionFilters} ({@link DatasetKind#TABLE} only) turn a table into a live working set:
+ * a fact of the table's source type satisfying <em>all</em> of them deletes the row for its key
+ * instead of upserting one (e.g. an open-instances table inserts on {@code ACTIVATED} and evicts on
+ * any other transition). Eviction is checked before the row {@code filters} — the evicting fact
+ * describes a row's end, so it typically does not match the filters that admit rows.
  */
 public record DatasetDeclaration(
     String name,
@@ -34,7 +40,8 @@ public record DatasetDeclaration(
     List<Long> windowSizesMs,
     String keyField,
     long latenessMs,
-    long snapshotEveryMs) {
+    long snapshotEveryMs,
+    List<FilterPredicate> evictionFilters) {
 
   /**
    * A dataset name is a metadata-plane lookup key (never a physical identifier), so its charset is
@@ -77,6 +84,7 @@ public record DatasetDeclaration(
     dimensions = List.copyOf(dimensions == null ? List.of() : dimensions);
     meters = List.copyOf(meters == null ? List.of() : meters);
     windowSizesMs = List.copyOf(windowSizesMs == null ? List.of() : windowSizesMs);
+    evictionFilters = List.copyOf(evictionFilters == null ? List.of() : evictionFilters);
     requireUnique(dimensions.stream().map(DimensionSpec::name).toList(), "dimension");
     requireUnique(meters.stream().map(Meter::name).toList(), "meter");
     for (final Meter meter : meters) {
@@ -101,6 +109,14 @@ public record DatasetDeclaration(
       if (keyField != null) {
         throw new IllegalArgumentException(
             "aggregated dataset '" + name + "' must not declare a key field");
+      }
+      if (!evictionFilters.isEmpty()) {
+        // Eviction deletes a keyed row; an aggregated cube has windowed cells, not keyed rows, so
+        // there is nothing a fact could evict.
+        throw new IllegalArgumentException(
+            "aggregated dataset '"
+                + name
+                + "' must not declare eviction predicates — only TABLE datasets evict rows");
       }
       if (meters.isEmpty()) {
         throw new IllegalArgumentException("dataset '" + name + "' declares no meters");
@@ -277,6 +293,7 @@ public record DatasetDeclaration(
     private final List<DimensionSpec> dimensions = new ArrayList<>();
     private final List<Meter> meters = new ArrayList<>();
     private final List<Long> windowSizesMs = new ArrayList<>();
+    private final List<FilterPredicate> evictionFilters = new ArrayList<>();
     private DatasetKind kind = DatasetKind.AGGREGATED;
     private String keyField;
     // A windowed cube's deltas arrive across many segment seals, so zero grace structurally drops
@@ -297,6 +314,15 @@ public record DatasetDeclaration(
     public Builder asTable(final String keyField) {
       kind = DatasetKind.TABLE;
       this.keyField = keyField;
+      return this;
+    }
+
+    /**
+     * TABLE only: a fact satisfying <em>all</em> {@code predicates} deletes the row for its key
+     * instead of upserting one — checked before the row filters (see the record javadoc).
+     */
+    public Builder evictWhen(final FilterPredicate... predicates) {
+      evictionFilters.addAll(List.of(predicates));
       return this;
     }
 
@@ -394,7 +420,8 @@ public record DatasetDeclaration(
           windowSizesMs,
           keyField,
           latenessMs,
-          snapshotEveryMs);
+          snapshotEveryMs,
+          evictionFilters);
     }
   }
 }

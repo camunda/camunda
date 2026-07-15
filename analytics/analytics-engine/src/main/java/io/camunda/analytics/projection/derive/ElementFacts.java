@@ -33,6 +33,9 @@ final class ElementFacts {
         .transition(transition)
         .field("bpmnProcessId", Utf8View.copyOf(value.getBpmnProcessIdBuffer()))
         .field("processDefinitionKey", value.getProcessDefinitionKey())
+        // Uniform on PI and ELEMENT facts: keys tables (open instances) and feeds the rework
+        // approximation (distinct instances per element).
+        .field("processInstanceKey", value.getProcessInstanceKey())
         .field("version", value.getVersion())
         .field("tenantId", value.getTenantId())
         // The ±1 lifecycle delta (the incident facts' convention): a LEVEL meter summing it is

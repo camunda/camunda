@@ -69,6 +69,11 @@ final class FreezableDatasetWriter implements DatasetWriter {
   }
 
   @Override
+  public void deleteRow(final CompiledTable table, final String rowKey) {
+    outbox.stage(new RowDelete(table, rowKey));
+  }
+
+  @Override
   public void upsertSnapshotRow(
       final CompiledDataset dataset,
       final DimensionKey key,
@@ -143,7 +148,7 @@ final class FreezableDatasetWriter implements DatasetWriter {
    * One buffered serving write, replayed against the backend at drain time with its batch's
    * version.
    */
-  private sealed interface Op permits CellUpsert, RowUpsert, SnapshotUpsert {
+  private sealed interface Op permits CellUpsert, RowUpsert, RowDelete, SnapshotUpsert {
     void applyTo(VersionedDatasetWriter writer, WriteVersion version);
   }
 
@@ -166,6 +171,14 @@ final class FreezableDatasetWriter implements DatasetWriter {
     @Override
     public void applyTo(final VersionedDatasetWriter writer, final WriteVersion version) {
       writer.upsertRow(table, rowKey, values, version);
+    }
+  }
+
+  private record RowDelete(CompiledTable table, String rowKey) implements Op {
+
+    @Override
+    public void applyTo(final VersionedDatasetWriter writer, final WriteVersion version) {
+      writer.deleteRow(table, rowKey, version);
     }
   }
 

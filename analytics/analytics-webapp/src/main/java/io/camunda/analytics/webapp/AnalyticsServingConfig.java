@@ -18,6 +18,7 @@ import io.camunda.analytics.query.SnapshotQueryExecutor;
 import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.serving.catalog.DatasetProvisioningService;
 import io.camunda.analytics.serving.catalog.StandardDatasets;
+import io.camunda.analytics.serving.catalog.StandardReports;
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.store.document.DocumentStores;
@@ -45,12 +46,16 @@ public class AnalyticsServingConfig {
 
   private final Backend backend = Backend.fromSystemProperties();
 
-  /** The metadata plane: migrate the fixed schema, then bootstrap the standard dataset specs. */
+  /**
+   * The metadata plane: migrate the fixed schema, bootstrap the standard dataset specs, then seed
+   * the default saved reports (create-if-absent by name, so restarts never duplicate them).
+   */
   @Bean(destroyMethod = "close")
   public MetadataStore metadataStore() {
     final MetadataStore store = backend.metadataStore();
     store.migrate();
     StandardDatasets.bootstrap(store);
+    StandardReports.seedDefaults(store);
     return store;
   }
 
