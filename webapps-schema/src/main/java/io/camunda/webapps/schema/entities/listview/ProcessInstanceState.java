@@ -10,5 +10,6 @@ package io.camunda.webapps.schema.entities.listview;
 public enum ProcessInstanceState {
   ACTIVE,
   COMPLETED,
+  SUSPENDED,
   CANCELED
 }
