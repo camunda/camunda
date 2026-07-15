@@ -88,49 +88,6 @@ const ObjectContent = styled.pre`
   word-break: break-word;
 `;
 
-const AttachmentsContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-block-start: var(--cds-spacing-04);
-  gap: var(--cds-spacing-02);
-`;
-
-const AttachmentsLabel = styled.h6`
-  font-size: var(--cds-label-01-font-size);
-  font-weight: var(--cds-label-01-font-weight);
-  line-height: var(--cds-label-01-line-height);
-  letter-spacing: var(--cds-label-01-letter-spacing);
-  color: var(--cds-text-secondary);
-`;
-
-const AttachmentButton = styled.button`
-  appearance: none;
-  background-color: transparent;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--cds-spacing-02);
-  padding: var(--cds-spacing-01) var(--cds-spacing-03);
-  border-radius: 100px; // pill shape
-  font-size: var(--cds-label-01-font-size);
-  font-weight: var(--cds-label-01-font-weight);
-  line-height: var(--cds-label-01-line-height);
-  letter-spacing: var(--cds-label-01-letter-spacing);
-  color: var(--cds-link-primary);
-  border: 1px solid var(--cds-border-subtle-01);
-  white-space: nowrap;
-  cursor: pointer;
-
-  & > svg {
-    color: var(--cds-icon-secondary);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    color: var(--cds-text-primary);
-  }
-`;
-
 const ModalContent = styled(TextContent)`
   min-height: 60vh;
   max-height: 70vh;
@@ -155,9 +112,6 @@ export {
   TextContent,
   ObjectContent,
   MessageActions,
-  AttachmentsContainer,
-  AttachmentsLabel,
-  AttachmentButton,
   ModalContent,
   ModalToolbar,
   ViewSwitcher,
