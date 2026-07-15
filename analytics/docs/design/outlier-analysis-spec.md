@@ -157,6 +157,109 @@ Constraint: callers of `quantile`/`shareAbove`/`outlierStats` are **server-side 
    sketch-based; declared variables only)". Empty state: "No correlation data — no corr-* cube
    or no outliers in range."
 
+## Step 4 — extend correlation to variants and gateway branches (counts only, no sketches)
+
+The variant report and the gateway branch distribution gain a "driver" dimension: which variable
+values predict which execution variant / which branch. Both are possible today because the facts
+already carry the joint information:
+
+- PROCESS end facts carry `variantHash` AND lazily-resolved `var.*` → a cube grained
+  `(bpmnProcessId, variantHash, var.X)` captures the joint variant/value distribution.
+- ELEMENT **COMPLETED** facts resolve `var.*` up the scope hierarchy
+  (`ElementCompletedDeriver` attaches `.variables(...)`; the ACTIVATED deriver does NOT — do not
+  try to condition activations on variables, the dimension would be all-NULL) → a cube grained
+  `(bpmnProcessId, elementId, var.X)` captures branch-target counts conditioned on the value.
+
+### Cubes (append to `StandardDatasets`, same `corr-` prefix)
+
+```java
+// Which variable values drive which execution variant. COMPLETED and TERMINATED alike —
+// variants count both (a terminated retry-storm is exactly the kind of variant a driver
+// value should explain).
+DatasetDeclaration.builder("corr-variant-route", FactType.PROCESS_INSTANCE)
+    .filterNotNull("variantHash")
+    .filterNotNull("var.route")
+    .dimension("bpmnProcessId", DimensionType.STRING)
+    .dimension("variantHash", DimensionType.LONG)
+    .dimension("var.route", DimensionType.STRING)
+    .meter(Meter.of("count", MeterCatalog.COUNT))
+    .window(ONE_MINUTE_MS)
+    .lateness(GRACE_MS)
+    .build(),
+
+// Which variable values drive which branch target. COMPLETED element facts (they carry
+// variables; activations don't) — counts skew low vs the branch card's activation counts
+// when an element is terminated mid-flight; document, don't reconcile.
+DatasetDeclaration.builder("corr-branch-route", FactType.ELEMENT)
+    .filterEquals("transition", Transition.COMPLETED.name())
+    .filterNotNull("var.route")
+    .dimension("bpmnProcessId", DimensionType.STRING)
+    .dimension("elementId", DimensionType.STRING)
+    .dimension("var.route", DimensionType.STRING)
+    .meter(Meter.of("count", MeterCatalog.COUNT))
+    .window(ONE_MINUTE_MS)
+    .lateness(GRACE_MS)
+    .build(),
+```
+
+Mirror both for `var.region`. Verify the exact filter-builder method names against the existing
+declarations before writing (`filterEquals`/`filterNotNull` exist on the builder — see
+dispute-types).
+
+### Discovery convention (replaces the Part-2-only rule)
+
+A catalog dataset named `corr-*` is a correlation cube; dispatch on its dimension shape:
+
+- exactly one `var.*` dimension + a `duration_p` percentile meter → **duration** correlation (Part 2);
+- `variantHash` + one `var.*` dimension → **variant** correlation;
+- `elementId` + one `var.*` dimension → **branch** correlation.
+
+Implement the classification in one small package-private helper in the webapp
+(`CorrelationCubes.classify(CompiledDataset)`), unit-tested, so all three endpoints share it.
+
+### Math (pure counts — lift of the outcome given the value)
+
+For outcome `o` (a variant hash, or a branch-target elementId) and variable value `x`, over the
+selected range, all within one `bpmnProcessId` and one corr cube:
+
+```
+n(o,x)  = joint count            n(x) = Σ_o n(o,x)
+n(o)    = Σ_x n(o,x)             N    = Σ n(o,x)
+lift(o,x) = ( n(o,x) / n(x) ) / ( n(o) / N )        // P(o|x) / P(o)
+```
+
+Marginals come from the corr cube itself (never mix with the variants/elements cubes — the corr
+cube only sees instances that HAVE the variable, so its marginals are self-consistent).
+Skip pairs with `n(o,x) < MIN_SUPPORT = 10`. For branch correlation, restrict outcomes to the
+gateway's outgoing-target elementIds using the same parsed topology `branchDistribution` uses
+(`GatewayTopology`), so pass-through elements don't pollute the ranking.
+
+### Endpoints + UI
+
+- `GET /api/dashboard/variant-correlation?process=&from=&to=` →
+  `[{variantHash: string, variable, value, n, share, lift}]` — for each variant its TOP value by
+  lift (one row per variant×variable), `variantHash` as a **decimal string** (64-bit rule).
+- `GET /api/dashboard/branch-correlation?process=&from=&to=` →
+  `[{gatewayId, targetId, variable, value, n, share, lift}]` — per branch its top driver.
+- UI: no new cards. `TopVariants.tsx` gains a "driver" column rendering the top driver as a chip
+  (`route=manual ×2.4`), joined client-side by the `variantHash` string; `GatewayDecisions.tsx`
+  gains the same chip per branch row. Both fetches are additive and optional: a missing cube /
+  empty response hides the column entirely (never an error state, never a layout jump beyond the
+  extra column).
+
+### Extra edge cases for step 4 (tests)
+
+- A variable that is literally the gateway's condition input (claim's `route`) must produce
+  near-perfect lift on its branch — that is the desired behavior (it recovers the decision rule),
+  assert it in the serving test rather than "fixing" it.
+- lift denominator zero (`n(o) == 0` after range filtering) → skip the pair.
+- Variant present in the variants card but absent from the corr cube (instance lacked the
+  variable) → no chip, row renders unchanged.
+- Cross-process hash collisions are already prevented by the process-seeded signature; still
+  filter every corr read by `bpmnProcessId`.
+- Numeric variables (e.g. `amount`) are OUT OF SCOPE: they need declare-time banding to be a
+  dimension. Note this in the declaration comment; do not attempt it.
+
 ## Edge cases that MUST be handled (each one is a test)
 
 - Empty sketch / `n == 0` → no row, never NaN in JSON.
@@ -186,7 +289,13 @@ inline fully-qualified names — use static imports (repo rule).
 4. `DashboardCorrelationServingTest`: seed overall + per-value sketches where one value is
    heavily outlier-biased → that value tops the lift ranking; `overall.share == 0` → empty;
    missing `corr-*` cubes → empty.
-5. Controller test for both endpoints (copy the compare-endpoint tests' validation assertions).
+5. Controller test for all four endpoints (copy the compare-endpoint tests' validation assertions).
+6. `CorrelationCubesTest`: the shape classifier maps duration/variant/branch cubes correctly and
+   rejects malformed ones (two var.* dims, no var.* dim).
+7. `DashboardVariantCorrelationServingTest` + `DashboardBranchCorrelationServingTest`: seed joint
+   counts where one value is heavily variant-biased / branch-biased → correct top driver + lift
+   (hand-compute the expected lift in the test comment); MIN_SUPPORT exclusion; missing cube →
+   empty 200.
 
 ## Gates (run all, in this order, before every commit)
 
@@ -221,6 +330,9 @@ Commits: conventional, no scopes, ≤120-char header, separate `feat:` commits p
 ## Definition of done
 
 - All gates green; zero new tsc errors; all listed tests present and passing.
+- Correlation chips render live: claim-process's `route` drives both the fraud/manual variants
+  and the triage branches with lift ≫ 1 (the driver weights routes 65/30/5, and amount > 4000
+  forces manual — visible as `route=manual` dominating the loop variant).
 - Both cards render live: outlier table shows slow-tail elements (the demo driver's ~15%
   SLA-breach fat tail guarantees outliers on worker elements), correlation ranks `route=manual`
   (claim-process's retry loop makes it slower) above `route=auto` with lift > 1.
