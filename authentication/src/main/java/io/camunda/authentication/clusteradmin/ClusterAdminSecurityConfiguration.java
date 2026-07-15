@@ -9,7 +9,6 @@ package io.camunda.authentication.clusteradmin;
 
 import static io.camunda.security.spring.security.CamundaSecurityFilterChainConstants.ORDER_WEBAPP_API;
 
-import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
@@ -19,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -29,7 +27,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -56,12 +53,11 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * NullSecurityContextRepository} explicitly and never creates a session, so an existing webapp
  * session cookie can never authenticate {@code /cluster/v2/**}.
  *
- * <p><strong>#57708 (OIDC):</strong> {@code cluster-admin.basic} and {@code cluster-admin.oidc} are
- * independent sibling config trees, so either mechanism can authenticate this chain based on the
- * {@code Authorization} header scheme. For #57708, OIDC should be added to the same chain through a
- * parallel {@code .oauth2ResourceServer(...)} block gated by {@code cluster-admin.oidc} presence,
- * not through a second same-path chain, since Spring only dispatches to one matching chain per
- * request.
+ * <p><strong>OIDC:</strong> handled by separate {@link ClusterAdminOidcSecurityConfiguration},
+ * gated by {@code @ConditionalOnAuthenticationMethod(OIDC)}.
+ *
+ * <p>The Basic and OIDC chains are mutually exclusive by deployment method, so both can target
+ * {@code /cluster/v2/**} without conflict.
  */
 @Configuration
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
@@ -144,20 +140,5 @@ public class ClusterAdminSecurityConfiguration {
     final var authenticationProvider = new DaoAuthenticationProvider(userDetailsManager);
     authenticationProvider.setPasswordEncoder(passwordEncoder);
     return new ProviderManager(authenticationProvider);
-  }
-
-  /**
-   * Converter that prevents cluster-admin principals from going through the DB-backed membership
-   * path. It runs before CSL's DB converter and only claims authentications marked with {@link
-   * #CLUSTER_ADMIN_AUTHORITY}, letting all others fall through.
-   *
-   * <p>It is registered now to prevent a future cross-chain leak on {@code /cluster/v2/**}: without
-   * it, a cluster-admin token could be treated as a DB user and inherit that user's groups, roles,
-   * and tenants on name collision.
-   */
-  @Bean
-  @Order(Ordered.HIGHEST_PRECEDENCE)
-  public CamundaAuthenticationConverter<Authentication> clusterAdminAuthenticationConverter() {
-    return new ClusterAdminAuthenticationConverter();
   }
 }
