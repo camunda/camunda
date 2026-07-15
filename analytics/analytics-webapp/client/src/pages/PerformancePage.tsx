@@ -9,7 +9,9 @@ import type { TimeRange } from "../lib/api";
 import { chartColor } from "../lib/chartColors";
 import { formatCount, formatDuration, formatPercent } from "../lib/format";
 import { qualityKpis, useMetrics } from "../lib/useMetrics";
+import { ActiveInstancesTrend } from "../components/ActiveInstancesTrend";
 import { CountTrend } from "../components/CountTrend";
+import { DurationSpreadTrend } from "../components/DurationSpreadTrend";
 import { DurationDistribution } from "../components/DurationDistribution";
 import { FrequencyDurationTrend } from "../components/FrequencyDurationTrend";
 import { IncidentHeatmap } from "../components/IncidentHeatmap";
@@ -72,6 +74,8 @@ export function PerformancePage({
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PercentileTrend points={data.duration} />
         <FrequencyDurationTrend points={data.duration} />
+        <ActiveInstancesTrend points={data.activeSeries} />
+        <DurationSpreadTrend points={data.durationSpread} />
         <CountTrend
           title="Instance trends"
           description="Instances started per window (by start cohort)"

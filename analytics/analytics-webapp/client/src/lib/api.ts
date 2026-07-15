@@ -100,6 +100,18 @@ export interface ElementDuration {
 }
 
 /** A selected time range in epoch-ms, or null for "all time". */
+export interface ActiveInstancesPoint {
+  time: number;
+  active: number;
+}
+
+export interface DurationSpreadPoint {
+  windowStart: number;
+  minMs: number;
+  maxMs: number;
+  stddevMs: number;
+}
+
 export interface TimeRange {
   from: number;
   to: number;
@@ -378,6 +390,10 @@ export const api = {
     getJson<number>(`/api/dashboard/activated-instances?process=${q(process)}${rangeQs(range)}`),
   endedInstances: (process: string, range: TimeRange | null) =>
     getJson<number>(`/api/dashboard/ended-instances?process=${q(process)}${rangeQs(range)}`),
+  activeSeries: (process: string, range: TimeRange | null) =>
+    getJson<ActiveInstancesPoint[]>(`/api/dashboard/active-series?process=${q(process)}${rangeQs(range)}`),
+  durationSpread: (process: string, range: TimeRange | null) =>
+    getJson<DurationSpreadPoint[]>(`/api/dashboard/duration-spread?process=${q(process)}${rangeQs(range)}`),
   slaCohorts: (process: string, range: TimeRange | null) =>
     getJson<SlaCohortPoint[]>(`/api/dashboard/sla-cohorts?process=${q(process)}${rangeQs(range)}`),
   noIncidentCohorts: (process: string, range: TimeRange | null) =>

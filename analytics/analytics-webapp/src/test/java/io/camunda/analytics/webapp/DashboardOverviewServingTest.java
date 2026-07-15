@@ -14,6 +14,7 @@ import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.DatasetQueryPlanner;
+import io.camunda.analytics.query.SnapshotQueryExecutor;
 import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.serving.spi.AggregatedFetch;
 import io.camunda.analytics.serving.spi.AggregatedRow;
@@ -56,7 +57,8 @@ final class DashboardOverviewServingTest {
         new DashboardRepository(
             new DatasetQueryExecutor(new DatasetQueryPlanner(), counting),
             fixture.catalog(),
-            new TableQueryExecutor(fixture.datasetStore().queryClient()));
+            new TableQueryExecutor(fixture.datasetStore().queryClient()),
+            new SnapshotQueryExecutor(fixture.datasetStore().queryClient()));
   }
 
   @AfterEach

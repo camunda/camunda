@@ -21,6 +21,7 @@ import io.camunda.analytics.fact.Transition;
 import io.camunda.analytics.meter.Meter;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.meter.MeterIdRegistry;
+import io.camunda.analytics.query.SnapshotQueryExecutor;
 import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.analytics.webapp.ServingTestSupport.Fixture;
@@ -151,7 +152,8 @@ final class DashboardCohortJoinTest {
     return new DashboardRepository(
         fixture.executor(),
         new DatasetCatalog(byName),
-        new TableQueryExecutor(fixture.datasetStore().queryClient()));
+        new TableQueryExecutor(fixture.datasetStore().queryClient()),
+        new SnapshotQueryExecutor(fixture.datasetStore().queryClient()));
   }
 
   /** Seeds one cube cell at an explicit window, folding the facts through every meter slot. */

@@ -160,6 +160,24 @@ public class DashboardController {
     return repository.endedInstances(bpmnProcessId, from, to);
   }
 
+  /** Running instances at each moment (the active-instances cube's periodic snapshots). */
+  @GetMapping("/active-series")
+  public List<ActiveInstancesPoint> activeSeries(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.activeSeries(bpmnProcessId, from, to);
+  }
+
+  /** Per-window completion-duration spread (stddev/min/max) for a process. */
+  @GetMapping("/duration-spread")
+  public List<DurationSpreadPoint> durationSpread(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.durationSpread(bpmnProcessId, from, to);
+  }
+
   /** Incidents per flow node (raised over the range + currently open) for a process. */
   @GetMapping("/incidents")
   public List<IncidentFlowNode> incidents(

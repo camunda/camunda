@@ -15,6 +15,9 @@ import io.camunda.analytics.metric.RatioResult;
 import io.camunda.analytics.query.DatasetQueryExecutor;
 import io.camunda.analytics.query.ReportQuery;
 import io.camunda.analytics.query.ReportRow;
+import io.camunda.analytics.query.SnapshotQueryExecutor;
+import io.camunda.analytics.query.SnapshotQueryExecutor.SnapshotQuery;
+import io.camunda.analytics.query.SnapshotQueryExecutor.SnapshotSeriesPoint;
 import io.camunda.analytics.query.TableQuery;
 import io.camunda.analytics.query.TableQueryExecutor;
 import io.camunda.analytics.serving.spi.TableRow;
@@ -53,6 +56,9 @@ public class DashboardRepository {
 
   private static final long ONE_HOUR_MS = 3_600_000L;
 
+  /** Default active-series lookback when no range start is given (the walk is O(buckets)). */
+  private static final long ACTIVE_SERIES_LOOKBACK_MS = 6 * ONE_HOUR_MS;
+
   /** The cube every lifecycle-derived widget (and the cohort joins' "started" side) reads. */
   private static final String LIFECYCLE_CUBE = "process-instances";
 
@@ -71,14 +77,17 @@ public class DashboardRepository {
   private final DatasetQueryExecutor executor;
   private final DatasetCatalog catalog;
   private final TableQueryExecutor tableExecutor;
+  private final SnapshotQueryExecutor snapshotExecutor;
 
   public DashboardRepository(
       final DatasetQueryExecutor executor,
       final DatasetCatalog catalog,
-      final TableQueryExecutor tableExecutor) {
+      final TableQueryExecutor tableExecutor,
+      final SnapshotQueryExecutor snapshotExecutor) {
     this.executor = executor;
     this.catalog = catalog;
     this.tableExecutor = tableExecutor;
+    this.snapshotExecutor = snapshotExecutor;
   }
 
   /**
@@ -414,6 +423,55 @@ public class DashboardRepository {
       final Map<QueryKey, List<ReportRow>> memo) {
     final LifecycleCounts lifecycle = lifecycle(bpmnProcessId, fromWindow, toWindow, memo);
     return lifecycle == null ? 0L : lifecycle.activated();
+  }
+
+  /**
+   * How many instances of the process were running at each moment of the range — the
+   * active-instances cube's periodic snapshots (ADR 0010), carried forward at the cube's sample
+   * interval. Absolute values, not per-window flows. A null range start defaults to a bounded
+   * lookback: the carry-forward walk is O(buckets), so "since forever" must not mean epoch 0.
+   */
+  public List<ActiveInstancesPoint> activeSeries(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final CompiledDataset dataset = catalog.require("active-instances");
+    final long everyMs = dataset.snapshots().everyMs();
+    final long toMs = toMs(toWindow);
+    final long fromMs = fromWindow == null ? toMs - ACTIVE_SERIES_LOOKBACK_MS : fromWindow;
+    final List<ActiveInstancesPoint> out = new ArrayList<>();
+    for (final SnapshotSeriesPoint point :
+        snapshotExecutor.execute(new SnapshotQuery(fromMs, toMs, everyMs), dataset)) {
+      if (bpmnProcessId.equals(point.keyValues().get(0))
+          && point.measures().get("active") instanceof final Number active) {
+        out.add(new ActiveInstancesPoint(point.time(), active.longValue()));
+      }
+    }
+    return out;
+  }
+
+  /** The per-window completion-duration spread (stddev/min/max) for a process over the range. */
+  public List<DurationSpreadPoint> durationSpread(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final List<DurationSpreadPoint> out = new ArrayList<>();
+    for (final ReportRow row :
+        series(
+            "process-duration-spread",
+            List.of(),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("stddev", "min", "max"),
+            newMemo())) {
+      out.add(
+          new DurationSpreadPoint(
+              row.windowStart(),
+              measureAsLong(row, "min"),
+              measureAsLong(row, "max"),
+              row.measures().get("stddev") instanceof final Number stddev
+                  ? stddev.doubleValue()
+                  : 0.0));
+    }
+    out.sort(Comparator.comparingLong(DurationSpreadPoint::windowStart));
+    return out;
   }
 
   /**

@@ -8,8 +8,10 @@
 import { useEffect, useState } from "react";
 import {
   api,
+  type ActiveInstancesPoint,
   type DistinctPoint,
   type DurationBucketPoint,
+  type DurationSpreadPoint,
   type DurationPoint,
   type ElementDuration,
   type IncidentFlowNode,
@@ -37,6 +39,8 @@ export interface MetricsData {
   activeNow: number;
   activated: number;
   ended: number;
+  activeSeries: ActiveInstancesPoint[];
+  durationSpread: DurationSpreadPoint[];
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -70,6 +74,8 @@ export function useMetrics(
       api.activeInstances(process, tenant),
       api.activatedInstances(process, range),
       api.endedInstances(process, range),
+      api.activeSeries(process, range),
+      api.durationSpread(process, range),
       api.noIncidentCohorts(process, range),
     ])
       .then(
@@ -88,6 +94,8 @@ export function useMetrics(
           activeNow,
           activated,
           ended,
+          activeSeries,
+          durationSpread,
           noIncidentCohorts,
         ]) => {
           if (!cancelled) {
@@ -107,6 +115,8 @@ export function useMetrics(
               activeNow,
               activated,
               ended,
+              activeSeries,
+              durationSpread,
             });
           }
         },

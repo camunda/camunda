@@ -9,18 +9,26 @@ package io.camunda.analytics.webapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.fact.Transition;
+import io.camunda.analytics.meter.CompositeAccumulatorValue;
+import io.camunda.analytics.query.SnapshotQueryExecutor;
 import io.camunda.analytics.query.TableQueryExecutor;
+import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.analytics.webapp.ServingTestSupport.Fixture;
+import io.camunda.analytics.webapp.dashboard.ActiveInstancesPoint;
 import io.camunda.analytics.webapp.dashboard.DashboardRepository;
 import io.camunda.analytics.webapp.dashboard.DistinctPoint;
 import io.camunda.analytics.webapp.dashboard.DurationBucketPoint;
 import io.camunda.analytics.webapp.dashboard.DurationPercentilePoint;
+import io.camunda.analytics.webapp.dashboard.DurationSpreadPoint;
 import io.camunda.analytics.webapp.dashboard.RatioPoint;
 import java.util.ArrayList;
 import java.util.List;
+import org.agrona.collections.MutableLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +49,8 @@ final class DashboardServingTest {
         new DashboardRepository(
             fixture.executor(),
             fixture.catalog(),
-            new TableQueryExecutor(fixture.datasetStore().queryClient()));
+            new TableQueryExecutor(fixture.datasetStore().queryClient()),
+            new SnapshotQueryExecutor(fixture.datasetStore().queryClient()));
   }
 
   @AfterEach
@@ -130,6 +139,54 @@ final class DashboardServingTest {
               assertThat(point.lowerBound()).isLessThanOrEqualTo(3L);
               assertThat(point.upperBound()).isGreaterThanOrEqualTo(3L);
             });
+  }
+
+  @Test
+  void shouldServeTheActiveSeriesFromSnapshotsAndTheSpreadFromPrimitives() {
+    // given active-instances snapshots (3 running at 1m, 5 at 3m) for the process
+    final long minute = 60_000L;
+    final CompiledDataset active = fixture.catalog().require("active-instances");
+    final DimensionKey key = DimensionKey.of(active.grain(), PROCESS);
+    fixture
+        .datasetStore()
+        .writer()
+        .upsertSnapshotRow(active, key, minute, level(active, 3L), new WriteVersion(1, 1));
+    fixture
+        .datasetStore()
+        .writer()
+        .upsertSnapshotRow(active, key, 3 * minute, level(active, 5L), new WriteVersion(1, 2));
+    // and one window of completions (100s/200s/300s) in the spread cube
+    ServingTestSupport.seed(
+        fixture,
+        "process-duration-spread",
+        "stddev",
+        completed(100_000L, 200_000L, 300_000L),
+        PROCESS);
+
+    // when both widgets read
+    final List<ActiveInstancesPoint> series = repository.activeSeries(PROCESS, 0L, 4 * minute);
+    final List<DurationSpreadPoint> spread = repository.durationSpread(PROCESS, null, null);
+
+    // then the snapshots carry forward through the silent buckets (absolute values)
+    assertThat(series)
+        .extracting(ActiveInstancesPoint::time, ActiveInstancesPoint::active)
+        .containsExactly(
+            org.assertj.core.groups.Tuple.tuple(minute, 3L),
+            org.assertj.core.groups.Tuple.tuple(2 * minute, 3L),
+            org.assertj.core.groups.Tuple.tuple(3 * minute, 5L),
+            org.assertj.core.groups.Tuple.tuple(4 * minute, 5L));
+    // and the spread window carries the exact extrema and the population stddev of the durations
+    assertThat(spread).hasSize(1);
+    assertThat(spread.get(0).minMs()).isEqualTo(100_000L);
+    assertThat(spread.get(0).maxMs()).isEqualTo(300_000L);
+    assertThat(spread.get(0).stddevMs())
+        .isCloseTo(81_649.66, org.assertj.core.data.Offset.offset(0.1));
+  }
+
+  /** The active-instances cube's single LEVEL slot as composite accumulator bytes. */
+  private static byte[] level(final CompiledDataset dataset, final long value) {
+    return new CompositeAccumulatorValue(dataset.meterBounds())
+        .toBytes(new Object[] {new MutableLong(value)});
   }
 
   @Test
