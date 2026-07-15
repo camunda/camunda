@@ -9,6 +9,9 @@ package io.camunda.exporter.tasks.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
@@ -37,9 +40,11 @@ import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
+import org.mockito.ArgumentCaptor;
 
 class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
   private static final int BATCH_SIZE = 10;
@@ -62,6 +67,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
     super.shouldExecuteWithoutErrorsWhenNothingToDo(config, ignored);
 
     assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+    verify(incidentNotifier).close();
+    verifyNoMoreInteractions(incidentNotifier);
   }
 
   @Override
@@ -115,6 +122,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               .withMessageContaining("Missing incident IDs: [[9999]]");
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+          verifyNoInteractions(incidentNotifier);
         });
   }
 
@@ -161,6 +169,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           assertThat(updated).succeedsWithin(EXECUTE_TIMEOUT).isEqualTo(1);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+          verifyNoInteractions(incidentNotifier);
         });
   }
 
@@ -227,6 +236,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               .withMessageContaining(" this will be retried later");
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(-1L);
+          verifyNoInteractions(incidentNotifier);
         });
   }
 
@@ -334,6 +344,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
+          verifyIncidentNotificationsSent(incidentEntity);
         });
   }
 
@@ -440,6 +451,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           assertThat(updatedIncident.getState()).isEqualTo(IncidentState.ACTIVE);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
+          verifyIncidentNotificationsSent(incidentEntity);
         });
   }
 
@@ -513,6 +525,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               .isEqualTo(String.format("%s/FNI_%d", treePath, processInstanceKey));
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
+          verifyIncidentNotificationsSent(updatedIncident);
         });
   }
 
@@ -623,9 +636,11 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           assertThat(updatedIncident.getState()).isEqualTo(IncidentState.RESOLVED);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
+          verifyNoInteractions(incidentNotifier);
         });
   }
 
+  @TestTemplate
   void shouldResolveIncidentButNotUnsetFlagsWhenOtherIncidentsStillActive(
       final ExporterConfiguration config, final SearchClientAdapter client) throws Exception {
     withTask(
@@ -753,6 +768,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           assertThat(updatedActiveIncident.getState()).isEqualTo(IncidentState.ACTIVE);
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
+          verifyNoInteractions(incidentNotifier);
         });
   }
 
@@ -842,6 +858,8 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           final var updatedProcessInstance =
               getFromIndex(listViewTemplate, client, processInstance);
           assertThat(updatedProcessInstance.isIncident()).isFalse();
+
+          verifyNoInteractions(incidentNotifier);
         });
   }
 
@@ -1004,6 +1022,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(3L);
+
+          // despite duplicates we should only send one notification per incident key
+          verifyIncidentNotificationsSent(updatedIncident1, updatedIncident2, updatedIncident3);
         });
   }
 
@@ -1126,6 +1147,7 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
               .isEqualTo(String.format("%s/FNI_%d", treePath, flowNodeInstanceKey));
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
+          verifyIncidentNotificationsSent(incidentEntity);
         });
   }
 
@@ -1194,6 +1216,18 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
         parent.getId(),
         templateDescriptor.getFullQualifiedName() + suffix,
         (Class<T>) entity.getClass());
+  }
+
+  private void verifyIncidentNotificationsSent(final IncidentEntity... incidents) {
+    final ArgumentCaptor<List<IncidentEntity>> captor = ArgumentCaptor.forClass(List.class);
+    verify(incidentNotifier).notifyAsync(captor.capture());
+
+    // just checking the IDs as the other fields may have been updated in the meantime
+    final List<String> expectedIds =
+        Arrays.stream(incidents).map(IncidentEntity::getId).sorted().toList();
+    final List<String> actualIds =
+        captor.getValue().stream().map(IncidentEntity::getId).sorted().toList();
+    assertThat(actualIds).isEqualTo(expectedIds);
   }
 
   private IncidentUpdateRepository createIncidentUpdateRepository(
