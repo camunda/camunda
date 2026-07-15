@@ -9,10 +9,13 @@ package io.camunda.zeebe.broker;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.db.rdbms.RdbmsServiceFactory;
+import io.camunda.exporter.rdbms.ExporterConfiguration;
 import io.camunda.exporter.rdbms.RdbmsExporterFactory;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -33,8 +36,17 @@ public class RdbmsExporterConfiguration {
   @Bean
   public RdbmsExporterFactory rdbmsExporterFactory(
       final RdbmsServiceFactory rdbmsServiceFactory,
-      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry) {
-    return new RdbmsExporterFactory(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
+      final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry,
+      final PhysicalTenantResolver physicalTenantResolver) {
+    // Resolve the full exporter configuration per physical tenant from that tenant's
+    // camunda.data.secondary-storage.rdbms.* config. The broker cannot pass per-physical-tenant
+    // config through the exporter context because the RDBMS exporter is provisioned via Spring, so
+    // the exporter resolves it here instead (see #57804).
+    final Map<String, ExporterConfiguration> exporterConfigByPhysicalTenantId =
+        physicalTenantResolver.mapValues(
+            BrokerBasedPropertiesOverride::toRdbmsExporterConfiguration);
+    return new RdbmsExporterFactory(
+        rdbmsServiceFactory, rdbmsSchemaManagerRegistry, exporterConfigByPhysicalTenantId);
   }
 
   @Bean

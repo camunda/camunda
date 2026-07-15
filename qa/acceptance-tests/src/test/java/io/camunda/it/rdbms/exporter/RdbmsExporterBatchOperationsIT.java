@@ -63,13 +63,22 @@ class RdbmsExporterBatchOperationsIT {
     rdbmsService =
         rdbmsServiceFactory.createRdbmsService(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
-    exporter = new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
+    final var exporterConfiguration =
+        new ExporterConfiguration(
+            "foo",
+            Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems));
+    exporter =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                exporterConfiguration.instantiate(
+                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
     exporter.configure(
         new ExporterContext(
             null,
-            new ExporterConfiguration(
-                "foo",
-                Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems)),
+            exporterConfiguration,
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             "",
             null,

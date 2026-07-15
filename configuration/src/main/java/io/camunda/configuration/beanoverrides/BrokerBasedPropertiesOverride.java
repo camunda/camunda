@@ -37,6 +37,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.Throttle;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.Write;
 import io.camunda.configuration.Zone;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -936,13 +937,24 @@ public class BrokerBasedPropertiesOverride {
 
     /* Load exporter config map */
 
-    var exporter = override.getRdbmsExporter();
-    if (exporter == null) {
-      exporter = new ExporterCfg();
-      exporter.setClassName(RDBMS_EXPORTER_CLASS_NAME);
-      exporter.setArgs(new LinkedHashMap<>());
-      override.getExporters().put(RDBMS_EXPORTER_NAME, exporter);
+    // 'rdbms' is a reserved exporter: it is provisioned internally and configured through
+    // camunda.data.secondary-storage.rdbms.* (resolved per physical tenant, see #57804). Reject any
+    // attempt to configure it through the generic exporter properties — unified
+    // (camunda.data.exporters.rdbms.*) or legacy (zeebe.broker.exporters.rdbms.*) — so nothing is
+    // silently ignored. At this point the reserved exporter has not been added yet, so a non-null
+    // entry can only come from user configuration.
+    if (override.getRdbmsExporter() != null
+        || data.getExporters().containsKey(RDBMS_EXPORTER_NAME)) {
+      throw new UnifiedConfigurationException(
+          "The 'rdbms' exporter is reserved and cannot be configured through the generic exporter "
+              + "properties ('camunda.data.exporters.rdbms.*' or 'zeebe.broker.exporters.rdbms.*'). "
+              + "Configure it through 'camunda.data.secondary-storage.rdbms.*'.");
     }
+
+    final ExporterCfg exporter = new ExporterCfg();
+    exporter.setClassName(RDBMS_EXPORTER_CLASS_NAME);
+    exporter.setArgs(new LinkedHashMap<>());
+    override.getExporters().put(RDBMS_EXPORTER_NAME, exporter);
 
     /* Override config map values */
 
@@ -953,70 +965,82 @@ public class BrokerBasedPropertiesOverride {
 
     exporter.setArgs(
         ExporterConfiguration.of(io.camunda.exporter.rdbms.ExporterConfiguration.class, args)
-            .apply(
-                config -> {
-                  config.setQueueSize(database.getQueueSize());
-                  config.setQueueMemoryLimit(database.getQueueMemoryLimit());
-                  config.setFlushInterval(database.getFlushInterval());
-                  config.setExportBatchOperationItemsOnCreation(
-                      database.isExportBatchOperationItemsOnCreation());
-                  config.setBatchOperationItemInsertBlockSize(
-                      database.getBatchOperationItemInsertBlockSize());
-                  config.setAuditLog(camunda.getData().getAuditLog().toConfiguration());
-                  config.setWaitState(camunda.getData().getWaitStates().toConfiguration());
-                  config.setHistoryDeletion(
-                      camunda.getData().getHistoryDeletion().toConfiguration());
-
-                  applyRdbmsHistoryExporterConfiguration(config.getHistory(), database);
-
-                  if (database.getProcessCache() != null) {
-                    config.getProcessCache().setMaxSize(database.getProcessCache().getMaxSize());
-                  }
-
-                  if (database.getBatchOperationCache() != null) {
-                    config
-                        .getBatchOperationCache()
-                        .setMaxSize(database.getBatchOperationCache().getMaxSize());
-                  }
-
-                  if (database.getInsertBatching() != null) {
-                    config
-                        .getInsertBatching()
-                        .setMaxAuditLogInsertBatchSize(
-                            database.getInsertBatching().getMaxAuditLogInsertBatchSize());
-                    config
-                        .getInsertBatching()
-                        .setMaxVariableInsertBatchSize(
-                            database.getInsertBatching().getMaxVariableInsertBatchSize());
-                    config
-                        .getInsertBatching()
-                        .setMaxJobInsertBatchSize(
-                            database.getInsertBatching().getMaxJobInsertBatchSize());
-                    config
-                        .getInsertBatching()
-                        .setMaxFlowNodeInsertBatchSize(
-                            database.getInsertBatching().getMaxFlowNodeInsertBatchSize());
-                  }
-
-                  if (database.getAsyncReplication() != null) {
-                    final var asyncReplication = database.getAsyncReplication();
-                    config.getAsyncReplication().setEnabled(asyncReplication.isEnabled());
-                    config
-                        .getAsyncReplication()
-                        .setPollingInterval(asyncReplication.getPollingInterval());
-                    config
-                        .getAsyncReplication()
-                        .setMinSyncReplicas(asyncReplication.getMinSyncReplicas());
-                    config.getAsyncReplication().setMaxLag(asyncReplication.getMaxLag());
-                    config
-                        .getAsyncReplication()
-                        .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
-                  }
-
-                  applyRdbmsExtensionPropertyConfiguration(
-                      config.getExtensionProperties(), camunda.getData().getExtensionProperties());
-                })
+            .apply(config -> applyRdbmsExporterConfiguration(config, camunda))
             .toArgs());
+  }
+
+  /**
+   * Builds a fully-resolved {@link io.camunda.exporter.rdbms.ExporterConfiguration} from a {@link
+   * Camunda} object, mapping {@code camunda.data.secondary-storage.rdbms.*} (plus the shared audit
+   * log, wait state, history deletion and extension property sections).
+   *
+   * <p>The RDBMS exporter is provisioned outside the Broker via Spring, so the Broker cannot pass
+   * per-physical-tenant config through the exporter context. This lets the exporter factory resolve
+   * the config per physical tenant from that tenant's {@code Camunda} instead (see #57804). It
+   * shares the same mapping as {@link #populateRdbmsExporter(BrokerBasedProperties, Camunda)} so
+   * the per-tenant object and the broker-supplied args cannot drift.
+   */
+  public static io.camunda.exporter.rdbms.ExporterConfiguration toRdbmsExporterConfiguration(
+      final Camunda camunda) {
+    return ExporterConfiguration.of(
+            io.camunda.exporter.rdbms.ExporterConfiguration.class, new LinkedHashMap<>())
+        .apply(config -> applyRdbmsExporterConfiguration(config, camunda))
+        .get();
+  }
+
+  private static void applyRdbmsExporterConfiguration(
+      final io.camunda.exporter.rdbms.ExporterConfiguration config, final Camunda camunda) {
+    final Rdbms database = camunda.getData().getSecondaryStorage().getRdbms();
+    config.setQueueSize(database.getQueueSize());
+    config.setQueueMemoryLimit(database.getQueueMemoryLimit());
+    config.setFlushInterval(database.getFlushInterval());
+    config.setExportBatchOperationItemsOnCreation(database.isExportBatchOperationItemsOnCreation());
+    config.setBatchOperationItemInsertBlockSize(database.getBatchOperationItemInsertBlockSize());
+    config.setAuditLog(camunda.getData().getAuditLog().toConfiguration());
+    config.setWaitState(camunda.getData().getWaitStates().toConfiguration());
+    config.setHistoryDeletion(camunda.getData().getHistoryDeletion().toConfiguration());
+
+    applyRdbmsHistoryExporterConfiguration(config.getHistory(), database);
+
+    if (database.getProcessCache() != null) {
+      config.getProcessCache().setMaxSize(database.getProcessCache().getMaxSize());
+    }
+
+    if (database.getBatchOperationCache() != null) {
+      config.getBatchOperationCache().setMaxSize(database.getBatchOperationCache().getMaxSize());
+    }
+
+    if (database.getInsertBatching() != null) {
+      config
+          .getInsertBatching()
+          .setMaxAuditLogInsertBatchSize(
+              database.getInsertBatching().getMaxAuditLogInsertBatchSize());
+      config
+          .getInsertBatching()
+          .setMaxVariableInsertBatchSize(
+              database.getInsertBatching().getMaxVariableInsertBatchSize());
+      config
+          .getInsertBatching()
+          .setMaxJobInsertBatchSize(database.getInsertBatching().getMaxJobInsertBatchSize());
+      config
+          .getInsertBatching()
+          .setMaxFlowNodeInsertBatchSize(
+              database.getInsertBatching().getMaxFlowNodeInsertBatchSize());
+    }
+
+    if (database.getAsyncReplication() != null) {
+      final var asyncReplication = database.getAsyncReplication();
+      config.getAsyncReplication().setEnabled(asyncReplication.isEnabled());
+      config.getAsyncReplication().setPollingInterval(asyncReplication.getPollingInterval());
+      config.getAsyncReplication().setMinSyncReplicas(asyncReplication.getMinSyncReplicas());
+      config.getAsyncReplication().setMaxLag(asyncReplication.getMaxLag());
+      config
+          .getAsyncReplication()
+          .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
+    }
+
+    applyRdbmsExtensionPropertyConfiguration(
+        config.getExtensionProperties(), camunda.getData().getExtensionProperties());
   }
 
   private static void applyRdbmsExtensionPropertyConfiguration(

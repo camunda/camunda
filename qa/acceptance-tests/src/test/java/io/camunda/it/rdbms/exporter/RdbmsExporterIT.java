@@ -159,11 +159,19 @@ class RdbmsExporterIT {
             DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
     exporterPositionMapper =
         rdbmsMapperBundles.get(DEFAULT_PHYSICAL_TENANT_ID).exporterPositionMapper();
-    exporter = new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
+    final var exporterConfiguration = new ExporterConfiguration("foo", Map.of("queueSize", 0));
+    exporter =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                exporterConfiguration.instantiate(
+                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
     exporter.configure(
         new ExporterContext(
             null,
-            new ExporterConfiguration("foo", Map.of("queueSize", 0)),
+            exporterConfiguration,
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             "",
             null,
@@ -1500,12 +1508,20 @@ class RdbmsExporterIT {
     // given - create a separate exporter with interval-based flush (queueSize > 0, not per-record)
     // Use partitionId=2 to avoid interfering with other tests that use partitionId=1
     final var intervalController = new ExporterTestController();
+    final var intervalConfiguration =
+        new ExporterConfiguration("interval-flush-test", Map.of("queueSize", 100));
     final var intervalExporter =
-        new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                intervalConfiguration.instantiate(
+                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
     intervalExporter.configure(
         new ExporterContext(
             null,
-            new ExporterConfiguration("interval-flush-test", Map.of("queueSize", 100)),
+            intervalConfiguration,
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 2),
             "",
             null,

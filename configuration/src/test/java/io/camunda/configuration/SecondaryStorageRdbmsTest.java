@@ -8,12 +8,12 @@
 package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
-import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
 import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.operate.property.OperateProperties;
@@ -28,6 +28,10 @@ import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -223,41 +227,64 @@ public class SecondaryStorageRdbmsTest {
     }
   }
 
+  /**
+   * The {@code rdbms} exporter is reserved and provisioned internally; it must be configured
+   * through {@code camunda.data.secondary-storage.rdbms.*}. Declaring it through the generic
+   * exporter properties — unified or legacy — must fail fast rather than be silently ignored (see
+   * #57804).
+   */
   @Nested
-  @TestPropertySource(
-      properties = {
-        "camunda.data.secondary-storage.type=rdbms",
-        "zeebe.broker.exporters.rdbms.class-name=io.camunda.exporter.rdbms.RdbmsExporter"
-      })
-  class ExporterTestWithoutArgs {
-    final BrokerBasedProperties brokerBasedProperties;
-
-    ExporterTestWithoutArgs(@Autowired final BrokerBasedProperties brokerBasedProperties) {
-      this.brokerBasedProperties = brokerBasedProperties;
+  class ReservedExporterRejected {
+    private ApplicationContextRunner runnerWith(final String... properties) {
+      return new ApplicationContextRunner()
+          .withUserConfiguration(
+              UnifiedConfiguration.class,
+              UnifiedConfigurationHelper.class,
+              BrokerBasedPropertiesOverride.class)
+          .withPropertyValues("spring.profiles.active=broker")
+          .withPropertyValues("camunda.data.secondary-storage.type=rdbms")
+          .withPropertyValues(properties);
     }
 
     @Test
-    void testSecondaryStorageExporterWithoutArgsGetDefaults() {
-      final ExporterCfg exporter = brokerBasedProperties.getRdbmsExporter();
-      assertThat(exporter).isNotNull();
-      final Map<String, Object> args = exporter.getArgs();
-      assertThat(args.get("queueSize")).isEqualTo(1000);
-      assertThat(args.get("queueMemoryLimit")).isEqualTo(20);
-      assertThat(args.get("flushInterval")).isEqualTo(Duration.ofMillis(500));
-      assertThat(args.get("exportBatchOperationItemsOnCreation")).isEqualTo(true);
-      assertThat(args.get("batchOperationItemInsertBlockSize")).isEqualTo(10000);
+    void shouldRejectUnifiedRdbmsExporterConfig() {
+      runnerWith("camunda.data.exporters.rdbms.args.queue-size=0")
+          .run(
+              context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                    .rootCause()
+                    .isInstanceOf(UnifiedConfigurationException.class)
+                    .hasMessageContaining("'rdbms' exporter is reserved");
+              });
     }
 
     @Test
-    void testEngineValidatorsDefaults() {
-      final ValidatorsCfg validators =
-          brokerBasedProperties.getExperimental().getEngine().getValidators();
-      assertThat(validators.getMaxIdFieldLength())
-          .isEqualTo(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
-      assertThat(validators.getMaxNameFieldLength())
-          .isEqualTo(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
-      assertThat(validators.getMaxWorkerTypeLength())
-          .isEqualTo(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
+    void shouldRejectLegacyRdbmsExporterConfig() {
+      runnerWith("zeebe.broker.exporters.rdbms.class-name=io.camunda.exporter.rdbms.RdbmsExporter")
+          .run(
+              context -> {
+                assertThat(context).hasFailed();
+                assertThat(context.getStartupFailure())
+                    .rootCause()
+                    .isInstanceOf(UnifiedConfigurationException.class)
+                    .hasMessageContaining("'rdbms' exporter is reserved");
+              });
+    }
+
+    @Test
+    void shouldRejectRdbmsExporterConfiguredPerPhysicalTenant() {
+      // the per-tenant path goes through BrokerBasedPropertiesOverride.convert (invoked per tenant
+      // by SystemContextLoader), which runs the same reserved-exporter check
+      final MockEnvironment environment = new MockEnvironment();
+      environment.setProperty("camunda.data.secondary-storage.type", "rdbms");
+      environment.setProperty("camunda.data.exporters.rdbms.args.queue-size", "0");
+      final Camunda perTenant = new Camunda();
+      Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(perTenant));
+
+      assertThatThrownBy(() -> BrokerBasedPropertiesOverride.convert(perTenant))
+          .isInstanceOf(UnifiedConfigurationException.class)
+          .hasMessageContaining("'rdbms' exporter is reserved");
     }
   }
 
