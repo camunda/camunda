@@ -43,7 +43,8 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, filt
 		datePicker: boolean;
 		dateInput: boolean;
 		quickFilter: boolean;
-	}>({datePicker: false, dateInput: false, quickFilter: false});
+		timeInput: boolean;
+	}>({datePicker: false, dateInput: false, quickFilter: false, timeInput: false});
 
 	useEffect(() => {
 		const flatpickrDays = calendarRef?.querySelector('.flatpickr-days');
