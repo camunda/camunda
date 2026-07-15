@@ -22,7 +22,7 @@ type Props = {
   toolCalls: ToolCall[];
 };
 
-const ToolCalls: React.FC<Props> = memo(function DocumentContent({toolCalls}) {
+const ToolCalls: React.FC<Props> = memo(function ToolCalls({toolCalls}) {
   const id = useId();
 
   if (toolCalls.length === 0) {
