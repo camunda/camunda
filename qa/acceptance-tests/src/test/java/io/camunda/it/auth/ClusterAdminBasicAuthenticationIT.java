@@ -17,7 +17,6 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -70,7 +69,9 @@ public class ClusterAdminBasicAuthenticationIT {
   void shouldAllowClusterAdminEndpointWithFirstConfiguredUser() throws Exception {
     // when
     final HttpResponse<String> response =
-        send(PATH_CLUSTER_TOPOLOGY, basicAuth(CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD));
+        send(
+            clusterUri(PATH_CLUSTER_TOPOLOGY),
+            basicAuth(CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD));
 
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
@@ -80,7 +81,9 @@ public class ClusterAdminBasicAuthenticationIT {
   void shouldAllowClusterAdminEndpointWithSecondConfiguredUser() throws Exception {
     // when — proves the whole users[] list is bound, not just the first entry
     final HttpResponse<String> response =
-        send(PATH_CLUSTER_TOPOLOGY, basicAuth(CLUSTER_ADMIN_USER_2, CLUSTER_ADMIN_PASSWORD_2));
+        send(
+            clusterUri(PATH_CLUSTER_TOPOLOGY),
+            basicAuth(CLUSTER_ADMIN_USER_2, CLUSTER_ADMIN_PASSWORD_2));
 
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
@@ -90,7 +93,7 @@ public class ClusterAdminBasicAuthenticationIT {
   void shouldRejectClusterAdminEndpointWithBadCredentials() throws Exception {
     // when
     final HttpResponse<String> response =
-        send(PATH_CLUSTER_TOPOLOGY, basicAuth(CLUSTER_ADMIN_USER, "wrong-password"));
+        send(clusterUri(PATH_CLUSTER_TOPOLOGY), basicAuth(CLUSTER_ADMIN_USER, "wrong-password"));
 
     // then
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
@@ -100,7 +103,7 @@ public class ClusterAdminBasicAuthenticationIT {
   void shouldRejectRealDbBackedUserOnClusterAdminEndpoint() throws Exception {
     // when — a real, secondary-storage-backed user presents valid DB credentials to the cluster API
     final HttpResponse<String> response =
-        send(PATH_CLUSTER_TOPOLOGY, basicAuth(DB_USERNAME, DB_PASSWORD));
+        send(clusterUri(PATH_CLUSTER_TOPOLOGY), basicAuth(DB_USERNAME, DB_PASSWORD));
 
     // then — the cluster-admin chain has its own isolated store; a DB user is not known to it
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
@@ -110,16 +113,17 @@ public class ClusterAdminBasicAuthenticationIT {
   void shouldRejectClusterAdminCredentialsOnRegularV2Endpoint() throws Exception {
     // when — cluster-admin credentials presented to the regular /v2 API
     final HttpResponse<String> response =
-        send(PATH_V2_AUTHENTICATION_ME, basicAuth(CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD));
+        send(
+            apiUri(PATH_V2_AUTHENTICATION_ME),
+            basicAuth(CLUSTER_ADMIN_USER, CLUSTER_ADMIN_PASSWORD));
 
     // then — cluster-admin users exist only for /cluster/v2/**
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
   }
 
-  private HttpResponse<String> send(final String path, final String authorizationHeader)
+  private HttpResponse<String> send(final URI uri, final String authorizationHeader)
       throws Exception {
-    final HttpRequest.Builder builder =
-        HttpRequest.newBuilder().uri(createUri(camundaClient, path));
+    final HttpRequest.Builder builder = HttpRequest.newBuilder().uri(uri);
     if (authorizationHeader != null) {
       builder.header("Authorization", authorizationHeader);
     }
@@ -130,10 +134,25 @@ public class ClusterAdminBasicAuthenticationIT {
     return "Basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes());
   }
 
-  private static URI createUri(final CamundaClient client, final String path)
-      throws URISyntaxException {
-    final String base = client.getConfiguration().getRestAddress().toString();
+  // The cluster-admin API is cluster-wide, so it is always addressed at the gateway root — never
+  // under a /physical-tenants/<id> prefix. In physical-tenant mode the client's REST address
+  // carries that prefix, so strip it to reach the root.
+  private static URI clusterUri(final String path) {
+    final String base =
+        camundaClient
+            .getConfiguration()
+            .getRestAddress()
+            .toString()
+            .replaceAll("/+$", "")
+            .replaceFirst("/physical-tenants/[^/]+$", "");
+    return URI.create(base + "/" + path);
+  }
+
+  // The regular v2 API is addressed through the client's configured REST address, which is
+  // physical-tenant-scoped when the suite runs under a physical tenant.
+  private static URI apiUri(final String path) {
+    final String base = camundaClient.getConfiguration().getRestAddress().toString();
     final String separator = base.endsWith("/") ? "" : "/";
-    return new URI(base + separator + path);
+    return URI.create(base + separator + path);
   }
 }
