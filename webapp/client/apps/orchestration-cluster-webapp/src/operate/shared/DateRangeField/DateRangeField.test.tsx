@@ -26,7 +26,6 @@ describe('<DateRangeField />', () => {
 		await screen.getByLabelText('Start Date Range').click();
 		await expect.element(screen.getByTestId('date-range-modal')).toHaveClass(/is-visible/);
 
-		// getByRole doesn't help here since the date range modal portal renders to document.body
 		await screen.getByRole('button', {name: 'Cancel'}).click();
 		await expect.element(screen.getByTestId('date-range-modal')).not.toBeInTheDocument();
 	});
