@@ -24,6 +24,13 @@ security:
       clientSecret: ${CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET:}
       audience: ${CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE:}
       baseUrl: ${CAMUNDA_OPTIMIZE_IDENTITY_BASE_URL:}
+      # Set to true to enable detailed DEBUG/WARN logging of OIDC redirect flows. Useful for
+      # diagnosing reverse-proxy misconfigurations (forwarded-header mismatches). Disabled by default.
+      diagnosticsEnabled: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_CCSM_DIAGNOSTICS_ENABLED:false}
+      # When true (default), rejects Microsoft Entra access tokens whose `ver` claim is not "2.0".
+      # Set to false only as a last-resort escape hatch while updating the Azure app registration
+      # to set api.requestedAccessTokenVersion = 2.
+      entraTokenVersionCheckEnabled: ${CAMUNDA_OPTIMIZE_SECURITY_AUTH_CCSM_ENTRA_TOKEN_VERSION_CHECK_ENABLED:true}
     cookie:
       same-site:
         # decides if the Optimize auth cookie has the same site cookie flag set

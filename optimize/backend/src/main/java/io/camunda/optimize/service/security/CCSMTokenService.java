@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -52,6 +53,22 @@ public class CCSMTokenService {
   // In Identity, Optimize requires users to have write access to everything
   private static final String OPTIMIZE_PERMISSION = "write:*";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(CCSMTokenService.class);
+
+  // Known Microsoft Entra / Azure AD issuer host roots across all cloud deployments:
+  //   Commercial:    login.microsoftonline.com, sts.windows.net
+  //   US Government: login.microsoftonline.us
+  //   Germany:       login.microsoftonline.de  (legacy sovereign, still active)
+  //   China:         login.partner.microsoftonline.cn, sts.chinacloudapi.cn
+  // Each entry matches both the exact host and any subdomain (e.g.
+  // "tenant.login.microsoftonline.us").
+  private static final List<String> ENTRA_ISSUER_ROOT_DOMAINS =
+      List.of(
+          "login.microsoftonline.com",
+          "login.microsoftonline.us",
+          "login.microsoftonline.de",
+          "login.partner.microsoftonline.cn",
+          "sts.windows.net",
+          "sts.chinacloudapi.cn");
 
   private final AuthCookieService authCookieService;
   private final ConfigurationService configurationService;
@@ -163,6 +180,7 @@ public class CCSMTokenService {
     if (!userHasOptimizeAuthorization(verifiedToken)) {
       throw new NotAuthorizedException("User is not authorized to access Optimize");
     }
+    validateEntraTokenVersion(accessToken);
   }
 
   public AccessToken verifyToken(final String accessToken) {
@@ -172,10 +190,69 @@ public class CCSMTokenService {
       if (!userHasOptimizeAuthorization(verifiedToken)) {
         throw new NotAuthorizedException("User is not authorized to access Optimize");
       }
+      validateEntraTokenVersion(accessToken);
       return verifiedToken;
     } catch (final TokenVerificationException ex) {
       throw new NotAuthorizedException("Token could not be verified", ex);
     }
+  }
+
+  /**
+   * Rejects Microsoft Entra (Azure AD) access tokens that were issued in v1.0 format ({@code ver !=
+   * "2.0"}). Entra issues v1.0 tokens by default when {@code api.requestedAccessTokenVersion} is
+   * not set on the app registration. Camunda requires v2.0 because v1.0 tokens use a different
+   * audience format that causes silent redirect loops instead of clear auth errors.
+   *
+   * <p>When a v1.0 token is detected, this method logs an actionable ERROR message and throws
+   * {@link NotAuthorizedException} so the failure surfaces immediately.
+   *
+   * <p>Gated by {@code security.auth.ccsm.entraTokenVersionCheckEnabled} (default {@code true}).
+   * Set to {@code false} as a last-resort escape hatch if a deployment cannot immediately update
+   * the Azure app registration.
+   */
+  private void validateEntraTokenVersion(final String rawToken) {
+    if (!configurationService
+        .getAuthConfiguration()
+        .getCcsmAuthConfiguration()
+        .isEntraTokenVersionCheckEnabled()) {
+      return;
+    }
+    final DecodedJWT decoded;
+    try {
+      decoded = authentication().decodeJWT(extractTokenFromAuthorizationValue(rawToken));
+    } catch (final TokenDecodeException e) {
+      return;
+    }
+    final String issuer = decoded.getIssuer();
+    if (issuer == null || !isMicrosoftEntraIssuer(issuer)) {
+      return;
+    }
+    final String ver = decoded.getClaim("ver").asString();
+    if (!"2.0".equals(ver)) {
+      final String msg =
+          "Microsoft Entra token rejected: 'ver' claim is '"
+              + ver
+              + "' but '2.0' is required. "
+              + "Set 'api.requestedAccessTokenVersion = 2' on the Camunda app registration "
+              + "in the Azure portal to enable v2.0 access tokens.";
+      LOG.error(msg);
+      throw new NotAuthorizedException(msg);
+    }
+  }
+
+  static boolean isMicrosoftEntraIssuer(final String issuer) {
+    final String host;
+    try {
+      host = URI.create(issuer).getHost();
+    } catch (final IllegalArgumentException e) {
+      return false;
+    }
+    if (host == null) {
+      return false;
+    }
+    final String lower = host.toLowerCase(Locale.ROOT);
+    return ENTRA_ISSUER_ROOT_DOMAINS.stream()
+        .anyMatch(domain -> lower.equals(domain) || lower.endsWith("." + domain));
   }
 
   public Tokens renewToken(final String refreshToken) {
