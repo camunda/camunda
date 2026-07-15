@@ -307,7 +307,17 @@ outputs:
         steps.filter-common.outputs.gradle-change == 'true' ||
         steps.filter-common.outputs.maven-change == 'true'
       }}
-
+  gradle-build-changes:
+    description: Output whether Gradle build inputs changed
+    value: >-
+      ${{ steps.filter-common.outputs.gradle-change == 'true' }}
+  gradle-only-changes:
+    description: Output whether a pull request changes only Gradle build inputs
+    value: >-
+      ${{
+        github.event_name == 'pull_request' &&
+        steps.gradle-only.outputs.gradle-only == 'true'
+      }}
 runs:
   using: composite
   steps:

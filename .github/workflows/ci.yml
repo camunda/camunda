@@ -79,7 +79,13 @@ jobs:
       scripts-changes: ${{ steps.filter.outputs.scripts-changes }}
       load-test-scripts-changes: ${{ steps.filter.outputs.load-test-scripts-changes }}
       gradle-changes: ${{ steps.filter.outputs.gradle-changes }}
-
+      gradle-build-changes: ${{ steps.filter.outputs.gradle-build-changes }}
+      gradle-only-changes: ${{ steps.filter.outputs.gradle-only-changes }}
+      # Single source of truth for which build tool CI uses. Pure Gradle-only PRs use Gradle
+      # automatically; the gradle-build label opts non-Java/non-Maven mixed PRs into Gradle. Java
+      # changes, Maven build changes, merge queues, pushes, schedules, manual runs, and other PRs
+      # use Maven.
+      build-tool: ${{ (github.event_name == 'pull_request' && steps.filter.outputs.java-source-changes != 'true' && steps.filter.outputs.maven-build-changes != 'true' && (steps.filter.outputs.gradle-only-changes == 'true' || contains(github.event.pull_request.labels.*.name, 'gradle-build'))) && 'gradle' || 'maven' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
