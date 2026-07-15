@@ -12,12 +12,20 @@ on:
         description: "Set to true if the change is running on a stable branch"
         type: boolean
         default: false
+      build-tool:
+        description: "Build tool to use ('maven' or 'gradle'). Gradle is PR-only opt-in via the 'gradle-build' label."
+        type: string
+        default: maven
   workflow_call:
     inputs:
       stable-branch:
         description: "Set to true if the change is running on a stable branch"
         type: boolean
         default: false
+      build-tool:
+        description: "Build tool to use ('maven' or 'gradle'). Gradle is PR-only opt-in via the 'gradle-build' label."
+        type: string
+        default: maven
 
 defaults:
   run:
@@ -64,14 +72,28 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly:  ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
+          skip-maven-cache: ${{ inputs.build-tool == 'gradle' }}
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        if: ${{ inputs.build-tool == 'maven' }}
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        if: ${{ inputs.build-tool == 'gradle' }}
+        with:
+          cache-read-only: true
+      - name: Build Zeebe distribution (Gradle)
+        id: build-zeebe-gradle
+        if: ${{ inputs.build-tool == 'gradle' }}
+        shell: bash
+        run: |
+          ./gradlew --no-daemon --console=plain -Pskip.fe.build :camunda-zeebe:distTar
+          DISTBALL=$(ls dist/build/distributions/camunda-zeebe-*.tar.gz)
+          echo "distball=${DISTBALL}" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         # Currently only Linux runners support building docker images without further ado
@@ -79,13 +101,14 @@ jobs:
         with:
           repository: camunda/camunda
           version: current-test
-          distball: ${{ steps.build-zeebe.outputs.distball }}
+          distball: ${{ steps.build-zeebe-gradle.outputs.distball || steps.build-zeebe.outputs.distball }}
           platforms: linux/${{ matrix.arch }}
           push: false
           dockerfile: 'camunda.Dockerfile'
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      - name: Run smoke test on ${{ matrix.arch }}
+      - name: Maven Run smoke test on ${{ matrix.arch }}
+        if: ${{ inputs.build-tool == 'maven' }}
         shell: bash
         env:
           # For non Linux runners there is no container available for testing, see build-camunda-docker job
@@ -102,6 +125,26 @@ jobs:
           -f zeebe
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Gradle Run smoke test on ${{ matrix.arch }}
+        if: ${{ inputs.build-tool == 'gradle' }}
+        shell: bash
+        env:
+          # For non Linux runners there is no container available for testing, see build-camunda-docker job
+          EXCLUDED_TEST_GROUPS: ${{ runner.os != 'Linux' && 'container' }}
+          CAMUNDA_TEST_DOCKER_IMAGE: camunda/camunda:current-test
+          CAMUNDA_DOCKER_IMAGE_NAME: camunda/camunda
+          DOCKER_IMAGE_TAG: current-test
+        run: |
+          ./gradlew --no-daemon --console=plain -Pskip.fe.build \
+            -Ptest.max.forks=1 \
+            -Psmoke-test \
+            -PexcludedGroups="${EXCLUDED_TEST_GROUPS}" \
+            -Dio.camunda.zeebe.it.smoke=true \
+            -Dio.camunda.process.test.camundaDockerImageName="${{ env.CAMUNDA_DOCKER_IMAGE_NAME }}" \
+            -Dio.camunda.process.test.camundaDockerImageVersion="${{ env.DOCKER_IMAGE_TAG }}" \
+            -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}" \
+            :zeebe-qa-integration-tests:it \
+            | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -358,14 +401,27 @@ jobs:
           minimus: true
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        if: ${{ inputs.build-tool == 'maven' }}
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        if: ${{ inputs.build-tool == 'gradle' }}
+        with:
+          cache-read-only: true
+      - name: Build Zeebe distribution (Gradle)
+        id: build-zeebe-gradle
+        if: ${{ inputs.build-tool == 'gradle' }}
+        shell: bash
+        run: |
+          ./gradlew --no-daemon --console=plain -Pskip.fe.build :camunda-zeebe:distTar
+          DISTBALL=$(ls dist/build/distributions/camunda-zeebe-*.tar.gz)
+          echo "distball=${DISTBALL}" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:
           # we use a local registry for pushing
           repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          distball: ${{ steps.build-zeebe.outputs.distball }}
+          distball: ${{ steps.build-zeebe-gradle.outputs.distball || steps.build-zeebe.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
