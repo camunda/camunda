@@ -1,6 +1,6 @@
 # description: Regenerates load-tests/setup golden files (rendered Kubernetes manifests) for
-#              Renovate branches and commits the diff back to the PR branch. Companion to the
-#              load-test-golden-tests job in ci.yml, which only verifies.
+#              Renovate branches or PRs labeled "generate-golden", and commits the diff back to
+#              the PR branch. Companion to the load-test-golden-tests job in ci.yml, which only verifies.
 # test location: load-tests/setup/test
 # type: ci
 # owner: @camunda/reliability-testing
@@ -11,6 +11,10 @@ on:
   push:
     branches:
       - "renovate/**"
+    paths:
+      - "load-tests/setup/**"
+  pull_request:
+    types: [labeled, synchronize]
     paths:
       - "load-tests/setup/**"
 
@@ -27,7 +31,10 @@ permissions: {}
 
 jobs:
   update-golden:
-    if: github.actor == 'renovate[bot]' || github.actor == 'mend[bot]' || github.actor == 'app/renovate'
+    if: >-
+      (github.event_name == 'push' && (github.actor == 'renovate[bot]' || github.actor == 'mend[bot]' || github.actor == 'app/renovate')) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.state != 'closed' && github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.label.name == 'generate-golden' || contains(github.event.pull_request.labels.*.name, 'generate-golden')))
     name: Update Golden Files
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -51,6 +58,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref || github.ref_name }}
           token: ${{ steps.github-token.outputs.token }}
 
       - name: Set up Go

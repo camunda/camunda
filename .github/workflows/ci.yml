@@ -253,7 +253,7 @@ jobs:
           echo "  make update-golden"
           echo "  git diff golden/    # review the change"
           echo "  git add golden/ && git commit -m 'test: update golden files'"
-          echo "Renovate PRs touching load-tests/setup/** regenerate golden files automatically."
+          echo "Or apply the 'generate-golden' label. Renovate PRs touching load-tests/setup/** are handled automatically."
       - name: Observe build status
         if: always()
         continue-on-error: true
