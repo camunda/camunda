@@ -28,6 +28,7 @@ import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
+import io.camunda.client.api.command.AssignProcessInstanceBusinessIdCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingRuleCommandStep1;
@@ -221,6 +222,7 @@ import io.camunda.client.impl.command.AssignClientToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToTenantCommandImpl;
+import io.camunda.client.impl.command.AssignProcessInstanceBusinessIdCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToClientCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToMappingRuleCommandImpl;
@@ -746,6 +748,18 @@ public final class CamundaClientImpl implements CamundaClient {
   public MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(
       final long processInstanceKey) {
     return new MigrateProcessInstanceCommandImpl(
+        processInstanceKey,
+        asyncStub,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config,
+        jsonMapper);
+  }
+
+  @Override
+  public AssignProcessInstanceBusinessIdCommandStep1 newAssignProcessInstanceBusinessIdCommand(
+      final long processInstanceKey) {
+    return new AssignProcessInstanceBusinessIdCommandImpl(
         processInstanceKey,
         asyncStub,
         credentialsProvider::shouldRetryRequest,

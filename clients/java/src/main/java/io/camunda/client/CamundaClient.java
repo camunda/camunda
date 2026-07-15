@@ -22,6 +22,7 @@ import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
+import io.camunda.client.api.command.AssignProcessInstanceBusinessIdCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingRuleCommandStep1;
@@ -421,6 +422,27 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(long processInstanceKey);
+
+  /**
+   * Command to assign a business id to an already running process instance.
+   *
+   * <p>This allows attaching a business id to a process instance that was started without one. The
+   * assignment is rejected if the instance already has a different business id, if it is a child
+   * instance created by a call activity, or if business id uniqueness is enabled for its process
+   * definition.
+   *
+   * <pre>
+   * camundaClient
+   *  .newAssignProcessInstanceBusinessIdCommand(processInstanceKey)
+   *  .businessId("order-4711")
+   *  .send();
+   * </pre>
+   *
+   * @param processInstanceKey the key of the process instance to assign the business id to
+   * @return a builder for the command
+   */
+  AssignProcessInstanceBusinessIdCommandStep1 newAssignProcessInstanceBusinessIdCommand(
+      long processInstanceKey);
 
   /**
    * Command to cancel a process instance.

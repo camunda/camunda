@@ -13,27 +13,45 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.AssignProcessInstanceBusinessIdCommandStep1;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @MultiDbTest
 class ProcessInstanceBusinessIdAssignmentIT {
 
   private static CamundaClient camundaClient;
 
-  @Test
-  void shouldAssignBusinessIdToRunningProcessInstance() throws Exception {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldAssignBusinessIdToRunningProcessInstance(final boolean useRest) {
     // given - a running process instance that currently has no business id
-    final var processId = "business-id-assignment-process";
-    final var businessId = "order-98765";
+    final var transport = useRest ? "rest" : "grpc";
+    final long processInstanceKey =
+        startProcessInstance("business-id-assignment-" + transport + "-process");
+    final var businessId = "order-" + transport + "-98765";
+
+    // when - the business id is assigned late via the Java client over the chosen transport
+    assignBusinessId(processInstanceKey, businessId, useRest).send().join();
+
+    // then - the assignment propagates to secondary storage
+    awaitBusinessId(processInstanceKey, businessId);
+
+    // and - re-sending the identical business id succeeds idempotently
+    assignBusinessId(processInstanceKey, businessId, useRest).send().join();
+  }
+
+  private AssignProcessInstanceBusinessIdCommandStep1.AssignProcessInstanceBusinessIdCommandStep2
+      assignBusinessId(
+          final long processInstanceKey, final String businessId, final boolean useRest) {
+    final var command = camundaClient.newAssignProcessInstanceBusinessIdCommand(processInstanceKey);
+    return (useRest ? command.useRest() : command.useGrpc()).businessId(businessId);
+  }
+
+  private long startProcessInstance(final String processId) {
     final var processDefinition =
         Bpmn.createExecutableProcess(processId).startEvent().userTask("task").endEvent().done();
     deployProcessAndWaitForIt(camundaClient, processDefinition, processId + ".bpmn");
@@ -52,13 +70,10 @@ class ProcessInstanceBusinessIdAssignmentIT {
         f -> f.processInstanceKey(processInstanceKey),
         instances -> assertThat(instances).hasSize(1));
 
-    // when - the business id is assigned late via the dedicated REST endpoint
-    final var response =
-        assignBusinessId(processInstanceKey, "{\"businessId\":\"%s\"}".formatted(businessId));
+    return processInstanceKey;
+  }
 
-    // then - the endpoint accepts the assignment and it propagates to secondary storage
-    assertThat(response.statusCode()).isEqualTo(204);
-
+  private void awaitBusinessId(final long processInstanceKey, final String businessId) {
     await("business id is reflected in secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions()
@@ -71,28 +86,5 @@ class ProcessInstanceBusinessIdAssignmentIT {
                             .join()
                             .getBusinessId())
                     .isEqualTo(businessId));
-
-    // and - re-sending the identical business id succeeds idempotently
-    final var idempotentResponse =
-        assignBusinessId(processInstanceKey, "{\"businessId\":\"%s\"}".formatted(businessId));
-    assertThat(idempotentResponse.statusCode()).isEqualTo(204);
-  }
-
-  private HttpResponse<String> assignBusinessId(final long processInstanceKey, final String body)
-      throws Exception {
-    final var base = camundaClient.getConfiguration().getRestAddress().toString();
-    final var separator = base.endsWith("/") ? "" : "/";
-    final var request =
-        HttpRequest.newBuilder()
-            .uri(
-                new URI(
-                    base
-                        + separator
-                        + "v2/process-instances/%d/business-id-assignment"
-                            .formatted(processInstanceKey)))
-            .header("Content-Type", "application/json")
-            .POST(BodyPublishers.ofString(body))
-            .build();
-    return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
   }
 }
