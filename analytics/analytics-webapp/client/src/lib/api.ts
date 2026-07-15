@@ -239,6 +239,30 @@ export interface VariableCorrelation {
   lift: number;
 }
 
+/** One execution variant's top driver for one variable: the value most associated with taking
+ * this variant, by lift (`P(variant|value) / P(variant)`). variantHash is a decimal string (64-bit
+ * rule). Counts-only, declared variables only (corr-variant-* cubes). */
+export interface VariantCorrelation {
+  variantHash: string;
+  variable: string;
+  value: string;
+  n: number;
+  share: number;
+  lift: number;
+}
+
+/** One gateway branch's single strongest driver across every declared variable, by lift. Restricted
+ * to real gateway outgoing targets. Counts-only, declared variables only (corr-branch-* cubes). */
+export interface BranchCorrelation {
+  gatewayId: string;
+  targetId: string;
+  variable: string;
+  value: string;
+  n: number;
+  share: number;
+  lift: number;
+}
+
 // ---------------------------------------------------------------------------
 // Dataset / report builder shapes. These mirror the analytics builder REST
 // contract (DatasetDeclaration / Report records serialized by name).
@@ -578,6 +602,14 @@ export const api = {
   variableCorrelation: (process: string, range: TimeRange | null) =>
     getJson<VariableCorrelation[]>(
       `/api/dashboard/variable-correlation?process=${q(process)}${rangeQs(range)}`,
+    ),
+  variantCorrelation: (process: string, range: TimeRange | null) =>
+    getJson<VariantCorrelation[]>(
+      `/api/dashboard/variant-correlation?process=${q(process)}${rangeQs(range)}`,
+    ),
+  branchCorrelation: (process: string, range: TimeRange | null) =>
+    getJson<BranchCorrelation[]>(
+      `/api/dashboard/branch-correlation?process=${q(process)}${rangeQs(range)}`,
     ),
 
   // Dataset / report builder endpoints.

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import {
   api,
   type ActiveInstancesPoint,
+  type BranchCorrelation,
   type BranchDistribution,
   type DurationBucketPoint,
   type DurationSpreadPoint,
@@ -28,6 +29,7 @@ import {
   type ValuePoint,
   type ValueSummary,
   type VariableCorrelation,
+  type VariantCorrelation,
   type VariantRow,
 } from "./api";
 
@@ -73,6 +75,10 @@ export interface MetricsData {
   outliers: ElementOutlier[];
   /** Which declared variable values are over-represented among duration outliers. */
   variableCorrelation: VariableCorrelation[];
+  /** Each execution variant's top driver value per declared variable (client joins by variantHash). */
+  variantCorrelation: VariantCorrelation[];
+  /** Each gateway branch's single strongest driver (client joins by gatewayId+targetId). */
+  branchCorrelation: BranchCorrelation[];
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -129,6 +135,8 @@ export function useMetrics(
       api.variants(process, range),
       api.outliers(process, range),
       api.variableCorrelation(process, range),
+      api.variantCorrelation(process, range),
+      api.branchCorrelation(process, range),
     ])
       .then(
         ([
@@ -161,6 +169,8 @@ export function useMetrics(
           variants,
           outliers,
           variableCorrelation,
+          variantCorrelation,
+          branchCorrelation,
         ]) => {
           if (!cancelled) {
             setData({
@@ -193,6 +203,8 @@ export function useMetrics(
               variants,
               outliers,
               variableCorrelation,
+              variantCorrelation,
+              branchCorrelation,
             });
           }
         },

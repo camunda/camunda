@@ -343,6 +343,32 @@ public class DashboardController {
     return repository.variableCorrelations(bpmnProcessId, from, to);
   }
 
+  /**
+   * Which declared variable values drive which execution variant, one row per (variant, variable):
+   * the value most associated with taking that variant, by lift. Empty when there is no {@code
+   * corr-variant-*} cube provisioned.
+   */
+  @GetMapping("/variant-correlation")
+  public List<VariantCorrelation> variantCorrelation(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.variantCorrelations(bpmnProcessId, from, to);
+  }
+
+  /**
+   * Which declared variable values drive which gateway branch, one row per branch: the single
+   * strongest driver across every declared variable, by lift. Empty when there is no deployed
+   * model, no decision gateways, or no {@code corr-branch-*} cube provisioned.
+   */
+  @GetMapping("/branch-correlation")
+  public List<BranchCorrelation> branchCorrelation(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.branchCorrelations(bpmnProcessId, from, to);
+  }
+
   @GetMapping(value = "/diagram", produces = MediaType.APPLICATION_XML_VALUE)
   public ResponseEntity<String> diagram(@RequestParam("process") final String bpmnProcessId) {
     return repository

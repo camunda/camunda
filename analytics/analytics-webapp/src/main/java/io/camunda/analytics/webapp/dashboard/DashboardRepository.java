@@ -11,7 +11,6 @@ import io.camunda.analytics.dataset.CompiledDataset;
 import io.camunda.analytics.dataset.CompiledMeter;
 import io.camunda.analytics.dataset.DimensionSpec;
 import io.camunda.analytics.dataset.FilterPredicate;
-import io.camunda.analytics.dimension.DimensionColumn;
 import io.camunda.analytics.meter.MeterCatalog;
 import io.camunda.analytics.metric.ExecutionTimeResult;
 import io.camunda.analytics.metric.RatioResult;
@@ -593,7 +592,15 @@ public class DashboardRepository {
    */
   private boolean hasMeter(final String datasetName, final String meterName) {
     final CompiledDataset dataset = catalog.byName().get(datasetName);
-    return dataset != null && hasMeter(dataset, meterName);
+    if (dataset == null) {
+      return false;
+    }
+    for (final CompiledMeter compiled : dataset.meters()) {
+      if (compiled.meterName().equals(meterName)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** The cap on rows a variable-correlation read returns, ranked by lift descending. */
@@ -683,36 +690,13 @@ public class DashboardRepository {
   }
 
   /**
-   * The {@code var.*} dimension name of {@code dataset} if it is a duration-correlation cube — a
-   * catalog dataset named {@code corr-*} declaring a {@code duration_p} sketch meter and exactly
-   * one variable dimension — or {@code null} otherwise. The {@code duration_p} meter is the signal
-   * that separates this cube shape from the variant/branch correlation cubes (which carry only
-   * counts).
+   * The {@code var.*} dimension name of {@code dataset} if it is a duration-correlation cube (see
+   * {@link CorrelationCubes}), or {@code null} otherwise.
    */
   private static String durationCorrelationVariable(final CompiledDataset dataset) {
-    if (!dataset.name().startsWith("corr-") || !hasMeter(dataset, "duration_p")) {
-      return null;
-    }
-    String variableDimension = null;
-    for (final DimensionColumn column : dataset.grain().columns()) {
-      if (column.name().startsWith(DimensionSpec.VARIABLE_PREFIX)) {
-        if (variableDimension != null) {
-          return null; // more than one variable dimension — not the duration-correlation shape
-        }
-        variableDimension = column.name();
-      }
-    }
-    return variableDimension;
-  }
-
-  /** Whether {@code dataset} declares a meter named {@code meterName}. */
-  private static boolean hasMeter(final CompiledDataset dataset, final String meterName) {
-    for (final CompiledMeter compiled : dataset.meters()) {
-      if (compiled.meterName().equals(meterName)) {
-        return true;
-      }
-    }
-    return false;
+    return CorrelationCubes.classify(dataset) == CorrelationCubes.Kind.DURATION
+        ? CorrelationCubes.variableDimension(dataset)
+        : null;
   }
 
   /** Instances started (activated) for a process over the range. */
@@ -1380,6 +1364,209 @@ public class DashboardRepository {
     }
     return out;
   }
+
+  /**
+   * The minimum joint (outcome, value) observation count before a variant/branch driver pair is
+   * trusted — below it the pair is noise, skipped rather than ranked.
+   */
+  private static final long MIN_SUPPORT = 10;
+
+  /**
+   * Which declared variable values drive which execution variant, one row per (variant, variable)
+   * pair: for each {@code corr-variant-*} cube (one per declared driver variable), the value most
+   * associated with taking a given variant, by lift ({@code P(variant|value) / P(variant)}).
+   * Marginals come from the corr cube itself — it only sees instances that HAVE the variable, so
+   * they are self-consistent and never mixed with the process-variants cube's totals. Pairs below
+   * {@link #MIN_SUPPORT} are skipped, as is a variant whose overall population is zero (a zero lift
+   * denominator). Sorted by lift descending.
+   */
+  public List<VariantCorrelation> variantCorrelations(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final List<VariantCorrelation> out = new ArrayList<>();
+    for (final CompiledDataset dataset : catalog.byName().values()) {
+      if (CorrelationCubes.classify(dataset) != CorrelationCubes.Kind.VARIANT) {
+        continue;
+      }
+      final String variableDimension = CorrelationCubes.variableDimension(dataset);
+      final String variable = variableDimension.substring(DimensionSpec.VARIABLE_PREFIX.length());
+      final Map<Long, Map<String, Long>> jointByVariant = new LinkedHashMap<>();
+      for (final ReportRow row :
+          total(
+              dataset.name(),
+              List.of("variantHash", variableDimension),
+              fromWindow,
+              toWindow,
+              List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+              List.of("count"),
+              newMemo())) {
+        final Object valueObject = row.dimensions().get(variableDimension);
+        if (valueObject == null) {
+          continue;
+        }
+        jointByVariant
+            .computeIfAbsent(
+                asLong(row.dimensions().get("variantHash")), key -> new LinkedHashMap<>())
+            .merge(valueObject.toString(), measureAsLong(row, "count"), Long::sum);
+      }
+      for (final DriverPick<Long> pick : topDriverPerOutcome(jointByVariant, variable)) {
+        out.add(
+            new VariantCorrelation(
+                Long.toString(pick.outcome()),
+                pick.variable(),
+                pick.value(),
+                pick.n(),
+                pick.share(),
+                pick.lift()));
+      }
+    }
+    out.sort(Comparator.comparingDouble(VariantCorrelation::lift).reversed());
+    return out;
+  }
+
+  /**
+   * Which declared variable values drive which gateway branch, one row per branch — the single
+   * strongest driver across every declared variable, by lift. Outcomes are restricted to the
+   * deployed model's actual gateway outgoing targets (see {@link GatewayTopology}, cached per
+   * definition), so a pass-through element's counts never pollute the ranking or the marginals.
+   * COMPLETED element facts only carry variables (the ACTIVATED deriver does not attach them), so
+   * counts skew low against the branch card's activation-based counts — documented, not reconciled.
+   * Same {@link #MIN_SUPPORT}/zero-denominator guards as {@link #variantCorrelations}.
+   */
+  public List<BranchCorrelation> branchCorrelations(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final TableRow definition = latestDefinition(bpmnProcessId).orElse(null);
+    if (definition == null || !(definition.values().get("bpmnXml") instanceof final String xml)) {
+      return List.of();
+    }
+    final long definitionKey = asLong(definition.values().get("processDefinitionKey"));
+    final List<GatewayTopology.GatewaySpec> gateways =
+        gatewaysByDefinition.computeIfAbsent(definitionKey, key -> GatewayTopology.parse(xml));
+    if (gateways.isEmpty()) {
+      return List.of();
+    }
+    final Map<String, String> gatewayByTarget = new HashMap<>();
+    for (final GatewayTopology.GatewaySpec gateway : gateways) {
+      for (final GatewayTopology.BranchSpec branch : gateway.branches()) {
+        gatewayByTarget.put(branch.targetId(), gateway.gatewayId());
+      }
+    }
+    // The strongest driver per target survives across every corr-branch-* cube (a target can have
+    // both a route and a region driver in the catalog; only one row per branch reaches the client).
+    final Map<String, DriverPick<String>> bestByTarget = new LinkedHashMap<>();
+    for (final CompiledDataset dataset : catalog.byName().values()) {
+      if (CorrelationCubes.classify(dataset) != CorrelationCubes.Kind.BRANCH) {
+        continue;
+      }
+      final String variableDimension = CorrelationCubes.variableDimension(dataset);
+      final String variable = variableDimension.substring(DimensionSpec.VARIABLE_PREFIX.length());
+      final Map<String, Map<String, Long>> jointByTarget = new LinkedHashMap<>();
+      for (final ReportRow row :
+          total(
+              dataset.name(),
+              List.of("elementId", variableDimension),
+              fromWindow,
+              toWindow,
+              List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+              List.of("count"),
+              newMemo())) {
+        final String target = elementId(row);
+        if (!gatewayByTarget.containsKey(target)) {
+          continue; // a pass-through element, not a decision outcome — excluded, not just hidden
+        }
+        final Object valueObject = row.dimensions().get(variableDimension);
+        if (valueObject == null) {
+          continue;
+        }
+        jointByTarget
+            .computeIfAbsent(target, key -> new LinkedHashMap<>())
+            .merge(valueObject.toString(), measureAsLong(row, "count"), Long::sum);
+      }
+      for (final DriverPick<String> pick : topDriverPerOutcome(jointByTarget, variable)) {
+        final DriverPick<String> current = bestByTarget.get(pick.outcome());
+        if (current == null || pick.lift() > current.lift()) {
+          bestByTarget.put(pick.outcome(), pick);
+        }
+      }
+    }
+    final List<BranchCorrelation> out = new ArrayList<>(bestByTarget.size());
+    for (final DriverPick<String> pick : bestByTarget.values()) {
+      out.add(
+          new BranchCorrelation(
+              gatewayByTarget.get(pick.outcome()),
+              pick.outcome(),
+              pick.variable(),
+              pick.value(),
+              pick.n(),
+              pick.share(),
+              pick.lift()));
+    }
+    out.sort(Comparator.comparingDouble(BranchCorrelation::lift).reversed());
+    return out;
+  }
+
+  /**
+   * One outcome's strongest driver: the (variable, value) pair with the highest lift among its
+   * joint counts, subject to {@link #MIN_SUPPORT}. Shared math for {@link #variantCorrelations} and
+   * {@link #branchCorrelations} — {@code P(outcome|value) / P(outcome)}, with all three marginals
+   * ({@code n(value)}, {@code n(outcome)}, {@code N}) read off {@code jointByOutcome} itself.
+   */
+  private static <K> List<DriverPick<K>> topDriverPerOutcome(
+      final Map<K, Map<String, Long>> jointByOutcome, final String variable) {
+    final Map<String, Long> nByValue = new HashMap<>();
+    long total = 0L;
+    for (final Map<String, Long> perValue : jointByOutcome.values()) {
+      for (final Map.Entry<String, Long> entry : perValue.entrySet()) {
+        nByValue.merge(entry.getKey(), entry.getValue(), Long::sum);
+        total += entry.getValue();
+      }
+    }
+    if (total == 0L) {
+      return List.of();
+    }
+    final List<DriverPick<K>> picks = new ArrayList<>();
+    for (final Map.Entry<K, Map<String, Long>> outcomeEntry : jointByOutcome.entrySet()) {
+      long nOutcome = 0L;
+      for (final long joint : outcomeEntry.getValue().values()) {
+        nOutcome += joint;
+      }
+      if (nOutcome == 0L) {
+        continue; // a zero lift denominator — skip rather than divide by zero
+      }
+      final double pOutcome = (double) nOutcome / total;
+      String bestValue = null;
+      long bestN = 0L;
+      double bestShare = 0.0;
+      double bestLift = Double.NEGATIVE_INFINITY;
+      for (final Map.Entry<String, Long> valueEntry : outcomeEntry.getValue().entrySet()) {
+        final long nJoint = valueEntry.getValue();
+        if (nJoint < MIN_SUPPORT) {
+          continue;
+        }
+        final long nValue = nByValue.getOrDefault(valueEntry.getKey(), 0L);
+        if (nValue == 0L) {
+          continue;
+        }
+        final double share = (double) nJoint / nValue;
+        final double lift = share / pOutcome;
+        if (lift > bestLift) {
+          bestLift = lift;
+          bestValue = valueEntry.getKey();
+          bestN = nJoint;
+          bestShare = share;
+        }
+      }
+      if (bestValue != null) {
+        picks.add(
+            new DriverPick<>(
+                outcomeEntry.getKey(), variable, bestValue, bestN, bestShare, bestLift));
+      }
+    }
+    return picks;
+  }
+
+  /** One outcome's strongest (variable, value) driver pair — see {@link #topDriverPerOutcome}. */
+  private record DriverPick<K>(
+      K outcome, String variable, String value, long n, double share, double lift) {}
 
   private static long asLong(final Object value) {
     return value instanceof final Number n ? n.longValue() : 0L;

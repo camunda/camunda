@@ -120,9 +120,12 @@ export function PerformancePage({
 
       <OutlierCorrelation rows={data.variableCorrelation} />
 
-      <TopVariants variants={data.variants} />
+      <TopVariants variants={data.variants} correlations={data.variantCorrelation} />
 
-      <GatewayDecisions gateways={data.branchDistribution} />
+      <GatewayDecisions
+        gateways={data.branchDistribution}
+        correlations={data.branchCorrelation}
+      />
 
       <ReworkHotspots rows={data.rework} />
 

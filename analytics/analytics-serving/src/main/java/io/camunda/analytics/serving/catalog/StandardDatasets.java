@@ -425,6 +425,60 @@ public final class StandardDatasets {
                     Map.of("ranks", "0.25,0.5,0.75,0.95")))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
+            .build(),
+        // Which variable values drive which execution variant. COMPLETED and TERMINATED alike —
+        // variants count both (a terminated retry-storm is exactly the kind of variant a driver
+        // value should explain). Discovered by the same corr-* naming convention: variantHash plus
+        // exactly one var.* dimension is a variant-correlation cube (see CorrelationCubes).
+        // APPENDED.
+        DatasetDeclaration.builder("corr-variant-route", FactType.PROCESS_INSTANCE)
+            .filterNotNull("variantHash")
+            .filterNotNull("var.route")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("variantHash", DimensionType.LONG)
+            .dimension("var.route", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .build(),
+        // Same shape as corr-variant-route, grouped by 'region' instead. APPENDED.
+        DatasetDeclaration.builder("corr-variant-region", FactType.PROCESS_INSTANCE)
+            .filterNotNull("variantHash")
+            .filterNotNull("var.region")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("variantHash", DimensionType.LONG)
+            .dimension("var.region", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .build(),
+        // Which variable values drive which branch target. COMPLETED element facts (they carry
+        // variables; activations don't — the ACTIVATED deriver does not attach them, so an
+        // activation-conditioned read would see an all-NULL variable column) — counts skew low vs
+        // the branch card's activation counts when an element is terminated mid-flight; document,
+        // don't reconcile. Discovered by the same corr-* convention: elementId plus exactly one
+        // var.* dimension is a branch-correlation cube. Numeric variables (e.g. amount) are out of
+        // scope: they need declare-time banding to become a dimension. APPENDED.
+        DatasetDeclaration.builder("corr-branch-route", FactType.ELEMENT)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .filterNotNull("var.route")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("elementId", DimensionType.STRING)
+            .dimension("var.route", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .build(),
+        // Same shape as corr-branch-route, grouped by 'region' instead. APPENDED.
+        DatasetDeclaration.builder("corr-branch-region", FactType.ELEMENT)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .filterNotNull("var.region")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("elementId", DimensionType.STRING)
+            .dimension("var.region", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build());
   }
 
