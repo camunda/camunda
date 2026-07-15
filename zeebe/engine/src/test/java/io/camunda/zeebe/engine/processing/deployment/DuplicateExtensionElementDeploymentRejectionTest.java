@@ -77,7 +77,7 @@ public class DuplicateExtensionElementDeploymentRejectionTest {
       this.extensionName = extensionName;
     }
 
-    @Parameterized.Parameters(name = "{1} → zeebe:{2}")
+    @Parameterized.Parameters(name = "{1} -> zeebe:{2}")
     public static Collection<Object[]> data() {
       return Arrays.asList(
           new Object[][] {
