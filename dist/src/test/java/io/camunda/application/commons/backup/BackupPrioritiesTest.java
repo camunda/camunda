@@ -17,10 +17,12 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -112,7 +114,8 @@ class BackupPrioritiesTest {
             "camunda-history-deletion-8.9.0_",
             "operate-process-8.3.0_",
             "operate-decision-8.3.0_",
-            "operate-decision-requirements-8.3.0_");
+            "operate-decision-requirements-8.3.0_",
+            "tasklist-form-8.4.0_");
     // PRIO 2 main indices
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.8.0_");
@@ -178,7 +181,6 @@ class BackupPrioritiesTest {
     // PRIO 4 main indices
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
-            "tasklist-form-8.4.0_",
             "camunda-authorization-8.8.0_",
             "camunda-group-8.8.0_",
             "camunda-mapping-rule-8.8.0_",
@@ -244,6 +246,9 @@ class BackupPrioritiesTest {
         .describedAs(
             "DecisionIndex must be backed up before DecisionInstanceTemplate, " + "its dependent")
         .isLessThan(tierByClass.get(DecisionInstanceTemplate.class));
+    assertThat(tierByClass.get(FormIndex.class))
+        .describedAs("FormIndex must be backed up before TaskTemplate, which references it")
+        .isLessThan(tierByClass.get(TaskTemplate.class));
   }
 
   private static void recordTier(
