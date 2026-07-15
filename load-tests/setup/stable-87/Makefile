@@ -2,7 +2,6 @@ namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 template_output_dir ?= .
 enable_optimize ?= __ENABLE_OPTIMIZE__
-enable_webapps ?= __ENABLE_WEBAPPS__
 # Enable the chaos-killer CronJob (randomly deletes one matching pod per run).
 # Use named targets (make install-chaos) or pass directly: make install chaos=true
 chaos ?= false
@@ -71,12 +70,6 @@ else
 	ifeq ($(secondary_storage),elasticsearch)
 		platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
 	endif
-endif
-
-# Disable Operate and Tasklist if webapps not enabled
-ifneq ($(enable_webapps),true)
-	platform_values += --set operate.enabled=false
-	platform_values += --set tasklist.enabled=false
 endif
 
 # Platform values with stable configuration

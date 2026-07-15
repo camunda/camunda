@@ -25,9 +25,8 @@ func (ns *ScaffoldedNamespace) Cleanup() {
 	_ = os.RemoveAll(ns.Dir)
 }
 
-// Scaffold runs newLoadTest.sh <namespace> <storage> 1 <optimize> true with
-// GIT_AUTHOR=golden-test in the environment, from the given versioned setup
-// directory, and returns a ScaffoldedNamespace.
+// Scaffold runs newLoadTest.sh -t <version> <namespace> <storage> 1 <optimize>
+// with GIT_AUTHOR=golden-test in the environment and returns a ScaffoldedNamespace.
 //
 // newLoadTest.sh reads the author label from the GIT_AUTHOR env var
 // (git_author=${GIT_AUTHOR:-$(compute_git_author)}); pinning it to a constant
@@ -42,19 +41,17 @@ func (ns *ScaffoldedNamespace) Cleanup() {
 func Scaffold(t *testing.T, setupDirName, namespace, storage, optimize string) *ScaffoldedNamespace {
 	t.Helper()
 
-	scriptDir := filepath.Join(repoRoot(t), "load-tests", "setup", setupDirName)
+	scriptDir := filepath.Join(repoRoot(t), "load-tests", "setup")
 	script := filepath.Join(scriptDir, "newLoadTest.sh")
 
 	// newLoadTest.sh creates the namespace directory as a sibling of the setup dir:
 	// ROOT_DIR = parent of SCRIPT_DIR = load-tests/setup/
-	namespaceDir := filepath.Join(filepath.Dir(scriptDir), namespace)
+	namespaceDir := filepath.Join(scriptDir, namespace)
 
 	// Clean up any leftover from a previous interrupted run.
 	_ = os.RemoveAll(namespaceDir)
 
-	cmd := exec.Command(script,
-		namespace, storage, "1", optimize, "true", // 5th arg: enable_single_zone=true (default)
-	)
+	cmd := exec.Command(script, "-t", setupDirName, namespace, storage, "1", optimize)
 	// newLoadTest.sh copies sibling files (Makefile, values/) with relative
 	// paths, so it must run from its own directory.
 	cmd.Dir = scriptDir
