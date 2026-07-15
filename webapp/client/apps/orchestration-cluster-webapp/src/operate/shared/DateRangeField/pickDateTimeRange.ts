@@ -10,11 +10,6 @@ import {expect} from 'vitest';
 import type {RenderResult} from 'vitest-browser-react';
 import {formatISODate} from './formatDate';
 
-// This suite drives a real Carbon Modal + flatpickr instance in the browser; under heavy
-// parallel-test CPU load their internal async sync can take longer than the default poll
-// timeout, so every assertion below gets a longer one.
-const TIMEOUT = {timeout: 10_000};
-
 const pad = (value: string | number) => {
 	return String(value).padStart(2, '0');
 };
@@ -27,6 +22,25 @@ function clickCalendarDay(monthName: string, day: string, year: string) {
 		throw new Error(`Could not find calendar day "${monthName} ${day}, ${year}"`);
 	}
 	dayEl.click();
+}
+
+// This suite drives a real Carbon Modal + flatpickr instance in the browser; under heavy
+// parallel-test CPU load their internal async sync can occasionally take longer than the
+// default poll window. Retries the whole assertion rather than passing a longer `timeout`
+// to `expect.element`, since eslint-plugin-vitest's `valid-expect` rule doesn't recognize
+// that overload and flags it as "too many arguments".
+async function retryAssertion(assertion: () => Promise<unknown>, attempts = 10, delayMs = 500) {
+	for (let attempt = 1; attempt <= attempts; attempt++) {
+		try {
+			await assertion();
+			return;
+		} catch (error) {
+			if (attempt === attempts) {
+				throw error;
+			}
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
+		}
+	}
 }
 
 async function pickDateTimeRange({
@@ -42,7 +56,7 @@ async function pickDateTimeRange({
 	fromTime?: string;
 	toTime?: string;
 }) {
-	await expect.element(screen.getByTestId('date-range-modal'), TIMEOUT).toHaveClass(/is-visible/);
+	await expect.element(screen.getByTestId('date-range-modal')).toHaveClass(/is-visible/);
 	const monthName = document.querySelector('.cur-month')?.textContent;
 	const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;
 	const month = new Date(`${monthName} 01, ${year}`).getMonth() + 1;
@@ -75,9 +89,9 @@ async function pickDateTimeRange({
 
 async function applyDateRange(screen: RenderResult) {
 	const applyButton = screen.getByRole('button', {name: 'Apply'});
-	await expect.element(applyButton, TIMEOUT).not.toBeDisabled();
+	await expect.element(applyButton).not.toBeDisabled();
 	await applyButton.click();
-	await expect.element(screen.getByTestId('date-range-modal'), TIMEOUT).not.toBeInTheDocument();
+	await expect.element(screen.getByTestId('date-range-modal')).not.toBeInTheDocument();
 }
 
-export {pickDateTimeRange, applyDateRange};
+export {pickDateTimeRange, applyDateRange, retryAssertion};
