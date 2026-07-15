@@ -25,7 +25,6 @@ const config: KnipConfig = {
 		'src/operate/shared/TextAreaField/**',
 		'src/operate/shared/AutoSubmit/**',
 		'src/operate/shared/OptionalFiltersMenu/**',
-		'src/operate/shared/IconInput/**',
 		'src/operate/shared/DateRangeField/**',
 		'src/operate/shared/EmptyMessage/**',
 		'src/operate/shared/ErrorMessage/**',
