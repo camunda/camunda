@@ -960,6 +960,17 @@ message MigrateProcessInstanceResponse {
 
 }
 
+message AssignProcessInstanceBusinessIdRequest {
+  // key of the process instance to assign the business id to
+  int64 processInstanceKey = 1;
+  // the business id to assign to the process instance
+  string businessId = 2;
+}
+
+message AssignProcessInstanceBusinessIdResponse {
+
+}
+
 message DeleteResourceRequest {
   // The key of the resource that should be deleted. This can either be the key
   // of a process definition, the key of a decision requirements definition or the key of a form.
@@ -1346,6 +1357,25 @@ service Gateway {
           For example, the engine cannot determine how to migrate a process instance when the instructions are: [A->B, A->C].
    */
   rpc MigrateProcessInstance (MigrateProcessInstanceRequest) returns (MigrateProcessInstanceResponse) {
+
+  }
+
+  /*
+    Assigns a business id to an already running process instance.
+
+    Errors:
+      NOT_FOUND:
+        - no process instance exists with the given key, or it is not active
+
+      FAILED_PRECONDITION:
+        - the process instance already has a different business id assigned
+        - the process instance is a child instance created by a call activity
+        - business id uniqueness is enabled for the process definition
+
+      INVALID_ARGUMENT:
+        - the business id is empty or exceeds the allowed length
+   */
+  rpc AssignProcessInstanceBusinessId (AssignProcessInstanceBusinessIdRequest) returns (AssignProcessInstanceBusinessIdResponse) {
 
   }
 
