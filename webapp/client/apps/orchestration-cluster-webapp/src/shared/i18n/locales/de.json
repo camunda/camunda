@@ -493,7 +493,7 @@
 					"parentInstanceId": "Schlüssel muss eine 16- bis 19-stellige Zahl sein",
 					"batchOperationKey": "Schlüssel muss eine 16- bis 19-stellige Zahl oder eine UUID sein",
 					"time": "Die Zeit muss im Format hh:mm:ss angegeben werden",
-					"timeRange": "„Von-Zeit\" liegt nach „Bis-Zeit\""
+					"timeRange": "„Von-Zeit“ liegt nach „Bis-Zeit“"
 				},
 				"tenantField": {
 					"selectTenant": "Mandant auswählen",
