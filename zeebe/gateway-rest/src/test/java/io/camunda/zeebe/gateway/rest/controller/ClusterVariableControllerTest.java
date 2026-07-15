@@ -136,39 +136,6 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   @Test
   void shouldCreateGlobalClusterVariable() {
     // given
-    when(clusterVariableServices.createGloballyScopedClusterVariable(
-            any(ClusterVariableRequest.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
-
-    final var request =
-        """
-        {
-            "name": "foo",
-            "value": "bar"
-        }""";
-
-    // when / then
-    webClient
-        .post()
-        .uri(GLOBAL_URL)
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isOk();
-
-    verify(clusterVariableServices)
-        .createGloballyScopedClusterVariable(createRequestCaptor.capture(), any());
-    final var capturedRequest = createRequestCaptor.getValue();
-    assertThat(capturedRequest.name()).isEqualTo("foo");
-    assertThat(capturedRequest.value()).isEqualTo("bar");
-    assertThat(capturedRequest.tenantId()).isNull();
-  }
-
-  @Test
-  void shouldCreateGlobalClusterVariableWithMetadata() {
-    // given
     final var metadata = Map.<String, Object>of("kind", "CREDENTIAL", "schemaVersion", 2);
     when(clusterVariableServices.createGloballyScopedClusterVariable(
             any(ClusterVariableRequest.class), any()))
@@ -208,6 +175,9 @@ public class ClusterVariableControllerTest extends RestControllerTest {
     verify(clusterVariableServices)
         .createGloballyScopedClusterVariable(createRequestCaptor.capture(), any());
     final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.name()).isEqualTo("foo");
+    assertThat(capturedRequest.value()).isEqualTo("bar");
+    assertThat(capturedRequest.tenantId()).isNull();
     assertThat(capturedRequest.metadata()).containsExactlyInAnyOrderEntriesOf(metadata);
   }
 
