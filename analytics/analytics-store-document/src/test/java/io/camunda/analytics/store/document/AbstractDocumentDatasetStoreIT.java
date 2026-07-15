@@ -10,8 +10,10 @@ package io.camunda.analytics.store.document;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.analytics.dataset.CompiledDataset;
+import io.camunda.analytics.dataset.CompiledTable;
 import io.camunda.analytics.dataset.DatasetCompiler;
 import io.camunda.analytics.dataset.DatasetDeclaration;
+import io.camunda.analytics.dataset.FilterPredicate;
 import io.camunda.analytics.dimension.DimensionKey;
 import io.camunda.analytics.dimension.DimensionType;
 import io.camunda.analytics.fact.Fact;
@@ -26,6 +28,8 @@ import io.camunda.analytics.serving.spi.AggregatedFetch;
 import io.camunda.analytics.serving.spi.AggregatedRow;
 import io.camunda.analytics.serving.spi.ReadStrategy;
 import io.camunda.analytics.serving.spi.SnapshotPoint;
+import io.camunda.analytics.serving.spi.TableFetch;
+import io.camunda.analytics.serving.spi.TableRow;
 import io.camunda.analytics.serving.spi.WriteVersion;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -364,6 +368,49 @@ abstract class AbstractDocumentDatasetStoreIT {
         .extracting(
             r -> r.groupValues().get(0), r -> r.measures().get("count"), r -> r.measures().get("p"))
         .containsExactlyInAnyOrder(Tuple.tuple("orders", 5L, 300.0), Tuple.tuple("ship", 2L, null));
+  }
+
+  @Test
+  void shouldUpsertAndDeleteTableRows() {
+    // given a projected table with two rows
+    final CompiledTable table =
+        compiler()
+            .compileTable(
+                113L,
+                DatasetDeclaration.builder("pd-open-rows", FactType.PROCESS_INSTANCE)
+                    .filterEquals("transition", "ACTIVATED")
+                    .asTable("processInstanceKey")
+                    .evictWhen(FilterPredicate.notEquals("transition", "ACTIVATED"))
+                    .dimension("bpmnProcessId", DimensionType.STRING)
+                    .dimension("startTime", DimensionType.LONG)
+                    .build());
+    store().schemaManager().ensureTable(table);
+    writer.upsertRow(table, "1001", List.of("order", 1_000L), new WriteVersion(1, 1));
+    writer.upsertRow(table, "1002", List.of("ship", 2_000L), new WriteVersion(1, 2));
+    refresh();
+    assertThat(fetchRows(table)).hasSize(2);
+
+    // when one row is evicted (and the eviction replays — deleting an absent doc is a no-op)
+    writer.deleteRow(table, "1001", new WriteVersion(1, 3));
+    refresh();
+    writer.deleteRow(table, "1001", new WriteVersion(1, 3));
+    refresh();
+
+    // then only the other row remains
+    assertThat(fetchRows(table))
+        .singleElement()
+        .satisfies(row -> assertThat(row.values().get("bpmnProcessId")).isEqualTo("ship"));
+
+    // and a staged upsert-then-evict of one key in a single flush nets to no row (deletes run
+    // after the bulked upserts, and the staged ops of one key collapse onto the newest)
+    writer.upsertRow(table, "1003", List.of("claim", 3_000L), new WriteVersion(1, 4));
+    writer.deleteRow(table, "1003", new WriteVersion(1, 5));
+    refresh();
+    assertThat(fetchRows(table)).hasSize(1);
+  }
+
+  private List<TableRow> fetchRows(final CompiledTable table) {
+    return store().queryClient().fetchRows(new TableFetch(table, List.of(), 100));
   }
 
   @Test

@@ -50,6 +50,38 @@ final class DatasetDeclarationTest {
   }
 
   @Test
+  void shouldRejectEvictionPredicatesOnAnAggregatedDataset() {
+    // given / when / then: eviction deletes keyed rows, which only TABLE datasets have
+    assertThatThrownBy(
+            () ->
+                DatasetDeclaration.builder("bad-evict", FactType.PROCESS_INSTANCE)
+                    .dimension("bpmnProcessId", DimensionType.STRING)
+                    .meter(Meter.of("count", MeterCatalog.COUNT))
+                    .window(60_000L)
+                    .evictWhen(FilterPredicate.notEquals("transition", "ACTIVATED"))
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("only TABLE datasets evict rows");
+  }
+
+  @Test
+  void shouldAcceptEvictionPredicatesOnATable() {
+    // given / when
+    final DatasetDeclaration declaration =
+        DatasetDeclaration.builder("open-rows", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", "ACTIVATED")
+            .asTable("processInstanceKey")
+            .evictWhen(FilterPredicate.notEquals("transition", "ACTIVATED"))
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .build();
+
+    // then
+    assertThat(declaration.evictionFilters())
+        .singleElement()
+        .satisfies(f -> assertThat(f.field()).isEqualTo("transition"));
+  }
+
+  @Test
   void shouldBuildADeclaration() {
     // given: "duration by definition and region (from the completion snapshot), per minute & hour"
     final DatasetDeclaration declaration =

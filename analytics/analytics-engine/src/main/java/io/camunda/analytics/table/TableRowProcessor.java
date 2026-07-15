@@ -27,12 +27,19 @@ import java.util.List;
  * idempotent by primary key, so a replay re-writes the same rows. A terminal node ({@code Out =
  * Void}); rows are written synchronously on {@link #process}, before the offset advances, so the
  * write is naturally produce-before-commit and the node holds no durable state.
+ *
+ * <p>A table declaring eviction predicates is a live working set: a fact satisfying <em>all</em> of
+ * them deletes the row for its key instead of upserting one. Eviction is checked before the row
+ * filters — the evicting fact describes a row's end (e.g. a completion), so it deliberately does
+ * not have to match the filters that admit rows (e.g. {@code transition = ACTIVATED}). Deletes are
+ * as idempotent as upserts (removing an absent row is a no-op), so replays stay safe.
  */
 public final class TableRowProcessor implements Processor<Fact, Void> {
 
   private final FactType factType;
   private final RegisteredDataset dataset;
   private final List<CompiledFilter> filters;
+  private final List<CompiledFilter> evictionFilters;
   private final CompiledTable table;
   private final DatasetWriter writer;
 
@@ -41,6 +48,7 @@ public final class TableRowProcessor implements Processor<Fact, Void> {
     factType = table.factBinding().factType();
     this.dataset = dataset;
     filters = table.factBinding().filters().stream().map(CompiledFilter::new).toList();
+    evictionFilters = table.evictionFilters().stream().map(CompiledFilter::new).toList();
     this.table = table;
     this.writer = writer;
   }
@@ -53,8 +61,17 @@ public final class TableRowProcessor implements Processor<Fact, Void> {
   @Override
   public void process(final Fact fact) {
     if (fact.factType() != factType
-        || !dataset.admits(fact.sourcePartition(), fact.sourcePosition(), fact.eventTime())
-        || !matchesFilters(fact)) {
+        || !dataset.admits(fact.sourcePartition(), fact.sourcePosition(), fact.eventTime())) {
+      return;
+    }
+    if (evicts(fact)) {
+      final Object key = fact.get(table.keyField());
+      if (key != null) {
+        writer.deleteRow(table, String.valueOf(key));
+      }
+      return;
+    }
+    if (!matchesFilters(fact)) {
       return;
     }
     final Object key = fact.get(table.keyField());
@@ -66,6 +83,19 @@ public final class TableRowProcessor implements Processor<Fact, Void> {
       values.add(text(fact.get(column.name())));
     }
     writer.upsertRow(table, String.valueOf(key), values);
+  }
+
+  /** Whether the fact satisfies the whole eviction conjunction (an empty one never evicts). */
+  private boolean evicts(final Fact fact) {
+    if (evictionFilters.isEmpty()) {
+      return false;
+    }
+    for (final CompiledFilter filter : evictionFilters) {
+      if (!filter.matches(fact)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /** Projected rows are a mandatory String edge: a UTF-8 view materializes here, once per row. */

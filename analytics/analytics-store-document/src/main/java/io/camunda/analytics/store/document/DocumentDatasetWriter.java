@@ -24,6 +24,7 @@ import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.RequestBuilders;
 import io.camunda.search.clients.core.SearchBulkIndexRequest;
 import io.camunda.search.clients.core.SearchBulkResponse;
+import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.exception.CamundaSearchException;
 import java.util.ArrayList;
@@ -72,11 +73,11 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
   private final DocumentBasedWriteClient writeClient;
 
   /**
-   * The staged documents of the current batch, keyed by (index, id) so a re-upsert of the same row
-   * replaces the older staged write; insertion-ordered, so distinct rows flush in write order.
+   * The staged operations of the current batch, keyed by (index, id) so a re-write of the same row
+   * replaces the older staged op (upsert-then-evict nets to the delete, evict-then-reproject to the
+   * upsert); insertion-ordered, so distinct rows flush in write order.
    */
-  private final Map<DocumentKey, SearchIndexRequest<Map<String, Object>>> staged =
-      new LinkedHashMap<>();
+  private final Map<DocumentKey, StagedOp> staged = new LinkedHashMap<>();
 
   /** Writes rejected by the version fence — stale by the time they reached the store. */
   private final LongAdder fencedWrites = new LongAdder();
@@ -147,6 +148,24 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
   }
 
   /**
+   * Stages a <b>plain</b> (unfenced) delete of the row's document: the shared delete request
+   * carries no external version, and even a versioned delete would only fence until the store
+   * garbage-collects the deleted doc's version ({@code index.gc_deletes}, 60s by default) — after
+   * that a zombie's stale upsert can resurrect the row either way, until the eviction replays (see
+   * {@link VersionedDatasetWriter#deleteRow}). Staging nets the delete against a staged upsert of
+   * the same row; at {@link #flush()} deletes run after the bulked upserts. Idempotent: deleting an
+   * absent document reports {@code NOT_FOUND}, which is a no-op here.
+   */
+  @Override
+  public void deleteRow(
+      final CompiledTable table, final String rowKey, final WriteVersion version) {
+    final String index = DocumentCubeNames.rowIndex(table.cubeId());
+    staged.put(
+        new DocumentKey(index, rowKey),
+        new StagedDelete(SearchDeleteRequest.of(r -> r.index(index).id(rowKey))));
+  }
+
+  /**
    * Adds every meter's serving fields from the composite accumulator (ADR 0009 — all slots of the
    * row in one document). A pushable (additive) meter decomposes its slot into native numeric
    * fields (the composite aggregation reduces them); a sketch/summary writes its app-mergeable blob
@@ -199,13 +218,14 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
     doc.put(DocumentCubeNames.VER_OFFSET, version.offset());
     staged.put(
         new DocumentKey(index, id),
-        RequestBuilders.<Map<String, Object>>indexRequest(
-            r ->
-                r.index(index)
-                    .id(id)
-                    .document(doc)
-                    .version(DocumentVersions.pack(version))
-                    .versionType(SearchIndexRequest.VersionType.EXTERNAL_GTE)));
+        new StagedIndex(
+            RequestBuilders.<Map<String, Object>>indexRequest(
+                r ->
+                    r.index(index)
+                        .id(id)
+                        .document(doc)
+                        .version(DocumentVersions.pack(version))
+                        .versionType(SearchIndexRequest.VersionType.EXTERNAL_GTE))));
   }
 
   @SuppressWarnings("unchecked")
@@ -232,19 +252,34 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
   }
 
   /**
-   * Sends everything staged since the last flush as {@code _bulk} requests of at most {@link
-   * #MAX_BULK_ITEMS} items each. A per-item version conflict is the fence working — counted, never
-   * thrown. Any other item failure (or a failed bulk request itself) throws so the cut fails and
-   * retries; the staged batch is kept, and the retry's re-staged writes overwrite it idempotently.
+   * Sends everything staged since the last flush: the upserts as {@code _bulk} requests of at most
+   * {@link #MAX_BULK_ITEMS} items each, then the deletes individually — deletes-last mirrors the
+   * RDBMS writer (per key an eviction always follows the activation in source order, and a staged
+   * upsert+delete of one key already netted to a single op). A per-item version conflict is the
+   * fence working — counted, never thrown. Any other item failure (or a failed request itself)
+   * throws so the cut fails and retries; the staged batch is kept, and the retry's re-staged writes
+   * overwrite it idempotently.
    */
   @Override
   public void flush() {
     if (staged.isEmpty()) {
       return;
     }
-    final List<SearchIndexRequest<Map<String, Object>>> pending = new ArrayList<>(staged.values());
-    for (int from = 0; from < pending.size(); from += MAX_BULK_ITEMS) {
-      sendBulk(pending.subList(from, Math.min(from + MAX_BULK_ITEMS, pending.size())));
+    final List<SearchIndexRequest<Map<String, Object>>> upserts = new ArrayList<>();
+    final List<SearchDeleteRequest> deletes = new ArrayList<>();
+    for (final StagedOp op : staged.values()) {
+      if (op instanceof final StagedIndex index) {
+        upserts.add(index.request());
+      } else if (op instanceof final StagedDelete delete) {
+        deletes.add(delete.request());
+      }
+    }
+    for (int from = 0; from < upserts.size(); from += MAX_BULK_ITEMS) {
+      sendBulk(upserts.subList(from, Math.min(from + MAX_BULK_ITEMS, upserts.size())));
+    }
+    for (final SearchDeleteRequest delete : deletes) {
+      // DELETED and NOT_FOUND are both success: the row is gone either way (idempotent replay).
+      writeClient.delete(delete);
     }
     staged.clear();
   }
@@ -278,4 +313,11 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
 
   /** The staging key: one staged write per document, the newest wins. */
   private record DocumentKey(String index, String id) {}
+
+  /** One staged operation: a fenced upsert of a document, or a plain delete of one. */
+  private sealed interface StagedOp permits StagedIndex, StagedDelete {}
+
+  private record StagedIndex(SearchIndexRequest<Map<String, Object>> request) implements StagedOp {}
+
+  private record StagedDelete(SearchDeleteRequest request) implements StagedOp {}
 }

@@ -267,6 +267,16 @@ public final class DatasetCompiler {
       throw new IllegalArgumentException("dataset '" + declaration.name() + "' is not projected");
     }
     validateFilters(declaration);
+    for (final FilterPredicate filter : declaration.evictionFilters()) {
+      try {
+        filter.validateValue();
+      } catch (final RuntimeException e) {
+        // reads: dataset 'x' declares an invalid eviction filter on 'f' (GT): value must be ...
+        throw new DatasetValidationException(
+            "dataset '" + declaration.name() + "' declares an invalid eviction " + e.getMessage(),
+            e);
+      }
+    }
     final List<DimensionColumn> columns = new ArrayList<>();
     final Map<String, EnrichmentTiming> enrichment = new LinkedHashMap<>();
     for (final DimensionSpec dimension : declaration.dimensions()) {
@@ -278,6 +288,11 @@ public final class DatasetCompiler {
     final FactBinding factBinding =
         new FactBinding(declaration.sourceFact(), declaration.filters(), enrichment);
     return new CompiledTable(
-        cubeId, declaration.name(), factBinding, declaration.keyField(), columns);
+        cubeId,
+        declaration.name(),
+        factBinding,
+        declaration.keyField(),
+        columns,
+        declaration.evictionFilters());
   }
 }
