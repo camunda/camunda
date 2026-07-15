@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 /**
  * Owns the FAILED orchestration directly and, on the activatable branch, inserts into {@code
  * JOB_ACTIVATABLE_BY_PRIORITY} via {@link MutableJobState#makeJobActivatableByPriority}, instead of
- * going through the deprecated {@link MutableJobState#fail}. See #56962.
+ * going through the deprecated {@link MutableJobState#fail}.
  */
 final class JobFailedV3Applier implements TypedEventApplier<JobIntent, JobRecord> {
 

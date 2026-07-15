@@ -23,9 +23,8 @@ import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 /**
  * Owns the CREATED orchestration directly and inserts into {@code JOB_ACTIVATABLE_BY_PRIORITY} via
  * {@link MutableJobState#makeJobActivatableByPriority}, instead of going through the deprecated
- * {@link MutableJobState#create}. See #56962: {@code create} is reachable from the released V1/V2
- * appliers and must keep writing the legacy {@code JOB_ACTIVATABLE} column family for replay of
- * pre-8.10 events.
+ * {@link MutableJobState#create}. {@code create} is reachable from the released V1/V2 appliers and
+ * must keep writing the legacy {@code JOB_ACTIVATABLE} column family for replay of pre-8.10 events.
  */
 final class JobCreatedV3Applier implements TypedEventApplier<JobIntent, JobRecord> {
 

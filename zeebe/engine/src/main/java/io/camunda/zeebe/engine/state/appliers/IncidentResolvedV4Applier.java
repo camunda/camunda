@@ -23,7 +23,7 @@ import java.util.Set;
 /**
  * Owns the RESOLVED orchestration directly and inserts the resolved job into {@code
  * JOB_ACTIVATABLE_BY_PRIORITY} via {@link MutableJobState#makeJobActivatableByPriority}, instead of
- * going through the deprecated {@link MutableJobState#resolve}. See #56962.
+ * going through the deprecated {@link MutableJobState#resolve}.
  */
 final class IncidentResolvedV4Applier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
 

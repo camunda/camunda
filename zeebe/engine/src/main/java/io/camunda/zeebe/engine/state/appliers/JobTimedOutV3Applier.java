@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 /**
  * Owns the TIMED_OUT orchestration directly and inserts into {@code JOB_ACTIVATABLE_BY_PRIORITY}
  * via {@link MutableJobState#makeJobActivatableByPriority}, instead of going through the deprecated
- * {@link MutableJobState#timeout}. See #56962.
+ * {@link MutableJobState#timeout}.
  */
 public class JobTimedOutV3Applier implements TypedEventApplier<JobIntent, JobRecord> {
 

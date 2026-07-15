@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 /**
  * Owns the RECURRED_AFTER_BACKOFF orchestration directly and inserts into {@code
  * JOB_ACTIVATABLE_BY_PRIORITY} via {@link MutableJobState#makeJobActivatableByPriority}, instead of
- * going through the deprecated {@link MutableJobState#recurAfterBackoff}. See #56962.
+ * going through the deprecated {@link MutableJobState#recurAfterBackoff}.
  */
 public class JobRecurredV2Applier implements TypedEventApplier<JobIntent, JobRecord> {
 

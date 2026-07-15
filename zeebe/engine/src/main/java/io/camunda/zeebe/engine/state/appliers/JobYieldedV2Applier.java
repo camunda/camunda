@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 /**
  * Owns the YIELDED orchestration directly and inserts into {@code JOB_ACTIVATABLE_BY_PRIORITY} via
  * {@link MutableJobState#makeJobActivatableByPriority}, instead of going through the deprecated
- * {@link MutableJobState#yield}. See #56962.
+ * {@link MutableJobState#yield}.
  */
 public final class JobYieldedV2Applier implements TypedEventApplier<JobIntent, JobRecord> {
 
