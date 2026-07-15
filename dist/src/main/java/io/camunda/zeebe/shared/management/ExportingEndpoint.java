@@ -48,10 +48,11 @@ public final class ExportingEndpoint {
       result.join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final CompletionException e) {
-      return new WebEndpointResponse<>(
-          e.getCause(), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      final var message = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+      return new WebEndpointResponse<>(message, WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     } catch (final Exception e) {
-      return new WebEndpointResponse<>(e, WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      return new WebEndpointResponse<>(
+          e.getMessage(), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     }
   }
 }
