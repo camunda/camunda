@@ -4,6 +4,9 @@
   persisting a cut in the runtime's shared transaction alongside a runtime-owned offset store,
   that path is superseded by [ADR 0007](0007-single-durability-concept.md): every cut persists
   through its own task's transaction. The freeze/persist/complete protocol itself is unchanged.
+  Where this ADR describes the freeze as serializing the whole open buffer, that is amended by
+  [ADR 0009](0009-state-changelog-on-compacted-topics.md): the freeze serializes only the cells
+  folded into since the last completed cut, so a cut's delta is exact.
 - Date: 2026-07-08
 - Scope: `event-bridge-streaming` runtime (commit protocol, state stores, aggregation operators)
 
