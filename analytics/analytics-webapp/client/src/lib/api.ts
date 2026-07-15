@@ -189,6 +189,23 @@ export interface ValuePoint {
   value: number;
 }
 
+/** One outgoing branch of a decision gateway (activation-based; shares can over-attribute a
+ * multi-inflow target and need not sum to 1). */
+export interface GatewayBranch {
+  targetId: string;
+  targetLabel: string;
+  activations: number;
+  share: number;
+}
+
+/** One exclusive gateway's traffic split over its outgoing branches in the range. */
+export interface BranchDistribution {
+  gatewayId: string;
+  gatewayLabel: string;
+  activations: number;
+  branches: GatewayBranch[];
+}
+
 // ---------------------------------------------------------------------------
 // Dataset / report builder shapes. These mirror the analytics builder REST
 // contract (DatasetDeclaration / Report records serialized by name).
@@ -489,6 +506,10 @@ export const api = {
     ),
   rework: (process: string, range: TimeRange | null) =>
     getJson<ReworkHotspot[]>(`/api/dashboard/rework?process=${q(process)}${rangeQs(range)}`),
+  branchDistribution: (process: string, range: TimeRange | null) =>
+    getJson<BranchDistribution[]>(
+      `/api/dashboard/branch-distribution?process=${q(process)}${rangeQs(range)}`,
+    ),
   openInstances: (process: string, limit = 20) =>
     getJson<OpenInstanceRow[]>(
       `/api/dashboard/open-instances?process=${q(process)}&limit=${limit}`,

@@ -291,6 +291,19 @@ public class DashboardController {
     return repository.openIncidents(bpmnProcessId);
   }
 
+  /**
+   * Per-gateway branch distribution over the range: the deployed model's exclusive gateways joined
+   * with the elements cube's activation counts (activation-based shares; see the caveat on {@link
+   * BranchDistribution}).
+   */
+  @GetMapping("/branch-distribution")
+  public List<BranchDistribution> branchDistribution(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.branchDistribution(bpmnProcessId, from, to);
+  }
+
   @GetMapping(value = "/diagram", produces = MediaType.APPLICATION_XML_VALUE)
   public ResponseEntity<String> diagram(@RequestParam("process") final String bpmnProcessId) {
     return repository

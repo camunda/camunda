@@ -11,6 +11,7 @@ import { formatCount, formatDuration, formatPercent } from "../lib/format";
 import { aggregateRatio, useMetrics } from "../lib/useMetrics";
 import { DeltaBadge } from "../components/DeltaBadge";
 import { DurationDistribution } from "../components/DurationDistribution";
+import { GatewayDecisions } from "../components/GatewayDecisions";
 import { DurationSpreadTrend } from "../components/DurationSpreadTrend";
 import { PercentileTrend } from "../components/PercentileTrend";
 import { ProcessHeatmap } from "../components/ProcessHeatmap";
@@ -111,6 +112,8 @@ export function PerformancePage({
       </div>
 
       <DurationDistribution points={data.durationBuckets} />
+
+      <GatewayDecisions gateways={data.branchDistribution} />
 
       <ReworkHotspots rows={data.rework} />
 

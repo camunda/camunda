@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import {
   api,
   type ActiveInstancesPoint,
+  type BranchDistribution,
   type DurationBucketPoint,
   type DurationSpreadPoint,
   type DurationPoint,
@@ -61,6 +62,8 @@ export interface MetricsData {
   valuePrevious: ValueSummary | null;
   /** Business value in flight over time (periodic snapshots). */
   valueSeries: ValuePoint[];
+  /** Per-gateway branch split (deployed model joined with the elements cube's activations). */
+  branchDistribution: BranchDistribution[];
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -113,6 +116,7 @@ export function useMetrics(
           })
         : Promise.resolve(null),
       api.valueSeries(process, range),
+      api.branchDistribution(process, range),
     ])
       .then(
         ([
@@ -141,6 +145,7 @@ export function useMetrics(
           valueSummary,
           valuePrevious,
           valueSeries,
+          branchDistribution,
         ]) => {
           if (!cancelled) {
             setData({
@@ -169,6 +174,7 @@ export function useMetrics(
               valueSummary,
               valuePrevious,
               valueSeries,
+              branchDistribution,
             });
           }
         },

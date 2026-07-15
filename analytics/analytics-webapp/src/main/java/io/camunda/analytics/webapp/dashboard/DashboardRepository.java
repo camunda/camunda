@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -1039,15 +1040,79 @@ public class DashboardRepository {
    * process was redeployed; empty if the definition has not been observed yet.
    */
   public Optional<String> diagramXml(final String bpmnProcessId) {
+    return latestDefinition(bpmnProcessId)
+        .map(r -> r.values().get("bpmnXml"))
+        .filter(String.class::isInstance)
+        .map(String.class::cast);
+  }
+
+  /** The highest-version process-definitions row for a process, if one has been observed. */
+  private Optional<TableRow> latestDefinition(final String bpmnProcessId) {
     final List<TableRow> rows =
         tableExecutor.execute(
             new TableQuery(List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)), 100),
             ProcessDefinitionSink.TABLE);
-    return rows.stream()
-        .max(Comparator.comparingLong(r -> asLong(r.values().get("version"))))
-        .map(r -> r.values().get("bpmnXml"))
-        .filter(String.class::isInstance)
-        .map(String.class::cast);
+    return rows.stream().max(Comparator.comparingLong(r -> asLong(r.values().get("version"))));
+  }
+
+  /**
+   * Parsed decision gateways per process definition. A definition key is immutable (a redeploy
+   * mints a new key and this map is keyed by it), so a model is parsed exactly once per deploy; the
+   * map stays tiny — one entry per observed definition.
+   */
+  private final Map<Long, List<GatewayTopology.GatewaySpec>> gatewaysByDefinition =
+      new ConcurrentHashMap<>();
+
+  /**
+   * How each exclusive gateway's traffic split over its outgoing branches in the range: the
+   * deployed model's decision gateways (see {@link GatewayTopology}, cached per definition) joined
+   * with the elements cube's per-element activation counts. Share semantics and the multi-inflow
+   * over-attribution caveat are documented on {@link BranchDistribution}.
+   */
+  public List<BranchDistribution> branchDistribution(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final TableRow definition = latestDefinition(bpmnProcessId).orElse(null);
+    if (definition == null || !(definition.values().get("bpmnXml") instanceof final String xml)) {
+      return List.of();
+    }
+    final long definitionKey = asLong(definition.values().get("processDefinitionKey"));
+    final List<GatewayTopology.GatewaySpec> gateways =
+        gatewaysByDefinition.computeIfAbsent(definitionKey, key -> GatewayTopology.parse(xml));
+    if (gateways.isEmpty()) {
+      return List.of();
+    }
+    // One activations-by-element read serves every gateway (and reuses the rework/hotspot query
+    // shape). Missing elements read as 0 — an unexecuted branch is still listed with share 0.
+    final Map<String, Long> activationsByElement = new HashMap<>();
+    for (final ReportRow row :
+        total(
+            "elements",
+            List.of("elementId"),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("activations"),
+            newMemo())) {
+      activationsByElement.put(elementId(row), measureAsLong(row, "activations"));
+    }
+    final List<BranchDistribution> out = new ArrayList<>(gateways.size());
+    for (final GatewayTopology.GatewaySpec gateway : gateways) {
+      final long gatewayActivations = activationsByElement.getOrDefault(gateway.gatewayId(), 0L);
+      final List<BranchDistribution.Branch> branches = new ArrayList<>(gateway.branches().size());
+      for (final GatewayTopology.BranchSpec branch : gateway.branches()) {
+        final long targetActivations = activationsByElement.getOrDefault(branch.targetId(), 0L);
+        branches.add(
+            new BranchDistribution.Branch(
+                branch.targetId(),
+                branch.targetLabel(),
+                targetActivations,
+                gatewayActivations == 0 ? 0.0 : (double) targetActivations / gatewayActivations));
+      }
+      out.add(
+          new BranchDistribution(
+              gateway.gatewayId(), gateway.gatewayLabel(), gatewayActivations, branches));
+    }
+    return out;
   }
 
   private static long asLong(final Object value) {
