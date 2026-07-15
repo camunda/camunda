@@ -295,6 +295,52 @@ public final class StandardDatasets {
             .meter(Meter.of("stddev", MeterCatalog.STDDEV, "durationMs"))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
+            .build(),
+        // First-time-right / straight-through-processing share per definition: ONE matched-form
+        // ratio over ended instances (transition != ACTIVATED — a faulted instance terminates, so
+        // completions alone would flatter the rate). The numerator is the conjunction "completed
+        // AND within the SLA AND incident-free". hadIncident compares EQUALS "false": ended facts
+        // ALWAYS carry the flag (the completion deriver reads it off the finalized row, whose
+        // BooleanProperty defaults to false), so the absent-field-never-matches-EQUALS trap does
+        // not apply here. APPENDED: declaration order fixes cube ids.
+        DatasetDeclaration.builder("process-stp", FactType.PROCESS_INSTANCE)
+            .filterNotEquals("transition", Transition.ACTIVATED.name())
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(
+                Meter.of("first_time_right", MeterCatalog.RATIO)
+                    .matched(
+                        FilterPredicate.equals(Fact.TRANSITION, Transition.COMPLETED.name()),
+                        FilterPredicate.lessOrEqual("durationMs", Long.toString(SLA_THRESHOLD_MS)),
+                        FilterPredicate.equals("hadIncident", "false")))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .build(),
+        // Completed-instance count + duration p95 segmented by the 'region' process variable (set
+        // by the demo's region-exec-time-demo process) — the default "duration by segment" report
+        // source. NOT_NULL(var.region) keeps region-less processes out of the cube. APPENDED.
+        DatasetDeclaration.builder("region-duration", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .filterNotNull("var.region")
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("var.region", DimensionType.STRING)
+            .meter(Meter.of("count", MeterCatalog.COUNT))
+            .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .build(),
+        // Rework hotspots per (process, element), with zero new state: activations counted exactly,
+        // distinct instances estimated (HLL over processInstanceKey). Rework per element is derived
+        // on read as max(0, activations − instances) — exact while the HLL is exact (small counts;
+        // it stores hashes exactly up to its sketch threshold), an approximation at scale, and
+        // never negative by construction of the read. APPENDED.
+        DatasetDeclaration.builder("element-rework", FactType.ELEMENT)
+            .filterEquals("transition", Transition.ACTIVATED.name())
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("elementId", DimensionType.STRING)
+            .meter(Meter.of("activations", MeterCatalog.COUNT))
+            .meter(Meter.of("instances", MeterCatalog.DISTINCT, "processInstanceKey"))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
             .build());
   }
 
@@ -309,6 +355,20 @@ public final class StandardDatasets {
             .dimension("durationMs", DimensionType.LONG)
             .dimension("hadIncident", DimensionType.BOOLEAN)
             .dimension("var.region", DimensionType.STRING)
+            .build(),
+        // The live working set of open instances (aging WIP): one row per running instance,
+        // inserted on activation and evicted on any other transition (completed OR terminated).
+        // startTime is the activation event time (the same field the completion facts carry), so
+        // the dashboard derives each row's age as now − startTime; processInstanceKey doubles as
+        // a column because a fetched TableRow carries only its declared columns, not its row key.
+        // APPENDED: declaration order is stable here too.
+        DatasetDeclaration.builder("open-instances", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.ACTIVATED.name())
+            .asTable("processInstanceKey")
+            .evictWhen(FilterPredicate.notEquals(Fact.TRANSITION, Transition.ACTIVATED.name()))
+            .dimension("processInstanceKey", DimensionType.LONG)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .dimension("startTime", DimensionType.LONG)
             .build());
   }
 }
