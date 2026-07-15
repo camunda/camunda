@@ -104,10 +104,16 @@ Open http://localhost:3333 → **Explore**
 
 ### Logs (Loki datasource)
 
+The exporter follows the OTel events convention and leaves the log body empty — `event.name`
+and every other attribute arrive as Loki **structured metadata**, not as text in the log line.
+Use a structured-metadata filter (`|`), not a line-content filter (`|=`) — the latter will
+never match and silently returns zero results.
+
 |                              Query                              |        What it shows         |
 |-----------------------------------------------------------------|------------------------------|
 | `{service_name="camunda-zeebe"}`                                | All raw analytics events     |
-| `{service_name="camunda-zeebe"} \|= "process_instance_created"` | Process instance events only |
+| `{service_name="camunda-zeebe"} \| event_name="process_instance_created"` | Process instance events only |
+| `{service_name="camunda-zeebe"} \| event_name="user_task_created"` | User task events only |
 
 ## 5. Tear down
 
