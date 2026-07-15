@@ -25,12 +25,14 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ImmutableForm;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -169,7 +171,7 @@ public class AuditLogsIT {
   }
 
   private List<TestParameter> provideTestParameters() {
-    // this is not a complete this - just trying to get enough to cover the main audit log and
+    // this is not a complete list - just trying to get enough to cover the main audit log and
     // cleanup scenarios for now
     return List.of(
         TestParameter.record(
@@ -332,6 +334,75 @@ public class AuditLogsIT {
                     Map.entry("id", "1-803"),
                     Map.entry("entityType", "PROCESS_INSTANCE"),
                     Map.entry("key", "3456"),
+                    Map.entry("keyField", "entityKey"),
+                    Map.entry("partitionId", 1)))
+            .build(),
+        TestParameter.record(
+                ImmutableRecord.builder()
+                    .withRecordType(RecordType.EVENT)
+                    .withValueType(ValueType.FORM)
+                    .withIntent(FormIntent.CREATED)
+                    .withValue(
+                        ImmutableForm.builder()
+                            .withFormKey(8888L)
+                            .withResource("<form />".getBytes(StandardCharsets.UTF_8))
+                            .build())
+                    .withKey(8888L)
+                    .withPosition(804L)
+                    .withPartitionId(1)
+                    .withTimestamp(Instant.parse("2026-07-15T16:00:00Z").toEpochMilli())
+                    .build())
+            .expectedAuditLog(
+                Map.ofEntries(
+                    Map.entry("id", "1-804"),
+                    Map.entry("actorType", "UNKNOWN"),
+                    Map.entry("category", "DEPLOYED_RESOURCES"),
+                    Map.entry("entityKey", "8888"),
+                    Map.entry("entityOperationIntent", (int) FormIntent.CREATED.value()),
+                    Map.entry("entityType", "RESOURCE"),
+                    Map.entry("entityValueType", (int) ValueType.FORM.value()),
+                    Map.entry("entityVersion", 0),
+                    Map.entry("formKey", 8888),
+                    Map.entry("operationType", "CREATE"),
+                    Map.entry("result", "SUCCESS"),
+                    Map.entry("tenantScope", "TENANT"),
+                    Map.entry("timestamp", "2026-07-15T16:00:00.000+0000")))
+            .build(),
+        TestParameter.record(
+                ImmutableRecord.builder()
+                    .withRecordType(RecordType.EVENT)
+                    .withValueType(ValueType.FORM)
+                    .withIntent(FormIntent.DELETED)
+                    .withValue(
+                        ImmutableForm.builder()
+                            .withFormKey(8888L)
+                            .withResource("<form />".getBytes(StandardCharsets.UTF_8))
+                            .build())
+                    .withKey(8888L)
+                    .withPosition(805L)
+                    .withPartitionId(1)
+                    .withTimestamp(Instant.parse("2026-07-15T16:05:00Z").toEpochMilli())
+                    .build())
+            .expectedAuditLog(
+                Map.ofEntries(
+                    Map.entry("id", "1-805"),
+                    Map.entry("actorType", "UNKNOWN"),
+                    Map.entry("category", "DEPLOYED_RESOURCES"),
+                    Map.entry("entityKey", "8888"),
+                    Map.entry("entityOperationIntent", (int) FormIntent.DELETED.value()),
+                    Map.entry("entityType", "RESOURCE"),
+                    Map.entry("entityValueType", (int) ValueType.FORM.value()),
+                    Map.entry("entityVersion", 0),
+                    Map.entry("formKey", 8888),
+                    Map.entry("operationType", "DELETE"),
+                    Map.entry("result", "SUCCESS"),
+                    Map.entry("tenantScope", "TENANT"),
+                    Map.entry("timestamp", "2026-07-15T16:05:00.000+0000")))
+            .expectedCleanup(
+                Map.ofEntries(
+                    Map.entry("id", "1-805"),
+                    Map.entry("entityType", "RESOURCE"),
+                    Map.entry("key", "8888"),
                     Map.entry("keyField", "entityKey"),
                     Map.entry("partitionId", 1)))
             .build());
