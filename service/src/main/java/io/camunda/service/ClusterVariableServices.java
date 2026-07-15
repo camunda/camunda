@@ -24,10 +24,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteClusterVariableR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateClusterVariableRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -97,11 +95,7 @@ public final class ClusterVariableServices
         new BrokerUpdateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
-            .setMetadata(
-                toDirectBufferMetadata(
-                    resolveMetadataForUpdate(
-                        request.metadata(),
-                        () -> getGloballyScopedClusterVariable(request, authentication))))
+            .setMetadata(toDirectBufferMetadata(request.metadata()))
             .setGlobalScope(),
         authentication);
   }
@@ -112,11 +106,7 @@ public final class ClusterVariableServices
         new BrokerUpdateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
-            .setMetadata(
-                toDirectBufferMetadata(
-                    resolveMetadataForUpdate(
-                        request.metadata(),
-                        () -> getTenantScopedClusterVariable(request, authentication))))
+            .setMetadata(toDirectBufferMetadata(request.metadata()))
             .setTenantScope(request.tenantId()),
         authentication);
   }
@@ -165,38 +155,6 @@ public final class ClusterVariableServices
 
   private DirectBuffer toDirectBufferMetadata(final Map<String, Object> metadata) {
     return toDirectBufferValue(metadata != null ? metadata : Map.of());
-  }
-
-  /**
-   * Cluster variable updates replace the whole stored record, so an omitted {@code metadata} field
-   * would otherwise silently wipe out previously stored metadata. When the client didn't send
-   * metadata, fall back to the currently stored metadata instead of an empty map; if it can't be
-   * looked up (e.g. the variable doesn't exist), let the update proceed and fail through the usual
-   * existence check in the engine.
-   */
-  private Map<String, Object> resolveMetadataForUpdate(
-      final Map<String, Object> metadata, final Supplier<ClusterVariableEntity> currentEntity) {
-    if (metadata != null) {
-      return metadata;
-    }
-    try {
-      return toMetadataMap(currentEntity.get());
-    } catch (final RuntimeException e) {
-      return Map.of();
-    }
-  }
-
-  private static Map<String, Object> toMetadataMap(final ClusterVariableEntity entity) {
-    final var metadata = entity.metadata();
-    if (metadata == null || metadata.isEmpty()) {
-      return Map.of();
-    }
-    final Map<String, Object> result = new LinkedHashMap<>();
-    metadata.forEach(
-        entry ->
-            result.put(
-                entry.key(), entry.valueNumber() != null ? entry.valueNumber() : entry.value()));
-    return result;
   }
 
   public record ClusterVariableRequest(
