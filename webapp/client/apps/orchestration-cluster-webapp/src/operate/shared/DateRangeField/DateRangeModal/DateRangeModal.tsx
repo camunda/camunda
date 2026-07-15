@@ -140,7 +140,9 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, filt
 											dateFormat="Y-m-d"
 											short
 											onOpen={() => {
-												setCalendarRef(document.querySelector('.flatpickr-calendar'));
+												// scope to the open calendar — the unified app can have several
+												// flatpickr instances in the DOM (legacy queried the first one)
+												setCalendarRef(document.querySelector('.flatpickr-calendar.open'));
 											}}
 											onClose={() => setCalendarRef(null)}
 										>
