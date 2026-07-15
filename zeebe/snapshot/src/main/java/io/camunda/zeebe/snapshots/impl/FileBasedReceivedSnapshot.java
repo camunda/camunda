@@ -46,7 +46,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   private @Nullable FileBasedSnapshotMetadata metadata;
   private @Nullable ByteBuffer metadataBuffer;
   private long writtenMetadataBytes;
-  private @Nullable SfvChecksumImpl checksumCollection;
+  private final IncrementalChecksums incrementalChecksums = new IncrementalChecksums();
 
   FileBasedReceivedSnapshot(
       final FileBasedSnapshotId snapshotId,
@@ -107,8 +107,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     LOGGER.trace("Consume snapshot snapshotChunk {} of snapshot {}", chunkName, snapshotId);
     writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
 
-    getChecksumCollection()
-        .updateFromBytes(snapshotFile.getFileName().toString(), snapshotChunk.getContent());
+    incrementalChecksums.update(snapshotChunk);
 
     if (snapshotChunk.getChunkName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
       try {
@@ -277,7 +276,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
           snapshotStore.persistNewSnapshot(
               directory,
               snapshotId,
-              getChecksumCollection(),
+              incrementalChecksums.complete(),
               persistedMetadata,
               writtenMetadataBytes);
       future.complete(value);
@@ -296,13 +295,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       }
     }
     return totalSize;
-  }
-
-  private SfvChecksumImpl getChecksumCollection() {
-    if (checksumCollection == null) {
-      checksumCollection = new SfvChecksumImpl();
-    }
-    return checksumCollection;
   }
 
   @Override

@@ -370,32 +370,21 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldCalculateSizeCorrectlyWithDuplicatedChunks() throws IOException {
+  public void shouldRejectDuplicatedChunks() {
     // given
-    final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
-    rewriteMetadataSize(senderSnapshot, 0L);
-    final var metadataSizeBytes = expectedMetadataSizeBytes(senderSnapshot);
-
-    // when
+    final var senderSnapshot = takePersistedSnapshot(1L);
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(senderSnapshot.getId()).join();
-    try (final var reader = senderSnapshot.newChunkReader()) {
-      var replayedDataChunk = false;
-      while (reader.hasNext()) {
-        final var chunk = reader.next();
-        receivedSnapshot.apply(chunk).join();
-        if (!replayedDataChunk
-            && !chunk.getChunkName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
-          receivedSnapshot.apply(chunk).join();
-          replayedDataChunk = true;
-        }
-      }
-    }
-    final var persistedSnapshot = receivedSnapshot.persist().join();
 
-    // then
-    assertThat(persistedSnapshot.getTotalSizeInBytes())
-        .isEqualTo(expectedTotalDataSize() + metadataSizeBytes);
+    try (final var reader = senderSnapshot.newChunkReader()) {
+      final var chunk = reader.next();
+      receivedSnapshot.apply(chunk).join();
+
+      // when/then
+      assertThatThrownBy(() -> receivedSnapshot.apply(chunk).join())
+          .hasCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Expected next chunk at offset");
+    }
   }
 
   @Test
