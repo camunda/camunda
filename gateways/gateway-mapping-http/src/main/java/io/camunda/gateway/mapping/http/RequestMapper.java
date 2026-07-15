@@ -31,6 +31,8 @@ import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestVa
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchOperationRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
+import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateResumeProcessInstanceRequest;
+import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateSuspendProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.ResourceRequestValidator.validateResourceDeletion;
@@ -81,10 +83,12 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
+import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
+import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.TenantFilterEnum;
 import io.camunda.gateway.protocol.model.UseSourceParentKeyInstruction;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
@@ -111,6 +115,8 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOpe
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceResumeRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceSuspendRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -798,6 +804,22 @@ public class RequestMapper {
     return getResult(
         validateCancelProcessInstanceRequest(request),
         () -> new ProcessInstanceCancelRequest(processInstanceKey, operationReference));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceSuspendRequest> toSuspendProcessInstance(
+      final long processInstanceKey, final SuspendProcessInstanceRequest request) {
+    final Long operationReference = request != null ? request.getOperationReference() : null;
+    return getResult(
+        validateSuspendProcessInstanceRequest(request),
+        () -> new ProcessInstanceSuspendRequest(processInstanceKey, operationReference));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceResumeRequest> toResumeProcessInstance(
+      final long processInstanceKey, final ResumeProcessInstanceRequest request) {
+    final Long operationReference = request != null ? request.getOperationReference() : null;
+    return getResult(
+        validateResumeProcessInstanceRequest(request),
+        () -> new ProcessInstanceResumeRequest(processInstanceKey, operationReference));
   }
 
   public static Either<ProblemDetail, ProcessInstanceMigrateRequest> toMigrateProcessInstance(
