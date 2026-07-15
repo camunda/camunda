@@ -14,11 +14,14 @@ import io.camunda.zeebe.engine.util.validation.ValidationConstraints;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -26,6 +29,7 @@ import java.util.Collections;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -292,48 +296,47 @@ public final class VariableNestingDepthRejectionTest {
         .contains(EXPECTED_REJECTION_REASON);
   }
 
-  // TODO: This test will fail due to a recursive call in the FEEL engine when evaluating the
-  // expression. FeelToMessagePackTransformer can result in stack overflows through the recursive
-  // handling of nested objects. This will be addressed in a follow-up issue.
-  //  @Test
-  //  public void shouldRejectScriptTaskWithDeeplyNestedExpression() {
-  //    // given
-  //    final String deeplyNestedFeelExpression =
-  //        String.format(
-  //            "(for i in 1..%s return if i = 1 then [\"test\"] else [partial[-1]])[-1]",
-  //            MAX_DEPTH + 1);
-  //    ENGINE
-  //        .deployment()
-  //        .withXmlResource(
-  //            Bpmn.createExecutableProcess(processId)
-  //                .startEvent()
-  //                .scriptTask(
-  //                    "script-task",
-  //                    b ->
-  //
-  // b.zeebeExpression(deeplyNestedFeelExpression).zeebeResultVariable("result"))
-  //                .endEvent()
-  //                .done())
-  //        .deploy();
-  //
-  //    // when
-  //    final long processInstanceKey =
-  // ENGINE.processInstance().ofBpmnProcessId(processId).create();
-  //
-  //    // then
-  //    final Record<IncidentRecordValue> incident =
-  //        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-  //            .withProcessInstanceKey(processInstanceKey)
-  //            .getFirst();
-  //
-  //    assertThat(incident)
-  //        .extracting(r -> ((IncidentRecordValue) r.getValue()).getErrorType())
-  //        .isEqualTo(ErrorType.IO_MAPPING_ERROR);
-  //    assertThat(incident)
-  //        .extracting(r -> ((IncidentRecordValue) r.getValue()).getErrorMessage())
-  //        .asString()
-  //        .contains(EXPECTED_REJECTION_REASON);
-  //  }
+  //   TODO: This test will fail due to a recursive call in the FEEL engine when evaluating the
+  //   expression. FeelToMessagePackTransformer can result in stack overflows through the recursive
+  //   handling of nested objects. This will be addressed in a follow-up issue.
+  @Test
+  @Ignore("https://github.com/camunda/camunda/issues/57504")
+  public void shouldRejectScriptTaskWithDeeplyNestedExpression() {
+    // given
+    final String deeplyNestedFeelExpression =
+        String.format(
+            "(for i in 1..%s return if i = 1 then [\"test\"] else [partial[-1]])[-1]",
+            MAX_DEPTH + 1);
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .scriptTask(
+                    "script-task",
+                    b ->
+                        b.zeebeExpression(deeplyNestedFeelExpression).zeebeResultVariable("result"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(incident)
+        .extracting(r -> ((IncidentRecordValue) r.getValue()).getErrorType())
+        .isEqualTo(ErrorType.IO_MAPPING_ERROR);
+    assertThat(incident)
+        .extracting(r -> ((IncidentRecordValue) r.getValue()).getErrorMessage())
+        .asString()
+        .contains(EXPECTED_REJECTION_REASON);
+  }
 
   private static Map<String, Object> deeplyNestedDocument() {
     Map<String, Object> current = Collections.emptyMap();
