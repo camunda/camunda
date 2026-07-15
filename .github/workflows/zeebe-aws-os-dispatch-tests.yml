@@ -30,6 +30,12 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+# Prevent concurrent runs of this workflow from stacking additional load on the
+# shared AWS OpenSearch clusters used by the integration-tests matrix below.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 env:
   TEST_OWNER: '@camunda/core-features'
 
@@ -91,6 +97,12 @@ jobs:
       TEST_OWNER: ${{ matrix.owner }}
     strategy:
       fail-fast: false
+      # Cap concurrent matrix jobs: all groups for a given os_version share one
+      # AWS OpenSearch cluster, and running all 5 at once overloads it (cluster
+      # event queue timeouts, search_phase_execution_exception, and jobs hanging
+      # until the job timeout). This is a nightly/manual job, so trading some
+      # wall-clock time for reliability is an acceptable tradeoff.
+      max-parallel: 2
       matrix:
         os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
         group:
