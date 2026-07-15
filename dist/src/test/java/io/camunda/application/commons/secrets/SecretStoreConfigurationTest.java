@@ -69,6 +69,72 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
+  void shouldThrowWhenMoreThanOneStoreConfigured() {
+    // given two file stores for the default tenant
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.store-a.path", "/etc/camunda/secrets-a",
+                "camunda.secrets.stores.file.store-b.path", "/etc/camunda/secrets-b"));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("only one is supported");
+  }
+
+  @Test
+  void shouldNormalizeStoreIdToLowercase() {
+    // given
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.file.MyStore.path", "/etc/camunda/secrets"));
+
+    // when
+    final var registries = CONFIG.secretStoreRegistries(resolver);
+
+    // then
+    final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(registry.getStores()).containsOnlyKeys("mystore");
+  }
+
+  @Test
+  void shouldNotAddNoopStoreWhenStoresAreConfigured() {
+    // given
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.file.main.path", "/etc/camunda/secrets"));
+
+    // when
+    final var registries = CONFIG.secretStoreRegistries(resolver);
+
+    // then
+    final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(registry.getStores()).containsOnlyKeys("main");
+    assertThat(registry.getStores()).doesNotContainKey("default");
+  }
+
+  @Test
+  void shouldFallbackToNoopStoreForNonDefaultTenantWhenNoStoresConfigured() {
+    // given
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.physical-tenants.mytenant.security.initialization.default-roles.admin.users[0]",
+                "mytenant-admin",
+                "camunda.physical-tenants.mytenant.data.secondary-storage.elasticsearch.index-prefix",
+                "mytenant"));
+
+    // when
+    final var registries = CONFIG.secretStoreRegistries(resolver);
+
+    // then
+    assertThat(registries).containsKey("mytenant");
+    final var registry = registries.get("mytenant");
+    assertThat(registry.getStores()).containsKey("default");
+    assertThat(registry.getStores().get("default")).isInstanceOf(NoopSecretStore.class);
+  }
+
+  @Test
   void shouldProduceOneRegistryPerPhysicalTenant() {
     // given two tenants with different store configurations
     final var resolver =

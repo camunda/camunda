@@ -53,7 +53,7 @@ public class Secrets {
   public static class FileStore {
 
     /**
-     * Path to the file backing this file-based secret store. Defaults to {@code
+     * Path to the directory backing this file-based secret store. Defaults to {@code
      * /etc/camunda/secrets}.
      */
     private String path = "/etc/camunda/secrets";

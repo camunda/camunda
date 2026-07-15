@@ -16,6 +16,8 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,6 +26,7 @@ import org.springframework.context.annotation.Configuration;
 @NullMarked
 public class SecretStoreConfiguration {
 
+  private static final Logger LOG = LoggerFactory.getLogger(SecretStoreConfiguration.class);
   private static final NoopSecretStore NOOP_STORE = new NoopSecretStore();
 
   @Bean
@@ -34,26 +37,39 @@ public class SecretStoreConfiguration {
         .mapValues(Camunda::getSecrets)
         .forEach(
             (tenantId, secrets) -> {
+              final var fileStores = secrets.getStores().getFile();
+              if (fileStores.size() > 1) {
+                throw new IllegalStateException(
+                    "Physical tenant '"
+                        + tenantId
+                        + "' has "
+                        + fileStores.size()
+                        + " secret stores configured, but only one is supported at this time");
+              }
               final Map<String, SecretStore<?>> stores = new LinkedHashMap<>();
-              secrets
-                  .getStores()
-                  .getFile()
-                  .forEach(
-                      (storeId, fileStore) -> {
-                        final var path = fileStore.getPath();
-                        if (path.isBlank()) {
-                          throw new IllegalStateException(
-                              "File store '"
-                                  + storeId
-                                  + "' for physical tenant '"
-                                  + tenantId
-                                  + "' has no path configured");
-                        }
-                        stores.put(
-                            storeId.trim().toLowerCase(), new FileBasedSecretStore(Path.of(path)));
-                      });
+              fileStores.forEach(
+                  (storeId, fileStore) -> {
+                    final var path = fileStore.getPath();
+                    if (path.isBlank()) {
+                      throw new IllegalStateException(
+                          "File store '"
+                              + storeId
+                              + "' for physical tenant '"
+                              + tenantId
+                              + "' has no path configured");
+                    }
+                    stores.put(
+                        storeId.trim().toLowerCase(), new FileBasedSecretStore(Path.of(path)));
+                    LOG.info(
+                        "Registered file secret store '{}' for physical tenant '{}'",
+                        storeId.trim().toLowerCase(),
+                        tenantId);
+                  });
               if (stores.isEmpty()) {
                 stores.put("default", NOOP_STORE);
+                LOG.info(
+                    "No secret stores configured for physical tenant '{}', using noop store",
+                    tenantId);
               }
               registries.put(tenantId, new SecretStoreRegistry(Map.copyOf(stores)));
             });
