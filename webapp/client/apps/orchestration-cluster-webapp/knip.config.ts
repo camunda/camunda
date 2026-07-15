@@ -33,7 +33,7 @@ const config: KnipConfig = {
 		// TODO(#55642): remove when BatchOperation detail page is migrated
 		'src/operate/shared/PaginatedSortableTable/**',
 	],
-	ignoreDependencies: ['@vitest/browser'],
+	ignoreDependencies: ['@vitest/browser', 'flatpickr'],
 	typescript: {
 		config: ['tsconfig.browser.json', 'tsconfig.vitest.json', 'tsconfig.node.json'],
 	},

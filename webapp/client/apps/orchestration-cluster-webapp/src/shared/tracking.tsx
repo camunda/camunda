@@ -134,6 +134,16 @@ type Events =
 			eventName: 'operate:batch-operations-sorted';
 			sortBy: string;
 			sortOrder: 'asc' | 'desc';
+	  }
+	| {
+			eventName: 'operate:date-range-applied';
+			methods: {
+				datePicker: boolean;
+				dateInput: boolean;
+				quickFilter: boolean;
+				timeInput: boolean;
+			};
+			filterName: string;
 	  };
 
 const STAGE_ENV = getStage(window.location.host);
