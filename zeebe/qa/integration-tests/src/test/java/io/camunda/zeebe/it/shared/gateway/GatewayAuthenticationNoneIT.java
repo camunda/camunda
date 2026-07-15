@@ -105,6 +105,12 @@ public class GatewayAuthenticationNoneIT {
           .withEnv("MANAGEMENT_HEALTH_READINESSSTATE_ENABLED", "true")
           .withNetwork(NETWORK)
           .withExposedPorts(8080, 8082)
+          // Identity's realm bootstrap can fail on its first attempt: Keycloak reports ready
+          // before its admin/realm authorization layer is fully consistent, so disabling the
+          // system clients returns HTTP 403 and the container exits. A fresh start succeeds
+          // because the realm the failed attempt already created now exists in the (still
+          // running) Keycloak, so retry the container start instead of failing the whole test.
+          .withStartupAttempts(3)
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
