@@ -115,6 +115,10 @@ public record AuditLogInfo(
           // ProcessInstance
           Map.entry(ProcessInstanceIntent.CANCELING, AuditLogOperationType.CANCEL),
           Map.entry(ProcessInstanceIntent.CANCEL, AuditLogOperationType.CANCEL),
+          Map.entry(ProcessInstanceIntent.SUSPENDED, AuditLogOperationType.SUSPEND),
+          Map.entry(ProcessInstanceIntent.SUSPEND, AuditLogOperationType.SUSPEND),
+          Map.entry(ProcessInstanceIntent.RESUMED, AuditLogOperationType.RESUME),
+          Map.entry(ProcessInstanceIntent.RESUME, AuditLogOperationType.RESUME),
 
           // ProcessInstanceMigration
           Map.entry(ProcessInstanceMigrationIntent.MIGRATED, AuditLogOperationType.MIGRATE),
