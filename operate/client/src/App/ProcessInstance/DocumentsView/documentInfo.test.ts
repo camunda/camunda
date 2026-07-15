@@ -30,6 +30,9 @@ const makeDocRef = (
 });
 
 describe('toDocumentInfo', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
   it('should map a document reference to a document info', () => {
     const result = toDocumentInfo(makeDocRef());
 
