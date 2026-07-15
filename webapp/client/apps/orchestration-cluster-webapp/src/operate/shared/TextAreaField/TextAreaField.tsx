@@ -14,10 +14,10 @@ type Props = React.ComponentProps<typeof TextArea> & {
 	name: string;
 };
 
-const TextAreaField: React.FC<Props> = ({name, ...props}) => {
+const TextAreaField = React.forwardRef<HTMLTextAreaElement, Props>(({name, ...props}, ref) => {
 	const error = useFieldError(name);
 
-	return <TextArea {...props} invalid={error !== undefined} invalidText={error} />;
-};
+	return <TextArea ref={ref} {...props} invalid={error !== undefined} invalidText={error} />;
+});
 
 export {TextAreaField};
