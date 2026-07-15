@@ -91,7 +91,7 @@ describe('<FilteredElementInstancesList /> with the real InfiniteScroller', () =
   it('attaches the scroll observer to the rendered results instead of warning about an invalid ref', async () => {
     const observeSpy = vi.fn();
     class ObservingIntersectionObserver extends MockIntersectionObserver {
-      observe = observeSpy;
+      override observe = observeSpy;
     }
     vi.stubGlobal('IntersectionObserver', ObservingIntersectionObserver);
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
