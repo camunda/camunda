@@ -23,6 +23,8 @@ import {
   type ReworkHotspot,
   type SlaCohortPoint,
   type TimeRange,
+  type ValuePoint,
+  type ValueSummary,
 } from "./api";
 
 /** All pre-aggregated metrics for one (process, tenant, range) — fetched once, shared by pages. */
@@ -53,6 +55,12 @@ export interface MetricsData {
   comparison: KpiComparison | null;
   /** Previous-period percentile series re-timestamped onto the current grid; null without range. */
   durationPrevious: DurationPoint[] | null;
+  /** Business value processed in range (null processed = the process has no value variable). */
+  valueSummary: ValueSummary;
+  /** Value processed in the previous period, for the tile's delta badge; null without range. */
+  valuePrevious: ValueSummary | null;
+  /** Business value in flight over time (periodic snapshots). */
+  valueSeries: ValuePoint[];
 }
 
 /** Fetches every metric for the current selection; re-fetches when process/tenant/range change. */
@@ -97,6 +105,14 @@ export function useMetrics(
       range
         ? api.durationPercentilesCompare(process, range).then((c) => c.previous)
         : Promise.resolve(null),
+      api.valueSummary(process, range),
+      range
+        ? api.valueSummary(process, {
+            from: range.from - (range.to - range.from),
+            to: range.from,
+          })
+        : Promise.resolve(null),
+      api.valueSeries(process, range),
     ])
       .then(
         ([
@@ -122,6 +138,9 @@ export function useMetrics(
           openInstances,
           comparison,
           durationPrevious,
+          valueSummary,
+          valuePrevious,
+          valueSeries,
         ]) => {
           if (!cancelled) {
             setData({
@@ -147,6 +166,9 @@ export function useMetrics(
               openInstances,
               comparison,
               durationPrevious,
+              valueSummary,
+              valuePrevious,
+              valueSeries,
             });
           }
         },

@@ -178,6 +178,17 @@ export interface PercentileComparison {
   previous: DurationPoint[];
 }
 
+/** Business value processed in range; null = the process carries no value variable (show a dash). */
+export interface ValueSummary {
+  processed: number | null;
+}
+
+/** One sample of the value-in-flight series (periodic snapshots, like ActiveInstancesPoint). */
+export interface ValuePoint {
+  time: number;
+  value: number;
+}
+
 // ---------------------------------------------------------------------------
 // Dataset / report builder shapes. These mirror the analytics builder REST
 // contract (DatasetDeclaration / Report records serialized by name).
@@ -466,6 +477,10 @@ export const api = {
     getJson<number>(`/api/dashboard/ended-instances?process=${q(process)}${rangeQs(range)}`),
   activeSeries: (process: string, range: TimeRange | null) =>
     getJson<ActiveInstancesPoint[]>(`/api/dashboard/active-series?process=${q(process)}${rangeQs(range)}`),
+  valueSummary: (process: string, range: TimeRange | null) =>
+    getJson<ValueSummary>(`/api/dashboard/value-summary?process=${q(process)}${rangeQs(range)}`),
+  valueSeries: (process: string, range: TimeRange | null) =>
+    getJson<ValuePoint[]>(`/api/dashboard/value-series?process=${q(process)}${rangeQs(range)}`),
   durationSpread: (process: string, range: TimeRange | null) =>
     getJson<DurationSpreadPoint[]>(`/api/dashboard/duration-spread?process=${q(process)}${rangeQs(range)}`),
   lifecycleSeries: (process: string, range: TimeRange | null) =>

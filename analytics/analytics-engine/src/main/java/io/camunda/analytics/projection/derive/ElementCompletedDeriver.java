@@ -85,6 +85,12 @@ public final class ElementCompletedDeriver implements FactDeriver {
     if (isProcess) {
       // processInstanceKey is stamped uniformly by ElementFacts.base — never duplicated here.
       fact.field("completedNormally", transition == Transition.COMPLETED);
+      final Long businessValue = BusinessValue.read(state, elementInstanceKey);
+      if (businessValue != null) {
+        // −value: the instance's worth leaves the system on either terminal transition (see
+        // BusinessValue for the field pair and the mid-flight-change caveat).
+        fact.field("value", businessValue).field("valueDelta", -businessValue);
+      }
     } else {
       fact.field("elementId", Utf8View.copyOf(value.getElementIdBuffer()))
           .field("elementType", value.getBpmnElementType().name());

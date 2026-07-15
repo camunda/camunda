@@ -571,6 +571,55 @@ public class DashboardRepository {
     return out;
   }
 
+  /**
+   * The business value processed over the range: the whole-range sum of the value-throughput cube's
+   * COMPLETED-filtered SUM. {@code processed} stays {@code null} when no row exists — the process
+   * never carried the value variable in range — so the tile can show a dash instead of a misleading
+   * 0.
+   */
+  public ValueSummary valueSummary(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    for (final ReportRow row :
+        total(
+            "value-throughput",
+            List.of(),
+            fromWindow,
+            toWindow,
+            List.of(FilterPredicate.equals("bpmnProcessId", bpmnProcessId)),
+            List.of("processed"),
+            newMemo())) {
+      if (row.measures().get("processed") instanceof final Number processed) {
+        return new ValueSummary(processed.longValue());
+      }
+    }
+    return new ValueSummary(null);
+  }
+
+  /**
+   * The business value in flight at each moment of the range — the value-in-flight cube's periodic
+   * snapshots, carried forward exactly like {@link #activeSeries} (same lookback clamp, same
+   * newest-releasable default end). Empty when the process never carried the value variable.
+   */
+  public List<ValuePoint> valueSeries(
+      final String bpmnProcessId, final Long fromWindow, final Long toWindow) {
+    final CompiledDataset dataset = catalog.require("value-in-flight");
+    final long everyMs = dataset.snapshots().everyMs();
+    final long toMs =
+        toWindow != null
+            ? toWindow
+            : System.currentTimeMillis() - dataset.finestTier().windows().graceMs();
+    final long fromMs = fromWindow == null ? toMs - ACTIVE_SERIES_LOOKBACK_MS : fromWindow;
+    final List<ValuePoint> out = new ArrayList<>();
+    for (final SnapshotSeriesPoint point :
+        snapshotExecutor.execute(new SnapshotQuery(fromMs, toMs, everyMs), dataset)) {
+      if (bpmnProcessId.equals(point.keyValues().get(0))
+          && point.measures().get("value") instanceof final Number value) {
+        out.add(new ValuePoint(point.time(), value.longValue()));
+      }
+    }
+    return out;
+  }
+
   /** The per-window completion-duration spread (avg±stddev band and the exact extrema). */
   public List<DurationSpreadPoint> durationSpread(
       final String bpmnProcessId, final Long fromWindow, final Long toWindow) {

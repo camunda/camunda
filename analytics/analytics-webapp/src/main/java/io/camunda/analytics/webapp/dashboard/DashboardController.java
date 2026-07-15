@@ -195,6 +195,27 @@ public class DashboardController {
     return repository.endedInstances(bpmnProcessId, from, to);
   }
 
+  /**
+   * Business value processed (sum of the value variable over COMPLETED instances) in the range;
+   * {@code processed} is null when the process carries no value variable.
+   */
+  @GetMapping("/value-summary")
+  public ValueSummary valueSummary(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.valueSummary(bpmnProcessId, from, to);
+  }
+
+  /** Business value in flight at each moment (the value-in-flight cube's periodic snapshots). */
+  @GetMapping("/value-series")
+  public List<ValuePoint> valueSeries(
+      @RequestParam("process") final String bpmnProcessId,
+      @RequestParam(value = "from", required = false) final Long from,
+      @RequestParam(value = "to", required = false) final Long to) {
+    return repository.valueSeries(bpmnProcessId, from, to);
+  }
+
   /** Running instances at each moment (the active-instances cube's periodic snapshots). */
   @GetMapping("/active-series")
   public List<ActiveInstancesPoint> activeSeries(

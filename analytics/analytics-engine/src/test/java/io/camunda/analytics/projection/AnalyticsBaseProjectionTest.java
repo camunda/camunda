@@ -141,6 +141,60 @@ final class AnalyticsBaseProjectionTest {
   }
 
   @Test
+  void shouldStampBusinessValueOnInstanceFacts() {
+    // given the start-payload 'amount' variable folded before the process activates (the
+    // creation command persists variables first, so this mirrors the real record order)
+    projection.process(numericVariable(PI_KEY, "amount", "4200", 9L));
+
+    // when the instance activates and completes
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L));
+
+    // then the activation carries +value and the completion −value (the in-flight level nets to
+    // zero), with the positive value on both for the throughput sum
+    final Fact activated = only(FactType.PROCESS_INSTANCE, Transition.ACTIVATED);
+    assertThat(activated.get("value")).isEqualTo(4200L);
+    assertThat(activated.get("valueDelta")).isEqualTo(4200L);
+    final Fact completed = only(FactType.PROCESS_INSTANCE, Transition.COMPLETED);
+    assertThat(completed.get("value")).isEqualTo(4200L);
+    assertThat(completed.get("valueDelta")).isEqualTo(-4200L);
+  }
+
+  @Test
+  void shouldBalanceTheValueDeltaOnTermination() {
+    // given a valued instance
+    projection.process(numericVariable(PI_KEY, "amount", "150", 9L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+
+    // when it terminates instead of completing
+    projection.process(process(ProcessInstanceIntent.ELEMENT_TERMINATED, 1200L, 11L));
+
+    // then the termination also carries −value — terminated work leaves the in-flight level too
+    final Fact terminated = only(FactType.PROCESS_INSTANCE, Transition.TERMINATED);
+    assertThat(terminated.get("valueDelta")).isEqualTo(-150L);
+  }
+
+  @Test
+  void shouldOmitBusinessValueWhenAbsentOrNonNumeric() {
+    // given one instance without the value variable and one with a non-numeric value
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L));
+
+    // then no value fields are stamped — absence keeps the fact out of the value meters via
+    // their implicit NOT_NULL(measure) filters, instead of folding a phantom 0
+    assertThat(only(FactType.PROCESS_INSTANCE, Transition.ACTIVATED).get("value")).isNull();
+    final Fact completed = only(FactType.PROCESS_INSTANCE, Transition.COMPLETED);
+    assertThat(completed.get("value")).isNull();
+    assertThat(completed.get("valueDelta")).isNull();
+
+    // and a non-numeric amount is ignored the same way
+    context.facts.clear();
+    projection.process(variable(PI_KEY, "amount", "not-a-number", 12L));
+    projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 2000L, 13L));
+    assertThat(only(FactType.PROCESS_INSTANCE, Transition.ACTIVATED).get("value")).isNull();
+  }
+
+  @Test
   void shouldStampHadIncidentOnTheElementItOccurredOn() {
     projection.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L));
     projection.process(incident(IncidentIntent.CREATED, PI_KEY, 1100L, 11L));
@@ -228,12 +282,23 @@ final class AnalyticsBaseProjectionTest {
 
   private static SourceRecord variable(
       final long scopeKey, final String name, final String value, final long position) {
+    return variableRecord(scopeKey, name, "\"" + value + "\"", position);
+  }
+
+  /** A msgpack-number variable (e.g. the 'amount' start payload), not a string. */
+  private static SourceRecord numericVariable(
+      final long scopeKey, final String name, final String number, final long position) {
+    return variableRecord(scopeKey, name, number, position);
+  }
+
+  private static SourceRecord variableRecord(
+      final long scopeKey, final String name, final String json, final long position) {
     final VariableRecord variable =
         new VariableRecord()
             .setProcessInstanceKey(PI_KEY)
             .setScopeKey(scopeKey)
             .setName(BufferUtil.wrapString(name))
-            .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("\"" + value + "\"")));
+            .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(json)));
     return record(
         variable, ValueType.VARIABLE, VariableIntent.CREATED, scopeKey, position, position);
   }

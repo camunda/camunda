@@ -329,6 +329,31 @@ public final class StandardDatasets {
             .meter(Meter.of("p95", MeterCatalog.PERCENTILE, "durationMs"))
             .window(ONE_MINUTE_MS)
             .lateness(GRACE_MS)
+            .build(),
+        // Business value processed per definition: the sum of the deriver-enriched 'value' field
+        // (the designated value variable, default 'amount') over COMPLETED instances. The field is
+        // an eager numeric enrichment — a var.* field rides facts as lazily-resolved TEXT, which
+        // SUM cannot measure — and is absent on value-less processes, so the implicit
+        // NOT_NULL(value) filter keeps them out instead of folding phantom zeroes. APPENDED.
+        DatasetDeclaration.builder("value-throughput", FactType.PROCESS_INSTANCE)
+            .filterEquals("transition", Transition.COMPLETED.name())
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("processed", MeterCatalog.SUM, "value"))
+            .window(ONE_MINUTE_MS)
+            .lateness(GRACE_MS)
+            .build(),
+        // Business value currently in flight per definition, mirroring active-instances: a LEVEL
+        // gauge over the signed 'valueDelta' enrichment (+value on ACTIVATED, −value on either
+        // end), sampled as periodic snapshots with the same deliberately tight lateness (the
+        // snapshot-freshness trade-off documented on active-instances). An instance whose value
+        // variable is absent contributes nothing on either side, so the level stays balanced.
+        // APPENDED.
+        DatasetDeclaration.builder("value-in-flight", FactType.PROCESS_INSTANCE)
+            .dimension("bpmnProcessId", DimensionType.STRING)
+            .meter(Meter.of("value", MeterCatalog.LEVEL, "valueDelta"))
+            .window(ONE_MINUTE_MS)
+            .lateness(ONE_MINUTE_MS)
+            .snapshots(ONE_MINUTE_MS)
             .build());
   }
 
