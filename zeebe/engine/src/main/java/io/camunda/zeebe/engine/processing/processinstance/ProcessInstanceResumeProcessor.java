@@ -1,0 +1,112 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.processinstance;
+
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
+
+public final class ProcessInstanceResumeProcessor
+    implements TypedRecordProcessor<ProcessInstanceRecord> {
+
+  private static final String MESSAGE_PREFIX =
+      "Expected to resume a process instance with key '%d', but ";
+
+  private static final String PROCESS_NOT_FOUND_MESSAGE =
+      MESSAGE_PREFIX + "no such process was found";
+
+  private final ElementInstanceState elementInstanceState;
+  private final TypedResponseWriter responseWriter;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final AuthorizationCheckBehavior authCheckBehavior;
+
+  public ProcessInstanceResumeProcessor(
+      final ProcessingState processingState,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
+    elementInstanceState = processingState.getElementInstanceState();
+    responseWriter = writers.response();
+    stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
+    this.authCheckBehavior = authCheckBehavior;
+  }
+
+  @Override
+  public void processRecord(final TypedRecord<ProcessInstanceRecord> command) {
+    final var elementInstance = elementInstanceState.getInstance(command.getKey());
+
+    if (!validateCommand(command, elementInstance)) {
+      return;
+    }
+
+    final ProcessInstanceRecord value = elementInstance.getValue();
+
+    // TODO(#57517): reject with INVALID_STATE if the process instance is not currently SUSPENDED,
+    // once SuspensionState exists to read the current status from.
+    // TODO(#57792): append a DRAIN command instead of writing RESUMED directly, once chunked
+    // draining of buffered commands is implemented.
+    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMED, value);
+    responseWriter.writeEventOnCommand(
+        command.getKey(), ProcessInstanceIntent.RESUMED, value, command);
+  }
+
+  private boolean validateCommand(
+      final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
+
+    if (elementInstance == null) {
+      rejectionWriter.appendRejection(
+          command,
+          RejectionType.NOT_FOUND,
+          String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
+      responseWriter.writeRejectionOnCommand(
+          command,
+          RejectionType.NOT_FOUND,
+          String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
+      return false;
+    }
+
+    final var request =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .permissionType(PermissionType.SUSPEND_PROCESS_INSTANCE)
+            .tenantId(elementInstance.getValue().getTenantId())
+            .addResourceId(elementInstance.getValue().getBpmnProcessId())
+            .build();
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.NOT_FOUND.equals(rejection.type())
+              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "resume a process instance",
+                  elementInstance.getValue().getProcessInstanceKey(),
+                  "such process")
+              : rejection.reason();
+      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      return false;
+    }
+
+    return true;
+  }
+}
