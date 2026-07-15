@@ -57,7 +57,7 @@ data:
         metrics: http://tasklist.c8-golden-stable-87-elasticsearch-stable:9600/actuator/prometheus
       - name: Zeebe Gateway
         id: zeebeGateway
-        version: 8.7.34
+        version: 8.7.35
         urls:
           grpc: http://localhost:26500
           http: http://localhost:8088
@@ -65,6 +65,6 @@ data:
         metrics: http://zeebe-gateway.c8-golden-stable-87-elasticsearch-stable:9600/actuator/prometheus
       - name: Zeebe
         id: zeebe
-        version: 8.7.34
+        version: 8.7.35
         readiness: http://zeebe.c8-golden-stable-87-elasticsearch-stable:9600/actuator/health/readiness
         metrics: http://zeebe.c8-golden-stable-87-elasticsearch-stable:9600/actuator/prometheus
