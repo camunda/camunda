@@ -39,7 +39,7 @@ final class JobFailedV3Applier implements TypedEventApplier<JobIntent, JobRecord
         jobState.updateJobRecord(key, value);
         jobState.updateJobState(key, State.FAILED);
         jobState.removeJobDeadline(key, value.getDeadline());
-        jobState.makeJobNotActivatable(value);
+        jobState.makeJobNotActivatable(key, value);
       } else {
         jobState.updateJobRecord(key, value);
         jobState.updateJobState(key, State.ACTIVATABLE);
@@ -51,7 +51,7 @@ final class JobFailedV3Applier implements TypedEventApplier<JobIntent, JobRecord
       jobState.updateJobRecord(key, value);
       jobState.updateJobState(key, State.FAILED);
       jobState.removeJobDeadline(key, value.getDeadline());
-      jobState.makeJobNotActivatable(value);
+      jobState.makeJobNotActivatable(key, value);
     }
 
     jobMetricsState.incrementMetric(value, JobMetricsExportState.FAILED);
