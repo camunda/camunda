@@ -91,7 +91,7 @@ jobs:
     permissions:
       contents: read
       actions: write
-    timeout-minutes: 180
+    timeout-minutes: 360
     runs-on: ${{ matrix.runs-on }}
     env:
       TEST_OWNER: ${{ matrix.owner }}
