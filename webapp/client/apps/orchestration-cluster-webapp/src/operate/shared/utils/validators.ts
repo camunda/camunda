@@ -9,7 +9,10 @@
 import type {FieldValidator} from 'final-form';
 import i18n from 'i18next';
 import {z} from 'zod';
+import {isValid} from 'date-fns';
 import {parseIds} from './parseIds';
+import {parseDate} from './parseDate';
+import {parseFilterTime} from './parseFilterTime';
 import {promisifyValidator} from './promisifyValidator';
 
 const VALIDATION_TIMEOUT = 750;
@@ -88,6 +91,44 @@ const validateBatchOperationKeyComplete: FieldValidator<string | undefined> = pr
 	return undefined;
 }, VALIDATION_TIMEOUT);
 
+const validateTimeComplete = promisifyValidator((value = '') => {
+	if (value !== '' && !isValid(parseFilterTime(value.trim()))) {
+		return i18n.t('operate.shared.validators.time');
+	}
+	return undefined;
+}, VALIDATION_TIMEOUT);
+
+const validateTimeRange = promisifyValidator((_, allValues, meta) => {
+	const {fromDate, toDate, fromTime, toTime} = (allValues ?? {}) as {
+		fromDate?: string;
+		toDate?: string;
+		fromTime?: string;
+		toTime?: string;
+	};
+
+	if (fromDate === undefined || toDate === undefined || fromTime === undefined || toTime === undefined) {
+		return undefined;
+	}
+
+	const parsedFromDate = parseDate(fromDate).getTime();
+	const parsedToDate = parseDate(toDate).getTime();
+	const parsedFromTime = parseFilterTime(fromTime.trim())?.getTime() ?? 0;
+	const parsedToTime = parseFilterTime(toTime.trim())?.getTime() ?? 0;
+
+	if (parsedFromDate === parsedToDate && parsedFromTime > parsedToTime) {
+		// ' ' allows the field to have error indicators without error message
+		return meta?.name === 'fromTime' ? i18n.t('operate.shared.validators.timeRange') : ' ';
+	}
+	return undefined;
+}, VALIDATION_TIMEOUT);
+
+const validateTimeCharacters = (value = '') => {
+	if (value !== '' && value.replace(/[0-9]|:/g, '') !== '') {
+		return i18n.t('operate.shared.validators.time');
+	}
+	return undefined;
+};
+
 export {
 	validateIdsCharacters,
 	validateIdsLength,
@@ -97,5 +138,8 @@ export {
 	validateParentInstanceIdNotTooLong,
 	validateBatchOperationKeyCharacters,
 	validateBatchOperationKeyComplete,
+	validateTimeComplete,
+	validateTimeRange,
+	validateTimeCharacters,
 	VALIDATION_TIMEOUT,
 };

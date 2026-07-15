@@ -494,7 +494,9 @@
 				"validators": {
 					"ids": "La clé doit être un nombre de 16 à 19 chiffres, séparé par un espace ou une virgule",
 					"parentInstanceId": "La clé doit être un nombre de 16 à 19 chiffres",
-					"batchOperationKey": "La clé doit être un nombre de 16 à 19 chiffres ou un UUID"
+					"batchOperationKey": "La clé doit être un nombre de 16 à 19 chiffres ou un UUID",
+					"time": "L'heure doit être au format hh:mm:ss",
+					"timeRange": "L'heure « de » est postérieure à l'heure « à »"
 				},
 				"tenantField": {
 					"selectTenant": "Sélectionner un client",
