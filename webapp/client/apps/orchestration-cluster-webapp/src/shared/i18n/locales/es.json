@@ -435,7 +435,24 @@
 				"fetchErrorDescription": "Actualice la página para intentarlo de nuevo"
 			},
 			"processes": {
-				"title": "Procesos"
+				"title": "Procesos",
+				"filters": {
+					"processSection": "Proceso",
+					"name": "Nombre",
+					"searchByName": "Buscar por nombre de proceso",
+					"version": "Versión",
+					"selectVersion": "Seleccionar una versión de proceso",
+					"allVersions": "Todas las versiones",
+					"element": "Elemento",
+					"searchByElement": "Buscar por elemento de proceso",
+					"instancesStates": "Estados de instancias",
+					"runningInstances": "Instancias en ejecución",
+					"finishedInstances": "Instancias finalizadas",
+					"active": "Activo",
+					"incidents": "Incidentes",
+					"completed": "Completado",
+					"canceled": "Cancelado"
+				}
 			},
 			"decisions": {
 				"title": "Decisiones"

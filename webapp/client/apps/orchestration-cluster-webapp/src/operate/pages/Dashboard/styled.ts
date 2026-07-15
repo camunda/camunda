@@ -97,7 +97,7 @@ const LinkWrapper = styled(Link)`
 	display: block;
 	text-decoration: none !important;
 	padding: var(--cds-spacing-03) 0;
-`;
+` as typeof Link;
 
 const Li = styled.li`
 	// override the hover color on expandable row's children

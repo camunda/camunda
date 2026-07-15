@@ -16,10 +16,11 @@ import {Li, LinkWrapper} from '../styled';
 
 type Props = {
 	errorHashCode: number;
+	errorMessage: string;
 	tabIndex?: number;
 };
 
-const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, tabIndex}) => {
+const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, errorMessage, tabIndex}) => {
 	const {t} = useTranslation();
 	const {data} = useSuspenseQuery(incidentsByErrorDefinitionsQuery(errorHashCode));
 
@@ -31,7 +32,16 @@ const IncidentsByErrorDefinitions: React.FC<Props> = ({errorHashCode, tabIndex})
 				return (
 					<Li key={`${item.processDefinitionKey}:${item.tenantId}`}>
 						<LinkWrapper
-							to="/"
+							to="/operate/processes"
+							search={{
+								process: item.processDefinitionId,
+								version: item.processDefinitionVersion,
+								errorMessage,
+								incidents: true,
+								active: false,
+								completed: false,
+								canceled: false,
+							}}
 							tabIndex={tabIndex ?? 0}
 							title={labelText}
 							onClick={() => {

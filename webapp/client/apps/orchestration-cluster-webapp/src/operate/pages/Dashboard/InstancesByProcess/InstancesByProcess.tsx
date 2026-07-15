@@ -17,6 +17,7 @@ import {InstancesBar} from '#/operate/components/InstancesBar/InstancesBar';
 import {ExpandableList} from '../ExpandableList';
 import {ExpandedRowErrorFallback} from '../ExpandedRowErrorFallback';
 import {useDashboardScrollPagination} from '../useDashboardScrollPagination';
+import {runningOrAllInstancesFilter} from '../processesLinkFilters';
 import {LinkWrapper, LoadingRow} from '../styled';
 import {instancesByProcessInfiniteQuery, PAGE_SIZE} from './instancesByProcess.queries';
 import {InstancesByProcessVersions} from './InstancesByProcessVersions';
@@ -60,7 +61,8 @@ const InstancesByProcess: React.FC = () => {
 					id: `${item.processDefinitionId}:${item.tenantId}`,
 					instance: (
 						<LinkWrapper
-							to="/"
+							to="/operate/processes"
+							search={{process: item.processDefinitionId, ...runningOrAllInstancesFilter(total)}}
 							title={labelText}
 							onClick={() => {
 								tracking.track({

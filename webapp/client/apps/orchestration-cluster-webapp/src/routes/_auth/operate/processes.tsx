@@ -7,7 +7,37 @@
  */
 
 import {createFileRoute} from '@tanstack/react-router';
+import {z} from 'zod';
+import {queries} from '#/shared/http/queries';
+import {Processes} from '#/operate/pages/Processes/Processes';
+
+const processesSearchSchema = z.object({
+	process: z.string().optional(),
+	version: z.number().int().positive().optional(),
+	elementId: z.string().optional(),
+	errorMessage: z.string().optional(),
+	active: z.boolean().default(true),
+	incidents: z.boolean().default(true),
+	completed: z.boolean().default(false),
+	canceled: z.boolean().default(false),
+});
 
 export const Route = createFileRoute('/_auth/operate/processes')({
-	component: () => null,
+	validateSearch: processesSearchSchema,
+	loader: ({context: {queryClient}}) =>
+		queryClient.ensureQueryData(queries.queryProcessDefinitions({page: {limit: 1000}})),
+	component: function ProcessesRoute() {
+		const {process, version, elementId, active, incidents, completed, canceled} = Route.useSearch();
+		return (
+			<Processes
+				process={process}
+				version={version}
+				elementId={elementId}
+				active={active}
+				incidents={incidents}
+				completed={completed}
+				canceled={canceled}
+			/>
+		);
+	},
 });

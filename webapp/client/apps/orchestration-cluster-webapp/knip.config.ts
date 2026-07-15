@@ -20,21 +20,16 @@ const config: KnipConfig = {
 		'shared-test-modules/api-mocks/incident-statistics.ts',
 		// TODO(#55735): remove when consumer migration is complete
 		'src/operate/shared/utils/**',
-		'src/operate/shared/PanelTitle/**',
 		'src/operate/shared/EmptyMessage/**',
 		'src/operate/shared/ErrorMessage/**',
 		'src/operate/shared/StateIcon/**',
 		'src/operate/shared/PanelHeader/**',
 		'src/operate/shared/DiagramShell/**',
-		'src/operate/shared/Frame/**',
-		'src/operate/shared/CollapsablePanel/**',
 		'src/operate/shared/FiltersPanel/**',
 		// TODO(#55642): remove when BatchOperation detail page is migrated
 		'src/operate/shared/PaginatedSortableTable/**',
-		'src/operate/shared/ResizablePanel/**',
-		'src/operate/shared/InstancesList/**',
 	],
-	ignoreDependencies: ['@vitest/browser', '@devbookhq/splitter'],
+	ignoreDependencies: ['@vitest/browser'],
 	typescript: {
 		config: ['tsconfig.browser.json', 'tsconfig.vitest.json', 'tsconfig.node.json'],
 	},
