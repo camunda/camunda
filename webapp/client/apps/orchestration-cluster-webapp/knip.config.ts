@@ -20,6 +20,11 @@ const config: KnipConfig = {
 		'shared-test-modules/api-mocks/incident-statistics.ts',
 		// TODO(#55735): remove when consumer migration is complete
 		'src/operate/shared/utils/**',
+		'src/operate/shared/hooks/**',
+		'src/operate/shared/TextInputField/**',
+		'src/operate/shared/TextAreaField/**',
+		'src/operate/shared/AutoSubmit/**',
+		'src/operate/shared/OptionalFiltersMenu/**',
 		'src/operate/shared/EmptyMessage/**',
 		'src/operate/shared/ErrorMessage/**',
 		'src/operate/shared/StateIcon/**',
