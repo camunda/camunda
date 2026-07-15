@@ -292,7 +292,7 @@ public final class MultiProcessDemoDriver {
 
   private static BpmnModelInstance orderProcess() {
     return Bpmn.createExecutableProcess("order-process")
-        .startEvent()
+        .startEvent("order-received")
         .serviceTask("collect", t -> t.zeebeJobType("order-collect"))
         .endEvent()
         .done();
@@ -300,7 +300,7 @@ public final class MultiProcessDemoDriver {
 
   private static BpmnModelInstance shippingProcess() {
     return Bpmn.createExecutableProcess("shipping-process")
-        .startEvent()
+        .startEvent("shipment-requested")
         .serviceTask("dispatch", t -> t.zeebeJobType("shipping-dispatch"))
         .endEvent()
         .done();
@@ -309,7 +309,7 @@ public final class MultiProcessDemoDriver {
   // start -> authorize -> XOR gateway -> (approved) capture -> end / (not approved) declined end
   private static BpmnModelInstance paymentProcess() {
     return Bpmn.createExecutableProcess("payment-process")
-        .startEvent()
+        .startEvent("payment-requested")
         .serviceTask("authorize", t -> t.zeebeJobType("payment-authorize"))
         .exclusiveGateway("decision")
         .conditionExpression("=approved")
@@ -338,7 +338,7 @@ public final class MultiProcessDemoDriver {
    */
   private static BpmnModelInstance claimProcess() {
     return Bpmn.createExecutableProcess("claim-process")
-        .startEvent()
+        .startEvent("claim-received")
         .serviceTask("register", t -> t.zeebeJobType("claim-register"))
         .exclusiveGateway("triage")
         .conditionExpression("=route = \"auto\"")
