@@ -148,9 +148,7 @@ describe('relaxedDocumentReferenceSchema', () => {
   it('should accept a valid document reference', () => {
     const value = makeDocRef();
 
-     expect(relaxedDocumentReferenceSchema.safeParse(value).success).toBe(
-      true,
-    );
+    expect(relaxedDocumentReferenceSchema.safeParse(value).success).toBe(true);
   });
 
   it('should accept a connector reference that omits optional metadata fields', () => {
