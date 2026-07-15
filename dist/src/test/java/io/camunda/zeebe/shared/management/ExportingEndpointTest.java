@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.from;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.gateway.admin.exporting.ExportingControlApi;
+import io.camunda.service.admin.exporting.ExportingControlApi;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.Stream;
