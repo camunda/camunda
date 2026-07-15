@@ -519,7 +519,6 @@ public class ProcessDefinitionStatisticsTest {
   void shouldGetStatisticsAndFilterByVariableWithMultipleValues() {
     // given
     final var processDefinitionKey = deployActiveBPMN();
-    // three instances, each carrying a distinct value for the same variable name
     TestHelper.startScopedProcessInstance(
         camundaClient, processDefinitionKey, testScopeId, Map.of("orderId", "1"));
     TestHelper.startScopedProcessInstance(
@@ -535,7 +534,7 @@ public class ProcessDefinitionStatisticsTest {
         .ignoreExceptions()
         .untilAsserted(
             () ->
-                // when filtering a single variable name by multiple values (e.g. orderId in [1, 2])
+                // when
                 assertThat(
                         camundaClient
                             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
@@ -548,7 +547,7 @@ public class ProcessDefinitionStatisticsTest {
                                                     .value(v -> v.in("\"1\"", "\"2\"")))))
                             .send()
                             .join())
-                    // then the counts must include every matching value, not only the first
+                    // then
                     .hasSize(2)
                     .containsExactlyInAnyOrder(
                         new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
