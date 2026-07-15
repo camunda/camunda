@@ -30,7 +30,6 @@ import io.camunda.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExpor
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
-import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -890,31 +889,70 @@ public final class ExporterDirectorTest {
   }
 
   @Test
-  public void shouldNotReplayRecordsWhenExporting() throws Exception {
-    // given - write 4 events
+  public void shouldReplayAndRedeliverGapRecordsWhenReopenedDuringExporting() throws Exception {
+    // given - write and export 4 events; both exporters auto-acknowledge their position after
+    // each export, exactly like a real exporter that updates its position per record
     final long eventPosition1 = writeEvent();
     final long eventPosition2 = writeEvent();
     final long eventPosition3 = writeEvent();
     final long eventPosition4 = writeEvent();
 
-    final AtomicReference<Controller> controllerRef = new AtomicReference<>();
+    final var openCount = new AtomicInteger(0);
     final var replayAccepted = new AtomicBoolean(false);
+    final var shouldThrow = new AtomicBoolean(false);
+
     exporters
         .getFirst()
-        .onOpen(controllerRef::set)
+        .onOpen(
+            controller -> {
+              if (openCount.incrementAndGet() > 1) {
+                // Simulate: exporter 0 detected a position mismatch and is re-syncing from
+                // eventPosition2, i.e. records 3 and 4 were never durably persisted downstream.
+                replayAccepted.set(controller.requestReplay(eventPosition2));
+              }
+            })
         .onExport(
             r -> {
-              if (r.getPosition() == eventPosition4) {
-                replayAccepted.set(controllerRef.get().requestReplay(eventPosition2));
+              if (shouldThrow.compareAndSet(true, false)) {
+                throw new ExporterException(
+                    "position mismatch", ExporterException.Compensation.REOPEN);
               }
-            });
+            })
+        .shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
 
-    // when
     rule.startExporterDirector(exporterDescriptors);
     waitUntil(() -> exporters.getFirst().getExportedRecords().size() == 4);
 
-    // then
-    assertThat(replayAccepted.get()).isFalse();
+    // when - simulate the downstream storage falling behind: records 3 and 4 were never really
+    // persisted (clear them here), then trigger a REOPEN on the next record
+    exporters.getFirst().getExportedRecords().clear();
+    shouldThrow.set(true);
+    final long eventPosition5 = writeEvent();
+
+    // then - reopen is triggered, replay from eventPosition2 is accepted, and the record that
+    // triggered the REOPEN is abandoned (not retried immediately) so the rewound log redelivers
+    // records 3, 4 and 5 in order - proving no record is leapfrogged/skipped by an immediate retry
+    Awaitility.await("gap records are redelivered in order after a mid-run replay")
+        .atMost(Duration.ofSeconds(10))
+        .until(() -> exporters.getFirst().getExportedRecords().size() >= 3);
+
+    assertThat(replayAccepted.get()).isTrue();
+    assertThat(openCount.get())
+        .describedAs("exporter was opened twice: once on startup, once on reopen")
+        .isEqualTo(2);
+    assertThat(exporters.getFirst().getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition3, eventPosition4, eventPosition5);
+
+    // exporter 1 never requested replay; its own progress is unaffected by exporter 0's rewind
+    Awaitility.await("exporter 1 exports the new record")
+        .atMost(Duration.ofSeconds(10))
+        .until(() -> exporters.get(1).getExportedRecords().size() == 5);
+    assertThat(exporters.get(1).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(
+            eventPosition1, eventPosition2, eventPosition3, eventPosition4, eventPosition5);
   }
 
   @Test

@@ -50,6 +50,7 @@ final class ExporterContainer implements Controller {
   private ActorControl actor;
   private final ExporterInitializationInfo initializationInfo;
   private final ExporterReplayControl replayControl;
+  private boolean replayAcceptedOnReopen;
 
   ExporterContainer(
       final ExporterDescriptor descriptor,
@@ -124,6 +125,7 @@ final class ExporterContainer implements Controller {
 
   void openExporter() {
     LOG.debug("Open exporter with id '{}'", getId());
+    replayAcceptedOnReopen = false;
     ThreadContextUtil.runWithClassLoader(
         () -> exporter.open(this), exporter.getClass().getClassLoader());
   }
@@ -224,6 +226,7 @@ final class ExporterContainer implements Controller {
       lastAcknowledgedPosition = lastExportedPosition;
       lastExportedMetadata = null;
       exportersState.setPosition(getId(), lastExportedPosition);
+      replayAcceptedOnReopen = true;
     }
     return replayResult;
   }
@@ -246,7 +249,7 @@ final class ExporterContainer implements Controller {
         () -> exporter.configure(context), exporter.getClass().getClassLoader());
   }
 
-  boolean exportRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
+  ExportOutcome exportRecord(final RecordMetadata rawMetadata, final TypedRecord<?> typedEvent) {
     try {
       if (position < typedEvent.getPosition()) {
         if (acceptRecord(rawMetadata, typedEvent)) {
@@ -255,7 +258,7 @@ final class ExporterContainer implements Controller {
           updatePositionOnSkipIfUpToDate(typedEvent.getPosition());
         }
       }
-      return true;
+      return ExportOutcome.EXPORTED;
     } catch (final ExporterException ex) {
       if (ex.getCompensation() == ExporterException.Compensation.REOPEN) {
         context
@@ -264,16 +267,25 @@ final class ExporterContainer implements Controller {
                 "Export error for exporter '{}' requires reopen to re-sync position", getId(), ex);
         try {
           reopenExporter();
+          if (replayAcceptedOnReopen) {
+            context
+                .getLogger()
+                .info(
+                    "Exporter '{}' accepted a replay during reopen; abandoning the current record"
+                        + " so it is redelivered in order from the rewound position",
+                    getId());
+            return ExportOutcome.ABORT_REPLAY;
+          }
         } catch (final Exception reopenEx) {
           context.getLogger().error("Failed to reopen exporter '{}'", getId(), reopenEx);
         }
       } else {
         context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
       }
-      return false;
+      return ExportOutcome.RETRY;
     } catch (final Exception ex) {
       context.getLogger().warn("Error on exporting record with key {}", typedEvent.getKey(), ex);
-      return false;
+      return ExportOutcome.RETRY;
     }
   }
 

@@ -228,6 +228,35 @@ final class ExporterContainerTest {
   }
 
   /**
+   * Exporter that throws a {@link ExporterException.Compensation#REOPEN} exception on export, and
+   * requests a replay on the reopen's {@link #open}, simulating a real position-mismatch recovery
+   * (e.g. the RDBMS exporter re-syncing after an async DB failover).
+   */
+  public static final class ReplayRequestingReopenExporter extends FakeExporter {
+
+    private int openCount;
+
+    @Override
+    public void open(final Controller controller) {
+      super.open(controller);
+      openCount++;
+      if (openCount > 1) {
+        controller.requestReplay(0L);
+      }
+    }
+
+    public int getOpenCount() {
+      return openCount;
+    }
+
+    @Override
+    public void export(final Record<?> record) {
+      throw new ExporterException(
+          "position mismatch detected", ExporterException.Compensation.REOPEN);
+    }
+  }
+
+  /**
    * Exporter that always throws a plain {@link ExporterException} (defaulting to {@link
    * ExporterException.Compensation#RETRY}) and tracks how many times {@link #open} was called.
    */
@@ -1165,12 +1194,51 @@ final class ExporterContainerTest {
       final var recordMetadata = new RecordMetadata();
 
       // when
-      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+      final ExportOutcome outcome = exporterContainer.exportRecord(recordMetadata, mockedRecord);
 
-      // then — the REOPEN compensation triggers close() + openExporter() inside exportRecord()
+      // then — the REOPEN compensation triggers close() + openExporter() inside exportRecord();
+      // since the reopen did not request a replay, the record is retried, not abandoned
+      assertThat(outcome).isEqualTo(ExportOutcome.RETRY);
       assertThat(throwingExporter.isClosed())
           .describedAs("exporter was closed as part of reopen")
           .isTrue();
+      assertThat(throwingExporter.getOpenCount())
+          .describedAs("exporter was opened twice: once on startup, once on reopen")
+          .isEqualTo(2);
+    }
+
+    @Test
+    void shouldAbortRecordWhenReopenAcceptsMidRunReplayRequest() throws Exception {
+      // given
+      final var descriptor =
+          runtime
+              .getRepository()
+              .validateAndAddExporterDescriptor(
+                  EXPORTER_ID, ReplayRequestingReopenExporter.class, Map.of());
+      exporterContainer =
+          runtime.newContainer(
+              descriptor,
+              PARTITION_ID,
+              new ExporterInitializationInfo(0, null),
+              new SimpleMeterRegistry(),
+              pos -> true);
+      final var throwingExporter = (ReplayRequestingReopenExporter) exporterContainer.getExporter();
+
+      exporterContainer.configureExporter();
+      runtime.getState().setPosition(EXPORTER_ID, 0);
+      exporterContainer.initMetadata();
+      exporterContainer.openExporter(); // first open: openCount = 1
+
+      final var mockedRecord = mock(TypedRecord.class);
+      when(mockedRecord.getPosition()).thenReturn(1L);
+      final var recordMetadata = new RecordMetadata();
+
+      // when
+      final ExportOutcome outcome = exporterContainer.exportRecord(recordMetadata, mockedRecord);
+
+      // then — reopen accepted a replay, so the current record is abandoned rather than retried,
+      // letting the rewound log reader redeliver it (and anything missed before it) in order
+      assertThat(outcome).isEqualTo(ExportOutcome.ABORT_REPLAY);
       assertThat(throwingExporter.getOpenCount())
           .describedAs("exporter was opened twice: once on startup, once on reopen")
           .isEqualTo(2);
@@ -1197,9 +1265,10 @@ final class ExporterContainerTest {
       final var recordMetadata = new RecordMetadata();
 
       // when
-      exporterContainer.exportRecord(recordMetadata, mockedRecord);
+      final ExportOutcome outcome = exporterContainer.exportRecord(recordMetadata, mockedRecord);
 
       // then — the RETRY compensation only logs the error; no close/reopen occurs
+      assertThat(outcome).isEqualTo(ExportOutcome.RETRY);
       assertThat(throwingExporter.isClosed())
           .describedAs("exporter was not closed for a RETRY compensation")
           .isFalse();
