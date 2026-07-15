@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.schedule;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse;
 import io.camunda.zeebe.protocol.impl.encoding.CheckpointStateResponse.PartitionCheckpointState;
@@ -104,7 +106,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
       final Function<CheckpointStateResponse, Set<PartitionCheckpointState>> stateFilter) {
     final ActorFuture<Set<PartitionCheckpointState>> future = createFuture();
     backupRequestHandler
-        .getCheckpointState()
+        .getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID)
         .thenApplyAsync(stateFilter, this)
         .whenCompleteAsync(future, this);
     return future;
@@ -154,7 +156,7 @@ public class CheckpointScheduler extends Actor implements AutoCloseable {
     final CompletableActorFuture<ExecutionResult> future = new CompletableActorFuture<>();
     if (nextExecution.isBefore(now) || nextExecution.equals(now)) {
       backupRequestHandler
-          .checkpoint(type)
+          .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, type)
           .toCompletableFuture()
           .thenApplyAsync(
               id -> {

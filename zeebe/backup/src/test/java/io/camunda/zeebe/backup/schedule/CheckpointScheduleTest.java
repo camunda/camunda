@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.schedule;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.LAST_CHECKPOINT_GAUGE_NAME;
 import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.LAST_CHECKPOINT_ID_GAUGE_NAME;
 import static io.camunda.zeebe.backup.schedule.SchedulerMetrics.NEXT_CHECKPOINT_GAUGE_NAME;
@@ -16,6 +17,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -66,18 +68,20 @@ public class CheckpointScheduleTest {
     final var topologyManager = mock(BrokerTopologyManager.class);
     final var clusterState = mock(BrokerClusterState.class);
     lenient().when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
-    lenient().when(topologyManager.getTopology()).thenReturn(clusterState);
+    lenient()
+        .when(topologyManager.getTopology(DEFAULT_PHYSICAL_TENANT_ID))
+        .thenReturn(clusterState);
     lenient().when(clusterState.getPartitionsCount()).thenReturn(1);
     lenient().when(clusterState.getPartitions()).thenReturn(List.of(1));
     backupRequestHandler = spy(new BackupRequestHandler(brokerClient));
 
     doAnswer(
             (ctx) -> {
-              final Object backupId = ctx.getArgument(0);
+              final Object backupId = ctx.getArgument(1);
               return CompletableFuture.completedFuture(backupId);
             })
         .when(backupRequestHandler)
-        .takeBackup(anyLong(), any(CheckpointType.class));
+        .takeBackup(any(), anyLong(), any(CheckpointType.class));
 
     actorScheduler.getClock().reset();
     actorScheduler.getClock().pinCurrentTime();
@@ -89,7 +93,7 @@ public class CheckpointScheduleTest {
     final var now = actorScheduler.getClock().getCurrentTime();
     checkpointScheduler =
         createScheduler(new Schedule.IntervalSchedule(Duration.ofSeconds(5)), null);
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedStage(checkpointState(now.toEpochMilli(), 0L)));
 
     // when
@@ -99,10 +103,11 @@ public class CheckpointScheduleTest {
     actorScheduler.workUntilDone();
 
     // then
-    verify(backupRequestHandler, times(2)).getCheckpointState();
-    verify(backupRequestHandler, times(1)).checkpoint(CheckpointType.MARKER);
+    verify(backupRequestHandler, times(2)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
     verify(backupRequestHandler, times(1))
-        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.MARKER));
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.MARKER);
+    verify(backupRequestHandler, times(1))
+        .takeBackup(any(), anyLong(), argThat(type -> type == CheckpointType.MARKER));
     verifyNoMoreInteractions(backupRequestHandler);
 
     final var recordedTimestampValue =
@@ -127,7 +132,7 @@ public class CheckpointScheduleTest {
     checkpointScheduler =
         createScheduler(null, new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
 
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedStage(checkpointState(0L, now.toEpochMilli())));
 
     // when
@@ -137,11 +142,12 @@ public class CheckpointScheduleTest {
     actorScheduler.workUntilDone();
 
     // then
-    verify(backupRequestHandler, times(2)).getCheckpointState();
+    verify(backupRequestHandler, times(2)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
 
-    verify(backupRequestHandler, times(1)).checkpoint(CheckpointType.SCHEDULED_BACKUP);
     verify(backupRequestHandler, times(1))
-        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, times(1))
+        .takeBackup(any(), anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
     verifyNoMoreInteractions(backupRequestHandler);
 
     var recordedTimestampValue = getGaugeValue(LAST_CHECKPOINT_GAUGE_NAME, CheckpointType.MARKER);
@@ -173,7 +179,7 @@ public class CheckpointScheduleTest {
             new Schedule.IntervalSchedule(Duration.ofSeconds(5)),
             new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
 
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(
             CompletableFuture.completedStage(
                 checkpointState(now.toEpochMilli(), now.toEpochMilli())));
@@ -185,12 +191,14 @@ public class CheckpointScheduleTest {
     actorScheduler.workUntilDone();
 
     // then – both loops fire independently
-    verify(backupRequestHandler, times(1)).checkpoint(CheckpointType.MARKER);
     verify(backupRequestHandler, times(1))
-        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.MARKER));
-    verify(backupRequestHandler, times(1)).checkpoint(CheckpointType.SCHEDULED_BACKUP);
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.MARKER);
     verify(backupRequestHandler, times(1))
-        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
+        .takeBackup(any(), anyLong(), argThat(type -> type == CheckpointType.MARKER));
+    verify(backupRequestHandler, times(1))
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, times(1))
+        .takeBackup(any(), anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
   }
 
   @Test
@@ -200,21 +208,21 @@ public class CheckpointScheduleTest {
     checkpointScheduler =
         createScheduler(null, new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
 
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedStage(checkpointState(0L, now.toEpochMilli())));
 
     // when
     actorScheduler.submitActor(checkpointScheduler);
     actorScheduler.workUntilDone();
-    verify(backupRequestHandler, times(1)).getCheckpointState();
+    verify(backupRequestHandler, times(1)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
     actorScheduler.updateClock(Duration.ofSeconds(5));
     checkpointScheduler.closeAsync();
     actorScheduler.workUntilDone();
 
     // then
 
-    verify(backupRequestHandler, times(0)).checkpoint(any());
-    verify(backupRequestHandler, times(0)).takeBackup(anyLong(), any());
+    verify(backupRequestHandler, times(0)).checkpoint(eq(DEFAULT_PHYSICAL_TENANT_ID), any());
+    verify(backupRequestHandler, times(0)).takeBackup(any(), anyLong(), any());
     verifyNoMoreInteractions(backupRequestHandler);
   }
 
@@ -223,7 +231,7 @@ public class CheckpointScheduleTest {
     // given
     final int iterations = 10;
     var now = actorScheduler.getClock().getCurrentTime();
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedStage(checkpointState(now.toEpochMilli(), 0L)));
     checkpointScheduler =
         createScheduler(new Schedule.IntervalSchedule(Duration.ofSeconds(5)), null);
@@ -235,16 +243,17 @@ public class CheckpointScheduleTest {
       actorScheduler.updateClock(Duration.ofSeconds(5));
       actorScheduler.workUntilDone();
       now = actorScheduler.getClock().getCurrentTime();
-      when(backupRequestHandler.getCheckpointState())
+      when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
           .thenReturn(CompletableFuture.completedStage(checkpointState(now.toEpochMilli(), 0L)));
     }
     // 1 for the initial plus the 10 iterations
-    verify(backupRequestHandler, times(11)).getCheckpointState();
+    verify(backupRequestHandler, times(11)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
 
     // then
-    verify(backupRequestHandler, times(iterations)).checkpoint(CheckpointType.MARKER);
     verify(backupRequestHandler, times(iterations))
-        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.MARKER));
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.MARKER);
+    verify(backupRequestHandler, times(iterations))
+        .takeBackup(any(), anyLong(), argThat(type -> type == CheckpointType.MARKER));
     verifyNoMoreInteractions(backupRequestHandler);
   }
 
@@ -252,7 +261,7 @@ public class CheckpointScheduleTest {
   void shouldTakeDifferentCheckpointsInSuccession() {
     // given
     final var initTime = actorScheduler.getClock().getCurrentTime();
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(
             CompletableFuture.completedStage(
                 checkpointState(initTime.toEpochMilli(), initTime.toEpochMilli())));
@@ -267,7 +276,7 @@ public class CheckpointScheduleTest {
     final var latestBackupCheckpoint = initTime.toEpochMilli();
     final AtomicInteger callCount = new AtomicInteger(0);
 
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenAnswer(
             invocation -> {
               final int count = callCount.incrementAndGet();
@@ -324,12 +333,14 @@ public class CheckpointScheduleTest {
     }
 
     // then – marker fires every 5s (3 times), backup fires at 15s (1 time)
-    verify(backupRequestHandler, times(3)).checkpoint(CheckpointType.MARKER);
     verify(backupRequestHandler, times(3))
-        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.MARKER));
-    verify(backupRequestHandler, times(1)).checkpoint(CheckpointType.SCHEDULED_BACKUP);
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.MARKER);
+    verify(backupRequestHandler, times(3))
+        .takeBackup(any(), anyLong(), argThat(type -> type == CheckpointType.MARKER));
     verify(backupRequestHandler, times(1))
-        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, times(1))
+        .takeBackup(any(), anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
   }
 
   @Test
@@ -339,7 +350,7 @@ public class CheckpointScheduleTest {
     checkpointScheduler =
         createScheduler(null, new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
 
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(
             CompletableFuture.completedStage(
                 checkpointState(0L, now.minus(1, ChronoUnit.DAYS).toEpochMilli())));
@@ -351,12 +362,13 @@ public class CheckpointScheduleTest {
     actorScheduler.workUntilDone();
 
     // then
-    verify(backupRequestHandler, times(2)).getCheckpointState();
+    verify(backupRequestHandler, times(2)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
     // Schedule will be executed twice, once instantly as it's overdue and once at the corrected
     // schedule time
-    verify(backupRequestHandler, times(2)).checkpoint(CheckpointType.SCHEDULED_BACKUP);
     verify(backupRequestHandler, times(2))
-        .takeBackup(anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
+        .checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.SCHEDULED_BACKUP);
+    verify(backupRequestHandler, times(2))
+        .takeBackup(any(), anyLong(), argThat(type -> type == CheckpointType.SCHEDULED_BACKUP));
     verifyNoMoreInteractions(backupRequestHandler);
   }
 
@@ -367,7 +379,7 @@ public class CheckpointScheduleTest {
     checkpointScheduler =
         createScheduler(null, new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
 
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(
             CompletableFuture.completedStage(
                 checkpointState(0L, now.minus(1, ChronoUnit.DAYS).toEpochMilli())));
@@ -393,7 +405,7 @@ public class CheckpointScheduleTest {
     checkpointScheduler =
         createScheduler(null, new Schedule.IntervalSchedule(Duration.ofSeconds(5)));
 
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(
             CompletableFuture.completedStage(
                 checkpointState(0L, now.minus(1, ChronoUnit.DAYS).toEpochMilli())));
@@ -418,7 +430,7 @@ public class CheckpointScheduleTest {
     final var lastCheckpoint = now.minus(interval).minus(Duration.ofSeconds(10));
 
     checkpointScheduler = createScheduler(new Schedule.IntervalSchedule(interval), null);
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(
             CompletableFuture.completedStage(checkpointState(lastCheckpoint.toEpochMilli(), 0L)));
 
@@ -427,7 +439,7 @@ public class CheckpointScheduleTest {
               return CompletableFuture.completedFuture(1L);
             })
         .when(backupRequestHandler)
-        .checkpoint(any());
+        .checkpoint(eq(DEFAULT_PHYSICAL_TENANT_ID), any());
 
     // when
     actorScheduler.submitActor(checkpointScheduler);
@@ -435,7 +447,7 @@ public class CheckpointScheduleTest {
 
     // then
     // it should have triggered checkpoint immediately
-    verify(backupRequestHandler).checkpoint(CheckpointType.MARKER);
+    verify(backupRequestHandler).checkpoint(DEFAULT_PHYSICAL_TENANT_ID, CheckpointType.MARKER);
   }
 
   @Test
@@ -446,7 +458,7 @@ public class CheckpointScheduleTest {
         createScheduler(new Schedule.IntervalSchedule(Duration.ofSeconds(60)), null);
 
     // First call fails, second call succeeds
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.failedStage(new RuntimeException("Expected error")))
         .thenReturn(CompletableFuture.completedStage(checkpointState(now.toEpochMilli(), 0L)));
 
@@ -455,14 +467,14 @@ public class CheckpointScheduleTest {
     actorScheduler.workUntilDone(); // Should handle error and schedule backoff
 
     // then
-    verify(backupRequestHandler, times(1)).getCheckpointState();
+    verify(backupRequestHandler, times(1)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
 
     // Move clock past initial backoff (1s)
     actorScheduler.updateClock(Duration.ofSeconds(2));
     actorScheduler.workUntilDone();
 
     // Should have retried
-    verify(backupRequestHandler, times(2)).getCheckpointState();
+    verify(backupRequestHandler, times(2)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   @Test
@@ -473,7 +485,7 @@ public class CheckpointScheduleTest {
         createScheduler(new Schedule.IntervalSchedule(Duration.ofSeconds(60)), null);
 
     // Provide a state where last checkpoint was long ago
-    when(backupRequestHandler.getCheckpointState())
+    when(backupRequestHandler.getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID))
         .thenReturn(
             CompletableFuture.completedStage(
                 checkpointState(now.minus(Duration.ofHours(1)).toEpochMilli(), 0L)));
@@ -481,21 +493,21 @@ public class CheckpointScheduleTest {
     // First checkpoint call fails
     doAnswer(invocation -> CompletableFuture.failedStage(new RuntimeException("Checkpoint failed")))
         .when(backupRequestHandler)
-        .checkpoint(any());
+        .checkpoint(eq(DEFAULT_PHYSICAL_TENANT_ID), any());
 
     // when
     actorScheduler.submitActor(checkpointScheduler);
     actorScheduler.workUntilDone(); // Should handle checkpoint error and schedule backoff
 
     // then
-    verify(backupRequestHandler, times(1)).checkpoint(any());
+    verify(backupRequestHandler, times(1)).checkpoint(eq(DEFAULT_PHYSICAL_TENANT_ID), any());
 
     // Move clock past initial backoff (1s)
     actorScheduler.updateClock(Duration.ofSeconds(2));
     actorScheduler.workUntilDone();
 
     // Should have retried (starts by acquiring state again)
-    verify(backupRequestHandler, times(2)).getCheckpointState();
+    verify(backupRequestHandler, times(2)).getCheckpointState(DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   private CheckpointStateResponse checkpointState(

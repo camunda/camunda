@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.admin.exporting;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.gateway.admin.exporting.ExportingControlServiceTest.RequestMatcher.requestTo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -55,7 +56,7 @@ public class ExportingControlServiceTest {
     final var service = new ExportingControlService(client);
 
     // when
-    service.pauseExporting().join();
+    service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID).join();
 
     // then
     for (final var partition : topology.getPartitions()) {
@@ -81,7 +82,7 @@ public class ExportingControlServiceTest {
 
     // then
     assertThatExceptionOfType(IncompleteTopologyException.class)
-        .isThrownBy(service::pauseExporting);
+        .isThrownBy(() -> service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID));
   }
 
   @ParameterizedTest
@@ -92,7 +93,8 @@ public class ExportingControlServiceTest {
     final var service = new ExportingControlService(client);
 
     // then
-    assertThat(service.pauseExporting()).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID))
+        .succeedsWithin(Duration.ofSeconds(10));
   }
 
   @ParameterizedTest
@@ -107,14 +109,15 @@ public class ExportingControlServiceTest {
         .thenThrow(new RuntimeException("request failed"));
 
     // then
-    assertThatExceptionOfType(Throwable.class).isThrownBy(service::pauseExporting);
+    assertThatExceptionOfType(Throwable.class)
+        .isThrownBy(() -> service.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID));
   }
 
   private BrokerClient setupBrokerClient(final BrokerClusterState topology) {
     final var client = mock(BrokerClient.class);
     final var topologyManager = mock(BrokerTopologyManager.class);
 
-    when(topologyManager.getTopology()).thenReturn(topology);
+    when(topologyManager.getTopology(DEFAULT_PHYSICAL_TENANT_ID)).thenReturn(topology);
     when(client.getTopologyManager()).thenReturn(topologyManager);
     when(client.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(new AdminResponse())));

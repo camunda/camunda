@@ -55,72 +55,82 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   @Override
-  public CompletionStage<Long> takeBackup(final long backupId) {
-    return takeBackup(backupId, CheckpointType.MANUAL_BACKUP);
+  public CompletionStage<Long> takeBackup(final String physicalTenantId, final long backupId) {
+    return takeBackup(physicalTenantId, backupId, CheckpointType.MANUAL_BACKUP);
   }
 
   @Override
-  public CompletionStage<Long> takeBackup() {
+  public CompletionStage<Long> takeBackup(final String physicalTenantId) {
     final var backupId = checkpointIdGenerator.generateCheckpointId();
-    return takeBackup(backupId);
+    return takeBackup(physicalTenantId, backupId);
   }
 
   @Override
-  public CompletionStage<BackupStatus> getStatus(final long backupId) {
-    return broadcastRequest(partitionId -> createStatusQueryRequest(backupId, partitionId))
+  public CompletionStage<BackupStatus> getStatus(
+      final String physicalTenantId, final long backupId) {
+    return broadcastRequest(
+            physicalTenantId, partitionId -> createStatusQueryRequest(backupId, partitionId))
         .thenApply(responses -> responses.stream().map(PartitionBackupStatus::from).toList())
         .thenApply(responses -> aggregatePartitionStatus(backupId, responses));
   }
 
   @Override
-  public CompletionStage<CheckpointStateResponse> getCheckpointState() {
-    return broadcastRequest(this::createCheckpointRequest)
+  public CompletionStage<CheckpointStateResponse> getCheckpointState(
+      final String physicalTenantId) {
+    return broadcastRequest(physicalTenantId, this::createCheckpointRequest)
         .thenApply(this::aggregateCheckpointResponses);
   }
 
   @Override
-  public CompletionStage<BackupRangesResponse> getBackupRanges() {
-    return broadcastRequest(this::createRangesRequest).thenApply(this::aggregateRangesResponses);
-  }
-
-  @Override
-  public CompletionStage<List<BackupStatus>> listBackups(final String prefix) {
-    return broadcastRequest(partitionId -> createListRequest(partitionId, prefix))
-        .thenApply(this::aggregateBackupList);
-  }
-
-  @Override
-  public CompletionStage<Void> deleteBackup(final long backupId) {
-    return broadcastRequest(partitionId -> createDeleteRequest(backupId, partitionId))
-        .thenApply(ignored -> null);
-  }
-
-  @Override
-  public CompletionStage<BackupRangesResponse> syncMetadata() {
-    return broadcastRequest(this::createMetadataSyncRequest)
+  public CompletionStage<BackupRangesResponse> getBackupRanges(final String physicalTenantId) {
+    return broadcastRequest(physicalTenantId, this::createRangesRequest)
         .thenApply(this::aggregateRangesResponses);
   }
 
   @Override
-  public CompletionStage<Void> deleteRuntimeState() {
-    return broadcastRequest(this::createClearStateRequest).thenApply(ignored -> null);
+  public CompletionStage<List<BackupStatus>> listBackups(
+      final String physicalTenantId, final String prefix) {
+    return broadcastRequest(physicalTenantId, partitionId -> createListRequest(partitionId, prefix))
+        .thenApply(responses -> aggregateBackupList(physicalTenantId, responses));
+  }
+
+  @Override
+  public CompletionStage<Void> deleteBackup(final String physicalTenantId, final long backupId) {
+    return broadcastRequest(
+            physicalTenantId, partitionId -> createDeleteRequest(backupId, partitionId))
+        .thenApply(ignored -> null);
+  }
+
+  @Override
+  public CompletionStage<BackupRangesResponse> syncMetadata(final String physicalTenantId) {
+    return broadcastRequest(physicalTenantId, this::createMetadataSyncRequest)
+        .thenApply(this::aggregateRangesResponses);
+  }
+
+  @Override
+  public CompletionStage<Void> deleteRuntimeState(final String physicalTenantId) {
+    return broadcastRequest(physicalTenantId, this::createClearStateRequest)
+        .thenApply(ignored -> null);
   }
 
   /**
-   * Trigger a checkpoint of the given type across all partitions
+   * Trigger a checkpoint of the given type across all partitions of the given physical tenant
    *
+   * @param physicalTenantId the physical tenant (partition group) to target
    * @param checkpointType {@link CheckpointType} type of checkpoint to create
    * @return the checkpoint id created
    */
-  public CompletionStage<Long> checkpoint(final CheckpointType checkpointType) {
+  public CompletionStage<Long> checkpoint(
+      final String physicalTenantId, final CheckpointType checkpointType) {
     final var checkpointId = checkpointIdGenerator.generateCheckpointId();
-    return takeBackup(checkpointId, checkpointType);
+    return takeBackup(physicalTenantId, checkpointId, checkpointType);
   }
 
   @VisibleForTesting
   public CompletionStage<Long> takeBackup(
-      final long backupId, final CheckpointType checkpointType) {
+      final String physicalTenantId, final long backupId, final CheckpointType checkpointType) {
     return broadcastRequest(
+            physicalTenantId,
             partitionId -> createBackupRequest(backupId, partitionId, checkpointType))
         .thenApply(
             responses -> {
@@ -155,13 +165,14 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   private <R> CompletionStage<Set<R>> broadcastRequest(
-      final Function<Integer, BrokerRequest<R>> requestCreator) {
-    return checkTopologyComplete()
+      final String physicalTenantId, final Function<Integer, BrokerRequest<R>> requestCreator) {
+    return checkTopologyComplete(physicalTenantId)
         .thenCompose(
             topology -> {
               final var responses =
                   topology.getPartitions().stream()
                       .map(requestCreator)
+                      .map(request -> stampPhysicalTenant(request, physicalTenantId))
                       .map(brokerClient::sendRequestWithRetry)
                       .toList();
               return CompletableFuture.allOf(responses.toArray(CompletableFuture[]::new))
@@ -174,8 +185,14 @@ public final class BackupRequestHandler implements BackupApi {
             });
   }
 
+  private static <R> BrokerRequest<R> stampPhysicalTenant(
+      final BrokerRequest<R> request, final String physicalTenantId) {
+    request.setPartitionGroup(physicalTenantId);
+    return request;
+  }
+
   private List<BackupStatus> aggregateBackupList(
-      final Collection<BackupListResponse> backupsReceived) {
+      final String physicalTenantId, final Collection<BackupListResponse> backupsReceived) {
     // backupId -> [partitiondId -> partitionBackupStatus]
     final var statusByBackupAndPartition =
         backupsReceived.stream()
@@ -188,7 +205,7 @@ public final class BackupRequestHandler implements BackupApi {
                         Function.identity(),
                         this::mergeDuplicatePartitionBackupStatus)));
 
-    final var partitions = topologyManager.getTopology().getPartitions();
+    final var partitions = topologyManager.getTopology(physicalTenantId).getPartitions();
     // calculate status of each backup from the status of each partition
     return statusByBackupAndPartition.entrySet().stream()
         .map(
@@ -253,8 +270,8 @@ public final class BackupRequestHandler implements BackupApi {
             Comparator.comparingInt(comparingOrder::indexOf)));
   }
 
-  private CompletionStage<BrokerClusterState> checkTopologyComplete() {
-    final BrokerClusterState topology = topologyManager.getTopology();
+  private CompletionStage<BrokerClusterState> checkTopologyComplete(final String physicalTenantId) {
+    final BrokerClusterState topology = topologyManager.getTopology(physicalTenantId);
     if (topology == null) {
       return CompletableFuture.failedFuture(new NoTopologyAvailableException());
     }

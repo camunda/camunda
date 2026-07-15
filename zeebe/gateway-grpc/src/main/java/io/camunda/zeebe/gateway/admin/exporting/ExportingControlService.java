@@ -30,38 +30,43 @@ public class ExportingControlService implements ExportingControlApi {
   }
 
   @Override
-  public CompletableFuture<Void> pauseExporting() {
-    LOG.info("Pausing exporting on all partitions.");
-    final var topology = brokerClient.getTopologyManager().getTopology();
-    return broadcastOnTopology(topology, BrokerAdminRequest::pauseExporting);
+  public CompletableFuture<Void> pauseExporting(final String physicalTenantId) {
+    LOG.info("Pausing exporting on all partitions of physical tenant {}.", physicalTenantId);
+    final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
+    return broadcastOnTopology(physicalTenantId, topology, BrokerAdminRequest::pauseExporting);
   }
 
   @Override
-  public CompletableFuture<Void> softPauseExporting() {
-    LOG.info("Soft Pausing exporting on all partitions.");
-    final var topology = brokerClient.getTopologyManager().getTopology();
-    return broadcastOnTopology(topology, BrokerAdminRequest::softPauseExporting);
+  public CompletableFuture<Void> softPauseExporting(final String physicalTenantId) {
+    LOG.info("Soft Pausing exporting on all partitions of physical tenant {}.", physicalTenantId);
+    final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
+    return broadcastOnTopology(physicalTenantId, topology, BrokerAdminRequest::softPauseExporting);
   }
 
   @Override
-  public CompletableFuture<Void> resumeExporting() {
-    LOG.info("Resuming exporting on all partitions.");
-    final var topology = brokerClient.getTopologyManager().getTopology();
-    return broadcastOnTopology(topology, BrokerAdminRequest::resumeExporting);
+  public CompletableFuture<Void> resumeExporting(final String physicalTenantId) {
+    LOG.info("Resuming exporting on all partitions of physical tenant {}.", physicalTenantId);
+    final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
+    return broadcastOnTopology(physicalTenantId, topology, BrokerAdminRequest::resumeExporting);
   }
 
   private CompletableFuture<Void> broadcastOnTopology(
-      final BrokerClusterState topology, final Consumer<BrokerAdminRequest> configureRequest) {
+      final String physicalTenantId,
+      final BrokerClusterState topology,
+      final Consumer<BrokerAdminRequest> configureRequest) {
     validateTopology(topology);
 
     final var requests =
         topology.getPartitions().stream()
-            .map(partition -> broadcastOnPartition(topology, partition, configureRequest))
+            .map(
+                partition ->
+                    broadcastOnPartition(physicalTenantId, topology, partition, configureRequest))
             .toArray(CompletableFuture<?>[]::new);
     return CompletableFuture.allOf(requests);
   }
 
   private CompletableFuture<Void> broadcastOnPartition(
+      final String physicalTenantId,
       final BrokerClusterState topology,
       final Integer partitionId,
       final Consumer<BrokerAdminRequest> configureRequest) {
@@ -84,6 +89,7 @@ public class ExportingControlService implements ExportingControlApi {
             .map(
                 brokerId -> {
                   final var request = new BrokerAdminRequest();
+                  request.setPartitionGroup(physicalTenantId);
                   request.setBrokerId(brokerId);
                   request.setPartitionId(partitionId);
                   configureRequest.accept(request);
