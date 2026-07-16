@@ -21,17 +21,23 @@
       <arg column="IS_PREVIEW" javaType="boolean"/>
       <arg column="SCOPE" javaType="io.camunda.search.entities.ClusterVariableScope"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <!-- no METADATA column yet; queries select a literal NULL and the entity defaults it to an
-       empty list. We use the ObjectTypeHandler because no other typeHandler can map NULL to List -->
-      <arg column="METADATA" javaType="java.util.List"
-        typeHandler="org.apache.ibatis.type.ObjectTypeHandler"/>
+    </constructor>
+  </resultMap>
+
+  <resultMap id="clusterVariableMetadataResultMap"
+    type="io.camunda.db.rdbms.write.domain.ClusterVariableMetadataDbModel">
+    <constructor>
+      <idArg column="CLUSTER_VARIABLE_ID" javaType="java.lang.String"/>
+      <arg column="METADATA_KEY" javaType="java.lang.String"/>
+      <arg column="METADATA_VALUE" javaType="java.lang.String"/>
+      <arg column="METADATA_VALUE_NUMBER" javaType="java.lang.Double"/>
     </constructor>
   </resultMap>
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*) FROM (
       SELECT 1 as col
-      FROM ${prefix}CLUSTER_VARIABLE
+      FROM ${prefix}CLUSTER_VARIABLE cv
       <include refid="io.camunda.db.rdbms.sql.ClusterVariableMapper.searchFilter"/>
       ${count.limit}
     ) t
@@ -47,16 +53,14 @@
     VAR_FULL_VALUE,
     TENANT_ID,
     SCOPE,
-    IS_PREVIEW,
-    NULL AS METADATA
-    FROM ${prefix}CLUSTER_VARIABLE
+    IS_PREVIEW
+    FROM ${prefix}CLUSTER_VARIABLE cv
     <include refid="io.camunda.db.rdbms.sql.ClusterVariableMapper.searchFilter"/>
-    ) t
+    ) filtered
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
-
 
   <select id="get" parameterType="java.lang.String"
     resultMap="io.camunda.db.rdbms.sql.ClusterVariableMapper.clusterVariableResultMap">
@@ -67,10 +71,23 @@
     VAR_FULL_VALUE,
     TENANT_ID,
     SCOPE,
-    IS_PREVIEW,
-    NULL AS METADATA
-    FROM ${prefix}CLUSTER_VARIABLE
-    WHERE CLUSTER_VARIABLE_ID = #{id}
+    IS_PREVIEW
+    FROM ${prefix}CLUSTER_VARIABLE cv
+    WHERE cv.CLUSTER_VARIABLE_ID = #{id}
+  </select>
+
+  <select id="findMetadataByClusterVariableIds"
+    resultMap="io.camunda.db.rdbms.sql.ClusterVariableMapper.clusterVariableMetadataResultMap">
+    SELECT
+    CLUSTER_VARIABLE_ID,
+    METADATA_KEY,
+    METADATA_VALUE,
+    METADATA_VALUE_NUMBER
+    FROM ${prefix}CLUSTER_VARIABLE_METADATA
+    WHERE CLUSTER_VARIABLE_ID IN
+    <foreach collection="ids" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
   </select>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
@@ -83,6 +100,33 @@
             #{value},
             #{fullValue}, #{isPreview}, #{tenantId}, #{scope})
   </insert>
+
+  <insert id="insertMetadata" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
+    INSERT INTO ${prefix}CLUSTER_VARIABLE_METADATA (CLUSTER_VARIABLE_ID, METADATA_KEY, METADATA_VALUE,
+                                                     METADATA_VALUE_NUMBER)
+    VALUES
+    <foreach collection="metadata" item="entry" separator=", ">
+      (#{id}, #{entry.key}, #{entry.value}, #{entry.valueNumber, jdbcType=DOUBLE})
+    </foreach>
+  </insert>
+
+  <!-- Oracle requires INSERT ALL syntax for multi-row inserts -->
+  <insert id="insertMetadata" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel"
+    databaseId="oracle">
+    INSERT ALL
+    <foreach collection="metadata" item="entry">
+      INTO ${prefix}CLUSTER_VARIABLE_METADATA (CLUSTER_VARIABLE_ID, METADATA_KEY, METADATA_VALUE,
+                                                METADATA_VALUE_NUMBER)
+      VALUES (#{id}, #{entry.key}, #{entry.value}, #{entry.valueNumber, jdbcType=DOUBLE})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
+  <delete id="deleteMetadata" parameterType="java.lang.String">
+    DELETE
+    FROM ${prefix}CLUSTER_VARIABLE_METADATA
+    WHERE CLUSTER_VARIABLE_ID = #{id}
+  </delete>
 
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
     DELETE
@@ -158,6 +202,36 @@
 
       <if test="filter.isTruncated != null">
         AND IS_PREVIEW = #{filter.isTruncated}
+      </if>
+
+      <!-- metadata filters -->
+      <if test="metadataSearchFilters != null and !metadataSearchFilters.isEmpty()">
+        <foreach collection="metadataSearchFilters" item="metadataFilter">
+          <choose>
+            <when test="metadataFilter.notExists">
+              AND NOT EXISTS (
+              SELECT 1 FROM ${prefix}CLUSTER_VARIABLE_METADATA cvm
+              WHERE cvm.CLUSTER_VARIABLE_ID = cv.CLUSTER_VARIABLE_ID
+              AND cvm.METADATA_KEY = #{metadataFilter.key}
+              )
+            </when>
+            <otherwise>
+              AND EXISTS (
+              SELECT 1 FROM ${prefix}CLUSTER_VARIABLE_METADATA cvm
+              WHERE cvm.CLUSTER_VARIABLE_ID = cv.CLUSTER_VARIABLE_ID
+              AND cvm.METADATA_KEY = #{metadataFilter.key}
+              <foreach collection="metadataFilter.stringOperations" item="operation">
+                AND cvm.METADATA_VALUE
+                <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+              </foreach>
+              <foreach collection="metadataFilter.numericOperations" item="operation">
+                AND cvm.METADATA_VALUE_NUMBER
+                <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+              </foreach>
+              )
+            </otherwise>
+          </choose>
+        </foreach>
       </if>
     </where>
   </sql>
