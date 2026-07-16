@@ -245,6 +245,7 @@ import io.camunda.security.api.model.user.CamundaUserDTO;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -1655,6 +1656,7 @@ public final class SearchQueryResponseMapper {
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
+        .metadata(toMetadataMap(clusterVariableEntity))
         .value(
             requireNonNull(
                 !truncateValues
@@ -1681,8 +1683,23 @@ public final class SearchQueryResponseMapper {
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
+        .metadata(toMetadataMap(clusterVariableEntity))
         .value(requireNonNull(getFullValueIfPresent(clusterVariableEntity), "value"))
         .build();
+  }
+
+  private static Map<String, Object> toMetadataMap(
+      final ClusterVariableEntity clusterVariableEntity) {
+    final var metadata = clusterVariableEntity.metadata();
+    if (metadata == null || metadata.isEmpty()) {
+      return Map.of();
+    }
+    final Map<String, Object> result = new LinkedHashMap<>();
+    metadata.forEach(
+        entry ->
+            result.put(
+                entry.key(), entry.valueNumber() != null ? entry.valueNumber() : entry.value()));
+    return result;
   }
 
   private static @Nullable String getFullValueIfPresent(

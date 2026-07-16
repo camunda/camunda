@@ -78,6 +78,12 @@ public class GatewayRestPropertiesOverride {
     }
 
     private void populateFromValidators(final GatewayRestConfiguration override) {
+      final var maxClusterVariableMetadataSize =
+          camunda.getApi().getRest().getClusterVariable().getMaxMetadataSize();
+      if (maxClusterVariableMetadataSize != null) {
+        override.setMaxClusterVariableMetadataSize(maxClusterVariableMetadataSize);
+      }
+
       if (camunda.getData().getSecondaryStorage().getType() != SecondaryStorageType.rdbms) {
         return;
       }

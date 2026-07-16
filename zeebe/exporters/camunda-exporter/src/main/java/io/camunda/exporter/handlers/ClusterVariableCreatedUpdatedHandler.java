@@ -93,6 +93,7 @@ public class ClusterVariableCreatedUpdatedHandler
     final Map<String, Object> metadata = recordValue.getMetadata();
     entity.setMetadata(
         metadata.entrySet().stream()
+            .filter(e -> e.getValue() != null)
             .map(
                 e ->
                     new MetadataEntry(
