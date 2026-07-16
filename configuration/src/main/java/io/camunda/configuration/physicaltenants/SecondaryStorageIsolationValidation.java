@@ -48,6 +48,7 @@ class SecondaryStorageIsolationValidation implements CrossTenantValidation {
         });
 
     final List<String> collisions = new ArrayList<>();
+    final boolean[] anyRdbmsCollision = {false};
     tenantsByIdentity.forEach(
         (identity, tenantIds) -> {
           if (tenantIds.size() > 1) {
@@ -55,14 +56,23 @@ class SecondaryStorageIsolationValidation implements CrossTenantValidation {
                 String.format(
                     "tenants %s share the same secondary-storage location [%s]",
                     tenantIds, identity.describe()));
+            anyRdbmsCollision[0] |= identity.isRdbms();
           }
         });
 
     if (!collisions.isEmpty()) {
+      final String oracleHint =
+          anyRdbmsCollision[0]
+              ? " To isolate Oracle physical tenants by schema-per-user (distinct DB users on a "
+                  + "shared jdbc url), set data.secondary-storage.rdbms.database-vendor-id: oracle "
+                  + "on each tenant."
+              : "";
       throw new UnifiedConfigurationException(
           "Physical tenants must not share a secondary-storage location, or they would write into "
               + "the same database. Use a distinct connection, or a distinct index/table prefix per "
-              + "tenant. Conflicts: "
+              + "tenant."
+              + oracleHint
+              + " Conflicts: "
               + String.join("; ", collisions));
     }
   }

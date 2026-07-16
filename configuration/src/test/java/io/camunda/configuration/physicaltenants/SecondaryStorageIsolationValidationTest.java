@@ -216,6 +216,104 @@ class SecondaryStorageIsolationValidationTest {
         .withMessageContaining("tenantb");
   }
 
+  @Test
+  void shouldPassForOracleTenantsSharingJdbcUrlButDistinctSchemaPerUser() {
+    // given two Oracle tenants on the same jdbc url with no distinct prefix and no schema in the
+    // url, isolated only by distinct DB users (Oracle: schema == user), with database-vendor-id set
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", oracle("jdbc:oracle:thin:@db:1521/ORCL", null, "tenanta"),
+            "tenantb", oracle("jdbc:oracle:thin:@db:1521/ORCL", null, "tenantb"));
+
+    // when / then the distinct Oracle users (schemas) isolate the tenants — no collision
+    assertThatCode(() -> validation.validate(resolved)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRejectOracleTenantsSharingJdbcUrlAndSameUser() {
+    // given two Oracle tenants on the same jdbc url, same prefix, and the same DB user (schema)
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", oracle("jdbc:oracle:thin:@db:1521/ORCL", null, "shared"),
+            "tenantb", oracle("jdbc:oracle:thin:@db:1521/ORCL", null, "shared"));
+
+    // when / then the same user (schema) means the same location — rejected
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldRejectOracleTenantsSharingJdbcUrlWithBlankUsers() {
+    // given two Oracle tenants on the same jdbc url with blank users — blank yields no distinction
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", oracle("jdbc:oracle:thin:@db:1521/ORCL", null, ""),
+            "tenantb", oracle("jdbc:oracle:thin:@db:1521/ORCL", null, ""));
+
+    // when / then blank users cannot isolate — rejected
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldTreatOracleUsersAsCaseInsensitive() {
+    // given two Oracle tenants whose users differ only by case — Oracle folds unquoted identifiers
+    // to upper case, so they refer to the same schema
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", oracle("jdbc:oracle:thin:@db:1521/ORCL", null, "tenant"),
+            "tenantb", oracle("jdbc:oracle:thin:@db:1521/ORCL", null, "TENANT"));
+
+    // when / then case-insensitive users collapse to the same schema — rejected
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
+  @Test
+  void shouldRejectRdbmsTenantsWithDistinctUsersWhenVendorNotOracle() {
+    // MANDATORY REGRESSION GUARD: on a non-Oracle vendor (here unset), distinct DB users must NOT
+    // isolate — the user does not partition storage on PostgreSQL/MySQL/etc, so two tenants on the
+    // same url+prefix still collide. Guards against trading the Oracle false positive for a silent
+    // double-write (false negative) on other vendors.
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta", rdbmsWithUser("jdbc:postgresql://db:5432/camunda", null, "usera"),
+            "tenantb", rdbmsWithUser("jdbc:postgresql://db:5432/camunda", null, "userb"));
+
+    // when / then distinct users on a non-Oracle vendor are still rejected
+    final var thrown =
+        assertThatExceptionOfType(UnifiedConfigurationException.class)
+            .isThrownBy(() -> validation.validate(resolved))
+            .withMessageContaining("tenanta")
+            .withMessageContaining("tenantb");
+    // the RDBMS collision message surfaces the Oracle isolation hint
+    thrown.withMessageContaining("database-vendor-id");
+  }
+
+  @Test
+  void shouldRejectRdbmsTenantsWithDistinctUsersWhenVendorIsPostgres() {
+    // regression guard: distinct users must not isolate even when the vendor is explicitly set to a
+    // non-Oracle vendor — only Oracle keys storage on the connecting user
+    final Map<String, Camunda> resolved =
+        tenants(
+            "tenanta",
+                rdbmsWithVendor("jdbc:postgresql://db:5432/camunda", null, "usera", "postgresql"),
+            "tenantb",
+                rdbmsWithVendor("jdbc:postgresql://db:5432/camunda", null, "userb", "postgresql"));
+
+    // when / then distinct users on PostgreSQL are still rejected
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> validation.validate(resolved))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("tenantb");
+  }
+
   // --- helpers ---------------------------------------------------------------------------------
 
   private static Camunda es(final String url, final String indexPrefix) {
@@ -233,6 +331,24 @@ class SecondaryStorageIsolationValidationTest {
     ss.setType(SecondaryStorageType.rdbms);
     ss.getRdbms().setUrl(jdbcUrl);
     ss.getRdbms().setPrefix(prefix);
+    return camunda;
+  }
+
+  private static Camunda oracle(final String jdbcUrl, final String prefix, final String username) {
+    return rdbmsWithVendor(jdbcUrl, prefix, username, "oracle");
+  }
+
+  private static Camunda rdbmsWithUser(
+      final String jdbcUrl, final String prefix, final String username) {
+    final Camunda camunda = rdbms(jdbcUrl, prefix);
+    camunda.getData().getSecondaryStorage().getRdbms().setUsername(username);
+    return camunda;
+  }
+
+  private static Camunda rdbmsWithVendor(
+      final String jdbcUrl, final String prefix, final String username, final String vendorId) {
+    final Camunda camunda = rdbmsWithUser(jdbcUrl, prefix, username);
+    camunda.getData().getSecondaryStorage().getRdbms().setDatabaseVendorId(vendorId);
     return camunda;
   }
 
