@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http;
 
+import io.camunda.gateway.mapping.http.mapper.ProcessInstanceMapper;
 import io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
@@ -19,6 +20,8 @@ import org.springframework.http.ProblemDetail;
 
 public class SimpleRequestMapper {
 
+  private static final ProcessInstanceMapper PROCESS_INSTANCE_MAPPER = new ProcessInstanceMapper();
+
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
       final io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction request,
       final boolean multiTenancyEnabled) {
@@ -29,7 +32,7 @@ public class SimpleRequestMapper {
     }
 
     if (request.getProcessDefinitionId() != null && !request.getProcessDefinitionId().isBlank()) {
-      return RequestMapper.toCreateProcessInstance(
+      return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
           (ProcessInstanceCreationInstruction)
               ProcessInstanceCreationInstructionById.Builder.create()
                   .processDefinitionId(request.getProcessDefinitionId())
@@ -50,7 +53,7 @@ public class SimpleRequestMapper {
           multiTenancyEnabled);
     }
 
-    return RequestMapper.toCreateProcessInstance(
+    return PROCESS_INSTANCE_MAPPER.toCreateProcessInstance(
         (ProcessInstanceCreationInstruction)
             ProcessInstanceCreationInstructionByKey.Builder.create()
                 .processDefinitionKey(request.getProcessDefinitionKey())
