@@ -22,18 +22,27 @@ let processInstanceWithFailedDecision: ProcessInstance;
 let processInstanceWithSuccessfulDecision: ProcessInstance;
 let calledDecisionInstanceId: string;
 
+// Uses its own copy of the invoice DMN/BPMN (process id "invoiceNavigation",
+// decisions suffixed "Navigation") rather than the shared ./resources/invoice.bpmn
+// + invoiceBusinessDecisions.dmn also deployed by decisionFilters.spec.ts.
+// Both specs' instances previously landed under the same "Assign Approver
+// Group" decision name in Operate's shared decisions view, adding noise that
+// could push this spec's own row out of the rendered window under load.
 test.beforeAll(async () => {
   await deploy([
-    './resources/invoiceBusinessDecisions.dmn',
-    './resources/invoice.bpmn',
+    './resources/invoiceBusinessDecisionsNavigation.dmn',
+    './resources/invoiceNavigation.bpmn',
   ]);
 
   // No variables → decision evaluation error → FAILED decision instance
-  processInstanceWithFailedDecision = await createSingleInstance('invoice', 1);
+  processInstanceWithFailedDecision = await createSingleInstance(
+    'invoiceNavigation',
+    1,
+  );
 
   // Valid inputs → decision evaluates successfully → EVALUATED decision instance
   processInstanceWithSuccessfulDecision = await createSingleInstance(
-    'invoice',
+    'invoiceNavigation',
     1,
     {amount: 500, invoiceCategory: 'Misc'},
   );
@@ -162,13 +171,15 @@ test.describe('Decision Navigation', () => {
       await operateHomePage.clickDecisionsTab();
     });
 
-    await test.step('Filter decision instances by Invoice Classification', async () => {
-      await operateDecisionsPage.selectDecisionName('Invoice Classification');
-      // Wait for the filtered results to load — Assign Approver Group rows must be gone
+    await test.step('Filter decision instances by Invoice Classification Navigation', async () => {
+      await operateDecisionsPage.selectDecisionName(
+        'Invoice Classification Navigation',
+      );
+      // Wait for the filtered results to load — Assign Approver Group Navigation rows must be gone
       // before interacting, since both share the same processInstanceKey
       await expect(
         operateDecisionsPage.decisionInstancesList.getByText(
-          'Assign Approver Group',
+          'Assign Approver Group Navigation',
         ),
       ).toHaveCount(0);
     });
@@ -205,23 +216,25 @@ test.describe('Decision Navigation', () => {
       await operateHomePage.clickDecisionsTab();
     });
 
-    await test.step('Filter by Assign Approver Group decision', async () => {
-      await operateDecisionsPage.selectDecisionName('Assign Approver Group');
+    await test.step('Filter by Assign Approver Group Navigation decision', async () => {
+      await operateDecisionsPage.selectDecisionName(
+        'Assign Approver Group Navigation',
+      );
       await expect(operateDecisionsPage.decisionInstancesList).toBeVisible();
       await expect(
         operateDecisionsPage.decisionInstancesList.getByRole('row'),
       ).not.toHaveCount(0);
     });
 
-    await test.step('Open the Assign Approver Group decision instance', async () => {
-      // Scope to this run's Assign Approver Group row explicitly, so the correct
+    await test.step('Open the Assign Approver Group Navigation decision instance', async () => {
+      // Scope to this run's Assign Approver Group Navigation row explicitly, so the correct
       // decision instance is selected even if the name filter has not fully applied.
       const decisionInstanceLink = operateDecisionsPage.decisionInstancesList
         .getByRole('row')
         .filter({
           hasText: processInstanceWithSuccessfulDecision.processInstanceKey,
         })
-        .filter({hasText: 'Assign Approver Group'})
+        .filter({hasText: 'Assign Approver Group Navigation'})
         .getByRole('link', {name: /View decision instance/})
         .first();
       // Wait for the freshly created decision instance to be indexed and rendered.
@@ -240,14 +253,14 @@ test.describe('Decision Navigation', () => {
       });
     });
 
-    await test.step('Verify we are on the Assign Approver Group decision instance', async () => {
+    await test.step('Verify we are on the Assign Approver Group Navigation decision instance', async () => {
       await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
         timeout: 30_000,
       });
-      // Input column header for Assign Approver Group is "Invoice Classification"
+      // Input column header for Assign Approver Group Navigation is "Invoice Classification Navigation"
       await expect(
         operateDecisionInstancePage.decisionPanel.getByText(
-          'Invoice Classification',
+          'Invoice Classification Navigation',
         ),
       ).toBeVisible();
     });
@@ -256,13 +269,13 @@ test.describe('Decision Navigation', () => {
       await expect(operateDecisionInstancePage.drd).toBeVisible();
     });
 
-    await test.step('Click Invoice Classification node in the DRD', async () => {
+    await test.step('Click Invoice Classification Navigation node in the DRD', async () => {
       await operateDecisionInstancePage.clickDrdDecisionNode(
-        'Invoice Classification',
+        'Invoice Classification Navigation',
       );
     });
 
-    await test.step('Verify navigation to Invoice Classification instance with updated input data', async () => {
+    await test.step('Verify navigation to Invoice Classification Navigation instance with updated input data', async () => {
       await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
         timeout: 30000,
       });
