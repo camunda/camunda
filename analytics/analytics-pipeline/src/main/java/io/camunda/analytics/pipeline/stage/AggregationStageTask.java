@@ -25,6 +25,7 @@ import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.DatasetWriter;
 import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
 import io.camunda.analytics.serving.spi.WriteVersion;
+import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.CommitCut;
 import io.camunda.eventbridge.streaming.OwnershipEpoch;
 import io.camunda.eventbridge.streaming.Task;
@@ -33,6 +34,8 @@ import io.camunda.eventbridge.streaming.aggregate.SegmentDedup;
 import io.camunda.eventbridge.streaming.aggregate.SegmentDedup.StreamKey;
 import io.camunda.eventbridge.streaming.aggregate.SegmentMergingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.SegmentPosition;
+import io.camunda.eventbridge.streaming.changelog.ChangelogPublisher;
+import io.camunda.eventbridge.streaming.changelog.ChangelogRecord;
 import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
 import io.camunda.eventbridge.streaming.shuffle.CellDelta;
@@ -89,6 +92,9 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
 
   private static final Logger LOG = LoggerFactory.getLogger(AggregationStageTask.class);
 
+  /** Sentinel changelog position — never actually published; a bug if ever persisted. */
+  private static final long NO_CHANGELOG_POSITION = -1L;
+
   private final int partition;
   private final OwnershipEpoch epoch;
   private final DatasetStore datasetStore;
@@ -98,6 +104,10 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private final KeyValueStore<DbInt, DbLong> offsets;
   private final KeyValueStore<DbBytes, DbBytes> dedupStore;
   private final KeyValueStore<DbBytes, DbBytes> parkedStore;
+  // Null when the changelog is disabled for this partition (streaming ADR 0009 Decision 1): the
+  // cut's publish() then skips the changelog append/ack, and persist() writes no position.
+  private final ChangelogPublisher changelogPublisher;
+  private final KeyValueStore<DbInt, DbLong> changelogPositions;
   private final DatasetCatalog catalog;
   // Nullable: without a registry the late-drop alarms still WARN, they just count nowhere.
   private final MeterRegistry meterRegistry;
@@ -110,6 +120,8 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private final DbBytes dedupValue = new DbBytes();
   private final DbBytes parkedKey = new DbBytes();
   private final DbBytes parkedValue = new DbBytes();
+  private final DbInt changelogPositionKey = new DbInt();
+  private final DbLong changelogPositionValue = new DbLong();
 
   /**
    * The dedup watermarks as last persisted, so each commit writes only the streams whose admission
@@ -172,6 +184,45 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final MeterRegistry meterRegistry,
       final long reloadCheckIntervalMs,
       final long nowMs) {
+    // No changelog: the streaming ADR 0009 changelog stage is opt-in per call site; existing
+    // callers (and this module's tests) that do not pass an EventBridgeClient get today's
+    // behavior unchanged.
+    this(
+        partition,
+        epoch,
+        datasetStore,
+        servingWriter,
+        provider,
+        cellStore,
+        offsets,
+        dedupStore,
+        parkedStore,
+        catalog,
+        meterRegistry,
+        reloadCheckIntervalMs,
+        nowMs,
+        null,
+        null,
+        false);
+  }
+
+  AggregationStageTask(
+      final int partition,
+      final OwnershipEpoch epoch,
+      final DatasetStore datasetStore,
+      final VersionedDatasetWriter servingWriter,
+      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
+      final KeyValueStore<DbBytes, DbBytes> cellStore,
+      final KeyValueStore<DbInt, DbLong> offsets,
+      final KeyValueStore<DbBytes, DbBytes> dedupStore,
+      final KeyValueStore<DbBytes, DbBytes> parkedStore,
+      final DatasetCatalog catalog,
+      final MeterRegistry meterRegistry,
+      final long reloadCheckIntervalMs,
+      final long nowMs,
+      final EventBridgeClient changelogClient,
+      final String changelogTopic,
+      final boolean changelogEnabled) {
     this.partition = partition;
     this.meterRegistry = meterRegistry;
     flowMetrics = FlowMetrics.of(meterRegistry, "aggregation", partition);
@@ -187,6 +238,15 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     this.offsets = offsets;
     this.dedupStore = dedupStore;
     this.parkedStore = parkedStore;
+    // The changelog is opt-in per this partition (streaming ADR 0009 Decision 1): one keyed batch
+    // publish per cut, to the shard's own changelog partition (index == this facts partition).
+    changelogPublisher =
+        changelogEnabled
+            ? new ChangelogPublisher(changelogClient, changelogTopic, partition)
+            : null;
+    changelogPositions =
+        provider.keyValueStore(
+            AnalyticsColumnFamilies.CHANGELOG_POSITION, new DbInt(), new DbLong());
     // Restore the dedup's admission watermarks once, at task open — the one SegmentDedup instance
     // then survives every live reload, so a reload never forgets what was already admitted.
     dedupStore.forEach(
@@ -246,6 +306,38 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final long reloadCheckIntervalMs,
       final MeterRegistry meterRegistry,
       final StoreTuning storeTuning) {
+    return open(
+        partition,
+        epoch,
+        baseDir,
+        datasetStore,
+        catalog,
+        reloadCheckIntervalMs,
+        meterRegistry,
+        storeTuning,
+        null,
+        null,
+        false);
+  }
+
+  /**
+   * As {@link #open(int, OwnershipEpoch, String, DatasetStore, DatasetCatalog, long, MeterRegistry,
+   * StoreTuning)}, additionally wiring this partition's changelog (streaming ADR 0009 Decision 1)
+   * when {@code changelogEnabled}: every cut's frozen delta is appended, keyed, to {@code
+   * changelogTopic}'s partition {@code partition} before the local transaction runs.
+   */
+  public static AggregationStageTask open(
+      final int partition,
+      final OwnershipEpoch epoch,
+      final String baseDir,
+      final DatasetStore datasetStore,
+      final DatasetCatalog catalog,
+      final long reloadCheckIntervalMs,
+      final MeterRegistry meterRegistry,
+      final StoreTuning storeTuning,
+      final EventBridgeClient changelogClient,
+      final String changelogTopic,
+      final boolean changelogEnabled) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
         RocksDbStateStoreProvider.open(
             new File(baseDir + "-p" + partition), meterRegistry, storeTuning);
@@ -275,7 +367,10 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
         catalog,
         meterRegistry,
         reloadCheckIntervalMs,
-        System.currentTimeMillis());
+        System.currentTimeMillis(),
+        changelogClient,
+        changelogTopic,
+        changelogEnabled);
   }
 
   /**
@@ -641,6 +736,11 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     final List<SnapshotSampler> samplers = activeSamplers;
     samplers.forEach(SnapshotSampler::freeze);
 
+    // Holds the changelog's assigned marker position (P) from publish() for persist() to store —
+    // the two phases share this one cut's mutable slot, never touched concurrently (publish()
+    // always completes, or throws, before persist() runs; see PartitionCommitter#persistCut).
+    final long[] changelogPosition = {NO_CHANGELOG_POSITION};
+
     return new CommitCut() {
 
       @Override
@@ -649,6 +749,17 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
         // advances; the upserts are idempotent by key, so a replay re-writes rather than
         // duplicates.
         servingWriter.publishFrozen();
+        // The changelog stage (streaming ADR 0009 Decisions 1/2): append this cut's frozen delta
+        // — every merger's changed cells and evicted-durable cells — plus the offset marker, and
+        // block for the broker's ack. A publish failure here throws before persist() ever runs,
+        // failing the whole cut (see ChangelogPublisher and CommitCut#publish's javadoc).
+        if (changelogPublisher != null) {
+          final List<ChangelogRecord> records = new ArrayList<>();
+          for (final SegmentMergingAggregation<?, ?> merger : mergers) {
+            records.addAll(merger.changelogRecords());
+          }
+          changelogPosition[0] = changelogPublisher.publish(records, offset);
+        }
       }
 
       @Override
@@ -678,6 +789,14 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
               for (final byte[] key : parkedDeleteBatch) {
                 parkedKey.wrapBytes(key);
                 parkedStore.delete(parkedKey);
+              }
+              if (changelogPublisher != null) {
+                // The changelog position P: persisted alongside the state delta and the barrier's
+                // offset, in the same transaction — today write-only (no reader exists yet; the
+                // changelog-follower standby is ADR 0009 Decisions 5/6, not yet built).
+                changelogPositionKey.wrapInt(partition);
+                changelogPositionValue.wrapLong(changelogPosition[0]);
+                changelogPositions.put(changelogPositionKey, changelogPositionValue);
               }
               mergers.forEach(SegmentMergingAggregation::persistFrozen);
               samplers.forEach(SnapshotSampler::persistFrozen);

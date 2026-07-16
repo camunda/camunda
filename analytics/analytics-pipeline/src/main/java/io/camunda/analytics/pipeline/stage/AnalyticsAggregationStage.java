@@ -15,6 +15,7 @@ import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
+import io.camunda.eventbridge.streaming.changelog.ChangelogTopics;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -84,6 +85,13 @@ public final class AnalyticsAggregationStage {
     // topology from it at a commit boundary when its version moves (live reload — ADR 0005).
     final DatasetCatalog catalog = new DatasetCatalog(metadataStore);
 
+    // The changelog (streaming ADR 0009 Decision 1): one COMPACT topic for this stage, one
+    // partition per facts partition — provisioned idempotently, same tolerance as the facts
+    // topic's own creation below.
+    if (config.changelogEnabled()) {
+      ChangelogTopics.ensure(client, config.changelogTopic(), config.factsPartitions());
+    }
+
     // One codec for this runtime's deserializer: the runtime invokes it only on its single
     // source-loop thread, so the codec's reused decode flyweights are thread-confined.
     final ShuffleEnvelopeCodec codec = new ShuffleEnvelopeCodec();
@@ -110,7 +118,10 @@ public final class AnalyticsAggregationStage {
                         catalog,
                         config.reloadCheckIntervalMs(),
                         meterRegistry,
-                        config.storeTuning()))
+                        config.storeTuning(),
+                        client,
+                        config.changelogTopic(),
+                        config.changelogEnabled()))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(config.checkpointInterval())
