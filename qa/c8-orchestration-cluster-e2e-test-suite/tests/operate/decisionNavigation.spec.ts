@@ -262,11 +262,19 @@ test.describe('Decision Navigation', () => {
           });
         },
         onFailure: async () => {
-          // page.reload() drops the name filter — it's client-side React
-          // state, not a URL parameter (confirmed via a failure snapshot
-          // showing the empty Name combobox after reload) — so re-apply it
-          // every time, whether we're retrying from the list or from a
-          // decision instance page that got redirected back to it.
+          // A failed attempt can leave us on either page: the decisions list
+          // (if the row/click itself failed) or a decision instance detail
+          // page (if decisionPanel was just the slow part, or Operate
+          // redirected there before bouncing back). selectDecisionName()
+          // needs the list's Name combobox, which the detail page doesn't
+          // have — clickDecisionsTab() first guarantees we land on the list
+          // regardless of which page we're actually on, via the persistent
+          // nav bar rather than assuming reload's target. Then reload, since
+          // the name filter is client-side React state, not a URL parameter
+          // (confirmed via a failure snapshot showing the empty Name
+          // combobox after a reload that didn't navigate first), so it needs
+          // re-applying every time regardless.
+          await operateHomePage.clickDecisionsTab();
           await page.reload();
           await operateDecisionsPage.selectDecisionName(
             'Assign Approver Group Navigation',
