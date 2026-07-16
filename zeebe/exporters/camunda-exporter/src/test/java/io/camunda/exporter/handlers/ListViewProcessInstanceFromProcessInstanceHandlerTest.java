@@ -71,7 +71,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         "ELEMENT_COMPLETED",
         "ELEMENT_TERMINATED",
         "ELEMENT_MIGRATED",
-        "ANCESTOR_MIGRATED"
+        "ANCESTOR_MIGRATED",
+        "SUSPENDED",
+        "RESUMED"
       },
       mode = Mode.INCLUDE)
   public void shouldHandleRecord(final ProcessInstanceIntent intent) {
@@ -90,7 +92,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         "ELEMENT_COMPLETED",
         "ELEMENT_TERMINATED",
         "ELEMENT_MIGRATED",
-        "ANCESTOR_MIGRATED"
+        "ANCESTOR_MIGRATED",
+        "SUSPENDED",
+        "RESUMED"
       },
       mode = Mode.EXCLUDE)
   public void shouldNotHandleRecord(final ProcessInstanceIntent intent) {

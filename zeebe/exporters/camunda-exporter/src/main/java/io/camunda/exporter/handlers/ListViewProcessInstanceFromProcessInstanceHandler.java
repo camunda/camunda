@@ -45,6 +45,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
   private static final Set<Intent> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
   private static final Set<Intent> PI_AND_AI_FINISH_STATES =
       Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
+  private static final Set<Intent> SUSPEND_RESUME_STATES = Set.of(SUSPENDED, RESUMED);
 
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final String indexName;
@@ -73,7 +74,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       return PI_AND_AI_START_STATES.contains(intent)
           || PI_AND_AI_FINISH_STATES.contains(intent)
           || ELEMENT_MIGRATED.equals(intent)
-          || ANCESTOR_MIGRATED.equals(intent);
+          || ANCESTOR_MIGRATED.equals(intent)
+          || SUSPEND_RESUME_STATES.contains(intent);
     }
     return false;
   }
