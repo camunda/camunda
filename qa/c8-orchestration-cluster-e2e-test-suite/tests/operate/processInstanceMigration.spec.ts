@@ -720,6 +720,11 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
+      // This step is not sharing data with anything else and already retries
+      // with reload — it failed in CI anyway after 3 attempts. Unlike the
+      // other fixes in this file, this isn't a data-uniqueness issue; it's
+      // backend contention from concurrently-running specs outlasting the
+      // retry budget. Bumping retries is a stopgap, not a fix for that.
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -731,7 +736,7 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();
         },
-        maxRetries: 3,
+        maxRetries: 5,
       });
     });
   });
