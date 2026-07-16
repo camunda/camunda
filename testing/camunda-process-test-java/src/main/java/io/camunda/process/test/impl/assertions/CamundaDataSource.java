@@ -26,7 +26,6 @@ import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
-import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
@@ -47,12 +46,22 @@ import java.util.function.Consumer;
 
 public class CamundaDataSource {
 
-  private static final Consumer<AnyPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
+  /**
+   * The default page size used when fetching element instances if no custom limit is configured.
+   * Kept for backward compatibility.
+   */
+  public static final int DEFAULT_QUERY_PAGE_LIMIT = 100;
 
   private final CamundaClient client;
+  private final int queryPageLimit;
 
   public CamundaDataSource(final CamundaClient client) {
+    this(client, DEFAULT_QUERY_PAGE_LIMIT);
+  }
+
+  public CamundaDataSource(final CamundaClient client, final int queryPageLimit) {
     this.client = client;
+    this.queryPageLimit = queryPageLimit;
   }
 
   public byte[] getDocumentContent(final DocumentReferenceResponse reference) {
@@ -89,7 +98,7 @@ public class CamundaDataSource {
     return client
         .newProcessDefinitionSearchRequest()
         .filter(filter -> filter.processDefinitionId(bpmnProcessId))
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(queryPageLimit))
         .sort(sort -> sort.version().desc())
         .send()
         .join()
@@ -116,7 +125,7 @@ public class CamundaDataSource {
         .newElementInstanceSearchRequest()
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(queryPageLimit))
         .send()
         .join()
         .items();
@@ -132,7 +141,7 @@ public class CamundaDataSource {
         .newVariableSearchRequest()
         .filter(filter)
         .withFullValues()
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(queryPageLimit))
         .send()
         .join()
         .items();
@@ -161,7 +170,7 @@ public class CamundaDataSource {
         .newProcessInstanceSearchRequest()
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(queryPageLimit))
         .send()
         .join()
         .items();
@@ -172,7 +181,7 @@ public class CamundaDataSource {
         .newIncidentSearchRequest()
         .filter(filter)
         .sort(sort -> sort.creationTime().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(queryPageLimit))
         .send()
         .join()
         .items();
@@ -183,7 +192,7 @@ public class CamundaDataSource {
         .newUserTaskSearchRequest()
         .filter(filter)
         .sort(sort -> sort.creationDate().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(queryPageLimit))
         .send()
         .join()
         .items();
@@ -191,7 +200,13 @@ public class CamundaDataSource {
 
   public List<DecisionInstance> findDecisionInstances(
       final Consumer<DecisionInstanceFilter> filter) {
-    return client.newDecisionInstanceSearchRequest().filter(filter).send().join().items();
+    return client
+        .newDecisionInstanceSearchRequest()
+        .filter(filter)
+        .page(page -> page.limit(queryPageLimit))
+        .send()
+        .join()
+        .items();
   }
 
   public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
@@ -203,7 +218,7 @@ public class CamundaDataSource {
     return client
         .newDecisionDefinitionSearchRequest()
         .filter(f -> f.decisionDefinitionId(decisionDefinitionId))
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(queryPageLimit))
         .sort(sort -> sort.version().desc())
         .send()
         .join()
@@ -230,7 +245,7 @@ public class CamundaDataSource {
         .newMessageSubscriptionSearchRequest()
         .filter(filter)
         .sort(sort -> sort.lastUpdatedDate().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(queryPageLimit))
         .send()
         .join()
         .items();
@@ -242,7 +257,7 @@ public class CamundaDataSource {
         .newCorrelatedMessageSubscriptionSearchRequest()
         .filter(filter)
         .sort(sort -> sort.correlationTime().asc())
-        .page(DEFAULT_PAGE_REQUEST)
+        .page(page -> page.limit(queryPageLimit))
         .send()
         .join()
         .items();

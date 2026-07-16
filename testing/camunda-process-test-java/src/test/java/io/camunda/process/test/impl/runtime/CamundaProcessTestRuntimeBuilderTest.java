@@ -141,4 +141,27 @@ public class CamundaProcessTestRuntimeBuilderTest {
         .first()
         .isInstanceOf(DummyContainerProvider.class);
   }
+
+  @Test
+  void shouldUseDefaultQueryPageLimit() {
+    // expect
+    assertThat(runtimeBuilder.getQueryPageLimit()).isEqualTo(100);
+  }
+
+  @Test
+  void shouldOverrideQueryPageLimit() {
+    // when
+    runtimeBuilder.withQueryPageLimit(500);
+
+    // then
+    assertThat(runtimeBuilder.getQueryPageLimit()).isEqualTo(500);
+  }
+
+  @Test
+  void shouldRejectNonPositiveQueryPageLimit() {
+    // when/then
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> runtimeBuilder.withQueryPageLimit(0))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must be greater than 0");
+  }
 }

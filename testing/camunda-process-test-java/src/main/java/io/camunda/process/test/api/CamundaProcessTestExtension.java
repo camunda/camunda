@@ -314,7 +314,8 @@ public class CamundaProcessTestExtension
 
     // initialize assertions
     final CamundaDataSource dataSource =
-        new CamundaDataSource(camundaProcessTestContext.createClient());
+        new CamundaDataSource(
+            camundaProcessTestContext.createClient(), runtimeBuilder.getQueryPageLimit());
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -379,7 +380,8 @@ public class CamundaProcessTestExtension
 
     try {
       final CamundaDataSource dataSource =
-          new CamundaDataSource(camundaProcessTestContext.createClient());
+          new CamundaDataSource(
+              camundaProcessTestContext.createClient(), runtimeBuilder.getQueryPageLimit());
       final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
       coverageCollector.collectTestRunCoverage(
           context.getRequiredTestClass(),

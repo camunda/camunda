@@ -24,9 +24,11 @@ public class AssertionProperties {
 
   public static final String PROPERTY_NAME_ASSERTION_TIMEOUT = "assertion.timeout";
   public static final String PROPERTY_NAME_ASSERTION_INTERVAL = "assertion.interval";
+  public static final String PROPERTY_NAME_QUERY_PAGE_LIMIT = "assertion.queryPageLimit";
 
   private final Duration assertionTimeout;
   private final Duration assertionInterval;
+  private final Integer queryPageLimit;
 
   public AssertionProperties(final Properties properties) {
     assertionTimeout =
@@ -36,6 +38,10 @@ public class AssertionProperties {
     assertionInterval =
         PropertiesUtil.getPropertyOrNull(
             properties, PROPERTY_NAME_ASSERTION_INTERVAL, Duration::parse);
+
+    queryPageLimit =
+        PropertiesUtil.getPropertyOrNull(
+            properties, PROPERTY_NAME_QUERY_PAGE_LIMIT, Integer::parseInt);
   }
 
   public Optional<Duration> getAssertionTimeout() {
@@ -44,5 +50,17 @@ public class AssertionProperties {
 
   public Optional<Duration> getAssertionInterval() {
     return Optional.ofNullable(assertionInterval);
+  }
+
+  /**
+   * The page size used when fetching entities (element instances, process instances, variables,
+   * user tasks, decision instances, etc.) for assertions and coverage reporting. Defaults to 100 if
+   * not configured.
+   *
+   * <p>Can be set via the {@code assertion.queryPageLimit} property or the {@code
+   * CAMUNDA_PROCESSTEST_ASSERTION_QUERYPAGELIMIT} environment variable.
+   */
+  public Optional<Integer> getQueryPageLimit() {
+    return Optional.ofNullable(queryPageLimit);
   }
 }

@@ -20,6 +20,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
@@ -110,6 +111,10 @@ public class CamundaProcessTestRuntimeBuilder {
       CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES.getAssertionTimeout();
   private Optional<Duration> assertionInterval =
       CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES.getAssertionInterval();
+  private int queryPageLimit =
+      CamundaProcessTestRuntimeDefaults.ASSERTION_PROPERTIES
+          .getQueryPageLimit()
+          .orElse(CamundaDataSource.DEFAULT_QUERY_PAGE_LIMIT);
 
   // ============ For testing =================
 
@@ -313,6 +318,23 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  /**
+   * Sets the page size used when fetching entities (element instances, process instances,
+   * variables, user tasks, decision instances, etc.) for assertions and coverage reporting.
+   * Increase this if a process instance under test can produce more than the default 100 entities,
+   * otherwise the latest-started (often terminal) entities may be excluded from assertions and
+   * coverage results.
+   *
+   * @param queryPageLimit the maximum number of entities to fetch per query, must be greater than 0
+   */
+  public CamundaProcessTestRuntimeBuilder withQueryPageLimit(final int queryPageLimit) {
+    if (queryPageLimit <= 0) {
+      throw new IllegalArgumentException("queryPageLimit must be greater than 0");
+    }
+    this.queryPageLimit = queryPageLimit;
+    return this;
+  }
+
   // ============ Build =================
 
   private void loadContainerProvidersFromServiceLoader() {
@@ -480,5 +502,9 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public Optional<Duration> getAssertionInterval() {
     return assertionInterval;
+  }
+
+  public int getQueryPageLimit() {
+    return queryPageLimit;
   }
 }

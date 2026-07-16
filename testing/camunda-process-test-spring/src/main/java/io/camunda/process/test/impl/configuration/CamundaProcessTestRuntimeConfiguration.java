@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.util.Collections;
 import java.util.List;
@@ -52,6 +53,8 @@ public class CamundaProcessTestRuntimeConfiguration {
       CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME;
 
   private boolean multiTenancyEnabled = false;
+
+  private int queryPageLimit = CamundaDataSource.DEFAULT_QUERY_PAGE_LIMIT;
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
@@ -232,6 +235,14 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setMultiTenancyEnabled(final boolean multiTenancyEnabled) {
     this.multiTenancyEnabled = multiTenancyEnabled;
+  }
+
+  public int getQueryPageLimit() {
+    return queryPageLimit;
+  }
+
+  public void setQueryPageLimit(final int queryPageLimit) {
+    this.queryPageLimit = queryPageLimit;
   }
 
   public CoverageReportConfiguration getCoverage() {
