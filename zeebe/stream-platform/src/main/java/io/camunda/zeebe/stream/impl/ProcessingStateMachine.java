@@ -229,21 +229,31 @@ public final class ProcessingStateMachine {
   }
 
   void tryToReadNextRecord() {
-    final var hasNext = logStreamReader.hasNext();
-
+    final boolean hasNext;
     if (currentRecord != null) {
       final var previousRecord = currentRecord;
+      final var previousPosition = previousRecord.getPosition();
+      final var isAnEventOrARejection = isEventOrRejection.applies(previousRecord);
+
+      // NOTE: hasNext() may advance the underlying storage reader and can switch/close segment
+      // readers
+      // when crossing a segment boundary. If the previous segment is marked for deletion and has
+      // no remaining readers, it may be unmapped, so avoid dereferencing `previousRecord` after
+      // calling hasNext().
+      hasNext = logStreamReader.hasNext();
+
       // All commands cause a follow-up event or rejection, which means the processor
       // reached the end of the log if:
       //  * the last record was an event or rejection
       //  * and there is no next record on the log
       //  * and this was the last record written (records that have been written to the dispatcher
       //    might not be written to the log yet, which means they will appear shortly after this)
-      reachedEnd =
-          isEventOrRejection.applies(previousRecord)
-              && !hasNext
-              && lastWrittenPosition <= previousRecord.getPosition();
+      reachedEnd = isAnEventOrARejection && !hasNext && lastWrittenPosition <= previousPosition;
+    } else {
+      hasNext = logStreamReader.hasNext();
     }
+    // currentRecord cannot be accessed anymore until we replace with the next one by calling
+    // `next()`
 
     if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
       currentRecord = logStreamReader.next();
