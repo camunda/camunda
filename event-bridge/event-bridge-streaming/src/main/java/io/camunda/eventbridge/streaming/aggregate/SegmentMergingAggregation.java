@@ -9,6 +9,7 @@ package io.camunda.eventbridge.streaming.aggregate;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.WindowedCellState.CheckpointDelta;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
@@ -139,6 +140,8 @@ public final class SegmentMergingAggregation<K, ACC> {
 
   private FinalizationListener<K, ACC> finalizationListener = (cell, value) -> {};
   private LateDropListener<K> lateDropListener = (cell, eventTimeHint, maxEventTime) -> {};
+  // Optional flow instrumentation (records/deltas lag pack); NOOP until the owning task wires it.
+  private FlowMetrics metrics = FlowMetrics.NOOP;
 
   // Heap working set: one running accumulator per open cell, indexed by window end for due-window
   // finalization and tracked for flush/checkpoint deltas.
@@ -229,6 +232,24 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   /**
+   * Wires the flow instrumentation (before processing starts); at most one. Optional — without it
+   * every recording is a zero-allocation no-op ({@link FlowMetrics#NOOP}).
+   */
+  public void metrics(final FlowMetrics metrics) {
+    this.metrics = metrics;
+  }
+
+  /**
+   * The current stream-time clock — the min over the live sources' own max event times, clamped
+   * monotonically non-decreasing (see the class javadoc). {@code Long.MIN_VALUE} before any source
+   * has spoken. Exposed so an owning task can gauge {@code now - clock()} as the "am I keeping up"
+   * watermark lag, the same way the owning task exposes the commit-cut timers.
+   */
+  public long clock() {
+    return clock;
+  }
+
+  /**
    * Wires the wall clock and the source idle timeout (before processing starts). {@code nowMs}
    * feeds only the idleness bookkeeping — event time never derives from it.
    */
@@ -296,6 +317,7 @@ public final class SegmentMergingAggregation<K, ACC> {
     }
     open.markChanged(cell);
     serializedSinceFlush.remove(cell); // the cached serialized form (if any) is stale now
+    metrics.countDeltaMerged();
     observeSource(sourceId, eventTimeHint);
     advanceClock();
   }

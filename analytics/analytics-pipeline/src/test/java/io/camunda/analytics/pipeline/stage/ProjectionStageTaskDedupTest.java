@@ -25,6 +25,7 @@ import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -107,6 +108,21 @@ final class ProjectionStageTaskDedupTest {
     // healthy flow
     assertThat(counterValue("analytics.projection.duplicate.skipped")).isEqualTo(2.0);
     assertThat(counterValue("analytics.projection.fold.row.missing")).isZero();
+    // and the library-level lag pack sees every processed record and every dedup skip
+    assertThat(
+            meterRegistry
+                .get("eb.streaming.records.processed")
+                .tag("stage", "projection")
+                .counter()
+                .count())
+        .isEqualTo(4.0); // 2 distinct facts + 2 re-appended duplicates
+    assertThat(
+            meterRegistry
+                .get("eb.streaming.dedup.skipped")
+                .tag("stage", "projection")
+                .counter()
+                .count())
+        .isEqualTo(2.0);
   }
 
   @Test
@@ -165,6 +181,7 @@ final class ProjectionStageTaskDedupTest {
             Long.MAX_VALUE, // no reload in these tests
             false,
             new MicrometerProjectionMetrics(meterRegistry, EB_PARTITION),
+            FlowMetrics.of(meterRegistry, "projection"),
             0L);
     task.init();
   }

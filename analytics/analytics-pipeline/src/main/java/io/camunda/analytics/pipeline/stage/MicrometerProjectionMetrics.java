@@ -7,11 +7,14 @@
  */
 package io.camunda.analytics.pipeline.stage;
 
+import io.camunda.analytics.fact.FactType;
 import io.camunda.analytics.projection.ProjectionMetrics;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * The base projection's correctness signals as Micrometer counters, one set per source partition.
@@ -20,7 +23,9 @@ import io.micrometer.core.instrument.MeterRegistry;
  * zero — see {@link ProjectionMetrics}. Per cube it additionally exposes the gate counters ({@code
  * analytics.projection.cube.facts.inspected}/{@code .folded}) and the silent-empty-cube alarm gauge
  * ({@code analytics.projection.cube.silent} — 1 while a cube has inspected many admitted facts and
- * folded none).
+ * folded none). {@code analytics.facts.emitted} counts the base projection's fan-out into the fact
+ * dispatcher, one pre-resolved counter per {@link FactType} so the hot path only ever looks up an
+ * existing meter, never registers one.
  */
 public final class MicrometerProjectionMetrics implements ProjectionMetrics {
 
@@ -29,6 +34,7 @@ public final class MicrometerProjectionMetrics implements ProjectionMetrics {
   private final Counter duplicateSkipped;
   private final Counter foldRowMissing;
   private final Counter factDropped;
+  private final Map<FactType, Counter> factsEmitted = new EnumMap<>(FactType.class);
 
   public MicrometerProjectionMetrics(final MeterRegistry registry, final int partition) {
     this.registry = registry;
@@ -49,6 +55,15 @@ public final class MicrometerProjectionMetrics implements ProjectionMetrics {
             .description("Must stay zero; a derivation lost its fact")
             .tag("partition", partitionTag)
             .register(registry);
+    for (final FactType factType : FactType.values()) {
+      factsEmitted.put(
+          factType,
+          Counter.builder("analytics.facts.emitted")
+              .description("Facts the base projection emitted into the dispatch fan-out")
+              .tag("partition", partitionTag)
+              .tag("factType", factType.name())
+              .register(registry));
+    }
   }
 
   @Override
@@ -64,6 +79,11 @@ public final class MicrometerProjectionMetrics implements ProjectionMetrics {
   @Override
   public void factDropped() {
     factDropped.increment();
+  }
+
+  @Override
+  public void factEmitted(final FactType factType) {
+    factsEmitted.get(factType).increment();
   }
 
   /**

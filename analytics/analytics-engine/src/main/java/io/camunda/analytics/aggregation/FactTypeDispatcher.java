@@ -9,6 +9,7 @@ package io.camunda.analytics.aggregation;
 
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
+import io.camunda.analytics.projection.ProjectionMetrics;
 import io.camunda.eventbridge.streaming.processor.Processor;
 import io.camunda.eventbridge.streaming.processor.ProcessorContext;
 import java.util.ArrayList;
@@ -28,16 +29,25 @@ import java.util.Objects;
  * nodes' wiring order — so the same facts reach the same nodes in the same order as the previous
  * broadcast, minus the deliveries each node would have rejected by fact type anyway. Rebuilt (and
  * re-registered) on every topology install, so a catalog reload recompiles the dispatch table.
+ *
+ * <p>This is also the fan-out point the base projection emits facts through, so it doubles as the
+ * {@code analytics.facts.emitted} seam ({@link ProjectionMetrics#factEmitted}).
  */
 public final class FactTypeDispatcher implements Processor<Fact, Fact> {
 
   // Per fact type, the child names to forward to, in registration (= wiring) order; broadcast
   // children appear in every type's list so their relative order is preserved.
   private final Map<FactType, List<String>> childrenByType = new EnumMap<>(FactType.class);
+  private final ProjectionMetrics metrics;
 
   private ProcessorContext<Fact> context;
 
   public FactTypeDispatcher() {
+    this(ProjectionMetrics.NOOP);
+  }
+
+  public FactTypeDispatcher(final ProjectionMetrics metrics) {
+    this.metrics = metrics;
     for (final FactType type : FactType.values()) {
       childrenByType.put(type, new ArrayList<>());
     }
@@ -65,6 +75,7 @@ public final class FactTypeDispatcher implements Processor<Fact, Fact> {
 
   @Override
   public void process(final Fact fact) {
+    metrics.factEmitted(fact.factType());
     for (final String child : childrenByType.get(fact.factType())) {
       context.forward(fact, child);
     }

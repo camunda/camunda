@@ -66,6 +66,7 @@ final class AggregationStageTaskDedupPersistenceTest {
   private DatasetRegistry registry;
   private DatasetCatalog catalog;
   private RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
+  private SimpleMeterRegistry meterRegistry;
   private AggregationStageTask task;
 
   @BeforeEach
@@ -80,6 +81,20 @@ final class AggregationStageTaskDedupPersistenceTest {
     if (task != null) {
       task.close(); // also closes the dataset store and the provider
     }
+  }
+
+  @Test
+  void shouldExposeANonNegativeWatermarkLagOnceAMergerHasSeenADelta() {
+    // given a task with no delta processed yet
+    openTask();
+    assertThat(task.watermarkLagMs()).isZero(); // no merger clock established yet
+
+    // when a delta is processed
+    final CubeHandle handle = resolve();
+    task.process(envelope(handle, 1L, 0));
+
+    // then the watermark lag reflects the merger's now-established stream-time clock
+    assertThat(task.watermarkLagMs()).isGreaterThanOrEqualTo(0L);
   }
 
   @Test
@@ -107,6 +122,23 @@ final class AggregationStageTaskDedupPersistenceTest {
     task.process(envelope(reopened, 2L, 0));
     Cuts.commit(task, 2L);
     assertThat(durableTotal(reopened)).isEqualTo(2L);
+
+    // and the library-level lag pack (this task's post-restart meter registry: openTask() rebinds
+    // it) saw both post-restart envelopes and exactly the one dedup skip among them
+    assertThat(
+            meterRegistry
+                .get("eb.streaming.records.processed")
+                .tag("stage", "aggregation")
+                .counter()
+                .count())
+        .isEqualTo(2.0);
+    assertThat(
+            meterRegistry
+                .get("eb.streaming.dedup.skipped")
+                .tag("stage", "aggregation")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
   }
 
   private void openTask() {
@@ -114,9 +146,8 @@ final class AggregationStageTaskDedupPersistenceTest {
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL("jdbc:h2:mem:dedup-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
     dataSource.setUser("sa");
-    provider =
-        RocksDbStateStoreProvider.open(
-            new File(stateDir.toFile(), "stage2"), new SimpleMeterRegistry());
+    meterRegistry = new SimpleMeterRegistry();
+    provider = RocksDbStateStoreProvider.open(new File(stateDir.toFile(), "stage2"), meterRegistry);
     final KeyValueStore<DbBytes, DbBytes> cellStore =
         provider.keyValueStore(AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes());
     final KeyValueStore<DbInt, DbLong> offsets =
@@ -140,7 +171,7 @@ final class AggregationStageTaskDedupPersistenceTest {
             dedupStore,
             parkedStore,
             catalog,
-            null, // no meter registry: the late-drop alarm logs only
+            meterRegistry,
             Long.MAX_VALUE, // no reload in these tests
             0L);
     task.init();

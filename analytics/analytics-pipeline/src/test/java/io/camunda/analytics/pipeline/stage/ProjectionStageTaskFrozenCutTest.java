@@ -29,6 +29,7 @@ import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.EventBridgeClient.BatchPublisher;
 import io.camunda.eventbridge.streaming.CommitCut;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
@@ -272,6 +273,7 @@ final class ProjectionStageTaskFrozenCutTest {
             Long.MAX_VALUE, // no reload in these tests
             eagerShufflePublish,
             ProjectionMetrics.NOOP,
+            FlowMetrics.NOOP,
             0L);
     task.init();
   }

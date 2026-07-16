@@ -9,6 +9,7 @@ package io.camunda.analytics.aggregation;
 
 import io.camunda.eventbridge.streaming.aggregate.SegmentDedup;
 import io.camunda.eventbridge.streaming.aggregate.SegmentMergingAggregation;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.processor.Processor;
 import io.camunda.eventbridge.streaming.shuffle.CellDelta;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
@@ -61,6 +62,7 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
   private final Map<Integer, CellApplier> byStreamId;
   private final List<SegmentMergingAggregation<?, ?>> mergers;
   private final DeltaParker parker;
+  private final FlowMetrics metrics;
 
   /**
    * Reused per-envelope admit-once-per-stream memo (the task processes envelopes one at a time on
@@ -73,10 +75,20 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
       final Map<Integer, CellApplier> byStreamId,
       final List<SegmentMergingAggregation<?, ?>> mergers,
       final DeltaParker parker) {
+    this(dedup, byStreamId, mergers, parker, FlowMetrics.NOOP);
+  }
+
+  public CubeMergeProcessor(
+      final SegmentDedup dedup,
+      final Map<Integer, CellApplier> byStreamId,
+      final List<SegmentMergingAggregation<?, ?>> mergers,
+      final DeltaParker parker,
+      final FlowMetrics metrics) {
     this.dedup = dedup;
     this.byStreamId = Map.copyOf(byStreamId);
     this.mergers = List.copyOf(mergers);
     this.parker = parker;
+    this.metrics = metrics;
   }
 
   @Override
@@ -107,7 +119,8 @@ public final class CubeMergeProcessor implements Processor<ShuffleEnvelope, Void
           admitted.computeIfAbsent(
               cell.streamId(), streamId -> dedup.admit(sourcePartition, streamId, segment, chunk));
       if (!merge) {
-        continue; // this stream already merged this batch — a duplicate or producer re-emit
+        metrics.countDedupSkipped(); // this stream already merged this batch — a re-emit
+        continue;
       }
       applier.apply(sourcePartition, cell.key(), cell.windowStart(), cell.payload());
     }

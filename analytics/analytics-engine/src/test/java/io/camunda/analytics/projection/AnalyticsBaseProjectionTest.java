@@ -513,6 +513,9 @@ final class AnalyticsBaseProjectionTest {
     public void factDropped() {
       factDropped++;
     }
+
+    @Override
+    public void factEmitted(final FactType factType) {}
   }
 
   /** A {@link ProcessorContext} that captures the forwarded (materialized) facts. */

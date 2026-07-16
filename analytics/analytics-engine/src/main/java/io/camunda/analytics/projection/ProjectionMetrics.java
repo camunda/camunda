@@ -7,6 +7,8 @@
  */
 package io.camunda.analytics.projection;
 
+import io.camunda.analytics.fact.FactType;
+
 /**
  * The base projection's correctness signals. {@link #duplicateSkipped()} is expected traffic — it
  * makes exporter retries visible (the pre-fold watermark absorbing producer duplicates, ADR 0007).
@@ -28,6 +30,9 @@ public interface ProjectionMetrics {
 
         @Override
         public void factDropped() {}
+
+        @Override
+        public void factEmitted(final FactType factType) {}
       };
 
   /**
@@ -42,6 +47,9 @@ public interface ProjectionMetrics {
 
   /** A derivation dropped its fact because the row was missing — a silent undercount surfaced. */
   void factDropped();
+
+  /** The base projection emitted a fact of {@code factType} into the dispatch fan-out. */
+  void factEmitted(FactType factType);
 
   /**
    * Registers one cube's gate counters for exposure (facts inspected vs facts folded, plus the

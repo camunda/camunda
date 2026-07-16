@@ -42,6 +42,7 @@ import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.Segments;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
@@ -125,6 +126,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final long reloadCheckIntervalMs;
   private final boolean eagerShufflePublish;
   private final ProjectionMetrics metrics;
+  private final FlowMetrics flowMetrics;
 
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
@@ -181,6 +183,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final long reloadCheckIntervalMs,
       final boolean eagerShufflePublish,
       final ProjectionMetrics metrics,
+      final FlowMetrics flowMetrics,
       final long nowMs) {
     this.partition = partition;
     this.epoch = epoch;
@@ -206,6 +209,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     this.reloadCheckIntervalMs = reloadCheckIntervalMs;
     this.eagerShufflePublish = eagerShufflePublish;
     this.metrics = metrics;
+    this.flowMetrics = flowMetrics;
     this.lastReloadCheckMs = nowMs;
     final DatasetCatalog.Snapshot snapshot = catalog.snapshot();
     installTopology(snapshot.cubes(), snapshot.tables());
@@ -265,6 +269,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         reloadCheckIntervalMs,
         eagerShufflePublish,
         new MicrometerProjectionMetrics(meterRegistry, partition),
+        FlowMetrics.of(meterRegistry, "projection"),
         System.currentTimeMillis());
   }
 
@@ -320,7 +325,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     // variable enrichment resolves only those names (point lookups, early-terminating) instead of
     // scanning the whole scope. Recomputed on each catalog reload.
     final VariableNames variableNames = VariableNames.of(variableNames(cubes, tables));
-    final FactTypeDispatcher dispatcher = new FactTypeDispatcher();
+    final FactTypeDispatcher dispatcher = new FactTypeDispatcher(metrics);
     final ProcessorTopology.Builder<SourceRecord> builder =
         ProcessorTopology.<SourceRecord>builder()
             .source("projection", new AnalyticsBaseProjection(state, variableNames, metrics))
@@ -346,7 +351,8 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
           wiringByStreamId.computeIfAbsent(
               streamId,
               id -> {
-                final CubeWiring created = cubeWiring(cube, segmentStride, openSegments, provider);
+                final CubeWiring created =
+                    cubeWiring(cube, segmentStride, openSegments, provider, flowMetrics);
                 // Expose the new cube's gate counters + silent-empty alarm (once per wiring).
                 metrics.registerCubeGate(created.processor());
                 return created;
@@ -409,7 +415,8 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final ActiveCube cube,
       final int segmentStride,
       final KeyValueStore<DbBytes, DbBytes> openSegments,
-      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider) {
+      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
+      final FlowMetrics flowMetrics) {
     final CompiledDataset compiled = cube.compiled();
     final List<BoundMeter<?, ?>> bounds = compiled.meterBounds();
     final ForwardingSegmentSink<Object[]> sink =
@@ -431,6 +438,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             new DimensionKeyValue(compiled.grain()),
             new CompositeAccumulatorValue(bounds),
             provider::runInTransaction);
+    sealing.metrics(flowMetrics);
     return new CubeWiring(
         new CubeAggregationProcessor(
             compiled.factBinding().factType(),
@@ -454,6 +462,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   @Override
   public void process(final SourceRecord record) {
+    flowMetrics.countRecordProcessed();
     // Pre-fold dedup (ADR 0007): skip a producer duplicate — the same Zeebe record re-appended at
     // a later Event Bridge offset arrives at-or-below its Zeebe partition's applied-position
     // watermark. The Event Bridge offset still advances for skipped records (the runtime marks
@@ -463,6 +472,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final Long watermark = appliedWatermarks.get(zeebePartition);
     if (watermark != null && zeebePosition <= watermark) {
       metrics.duplicateSkipped();
+      flowMetrics.countDedupSkipped();
       return;
     }
     topology.process(record);

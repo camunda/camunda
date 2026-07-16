@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
@@ -19,6 +20,7 @@ import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -149,6 +151,52 @@ final class SegmentMergingAggregationTest {
     assertThat(dropped).containsExactly(cell);
     assertThat(clocks).containsExactly(1_000L);
     assertThat(sink.get(cell)).hasValue(5L);
+  }
+
+  @Test
+  void shouldCountAcceptedMergesButNotLateDrops() {
+    // given a no-grace window and a metrics-wired merger
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(
+            new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()),
+            sink,
+            TumblingWindows.of(1_000L));
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    merger.metrics(FlowMetrics.of(registry, "aggregation"));
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+
+    // when an accepted delta closes the window and a late delta follows
+    merger.merge(cell, 5L);
+    merger.checkpoint();
+    merger.merge(cell, 100L);
+    merger.flush();
+
+    // then only the accepted merge is counted — the late-dropped delta never reaches the fold
+    assertThat(
+            registry
+                .get("eb.streaming.deltas.merged")
+                .tag("stage", "aggregation")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldExposeTheCurrentStreamTimeClock() {
+    // given a merger that has not seen a delta yet
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()), sink, keepOpen());
+
+    // then the clock is unset
+    assertThat(merger.clock()).isEqualTo(Long.MIN_VALUE);
+
+    // when a delta advances the clock
+    merger.merge(new Windowed<>("k", 0L), 5L, 1_234L);
+
+    // then the clock reflects the observed event-time hint
+    assertThat(merger.clock()).isEqualTo(1_234L);
   }
 
   @Test
