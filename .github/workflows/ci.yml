@@ -2374,7 +2374,7 @@ jobs:
       - name: Install pytest
         run: pip install --quiet pytest
       - name: Run unit tests
-        run: pytest --verbose --color=yes --tb=short .github/scripts
+        run: pytest --verbose --color=yes --tb=short .github/scripts .github/actions/adjust-pom-for-license-analysis
       - name: Observe build status
         if: always()
         continue-on-error: true
