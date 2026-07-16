@@ -450,6 +450,110 @@ public class ClusterVariableControllerTest extends RestControllerTest {
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isEqualTo("newValue");
     assertThat(capturedRequest.tenantId()).isNull();
+    assertThat(capturedRequest.metadata()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectUpdateWithNonScalarMetadataValue() {
+    // given
+    final var request =
+        """
+        {
+            "value": "newValue",
+            "metadata": {
+                "kind": ["CREDENTIAL"]
+            }
+        }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "The metadata value for key 'kind' is of type 'ArrayList' but must be a string or a number.",
+              "instance": "%s"
+            }"""
+            .formatted(GLOBAL_WITH_NAME_URL.formatted("foo"));
+
+    // when / then
+    webClient
+        .put()
+        .uri(GLOBAL_WITH_NAME_URL.formatted("foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectUpdateWithTooManyMetadataEntries() {
+    // given
+    final var metadataEntries =
+        IntStream.range(0, 101)
+            .mapToObj(i -> "\"%d\": \"%d\"".formatted(i, i))
+            .collect(Collectors.joining(","));
+    final var request =
+        """
+        {
+            "value": "newValue",
+            "metadata": { %s }
+        }"""
+            .formatted(metadataEntries);
+
+    // when / then
+    webClient
+        .put()
+        .uri(GLOBAL_WITH_NAME_URL.formatted("foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo("The provided metadata has 101 entries but must not exceed 100 entries.");
+  }
+
+  @Test
+  void shouldRejectUpdateWithOversizedMetadata() {
+    // given: exceeds the test-configured metadata size limit (see TestConfig) without needing a
+    // huge payload
+    final var largeValue = "x".repeat(TEST_MAX_CLUSTER_VARIABLE_METADATA_SIZE);
+    final var request =
+        """
+        {
+            "value": "newValue",
+            "metadata": { "key": "%s" }
+        }"""
+            .formatted(largeValue);
+
+    // when / then
+    webClient
+        .put()
+        .uri(GLOBAL_WITH_NAME_URL.formatted("foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo(
+            "The provided metadata exceeds the maximum serialized size of %d bytes."
+                .formatted(TEST_MAX_CLUSTER_VARIABLE_METADATA_SIZE));
   }
 
   @Test
@@ -868,6 +972,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isEqualTo("newValue");
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
+    assertThat(capturedRequest.metadata()).isEmpty();
   }
 
   @Test
