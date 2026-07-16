@@ -18,7 +18,7 @@ runs:
       with:
         max_attempts: 5
         retry_wait_seconds: 10
-        timeout_minutes: 5
+        timeout_minutes: 1
         shell: bash
         command: |
           set -euo pipefail
