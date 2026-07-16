@@ -10,12 +10,10 @@ import { FC, useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { groupQueries } from "src/utility/api/groups/queries";
 import { tenantMutations } from "src/utility/api/tenants/mutations";
-import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import DropdownSearch from "src/components/form/DropdownSearch";
+import GroupSearchDropdown from "src/components/form/GroupSearchDropdown";
 import FormModal from "src/components/modal/FormModal";
 import type { Group, Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -32,23 +30,6 @@ const AssignGroupsModal: FC<
   const { t } = useTranslate("tenants");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
   const [loadingAssignGroup, setLoadingAssignGroup] = useState(false);
-  const [currentInputValue, setCurrentInputValue] = useState("");
-
-  const [search, setSearch] = useState<Record<string, unknown>>({});
-  useEffect(() => {
-    if (currentInputValue === "") {
-      setSearch({});
-      return;
-    }
-    setSearch({ filter: { groupId: { $like: `*${currentInputValue}*` } } });
-  }, [currentInputValue]);
-
-  const {
-    data: groupSearchResults,
-    isLoading: loading,
-    refetch: reload,
-    error,
-  } = useQuery(groupQueries.search(search));
 
   const qc = useQueryClient();
   const { mutateAsync: callAssignGroup } = useMutation(
@@ -62,13 +43,8 @@ const AssignGroupsModal: FC<
     [assignedGroups, selectedGroups],
   );
 
-  const handleDropdownChange = (value: string) => {
-    setCurrentInputValue(value);
-  };
-
   const onSelectGroup = (group: Group) => {
     setSelectedGroups([...selectedGroups, group]);
-    setCurrentInputValue("");
   };
 
   const onUnselectGroup =
@@ -102,7 +78,6 @@ const AssignGroupsModal: FC<
   useEffect(() => {
     if (open) {
       setSelectedGroups([]);
-      setCurrentInputValue("");
     }
   }, [open]);
 
@@ -134,27 +109,14 @@ const AssignGroupsModal: FC<
           ))}
         </SelectedGroups>
       )}
-      <DropdownSearch
+      <GroupSearchDropdown
         autoFocus
-        items={groupSearchResults?.items || []}
-        itemTitle={({ groupId }) => groupId}
-        itemSubTitle={({ name }) => name}
         placeholder={t("searchByGroupId")}
         onSelect={onSelectGroup}
-        onChange={handleDropdownChange}
         filter={unassignedFilter}
+        errorTitle={t("groupsCouldNotLoad")}
+        retryLabel={t("retry")}
       />
-      {!loading && error && (
-        <TranslatedErrorInlineNotification
-          title={t("groupsCouldNotLoad")}
-          actionButton={{
-            label: t("retry"),
-            onClick: () => {
-              void reload();
-            },
-          }}
-        />
-      )}
     </FormModal>
   );
 };
