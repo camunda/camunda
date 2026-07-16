@@ -23,6 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -300,6 +301,7 @@ class RdbmsExporterTest {
     // then
     verify(replicationController).close();
     verify(flushTask).cancel();
+    verify(rdbmsWriters.getExecutionQueue()).reset();
 
     // set null to avoid tear down flush
     exporter = null;
@@ -533,17 +535,21 @@ class RdbmsExporterTest {
   }
 
   @Test
-  void shouldThrowWhenReplayFailsBecauseLogSegmentsAreGone() {
-    // given - broker position is 1000, RDBMS position is 900, but log segments are gone
+  void shouldThrowWhenReplayIsUnavailable() {
+    // given - broker position is 1000, RDBMS position is 900, but replay is unavailable
+    // (segments deleted or already in exporting phase)
     final long brokerPosition = 1000L;
     final long rdbmsPosition = 900L;
     createExporterWithRdbmsPosition(brokerPosition, rdbmsPosition);
     when(controller.requestReplay(anyLong())).thenReturn(false);
 
-    // when + then - exporter should fail to open because replay is not possible
+    // when + then - exporter must throw when replay cannot be initiated; accepting a stale DB
+    // position as baseline risks data loss, so we fail hard and require manual intervention
     assertThatThrownBy(() -> exporter.open(controller))
         .isInstanceOf(ExporterException.class)
-        .hasMessageContaining("log segments are no longer available");
+        .hasMessageContaining("Cannot replay records");
+
+    verify(controller).requestReplay(rdbmsPosition);
   }
 
   @Test
@@ -557,6 +563,96 @@ class RdbmsExporterTest {
 
     // then - no replay should be requested
     verify(controller, never()).requestReplay(Mockito.anyLong());
+  }
+
+  @Test
+  void shouldRequestReplayWhenInstanceFlushedFurtherThanBrokerAcked() {
+    // given - exporter opens with broker and DB both at position 500 (a normal, in-sync start)
+    final long initialPosition = 500L;
+    final var initialRdbmsPosition =
+        new ExporterPositionModel(
+            0,
+            RdbmsExporter.class.getSimpleName(),
+            initialPosition,
+            LocalDateTime.now(),
+            LocalDateTime.now());
+    final var jobHandler = mockHandler(ValueType.JOB);
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler), true, true, initialRdbmsPosition);
+
+    // this instance flushes further than what gets acked to the broker - e.g. under async
+    // LSN-based replication (LsnReplicationController), acking is intentionally delayed until
+    // replication is confirmed, so the broker position lags this instance's real progress
+    final long instanceFlushedPosition = 1000L;
+    exporter.export(mockRecord(ValueType.JOB, instanceFlushedPosition));
+    executionQueue.flush(); // trigger the postFlushListener that sets lastFlushedPosition
+
+    // simulate a failover: the broker only ever got acked up to 900 (replication-confirmed floor)
+    // and the new (promoted) DB position is 950 - between the broker's ack and what this instance
+    // had actually flushed
+    final long brokerAckedPosition = 900L;
+    final long dbPositionAfterFailover = 950L;
+    when(controller.getLastExportedRecordPosition()).thenReturn(brokerAckedPosition);
+    when(positionService.findOne(anyInt()))
+        .thenReturn(
+            new ExporterPositionModel(
+                0,
+                RdbmsExporter.class.getSimpleName(),
+                dbPositionAfterFailover,
+                LocalDateTime.now(),
+                LocalDateTime.now()));
+    when(controller.requestReplay(anyLong())).thenReturn(true);
+
+    // when - exporter is reopened (simulating ExporterContainer.reopenExporter)
+    exporter.open(controller);
+
+    // then - replay is requested from the DB position; the broker position (900) alone would not
+    // have looked "ahead" of the DB (950), but this instance's own last-flushed position (1000) is
+    verify(controller).requestReplay(dbPositionAfterFailover);
+  }
+
+  @Test
+  void shouldThrowReopenExceptionWhenPositionIsAhead() {
+    // given
+    final var jobHandler = mockHandler(ValueType.JOB);
+    final var record = mockRecord(ValueType.JOB, 5);
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler));
+
+    // Make the flush throw ExporterPositionAheadException to simulate DB ahead of broker
+    doAnswer(
+            invocation -> {
+              throw new ExporterPositionMismatchException(1, 4, 5); // expected 4 but found 5 in DB
+            })
+        .when(rdbmsWriters)
+        .flush(anyBoolean());
+
+    // when - export wraps the conflict in an ExporterException(REOPEN) so ExporterContainer
+    // closes and reopens the exporter to re-sync the position
+    final var thrown =
+        assertThatThrownBy(() -> exporter.export(record))
+            .isInstanceOf(ExporterException.class)
+            .hasMessageContaining("exporter position conflict")
+            .hasCauseInstanceOf(ExporterPositionMismatchException.class);
+
+    // then - compensation must be REOPEN so ExporterContainer calls reopenExporter()
+    thrown.satisfies(
+        ex ->
+            assertThat(((ExporterException) ex).getCompensation())
+                .isEqualTo(ExporterException.Compensation.REOPEN));
+  }
+
+  @Test
+  void shouldNotRegisterDuplicateListenersOnReopen() {
+    // given - exporter already opened (listeners registered once)
+    createExporter(b -> b.withHandler(ValueType.JOB, mockHandler(ValueType.JOB)));
+
+    final int listenersAfterFirstOpen = executionQueue.preFlushListeners.size();
+    assertThat(listenersAfterFirstOpen).isGreaterThan(0);
+
+    // when - exporter is reopened (simulating ExporterContainer.reopenExporter)
+    exporter.open(controller);
+
+    // then - listener count must not double; reset() in open() clears before re-registering
+    assertThat(executionQueue.preFlushListeners).hasSize(listenersAfterFirstOpen);
   }
 
   @Test
@@ -677,7 +773,7 @@ class RdbmsExporterTest {
     when(controller.scheduleCancellableTask(any(), any())).thenReturn(flushTask);
 
     rdbmsWriters = mock(RdbmsWriters.class);
-    executionQueue = new StubExecutionQueue();
+    executionQueue = Mockito.spy(new StubExecutionQueue());
     positionService = mock(ExporterPositionService.class);
     when(positionService.findOne(anyInt())).thenReturn(exporterPositionModel);
     rdbmsPurger = mock(RdbmsPurger.class);
@@ -735,6 +831,7 @@ class RdbmsExporterTest {
     exporter = builderFunction.apply(builder).build();
     if (openExporter) {
       exporter.open(controller);
+      Mockito.reset(executionQueue);
     }
   }
 
@@ -779,6 +876,13 @@ class RdbmsExporterTest {
     @Override
     public boolean checkQueueForFlush() {
       return false;
+    }
+
+    @Override
+    public void reset() {
+      preFlushListeners.clear();
+      postFlushListeners.clear();
+      inTransactionHooks.clear();
     }
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms;
 
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
+import io.camunda.db.rdbms.exception.ExporterPositionMismatchException;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
@@ -89,49 +90,46 @@ public final class RdbmsExporter {
     this.historyDeletionService = historyDeletionService;
     this.replicationControllerFactory = replicationControllerFactory;
 
-    LOG.info(
-        "[RDBMS Exporter P{} T-{}] RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
-        partitionId,
-        physicalTenantId,
+    logInfo(
+        "RdbmsExporter created with Configuration: flushInterval={}, queueSize={}",
         flushInterval,
         queueSize);
   }
 
   public void open(final Controller controller) {
     this.controller = controller;
-    LOG.info(
-        "[RDBMS Exporter P{} T-{}] Opening exporter with broker position {}",
-        partitionId,
-        physicalTenantId,
-        controller.getLastExportedRecordPosition());
+    rdbmsWriters.getExecutionQueue().reset();
+    logInfo(
+        "Opening exporter with broker position {}, last flushed position {}",
+        controller.getLastExportedRecordPosition(),
+        lastFlushedPosition);
 
     if (!rdbmsSchemaManagerRegistry.isInitialized(physicalTenantId)) {
-      LOG.warn(
-          "[RDBMS Exporter P{} T-{}] Schema is not yet ready for use",
-          partitionId,
-          physicalTenantId);
+      logWarn("Schema is not yet ready for use");
       throw new ExporterException("Schema is not ready for use");
     }
 
     initializeRdbmsPosition();
-    lastPosition = controller.getLastExportedRecordPosition();
+    // Use whichever of the broker-acked position and this instance's own last-flushed position
+    // (preserved across a close+reopen on the same instance) is more advanced. On a cold start
+    // lastFlushedPosition is still -1, so this is exactly the broker position, matching what a
+    // fresh restart would use. On an in-process reopen, this instance may have already flushed
+    // further than what's been acknowledged - e.g. under async LSN-based replication
+    // (LsnReplicationController), acking is intentionally delayed until replication is confirmed.
+    lastPosition = Math.max(controller.getLastExportedRecordPosition(), lastFlushedPosition);
     if (exporterRdbmsPosition.lastExportedPosition() > -1) {
       if (lastPosition < exporterRdbmsPosition.lastExportedPosition()) {
         // This is needed since the brokers last exported position is from its last snapshot and can
         // be different from ours.
-        LOG.info(
-            "[RDBMS Exporter P{} T-{}] Updating broker position {} to last exported position in rdbms {}",
-            partitionId,
-            physicalTenantId,
+        logInfo(
+            "Updating broker position {} to last exported position in rdbms {}",
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition());
         lastPosition = exporterRdbmsPosition.lastExportedPosition();
         updatePositionInBroker();
       } else if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
-        LOG.info(
-            "[RDBMS Exporter P{} T-{}] Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
-            partitionId,
-            physicalTenantId,
+        logInfo(
+            "Broker position {} is more advanced than rdbms position {}. Requesting replay from {}",
             lastPosition,
             exporterRdbmsPosition.lastExportedPosition(),
             exporterRdbmsPosition.lastExportedPosition());
@@ -175,11 +173,7 @@ public final class RdbmsExporter {
             partitionId, historyCleanupService, historyDeletionService, LOG);
     backgroundTaskManager.start();
 
-    LOG.info(
-        "[RDBMS Exporter P{} T-{}] Exporter opened with last exported position {}",
-        partitionId,
-        physicalTenantId,
-        lastPosition);
+    logInfo("Exporter opened with last exported position {}", lastPosition);
   }
 
   public void close() {
@@ -195,30 +189,22 @@ public final class RdbmsExporter {
       try {
         rdbmsWriters.flush(true);
       } catch (final Exception e) {
-        LOG.warn(
-            "[RDBMS Exporter P{} T-{}] Failed to execute final flush on close for partition {}",
-            partitionId,
-            physicalTenantId,
-            partitionId);
+        logWarn("Failed to execute final flush on close for partition {}", partitionId);
         throw e;
       }
+
+      rdbmsWriters.getExecutionQueue().reset();
 
       if (replicationController != null) {
         replicationController.close();
         replicationController = null;
       }
     } catch (final Exception e) {
-      LOG.warn(
-          "[RDBMS Exporter P{} T-{}] Failed to flush records before closing exporter.",
-          partitionId,
-          physicalTenantId,
-          e);
+      logWarn("Failed to flush records before closing exporter.", e);
     }
 
-    LOG.info(
-        "[RDBMS Exporter P{} T-{}] Exporter closed at positions Broker {}, RDBMS {}",
-        partitionId,
-        physicalTenantId,
+    logInfo(
+        "Exporter closed at positions Broker {}, RDBMS {}",
         lastPosition,
         exporterRdbmsPosition == null ? null : exporterRdbmsPosition.lastExportedPosition());
   }
@@ -231,10 +217,8 @@ public final class RdbmsExporter {
               partitionId));
     }
 
-    LOG.trace(
-        "[RDBMS Exporter P{} T-{}] Process record {}-{} - {}:{}",
-        partitionId,
-        physicalTenantId,
+    logTrace(
+        "Process record {}-{} - {}:{}",
         record.getPartitionId(),
         record.getPosition(),
         record.getValueType(),
@@ -250,30 +234,17 @@ public final class RdbmsExporter {
     if (!alreadyProcessed && registeredHandlers.containsKey(record.getValueType())) {
       for (final var handler : registeredHandlers.get(record.getValueType())) {
         if (handler.canExport(record)) {
-          LOG.trace(
-              "[RDBMS Exporter P{} T-{}] Exporting record {} with handler {}",
-              partitionId,
-              physicalTenantId,
-              record.getValue(),
-              handler.getClass());
+          logTrace("Exporting record {} with handler {}", record.getValue(), handler.getClass());
           handler.export(record);
           exported = true;
           shouldFlushAfterRecordProcessed |= handler.shouldFlushAfterRecordProcessed();
         } else {
-          LOG.trace(
-              "[RDBMS Exporter P{} T-{}] Handler {} can not export record {}",
-              partitionId,
-              physicalTenantId,
-              handler.getClass(),
-              record.getValueType());
+          logTrace(
+              "Handler {} can not export record {}", handler.getClass(), record.getValueType());
         }
       }
     } else if (!alreadyProcessed) {
-      LOG.trace(
-          "[RDBMS Exporter P{} T-{}] No registered handler found for {}",
-          partitionId,
-          physicalTenantId,
-          record.getValueType());
+      logTrace("No registered handler found for {}", record.getValueType());
     }
 
     if (!alreadyProcessed) {
@@ -299,20 +270,26 @@ public final class RdbmsExporter {
         if (flushed) {
           resetIntervalFlush();
         }
+      } catch (final ExporterPositionMismatchException e) {
+        logWarn(
+            "Exporter position conflict detected during flush — requesting reopen to re-sync from DB position.");
+        throw new ExporterException(
+            String.format(
+                "[RDBMS Exporter P%d T-%s] Flush failed due to exporter position conflict;"
+                    + " exporter will reopen to re-sync.",
+                partitionId, physicalTenantId),
+            e,
+            ExporterException.Compensation.REOPEN);
       } catch (final Exception e) {
-        LOG.warn(
-            "[RDBMS Exporter P{} T-{}] Failed to flush record for positions {} to {} to the database.",
-            partitionId,
-            physicalTenantId,
+        logWarn(
+            "Failed to flush record for positions {} to {} to the database.",
             lastFlushedPosition + 1,
             lastPosition);
         throw e;
       }
     } else {
-      LOG.trace(
-          "[RDBMS Exporter P{} T-{}] Record with key {} and original partitionId {} could not be exported {}.",
-          partitionId,
-          physicalTenantId,
+      logTrace(
+          "Record with key {} and original partitionId {} could not be exported {}.",
           record.getKey(),
           Protocol.decodePartitionId(record.getKey()),
           record);
@@ -344,21 +321,13 @@ public final class RdbmsExporter {
   }
 
   private void updatePositionInBroker() {
-    LOG.trace(
-        "[RDBMS Exporter P{} T-{}] Updating position to {} in broker",
-        partitionId,
-        physicalTenantId,
-        lastPosition);
+    logTrace("Updating position to {} in broker", lastPosition);
     controller.updateLastExportedRecordPosition(lastPosition);
   }
 
   private void updatePositionInRdbms() {
     if (lastPosition > exporterRdbmsPosition.lastExportedPosition()) {
-      LOG.trace(
-          "[RDBMS Exporter P{} T-{}] Updating position to {} in rdbms",
-          partitionId,
-          physicalTenantId,
-          lastPosition);
+      logTrace("Updating position to {} in rdbms", lastPosition);
       exporterRdbmsPosition =
           new ExporterPositionModel(
               exporterRdbmsPosition.partitionId(),
@@ -383,10 +352,8 @@ public final class RdbmsExporter {
     try {
       exporterRdbmsPosition = rdbmsWriters.getExporterPositionService().findOne(partitionId);
     } catch (final Exception e) {
-      LOG.warn(
-          "[RDBMS Exporter P{} T-{}] Failed to initialize exporter position because Database is not ready, retrying ... {}",
-          partitionId,
-          physicalTenantId,
+      logWarn(
+          "Failed to initialize exporter position because Database is not ready, retrying ... {}",
           e.getMessage());
       throw e;
     }
@@ -400,14 +367,9 @@ public final class RdbmsExporter {
               LocalDateTime.now(),
               LocalDateTime.now());
       rdbmsWriters.getExporterPositionService().createWithoutQueue(exporterRdbmsPosition);
-      LOG.debug(
-          "[RDBMS Exporter P{} T-{}] Initialize position in rdbms", partitionId, physicalTenantId);
+      logDebug("Initialize position in rdbms");
     } else {
-      LOG.debug(
-          "[RDBMS Exporter P{} T-{}] Found position in rdbms for this exporter: {}",
-          partitionId,
-          physicalTenantId,
-          exporterRdbmsPosition);
+      logDebug("Found position in rdbms for this exporter: {}", exporterRdbmsPosition);
     }
   }
 
@@ -420,10 +382,8 @@ public final class RdbmsExporter {
     try {
       flushExecutionQueue();
     } catch (final Exception e) {
-      LOG.warn(
-          "[RDBMS Exporter P{} T-{}] Failed to flush records for positions {} to {} to the database",
-          partitionId,
-          physicalTenantId,
+      logWarn(
+          "Failed to flush records for positions {} to {} to the database",
           lastFlushedPosition + 1,
           lastPosition);
     } finally {
@@ -436,11 +396,39 @@ public final class RdbmsExporter {
       "Each exporter creates it's own executionQueue, so we need an accessible flush method for tests")
   public void flushExecutionQueue() {
     if (flushAfterEachRecord()) {
-      LOG.warn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
+      logWarn("Unnecessary flush called, since flush interval is zero or max queue size is zero");
       return;
     }
     rdbmsWriters.getMetrics().recordQueueFlush(FlushTrigger.FLUSH_INTERVAL);
     rdbmsWriters.flush(true);
+  }
+
+  private void logTrace(final String message, final Object... args) {
+    LOG.trace(withLogContext(message), withLogContextArgs(args));
+  }
+
+  private void logDebug(final String message, final Object... args) {
+    LOG.debug(withLogContext(message), withLogContextArgs(args));
+  }
+
+  private void logInfo(final String message, final Object... args) {
+    LOG.info(withLogContext(message), withLogContextArgs(args));
+  }
+
+  private void logWarn(final String message, final Object... args) {
+    LOG.warn(withLogContext(message), withLogContextArgs(args));
+  }
+
+  private String withLogContext(final String message) {
+    return "[RDBMS Exporter P{} T-{}] " + message;
+  }
+
+  private Object[] withLogContextArgs(final Object... args) {
+    final Object[] contextualArgs = new Object[args.length + 2];
+    contextualArgs[0] = partitionId;
+    contextualArgs[1] = physicalTenantId;
+    System.arraycopy(args, 0, contextualArgs, 2, args.length);
+    return contextualArgs;
   }
 
   @VisibleForTesting("Allows verification of registered handlers in tests")

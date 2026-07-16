@@ -137,7 +137,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       try (final var ignored = metrics.measureFlushDuration()) {
         // Record memory usage before flush
         metrics.recordQueueMemoryUsage(currentQueueMemoryBytes);
-        final int numFlushedElements = doFLush();
+        final int numFlushedElements = doFlush();
         metrics.stopFlushLatencyMeasurement();
         metrics.recordBulkSize(numFlushedElements);
         // Reset memory tracking after flush
@@ -228,7 +228,18 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     return false;
   }
 
-  private int doFLush() {
+  @Override
+  public void reset() {
+    synchronized (queue) {
+      queue.clear();
+      currentQueueMemoryBytes = 0;
+      preFlushListeners.clear();
+      postFlushListeners.clear();
+      inTransactionHooks.clear();
+    }
+  }
+
+  private int doFlush() {
     LOG.debug(
         "[RDBMS ExecutionQueue, Partition {}] Flushing execution queue with {} items",
         partitionId,
