@@ -203,6 +203,30 @@ final class ClusterApiUtilsTest {
         .containsExactlyInAnyOrder("0", "1");
   }
 
+  @Test
+  void shouldMapRecoveringPartitionState() {
+    // given
+    final var config =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("0"),
+                MemberState.initializeAsActive(
+                    Map.of(
+                        1,
+                        PartitionState.active(1, DynamicPartitionConfig.init()).toRecovering())));
+
+    // when
+    final var response = ClusterApiUtils.mapClusterTopologyResponse(Either.right(config));
+
+    // then
+    final var body = (GetTopologyResponse) response.getBody();
+    assertThat(body).isNotNull();
+    assertThat(body.getBrokers())
+        .flatExtracting(BrokerState::getPartitions)
+        .extracting(io.camunda.zeebe.management.cluster.PartitionState::getState)
+        .containsExactly(io.camunda.zeebe.management.cluster.PartitionStateCode.RECOVERING);
+  }
+
   @ParameterizedTest
   @ValueSource(strings = {"ZONE_AWARE", "FIXED", "ROUND_ROBIN"})
   void shouldIncludePartitionDistributorConfig(final String type) {
