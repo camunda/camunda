@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.Preconditions.assertNonEmpty;
 import static io.camunda.zeebe.util.Preconditions.assertPositive;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -29,6 +30,19 @@ public sealed interface ClusterConfigurationManagementRequest {
    * configuration remains unchanged.
    */
   boolean dryRun();
+
+  default String physicalTenantId() {
+    return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+  }
+
+  /**
+   * Marks a request as requiring a registered {@link ClusterConfigurationRequestValidator} for its
+   * type and {@link #physicalTenantId()}. If true and no such validator is registered, handling the
+   * request fails instead of silently skipping validation.
+   */
+  default boolean requiresValidation() {
+    return false;
+  }
 
   record AddMembersRequest(Set<MemberId> members, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
@@ -156,5 +170,11 @@ public sealed interface ClusterConfigurationManagementRequest {
       String databaseType,
       boolean continuousBackups,
       boolean dryRun)
-      implements ClusterConfigurationManagementRequest {}
+      implements ClusterConfigurationManagementRequest {
+
+    @Override
+    public boolean requiresValidation() {
+      return true;
+    }
+  }
 }

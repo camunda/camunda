@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
@@ -132,5 +134,28 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
 
     // then the exact request instance is handed to the validator
     assertThat(received.get()).isSameAs(request);
+  }
+
+  @Test
+  void shouldNotInvokeValidatorForAddMembers() {
+    // given a validator that would reject anything handed to it
+    final var request = new AddMembersRequest(Set.of(MemberId.from("1")), false);
+    final var handler =
+        handler(
+            r -> {
+              throw new IllegalArgumentException("should never be called");
+            });
+    final var config = ClusterConfiguration.init();
+    when(coordinator.applyOperations(any()))
+        .thenReturn(
+            CompletableActorFuture.completed(
+                new ConfigurationChangeResult(config, config, 1L, List.of())));
+
+    // when
+    final var result = handler.addMembers(request);
+
+    // then addMembers is not routed through validation, only restore is
+    assertThat(failureOf(result)).isNull();
+    verify(coordinator).applyOperations(any());
   }
 }

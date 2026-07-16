@@ -16,8 +16,9 @@ package io.camunda.zeebe.dynamic.config.api;
  * handler}. Prefer {@link IllegalArgumentException} for user-facing validation errors so they are
  * surfaced as an invalid-request response.
  *
- * <p>Validators are registered on the {@code ClusterConfigurationManagerService} and are entirely
- * optional: a request type without a registered validator is not validated.
+ * <p>Validators are registered per physical tenant on the {@code
+ * ClusterConfigurationManagerService} and are entirely optional: a request type without a
+ * registered validator for its tenant is not validated.
  *
  * @param <T> the concrete request type this validator handles
  * @param <R> the type produced by validation; implementations that don't need to rewrite or resolve

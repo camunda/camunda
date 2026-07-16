@@ -42,9 +42,11 @@ public interface ClusterConfigurationService extends AsyncClosable {
 
   void removeInconsistentConfigurationListener();
 
-  void registerRequestValidator(ClusterConfigurationRequestValidator<?, ?> validator);
+  void registerRequestValidator(
+      String physicalTenantId, ClusterConfigurationRequestValidator<?, ?> validator);
 
-  void removeRequestValidator(Class<? extends ClusterConfigurationManagementRequest> requestType);
+  void removeRequestValidator(
+      String physicalTenantId, Class<? extends ClusterConfigurationManagementRequest> requestType);
 
   default List<PartitionMetadata> getMemberPartitions(final MemberId memberId) {
     final var partitionDistribution = getPartitionDistribution();

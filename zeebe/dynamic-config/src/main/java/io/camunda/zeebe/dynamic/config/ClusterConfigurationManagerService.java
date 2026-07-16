@@ -48,6 +48,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
@@ -290,13 +291,16 @@ public final class ClusterConfigurationManagerService
     clusterConfigurationManager.removeTopologyChangedListener();
   }
 
-  public void registerRequestValidator(final ClusterConfigurationRequestValidator<?, ?> validator) {
-    validators.registerValidator(validator);
+  public void registerRequestValidator(
+      final @Nullable String physicalTenantId,
+      final ClusterConfigurationRequestValidator<?, ?> validator) {
+    validators.registerValidator(physicalTenantId, validator);
   }
 
   public void removeRequestValidator(
+      final @Nullable String physicalTenantId,
       final Class<? extends ClusterConfigurationManagementRequest> requestType) {
-    validators.deregisterValidator(requestType);
+    validators.deregisterValidator(physicalTenantId, requestType);
   }
 
   @Override

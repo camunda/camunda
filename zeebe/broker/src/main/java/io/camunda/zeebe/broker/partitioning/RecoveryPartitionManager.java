@@ -118,7 +118,8 @@ public final class RecoveryPartitionManager
         () -> {
           if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
             clusterConfigurationService.registerPartitionChangeExecutors(this, this);
-            clusterConfigurationService.registerRequestValidator(new RestoreValidator(backupStore));
+            clusterConfigurationService.registerRequestValidator(
+                partitionGroup, new RestoreValidator(backupStore));
           }
           startInternal(result);
         });
@@ -133,7 +134,8 @@ public final class RecoveryPartitionManager
         () -> {
           if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
             clusterConfigurationService.removePartitionChangeExecutor();
-            clusterConfigurationService.removeRequestValidator(RestoreRequest.class);
+            clusterConfigurationService.removeRequestValidator(
+                partitionGroup, RestoreRequest.class);
           }
           stopInternal(result);
         });
