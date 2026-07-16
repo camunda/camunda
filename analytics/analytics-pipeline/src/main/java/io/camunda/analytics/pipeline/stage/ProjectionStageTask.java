@@ -43,6 +43,7 @@ import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.Segments;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
 import io.camunda.eventbridge.streaming.internals.FlowMetrics;
+import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
@@ -127,6 +128,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final boolean eagerShufflePublish;
   private final ProjectionMetrics metrics;
   private final FlowMetrics flowMetrics;
+  private final StoreMetrics storeMetrics;
 
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
@@ -184,6 +186,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final boolean eagerShufflePublish,
       final ProjectionMetrics metrics,
       final FlowMetrics flowMetrics,
+      final StoreMetrics storeMetrics,
       final long nowMs) {
     this.partition = partition;
     this.epoch = epoch;
@@ -210,6 +213,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     this.eagerShufflePublish = eagerShufflePublish;
     this.metrics = metrics;
     this.flowMetrics = flowMetrics;
+    this.storeMetrics = storeMetrics;
     this.lastReloadCheckMs = nowMs;
     final DatasetCatalog.Snapshot snapshot = catalog.snapshot();
     installTopology(snapshot.cubes(), snapshot.tables());
@@ -270,6 +274,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         eagerShufflePublish,
         new MicrometerProjectionMetrics(meterRegistry, partition),
         FlowMetrics.of(meterRegistry, "projection"),
+        StoreMetrics.of(meterRegistry, "projection", partition),
         System.currentTimeMillis());
   }
 
@@ -306,6 +311,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   private void installTopology(final List<ActiveCube> cubes, final List<ActiveTable> tables) {
     final StateBackedProjectionState state = StateBackedProjectionState.fromProvider(provider);
+    // Advisory, like the cube gate counters: a reload rebuilds the base state's caches, but a
+    // gauge already registered under this store's id/tags keeps reading the prior (now-abandoned)
+    // cache — Micrometer keeps the first registration. Harmless for these advisory overlay gauges.
+    state.bindMetrics(storeMetrics);
     projectionState = state;
     final EnvelopePublisher publisher =
         new EnvelopePublisher(

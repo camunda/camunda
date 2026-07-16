@@ -27,6 +27,7 @@ import io.camunda.analytics.serving.spi.TableRow;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.internals.FlowMetrics;
+import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbInt;
@@ -167,6 +168,7 @@ final class ProjectionStageTaskVariantRestartTest {
             false,
             ProjectionMetrics.NOOP,
             FlowMetrics.NOOP,
+            StoreMetrics.NOOP,
             0L);
     task.init();
   }

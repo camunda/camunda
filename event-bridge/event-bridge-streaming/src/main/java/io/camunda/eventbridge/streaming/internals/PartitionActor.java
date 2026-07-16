@@ -235,6 +235,7 @@ public final class PartitionActor<R> {
           }
           return;
         }
+        metrics.countEarlyCut();
         beginCommit();
         // The cut is in flight but detached: keep folding — the write stall above kicks in only
         // if the budget is still exhausted while the persist runs.

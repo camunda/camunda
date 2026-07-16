@@ -10,6 +10,7 @@ package io.camunda.analytics.state;
 import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.state.mutable.MutableProjectionState;
+import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.StoreBuilder;
 import io.camunda.eventbridge.streaming.state.api.StateStoreProvider;
 import io.camunda.eventbridge.streaming.state.cache.CachingKeyValueStore;
@@ -60,6 +61,8 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   private final CachingKeyValueStore<DbLong, IncidentEntity> incidents;
   private final CachingKeyValueStore<DbBytes, DbLong> variantElements;
   private final List<CachingKeyValueStore<?, ?>> caches;
+  // Named the same way for the overlay gauges (see bindMetrics) as for lookups above.
+  private final Map<String, CachingKeyValueStore<?, ?>> namedCaches;
 
   private final DbLong elementKey = new DbLong();
   private final ElementEntity elementWrite = new ElementEntity();
@@ -110,6 +113,21 @@ public final class StateBackedProjectionState implements MutableProjectionState,
             .withDeleteAbsorption()
             .buildCache(provider);
     caches = List.of(elements, variables, variableScopes, incidents, variantElements);
+    namedCaches =
+        Map.of(
+            "elements", elements,
+            "variables", variables,
+            "variableScopes", variableScopes,
+            "incidents", incidents,
+            "variantElements", variantElements);
+  }
+
+  /**
+   * Wires the "is state healthy" overlay gauges (entries + approximate bytes) for every store this
+   * base projection opened, tagged by each store's name. Call once, before processing starts.
+   */
+  public void bindMetrics(final StoreMetrics metrics) {
+    namedCaches.forEach((name, cache) -> cache.metrics(metrics, name));
   }
 
   /** Shares an already-open provider (the caller owns its lifecycle) — the production wiring. */

@@ -302,6 +302,35 @@ final class StreamRuntimeFrozenCutTest {
         .isEqualTo(task.completions.stream().filter(Boolean::booleanValue).count());
     assertThat(retryCount(registry)).isZero();
     assertThat(writeStallCount(registry)).isZero();
+    // and — every cut here was cadence-driven (commitInterval ZERO), never needsCheckpoint-driven
+    assertThat(earlyCutCount(registry)).isZero();
+  }
+
+  @Test
+  void shouldCountAnEarlyCutTriggeredByNeedsCheckpointRatherThanCadence() throws Exception {
+    // given — a one-hour commit cadence (never fires in this test) and a budget that forces a
+    // checkpoint after the first batch
+    stubClient();
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final FrozenCutTask task = new FrozenCutTask();
+    task.needsCheckpointAt = 2;
+    final AtomicBoolean delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> delivered.getAndSet(true) ? List.of() : List.of(event(1), event(2)));
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final List<Long> committed = stubCommittedOffsets(journal);
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ofHours(1), registry);
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // when — the budget-exhausted fold commits despite the cadence never having elapsed
+    await().until(() -> committed.contains(2L));
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+
+    // then — the cut is counted as early (overlay-full-triggered), not cadence-triggered
+    assertThat(earlyCutCount(registry)).isEqualTo(1.0);
   }
 
   @Test
@@ -608,6 +637,10 @@ final class StreamRuntimeFrozenCutTest {
 
   private static double writeStallCount(final SimpleMeterRegistry registry) {
     return registry.get("eb.streaming.write.stalls").tag("partition", "1").counter().count();
+  }
+
+  private static double earlyCutCount(final SimpleMeterRegistry registry) {
+    return registry.get("eb.streaming.cut.early").tag("partition", "1").counter().count();
   }
 
   /**

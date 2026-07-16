@@ -26,6 +26,7 @@ import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.internals.FlowMetrics;
+import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -93,6 +94,17 @@ final class ProjectionStageTaskDedupTest {
     // given a running task that folded an instance activation and completion
     openTask();
     task.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L, 100L));
+    // the base projection's element cache holds the activated row in its active overlay — before
+    // the completion evicts it (evict-after-emit) and before any checkpoint
+    assertThat(
+            meterRegistry
+                .get("eb.streaming.store.overlay.entries")
+                .tag("stage", "projection")
+                .tag("partition", String.valueOf(EB_PARTITION))
+                .tag("store", "elements")
+                .gauge()
+                .value())
+        .isGreaterThan(0.0);
     task.process(process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, 11L, 101L));
 
     // when the exporter re-appends the same Zeebe records at later Event Bridge offsets (a retried
@@ -182,6 +194,7 @@ final class ProjectionStageTaskDedupTest {
             false,
             new MicrometerProjectionMetrics(meterRegistry, EB_PARTITION),
             FlowMetrics.of(meterRegistry, "projection"),
+            StoreMetrics.of(meterRegistry, "projection", EB_PARTITION),
             0L);
     task.init();
   }

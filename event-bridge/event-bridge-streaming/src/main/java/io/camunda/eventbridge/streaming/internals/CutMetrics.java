@@ -59,6 +59,14 @@ public interface CutMetrics {
   default void countWriteStall() {}
 
   /**
+   * A cut was triggered by {@link io.camunda.eventbridge.streaming.Task#needsCheckpoint()} (the
+   * task's bounded overlay is full) rather than the commit-interval cadence. A sustained nonzero
+   * rate means the overlay is undersized for the load — this partition is cutting far more often
+   * than its configured interval.
+   */
+  default void countEarlyCut() {}
+
+  /**
    * The Micrometer-backed implementation; meters are registered once, recording allocates nothing.
    */
   final class MicrometerCutMetrics implements CutMetrics {
@@ -67,6 +75,7 @@ public interface CutMetrics {
     private final Timer persistDuration;
     private final Counter retries;
     private final Counter writeStalls;
+    private final Counter earlyCuts;
 
     private MicrometerCutMetrics(final MeterRegistry registry, final int partitionId) {
       final String partition = Integer.toString(partitionId);
@@ -91,6 +100,13 @@ public interface CutMetrics {
                   "Entries into the budget-exhausted write stall while a cut was in flight")
               .tag("partition", partition)
               .register(registry);
+      earlyCuts =
+          Counter.builder("eb.streaming.cut.early")
+              .description(
+                  "Cuts triggered by needsCheckpoint() (overlay full) rather than the commit"
+                      + " cadence")
+              .tag("partition", partition)
+              .register(registry);
     }
 
     @Override
@@ -111,6 +127,11 @@ public interface CutMetrics {
     @Override
     public void countWriteStall() {
       writeStalls.increment();
+    }
+
+    @Override
+    public void countEarlyCut() {
+      earlyCuts.increment();
     }
   }
 }

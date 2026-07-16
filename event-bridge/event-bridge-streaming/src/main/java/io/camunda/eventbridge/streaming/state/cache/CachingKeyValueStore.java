@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.streaming.state.cache;
 
+import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.api.Checkpointable;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.zeebe.db.DbKey;
@@ -417,6 +418,17 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
    */
   public boolean overCapacity() {
     return approxBytes > maxBytes;
+  }
+
+  /**
+   * Wires the "is state healthy" overlay gauges for {@code storeName} (before processing starts);
+   * at most one. Optional — without it every recording is a zero-allocation no-op ({@link
+   * StoreMetrics#NOOP}). The entry count is the active overlay only (the records cache whose growth
+   * forces early cuts); the byte estimate covers this cache's active, frozen and clean layers
+   * combined, since they are not tracked separately.
+   */
+  public void metrics(final StoreMetrics metrics, final String storeName) {
+    metrics.bindOverlay(storeName, () -> activeMap.size(), () -> approxBytes);
   }
 
   private void evictIfNeeded() {
