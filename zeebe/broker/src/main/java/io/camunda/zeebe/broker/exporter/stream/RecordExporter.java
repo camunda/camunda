@@ -26,7 +26,6 @@ class RecordExporter {
 
   private boolean shouldExport;
   private int exporterIndex;
-  private boolean abortedForReplay;
   private final InstantSource clock;
 
   RecordExporter(
@@ -51,12 +50,11 @@ class RecordExporter {
       typedEvent.wrap(rawEvent, rawMetadata, recordValue);
       exporterIndex = 0;
     }
-    abortedForReplay = false;
   }
 
-  boolean export() {
+  ExportOutcome export() {
     if (!shouldExport) {
-      return true;
+      return ExportOutcome.EXPORTED;
     }
 
     final ValueType valueType = typedEvent.getValueType();
@@ -78,23 +76,16 @@ class RecordExporter {
       try (final var timer =
           exporterMetrics.startExporterExportingTimer(valueType, container.getId())) {
         final ExportOutcome outcome = container.exportRecord(rawMetadata, typedEvent);
-        switch (outcome) {
-          case EXPORTED -> {
-            exporterIndex++;
-            exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
-          }
-          case ABORT_REPLAY -> {
-            abortedForReplay = true;
-            return true;
-          }
-          case RETRY -> {
-            return false;
-          }
+        if (outcome == ExportOutcome.EXPORTED) {
+          exporterIndex++;
+          exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
+        } else {
+          return outcome;
         }
       }
     }
 
-    return true;
+    return ExportOutcome.EXPORTED;
   }
 
   TypedRecordImpl getTypedEvent() {
@@ -103,16 +94,5 @@ class RecordExporter {
 
   public void resetExporterIndex() {
     exporterIndex = 0;
-  }
-
-  /**
-   * Returns whether the current record's export was abandoned because a container's reopen accepted
-   * a mid-run replay request, and clears the flag. The abandoned record is redelivered once reading
-   * resumes from the rewound log position.
-   */
-  boolean consumeAbortedForReplay() {
-    final boolean result = abortedForReplay;
-    abortedForReplay = false;
-    return result;
   }
 }

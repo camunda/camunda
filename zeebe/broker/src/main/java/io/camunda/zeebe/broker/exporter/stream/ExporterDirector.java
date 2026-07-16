@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.LangUtil;
@@ -768,8 +769,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return;
     }
 
+    final AtomicReference<ExportOutcome> lastOutcome = new AtomicReference<>();
     final ActorFuture<Boolean> retryFuture =
-        exportingRetryStrategy.runWithRetry(recordExporter::export, this::isClosed);
+        exportingRetryStrategy.runWithRetry(
+            () -> {
+              final ExportOutcome outcome = recordExporter.export();
+              lastOutcome.set(outcome);
+              return outcome != ExportOutcome.RETRY;
+            },
+            this::isClosed);
 
     actor.runOnCompletion(
         retryFuture,
@@ -777,7 +785,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
             onFailure();
-          } else if (recordExporter.consumeAbortedForReplay()) {
+          } else if (lastOutcome.get() == ExportOutcome.ABORT_REPLAY) {
             // the record was abandoned because a reopened exporter's replay request rewound the
             // log reader; it will be redelivered, in order, once reading resumes below
             inExportingPhase = false;
