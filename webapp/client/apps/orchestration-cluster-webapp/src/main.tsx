@@ -7,7 +7,7 @@
  */
 
 import ReactDOM from 'react-dom/client';
-import {RouterProvider, createRouter} from '@tanstack/react-router';
+import {RouterProvider, createRouter, parseSearchWith, stringifySearchWith} from '@tanstack/react-router';
 import {routeTree} from './routeTree.gen';
 import {QueryClientProvider} from '@tanstack/react-query';
 import './index.scss';
@@ -16,6 +16,7 @@ import {tracking} from '#/shared/tracking';
 import {reactQueryClient} from '#/shared/http/reactQueryClient';
 import {initI18next} from '#/shared/i18n/i18next';
 import {getBootConfig} from '#/shared/config/getBootConfig';
+import {parseSearchValueSafe} from '#/shared/parseSearchValueSafe';
 
 initI18next();
 
@@ -25,6 +26,8 @@ const router = createRouter({
 	defaultPreload: 'intent',
 	defaultPreloadStaleTime: 0,
 	scrollRestoration: true,
+	parseSearch: parseSearchWith(parseSearchValueSafe),
+	stringifySearch: stringifySearchWith(JSON.stringify, parseSearchValueSafe),
 	context: {
 		queryClient: reactQueryClient,
 	},
