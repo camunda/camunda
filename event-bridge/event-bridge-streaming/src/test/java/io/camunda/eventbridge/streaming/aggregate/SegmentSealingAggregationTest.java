@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
+import io.camunda.eventbridge.streaming.changelog.ChangelogRecord;
 import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
@@ -363,6 +364,59 @@ final class SegmentSealingAggregationTest {
     final SegmentSealingAggregation<Ev, String, MutableLong> after = durable(store);
     after.accept(new Ev(0, 20L, 100L, "b", 1L));
     assertThat(emitted).containsExactly(new Sealed("b", 0L, 0, 1L, 7L));
+  }
+
+  @Test
+  void shouldExposeAPutForADirtyCellWithTheSameBytesPersistFrozenWrites() {
+    // given a dirty cell whose cut is frozen but not yet persisted
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = durable(store);
+    aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
+    aggregation.freeze();
+
+    // when the changelog records are read before the transaction runs
+    final List<ChangelogRecord> records = aggregation.changelogRecords();
+    aggregation.persistFrozen();
+    aggregation.completeFrozen(true);
+
+    // then exactly one put, whose value is the bytes the store now holds under that key
+    assertThat(records).hasSize(1);
+    assertThat(records.get(0).isTombstone()).isFalse();
+    final DbBytes lookupKey = new DbBytes();
+    lookupKey.wrapBytes(records.get(0).key());
+    final byte[] storedValue = store.get(lookupKey).map(DbBytes::getBytes).orElseThrow();
+    assertThat(records.get(0).value()).isEqualTo(storedValue);
+  }
+
+  @Test
+  void shouldExposeATombstoneForAStaleRowAnEarlierCutWrote() {
+    // given segment 0 checkpointed durably
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = durable(store);
+    aggregation.accept(new Ev(0, 0L, 100L, "a", 5L));
+    aggregation.checkpoint();
+    store.clearRecorded();
+
+    // when a crossing record seals segment 0 away and the next cut freezes
+    aggregation.accept(new Ev(0, 10L, 100L, "b", 7L));
+    aggregation.freeze();
+
+    // then the changelog carries a tombstone for the sealed-away row
+    final List<ChangelogRecord> deletes =
+        aggregation.changelogRecords().stream().filter(ChangelogRecord::isTombstone).toList();
+    assertThat(deletes).hasSize(1);
+    aggregation.persistFrozen();
+    aggregation.completeFrozen(true);
+    assertThat(store.deleteWindowStarts()).hasSize(1);
+  }
+
+  @Test
+  void shouldRejectChangelogRecordsWhenNothingIsFrozen() {
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation =
+        durable(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    assertThatThrownBy(aggregation::changelogRecords).isInstanceOf(IllegalStateException.class);
   }
 
   @Test

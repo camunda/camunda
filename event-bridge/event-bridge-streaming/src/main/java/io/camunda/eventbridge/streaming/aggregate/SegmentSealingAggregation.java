@@ -9,6 +9,7 @@ package io.camunda.eventbridge.streaming.aggregate;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.WindowedCellState.CheckpointDelta;
+import io.camunda.eventbridge.streaming.changelog.ChangelogRecord;
 import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
@@ -16,8 +17,10 @@ import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.ToLongFunction;
@@ -361,6 +364,37 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     }
     frozen.cells().forEach(cells::putSerialized);
     cells.putMeta(frozen.meta());
+  }
+
+  /**
+   * The frozen open-segment snapshot as changelog records (streaming ADR 0009 Decisions 1/2): one
+   * {@linkplain ChangelogRecord#put put} per frozen dirty cell — the cell's store key bytes and the
+   * exact bytes {@link #persistFrozen()} writes — and one {@linkplain ChangelogRecord#tombstone
+   * tombstone} per stale (sealed-away) cell. Mirrors {@link #persistFrozen()} exactly, including
+   * its no-op under Model R (no durable aggregation state). Callable only while a cut is frozen,
+   * normally from a cut's {@link io.camunda.eventbridge.streaming.CommitCut#publish()} before the
+   * transaction that calls {@link #persistFrozen()} runs.
+   *
+   * @throws IllegalStateException if nothing is frozen (Model F only)
+   */
+  public List<ChangelogRecord> changelogRecords() {
+    if (cells == null) {
+      return List.of();
+    }
+    if (frozen == null) {
+      throw new IllegalStateException("expected a frozen open-segment snapshot, but none");
+    }
+    final List<ChangelogRecord> records =
+        new ArrayList<>(frozen.cells().size() + frozen.staleCells().size());
+    frozen
+        .cells()
+        .forEach(
+            (cell, bytes) ->
+                records.add(ChangelogRecord.put(cells.encodeCellKeyBytes(cell), bytes)));
+    for (final Windowed<K> cell : frozen.staleCells()) {
+      records.add(ChangelogRecord.tombstone(cells.encodeCellKeyBytes(cell)));
+    }
+    return records;
   }
 
   /**

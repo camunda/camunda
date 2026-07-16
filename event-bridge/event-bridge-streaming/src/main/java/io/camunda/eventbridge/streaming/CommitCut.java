@@ -44,9 +44,21 @@ public interface CommitCut {
 
   /**
    * Produce-before-commit: make the cut's produced output durable at its destination (e.g. publish
-   * sealed shuffle deltas, flush serving rows). Runs on the IO thread <em>outside</em> the state
-   * transaction; the writes must be idempotent, since a crash before the offset advances replays
-   * them. Default no-op for cuts without produced output.
+   * sealed shuffle deltas, flush serving rows, append the shard's changelog — streaming ADR 0009).
+   * Runs on the IO thread <em>outside</em> the state transaction; the writes must be idempotent,
+   * since a crash before the offset advances replays them. Default no-op for cuts without produced
+   * output.
+   *
+   * <p><b>The changelog stage (ADR 0009).</b> A shard that replicates its state through a
+   * compacted-topic changelog appends its frozen delta's keyed puts/tombstones plus a trailing
+   * offset-marker record here, and blocks for the broker's ack before returning — because {@link
+   * io.camunda.eventbridge.streaming.internals.PartitionCommitter#persistCut} always runs {@code
+   * publish()} to completion before {@link #persist()}, this makes "changelog ack strictly before
+   * the local commit" (the ADR's ordering invariant) hold by construction: a publish failure here
+   * propagates before any local transaction runs, so the whole cut fails together (no local commit,
+   * no source-offset commit — replay covers it, same as any failed persist). A task publishing a
+   * changelog also persists the changelog's assigned position in its own {@link #persist()}
+   * transaction, alongside the state delta and the barrier's offset.
    */
   default void publish() {}
 

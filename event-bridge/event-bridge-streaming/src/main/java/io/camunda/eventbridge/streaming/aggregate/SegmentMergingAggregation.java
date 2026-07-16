@@ -9,14 +9,17 @@ package io.camunda.eventbridge.streaming.aggregate;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.WindowedCellState.CheckpointDelta;
+import io.camunda.eventbridge.streaming.changelog.ChangelogRecord;
 import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
 import io.camunda.zeebe.db.impl.DbBytes;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -481,6 +484,34 @@ public final class SegmentMergingAggregation<K, ACC> {
     if (frozenClock != Long.MIN_VALUE) {
       cells.putMeta(encodeClock(frozenClock));
     }
+  }
+
+  /**
+   * The frozen delta as changelog records (streaming ADR 0009 Decisions 1/2): one {@linkplain
+   * ChangelogRecord#put put} per frozen changed cell — the cell's store key bytes and the exact
+   * bytes {@link #persistFrozen()} writes — and one {@linkplain ChangelogRecord#tombstone
+   * tombstone} per frozen deleted cell. This mirrors {@link #persistFrozen()} exactly: a cell born
+   * and evicted between two cuts has no durable row and produces no changelog record either (it is
+   * not in {@link #frozenDeletes}), and an unchanged cell is not re-emitted (it is in neither
+   * frozen set). Callable only while a cut is frozen, alongside {@link #persistFrozen()} — normally
+   * from a cut's {@link io.camunda.eventbridge.streaming.CommitCut#publish()}, before the
+   * transaction that calls {@link #persistFrozen()} runs.
+   *
+   * @throws IllegalStateException if nothing is frozen
+   */
+  public List<ChangelogRecord> changelogRecords() {
+    if (frozenCells == null) {
+      throw new IllegalStateException("expected a frozen checkpoint delta, but none");
+    }
+    final List<ChangelogRecord> records =
+        new ArrayList<>(frozenCells.changed().size() + frozenDeletes.size());
+    for (final Windowed<K> cell : frozenCells.changed()) {
+      records.add(ChangelogRecord.put(cells.encodeCellKeyBytes(cell), frozenSerialized.get(cell)));
+    }
+    for (final Windowed<K> cell : frozenDeletes) {
+      records.add(ChangelogRecord.tombstone(cells.encodeCellKeyBytes(cell)));
+    }
+    return records;
   }
 
   /**
