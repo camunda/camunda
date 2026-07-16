@@ -2,5 +2,8 @@ dependencies:
 - name: camunda-load-tests
   repository: https://camunda.github.io/camunda-load-tests-helm/
   version: 0.1.12
-digest: sha256:e22066b23862335a160a0db9e11b491478b60575ccf150b6eb7698b5ffcb6990
-generated: "2026-07-06T17:39:37.885393407+02:00"
+- name: prometheus-elasticsearch-exporter
+  repository: oci://ghcr.io/prometheus-community/charts
+  version: 7.2.1
+digest: sha256:573bcbb35b475bc46a56848c7f99c63618f0b8c8a8478e2f71bc30d9d9f1a646
+generated: "2026-07-16T16:35:31.579970684+02:00"

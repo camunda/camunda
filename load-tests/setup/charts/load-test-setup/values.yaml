@@ -85,7 +85,9 @@ loadTest:
 # appropriate for load-test environments, not production.
 elasticsearch:
   # -- Set to true to deploy an Elasticsearch cluster via the ECK operator.
-  enabled: false
+  # This is a boolean, defaults to "false". Keep this unset to allow further
+  # chaining further conditions in the "Chart.yaml" conditions.
+  enabled:
 
   # -- The name of the underlying Elasticsearch resource.
   # Changing this also changes the names of the other resources deployed by the
@@ -135,3 +137,47 @@ elasticsearch:
     operator: Equal
     value: n2-standard-8
 
+# -- Configuration for OpenSearch
+opensearch:
+  # -- Set to true to deploy an OpenSearch cluster via the OpenSearch Helm Chart (not implemented yet)
+  # This is a boolean, defaults to "false". Keep this unset to allow further
+  # chaining further conditions in the "Chart.yaml" conditions.
+  enabled:
+
+# -- Configuration for the Prometheus exporter for Elasticsearch
+# See https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter
+prometheus-elasticsearch-exporter:
+  # -- Forcefully enable/disable the Prometheus exporter for Elasticsearch.
+  # This is a boolean, defaults to "false". Keep this unset to allow further
+  # chaining further conditions in the "Chart.yaml" conditions.
+  #
+  # By default, the Prometheus exporter for Elasticsearch is automatically
+  # enabled when Elasticsearch or OpenSearch are enabled through this Helm
+  # Chart.
+  enabled:
+
+  # Other options for the Prometheus exporter for Elasticsearch.
+  # See https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-elasticsearch-exporter/values.yaml for the list of options.
+  fullnameOverride: elasticsearch-exporter
+
+  commonLabels:
+    camunda.io/created-by: __AUTHOR__
+    camunda.io/purpose: load-test
+
+  image:
+    # Route through colocated GAR pull-through cache to avoid quay.io rate limiting
+    # Original: quay.io/prometheuscommunity/elasticsearch-exporter
+    repository: europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter
+    tag: v1.10.0
+
+  log:
+    format: json
+
+  serviceMonitor:
+    enabled: true
+    # Labels used by the service monitor, specific to our prometheus installation
+    labels:
+      release: monitoring
+
+  nodeSelector:
+    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__

@@ -136,8 +136,8 @@ The template files live under `setup/main/`:
   them. For example, `elasticsearch` copies
   `camunda-platform-values-defaults.yaml`,
   `camunda-platform-values-elasticsearch.yaml`,
-  `camunda-platform-override-values.yaml`, `load-test-values.yaml`,
-  `values-stable.yaml`, and `prometheus-elasticsearch-exporter-values.yaml`.
+  `camunda-platform-override-values.yaml`, `load-test-values.yaml` and
+  `values-stable.yaml`
 - `databases/` — raw Kubernetes manifests for MSSQL and Oracle (no public
   Helm chart). Copied into the namespace folder only when the matching
   storage is chosen.

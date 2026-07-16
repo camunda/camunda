@@ -14,3 +14,15 @@ dependencies:
     # the load generators (e.g. for a bare cluster setup or when using the
     # standalone load-tester Helm release on stable versions).
     condition: load-tester.enabled
+
+  - name: prometheus-elasticsearch-exporter
+    version: "7.2.1"
+    repository: oci://ghcr.io/prometheus-community/charts
+    # Enable the exporter if:
+    #   1. It's explicitly enabled
+    #   2. or if the Helm Chart is configured with Elasticsearch or OpenSearch.
+    #
+    # If any of these option is set to a boolean value, the rest of the options
+    # is not checked. Make sure to *not* configure an prior option to "false"
+    # if a further option is set to "true".
+    condition: prometheus-elasticsearch-exporter.enabled,elasticsearch.enabled,opensearch.enabled

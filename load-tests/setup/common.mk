@@ -43,7 +43,6 @@ chaos ?= false
 # same RDBMS but isolated by table prefix. Requires an rdbms secondary_storage.
 # Pass directly: make install physical_tenants=true secondary_storage=postgresql
 physical_tenants ?= false
-prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
 # Optional: additional Helm configuration for the Camunda Platform release.
 # Use this to pass extra `--set`/`-f` flags, for example:
 #   make install additional_platform_configuration="--set zeebeGateway.env[0].name=FOO --set zeebeGateway.env[0].value=bar"
@@ -158,24 +157,6 @@ endif
 # Platform values with stable configuration
 platform_values_stable = $(platform_values) -f values-stable.yaml
 
-ifeq ($(secondary_storage),elasticsearch)
-	install_es_prom_exporter = true
-	es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
-else ifeq ($(secondary_storage),opensearch)
-	install_es_prom_exporter = true
-	es_prom_exporter_es_uri = http://opensearch:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
-else ifeq ($(enable_optimize),true)
-	# Here, the secondary storage is either none or an RDBMS database.
-	# Elasticsearch is always used in this case as the backend for Optimize.
-	install_es_prom_exporter = true
-	es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
-else
-	install_es_prom_exporter = false
-endif
-
 ifeq ($(chaos),true)
 	_load_test_setup_flags += --set chaosKiller.enabled=true
 endif
@@ -192,10 +173,10 @@ load_test_setup_flags = $(load_test_setup_values) \
 all: install
 
 .PHONY: install
-install: check-deadline install-load-test-setup $(install_storage_target) install-platform install-elasticsearch-exporter
+install: check-deadline install-load-test-setup $(install_storage_target) install-platform
 
 .PHONY: install-stable
-install-stable: check-deadline install-load-test-setup $(install_storage_target) install-platform-stable install-elasticsearch-exporter
+install-stable: check-deadline install-load-test-setup $(install_storage_target) install-platform-stable
 
 # When physical_tenants=true, also deploy the second (testfoo) load tester. Appended as the
 # last prerequisite so it runs after the platform is up and the load-test-credentials secret exists.
@@ -285,21 +266,6 @@ else ifeq ($(secondary_storage),opensearch)
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
-endif
-
-# Install Elasticsearch Prometheus exporter if Elasticsearch/OpenSearch is deployed (secondary storage or Optimize)
-.PHONY: install-elasticsearch-exporter
-install-elasticsearch-exporter:
-ifeq ($(install_es_prom_exporter),true)
-	@echo "Installing Elasticsearch Prometheus Exporter for namespace $(namespace)..."
-	helm upgrade --install elasticsearch-exporter oci://ghcr.io/prometheus-community/charts/prometheus-elasticsearch-exporter \
-    --namespace $(namespace) \
-    --version $(prometheus_elasticsearch_exporter_chart_version) \
-    --wait --timeout 5m0s \
-    -f prometheus-elasticsearch-exporter-values.yaml \
-    --set "es.uri=$(es_prom_exporter_es_uri)"
-else
-	@echo "Skipping Elasticsearch Prometheus Exporter installation (secondary_storage=$(secondary_storage))"
 endif
 
 ifneq ($(physical_tenants_rdbms_values_file),)
