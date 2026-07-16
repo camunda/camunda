@@ -204,6 +204,15 @@ message CompleteJobRequest {
   // after the job timed out or failed and was re-activated by another worker). A job that was
   // activated without a lease requires no token.
   optional string leaseToken = 4;
+  // an optional business id to assign to the process instance the job belongs to, as part of
+  // completing the job. The business id can only be assigned to a root process instance: if the
+  // job belongs to a child process instance (one started by a call activity), the completion is
+  // rejected. An empty business id is likewise rejected. The assignment is single and irreversible
+  // and is only accepted while business id uniqueness is disabled. Only artifacts created after the
+  // assignment carry the business id; already-existing ones are not enriched. Completing with a
+  // business id that differs from one already assigned rejects the whole completion, leaving the
+  // job open; re-sending the identical business id is an idempotent no-op.
+  optional string businessId = 5;
 }
 
 message JobResult{
