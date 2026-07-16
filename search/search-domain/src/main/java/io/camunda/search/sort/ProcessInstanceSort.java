@@ -86,6 +86,16 @@ public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortO
       return this;
     }
 
+    public Builder suspended() {
+      currentOrdering = new FieldSorting("suspended", null);
+      return this;
+    }
+
+    public Builder suspendedDate() {
+      currentOrdering = new FieldSorting("suspendedDate", null);
+      return this;
+    }
+
     public Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
       return this;
