@@ -75,6 +75,7 @@ import io.camunda.zeebe.engine.processing.resource.ResourceReexportReexportProce
 import io.camunda.zeebe.engine.processing.resource.ResourceReexportStartProcessor;
 import io.camunda.zeebe.engine.processing.resource.RpaReexportMigrator;
 import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
+import io.camunda.zeebe.engine.processing.secretreference.SecretReferenceProcessors;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -504,6 +505,8 @@ public final class EngineProcessors {
 
     AgentHistoryProcessors.addAgentHistoryProcessors(
         keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
+
+    SecretReferenceProcessors.addSecretReferenceProcessors(typedRecordProcessors);
 
     return typedRecordProcessors;
   }
