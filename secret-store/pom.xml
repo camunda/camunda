@@ -23,6 +23,7 @@
   <modules>
     <module>secret-store-api</module>
     <module>secret-store-file</module>
+    <module>secret-store-aws</module>
   </modules>
 
 </project>
