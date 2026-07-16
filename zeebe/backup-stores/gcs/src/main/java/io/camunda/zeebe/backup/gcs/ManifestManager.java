@@ -28,14 +28,20 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
+import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +58,13 @@ public final class ManifestManager {
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
   public static final int PRECONDITION_FAILED = 412;
+  private static final int LIST_MAX_RETRIES = 6;
+  private static final int MAX_CAUSE_DEPTH = 20;
+  private static final Duration MIN_LIST_RETRY_DELAY = Duration.ofMillis(100);
+  private static final Duration MAX_LIST_RETRY_DELAY = Duration.ofSeconds(2);
+  private static final RetryDecorator MANIFEST_LIST_RETRY =
+      new RetryDecorator(manifestListRetryConfiguration())
+          .withRetryOnException(ManifestManager::shouldRetryListOperation);
   private static final Logger LOG = LoggerFactory.getLogger(ManifestManager.class);
 
   /**
@@ -193,10 +206,8 @@ public final class ManifestManager {
   public Collection<BackupStatus> listBackupStatuses(final BackupIdentifierWildcard wildcard) {
     final var blobFilter = filterBlobsByWildcard(wildcard);
     LOG.debug("Listing backup statuses for wildcard {}", wildcard);
-    final var listing =
-        client
-            .list(bucketInfo.getName(), BlobListOption.prefix(wildcardPrefix(wildcard)))
-            .iterateAll();
+    final var prefix = wildcardPrefix(wildcard);
+    final var listing = listManifestBlobsWithRetry(prefix);
     final var statusFutures = new ArrayList<CompletableFuture<BackupStatus>>();
     for (final var blob : listing) {
       if (!blobFilter.test(blob)) {
@@ -218,6 +229,72 @@ public final class ManifestManager {
         .map(CompletableFuture::join)
         .filter(status -> wildcard.matches(status.id()))
         .toList();
+  }
+
+  private List<Blob> listManifestBlobsWithRetry(final String prefix) {
+    try {
+      final var operationName =
+          "list GCS backup manifests from bucket '%s' with prefix '%s'"
+              .formatted(bucketInfo.getName(), prefix);
+      return MANIFEST_LIST_RETRY.decorate(
+          operationName, () -> listManifestBlobs(prefix), ignored -> false);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException(
+          "Failed to list GCS backup manifests from bucket '%s' with prefix '%s'"
+              .formatted(bucketInfo.getName(), prefix),
+          e);
+    }
+  }
+
+  private List<Blob> listManifestBlobs(final String prefix) {
+    final var blobs = new ArrayList<Blob>();
+    client
+        .list(bucketInfo.getName(), BlobListOption.prefix(prefix))
+        .iterateAll()
+        .forEach(blobs::add);
+    return blobs;
+  }
+
+  private static boolean shouldRetryListOperation(final Throwable error) {
+    return causes(error)
+        .anyMatch(
+            current ->
+                current instanceof final StorageException storageException
+                    && shouldRetryStorageException(storageException));
+  }
+
+  private static boolean shouldRetryStorageException(final StorageException storageException) {
+    return storageException.isRetryable()
+        || isServerError(storageException)
+        || isNonHttpIoError(storageException);
+  }
+
+  private static boolean isServerError(final StorageException e) {
+    final var statusCode = e.getCode();
+    return statusCode >= 500 && statusCode < 600;
+  }
+
+  private static boolean isNonHttpIoError(final StorageException e) {
+    return e.getCode() == 0 && hasCause(e, IOException.class);
+  }
+
+  private static boolean hasCause(
+      final Throwable error, final Class<? extends Throwable> causeType) {
+    return causes(error).anyMatch(causeType::isInstance);
+  }
+
+  private static Stream<Throwable> causes(final Throwable error) {
+    return Stream.iterate(error, Objects::nonNull, Throwable::getCause).limit(MAX_CAUSE_DEPTH);
+  }
+
+  private static RetryConfiguration manifestListRetryConfiguration() {
+    final var retryConfiguration = new RetryConfiguration();
+    retryConfiguration.setMaxRetries(LIST_MAX_RETRIES);
+    retryConfiguration.setMinRetryDelay(MIN_LIST_RETRY_DELAY);
+    retryConfiguration.setMaxRetryDelay(MAX_LIST_RETRY_DELAY);
+    return retryConfiguration;
   }
 
   private CompletableFuture<BackupStatus> downloadManifestStatus(final Blob blob) {
