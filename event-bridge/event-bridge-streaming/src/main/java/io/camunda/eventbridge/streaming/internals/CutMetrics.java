@@ -71,6 +71,14 @@ public interface CutMetrics {
   default void countEarlyCut() {}
 
   /**
+   * The shard halted after its source-offset commit was rejected (fenced) — the interim halt
+   * discipline (streaming ADR 0009 §4) ahead of broker-enforced epoch fencing: no retry, no further
+   * cuts for this partition. Should be rare; a nonzero rate outside a deliberate rebalance/failover
+   * means a deposed member kept running past its fencing.
+   */
+  default void countHalt() {}
+
+  /**
    * The Micrometer-backed implementation; meters are registered once, recording allocates nothing.
    */
   final class MicrometerCutMetrics implements CutMetrics {
@@ -80,6 +88,7 @@ public interface CutMetrics {
     private final Counter retries;
     private final Counter writeStalls;
     private final Counter earlyCuts;
+    private final Counter halts;
 
     private MicrometerCutMetrics(
         final MeterRegistry registry, final int partitionId, final String stageLabel) {
@@ -117,6 +126,13 @@ public interface CutMetrics {
         earlyCutsBuilder.tag("stage", stageLabel);
       }
       earlyCuts = earlyCutsBuilder.register(registry);
+      halts =
+          Counter.builder("eb.streaming.cut.halts")
+              .description(
+                  "Shard halts after a rejected (fenced) source-offset commit — no retry, no"
+                      + " further cuts")
+              .tag("partition", partition)
+              .register(registry);
     }
 
     @Override
@@ -137,6 +153,11 @@ public interface CutMetrics {
     @Override
     public void countWriteStall() {
       writeStalls.increment();
+    }
+
+    @Override
+    public void countHalt() {
+      halts.increment();
     }
 
     @Override

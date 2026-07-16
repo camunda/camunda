@@ -46,6 +46,16 @@ public final class PartitionCommitter<R> {
    * one hard ordering rule holds by construction: the commit is never sent before the transaction
    * committed.
    *
+   * <p><b>The changelog stage (streaming ADR 0009).</b> A shard with a changelog appends it inside
+   * {@link CommitCut#publish()}, so the ordering here already gives the ADR's invariant for free:
+   * {@code cut.publish()} runs to completion (changelog ack included) before {@code cut.persist()}
+   * ever starts, and a publish failure — including a changelog append failure — throws out of this
+   * method before any local transaction runs, failing the whole cut (no local commit, no
+   * source-offset commit) exactly like any other failed persist. The interim halt discipline for a
+   * <em>rejected</em> {@code commitOffset} (a coordinator-epoch fence — see {@link
+   * PartitionActor#onCutPersisted}) lives one level up: this method only sends the commit and
+   * returns its future, uninterpreted.
+   *
    * @return a future done only when the cut is fully durable — its transaction committed and its
    *     source-offset ack arrived
    */

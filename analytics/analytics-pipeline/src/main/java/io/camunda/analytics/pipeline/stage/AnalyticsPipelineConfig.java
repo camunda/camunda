@@ -45,6 +45,9 @@ import java.time.Duration;
  * @param stateDeleteAwareCompaction whether the tasks' RocksDBs periodically recompact old SST
  *     files to purge accumulated tombstones ({@code analytics.state.deleteAwareCompaction}, default
  *     {@code true}: scope clears make the stores tombstone-heavy)
+ * @param changelogEnabled whether a stage's cuts replicate their state through a compacted-topic
+ *     changelog ({@code analytics.changelog.enabled}, default {@code true} — streaming ADR 0009);
+ *     the topic is provisioned idempotently and one changelog partition backs each source partition
  */
 public record AnalyticsPipelineConfig(
     String stage,
@@ -59,7 +62,8 @@ public record AnalyticsPipelineConfig(
     Duration checkpointInterval,
     long reloadCheckIntervalMs,
     boolean stateConsistencyChecks,
-    boolean stateDeleteAwareCompaction) {
+    boolean stateDeleteAwareCompaction,
+    boolean changelogEnabled) {
 
   /** Reads the configuration for one stage from system properties, with the shared defaults. */
   public static AnalyticsPipelineConfig fromSystemProperties(final String stage) {
@@ -76,7 +80,8 @@ public record AnalyticsPipelineConfig(
         Duration.ofMillis(Long.getLong("analytics.checkpointIntervalMs", 1000L)),
         Long.getLong("analytics.reloadCheckIntervalMs", 10_000L),
         Boolean.parseBoolean(System.getProperty("analytics.state.consistencyChecks", "false")),
-        Boolean.parseBoolean(System.getProperty("analytics.state.deleteAwareCompaction", "true")));
+        Boolean.parseBoolean(System.getProperty("analytics.state.deleteAwareCompaction", "true")),
+        Boolean.parseBoolean(System.getProperty("analytics.changelog.enabled", "true")));
   }
 
   /** The per-instance state directory this stage's RocksDBs live under. */
@@ -87,5 +92,13 @@ public record AnalyticsPipelineConfig(
   /** The RocksDB tuning the analytics tasks open their state stores with. */
   public StoreTuning storeTuning() {
     return new StoreTuning(stateConsistencyChecks, stateDeleteAwareCompaction);
+  }
+
+  /**
+   * The changelog topic backing this stage's cuts (streaming ADR 0009 Decision 1): one COMPACT
+   * topic per stage/store, partition count matching the source partition count this stage owns.
+   */
+  public String changelogTopic() {
+    return "analytics-" + stage + "-changelog";
   }
 }

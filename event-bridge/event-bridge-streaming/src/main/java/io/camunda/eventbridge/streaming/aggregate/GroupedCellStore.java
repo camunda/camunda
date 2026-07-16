@@ -118,6 +118,20 @@ final class GroupedCellStore<K, ACC> {
     store.delete(cellKey);
   }
 
+  /**
+   * A stable copy of {@code cell}'s row key bytes, safe to retain past the next call — unlike
+   * {@link #encodeCellKey}, which wraps a flyweight over reused encode scratch that the very next
+   * call overwrites. Used to build changelog records (streaming ADR 0009), whose keys must outlive
+   * this call: they are collected into a batch before publishing.
+   */
+  byte[] encodeCellKeyBytes(final Windowed<K> cell) {
+    encodeCellKey(cell);
+    final DirectBuffer buffer = cellKey.getDirectBuffer();
+    final byte[] copy = new byte[buffer.capacity()];
+    buffer.getBytes(0, copy);
+    return copy;
+  }
+
   /** Upserts the group's meta row (the bare-group key); the value layout is the caller's. */
   void putMeta(final byte[] value) {
     cellValue.wrapBytes(value);

@@ -16,6 +16,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.eventbridge.client.Consumer;
+import io.camunda.eventbridge.client.ConsumerNotRegisteredException;
 import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -458,6 +459,60 @@ final class StreamRuntimeFrozenCutTest {
   }
 
   @Test
+  void shouldHaltTheShardWhenTheSourceOffsetCommitIsRejectedByFencing() throws Exception {
+    // given — every source-offset commit is rejected: the coordinator has fenced this member
+    // (streaming ADR 0009 §4's interim halt discipline)
+    stubClient();
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final FrozenCutTask task = new FrozenCutTask();
+    final List<String> journal = new CopyOnWriteArrayList<>();
+    final AtomicInteger commitAttempts = new AtomicInteger();
+    when(consumer.commitOffset(any(), anyInt(), anyLong()))
+        .thenAnswer(
+            invocation -> {
+              commitAttempts.incrementAndGet();
+              journal.add("commitOffset-rejected:" + invocation.getArgument(2, Long.class));
+              return CompletableFuture.failedFuture(new ConsumerNotRegisteredException("g", "i"));
+            });
+    final AtomicBoolean batch1Delivered = new AtomicBoolean();
+    final AtomicBoolean batch2Ready = new AtomicBoolean();
+    final AtomicBoolean batch2Delivered = new AtomicBoolean();
+    when(consumer.poll(anyInt(), any()))
+        .thenAnswer(
+            invocation -> {
+              if (!batch1Delivered.getAndSet(true)) {
+                return List.of(event(1), event(2));
+              }
+              if (batch2Ready.get() && !batch2Delivered.getAndSet(true)) {
+                return List.of(event(3));
+              }
+              return List.of();
+            });
+    final StreamRuntime<String> runtime = runtime(task, journal, Duration.ZERO, registry);
+    final Thread loop = new Thread(runtime::run, "runtime-under-test");
+    loop.start();
+
+    // then — the shard halts after its one rejected commit attempt: no retry (the transaction
+    // already committed, so the cut is treated as durable — only the advisory ack was rejected)
+    await().until(() -> haltCount(registry) == 1.0);
+    assertThat(task.completions).containsExactly(true);
+    assertThat(retryCount(registry)).isZero();
+    assertThat(commitAttempts.get()).isEqualTo(1);
+
+    // when a later batch arrives after the halt
+    batch2Ready.set(true);
+
+    // then it is never folded and no second commit is ever attempted — no further cuts run
+    await()
+        .during(Duration.ofMillis(200))
+        .atMost(Duration.ofSeconds(2))
+        .until(() -> !task.processed.contains("e3") && commitAttempts.get() == 1);
+
+    runtime.stop();
+    loop.join(TimeUnit.SECONDS.toMillis(5));
+  }
+
+  @Test
   void shouldChainTheNextFreezeBehindTheSourceOffsetAck() throws Exception {
     // given — the first cut's source-offset ack is held back after its transaction committed
     stubClient();
@@ -634,6 +689,10 @@ final class StreamRuntimeFrozenCutTest {
 
   private static double retryCount(final SimpleMeterRegistry registry) {
     return registry.get("eb.streaming.cut.retries").tag("partition", "1").counter().count();
+  }
+
+  private static double haltCount(final SimpleMeterRegistry registry) {
+    return registry.get("eb.streaming.cut.halts").tag("partition", "1").counter().count();
   }
 
   private static double writeStallCount(final SimpleMeterRegistry registry) {

@@ -117,7 +117,16 @@ public enum AnalyticsColumnFamilies implements EnumValue, ScopedColumnFamily {
    * amplified to one entry per distinct executed element. A sweep/TTL is deliberately deferred
    * until it shows up in state-size numbers.
    */
-  VARIANT_ELEMENTS(11, ColumnFamilyScope.PARTITION_LOCAL);
+  VARIANT_ELEMENTS(11, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Stage-2 changelog position (streaming ADR 0009 Decision 1): {@code partition -> P}, the
+   * broker-assigned position of the most recent cut's changelog offset-marker record. Persisted in
+   * the same atomic cut as the merged cells and the facts offset, alongside the changelog append
+   * itself; write-only today (no reader exists yet — the changelog-follower standby and
+   * intact-disk-resume paths are ADR 0009 Decisions 5/6, not yet built).
+   */
+  CHANGELOG_POSITION(12, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

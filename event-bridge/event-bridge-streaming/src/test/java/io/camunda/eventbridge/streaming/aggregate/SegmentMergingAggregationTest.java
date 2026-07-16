@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
+import io.camunda.eventbridge.streaming.changelog.ChangelogRecord;
 import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -964,6 +966,127 @@ final class SegmentMergingAggregationTest {
     assertThat(store.deleteWindowStarts()).isEmpty();
     assertThat(sink.get(cell)).hasValue(5L);
     assertThat(storedWindowStarts(store)).containsExactly(10_000L);
+  }
+
+  @Test
+  void shouldExposeAPutWithTheSameBytesPersistFrozenWrites() {
+    // given a changed cell whose cut is frozen but not yet persisted
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, new InMemoryResultSink<>(), keepOpen());
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 5L);
+    merger.freeze();
+
+    // when the changelog records are read before the transaction runs
+    final List<ChangelogRecord> records = merger.changelogRecords();
+    merger.persistFrozen();
+    merger.completeFrozen(true);
+
+    // then exactly one put, whose value is the same bytes the store now holds under that key
+    assertThat(records).hasSize(1);
+    assertThat(records.get(0).isTombstone()).isFalse();
+    final Map<ByteKey, byte[]> stored = new HashMap<>();
+    store.forEach((key, value) -> stored.put(new ByteKey(key.getBytes()), value.getBytes()));
+    assertThat(stored).containsEntry(new ByteKey(records.get(0).key()), records.get(0).value());
+  }
+
+  @Test
+  void shouldExposeATombstoneForAnEvictedCellAnEarlierCutWrote() {
+    // given a cell whose row a completed cut persisted
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, new InMemoryResultSink<>(), TumblingWindows.ofSizeAndGrace(1_000L, 2_000L));
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 5L);
+    merger.checkpoint();
+    store.clearRecorded();
+
+    // when event time closes the cell's window and the next cut freezes its eviction
+    merger.merge(new Windowed<>("later", 10_000L), 1L);
+    merger.freeze();
+
+    // then the changelog carries exactly one tombstone, for the evicted cell's key
+    final List<ChangelogRecord> deletes =
+        merger.changelogRecords().stream().filter(ChangelogRecord::isTombstone).toList();
+    assertThat(deletes).hasSize(1);
+    merger.persistFrozen();
+    merger.completeFrozen(true);
+    assertThat(store.deleteWindowStarts()).containsExactly(0L);
+  }
+
+  @Test
+  void shouldExposeNoRecordForACellBornAndEvictedBetweenTwoCuts() {
+    // given a completed cut, and a cell then born AND finalized before the next cut — no cut ever
+    // wrote its row, so neither persistFrozen() nor the changelog has anything to delete
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final InMemoryResultSink<Windowed<String>, Long> sink = new InMemoryResultSink<>();
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, sink, TumblingWindows.ofSizeAndGrace(1_000L, 2_000L));
+    merger.checkpoint();
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 5L);
+    merger.merge(new Windowed<>("later", 10_000L), 1L); // closes the cell's window
+
+    // when the next cut finalizes and evicts the born-and-died cell
+    merger.freeze();
+
+    // then the changelog carries a put only for the still-open later cell — no record at all for
+    // the born-and-died one
+    final List<ChangelogRecord> records = merger.changelogRecords();
+    assertThat(records).hasSize(1);
+    assertThat(records.get(0).isTombstone()).isFalse();
+    merger.persistFrozen();
+    merger.completeFrozen(true);
+  }
+
+  @Test
+  void shouldNotReemitAnUnchangedCellsChangelogRecord() {
+    // given a cell persisted by a completed cut, unchanged since
+    final RecordingKeyValueStore store =
+        new RecordingKeyValueStore(new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()));
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(store, new InMemoryResultSink<>(), keepOpen());
+    final Windowed<String> cell = new Windowed<>("k", 0L);
+    merger.merge(cell, 5L);
+    merger.checkpoint();
+
+    // when a later cut's cut freezes with nothing changed
+    final Windowed<String> other = new Windowed<>("other", 0L);
+    merger.merge(other, 1L);
+    merger.freeze();
+
+    // then the changelog carries only the newly-changed cell, not the untouched one
+    final List<ChangelogRecord> records = merger.changelogRecords();
+    assertThat(records).hasSize(1);
+    merger.persistFrozen();
+    merger.completeFrozen(true);
+  }
+
+  @Test
+  void shouldRejectChangelogRecordsWhenNothingIsFrozen() {
+    final SegmentMergingAggregation<String, Long> merger =
+        merger(
+            new InMemoryKeyValueStore<>(new DbBytes(), new DbBytes()),
+            new InMemoryResultSink<>(),
+            keepOpen());
+    assertThatThrownBy(merger::changelogRecords).isInstanceOf(IllegalStateException.class);
+  }
+
+  /** A wrapper giving {@code byte[]} value semantics for map keys in assertions. */
+  private record ByteKey(byte[] bytes) {
+    @Override
+    public boolean equals(final Object obj) {
+      return obj instanceof final ByteKey other && Arrays.equals(bytes, other.bytes);
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(bytes);
+    }
   }
 
   @Test
