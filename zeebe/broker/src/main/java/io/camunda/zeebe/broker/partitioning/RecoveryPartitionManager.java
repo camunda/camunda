@@ -12,10 +12,12 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -54,6 +57,7 @@ public final class RecoveryPartitionManager
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryPartitionManager.class);
   private final List<RecoveryPartition> recoveryPartitions = new ArrayList<>();
+  private final List<Integer> failedPartitionIds = new ArrayList<>();
   private final String partitionGroup;
   private final ConcurrencyControl concurrencyControl;
   private final ActorSchedulingService actorSchedulingService;
@@ -64,6 +68,7 @@ public final class RecoveryPartitionManager
   private final BrokerCfg brokerCfg;
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
+  private @Nullable BackupStore backupStore;
 
   public RecoveryPartitionManager(
       final String partitionGroup,
@@ -139,13 +144,20 @@ public final class RecoveryPartitionManager
       return;
     }
 
-    final List<RecoveryPartition> starting = new ArrayList<>();
-    final var startFutures = new ArrayList<ActorFuture<RecoveryPartition>>();
+    final var backupCfg = brokerCfg.getData().getBackup();
+    try {
+      backupStore = BackupCfg.BackupStoreFactory.createStore(backupCfg);
+    } catch (final Exception e) {
+      LOG.error("Failed to create backup store for partition group {}", partitionGroup, e);
+      result.completeExceptionally(e);
+      return;
+    }
+
+    final var startFutures = new ArrayList<ActorFuture<Void>>();
     for (final var partitionMetadata : localPartitions) {
       LOG.info("Recovering partition {}", partitionMetadata.id());
       final var partition = RecoveryPartition.recovering(startupContext(partitionMetadata));
-      starting.add(partition);
-      startFutures.add(partition.start());
+      startFutures.add(startPartition(partition));
     }
 
     final var startAll =
@@ -154,10 +166,12 @@ public final class RecoveryPartitionManager
         startAll,
         (ignored, startError) -> {
           if (startError != null) {
-            result.completeExceptionally(startError);
-            return;
+            LOG.warn(
+                "Recovered {}/{} partitions for partition group {}",
+                recoveryPartitions.size(),
+                localPartitions.size(),
+                partitionGroup);
           }
-          recoveryPartitions.addAll(starting);
           final var deactivateFutures =
               localPartitions.stream()
                   .map(p -> topologyManager.setInactive(p.id().number()))
@@ -165,7 +179,24 @@ public final class RecoveryPartitionManager
           concurrencyControl.runOnCompletion(
               deactivateFutures,
               (ignoredDeactivate, deactivateError) -> {
-                if (deactivateError != null) {
+                // reported once the partition is registered as INACTIVE above, since
+                // onHealthChanged is a no-op for a partition the topology doesn't know about yet
+                failedPartitionIds.forEach(
+                    id -> topologyManager.onHealthChanged(id, HealthStatus.DEAD));
+                if (recoveryPartitions.isEmpty()) {
+                  if (deactivateError != null) {
+                    LOG.error(
+                        "Failed to deactivate local partitions for partition group {} after all"
+                            + " partitions failed to recover",
+                        partitionGroup,
+                        deactivateError);
+                  }
+                  concurrencyControl.runOnCompletion(
+                      closeBackupStore(),
+                      (ignoredClose, ignoredCloseError) ->
+                          result.completeExceptionally(
+                              new IllegalStateException("No partitions recovered", startError)));
+                } else if (deactivateError != null) {
                   result.completeExceptionally(deactivateError);
                 } else {
                   result.complete(null);
@@ -187,7 +218,8 @@ public final class RecoveryPartitionManager
         concurrencyControl,
         brokerCfg,
         brokerInfo,
-        gatewayBrokerTransport);
+        gatewayBrokerTransport,
+        backupStore);
   }
 
   private void stopInternal(final ActorFuture<Void> result) {
@@ -202,11 +234,16 @@ public final class RecoveryPartitionManager
           recoveryPartitions.clear();
           if (stopError != null) {
             LOG.error("Failed to stop recovery partitions", stopError);
-            result.completeExceptionally(stopError);
-          } else {
-            LOG.info("Stopped recovery partitions");
-            result.complete(null);
           }
+          concurrencyControl.runOnCompletion(
+              closeBackupStore(),
+              (ignoredClose, ignoredCloseError) -> {
+                if (stopError != null) {
+                  result.completeExceptionally(stopError);
+                } else {
+                  result.complete(null);
+                }
+              });
         });
   }
 
@@ -235,6 +272,58 @@ public final class RecoveryPartitionManager
         .stream()
         .filter(p -> p.members().contains(localMemberId))
         .toList();
+  }
+
+  private ActorFuture<Void> closeBackupStore() {
+    final var closed = concurrencyControl.<Void>createFuture();
+    if (backupStore == null) {
+      closed.complete(null);
+      return closed;
+    }
+    final var store = backupStore;
+    backupStore = null;
+    store
+        .closeAsync()
+        .whenCompleteAsync(
+            (ignore, closeError) -> {
+              if (closeError != null) {
+                LOG.error("Failed to close backup store", closeError);
+              }
+              closed.complete(null);
+            },
+            concurrencyControl);
+    return closed;
+  }
+
+  private ActorFuture<Void> startPartition(final RecoveryPartition partition) {
+    return partition
+        .start()
+        .andThen(
+            (started, startError) -> {
+              if (startError == null) {
+                recoveryPartitions.add(started);
+                return CompletableActorFuture.completed();
+              }
+              LOG.error(
+                  "Failed to start recovery partition for {}, stopping it",
+                  partition.partitionId(),
+                  startError);
+              failedPartitionIds.add(partition.partitionId().number());
+              return partition
+                  .stop()
+                  .andThen(
+                      (ignored, stopError) -> {
+                        if (stopError != null) {
+                          LOG.error(
+                              "Failed to stop partially started recovery partition for {}",
+                              partition.partitionId(),
+                              stopError);
+                        }
+                        return CompletableActorFuture.<Void>completedExceptionally(startError);
+                      },
+                      concurrencyControl);
+            },
+            concurrencyControl);
   }
 
   @Override

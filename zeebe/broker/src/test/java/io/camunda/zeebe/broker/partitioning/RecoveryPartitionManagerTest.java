@@ -24,14 +24,19 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +45,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 final class RecoveryPartitionManagerTest {
 
@@ -55,6 +61,8 @@ final class RecoveryPartitionManagerTest {
   private ClusterServices clusterServices;
   private RecoveryPartitionManager partitionManager;
   private TopologyManagerImpl topologyManager;
+  private BrokerInfo brokerInfo;
+  private AtomixServerTransport transport;
 
   @BeforeEach
   void setUp() {
@@ -79,27 +87,31 @@ final class RecoveryPartitionManagerTest {
     when(clusterConfigurationService.getPartitionDistribution())
         .thenReturn(new PartitionDistribution(Set.of(metadata, metadata2)));
 
-    final var brokerInfo = new BrokerInfo(0, null, "localhost:26501").setPartitionGroup(GROUP);
+    brokerInfo = new BrokerInfo(0, null, "localhost:26501").setPartitionGroup(GROUP);
     topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
     actorScheduler.submitActor(topologyManager).join();
 
-    final var transport = mock(AtomixServerTransport.class);
+    transport = mock(AtomixServerTransport.class);
     when(transport.subscribe(any(), any(), any()))
         .thenReturn(CompletableActorFuture.completed(null));
     when(transport.unsubscribe(any(), any())).thenReturn(CompletableActorFuture.completed(null));
 
-    partitionManager =
-        new RecoveryPartitionManager(
-            GROUP,
-            new BrokerCfg(),
-            brokerInfo,
-            controlActor,
-            clusterConfigurationService,
-            clusterServices.getMembershipService(),
-            actorScheduler,
-            new SimpleMeterRegistry(),
-            transport,
-            topologyManager);
+    partitionManager = buildManager(new BrokerCfg(), actorScheduler);
+  }
+
+  private RecoveryPartitionManager buildManager(
+      final BrokerCfg brokerCfg, final ActorSchedulingService schedulingService) {
+    return new RecoveryPartitionManager(
+        GROUP,
+        brokerCfg,
+        brokerInfo,
+        controlActor,
+        clusterConfigurationService,
+        clusterServices.getMembershipService(),
+        schedulingService,
+        new SimpleMeterRegistry(),
+        transport,
+        topologyManager);
   }
 
   private PartitionMetadata localPartitionMetadata(final int partitionId) {
@@ -150,6 +162,133 @@ final class RecoveryPartitionManagerTest {
     assertThat(partitionManager.getRaftPartitions()).isEmpty();
     assertThat(partitionManager.getZeebePartitions()).isEmpty();
     assertThat(partitionManager.getRaftPartition(PARTITION_ID)).isNull();
+  }
+
+  @Test
+  void shouldCreateAndCloseBackupStoreAcrossRepeatedStartStopCycles(@TempDir final Path tempDir) {
+    // given
+    final var brokerCfg = new BrokerCfg();
+    brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
+    brokerCfg.getData().getBackup().getFilesystem().setBasePath(tempDir.toString());
+    partitionManager = buildManager(brokerCfg, actorScheduler);
+
+    // when/then: each cycle must create a fresh backup store and fully close the previous one;
+    // a leaked or half-closed store would make the next start()/stop() hang or fail
+    for (int i = 0; i < 2; i++) {
+      assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+      assertThat(partitionManager.stop()).succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldToleratePartialStartFailureAndStillDeactivateAllLocalPartitions() {
+    // given: partition 2's recovery steps fail to schedule, so only partition 1 recovers
+    partitionManager =
+        buildManager(
+            new BrokerCfg(), new FailingActorSchedulingService(actorScheduler, PARTITION_ID_2));
+
+    // when
+    assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+
+    // then: start() still succeeds overall, but both partitions - including the one that
+    // failed to start - are marked INACTIVE so nothing assumes partition 2 is serving traffic
+    await()
+        .untilAsserted(
+            () -> {
+              final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
+              assertThat(publishedInfos)
+                  .anySatisfy(
+                      info ->
+                          assertThat(info.getPartitionRoles())
+                              .containsEntry(PARTITION_ID, PartitionRole.INACTIVE)
+                              .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
+            });
+
+    // and: only the partition that failed to start is reported as DEAD, since it never
+    // recovered and nothing is left running to ever bring it back
+    await()
+        .untilAsserted(
+            () -> {
+              final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
+              assertThat(publishedInfos)
+                  .anySatisfy(
+                      info ->
+                          assertThat(info.getPartitionHealthStatuses())
+                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD)
+                              .doesNotContainKey(PARTITION_ID));
+            });
+  }
+
+  @Test
+  void shouldDeactivateAllLocalPartitionsAndFailStartWhenAllPartitionsFail() {
+    // given: both partitions fail to schedule, so none recover
+    partitionManager =
+        buildManager(
+            new BrokerCfg(),
+            new FailingActorSchedulingService(actorScheduler, PARTITION_ID, PARTITION_ID_2));
+
+    // when
+    final var startFuture = partitionManager.start();
+
+    // then: start() fails since no partition recovered, but both partitions are still marked
+    // INACTIVE so nothing assumes they are serving traffic
+    assertThat(startFuture).failsWithin(Duration.ofSeconds(10));
+    await()
+        .untilAsserted(
+            () -> {
+              final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
+              assertThat(publishedInfos)
+                  .anySatisfy(
+                      info ->
+                          assertThat(info.getPartitionRoles())
+                              .containsEntry(PARTITION_ID, PartitionRole.INACTIVE)
+                              .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
+            });
+
+    // and: both partitions are reported as DEAD, since neither recovered and nothing is left
+    // running to ever bring them back - this is the signal that the mode-change bookkeeping
+    // (which only checks the INACTIVE role above) otherwise misses
+    await()
+        .untilAsserted(
+            () -> {
+              final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
+              assertThat(publishedInfos)
+                  .anySatisfy(
+                      info ->
+                          assertThat(info.getPartitionHealthStatuses())
+                              .containsEntry(PARTITION_ID, PartitionHealthStatus.DEAD)
+                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD));
+            });
+  }
+
+  private static final class FailingActorSchedulingService implements ActorSchedulingService {
+    private final ActorSchedulingService delegate;
+    private final Set<Integer> failingPartitionIds;
+
+    private FailingActorSchedulingService(
+        final ActorSchedulingService delegate, final Integer... failingPartitionIds) {
+      this.delegate = delegate;
+      this.failingPartitionIds = Set.of(failingPartitionIds);
+    }
+
+    @Override
+    public ActorFuture<Void> submitActor(final Actor actor) {
+      return shouldFail(actor) ? failure() : delegate.submitActor(actor);
+    }
+
+    @Override
+    public ActorFuture<Void> submitActor(final Actor actor, final SchedulingHints schedulingHints) {
+      return shouldFail(actor) ? failure() : delegate.submitActor(actor, schedulingHints);
+    }
+
+    private boolean shouldFail(final Actor actor) {
+      return failingPartitionIds.stream().anyMatch(id -> actor.getName().endsWith("-" + id));
+    }
+
+    private ActorFuture<Void> failure() {
+      return CompletableActorFuture.completedExceptionally(
+          new RuntimeException("Injected failure for partition(s) " + failingPartitionIds));
+    }
   }
 
   @Nested
