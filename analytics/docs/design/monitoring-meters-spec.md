@@ -14,10 +14,16 @@ past-tense events (`….sealed`, `….rejected`).
 - Tags: `stage` (projection|aggregation), `source` (source partition id) where per-source,
 `dataset` where per-dataset, `backend` (rdbms|elasticsearch|opensearch) on serving meters.
 Keep tag cardinality bounded — never tag by key, window, or instance.
-- Library code must not depend on Micrometer directly if it doesn't already: follow the
-existing pattern (`ProjectionMetrics` interface in the engine, `MicrometerProjectionMetrics`
-adapter in the pipeline). Where event-bridge-streaming already exposes hooks (the cut timers
-exist, so a metrics facade exists — find it and extend it), stay in that idiom.
+- The streaming library ALREADY depends on micrometer-core directly; its house idiom is
+`CutMetrics` (`streaming/internals/CutMetrics.java`): a small per-group interface with a
+zero-allocation `NOOP` default and a Micrometer implementation, constructed via
+`of(registry, …)` that returns NOOP for a null registry — the hot path pays nothing when
+uninstrumented. New LIBRARY meters (phases 1-2) MUST copy this pattern (e.g. a `FlowMetrics`
+group for records/segments/deltas/dedup/watermark, a `StoreMetrics` group for the overlay),
+wired from `StreamRuntime`'s existing MeterRegistry. APP meters (phase 3) follow the engine
+pattern instead: `ProjectionMetrics` interface + `MicrometerProjectionMetrics` adapter in the
+pipeline. The RocksDB gauges already exist opt-in in `RocksDbStateStoreProvider` behind
+`StoreTuning` — phase 2 only turns them on in app config.
 - Every new meter: one unit test through `SimpleMeterRegistry` asserting it moves at the right
 seam, following the module's test conventions (JUnit 5, AssertJ, should…, given/when/then).
 
