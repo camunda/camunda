@@ -165,7 +165,6 @@ jobs:
     with:
       name: c8-${{ needs.benchmark-data.outputs.benchmark }}
       pod: ''
-      database: elasticsearch
       test-type: grpc
       duration-seconds: '1800'
 
@@ -181,7 +180,6 @@ jobs:
     with:
       name: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
       pod: ''
-      database: elasticsearch
       test-type: rest
       duration-seconds: '1800'
 
