@@ -315,6 +315,7 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           push: true
           provenance: false
+          outputs: type=image,oci-mediatypes=false
           build-args: ${{ steps.build-args.outputs.args }}
           tags: |
             ${{ env.HOTFIX_REGISTRY }}/${{ matrix.component }}:${{ steps.set-version.outputs.hotfix-version }}

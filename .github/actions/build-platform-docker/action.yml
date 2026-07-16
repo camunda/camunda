@@ -149,6 +149,7 @@ runs:
         push: ${{ inputs.push }}
         platforms: ${{ inputs.platforms }}
         provenance: false
+        outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false' || '' }}
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
