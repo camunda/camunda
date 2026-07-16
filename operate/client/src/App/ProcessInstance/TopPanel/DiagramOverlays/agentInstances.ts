@@ -11,6 +11,17 @@ import {useProcessInstanceAgentInstances} from 'modules/queries/agentInstances/u
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {AgentStatusPayload} from 'modules/bpmn-js/overlayTypes';
 
+/** Assigns each agent-instance status an importance weight. A bigger number implies higher importance. */
+const STATUS_IMPORTANCE: Record<AgentInstance['status'], number> = {
+  INITIALIZING: 4,
+  THINKING: 3,
+  TOOL_DISCOVERY: 2,
+  TOOL_CALLING: 1,
+  COMPLETED: 0,
+  UNKNOWN: 0,
+  IDLE: 0,
+};
+
 type AgentInstancesStatusMap = Map<
   AgentInstance['elementId'],
   AgentStatusPayload
@@ -33,9 +44,16 @@ const useAgentInstancesStatusPerElement = (): {
           status: agentInstance.status,
           additionalActiveCount: 0,
         });
-      } else {
-        // NOTE: Object stored in map. So data in map gets updated as well.
-        statusInfo.additionalActiveCount += 1;
+        continue;
+      }
+      // NOTE: Object stored in map. So data in map gets updated as well.
+      statusInfo.additionalActiveCount += 1;
+      if (
+        STATUS_IMPORTANCE[agentInstance.status] >
+        STATUS_IMPORTANCE[statusInfo.status]
+      ) {
+        statusInfo.agentInstanceKey = agentInstance.agentInstanceKey;
+        statusInfo.status = agentInstance.status;
       }
     }
 
