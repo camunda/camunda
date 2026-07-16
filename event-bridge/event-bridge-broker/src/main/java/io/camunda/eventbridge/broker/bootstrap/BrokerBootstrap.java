@@ -119,8 +119,17 @@ public final class BrokerBootstrap {
     final var localMemberId = cluster.getMembershipService().getLocalMember().id();
     final var comm = cluster.getCommunicationService();
 
+    // The observed registry feeds two thread-safe caches read at points that don't carry the full
+    // TopicMetadata: the coordinator leader reads topicPartitionCounts at join time to derive a
+    // group's partition count, and the reconciler reads topicCleanupPolicies for the
+    // change-coordinator-driven join path (whose ReconfigurationCommand carries only the topic
+    // name, not its metadata — see TopicCleanupPolicies).
+    final var topicPartitionCounts = new TopicPartitionCounts();
+    final var topicCleanupPolicies = new TopicCleanupPolicies();
+
     final var topicReconciler =
-        new TopicReconciler(partitionBootstrapper, topologySetup, localMemberId);
+        new TopicReconciler(
+            partitionBootstrapper, topologySetup, localMemberId, topicCleanupPolicies);
 
     // 4b. Topic-registry propagation is pull-from-observed-state, not push: every broker is a
     // member or passive observer of the metadata Raft group and periodically hands its local
@@ -128,15 +137,12 @@ public final class BrokerBootstrap {
     // topic Raft groups. The reconcile runs off the metadata partition's actor thread (the snapshot
     // read already happened on it). This replaces the old 2s whole-registry broadcast.
     //
-    // The same observed registry feeds a thread-safe topic→partitionCount cache: the coordinator
-    // leader (which observes the metadata group on this broker too) reads it at join time to derive
-    // a group's partition count from its subscribed topic, rather than from a static config. Only
-    // topics that are servable (not DELETING) are cached; a missing entry resolves to 0, which the
-    // join processor rejects as an unknown topic.
-    final var topicPartitionCounts = new TopicPartitionCounts();
+    // Only topics that are servable (not DELETING) are cached in topicPartitionCounts; a missing
+    // entry resolves to 0, which the join processor rejects as an unknown topic.
     final Consumer<Map<String, TopicMetadata>> registryReconciler =
         desired -> {
           topicPartitionCounts.update(desired);
+          topicCleanupPolicies.update(desired);
           executorService.execute(() -> topicReconciler.reconcile(desired));
         };
 

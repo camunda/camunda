@@ -11,6 +11,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.eventbridge.broker.compaction.ManifestStore;
+import io.camunda.eventbridge.broker.compaction.ReaderLeaseRegistry;
 import io.camunda.eventbridge.broker.partitioning.steps.EventStreamFetcherStep;
 import io.camunda.eventbridge.broker.partitioning.steps.EventStreamStep;
 import io.camunda.eventbridge.broker.partitioning.steps.FetchPurgatoryStep;
@@ -19,6 +21,7 @@ import io.camunda.eventbridge.broker.partitioning.steps.LogStorageStep;
 import io.camunda.eventbridge.broker.partitioning.steps.PublishRequestHandlerStep;
 import io.camunda.eventbridge.broker.partitioning.steps.TopologyStep;
 import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.camunda.eventbridge.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.scheduler.Actor;
@@ -72,7 +75,10 @@ public final class PartitionLifecycle extends Actor {
       final InstantSource clock,
       final IdGenerator idGenerator,
       final TopologyManagerImpl topologyManager,
-      final ExecutorService executorService) {
+      final ExecutorService executorService,
+      final CleanupPolicy cleanupPolicy,
+      final ManifestStore compactionManifestStore,
+      final ReaderLeaseRegistry compactionLeaseRegistry) {
     this.topic = topic;
     this.localNodeId = localNodeId;
     this.leaderReporter = leaderReporter == null ? PartitionLeaderReporter.NOOP : leaderReporter;
@@ -86,7 +92,10 @@ public final class PartitionLifecycle extends Actor {
             messagingService,
             clock,
             idGenerator,
-            executorService);
+            executorService,
+            cleanupPolicy,
+            compactionManifestStore,
+            compactionLeaseRegistry);
     context.setRequestHandlerRegistry(new RequestHandlerRegistry(partitionId, messagingService));
     // The consumer-group coordinator no longer runs on data partitions; it has its own Raft group
     // (see CoordinatorPartition), so its replicated offset log never pollutes the event stream.

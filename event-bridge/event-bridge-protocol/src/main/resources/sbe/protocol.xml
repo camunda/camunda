@@ -100,6 +100,7 @@
       <validValue name="NO_LEADER">3</validValue>
       <validValue name="SHUTTING_DOWN">4</validValue>
       <validValue name="WRITE_FAILURE">5</validValue>
+      <validValue name="UNKEYED_ON_COMPACTED_TOPIC">6</validValue>
     </enum>
 
   </types>

@@ -13,7 +13,13 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.RaftRoleChangeListener;
+import io.atomix.raft.partition.RaftPartition;
+import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.eventbridge.broker.BrokerMembers;
+import io.camunda.eventbridge.broker.compaction.CompactionConfig;
+import io.camunda.eventbridge.broker.compaction.CompactionPartitionWiring;
+import io.camunda.eventbridge.broker.compaction.CompactionPartitionWiring.CompactionRuntime;
+import io.camunda.eventbridge.broker.compaction.FileManifestStore;
 import io.camunda.eventbridge.broker.logstreams.LogRetentionCompactor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
@@ -27,11 +33,16 @@ import io.camunda.eventbridge.consumergroups.stream.CoordinatorPartition;
 import io.camunda.eventbridge.core.config.EventBridgeProperties;
 import io.camunda.eventbridge.core.partition.PartitionLeaderReporter;
 import io.camunda.eventbridge.core.topic.TopicGroups;
+import io.camunda.eventbridge.messaging.stream.EventStreamReader;
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
+import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.InstantSource;
@@ -40,6 +51,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 import org.agrona.concurrent.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -366,14 +379,16 @@ final class PartitionBootstrapper {
   /**
    * Provisions a data-style partition (event log) for a per-topic Raft group and bootstraps it.
    * Driven by the {@link TopicReconciler} from the replicated registry: create raft components,
-   * wire lifecycle + retention + role listener, then bootstrap.
+   * wire lifecycle + retention/compaction + role listener, then bootstrap.
    */
   void provisionDataPartition(
       final String groupName,
       final int partitionId,
       final Set<MemberId> members,
-      final TopologyManagerImpl topologyManager) {
-    startDataPartition(groupName, partitionId, members, topologyManager, false, false);
+      final TopologyManagerImpl topologyManager,
+      final CleanupPolicy cleanupPolicy) {
+    startDataPartition(
+        groupName, partitionId, members, topologyManager, cleanupPolicy, false, false);
   }
 
   /**
@@ -385,8 +400,10 @@ final class PartitionBootstrapper {
       final String groupName,
       final int partitionId,
       final Set<MemberId> members,
-      final TopologyManagerImpl topologyManager) {
-    return startDataPartition(groupName, partitionId, members, topologyManager, true, false);
+      final TopologyManagerImpl topologyManager,
+      final CleanupPolicy cleanupPolicy) {
+    return startDataPartition(
+        groupName, partitionId, members, topologyManager, cleanupPolicy, true, false);
   }
 
   /**
@@ -398,8 +415,10 @@ final class PartitionBootstrapper {
       final String groupName,
       final int partitionId,
       final Set<MemberId> members,
-      final TopologyManagerImpl topologyManager) {
-    return startDataPartition(groupName, partitionId, members, topologyManager, true, true);
+      final TopologyManagerImpl topologyManager,
+      final CleanupPolicy cleanupPolicy) {
+    return startDataPartition(
+        groupName, partitionId, members, topologyManager, cleanupPolicy, true, true);
   }
 
   /**
@@ -486,6 +505,7 @@ final class PartitionBootstrapper {
       final int partitionId,
       final Set<MemberId> members,
       final TopologyManagerImpl topologyManager,
+      final CleanupPolicy cleanupPolicy,
       final boolean join,
       final boolean passive) {
 
@@ -502,7 +522,16 @@ final class PartitionBootstrapper {
     // separately.
     final var routingGroup = groupName;
 
-    // 2. Create lifecycle actor. On becoming leader it reports its leadership to the metadata group
+    // 2a. A COMPACT partition's manifest store + reader-lease registry are built before the
+    // lifecycle so they can be stamped into the immutable PartitionContext once (see
+    // PartitionContext's javadoc on why the policy check is cache-free). Null for DELETE.
+    final CompactionRuntime compactionRuntime =
+        cleanupPolicy == CleanupPolicy.COMPACT
+            ? buildCompactionRuntime(groupName, partitionId, created)
+            : null;
+
+    // 2b. Create lifecycle actor. On becoming leader it reports its leadership to the metadata
+    // group
     // so topic readiness (CREATING → ACTIVE) is derived from the partition leaders.
     final var topic = TopicGroups.topicFrom(groupName);
     final var lifecycle =
@@ -519,26 +548,33 @@ final class PartitionBootstrapper {
             clock,
             idGenerator,
             topologyManager,
-            executorService);
+            executorService,
+            cleanupPolicy,
+            compactionRuntime != null ? compactionRuntime.manifestStore() : null,
+            compactionRuntime != null ? compactionRuntime.leaseRegistry() : null);
     actorScheduler.submitActor(lifecycle);
 
-    // 2b. Retention compaction runs on every replica (leader and followers), not just the leader:
-    // each node trims its own committed log prefix independently. This is safe — Raft guarantees an
-    // identical committed prefix everywhere, so replicas differ only in how far back they retain,
-    // never in shared content — and it bounds disk on followers without waiting for promotion.
-    LogRetentionCompactor retentionCompactor = null;
-    if (properties.retention().maxRecordsPerPartition() > 0) {
-      retentionCompactor =
+    // 2c. Retention compaction (DELETE) or log compaction (COMPACT) runs on every replica (leader
+    // and followers), not just the leader: each node trims/cleans its own committed log prefix
+    // independently. This is safe — Raft guarantees an identical committed prefix everywhere, so
+    // replicas differ only in how far back they retain, never in shared content — and it bounds
+    // disk on followers without waiting for promotion. The two policies are mutually exclusive.
+    Actor compactor = null;
+    if (cleanupPolicy == CleanupPolicy.COMPACT) {
+      compactor = compactionRuntime.cleaner();
+      actorScheduler.submitActor(compactor);
+    } else if (properties.retention().maxRecordsPerPartition() > 0) {
+      compactor =
           new LogRetentionCompactor(
               partitionId,
               created.raftPartition(),
               (ConstructableSnapshotStore) created.snapshotStore(),
               properties.retention().maxRecordsPerPartition(),
               Duration.ofMillis(properties.retention().compactionIntervalMs()));
-      actorScheduler.submitActor(retentionCompactor);
+      actorScheduler.submitActor(compactor);
     }
 
-    registry.addData(groupName, partitionId, created, lifecycle, retentionCompactor);
+    registry.addData(groupName, partitionId, created, lifecycle, compactor);
 
     // 3. Wire raft role changes to lifecycle — before start so no events are lost. The term is the
     // leader-epoch the lifecycle reports to the metadata group on becoming leader.
@@ -615,5 +651,92 @@ final class PartitionBootstrapper {
               }
               return null;
             });
+  }
+
+  // A read-only appender: the cleaner's dirty-log reader never writes, so no entry ever reaches it
+  // (mirrors RaftPartitionLifecycle's follower-role appender for the same reason).
+  private static final ZeebeLogAppender NOOP_APPENDER = (entry, listener) -> {};
+
+  /**
+   * Builds the compaction runtime (manifest store + reader-lease registry + cleaner) for one
+   * replica of a {@code COMPACT} partition. Runs unconditionally regardless of raft role — every
+   * replica cleans its own committed log prefix independently (ADR 0001, decision 6).
+   *
+   * <p>The manifest store here is {@link FileManifestStore}, a directory-local seam durable across
+   * restarts but not yet integrated with Raft snapshotting/InstallSnapshot — that integration is
+   * the {@code SnapshotManifestStore} adapter (event-bridge ADR 0001, decision 3), a follow-up
+   * commit.
+   */
+  private CompactionRuntime buildCompactionRuntime(
+      final String groupName, final int partitionId, final CreatedPartition created) {
+    final var compactionDirectory =
+        factory.getPartitionDirectory(groupName, partitionId).resolve("compaction");
+    try {
+      FileUtil.ensureDirectoryExists(compactionDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(
+          "Failed to create compaction directory for partition " + partitionId, e);
+    }
+
+    final var manifestStore = new FileManifestStore(compactionDirectory);
+
+    final var cfg = properties.compaction();
+    final var compactionConfig =
+        new CompactionConfig(
+            cfg.minLagRecords(),
+            cfg.maxSegmentBytes(),
+            Duration.ofMillis(cfg.graceWindowMs()),
+            cfg.keyMapCapacity(),
+            Duration.ofMillis(cfg.passIntervalMs()));
+
+    final var raftPartition = created.raftPartition();
+    final Supplier<EventStreamReader> dirtyLogReaderSupplier =
+        () -> {
+          // Fetched fresh on every pass: the server is created during raft bootstrap, after this
+          // supplier is built (mirrors LogRetentionCompactor.compact()'s own fresh fetch).
+          final var server = raftPartition.getServer();
+          if (server == null) {
+            throw new IllegalStateException(
+                "Partition " + partitionId + " — raft server not yet available for compaction");
+          }
+          return new EventStreamReader(
+              AtomixLogStorage.ofPartition(server::openReader, NOOP_APPENDER).newReader());
+        };
+    final LongSupplier lastCommittedPosition =
+        () -> lastCommittedPosition(raftPartition, partitionId);
+
+    return CompactionPartitionWiring.build(
+        partitionId,
+        compactionDirectory,
+        manifestStore,
+        dirtyLogReaderSupplier,
+        lastCommittedPosition,
+        compactionConfig);
+  }
+
+  /**
+   * Reads the highest committed record position from this replica's own Raft log, or {@code -1} if
+   * the log is empty or not yet readable. Mirrors {@code LogRetentionCompactor}'s identically-named
+   * private helper; duplicated rather than shared to avoid touching that already-battle-tested
+   * class for this change (DELETE-policy partitions must be byte-for-byte unaffected).
+   */
+  private static long lastCommittedPosition(
+      final RaftPartition raftPartition, final int partitionId) {
+    final var server = raftPartition.getServer();
+    if (server == null) {
+      return -1L;
+    }
+    try (final var reader = server.openReader()) {
+      reader.seekToLast();
+      if (!reader.hasNext()) {
+        return -1L;
+      }
+      final var entry = reader.next();
+      return entry.isApplicationEntry() ? entry.getApplicationEntry().highestPosition() : -1L;
+    } catch (final Exception e) {
+      LOG.debug(
+          "Partition {} — could not read last committed position for compaction", partitionId, e);
+      return -1L;
+    }
   }
 }

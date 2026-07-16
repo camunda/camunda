@@ -7,7 +7,6 @@
  */
 package io.camunda.eventbridge.broker.bootstrap;
 
-import io.camunda.eventbridge.broker.logstreams.LogRetentionCompactor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
 import io.camunda.eventbridge.broker.partitioning.PartitionLifecycle;
 import io.camunda.zeebe.scheduler.Actor;
@@ -33,9 +32,13 @@ final class PartitionRegistry {
   private static final Logger LOG = LoggerFactory.getLogger(PartitionRegistry.class);
   private static final int CLOSE_TIMEOUT_SECONDS = 30;
 
-  /** A provisioned data-partition replica, addressable by its (group, partition) key. */
-  record DataReplica(
-      CreatedPartition created, PartitionLifecycle lifecycle, LogRetentionCompactor compactor) {}
+  /**
+   * A provisioned data-partition replica, addressable by its (group, partition) key. {@code
+   * compactor} is either a {@code LogRetentionCompactor} (DELETE policy) or a {@code LogCleaner}
+   * (COMPACT policy) — the two are mutually exclusive by policy — or {@code null} if retention
+   * compaction is disabled.
+   */
+  record DataReplica(CreatedPartition created, PartitionLifecycle lifecycle, Actor compactor) {}
 
   // CopyOnWrite/Concurrent: boot mutates these on the start thread, runtime topic provisioning on
   // the reconciler thread, and closeAll() iterates them — so all access must be thread-safe.
@@ -62,7 +65,7 @@ final class PartitionRegistry {
       final int partitionId,
       final CreatedPartition created,
       final PartitionLifecycle lifecycle,
-      final LogRetentionCompactor compactor) {
+      final Actor compactor) {
     rafts.add(created);
     components.add(lifecycle);
     if (compactor != null) {

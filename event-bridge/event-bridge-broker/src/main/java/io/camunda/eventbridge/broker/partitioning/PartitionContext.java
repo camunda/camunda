@@ -9,12 +9,15 @@ package io.camunda.eventbridge.broker.partitioning;
 
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.eventbridge.broker.compaction.ManifestStore;
+import io.camunda.eventbridge.broker.compaction.ReaderLeaseRegistry;
 import io.camunda.eventbridge.messaging.fetch.FetchPurgatory;
 import io.camunda.eventbridge.messaging.stream.EventBridgeEventStream;
 import io.camunda.eventbridge.messaging.transport.fetch.FetchRequestHandler;
 import io.camunda.eventbridge.messaging.transport.publish.PublishRequestCorrelator;
 import io.camunda.eventbridge.messaging.transport.publish.PublishRequestHandler;
 import io.camunda.eventbridge.messaging.watermark.HighWatermark;
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.camunda.eventbridge.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -34,6 +37,15 @@ public final class PartitionContext {
   private final IdGenerator idGenerator;
   private final ExecutorService executorService;
 
+  // Stamped once at construction and never reassigned: the topic's cleanup policy is immutable for
+  // the lifetime of a partition replica (event-bridge ADR 0001), so every read of these three
+  // fields
+  // is a plain field access — no lookup, no cache, no invalidation to reason about. DELETE-policy
+  // partitions carry null compaction handles; only COMPACT partitions populate them.
+  private final CleanupPolicy cleanupPolicy;
+  private final ManifestStore compactionManifestStore;
+  private final ReaderLeaseRegistry compactionLeaseRegistry;
+
   private LogStorage logStorage;
   private PublishRequestCorrelator correlator;
   private EventBridgeEventStream eventStream;
@@ -52,7 +64,10 @@ public final class PartitionContext {
       final MessagingService messagingService,
       final InstantSource clock,
       final IdGenerator idGenerator,
-      final ExecutorService executorService) {
+      final ExecutorService executorService,
+      final CleanupPolicy cleanupPolicy,
+      final ManifestStore compactionManifestStore,
+      final ReaderLeaseRegistry compactionLeaseRegistry) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.routingGroup = routingGroup;
@@ -62,6 +77,33 @@ public final class PartitionContext {
     this.clock = clock;
     this.idGenerator = idGenerator;
     this.executorService = executorService;
+    this.cleanupPolicy = cleanupPolicy;
+    this.compactionManifestStore = compactionManifestStore;
+    this.compactionLeaseRegistry = compactionLeaseRegistry;
+  }
+
+  /** The topic's cleanup policy (event-bridge ADR 0001); immutable for the partition's lifetime. */
+  public CleanupPolicy getCleanupPolicy() {
+    return cleanupPolicy;
+  }
+
+  /**
+   * The committed manifest seam for a {@code COMPACT} partition, or {@code null} for a {@code
+   * DELETE} partition. Consulted by the fetch path to serve positions at or below the cleaner point
+   * from the clean set.
+   */
+  public ManifestStore getCompactionManifestStore() {
+    return compactionManifestStore;
+  }
+
+  /**
+   * The reader-lease registry a {@code COMPACT} partition's cleaner condemns clean segments
+   * through, or {@code null} for a {@code DELETE} partition. The fetch path acquires leases from
+   * the same registry so the cleaner's deferred deletion never unlinks a segment an in-flight fetch
+   * response still streams from.
+   */
+  public ReaderLeaseRegistry getCompactionLeaseRegistry() {
+    return compactionLeaseRegistry;
   }
 
   public int getPartitionId() {
