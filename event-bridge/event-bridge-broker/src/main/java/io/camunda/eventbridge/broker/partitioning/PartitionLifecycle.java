@@ -26,6 +26,7 @@ import io.camunda.eventbridge.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import java.nio.file.Path;
 import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -78,7 +79,8 @@ public final class PartitionLifecycle extends Actor {
       final ExecutorService executorService,
       final CleanupPolicy cleanupPolicy,
       final ManifestStore compactionManifestStore,
-      final ReaderLeaseRegistry compactionLeaseRegistry) {
+      final ReaderLeaseRegistry compactionLeaseRegistry,
+      final Path compactionDirectory) {
     this.topic = topic;
     this.localNodeId = localNodeId;
     this.leaderReporter = leaderReporter == null ? PartitionLeaderReporter.NOOP : leaderReporter;
@@ -95,7 +97,8 @@ public final class PartitionLifecycle extends Actor {
             executorService,
             cleanupPolicy,
             compactionManifestStore,
-            compactionLeaseRegistry);
+            compactionLeaseRegistry,
+            compactionDirectory);
     context.setRequestHandlerRegistry(new RequestHandlerRegistry(partitionId, messagingService));
     // The consumer-group coordinator no longer runs on data partitions; it has its own Raft group
     // (see CoordinatorPartition), so its replicated offset log never pollutes the event stream.

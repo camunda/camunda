@@ -21,6 +21,7 @@ import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.camunda.eventbridge.transport.RequestHandlerRegistry;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import java.nio.file.Path;
 import java.time.InstantSource;
 import java.util.concurrent.ExecutorService;
 import org.agrona.concurrent.IdGenerator;
@@ -45,6 +46,7 @@ public final class PartitionContext {
   private final CleanupPolicy cleanupPolicy;
   private final ManifestStore compactionManifestStore;
   private final ReaderLeaseRegistry compactionLeaseRegistry;
+  private final Path compactionDirectory;
 
   private LogStorage logStorage;
   private PublishRequestCorrelator correlator;
@@ -67,7 +69,8 @@ public final class PartitionContext {
       final ExecutorService executorService,
       final CleanupPolicy cleanupPolicy,
       final ManifestStore compactionManifestStore,
-      final ReaderLeaseRegistry compactionLeaseRegistry) {
+      final ReaderLeaseRegistry compactionLeaseRegistry,
+      final Path compactionDirectory) {
     this.partitionId = partitionId;
     this.partitionCount = partitionCount;
     this.routingGroup = routingGroup;
@@ -80,6 +83,7 @@ public final class PartitionContext {
     this.cleanupPolicy = cleanupPolicy;
     this.compactionManifestStore = compactionManifestStore;
     this.compactionLeaseRegistry = compactionLeaseRegistry;
+    this.compactionDirectory = compactionDirectory;
   }
 
   /** The topic's cleanup policy (event-bridge ADR 0001); immutable for the partition's lifetime. */
@@ -104,6 +108,14 @@ public final class PartitionContext {
    */
   public ReaderLeaseRegistry getCompactionLeaseRegistry() {
     return compactionLeaseRegistry;
+  }
+
+  /**
+   * The directory a {@code COMPACT} partition's manifest and clean segments live in, or {@code
+   * null} for a {@code DELETE} partition. The fetch path resolves a clean segment's file within it.
+   */
+  public Path getCompactionDirectory() {
+    return compactionDirectory;
   }
 
   public int getPartitionId() {

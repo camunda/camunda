@@ -554,7 +554,8 @@ final class PartitionBootstrapper {
             executorService,
             cleanupPolicy,
             compactionRuntime != null ? compactionRuntime.manifestStore() : null,
-            compactionRuntime != null ? compactionRuntime.leaseRegistry() : null);
+            compactionRuntime != null ? compactionRuntime.leaseRegistry() : null,
+            compactionRuntime != null ? compactionRuntime.compactionDirectory() : null);
     actorScheduler.submitActor(lifecycle);
 
     // 2c. Retention compaction (DELETE) or log compaction (COMPACT) runs on every replica (leader
