@@ -215,6 +215,7 @@ mwnw*                       @camunda/monorepo-devops-team
 /zeebe/feel/                @camunda/core-features
 /zeebe/feel-tagged-parameters/ @camunda/core-features
 /zeebe/exporter-api/        @camunda/core-features
+/zeebe/exporter-config-support/ @camunda/core-features
 
 # Engine-expert skill
 /.claude/skills/engine-expert/ @korthout @camunda/core-features

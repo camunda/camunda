@@ -10,7 +10,9 @@ package io.camunda.zeebe.it.physicaltenant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -21,6 +23,14 @@ import io.camunda.zeebe.qa.util.cluster.PhysicalTenantsITHelper.Storage;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,16 +41,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 /**
  * Verifies that per-physical-tenant exporter configuration is applied at the exporter level.
  *
- * <p>Supported today: an exporter declared in the <b>root</b> configuration can be redeclared per
- * physical tenant under {@code camunda.physical-tenants.<tenantId>.data.exporters.<id>.*} with
- * different properties. The per-tenant declaration must be complete (class-name and all args):
- * partial overrides do not inherit the root entry's remaining fields (Spring's MapBinder replaces
- * the whole map entry; a merge strategy is discussed in a separate issue). Each tenant's partition
- * group then runs the exporter with that tenant's configuration.
+ * <p>Supported today: an exporter declared in the <b>root</b> configuration can be overridden per
+ * physical tenant under {@code camunda.physical-tenants.<tenantId>.data.exporters.<id>.*}. The root
+ * entry's {@code className}/{@code jarPath} are always inherited (diverging from them is a boot
+ * error). If the exporter's class ships an {@code ExporterConfigMerger} (the bundled ES/OS and
+ * Camunda exporters do), a partial override is deep-merged over the root args; for any other class
+ * the tenant's args replace the root args wholesale and must therefore be complete (ADR-0008 step
+ * 1). Each tenant's partition group then runs the exporter with that tenant's resolved
+ * configuration.
  *
  * <p>Not yet supported: declaring an exporter <b>only</b> for a physical tenant (absent from the
  * root config). The initial cluster configuration — which decides which exporter ids are enabled on
@@ -60,14 +73,35 @@ final class PhysicalTenantExporterConfigIT {
 
   private static final String TENANT_A_ONLY_EXPORTER_ID = "tenanta-exporter";
 
+  private static final String ES_MERGE_EXPORTER_ID = "esmerge";
+  private static final String ROOT_INDEX_PREFIX = "rootmergeprefix";
+  private static final String TENANT_A_INDEX_PREFIX = "tenantamergeprefix";
+
+  @SuppressWarnings("resource")
+  private static final ElasticsearchContainer ES =
+      TestSearchContainers.createDefaultElasticsearchContainer();
+
+  private static final String ES_URL;
+
+  static {
+    ES.start();
+    ES_URL = "http://" + ES.getHttpHostAddress();
+  }
+
+  private static final HttpClient HTTP = HttpClient.newHttpClient();
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+
   private static final PhysicalTenantsITHelper TENANTS =
       PhysicalTenantsITHelper.builder()
           .withTenant(PhysicalTenantsITHelper.DEFAULT_TENANT_ID, Storage.none())
           .withTenant(TENANT_A, Storage.none())
           .build();
 
-  // The exporter is declared in the ROOT config (so it is enabled on every partition group), and
-  // tenantA redeclares it fully with a different "target" arg. The tenantA-only exporter
+  // The exporters are declared in the ROOT config (so they are enabled on every partition group).
+  // tenantA redeclares the location exporter fully with a different "target" arg (the
+  // whole-entry-replace path for a class without a merger), and overrides ONLY the index prefix
+  // of the Elasticsearch exporter (the deep-merge path: its class ships an ExporterConfigMerger,
+  // so url and bulk tuning are inherited from the root entry). The tenantA-only exporter
   // exercises the not-yet-supported case and is used by the disabled test only.
   @TestZeebe
   private final TestStandaloneBroker broker =
@@ -79,6 +113,16 @@ final class PhysicalTenantExporterConfigIT {
                 cfg.setClassName(LocationRecordingExporter.class.getName());
                 cfg.setArgs(Map.of(TARGET_ARG, ROOT_TARGET));
               })
+          .withExporter(
+              ES_MERGE_EXPORTER_ID,
+              cfg -> {
+                cfg.setClassName(ElasticsearchExporter.class.getName());
+                cfg.setArgs(
+                    Map.of(
+                        "url", ES_URL,
+                        "bulk", Map.of("size", 1, "delay", 1),
+                        "index", Map.of("prefix", ROOT_INDEX_PREFIX)));
+              })
           .withPtConfig(
               TENANT_A,
               camunda -> {
@@ -86,6 +130,11 @@ final class PhysicalTenantExporterConfigIT {
                 exporter.setClassName(LocationRecordingExporter.class.getName());
                 exporter.setArgs(Map.of(TARGET_ARG, TENANT_A_TARGET));
                 camunda.getData().getExporters().put(LOCATION_EXPORTER_ID, exporter);
+
+                // partial override: no className, no url, no bulk tuning — only the index prefix
+                final var esOverride = new io.camunda.configuration.Exporter();
+                esOverride.setArgs(Map.of("index", Map.of("prefix", TENANT_A_INDEX_PREFIX)));
+                camunda.getData().getExporters().put(ES_MERGE_EXPORTER_ID, esOverride);
 
                 final var tenantOnlyExporter = new io.camunda.configuration.Exporter();
                 tenantOnlyExporter.setClassName(TenantAExporter.class.getName());
@@ -161,6 +210,52 @@ final class PhysicalTenantExporterConfigIT {
     await("tenant-only exporter is opened and receives records from tenantA's partition")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(() -> assertThat(TenantAExporter.RECORDS).isNotEmpty());
+  }
+
+  /**
+   * Asserts the ADR-0008 merge path end-to-end with the real ServiceLoader discovery on a real
+   * broker classpath: the root declares an Elasticsearch exporter (url, bulk tuning, index prefix),
+   * and tenantA overrides <b>only</b> {@code args.index.prefix}. Because the exporter's class ships
+   * an {@code ExporterConfigMerger}, tenantA's partition group must run the exporter with the
+   * root's url and bulk tuning but its own index prefix — records of both tenants land in the same
+   * cluster under their respective prefixes, and neither tenant's records leak into the other's
+   * indices.
+   */
+  @Test
+  void shouldDeepMergePartialExporterArgsOverride() throws Exception {
+    // given — records flow through both tenants' partition groups
+    deployAndCreateInstance(defaultClient, "default-merge-process");
+    deployAndCreateInstance(tenantAClient, "tenanta-merge-process");
+
+    // then — the default partition group exports under the root prefix, and tenantA's partition
+    // group exports under its overridden prefix to the root-configured url
+    await("both tenants' records are exported under their own index prefix")
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () -> {
+              assertThat(countDocuments(ROOT_INDEX_PREFIX, "default-merge-process")).isPositive();
+              assertThat(countDocuments(TENANT_A_INDEX_PREFIX, "tenanta-merge-process"))
+                  .isPositive();
+            });
+
+    // and neither tenant's records were exported under the other tenant's prefix
+    assertThat(countDocuments(ROOT_INDEX_PREFIX, "tenanta-merge-process")).isZero();
+    assertThat(countDocuments(TENANT_A_INDEX_PREFIX, "default-merge-process")).isZero();
+  }
+
+  /** Counts documents matching the process id across all indices under the given prefix. */
+  private static long countDocuments(final String indexPrefix, final String processId)
+      throws IOException, InterruptedException {
+    // the zeebe ES exporter indexes raw records: the process id sits under value.bpmnProcessId
+    final var query =
+        URLEncoder.encode("value.bpmnProcessId:\"" + processId + "\"", StandardCharsets.UTF_8);
+    final var request =
+        HttpRequest.newBuilder(URI.create(ES_URL + "/" + indexPrefix + "*/_count?q=" + query))
+            .GET()
+            .build();
+    final var response = HTTP.send(request, BodyHandlers.ofString());
+    assertThat(response.statusCode()).isEqualTo(200);
+    return MAPPER.readTree(response.body()).path("count").asLong();
   }
 
   private static void deployAndCreateInstance(final CamundaClient client, final String processId) {

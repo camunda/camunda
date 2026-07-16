@@ -1,0 +1,4 @@
+io.camunda.configuration.physicaltenants.TestExporterConfigMergers$RecordingMerger
+io.camunda.configuration.physicaltenants.TestExporterConfigMergers$FailingMerger
+io.camunda.configuration.physicaltenants.TestExporterConfigMergers$FirstDuplicateClaimant
+io.camunda.configuration.physicaltenants.TestExporterConfigMergers$SecondDuplicateClaimant

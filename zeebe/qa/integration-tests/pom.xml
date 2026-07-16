@@ -112,6 +112,14 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- Needed for PhysicalTenantExporterConfigIT: references ElasticsearchExporter.class to
+         exercise the ExporterConfigMerger deep-merge path with a real bundled exporter -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-elasticsearch-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Needed on the classpath for runtime classloading in AnalyticsExporterIT -->
     <dependency>
       <groupId>io.camunda</groupId>

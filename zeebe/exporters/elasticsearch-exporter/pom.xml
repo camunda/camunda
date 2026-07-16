@@ -23,6 +23,16 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-exporter-config-support</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-exporter-filter</artifactId>
     </dependency>
 
