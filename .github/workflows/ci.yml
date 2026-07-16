@@ -354,16 +354,21 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Upload distball + SNAPSHOTs to GCS
-        shell: bash
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
         env:
           CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
-        run: |
-          set -euo pipefail
-          gcloud storage cp "${{ steps.build-zeebe.outputs.distball }}" \
-            "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
-          gcloud storage cp m2-installed.tar \
-            "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar"
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 5
+          shell: bash
+          command: |
+            set -euo pipefail
+            gcloud storage cp "${{ steps.build-zeebe.outputs.distball }}" \
+              "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
+            gcloud storage cp m2-installed.tar \
+              "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -1059,12 +1064,17 @@ jobs:
           minimus: true
           gcs-build-cache-auth: true
       # Download the shared distball tarball; restore-shared-m2 below handles the SNAPSHOTs.
-      - name: Download distball from GCS
+      - name: Create dist/target
         shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p dist/target
-          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
+        run: mkdir -p dist/target
+      - name: Download distball from GCS
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 5
+          shell: bash
+          command: gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
       # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
       # (the GHA Maven cache doesn't carry locally-installed SNAPSHOTs between jobs).
       - uses: ./.github/actions/restore-shared-m2
