@@ -9,13 +9,11 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { mappingRuleQueries } from "src/utility/api/mapping-rules/queries";
 import { groupMutations } from "src/utility/api/groups/mutations";
-import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
-import DropdownSearch from "src/components/form/DropdownSearch";
+import MappingRuleSearchDropdown from "src/components/form/MappingRuleSearchDropdown";
 import FormModal from "src/components/modal/FormModal";
 import { useNotifications } from "src/components/notifications";
 import type { Group, MappingRule } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -37,22 +35,6 @@ const AssignMappingRulesModal: FC<
   >([]);
   const [loadingAssignMappingRule, setLoadingAssignMappingRule] =
     useState(false);
-
-  const [mappingRuleFilter, setMappingRuleFilter] = useState({});
-  const handleMappingRuleFilterChange = useCallback((search: string) => {
-    if (!search.trim()) {
-      setMappingRuleFilter({});
-      return;
-    }
-    setMappingRuleFilter({ filter: { name: search } });
-  }, []);
-
-  const {
-    data: mappingRuleSearchResults,
-    isLoading: loading,
-    refetch: reload,
-    error,
-  } = useQuery(mappingRuleQueries.search(mappingRuleFilter));
 
   const unassignedFilter = useCallback(
     ({ mappingRuleId }: MappingRule) =>
@@ -158,27 +140,14 @@ const AssignMappingRulesModal: FC<
           ))}
         </SelectedMappingRules>
       )}
-      <DropdownSearch
+      <MappingRuleSearchDropdown
         autoFocus
-        onChange={handleMappingRuleFilterChange}
-        items={mappingRuleSearchResults?.items || []}
-        filter={unassignedFilter}
-        itemTitle={({ mappingRuleId }) => mappingRuleId}
-        itemSubTitle={({ name }) => name}
         placeholder={t("searchByMappingRuleId")}
         onSelect={onSelectMappingRule}
+        filter={unassignedFilter}
+        errorTitle={t("mappingRulesCouldNotLoad")}
+        retryLabel={t("retry")}
       />
-      {!loading && error && (
-        <TranslatedErrorInlineNotification
-          title={t("mappingRulesCouldNotLoad")}
-          actionButton={{
-            label: t("retry"),
-            onClick: () => {
-              void reload();
-            },
-          }}
-        />
-      )}
     </FormModal>
   );
 };
