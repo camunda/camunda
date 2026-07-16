@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.state.secretreference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.db.ZeebeDbInconsistentException;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import java.util.ArrayList;
@@ -122,6 +124,17 @@ public final class DbSecretReferenceStateTest {
     final List<String> visitedByJob = new ArrayList<>();
     state.visitSecretReferencesByJob(jobKey, (sid, sref) -> visitedByJob.add(sid));
     assertThat(visitedByJob).isEmpty();
+  }
+
+  @Test
+  public void shouldRejectWaitingJobWithoutPendingSecretReference() {
+    // given — no addPendingSecretReference call
+    final String storeId = "storeA";
+    final String secretRef = "secret1";
+
+    // when / then — FK constraint must fire
+    assertThatThrownBy(() -> state.addWaitingJob(storeId, secretRef, 42L))
+        .isInstanceOf(ZeebeDbInconsistentException.class);
   }
 
   @Test
