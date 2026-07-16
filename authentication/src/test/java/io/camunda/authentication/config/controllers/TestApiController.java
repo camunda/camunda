@@ -132,7 +132,9 @@ public class TestApiController {
     return DEFAULT_RESPONSE;
   }
 
-  @RequestMapping(DUMMY_CLUSTER_ADMIN_ENDPOINT)
+  @RequestMapping(
+      value = DUMMY_CLUSTER_ADMIN_ENDPOINT,
+      method = org.springframework.web.bind.annotation.RequestMethod.GET)
   public @ResponseBody String dummyClusterAdminEndpoint() {
     return DEFAULT_RESPONSE;
   }
