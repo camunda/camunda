@@ -8,7 +8,7 @@
 
 import {useMemo} from 'react';
 import type {OverlayData} from 'modules/bpmn-js/overlayTypes';
-import {useFirstAgentInstancePerElement} from './agentInstances';
+import {useAgentInstancesStatusPerElement} from './agentInstances';
 import {useElementStateOverlaysData} from './elementStateOverlay';
 import {useModificationBadgeOverlaysData} from './modificationBadgeOverlay';
 import {useWaitingStateOverlaysData} from './waitingStateOverlay';
@@ -18,13 +18,14 @@ import {useAgentShineOverlaysData} from './agentShineOverlay';
 const useDiagramOverlaysData = (
   isModificationModeEnabled: boolean,
 ): OverlayData[] => {
-  const {agentInstances, elementsWithAgent} = useFirstAgentInstancePerElement();
+  const {agentInstancesStatusMap, elementsWithAgent} =
+    useAgentInstancesStatusPerElement();
 
   const elementStateData = useElementStateOverlaysData();
   const modificationBadgeData = useModificationBadgeOverlaysData();
   const waitingStateData = useWaitingStateOverlaysData(elementsWithAgent);
-  const agentStatusData = useAgentStatusOverlaysData(agentInstances);
-  const agentShineData = useAgentShineOverlaysData(agentInstances);
+  const agentStatusData = useAgentStatusOverlaysData(agentInstancesStatusMap);
+  const agentShineData = useAgentShineOverlaysData(agentInstancesStatusMap);
 
   return useMemo(() => {
     // While modifying, show the element states and the pending modification

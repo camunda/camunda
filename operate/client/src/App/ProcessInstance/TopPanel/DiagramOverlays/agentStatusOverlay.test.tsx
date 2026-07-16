@@ -11,11 +11,14 @@ import {AgentStatusOverlay} from './agentStatusOverlay';
 import {render, screen} from 'modules/testing-library';
 import type {DiagramOverlay} from './types';
 
-const createOverlay = (status: AgentInstanceStatus): DiagramOverlay => ({
+const createOverlay = (
+  status: AgentInstanceStatus,
+  additionalActiveCount = 0,
+): DiagramOverlay => ({
   container: document.body,
   elementId: 'Activity_agent',
   type: 'agentStatus',
-  payload: {status, agentInstanceKey: 'agent-1'},
+  payload: {status, agentInstanceKey: 'agent-1', additionalActiveCount},
 });
 
 describe('agentStatusOverlay', () => {
@@ -45,4 +48,20 @@ describe('agentStatusOverlay', () => {
       ).not.toBeInTheDocument();
     },
   );
+
+  it('should append the count of other active agents on the element', () => {
+    render(<AgentStatusOverlay overlay={createOverlay('THINKING', 3)} />);
+
+    expect(
+      screen.getByTestId('agent-status-overlay-THINKING'),
+    ).toHaveTextContent('Thinking... + 3 more active');
+  });
+
+  it('should not append a count when no other agents are active', () => {
+    render(<AgentStatusOverlay overlay={createOverlay('THINKING', 0)} />);
+
+    const overlay = screen.getByTestId('agent-status-overlay-THINKING');
+    expect(overlay).toHaveTextContent('Thinking...');
+    expect(overlay).not.toHaveTextContent('more active');
+  });
 });

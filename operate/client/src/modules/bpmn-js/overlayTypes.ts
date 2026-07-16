@@ -39,6 +39,7 @@ type WaitingStatePayload = {
 type AgentStatusPayload = {
   status: AgentInstance['status'];
   agentInstanceKey: string;
+  additionalActiveCount: number;
 };
 
 type AgentShinePayload = {

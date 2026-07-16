@@ -9,27 +9,41 @@
 import {useMemo} from 'react';
 import {useProcessInstanceAgentInstances} from 'modules/queries/agentInstances/useProcessInstanceAgentInstances';
 import type {AgentInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AgentStatusPayload} from 'modules/bpmn-js/overlayTypes';
 
-const useFirstAgentInstancePerElement = (): {
-  agentInstances: AgentInstance[];
+type AgentInstancesStatusMap = Map<
+  AgentInstance['elementId'],
+  AgentStatusPayload
+>;
+
+const useAgentInstancesStatusPerElement = (): {
+  agentInstancesStatusMap: AgentInstancesStatusMap;
   elementsWithAgent: Set<string>;
 } => {
   const {data} = useProcessInstanceAgentInstances();
 
   return useMemo(() => {
-    const elementsWithAgent = new Set<string>();
-    const agentInstances: AgentInstance[] = [];
+    const agentInstancesStatusMap: AgentInstancesStatusMap = new Map();
 
     for (const agentInstance of data?.items ?? []) {
-      if (elementsWithAgent.has(agentInstance.elementId)) {
-        continue;
+      const statusInfo = agentInstancesStatusMap.get(agentInstance.elementId);
+      if (!statusInfo) {
+        agentInstancesStatusMap.set(agentInstance.elementId, {
+          agentInstanceKey: agentInstance.agentInstanceKey,
+          status: agentInstance.status,
+          additionalActiveCount: 0,
+        });
+      } else {
+        // NOTE: Object stored in map. So data in map gets updated as well.
+        statusInfo.additionalActiveCount += 1;
       }
-      elementsWithAgent.add(agentInstance.elementId);
-      agentInstances.push(agentInstance);
     }
 
-    return {agentInstances, elementsWithAgent};
+    return {
+      agentInstancesStatusMap,
+      elementsWithAgent: new Set(agentInstancesStatusMap.keys()),
+    };
   }, [data]);
 };
 
-export {useFirstAgentInstancePerElement};
+export {type AgentInstancesStatusMap, useAgentInstancesStatusPerElement};

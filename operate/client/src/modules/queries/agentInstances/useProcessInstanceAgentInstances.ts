@@ -18,6 +18,7 @@ const useProcessInstanceAgentInstances = () => {
     ...agentInstancesSearchOptions({
       loadAllItems: true,
       payload: {
+        sort: [{field: 'lastUpdatedDate', order: 'desc'}],
         filter: {
           processInstanceKey: processInstanceId ?? '',
           status: {$in: ACTIVE_STATUSES_ARRAY},
