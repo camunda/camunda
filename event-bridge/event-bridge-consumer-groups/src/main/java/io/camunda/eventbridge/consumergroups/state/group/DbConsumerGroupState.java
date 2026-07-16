@@ -196,6 +196,7 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
     final var lifecycle = group0.getState();
     final var emptySince = group0.getEmptySince();
     final var subscriptions = Map.copyOf(group0.getSubscriptions());
+    final var standbyReplicas = group0.getStandbyReplicas();
 
     final Map<String, MemberSnapshot> members = new LinkedHashMap<>();
     groupId.wrapString(group);
@@ -209,7 +210,8 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
                   value.getInstanceId(),
                   value.getMemberEpoch(),
                   value.getAssignedEpoch(),
-                  value.getTargetPartitions()));
+                  value.getTargetPartitions(),
+                  value.getStandbyTargetPartitions()));
         };
     memberColumnFamily.whileEqualPrefix(groupId, visitor);
     return new GroupSnapshot(
@@ -219,6 +221,7 @@ public final class DbConsumerGroupState implements MutableConsumerGroupState {
         lifecycle,
         emptySince,
         subscriptions,
+        standbyReplicas,
         Map.copyOf(members));
   }
 

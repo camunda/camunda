@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.eventbridge.consumergroups.assignor.BalancedStickyAssignor;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
+import io.camunda.eventbridge.consumergroups.session.StandbyReadinessMirror;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
@@ -75,7 +76,11 @@ final class RebalanceAssignorTaskTest {
     clock = new MutableClock();
     task =
         new RebalanceAssignorTask(
-            Duration.ofSeconds(1), state, new BalancedStickyAssignor(), clock);
+            Duration.ofSeconds(1),
+            state,
+            new BalancedStickyAssignor(),
+            new StandbyReadinessMirror(),
+            clock);
   }
 
   @AfterEach

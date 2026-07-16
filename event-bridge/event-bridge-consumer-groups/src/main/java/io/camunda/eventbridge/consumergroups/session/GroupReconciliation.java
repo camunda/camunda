@@ -32,6 +32,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class GroupReconciliation {
 
+  /**
+   * A standby is considered caught up (ready for promotion) once its reported changelog lag is at
+   * or below this many records (event-bridge-streaming ADR 0009: readiness = changelog end offset
+   * minus applied position). Fixed rather than configurable for now — correctness over availability
+   * favors a strict bound; tune this if it proves too tight in practice.
+   */
+  public static final long READY_LAG_THRESHOLD = 0L;
+
   private final Map<String, MemberSession> sessions = new ConcurrentHashMap<>();
 
   // Partitions that must move between members on the current target — withheld from their new owner
@@ -109,6 +117,55 @@ public final class GroupReconciliation {
         member.memberId(),
         new MemberSession(member.memberId(), member.targetPartitions(), assignmentEpoch, now));
     targetEpoch = Math.max(targetEpoch, assignmentEpoch);
+  }
+
+  /**
+   * Records the member's latest reported standby changelog lag (consumer-groups ADR 0006 decision
+   * 1) — ephemeral, like the rest of this handshake; rebuilt from the member's next heartbeat after
+   * a coordinator failover, never replicated (only the eventual promotion decision is).
+   */
+  public void recordStandbyReadiness(final String memberId, final Map<TopicPartition, Long> lag) {
+    final var session = sessions.get(memberId);
+    if (session != null) {
+      session.recordStandbyLag(lag);
+    }
+  }
+
+  /**
+   * The members currently reporting readiness for {@code partition} — i.e. lag at or below {@link
+   * #READY_LAG_THRESHOLD}. Used by the assignor for ready-only promotion; a member that has never
+   * reported (a cold standby) never appears here.
+   */
+  public Set<String> readyStandbysFor(final TopicPartition partition) {
+    final var ready = new HashSet<String>();
+    sessions.forEach(
+        (memberId, session) -> {
+          if (session.isReadyStandby(partition, READY_LAG_THRESHOLD)) {
+            ready.add(memberId);
+          }
+        });
+    return ready;
+  }
+
+  /** {@code memberId -> the partitions that member currently reports as a ready standby for}. */
+  public Map<String, Set<TopicPartition>> readyStandbys() {
+    final var result = new HashMap<String, Set<TopicPartition>>();
+    sessions.forEach(
+        (memberId, session) -> {
+          final var ready = new HashSet<TopicPartition>();
+          session
+              .standbyLag()
+              .forEach(
+                  (partition, lag) -> {
+                    if (lag <= READY_LAG_THRESHOLD) {
+                      ready.add(partition);
+                    }
+                  });
+          if (!ready.isEmpty()) {
+            result.put(memberId, ready);
+          }
+        });
+    return result;
   }
 
   private void observeTarget(final GroupSnapshot group, final Instant now) {

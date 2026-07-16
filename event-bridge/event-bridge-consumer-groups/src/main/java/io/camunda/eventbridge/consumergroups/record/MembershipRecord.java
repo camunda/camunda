@@ -11,6 +11,7 @@ import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.topic.TopicSubscriptionValue;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -56,9 +57,13 @@ public final class MembershipRecord extends UnifiedRecordValue {
   private final StringProperty stateProp = new StringProperty("state", GroupLifecycle.EMPTY.name());
   private final LongProperty emptySinceProp = new LongProperty("emptySince", 0L);
   private final LongProperty rebalanceDueAtProp = new LongProperty("rebalanceDueAt", 0L);
+  // The group's standby-replica count (consumer-groups ADR 0006 decision 1), carried on join like
+  // subscriptions; 0 (no standbys) is the default, matching today's behavior for a request encoded
+  // before this field existed.
+  private final IntegerProperty standbyReplicasProp = new IntegerProperty("standbyReplicas", 0);
 
   public MembershipRecord() {
-    super(9);
+    super(10);
     declareProperty(groupIdProp)
         .declareProperty(subscriptionsProp)
         .declareProperty(memberIdProp)
@@ -67,7 +72,8 @@ public final class MembershipRecord extends UnifiedRecordValue {
         .declareProperty(groupEpochProp)
         .declareProperty(stateProp)
         .declareProperty(emptySinceProp)
-        .declareProperty(rebalanceDueAtProp);
+        .declareProperty(rebalanceDueAtProp)
+        .declareProperty(standbyReplicasProp);
   }
 
   /**
@@ -192,6 +198,16 @@ public final class MembershipRecord extends UnifiedRecordValue {
 
   public MembershipRecord setRebalanceDueAt(final long rebalanceDueAt) {
     rebalanceDueAtProp.setValue(rebalanceDueAt);
+    return this;
+  }
+
+  /** The group's standby-replica count (0 = no standbys, today's behavior), set at join. */
+  public int getStandbyReplicas() {
+    return standbyReplicasProp.getValue();
+  }
+
+  public MembershipRecord setStandbyReplicas(final int standbyReplicas) {
+    standbyReplicasProp.setValue(standbyReplicas);
     return this;
   }
 }

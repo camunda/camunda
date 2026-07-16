@@ -11,6 +11,7 @@ import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -26,6 +27,10 @@ final class MemberSession {
   private Set<TopicPartition> confirmedAssignment;
   private long confirmedEpoch;
   private Instant lastHeartbeat;
+  // Latest reported changelog lag per standby partition this member is warming (consumer-groups
+  // ADR 0006 decision 1); never replicated, rebuilt from the member's next heartbeat after a
+  // coordinator failover like the rest of this ephemeral state.
+  private Map<TopicPartition, Long> standbyLag = Map.of();
 
   MemberSession(
       final String memberId,
@@ -65,5 +70,19 @@ final class MemberSession {
 
   boolean isExpired(final Instant deadline) {
     return lastHeartbeat.isBefore(deadline);
+  }
+
+  void recordStandbyLag(final Map<TopicPartition, Long> lag) {
+    standbyLag = lag == null ? Map.of() : Map.copyOf(lag);
+  }
+
+  Map<TopicPartition, Long> standbyLag() {
+    return standbyLag;
+  }
+
+  /** Whether this member is a caught-up (ready-for-promotion) standby for {@code partition}. */
+  boolean isReadyStandby(final TopicPartition partition, final long readyLagThreshold) {
+    final var lag = standbyLag.get(partition);
+    return lag != null && lag <= readyLagThreshold;
   }
 }

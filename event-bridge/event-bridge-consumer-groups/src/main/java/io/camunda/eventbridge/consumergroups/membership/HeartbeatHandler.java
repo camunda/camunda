@@ -16,6 +16,7 @@ import static io.camunda.eventbridge.protocol.request.coordination.CoordinationE
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.session.GroupReconciliation;
 import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
+import io.camunda.eventbridge.consumergroups.session.StandbyReadinessMirror;
 import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot.MemberSnapshot;
@@ -57,6 +58,7 @@ public final class HeartbeatHandler extends Actor {
   private final ConsumerGroupQueryService groupQuery;
   private final OffsetQueryService offsetQuery;
   private final MemberLivenessMirror liveness;
+  private final StandbyReadinessMirror standbyReadiness;
 
   // Ephemeral reconciliation handshake per group (rebuilt from heartbeats / seed after failover).
   private final Map<String, GroupReconciliation> reconciliations = new HashMap<>();
@@ -69,6 +71,7 @@ public final class HeartbeatHandler extends Actor {
     groupQuery = coordinatorStream.newGroupQueryService();
     offsetQuery = coordinatorStream.newOffsetQueryService();
     liveness = coordinatorStream.liveness();
+    standbyReadiness = coordinatorStream.standbyReadiness();
   }
 
   @Override
@@ -83,9 +86,11 @@ public final class HeartbeatHandler extends Actor {
 
   @Override
   protected void onActorClosing() {
-    // Leadership is being given up — abandon the ephemeral liveness so the eviction task (also
-    // stopping) cannot act on stale sessions; a new leader reseeds it from replicated state.
+    // Leadership is being given up — abandon the ephemeral liveness/readiness so the eviction and
+    // assignor tasks (also stopping) cannot act on stale sessions; a new leader reseeds them from
+    // replicated state and fresh heartbeats.
     liveness.clear();
+    standbyReadiness.clear();
   }
 
   /** Serves one heartbeat and returns the serialized reply (the request handler frames it). */
@@ -147,9 +152,13 @@ public final class HeartbeatHandler extends Actor {
     final var reconciliation = reconciliationFor(groupId);
     final var delta =
         reconciliation.reconcile(group, memberId, request.getOwnedPartitions(), clock.instant());
-    // Publish the refreshed liveness for the off-actor eviction task, and drop reconciliations for
-    // groups that have since disappeared (their last member left).
+    // Standby readiness (consumer-groups ADR 0006 decision 1): record this member's reported
+    // changelog lag and republish the group's ready set for the off-actor assignor task.
+    reconciliation.recordStandbyReadiness(memberId, request.getStandbyReadiness());
+    // Publish the refreshed liveness/readiness for the off-actor tasks, and drop reconciliations
+    // for groups that have since disappeared (their last member left).
     liveness.publish(groupId, reconciliation.liveness());
+    standbyReadiness.publish(groupId, reconciliation.readyStandbys());
     pruneReconciliations();
     maybeRecordConvergence(group, member, reconciliation);
 
@@ -161,7 +170,8 @@ public final class HeartbeatHandler extends Actor {
         .setRevoke(delta.revoke())
         .setAssignment(delta.assignment())
         .setAssignmentEpoch(group.assignmentEpoch())
-        .setCommittedOffsets(offsetQuery.committedOffsets(groupId));
+        .setCommittedOffsets(offsetQuery.committedOffsets(groupId))
+        .setStandbyAssignment(member.standbyTargetPartitions());
   }
 
   private GroupReconciliation reconciliationFor(final String groupId) {

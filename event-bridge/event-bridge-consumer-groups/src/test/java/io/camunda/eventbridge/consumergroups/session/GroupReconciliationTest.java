@@ -143,13 +143,14 @@ final class GroupReconciliationTest {
     }
     final var state =
         assignmentEpoch < groupEpoch ? GroupLifecycle.PREPARING_REBALANCE : GroupLifecycle.STABLE;
-    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, state, 0L, Map.of("t", 4), roster);
+    return new GroupSnapshot(
+        "g", groupEpoch, assignmentEpoch, state, 0L, Map.of("t", 4), 0, roster);
   }
 
   private static MemberSnapshot member(
       final String memberId, final long memberEpoch, final int... target) {
     // assignedEpoch is irrelevant to the ephemeral handshake under test; mirror the member epoch.
-    return new MemberSnapshot(memberId, null, memberEpoch, memberEpoch, tps(target));
+    return new MemberSnapshot(memberId, null, memberEpoch, memberEpoch, tps(target), List.of());
   }
 
   private static TopicPartition tp(final int partition) {

@@ -24,6 +24,7 @@ import io.camunda.eventbridge.consumergroups.record.EventBridgeRecordValues;
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
 import io.camunda.eventbridge.consumergroups.record.OffsetCommitRecord;
 import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
+import io.camunda.eventbridge.consumergroups.session.StandbyReadinessMirror;
 import io.camunda.eventbridge.consumergroups.state.EventBridgeColumnFamilies;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupDeletedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
@@ -88,6 +89,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
   private DbOffsetState offsetState;
   private DbConsumerGroupState groupState;
   private MemberLivenessMirror liveness;
+  private StandbyReadinessMirror standbyReadiness;
 
   /**
    * @param zeebeDb the state DB, recovered/owned by the {@link
@@ -126,6 +128,7 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
     offsetState = new DbOffsetState(zeebeDb, zeebeDb.createContext());
     groupState = new DbConsumerGroupState(zeebeDb, zeebeDb.createContext());
     liveness = new MemberLivenessMirror();
+    standbyReadiness = new StandbyReadinessMirror();
   }
 
   @Override
@@ -177,7 +180,11 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                     new GroupDeletedApplier(groupState, offsetState))
                 .withListener(
                     new RebalanceAssignorTask(
-                        ASSIGNOR_INTERVAL, taskGroupState(), new BalancedStickyAssignor(), clock))
+                        ASSIGNOR_INTERVAL,
+                        taskGroupState(),
+                        new BalancedStickyAssignor(),
+                        standbyReadiness,
+                        clock))
                 .withListener(
                     new GroupRetentionTask(
                         RETENTION_INTERVAL, EMPTY_GROUP_RETENTION, taskGroupState(), clock))
@@ -250,6 +257,17 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
    */
   public MemberLivenessMirror liveness() {
     return liveness;
+  }
+
+  /**
+   * The shared ephemeral standby-readiness mirror (consumer-groups ADR 0006 decision 1): the
+   * coordinator's heartbeat handler publishes per group, the off-actor {@link
+   * RebalanceAssignorTask} reads it for ready-only promotion and to re-propose a group as soon as a
+   * standby catches up. Created at startup so both share one instance, exactly like {@link
+   * #liveness}.
+   */
+  public StandbyReadinessMirror standbyReadiness() {
+    return standbyReadiness;
   }
 
   /**

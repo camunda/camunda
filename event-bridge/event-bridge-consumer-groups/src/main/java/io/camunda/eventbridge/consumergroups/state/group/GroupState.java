@@ -12,6 +12,7 @@ import io.camunda.eventbridge.consumergroups.topic.TopicSubscriptionValue;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -49,15 +50,20 @@ public final class GroupState extends UnpackedObject implements DbValue {
       new ArrayProperty<>("subscriptions", TopicSubscriptionValue::new);
   private final LongProperty emptySinceProp = new LongProperty("emptySince", 0L);
   private final LongProperty rebalanceDueAtProp = new LongProperty("rebalanceDueAt", 0L);
+  // Standby replicas per partition (consumer-groups ADR 0006 decision 1), fixed at group creation
+  // like subscriptions; 0 (no standbys) is the default, today's behavior for a group created before
+  // this field existed.
+  private final IntegerProperty standbyReplicasProp = new IntegerProperty("standbyReplicas", 0);
 
   public GroupState() {
-    super(6);
+    super(7);
     declareProperty(groupEpochProp)
         .declareProperty(assignmentEpochProp)
         .declareProperty(stateProp)
         .declareProperty(subscriptionsProp)
         .declareProperty(emptySinceProp)
-        .declareProperty(rebalanceDueAtProp);
+        .declareProperty(rebalanceDueAtProp)
+        .declareProperty(standbyReplicasProp);
   }
 
   public GroupLifecycle getState() {
@@ -118,6 +124,16 @@ public final class GroupState extends UnpackedObject implements DbValue {
 
   public GroupState setRebalanceDueAt(final long rebalanceDueAt) {
     rebalanceDueAtProp.setValue(rebalanceDueAt);
+    return this;
+  }
+
+  /** Standby replicas per partition (0 = no standbys, today's behavior), fixed at creation. */
+  public int getStandbyReplicas() {
+    return standbyReplicasProp.getValue();
+  }
+
+  public GroupState setStandbyReplicas(final int standbyReplicas) {
+    standbyReplicasProp.setValue(standbyReplicas);
     return this;
   }
 }
