@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.clustervariable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -39,6 +40,34 @@ final class ClusterVariableRecordTest {
     assertThat(copy.getTenantId()).isEqualTo(original.getTenantId());
     assertThat(copy.getValue()).isEqualTo(original.getValue());
     assertThat(copy.getMetadata()).containsExactlyInAnyOrderEntriesOf(metadata);
+  }
+
+  @Test
+  void shouldRoundTripKindViaMsgPack() {
+    // given
+    final var original =
+        new ClusterVariableRecord()
+            .setName("myVar")
+            .setScope(ClusterVariableScope.GLOBAL)
+            .setTenantId("<default>")
+            .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("\"value\"")))
+            .setKind(ClusterVariableKind.SECRET_REFERENCE);
+
+    // when
+    final var copy = new ClusterVariableRecord();
+    copy.copyFrom(original);
+
+    // then
+    assertThat(copy.getKind()).isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
+  }
+
+  @Test
+  void shouldDefaultKindToJsonWhenNotSet() {
+    // given / when
+    final var record = new ClusterVariableRecord();
+
+    // then
+    assertThat(record.getKind()).isEqualTo(ClusterVariableKind.JSON);
   }
 
   @Test
