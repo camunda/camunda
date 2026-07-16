@@ -44,6 +44,14 @@ public class BrokerCreateClusterVariableRequest
     return this;
   }
 
+  public BrokerCreateClusterVariableRequest setKind(
+      final io.camunda.zeebe.protocol.record.value.ClusterVariableKind kind) {
+    if (kind != null) {
+      requestDto.setKind(kind);
+    }
+    return this;
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;

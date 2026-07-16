@@ -3384,7 +3384,8 @@ final class JsonSerializableToJsonTest {
                   "value": "42",
                   "scope": "GLOBAL",
                   "tenantId": "<default>",
-                  "metadata": { "credentialType": "OAUTH2" }
+                  "metadata": { "credentialType": "OAUTH2" },
+                  "kind": "JSON"
                 }
                 """
       },
@@ -3403,7 +3404,8 @@ final class JsonSerializableToJsonTest {
                   "value": "42",
                   "scope": "TENANT",
                   "tenantId": "tenant-1",
-                  "metadata": {}
+                  "metadata": {},
+                  "kind": "JSON"
                 }
                 """
       },
