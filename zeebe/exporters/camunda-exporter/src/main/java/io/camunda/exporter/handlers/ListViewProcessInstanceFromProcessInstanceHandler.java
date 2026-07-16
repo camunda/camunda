@@ -139,6 +139,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     } else if (intent.equals(ELEMENT_MIGRATED) || intent.equals(ANCESTOR_MIGRATED)) {
       final TreePath treePath = createTreePath(record);
       piEntity.setTreePath(treePath.toString()).setState(ProcessInstanceState.ACTIVE);
+    } else if (intent.equals(SUSPENDED)) {
+      piEntity.setState(ProcessInstanceState.SUSPENDED).setSuspendedDate(timestamp);
+    } else if (intent.equals(RESUMED)) {
+      piEntity.setState(ProcessInstanceState.ACTIVE).setSuspendedDate(null);
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
@@ -179,6 +183,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     updateFields.put(POSITION, entity.getPosition());
     if (entity.getState() != null) {
       updateFields.put(ListViewTemplate.STATE, entity.getState());
+      updateFields.put(ListViewTemplate.SUSPENDED_DATE, entity.getSuspendedDate());
     }
     if (entity.getTags() != null && !entity.getTags().isEmpty()) {
       updateFields.put(ListViewTemplate.TAGS, entity.getTags());
