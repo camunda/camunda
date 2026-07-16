@@ -192,7 +192,7 @@ public final class FileBasedSnapshotStoreImpl {
         return null;
       }
 
-      final var metadata = collectMetadata(path, snapshotId);
+      final var metadata = collectMetadata(path);
       return new FileBasedSnapshot(
           path, checksumPath, actualChecksum, snapshotId, metadata, this::onSnapshotDeleted, actor);
     } catch (final Exception e) {
@@ -201,22 +201,15 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
-  private FileBasedSnapshotMetadata collectMetadata(
-      final Path path, final FileBasedSnapshotId snapshotId) throws IOException {
+  private FileBasedSnapshotMetadata collectMetadata(final Path path) throws IOException {
     final var metadataPath = path.resolve(METADATA_FILE_NAME);
-    if (metadataPath.toFile().exists()) {
-      final var encodedMetadata = Files.readAllBytes(metadataPath);
-      return FileBasedSnapshotMetadata.decode(encodedMetadata);
-    } else {
-      // backward compatibility mode
-      return new FileBasedSnapshotMetadata(
-          VERSION,
-          snapshotId.getProcessedPosition(),
-          snapshotId.getExportedPosition(),
-          Long.MAX_VALUE,
-          Long.MAX_VALUE,
-          false);
+    if (!metadataPath.toFile().exists()) {
+      throw new IllegalStateException(
+          "Expected snapshot %s to contain a metadata file, but none was found".formatted(path));
     }
+
+    final var encodedMetadata = Files.readAllBytes(metadataPath);
+    return FileBasedSnapshotMetadata.decode(encodedMetadata);
   }
 
   public boolean hasSnapshotId(final String id) {

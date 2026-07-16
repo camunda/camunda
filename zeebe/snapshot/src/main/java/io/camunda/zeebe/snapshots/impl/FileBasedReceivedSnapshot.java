@@ -265,20 +265,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     try {
-      if (metadata == null) {
-        // backward compatibility
-        metadata =
-            new FileBasedSnapshotMetadata(
-                FileBasedSnapshotStoreImpl.VERSION,
-                snapshotId.getProcessedPosition(),
-                snapshotId.getExportedPosition(),
-                Long.MAX_VALUE,
-                Long.MAX_VALUE,
-                false);
-      }
+      final var persistedMetadata =
+          Objects.requireNonNull(metadata, "Expected the received snapshot to contain metadata");
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(
-              directory, snapshotId, getChecksumCollection(), metadata);
+              directory, snapshotId, getChecksumCollection(), persistedMetadata);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);

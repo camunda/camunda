@@ -126,7 +126,8 @@ public final class FileBasedSnapshotTest {
 
   private FileBasedSnapshot createSnapshot(final Path snapshotPath, final Path checksumPath)
       throws IOException {
-    return createSnapshot(snapshotPath, checksumPath, null);
+    return createSnapshot(
+        snapshotPath, checksumPath, new FileBasedSnapshotMetadata(1, 1L, 1L, 1L, 0, false));
   }
 
   private FileBasedSnapshot createSnapshot(

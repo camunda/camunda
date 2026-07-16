@@ -25,6 +25,7 @@ import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.SfvChecksumImpl;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -178,7 +179,7 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
 
   @Override
   public SnapshotMetadata getMetadata() {
-    return null;
+    return new FileBasedSnapshotMetadata(1, 0L, 0L, 0L, 0L, false, 0L);
   }
 
   @Override
