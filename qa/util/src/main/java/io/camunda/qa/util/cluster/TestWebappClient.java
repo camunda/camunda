@@ -27,7 +27,12 @@ import org.awaitility.core.ConditionTimeoutException;
 
 public class TestWebappClient {
 
-  private static final Duration LOGIN_TIMEOUT = Duration.ofSeconds(3);
+  // Generous upper bound, not the expected wait. On ES/OS the default user only becomes
+  // searchable once it is exported and the index refreshes (gated behind schema init and the
+  // exporter's backoff), which can lag startup by several seconds under CI load. The retry is
+  // condition-based and returns as soon as login is accepted, so this only bites when something
+  // is genuinely wrong.
+  private static final Duration LOGIN_TIMEOUT = Duration.ofSeconds(60);
 
   private final URI endpoint;
 
@@ -42,10 +47,9 @@ public class TestWebappClient {
     final var loginRequest = buildLoginRequest(username, password);
     final var lastResponse = new AtomicReference<HttpResponse<String>>();
 
-    // The default user is provisioned asynchronously; on Elasticsearch/OpenSearch it only becomes
-    // searchable after an index refresh. Until then the username lookup misses and login is
-    // rejected, so retry until it is accepted rather than handing back an unauthenticated client
-    // whose failure only surfaces later as a confusing 401 on the first authenticated request.
+    // Retry until the login is accepted (see LOGIN_TIMEOUT): until the user is searchable the
+    // username lookup misses and login is rejected, and handing back an unauthenticated client here
+    // would only surface later as a confusing 401 on the first authenticated request.
     try {
       Awaitility.await("login of user '%s'".formatted(username))
           .atMost(LOGIN_TIMEOUT)
