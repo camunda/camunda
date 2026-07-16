@@ -14,10 +14,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Status;
@@ -32,9 +33,31 @@ public class ClusterHealthIndicatorTest {
   }
 
   @Test
-  public void shouldReportDownIfSupplierReturnsEmpty() {
+  public void shouldReportDownIfSupplierReturnsEmptyMap() {
     // given
-    final Supplier<Optional<BrokerClusterState>> stateSupplier = () -> Optional.empty();
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier = Map::of;
+    final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
+
+    // when
+    final var actualHealth = sutHealthIndicator.health();
+
+    // then
+    assertThat(actualHealth).isNotNull();
+    assertThat(actualHealth.getStatus()).isEqualTo(Status.DOWN);
+  }
+
+  @Test
+  public void shouldReportDownIfOnlyNonDefaultTenantIsKnown() {
+    // given the indicator only considers the default physical tenant
+    final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
+    when(mockClusterState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
+    when(mockClusterState.getPartitions()).thenReturn(List.of(1));
+    when(mockClusterState.getLeaderForPartition(1)).thenReturn(BrokerMemberId.from(1));
+    when(mockClusterState.getPartitionHealth(BrokerMemberId.from(1), 1))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier =
+        () -> Map.of("other-tenant", mockClusterState);
     final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
 
     // when
@@ -52,8 +75,8 @@ public class ClusterHealthIndicatorTest {
     when(mockClusterState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
     when(mockClusterState.getPartitions()).thenReturn(List.of());
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier =
+        () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, mockClusterState);
     final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
 
     // when
@@ -74,8 +97,8 @@ public class ClusterHealthIndicatorTest {
     when(mockClusterState.getPartitionHealth(BrokerMemberId.from(1), 1))
         .thenReturn(PartitionHealthStatus.HEALTHY);
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier =
+        () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, mockClusterState);
     final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
 
     // when
@@ -101,8 +124,8 @@ public class ClusterHealthIndicatorTest {
     when(mockClusterState.getPartitionHealth(BrokerMemberId.from(3), 3))
         .thenReturn(PartitionHealthStatus.DEAD);
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier =
+        () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, mockClusterState);
     final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
 
     // when
@@ -128,8 +151,8 @@ public class ClusterHealthIndicatorTest {
     when(mockClusterState.getPartitionHealth(BrokerMemberId.from(3), 3))
         .thenReturn(PartitionHealthStatus.DEAD);
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier =
+        () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, mockClusterState);
     final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
 
     // when
@@ -155,8 +178,8 @@ public class ClusterHealthIndicatorTest {
     when(mockClusterState.getPartitionHealth(BrokerMemberId.from(3), 3))
         .thenReturn(PartitionHealthStatus.UNHEALTHY);
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier =
+        () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, mockClusterState);
     final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
 
     // when
@@ -173,8 +196,8 @@ public class ClusterHealthIndicatorTest {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getBrokers()).thenReturn(emptyList());
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier =
+        () -> Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, mockClusterState);
     final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
 
     // when

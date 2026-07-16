@@ -23,17 +23,11 @@ import org.springframework.stereotype.Component;
 public class SpringGatewayBridge {
 
   private Supplier<Status> gatewayStatusSupplier;
-  private Supplier<Optional<BrokerClusterState>> clusterStateSupplier;
   private Supplier<Map<String, BrokerClusterState>> clusterStatesSupplier;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
 
   public void registerGatewayStatusSupplier(final Supplier<Status> gatewayStatusSupplier) {
     this.gatewayStatusSupplier = gatewayStatusSupplier;
-  }
-
-  public void registerClusterStateSupplier(
-      final Supplier<Optional<BrokerClusterState>> clusterStateSupplier) {
-    this.clusterStateSupplier = clusterStateSupplier;
   }
 
   /**
@@ -48,10 +42,6 @@ public class SpringGatewayBridge {
 
   public Optional<Status> getGatewayStatus() {
     return Optional.ofNullable(gatewayStatusSupplier).map(Supplier::get);
-  }
-
-  public Optional<BrokerClusterState> getClusterState() {
-    return Optional.ofNullable(clusterStateSupplier).flatMap(Supplier::get);
   }
 
   /**

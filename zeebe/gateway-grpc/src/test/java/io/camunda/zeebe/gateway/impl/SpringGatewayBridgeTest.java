@@ -50,30 +50,6 @@ public class SpringGatewayBridgeTest {
   }
 
   @Test
-  public void shouldReturnNoClusterStateByDefault() {
-    // when
-    final var actual = sutBrigde.getClusterState();
-
-    // then
-    assertThat(actual).describedAs("Cluster status when no supplier is set").isEmpty();
-  }
-
-  @Test
-  public void shouldUseClusterStateSupplierWhenSet() {
-    // given
-    final var mockClusterState = Mockito.mock(BrokerClusterState.class);
-
-    final Supplier<Optional<BrokerClusterState>> testSupplier = () -> Optional.of(mockClusterState);
-    sutBrigde.registerClusterStateSupplier(testSupplier);
-
-    // when
-    final var actual = sutBrigde.getClusterState();
-
-    // then
-    assertThat(actual).contains(mockClusterState);
-  }
-
-  @Test
   public void shouldReturnEmptyClusterStatesByDefault() {
     // when
     final var actual = sutBrigde.getClusterStates();

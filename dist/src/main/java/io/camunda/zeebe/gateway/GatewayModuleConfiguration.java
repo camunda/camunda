@@ -161,11 +161,6 @@ public class GatewayModuleConfiguration implements CloseableSilently {
             maxVariableNameLength,
             physicalTenantIds);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
-    springGatewayBridge.registerClusterStateSupplier(
-        () ->
-            Optional.ofNullable(gateway.getBrokerClient())
-                .map(BrokerClient::getTopologyManager)
-                .map(BrokerTopologyManager::getTopology));
     springGatewayBridge.registerClusterStatesSupplier(this::clusterStatesByPhysicalTenant);
     springGatewayBridge.registerJobStreamClient(() -> jobStreamClient);
 

@@ -51,7 +51,6 @@ public class GatewayHealthIndicatorsIntegrationTest {
   @After
   public void tearDown() {
     // reset suppliers
-    springGatewayBridge.registerClusterStateSupplier(null);
     springGatewayBridge.registerClusterStatesSupplier(null);
     springGatewayBridge.registerGatewayStatusSupplier(null);
   }

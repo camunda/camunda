@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 
 import static java.util.Objects.requireNonNull;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.HashMap;
@@ -23,18 +24,25 @@ import org.springframework.boot.health.contributor.HealthIndicator;
  * The cluster health indicator signals if there are still any healthy partition available, if not
  * then is set as down as no processing is happening. In the details also indicates the health
  * status of all partitions.
+ *
+ * <p>This indicator reports the default physical tenant only. Aggregation across all physical
+ * tenants is served by the cluster-level status endpoint instead (ADR
+ * docs/adr/management/001-physical-tenant-health-status-topology.md).
  */
 public class ClusterHealthIndicator implements HealthIndicator {
 
-  private final Supplier<Optional<BrokerClusterState>> clusterStateSupplier;
+  private final Supplier<Map<String, BrokerClusterState>> clusterStatesSupplier;
 
-  public ClusterHealthIndicator(final Supplier<Optional<BrokerClusterState>> clusterStateSupplier) {
-    this.clusterStateSupplier = requireNonNull(clusterStateSupplier);
+  public ClusterHealthIndicator(
+      final Supplier<Map<String, BrokerClusterState>> clusterStatesSupplier) {
+    this.clusterStatesSupplier = requireNonNull(clusterStatesSupplier);
   }
 
   @Override
   public Health health() {
-    final var optClusterState = clusterStateSupplier.get();
+    final var optClusterState =
+        Optional.ofNullable(
+            clusterStatesSupplier.get().get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
 
     if (optClusterState.isEmpty()) {
       return Health.down().build();
