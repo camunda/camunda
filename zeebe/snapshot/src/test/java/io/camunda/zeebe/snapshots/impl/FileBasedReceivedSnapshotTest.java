@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
@@ -385,7 +386,7 @@ public class FileBasedReceivedSnapshotTest {
   private FileBasedSnapshotStore createStore(final Path root) {
     final var store =
         new FileBasedSnapshotStore(
-            0, PARTITION_ID, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0, PARTITION_ID, root, snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
     scheduler.submitActor(store);
 
     return store;

@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -71,7 +72,7 @@ public final class StateControllerImplTest {
             0,
             1,
             tempFolderRule.newFolder("data").toPath(),
-            snapshotPath -> Map.of(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             meterRegistry);
     actorSchedulerRule.submitActor(store).join();
 

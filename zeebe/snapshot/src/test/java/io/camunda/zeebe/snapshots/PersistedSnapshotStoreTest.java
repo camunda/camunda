@@ -39,7 +39,7 @@ public class PersistedSnapshotStoreTest {
 
     final var snapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, root.toPath(), snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0, partitionId, root.toPath(), snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
     scheduler.submitActor(snapshotStore).join();
     persistedSnapshotStore = snapshotStore;
   }

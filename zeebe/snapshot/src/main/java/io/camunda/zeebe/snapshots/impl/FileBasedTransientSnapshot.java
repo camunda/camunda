@@ -12,7 +12,7 @@ import static io.camunda.zeebe.util.Unit.unit;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
@@ -50,7 +50,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private boolean isValid = false;
   private @Nullable PersistedSnapshot snapshot;
   private @Nullable MutableChecksumsSFV checksum;
-  private final CRC32CChecksumProvider checksumProvider;
+  private final SnapshotFileInfoProvider fileInfoProvider;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
   private long maxExportedPosition = Long.MAX_VALUE;
   private final boolean isBootstrap;
@@ -61,13 +61,13 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       final Path directory,
       final FileBasedSnapshotStoreImpl snapshotStore,
       final ConcurrencyControl actor,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider fileInfoProvider,
       final boolean isBootstrap) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
-    this.checksumProvider = checksumProvider;
+    this.fileInfoProvider = fileInfoProvider;
     this.isBootstrap = isBootstrap;
   }
 
@@ -105,7 +105,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          checksum = SnapshotChecksum.calculateWithProvidedChecksums(directory, checksumProvider);
+          checksum = SnapshotChecksum.calculateWithProvidedChecksums(directory, fileInfoProvider);
 
           snapshot = null;
           isValid = true;

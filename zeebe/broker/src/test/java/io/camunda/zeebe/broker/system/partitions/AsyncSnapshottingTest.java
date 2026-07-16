@@ -27,6 +27,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -70,7 +71,7 @@ public final class AsyncSnapshottingTest {
     final var meterRegistry = new SimpleMeterRegistry();
     persistedSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, rootDirectory, snapshotPath -> Map.of(), meterRegistry);
+            0, partitionId, rootDirectory, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
     actorSchedulerRule.submitActor(persistedSnapshotStore).join();
 
     positionSupplier =

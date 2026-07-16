@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
@@ -38,21 +39,21 @@ final class SnapshotChecksum {
   }
 
   public static MutableChecksumsSFV calculate(final Path snapshotDirectory) throws IOException {
-    return createChecksumForSnapshot(snapshotDirectory, snapshotPath -> Map.of());
+    return createChecksumForSnapshot(snapshotDirectory, snapshotPath -> SnapshotFilesInfo.none());
   }
 
   public static MutableChecksumsSFV calculateWithProvidedChecksums(
-      final Path snapshotDirectory, final CRC32CChecksumProvider provider) throws IOException {
+      final Path snapshotDirectory, final SnapshotFileInfoProvider provider) throws IOException {
     return createChecksumForSnapshot(snapshotDirectory, provider);
   }
 
   private static MutableChecksumsSFV createChecksumForSnapshot(
-      final Path snapshotDirectory, final CRC32CChecksumProvider provider) throws IOException {
+      final Path snapshotDirectory, final SnapshotFileInfoProvider provider) throws IOException {
 
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
       final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
-      final Map<String, Long> fullFileChecksums = provider.getSnapshotChecksums(snapshotDirectory);
+      final Map<String, Long> fullFileChecksums = provider.getSnapshotFilesInfo(snapshotDirectory).checksums();
       fileStream.forEachOrdered(path -> updateChecksum(sfvChecksum, fullFileChecksums, path));
 
       // While persisting transient snapshot, the checksum of metadata file is added at the end.

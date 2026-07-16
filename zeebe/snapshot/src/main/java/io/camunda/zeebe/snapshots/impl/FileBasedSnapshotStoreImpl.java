@@ -15,7 +15,7 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -65,7 +65,7 @@ public final class FileBasedSnapshotStoreImpl {
   // keeps track of all snapshot modification listeners
   private final Set<PersistedSnapshotListener> listeners = new CopyOnWriteArraySet<>();
   private final SnapshotMetrics metrics;
-  private final CRC32CChecksumProvider checksumProvider;
+  private final SnapshotFileInfoProvider fileInfoProvider;
   private final ConcurrencyControl actor;
 
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
@@ -80,13 +80,13 @@ public final class FileBasedSnapshotStoreImpl {
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
       final Path root,
-      final CRC32CChecksumProvider checksumProvider,
+      final SnapshotFileInfoProvider fileInfoProvider,
       final ConcurrencyControl actor,
       final SnapshotMetrics metrics) {
     this.brokerId = brokerId;
     this.actor = Objects.requireNonNull(actor);
     this.metrics = Objects.requireNonNull(metrics);
-    this.checksumProvider = Objects.requireNonNull(checksumProvider);
+    this.fileInfoProvider = Objects.requireNonNull(fileInfoProvider);
 
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     bootstrapSnapshotsDirectory = root.resolve(SNAPSHOTS_BOOTSTRAP_DIRECTORY);
@@ -183,7 +183,7 @@ public final class FileBasedSnapshotStoreImpl {
     try {
       final var expectedChecksum = SnapshotChecksum.read(checksumPath);
       final var actualChecksum =
-          SnapshotChecksum.calculateWithProvidedChecksums(path, checksumProvider);
+          SnapshotChecksum.calculateWithProvidedChecksums(path, fileInfoProvider);
       if (!actualChecksum.sameChecksums(expectedChecksum)) {
         LOGGER.warn(
             "Expected snapshot {} to have checksums {}, but the actual checksums are {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
@@ -385,7 +385,7 @@ public final class FileBasedSnapshotStoreImpl {
     } while (Files.exists(directory));
     final var newPendingSnapshot =
         new FileBasedTransientSnapshot(
-            newSnapshotId, directory, this, actor, checksumProvider, false);
+            newSnapshotId, directory, this, actor, fileInfoProvider, false);
     addPendingSnapshot(newPendingSnapshot);
     return Either.right(newPendingSnapshot);
   }
@@ -704,7 +704,7 @@ public final class FileBasedSnapshotStoreImpl {
               ignored -> {
                 final var transientSnapshot =
                     new FileBasedTransientSnapshot(
-                        zeroedSnapshotId, destinationFolder, this, actor, checksumProvider, true);
+                        zeroedSnapshotId, destinationFolder, this, actor, fileInfoProvider, true);
                 return transientSnapshot
                     .take(toPath -> copySnapshot.accept(snapshotPath, toPath))
                     .andThen(ignore -> transientSnapshot.persistInternal(), actor);

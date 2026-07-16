@@ -33,6 +33,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
@@ -137,7 +138,7 @@ public class SnapshotApiRequestHandlerTest {
                 0,
                 partitionId,
                 senderDirectory,
-                snapshotPath -> Map.of(),
+                snapshotPath -> SnapshotFilesInfo.none(),
                 new SimpleMeterRegistry()));
 
     final var transferService =
@@ -155,7 +156,7 @@ public class SnapshotApiRequestHandlerTest {
                 0,
                 partitionId,
                 receiverDirectory,
-                snapshotPath -> Map.of(),
+                snapshotPath -> SnapshotFilesInfo.none(),
                 new SimpleMeterRegistry()));
 
     client = new SnapshotTransferServiceClient(brokerClient);

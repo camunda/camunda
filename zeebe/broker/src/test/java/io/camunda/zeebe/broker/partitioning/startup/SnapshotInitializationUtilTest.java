@@ -23,6 +23,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -73,7 +74,7 @@ class SnapshotInitializationUtilTest {
             1, // brokerId
             2, // partitionId
             receiverSnapshotDir,
-            snapshotPath -> Map.of(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             new SimpleMeterRegistry());
 
     // Create sender snapshot store (simulates the leader/sender)
@@ -83,7 +84,7 @@ class SnapshotInitializationUtilTest {
             2, // different brokerId
             1, // same partitionId
             senderSnapshotDir,
-            snapshotPath -> Map.of(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             new SimpleMeterRegistry());
 
     scheduler.submitActor(receiverSnapshotStore).join();
@@ -366,7 +367,7 @@ class SnapshotInitializationUtilTest {
             1, // brokerId
             2, // partitionId
             receiverSnapshotDir,
-            snapshotPath -> Map.of(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             new SimpleMeterRegistry());
     scheduler.submitActor(receiverSnapshotStore).join();
   }

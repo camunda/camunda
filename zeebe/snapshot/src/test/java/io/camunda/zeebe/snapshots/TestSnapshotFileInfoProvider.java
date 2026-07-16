@@ -10,15 +10,15 @@ package io.camunda.zeebe.snapshots;
 import java.nio.file.Path;
 import java.util.Map;
 
-public class TestChecksumProvider implements CRC32CChecksumProvider {
+public class TestSnapshotFileInfoProvider implements SnapshotFileInfoProvider {
   private final Map<String, Long> snapshotChecksums;
 
-  public TestChecksumProvider(final Map<String, Long> snapshotChecksums) {
+  public TestSnapshotFileInfoProvider(final Map<String, Long> snapshotChecksums) {
     this.snapshotChecksums = snapshotChecksums;
   }
 
   @Override
-  public Map<String, Long> getSnapshotChecksums(final Path snapshotPath) {
-    return snapshotChecksums;
+  public SnapshotFilesInfo getSnapshotFilesInfo(final Path snapshotPath) {
+    return new SnapshotFilesInfo(snapshotChecksums, Map.of());
   }
 }

@@ -41,12 +41,12 @@ public class ReceivedSnapshotTest {
 
     senderSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0, partitionId, senderDirectory, snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
     scheduler.get().submitActor((Actor) senderSnapshotStore).join();
 
     receiverSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0, partitionId, receiverDirectory, snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
 
     scheduler.get().submitActor((Actor) receiverSnapshotStore).join();
   }

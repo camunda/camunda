@@ -22,6 +22,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.SnapshotTransferUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
@@ -61,13 +62,13 @@ public class SnapshotTransferTest {
 
     senderSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0, partitionId, senderDirectory, snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
     actorScheduler.submitActor(senderSnapshotStore);
     actorScheduler.workUntilDone();
 
     receiverSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0, partitionId, receiverDirectory, snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
 
     actorScheduler.submitActor(receiverSnapshotStore);
     actorScheduler.workUntilDone();

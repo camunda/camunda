@@ -13,8 +13,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
-import io.camunda.zeebe.snapshots.TestChecksumProvider;
+import io.camunda.zeebe.snapshots.TestSnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
@@ -74,7 +75,7 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     final var store =
-        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), meterRegistry);
+        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
 
     // then
     assertThat(root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
@@ -272,7 +273,7 @@ public class FileBasedSnapshotStoreTest {
     // given
     final Map<String, Long> badChecksums = new HashMap<>();
     badChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, 123L);
-    final var testChecksumProvider = new TestChecksumProvider(badChecksums);
+    final var testChecksumProvider = new TestSnapshotFileInfoProvider(badChecksums);
 
     // when
     final var store =
@@ -391,7 +392,7 @@ public class FileBasedSnapshotStoreTest {
             0,
             PARTITION_ID,
             receiverStorePath,
-            new TestChecksumProvider(fileChecksums),
+            new TestSnapshotFileInfoProvider(fileChecksums),
             new SimpleMeterRegistry());
     scheduler.submitActor(store);
 
@@ -415,7 +416,7 @@ public class FileBasedSnapshotStoreTest {
             0,
             PARTITION_ID,
             receiverStorePath,
-            new TestChecksumProvider(fileChecksums),
+            new TestSnapshotFileInfoProvider(fileChecksums),
             new SimpleMeterRegistry());
     scheduler.submitActor(restartedStore).join();
 
@@ -603,7 +604,7 @@ public class FileBasedSnapshotStoreTest {
 
   private FileBasedSnapshotStore createStore(final Path root) {
     final var store =
-        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), meterRegistry);
+        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
     scheduler.submitActor(store).join();
 
     return store;

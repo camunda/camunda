@@ -12,10 +12,10 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedReceivedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -35,7 +34,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.zip.CRC32C;
 
 public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
 
@@ -50,7 +48,7 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
         new FileBasedSnapshotStoreImpl(
             nodeId,
             root,
-            new TestChecksumProvider(),
+            snapshotPath -> SnapshotFilesInfo.none(),
             concurrencyControl,
             new SnapshotMetrics(meterRegistry));
     snapshotStore.start();
@@ -157,31 +155,5 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
   @Override
   public ActorFuture<Void> deleteBootstrapSnapshots() {
     return CompletableActorFuture.completed();
-  }
-
-  private static final class TestChecksumProvider implements CRC32CChecksumProvider {
-
-    @Override
-    public Map<String, Long> getSnapshotChecksums(final Path snapshotPath) {
-      final HashMap<String, Long> checksums = new HashMap<>();
-      try (final var files =
-          Files.newDirectoryStream(
-              snapshotPath, p -> p.getFileName().toString().startsWith("chunk"))) {
-        files.forEach(
-            file -> {
-              try {
-                final var fileContentChecksum = new CRC32C();
-                fileContentChecksum.update(Files.readAllBytes(file));
-                checksums.put(file.getFileName().toString(), fileContentChecksum.getValue());
-              } catch (final IOException e) {
-                throw new UncheckedIOException(e);
-              }
-            });
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
-
-      return checksums;
-    }
   }
 }
