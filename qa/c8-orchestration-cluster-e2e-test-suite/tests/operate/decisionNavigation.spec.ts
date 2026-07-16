@@ -278,20 +278,23 @@ test.describe('Decision Navigation', () => {
     });
 
     await test.step('Verify we are on the Assign Approver Group Navigation decision instance', async () => {
-      // Same import-lag hazard as the previous step: a single wait here (no
-      // retry) was the exact assertion observed failing on a Playwright
-      // retry attempt in CI, after the row-visibility wait above had already
-      // succeeded — the decision instance page itself can still be slow to
-      // populate right after navigating to it.
+      // This was a wrong assertion, not import lag: the DMN's input *label*
+      // "Invoice Classification" (rendered as this decision's own input
+      // column header) was deliberately left unrenamed when
+      // invoiceBusinessDecisionsNavigation.dmn was created — only decision
+      // ids/names were suffixed "Navigation" for cross-spec isolation, since
+      // labels don't cause naming collisions the way decision names do. A
+      // blanket find-and-replace across this file for "Invoice
+      // Classification" incorrectly renamed this specific expectation too.
       await waitForAssertion({
         assertion: async () => {
           await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
             timeout: 10_000,
           });
-          // Input column header for Assign Approver Group Navigation is "Invoice Classification Navigation"
+          // Input column header for Assign Approver Group Navigation is "Invoice Classification"
           await expect(
             operateDecisionInstancePage.decisionPanel.getByText(
-              'Invoice Classification Navigation',
+              'Invoice Classification',
             ),
           ).toBeVisible();
         },
