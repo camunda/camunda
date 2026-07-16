@@ -61,7 +61,8 @@ public final class JobEventProcessors {
                 eventHandle,
                 cslCheck,
                 bpmnBehaviors.variableBehavior(),
-                config.isIncludeVariablesInJobCompletedEvent()))
+                config.isIncludeVariablesInJobCompletedEvent(),
+                config.isBusinessIdUniquenessEnabled()))
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,
