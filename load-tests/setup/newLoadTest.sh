@@ -182,6 +182,11 @@ if [[ "$enable_optimize" == "true" ]]; then
     # stable-87's Makefile uses this file when secondary_storage=elasticsearch;
     # for other versions it's harmlessly present (their Makefiles skip it for ES).
     cp -v "$VERSION_DIR/values/camunda-platform-values-optimize-elasticsearch.yaml" "$TARGET_DIRECTORY/"
+  elif [[ "$secondary_storage" == "opensearch" ]]; then
+    optimize_opensearch_config_file="$VERSION_DIR/values/camunda-platform-values-optimize-opensearch.yaml"
+    if [[ -f "$optimize_opensearch_config_file" ]]; then
+      cp -v "$optimize_opensearch_config_file" "$TARGET_DIRECTORY/"
+    fi
   elif [[ "$secondary_storage" != "opensearch" ]]; then
     # Non-ES/non-OS storage: forcefully configure Optimize to use Elasticsearch.
     elasticsearchEnabled=true
