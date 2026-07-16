@@ -369,7 +369,7 @@ jobs:
           vault-addr: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Upload distball + SNAPSHOTs to GCS
+      - name: Upload distball to GCS
         uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
         # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
         env:
@@ -377,12 +377,23 @@ jobs:
         with:
           max_attempts: 5
           retry_wait_seconds: 10
-          timeout_minutes: 5
+          timeout_minutes: 2
           shell: bash
           command: |
             set -euo pipefail
             gcloud storage cp "${{ steps.build-zeebe.outputs.distball }}" \
               "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
+      - name: Upload SNAPSHOTs to GCS
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 1
+          shell: bash
+          command: |
+            set -euo pipefail
             gcloud storage cp m2-installed.tar \
               "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar"
       - name: Observe build status
@@ -1296,7 +1307,7 @@ jobs:
         with:
           max_attempts: 5
           retry_wait_seconds: 10
-          timeout_minutes: 5
+          timeout_minutes: 2
           shell: bash
           command: gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/camunda-zeebe-*.tar.gz" dist/target/
       # Restore the io.camunda SNAPSHOTs archived by build-distball for `mvn verify` below
