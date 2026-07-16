@@ -150,6 +150,7 @@ final class IntentEncodingDecodingTest {
     result.addAll(
         buildParameterSets(RuntimeInstructionIntent.class, RuntimeInstructionIntent::from));
     result.addAll(buildParameterSets(ScaleIntent.class, ScaleIntent::from));
+    result.addAll(buildParameterSets(SecretReferenceIntent.class, SecretReferenceIntent::from));
     result.addAll(buildParameterSets(SignalIntent.class, SignalIntent::from));
     result.addAll(
         buildParameterSets(SignalSubscriptionIntent.class, SignalSubscriptionIntent::from));

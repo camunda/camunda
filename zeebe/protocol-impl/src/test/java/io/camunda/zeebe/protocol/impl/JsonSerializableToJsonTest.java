@@ -91,6 +91,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -122,6 +123,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResolutionState;
 import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
@@ -5268,6 +5270,42 @@ final class JsonSerializableToJsonTest {
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
           "processDefinitionKey": -1
+        }
+        """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// SecretReferenceRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty SecretReferenceRecord",
+        (Supplier<UnifiedRecordValue>) SecretReferenceRecord::new,
+        """
+        {
+          "storeId": "",
+          "secretReference": "",
+          "resolutionState": "UNSPECIFIED",
+          "jobKeys": []
+        }
+        """
+      },
+      {
+        "SecretReferenceRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final SecretReferenceRecord record = new SecretReferenceRecord();
+              record.setStoreId("my-store");
+              record.setSecretReference("my-secret");
+              record.setResolutionState(ResolutionState.SUCCESS);
+              record.addJobKey(100L);
+              record.addJobKey(200L);
+              return record;
+            },
+        """
+        {
+          "storeId": "my-store",
+          "secretReference": "my-secret",
+          "resolutionState": "SUCCESS",
+          "jobKeys": [100, 200]
         }
         """
       }
