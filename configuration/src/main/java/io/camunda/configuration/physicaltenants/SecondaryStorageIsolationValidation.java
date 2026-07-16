@@ -48,21 +48,22 @@ class SecondaryStorageIsolationValidation implements CrossTenantValidation {
         });
 
     final List<String> collisions = new ArrayList<>();
-    final boolean[] anyRdbmsCollision = {false};
-    tenantsByIdentity.forEach(
-        (identity, tenantIds) -> {
-          if (tenantIds.size() > 1) {
-            collisions.add(
-                String.format(
-                    "tenants %s share the same secondary-storage location [%s]",
-                    tenantIds, identity.describe()));
-            anyRdbmsCollision[0] |= identity.isRdbms();
-          }
-        });
+    boolean anyRdbmsCollision = false;
+    for (final var entry : tenantsByIdentity.entrySet()) {
+      final StorageIdentity identity = entry.getKey();
+      final List<String> tenantIds = entry.getValue();
+      if (tenantIds.size() > 1) {
+        collisions.add(
+            String.format(
+                "tenants %s share the same secondary-storage location [%s]",
+                tenantIds, identity.describe()));
+        anyRdbmsCollision |= identity.isRdbms();
+      }
+    }
 
     if (!collisions.isEmpty()) {
       final String oracleHint =
-          anyRdbmsCollision[0]
+          anyRdbmsCollision
               ? " To isolate Oracle physical tenants by schema-per-user (distinct DB users on a "
                   + "shared jdbc url), set data.secondary-storage.rdbms.database-vendor-id: oracle "
                   + "on each tenant."

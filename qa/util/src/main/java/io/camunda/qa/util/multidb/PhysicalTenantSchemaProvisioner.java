@@ -59,7 +59,7 @@ final class PhysicalTenantSchemaProvisioner {
 
   /**
    * Builds the namespace name for a physical tenant: {@code <basePrefix>_<tenantId>} — the schema
-   * or database name on the schema/database dialects, or the table prefix on Oracle.
+   * or database name on the schema/database dialects, or the user/schema name on Oracle.
    */
   static String buildNamespace(final String basePrefix, final String tenantId) {
     return basePrefix + "_" + tenantId;
@@ -206,16 +206,39 @@ final class PhysicalTenantSchemaProvisioner {
     try {
       executeDdl(url, adminUser, adminPass, "DROP USER " + namespace + " CASCADE");
     } catch (final RuntimeException e) {
-      // Expected when no leftover user exists (ORA-01918); recreate cleanly below.
-      LOGGER.debug("No pre-existing Oracle user '{}' to drop before create", namespace);
+      // Only ignore "user does not exist" (ORA-01918) — the expected case when there is no leftover
+      // user from a prior same-JVM rerun. Any other failure (privileges, connectivity) is real and
+      // must surface here rather than masquerading as a later CREATE USER failure.
+      if (isOracleUserDoesNotExist(e)) {
+        LOGGER.debug("No pre-existing Oracle user '{}' to drop before create", namespace);
+      } else {
+        throw e;
+      }
     }
     executeDdl(
         url,
         adminUser,
         adminPass,
-        "CREATE USER " + namespace + " IDENTIFIED BY \"" + userPassword + "\"",
+        "CREATE USER "
+            + namespace
+            + " IDENTIFIED BY \""
+            + escapeOracleQuotedLiteral(userPassword)
+            + "\"",
         "GRANT CONNECT, RESOURCE TO " + namespace,
         "GRANT UNLIMITED TABLESPACE TO " + namespace);
+  }
+
+  /** ORA-01918: "user '…' does not exist" — the expected DROP USER outcome when none is present. */
+  private static final int ORA_USER_DOES_NOT_EXIST = 1918;
+
+  private static boolean isOracleUserDoesNotExist(final RuntimeException e) {
+    return e.getCause() instanceof final SQLException sqlException
+        && sqlException.getErrorCode() == ORA_USER_DOES_NOT_EXIST;
+  }
+
+  /** Escapes a double-quoted Oracle literal by doubling any embedded double quotes. */
+  private static String escapeOracleQuotedLiteral(final String value) {
+    return value.replace("\"", "\"\"");
   }
 
   /**
