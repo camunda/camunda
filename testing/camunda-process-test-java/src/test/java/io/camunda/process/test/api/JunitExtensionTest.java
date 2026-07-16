@@ -505,7 +505,7 @@ public class JunitExtensionTest {
       // given
       final CamundaProcessTestExtension extension =
           new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
-              .withDataDeletionEnabled(false);
+              .withDataDeletionMode(DataDeletionMode.NONE);
 
       // when
       extension.beforeAll(extensionContext);

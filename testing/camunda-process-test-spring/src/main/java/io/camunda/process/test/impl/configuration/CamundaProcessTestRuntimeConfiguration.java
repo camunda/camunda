@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.util.Collections;
 import java.util.List;
@@ -53,7 +54,7 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   private boolean multiTenancyEnabled = false;
   private boolean clockResetEnabled = true;
-  private boolean dataDeletionEnabled = true;
+  private DataDeletionMode dataDeletionMode = DataDeletionMode.CLUSTER_PURGE;
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
@@ -244,12 +245,12 @@ public class CamundaProcessTestRuntimeConfiguration {
     this.clockResetEnabled = clockResetEnabled;
   }
 
-  public boolean isDataDeletionEnabled() {
-    return dataDeletionEnabled;
+  public DataDeletionMode getDataDeletionMode() {
+    return dataDeletionMode;
   }
 
-  public void setDataDeletionEnabled(final boolean dataDeletionEnabled) {
-    this.dataDeletionEnabled = dataDeletionEnabled;
+  public void setDataDeletionMode(final DataDeletionMode dataDeletionMode) {
+    this.dataDeletionMode = dataDeletionMode;
   }
 
   public CoverageReportConfiguration getCoverage() {
