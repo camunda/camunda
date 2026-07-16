@@ -10,6 +10,8 @@ package io.camunda.analytics.state;
 import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.state.mutable.MutableProjectionState;
+import io.camunda.eventbridge.streaming.changelog.ChangelogKeyEnvelope;
+import io.camunda.eventbridge.streaming.changelog.ChangelogRecord;
 import io.camunda.eventbridge.streaming.state.StoreBuilder;
 import io.camunda.eventbridge.streaming.state.api.StateStoreProvider;
 import io.camunda.eventbridge.streaming.state.cache.CachingKeyValueStore;
@@ -412,6 +414,45 @@ public final class StateBackedProjectionState implements MutableProjectionState,
    */
   public void persistFrozen() {
     caches.forEach(CachingKeyValueStore::persistFrozen);
+  }
+
+  /**
+   * The frozen cut's changelog records (streaming ADR 0009 Decisions 1/2), across every base-
+   * projection column family this state owns: each named cache's {@link
+   * CachingKeyValueStore#changelogRecords()} — already exactly the puts/tombstones {@link
+   * #persistFrozen()} writes for that store — enveloped with the store's own {@link
+   * AnalyticsColumnFamilies} tag ({@link ChangelogKeyEnvelope}), since this projection's several
+   * column families (element, variable, variable-scope marker, incident and variant-element rows)
+   * share one changelog topic with Stage 1's sealing aggregation and pre-fold dedup watermarks (see
+   * {@code ProjectionStageTask}). No record set is re-derived here — every cache's frozen delta is
+   * mirrored as-is, so absorption (a scope/variable created and deleted within one cut never
+   * appears) and delta trueness (an unchanged key is never re-emitted) are inherited from {@link
+   * CachingKeyValueStore}, not reproduced. Callable only after {@link #freeze()}, normally from a
+   * cut's {@link io.camunda.eventbridge.streaming.CommitCut#publish()} before {@link
+   * #persistFrozen()} runs.
+   */
+  public List<ChangelogRecord> changelogRecords() {
+    final List<ChangelogRecord> records = new ArrayList<>();
+    appendEnveloped(records, AnalyticsColumnFamilies.ELEMENT_ENTITY, elements);
+    appendEnveloped(records, AnalyticsColumnFamilies.VARIABLE_ENTRIES, variables);
+    appendEnveloped(records, AnalyticsColumnFamilies.VARIABLE_SCOPES, variableScopes);
+    appendEnveloped(records, AnalyticsColumnFamilies.INCIDENT_ENTITY, incidents);
+    appendEnveloped(records, AnalyticsColumnFamilies.VARIANT_ELEMENTS, variantElements);
+    return records;
+  }
+
+  private static void appendEnveloped(
+      final List<ChangelogRecord> out,
+      final AnalyticsColumnFamilies cf,
+      final CachingKeyValueStore<?, ?> cache) {
+    final int cfTag = cf.getValue();
+    for (final ChangelogRecord record : cache.changelogRecords()) {
+      final byte[] enveloped = ChangelogKeyEnvelope.encode(cfTag, record.key());
+      out.add(
+          record.isTombstone()
+              ? ChangelogRecord.tombstone(enveloped)
+              : ChangelogRecord.put(enveloped, record.value()));
+    }
   }
 
   /**

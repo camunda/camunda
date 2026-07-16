@@ -42,6 +42,9 @@ import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.Segments;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
+import io.camunda.eventbridge.streaming.changelog.ChangelogKeyEnvelope;
+import io.camunda.eventbridge.streaming.changelog.ChangelogPublisher;
+import io.camunda.eventbridge.streaming.changelog.ChangelogRecord;
 import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
@@ -54,6 +57,7 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -95,6 +99,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   private static final Logger LOG = LoggerFactory.getLogger(ProjectionStageTask.class);
 
+  /** Sentinel changelog position — never actually published; a bug if ever persisted. */
+  private static final long NO_CHANGELOG_POSITION = -1L;
+
   /** Source coordinate of a fact — the origin the shuffle dedups by. */
   private static final SourceCoordinate<Fact> COORDINATE =
       new SourceCoordinate<>() {
@@ -123,6 +130,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final KeyValueStore<DbBytes, DbBytes> openSegments;
   private final KeyValueStore<DbInt, DbLong> offsets;
   private final KeyValueStore<DbInt, DbLong> appliedPositions;
+  // Null when the changelog is disabled for this partition (streaming ADR 0009 Decision 1): the
+  // cut's publish() then skips the changelog append/ack, and persist() writes no position.
+  private final ChangelogPublisher changelogPublisher;
+  private final KeyValueStore<DbInt, DbLong> changelogPositions;
   private final DatasetCatalog catalog;
   private final long reloadCheckIntervalMs;
   private final boolean eagerShufflePublish;
@@ -134,6 +145,8 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final DbLong offsetValue = new DbLong();
   private final DbInt appliedKey = new DbInt();
   private final DbLong appliedValue = new DbLong();
+  private final DbInt changelogPositionKey = new DbInt();
+  private final DbLong changelogPositionValue = new DbLong();
 
   /**
    * Pre-fold dedup (ADR 0007): the high-watermark of the last applied Zeebe record position per
@@ -193,6 +206,57 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final FlowMetrics flowMetrics,
       final StoreMetrics storeMetrics,
       final long nowMs) {
+    // No changelog: the streaming ADR 0009 changelog stage is opt-in per call site; existing
+    // callers (and this module's tests) that do not pass a changelog topic get today's behavior
+    // unchanged.
+    this(
+        partition,
+        epoch,
+        client,
+        factsTopic,
+        factsPartitions,
+        segmentStride,
+        schemaVersion,
+        datasetStore,
+        servingWriter,
+        provider,
+        openSegments,
+        offsets,
+        appliedPositions,
+        catalog,
+        reloadCheckIntervalMs,
+        eagerShufflePublish,
+        metrics,
+        flowMetrics,
+        storeMetrics,
+        nowMs,
+        null,
+        false);
+  }
+
+  ProjectionStageTask(
+      final int partition,
+      final OwnershipEpoch epoch,
+      final EventBridgeClient client,
+      final String factsTopic,
+      final int factsPartitions,
+      final int segmentStride,
+      final int schemaVersion,
+      final DatasetStore datasetStore,
+      final VersionedDatasetWriter servingWriter,
+      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
+      final KeyValueStore<DbBytes, DbBytes> openSegments,
+      final KeyValueStore<DbInt, DbLong> offsets,
+      final KeyValueStore<DbInt, DbLong> appliedPositions,
+      final DatasetCatalog catalog,
+      final long reloadCheckIntervalMs,
+      final boolean eagerShufflePublish,
+      final ProjectionMetrics metrics,
+      final FlowMetrics flowMetrics,
+      final StoreMetrics storeMetrics,
+      final long nowMs,
+      final String changelogTopic,
+      final boolean changelogEnabled) {
     this.partition = partition;
     this.epoch = epoch;
     this.client = client;
@@ -213,6 +277,14 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     this.appliedPositions = appliedPositions;
     appliedPositions.forEach(
         (key, value) -> appliedWatermarks.put(key.getValue(), value.getValue()));
+    // The changelog is opt-in per this partition (streaming ADR 0009 Decision 1): one keyed batch
+    // publish per cut, to the shard's own changelog partition (index == this source partition),
+    // reusing the same client the shuffle transport publishes with.
+    changelogPublisher =
+        changelogEnabled ? new ChangelogPublisher(client, changelogTopic, partition) : null;
+    changelogPositions =
+        provider.keyValueStore(
+            AnalyticsColumnFamilies.CHANGELOG_POSITION, new DbInt(), new DbLong());
     this.catalog = catalog;
     this.reloadCheckIntervalMs = reloadCheckIntervalMs;
     this.eagerShufflePublish = eagerShufflePublish;
@@ -251,6 +323,50 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final DatasetStore datasetStore,
       final MeterRegistry meterRegistry,
       final StoreTuning storeTuning) {
+    return open(
+        partition,
+        epoch,
+        client,
+        baseDir,
+        factsTopic,
+        factsPartitions,
+        segmentStride,
+        schemaVersion,
+        catalog,
+        reloadCheckIntervalMs,
+        eagerShufflePublish,
+        datasetStore,
+        meterRegistry,
+        storeTuning,
+        null,
+        false);
+  }
+
+  /**
+   * As {@link #open(int, OwnershipEpoch, EventBridgeClient, String, String, int, int, int,
+   * DatasetCatalog, long, boolean, DatasetStore, MeterRegistry, StoreTuning)}, additionally wiring
+   * this partition's changelog (streaming ADR 0009 Decision 1) when {@code changelogEnabled}: every
+   * cut's frozen delta — across every base-projection column family, the sealing aggregations' open
+   * segments, and the pre-fold dedup watermarks — is appended, keyed, to {@code changelogTopic}'s
+   * partition {@code partition} before the local transaction runs, reusing {@code client}.
+   */
+  public static ProjectionStageTask open(
+      final int partition,
+      final OwnershipEpoch epoch,
+      final EventBridgeClient client,
+      final String baseDir,
+      final String factsTopic,
+      final int factsPartitions,
+      final int segmentStride,
+      final int schemaVersion,
+      final DatasetCatalog catalog,
+      final long reloadCheckIntervalMs,
+      final boolean eagerShufflePublish,
+      final DatasetStore datasetStore,
+      final MeterRegistry meterRegistry,
+      final StoreTuning storeTuning,
+      final String changelogTopic,
+      final boolean changelogEnabled) {
     final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider =
         RocksDbStateStoreProvider.open(
             new File(baseDir + "-p" + partition), meterRegistry, storeTuning);
@@ -295,7 +411,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             new MicrometerProjectionMetrics(meterRegistry, partition),
             FlowMetrics.of(meterRegistry, "projection", partition),
             StoreMetrics.of(meterRegistry, "projection", partition),
-            System.currentTimeMillis());
+            System.currentTimeMillis(),
+            changelogTopic,
+            changelogEnabled);
     // Deregistered at close: a re-opened partition task registers its own FunctionCounter over its
     // own writer, which Micrometer would otherwise ignore in favor of the closed task's (weakly
     // referenced) one — the counter would silently freeze, then read nothing.
@@ -579,6 +697,11 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = sealingAggregations;
     aggregations.forEach(SegmentSealingAggregation::freeze);
 
+    // Holds the changelog's assigned marker position (P) from publish() for persist() to store —
+    // the two phases share this one cut's mutable slot, never touched concurrently (publish()
+    // always completes, or throws, before persist() runs; see PartitionCommitter#persistCut).
+    final long[] changelogPosition = {NO_CHANGELOG_POSITION};
+
     return new CommitCut() {
 
       @Override
@@ -588,6 +711,20 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         // idempotently on a replay (segment/chunk dedup downstream, full-value upserts).
         publisher.publishFrozen();
         servingWriter.publishFrozen();
+        // The changelog stage (streaming ADR 0009 Decisions 1/2): append this cut's frozen delta —
+        // every base-projection column family, every sealing aggregation's open-segment cells, and
+        // the pre-fold dedup watermarks — plus the offset marker, and block for the broker's ack.
+        // A publish failure here throws before persist() ever runs, failing the whole cut (see
+        // ChangelogPublisher and CommitCut#publish's javadoc).
+        if (changelogPublisher != null) {
+          final List<ChangelogRecord> records = new ArrayList<>();
+          records.addAll(state.changelogRecords());
+          for (final SegmentSealingAggregation<Fact, ?, ?> aggregation : aggregations) {
+            appendEnvelopedOpenSegmentRecords(records, aggregation);
+          }
+          appendEnvelopedZeebeWatermarkRecords(records, frozenWatermarks);
+          changelogPosition[0] = changelogPublisher.publish(records, offset);
+        }
       }
 
       @Override
@@ -610,6 +747,14 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
               }
               state.persistFrozen();
               aggregations.forEach(SegmentSealingAggregation::persistFrozen);
+              if (changelogPublisher != null) {
+                // The changelog position P: persisted alongside the state delta and the barrier's
+                // offset, in the same transaction — today write-only (no reader exists yet; the
+                // changelog-follower standby is ADR 0009 Decisions 5/6, not yet built).
+                changelogPositionKey.wrapInt(partition);
+                changelogPositionValue.wrapLong(changelogPosition[0]);
+                changelogPositions.put(changelogPositionKey, changelogPositionValue);
+              }
             });
       }
 
@@ -627,6 +772,55 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         }
       }
     };
+  }
+
+  /**
+   * Appends {@code aggregation}'s frozen open-segment changelog records (already exactly what its
+   * {@code persistFrozen()} writes — see {@link SegmentSealingAggregation#changelogRecords()}),
+   * enveloped under the {@code OPEN_SEGMENT} column-family tag: this projection's changelog spans
+   * several column families sharing one topic (streaming ADR 0009), so every non-marker key must be
+   * self-describing (see {@link ChangelogKeyEnvelope}).
+   */
+  private static void appendEnvelopedOpenSegmentRecords(
+      final List<ChangelogRecord> out, final SegmentSealingAggregation<Fact, ?, ?> aggregation) {
+    final int cfTag = AnalyticsColumnFamilies.OPEN_SEGMENT.getValue();
+    for (final ChangelogRecord record : aggregation.changelogRecords()) {
+      final byte[] enveloped = ChangelogKeyEnvelope.encode(cfTag, record.key());
+      out.add(
+          record.isTombstone()
+              ? ChangelogRecord.tombstone(enveloped)
+              : ChangelogRecord.put(enveloped, record.value()));
+    }
+  }
+
+  /**
+   * Appends one put per frozen pre-fold dedup watermark, enveloped under the {@code
+   * ZEEBE_APPLIED_POSITION} column-family tag — mirroring {@code persist()} exactly: every known
+   * Zeebe-partition watermark is (re-)written every cut, not only the ones that moved since the
+   * last cut (unlike Stage 2's dedup-watermark handling). The changelog therefore carries the same
+   * occasional redundant re-put {@code persist()} itself already does; fixing that redundancy is
+   * out of this change's scope.
+   */
+  private static void appendEnvelopedZeebeWatermarkRecords(
+      final List<ChangelogRecord> out, final Map<Integer, Long> frozenWatermarks) {
+    final int cfTag = AnalyticsColumnFamilies.ZEEBE_APPLIED_POSITION.getValue();
+    for (final Map.Entry<Integer, Long> watermark : frozenWatermarks.entrySet()) {
+      final byte[] enveloped =
+          ChangelogKeyEnvelope.encode(cfTag, encodeZeebeWatermarkKey(watermark.getKey()));
+      out.add(ChangelogRecord.put(enveloped, encodeZeebeWatermarkValue(watermark.getValue())));
+    }
+  }
+
+  /**
+   * Zeebe-applied-position key: {@code zeebePartitionId(4)}, big-endian (matches {@link DbInt}).
+   */
+  private static byte[] encodeZeebeWatermarkKey(final int zeebePartitionId) {
+    return ByteBuffer.allocate(Integer.BYTES).putInt(zeebePartitionId).array();
+  }
+
+  /** Zeebe-applied-position value: {@code position(8)}, big-endian (matches {@link DbLong}). */
+  private static byte[] encodeZeebeWatermarkValue(final long position) {
+    return ByteBuffer.allocate(Long.BYTES).putLong(position).array();
   }
 
   /**

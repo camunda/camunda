@@ -24,6 +24,13 @@ import org.agrona.concurrent.UnsafeBuffer;
  * layout is durable identity — never change it</b>: changing this constant orphans every unread
  * marker in a live changelog.
  *
+ * <p><b>Generalizing to a multi-column-family shard.</b> A shard whose changelog spans several
+ * column families through a {@link ChangelogKeyEnvelope} (e.g. the analytics Stage-1 projection
+ * changelog) reuses this same reserved key — no second marker scheme. The collision argument
+ * generalizes by length rather than by allocation range: {@link ChangelogKeyEnvelope#encode}
+ * requires at least a 4-byte store key, so every enveloped key is at least 5 bytes and can never
+ * equal this 4-byte sentinel. See {@link ChangelogKeyEnvelope}'s javadoc for the full argument.
+ *
  * <p><b>Marker value.</b> {@code version(1 byte) ++ sourceOffset(8 bytes, big-endian)}. The version
  * byte lets a future format (e.g. carrying a fencing epoch once ADR 0009's deferred Decision 4
  * stamping lands) evolve without breaking a reader of unstamped history — an old marker simply
