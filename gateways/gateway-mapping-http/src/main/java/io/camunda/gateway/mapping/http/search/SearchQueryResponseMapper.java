@@ -52,6 +52,7 @@ import io.camunda.gateway.protocol.model.BatchOperationSearchQueryResult;
 import io.camunda.gateway.protocol.model.BatchOperationStateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.CamundaUserResult;
+import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryResult;
@@ -186,6 +187,7 @@ import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
@@ -1655,6 +1657,7 @@ public final class SearchQueryResponseMapper {
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
+        .kind(toKindEnum(clusterVariableEntity.kind()))
         .value(
             requireNonNull(
                 !truncateValues
@@ -1681,8 +1684,19 @@ public final class SearchQueryResponseMapper {
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
+        .kind(toKindEnum(clusterVariableEntity.kind()))
         .value(requireNonNull(getFullValueIfPresent(clusterVariableEntity), "value"))
         .build();
+  }
+
+  private static ClusterVariableKindEnum toKindEnum(final ClusterVariableKind kind) {
+    if (kind == null) {
+      return ClusterVariableKindEnum.JSON;
+    }
+    return switch (kind) {
+      case SECRET_REFERENCE -> ClusterVariableKindEnum.SECRET_REFERENCE;
+      default -> ClusterVariableKindEnum.JSON;
+    };
   }
 
   private static @Nullable String getFullValueIfPresent(

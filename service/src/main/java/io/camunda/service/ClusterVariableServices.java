@@ -56,6 +56,7 @@ public final class ClusterVariableServices
         new BrokerCreateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
+            .setKind(request.kind())
             .setGlobalScope(),
         authentication);
   }
@@ -66,6 +67,7 @@ public final class ClusterVariableServices
         new BrokerCreateClusterVariableRequest()
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
+            .setKind(request.kind())
             .setTenantScope(request.tenantId()),
         authentication);
   }
@@ -148,5 +150,9 @@ public final class ClusterVariableServices
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
   }
 
-  public record ClusterVariableRequest(String name, Object value, String tenantId) {}
+  public record ClusterVariableRequest(
+      String name,
+      Object value,
+      String tenantId,
+      io.camunda.zeebe.protocol.record.value.ClusterVariableKind kind) {}
 }

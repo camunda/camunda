@@ -9,10 +9,13 @@ package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.validator.ClusterVariableRequestValidator;
+import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
 import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
 import io.camunda.service.ClusterVariableServices.ClusterVariableRequest;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.util.Either;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ProblemDetail;
 
 public class ClusterVariableMapper {
@@ -29,14 +32,19 @@ public class ClusterVariableMapper {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateTenantClusterVariableCreateRequest(
             request, tenantId),
-        () -> new ClusterVariableRequest(request.getName(), request.getValue(), tenantId));
+        () ->
+            new ClusterVariableRequest(
+                request.getName(),
+                request.getValue(),
+                tenantId,
+                toProtocolKind(request.getKind())));
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableUpdateRequest(
       final String name, final UpdateClusterVariableRequest request) {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateGlobalClusterVariableUpdateRequest(name, request),
-        () -> new ClusterVariableRequest(name, request.getValue(), null));
+        () -> new ClusterVariableRequest(name, request.getValue(), null, null));
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableUpdateRequest(
@@ -44,27 +52,39 @@ public class ClusterVariableMapper {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateTenantClusterVariableUpdateRequest(
             name, request, tenantId),
-        () -> new ClusterVariableRequest(name, request.getValue(), tenantId));
+        () -> new ClusterVariableRequest(name, request.getValue(), tenantId, null));
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toTenantClusterVariableRequest(
       final String name, final String tenantId) {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateTenantClusterVariableRequest(name, tenantId),
-        () -> new ClusterVariableRequest(name, null, tenantId));
+        () -> new ClusterVariableRequest(name, null, tenantId, null));
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableCreateRequest(
       final CreateClusterVariableRequest request) {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateGlobalClusterVariableCreateRequest(request),
-        () -> new ClusterVariableRequest(request.getName(), request.getValue(), null));
+        () ->
+            new ClusterVariableRequest(
+                request.getName(), request.getValue(), null, toProtocolKind(request.getKind())));
   }
 
   public Either<ProblemDetail, ClusterVariableRequest> toGlobalClusterVariableRequest(
       final String name) {
     return RequestMapper.getResult(
         clusterVariableRequestValidator.validateGlobalClusterVariableRequest(name),
-        () -> new ClusterVariableRequest(name, null, null));
+        () -> new ClusterVariableRequest(name, null, null, null));
+  }
+
+  private static ClusterVariableKind toProtocolKind(final @Nullable ClusterVariableKindEnum kind) {
+    if (kind == null) {
+      return ClusterVariableKind.JSON;
+    }
+    return switch (kind) {
+      case JSON -> ClusterVariableKind.JSON;
+      case SECRET_REFERENCE -> ClusterVariableKind.SECRET_REFERENCE;
+    };
   }
 }

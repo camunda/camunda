@@ -455,6 +455,10 @@ paths:
 
 components:
   schemas:
+    ClusterVariableKindEnum:
+      type: string
+      enum: [JSON, SECRET_REFERENCE]
+      description: The kind of a cluster variable. JSON is the default. SECRET_REFERENCE allows the value to contain camunda.secrets.X references that are resolved at job activation time.
     ClusterVariableScopeEnum:
       type: string
       enum: [ GLOBAL, TENANT ]
@@ -472,6 +476,10 @@ components:
         value:
           type: object
           description: The value of the cluster variable. Can be any JSON object or primitive value. Will be serialized as a JSON string in responses.
+        kind:
+          description: The kind of the cluster variable. Defaults to JSON if not specified.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindEnum'
     UpdateClusterVariableRequest:
       type: object
       required:
@@ -512,6 +520,7 @@ components:
         - name
         - scope
         - tenantId
+        - kind
       properties:
         name:
           description: The name of the cluster variable. Unique within its scope (global or tenant-specific).
@@ -523,6 +532,8 @@ components:
           type: string
           nullable: true
           description: Only provided if the cluster variable scope is TENANT. Null for global scope variables.
+        kind:
+          $ref: '#/components/schemas/ClusterVariableKindEnum'
     ClusterVariableSearchQueryRequest:
       description: Cluster variable search query request.
       additionalProperties: false
@@ -578,6 +589,10 @@ components:
           description: |
             Filter cluster variables by truncation status of their stored values. When true, returns only variables whose stored values are truncated (i.e., the value exceeds the storage size limit and is truncated in storage). When false, returns only variables with non-truncated stored values. This filter is based on the underlying storage characteristic, not the response format.
           type: boolean
+        kind:
+          description: The kind filter for cluster variables.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindFilterProperty'
     ClusterVariableScopeFilterProperty:
       description: ClusterVariableScopeEnum property with full advanced search capabilities.
       oneOf:
@@ -608,6 +623,38 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ClusterVariableScopeEnum'
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+    ClusterVariableKindFilterProperty:
+      description: ClusterVariableKindEnum property with full advanced search capabilities.
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindEnum'
+        - $ref: '#/components/schemas/AdvancedClusterVariableKindFilter'
+    AdvancedClusterVariableKindFilter:
+      title: Advanced filter
+      description: Advanced ClusterVariableKindEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/ClusterVariableKindEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/ClusterVariableKindEnum'
         $like:
           $ref: "filters.yaml#/components/schemas/LikeFilter"
     ClusterVariableSearchQueryResult:
