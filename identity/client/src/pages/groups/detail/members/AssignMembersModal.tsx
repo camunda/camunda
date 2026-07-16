@@ -10,13 +10,10 @@ import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
-import { useQuery } from "@tanstack/react-query";
-import { userQueries } from "src/utility/api/users/queries";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { membershipMutations } from "src/utility/api/membership/mutations";
-import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
-import DropdownSearch from "src/components/form/DropdownSearch";
+import UserSearchDropdown from "src/components/form/UserSearchDropdown";
 import FormModal from "src/components/modal/FormModal";
 import { useNotifications } from "src/components/notifications";
 import type { Group, User } from "@camunda/camunda-api-zod-schemas/8.10";
@@ -35,24 +32,6 @@ const AssignMembersModal: FC<
   const { enqueueNotification } = useNotifications();
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
-
-  const [search, setSearch] = useState<{ filter?: object }>({});
-
-  const handleSearchChange = (search: string) => {
-    if (search === "") {
-      setSearch({});
-      return;
-    }
-
-    setSearch({ filter: { username: { $like: `*${search}*` } } });
-  };
-
-  const {
-    data: userSearchResults,
-    isLoading: loading,
-    refetch: reload,
-    error,
-  } = useQuery(userQueries.search(search));
 
   const qc = useQueryClient();
   const { mutateAsync: callAssignUser } = useMutation(
@@ -145,28 +124,14 @@ const AssignMembersModal: FC<
           ))}
         </SelectedUsers>
       )}
-      <DropdownSearch
+      <UserSearchDropdown
         autoFocus
-        items={userSearchResults?.items || []}
-        keyAttribute="username"
-        itemTitle={({ username }) => username}
-        itemSubTitle={({ email }) => email}
         placeholder={t("searchByNameOrEmail")}
         onSelect={onSelectUser}
-        onChange={handleSearchChange}
         filter={unassignedFilter}
+        errorTitle={t("usersCouldNotLoad")}
+        retryLabel={t("retry")}
       />
-      {!loading && error && (
-        <TranslatedErrorInlineNotification
-          title={t("usersCouldNotLoad")}
-          actionButton={{
-            label: t("retry"),
-            onClick: () => {
-              void reload();
-            },
-          }}
-        />
-      )}
     </FormModal>
   );
 };
