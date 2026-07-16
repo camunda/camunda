@@ -147,7 +147,10 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
                 new ExitRecoveryApplier(modeChangeOperation.memberId(), modeChangeExecutor);
           };
       case final AwaitModeChangeOperation awaitModeChangeOperation ->
-          new AwaitModeChangeApplier(awaitModeChangeOperation.mode(), modeChangeExecutor);
+          new AwaitModeChangeApplier(
+              awaitModeChangeOperation.memberId(),
+              awaitModeChangeOperation.mode(),
+              modeChangeExecutor);
     };
   }
 }
