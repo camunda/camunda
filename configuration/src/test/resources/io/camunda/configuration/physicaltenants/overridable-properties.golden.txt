@@ -305,6 +305,7 @@ processing.max-commands-in-batch
 processing.max-recoverable-retries
 processing.scheduled-tasks-check-interval
 processing.skip-positions
+secrets.stores.aws-secrets-manager
 secrets.stores.file
 security.authentication
 security.authentication.authentication-refresh-interval
