@@ -61,9 +61,14 @@ Single-node in-memory sessions are used unless a `SessionStorePort` bean is adde
 1. Real `SessionStorePort` over Optimize's Elasticsearch + a session index; remove the old
    auth-storage index (the terminated-session store) on upgrade.
 2. Real `MembershipPort` (OIDC groups-claim extraction).
-3. Config backwards-compatibility layer: bridge Optimize's existing auth config to
-   `camunda.security.*` so users are not forced to migrate (feasible via a Spring
-   `EnvironmentPostProcessor`, mirroring OC's `PersistentWebSessionPropertiesPostProcessor`).
+3. Config backwards-compatibility layer: prototype present as
+   `OptimizeSecurityConfigCompatibilityPostProcessor` (a Spring `EnvironmentPostProcessor`,
+   registered in `META-INF/spring/...EnvironmentPostProcessor.imports`, mirroring OC's
+   `PersistentWebSessionPropertiesPostProcessor`). It bridges Optimize's existing auth config to
+   `camunda.security.*` at low precedence so operators are not forced to migrate. The full
+   key-by-key mapping is in `CONFIG-COMPAT.md`; the skeleton implements the representative OIDC /
+   API / HSTS keys and deprecation warnings, with the remaining rows marked TODO (and the
+   `environment-config.yaml`-only path, vs env vars, as a follow-up).
 4. Chain-level boot test (see below).
 
 ## Test blind spot to close (important)
