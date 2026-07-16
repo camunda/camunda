@@ -13,19 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.response;
+package io.camunda.client.api.search.enums;
 
-import io.camunda.client.api.search.enums.ClusterVariableScope;
-
-public interface CreateClusterVariableResponse {
-
-  String getName();
-
-  Object getValue();
-
-  ClusterVariableScope getScope();
-
-  String getTenantId();
-
-  io.camunda.client.api.search.enums.ClusterVariableKind getKind();
+public enum ClusterVariableKind {
+  JSON,
+  SECRET_REFERENCE;
 }

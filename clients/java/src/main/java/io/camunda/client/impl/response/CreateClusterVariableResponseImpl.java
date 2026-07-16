@@ -26,6 +26,7 @@ public class CreateClusterVariableResponseImpl implements CreateClusterVariableR
   private String value;
   private ClusterVariableScope scope;
   private String tenantId;
+  private io.camunda.client.api.search.enums.ClusterVariableKind kind;
 
   public CreateClusterVariableResponse setResponse(
       final ClusterVariableResult clusterVariableResult) {
@@ -33,6 +34,10 @@ public class CreateClusterVariableResponseImpl implements CreateClusterVariableR
     value = clusterVariableResult.getValue();
     tenantId = clusterVariableResult.getTenantId();
     scope = EnumUtil.convert(clusterVariableResult.getScope(), ClusterVariableScope.class);
+    kind =
+        EnumUtil.convert(
+            clusterVariableResult.getKind(),
+            io.camunda.client.api.search.enums.ClusterVariableKind.class);
     return this;
   }
 
@@ -54,5 +59,10 @@ public class CreateClusterVariableResponseImpl implements CreateClusterVariableR
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public io.camunda.client.api.search.enums.ClusterVariableKind getKind() {
+    return kind;
   }
 }

@@ -54,6 +54,15 @@ public class GloballyScopedCreateClusterVariableImpl
   }
 
   @Override
+  public GloballyScopedClusterVariableCreationCommandStep1 kind(
+      final io.camunda.client.api.search.enums.ClusterVariableKind kind) {
+    createVariableRequest.setKind(
+        io.camunda.client.impl.util.EnumUtil.convert(
+            kind, io.camunda.client.protocol.rest.ClusterVariableKindEnum.class));
+    return this;
+  }
+
+  @Override
   public GloballyScopedClusterVariableCreationCommandStep1 requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
