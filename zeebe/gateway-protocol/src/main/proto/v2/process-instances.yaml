@@ -624,8 +624,8 @@ paths:
       summary: Suspend process instances (batch)
       description: |
         Suspends multiple running process instances.
-        Since only ACTIVE root instances can be suspended, any given filters for state and
-        parentProcessInstanceKey are ignored and overridden during this batch operation.
+        Since only ACTIVE root instances can be suspended, any given
+        filters for state, parentProcessInstanceKey, suspended, and suspendedDate are ignored and overridden during this batch operation.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -672,8 +672,8 @@ paths:
       summary: Resume process instances (batch)
       description: |
         Resumes multiple suspended process instances.
-        Since only SUSPENDED root instances can be resumed, any given filters for state and
-        parentProcessInstanceKey are ignored and overridden during this batch operation.
+        Since only SUSPENDED root instances can be resumed, any given
+        filters for state, parentProcessInstanceKey, suspended, and suspendedDate are ignored and overridden during this batch operation.
         This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
@@ -1430,7 +1430,9 @@ components:
             - parentElementInstanceKey
             - startDate
             - endDate
+            - suspendedDate
             - state
+            - suspended
             - hasIncident
             - tenantId
             - businessId
@@ -1475,6 +1477,15 @@ components:
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
+        suspended:
+          type: boolean
+          description: Whether this process instance is currently suspended.
+        suspendedDate:
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/DateTimeFilterProperty'
+          description: |
+            The time this process instance most recently entered the SUSPENDED state.
+            This is cleared (null) again once the process instance is resumed.
         tenantId:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
@@ -1546,6 +1557,10 @@ components:
           addedInVersion: "8.8"
         - propertyName: hasIncident
           addedInVersion: "8.8"
+        - propertyName: suspended
+          addedInVersion: "8.10"
+        - propertyName: suspendedDate
+          addedInVersion: "8.10"
         - propertyName: tenantId
           addedInVersion: "8.6"
         - propertyName: variables
@@ -1727,6 +1742,8 @@ components:
         - startDate
         - endDate
         - state
+        - suspended
+        - suspendedDate
         - hasIncident
         - tenantId
         - processInstanceKey
@@ -1762,6 +1779,17 @@ components:
           format: date-time
         state:
           $ref: '#/components/schemas/ProcessInstanceStateEnum'
+        suspended:
+          type: boolean
+          description: |
+            Whether this process instance is currently suspended (i.e. `state` is `SUSPENDED`).
+        suspendedDate:
+          description: |
+            The time this process instance most recently entered the `SUSPENDED` state.
+            This is `null` if the process instance is not currently suspended.
+          nullable: true
+          type: string
+          format: date-time
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
@@ -1815,6 +1843,10 @@ components:
           addedInVersion: "8.6"
         - propertyName: state
           addedInVersion: "8.6"
+        - propertyName: suspended
+          addedInVersion: "8.10"
+        - propertyName: suspendedDate
+          addedInVersion: "8.10"
         - propertyName: hasIncident
           addedInVersion: "8.8"
         - propertyName: tenantId
@@ -2283,6 +2315,7 @@ components:
       enum:
         - ACTIVE
         - COMPLETED
+        - SUSPENDED
         - TERMINATED
 
     ## Filters

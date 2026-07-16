@@ -96,6 +96,48 @@ public record ProcessInstanceEntity(
         null);
   }
 
+  public ProcessInstanceEntity(
+      final Long processInstanceKey,
+      final Long rootProcessInstanceKey,
+      final String processDefinitionId,
+      final String processDefinitionName,
+      final Integer processDefinitionVersion,
+      final String processDefinitionVersionTag,
+      final Long processDefinitionKey,
+      final Long parentProcessInstanceKey,
+      final Long parentFlowNodeInstanceKey,
+      final OffsetDateTime startDate,
+      final OffsetDateTime endDate,
+      final ProcessInstanceState state,
+      final Boolean hasIncident,
+      final String tenantId,
+      final String treePath,
+      final String businessId,
+      final Boolean suspended,
+      final OffsetDateTime suspendedDate) {
+
+    this(
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        processDefinitionName,
+        processDefinitionVersion,
+        processDefinitionVersionTag,
+        processDefinitionKey,
+        parentProcessInstanceKey,
+        parentFlowNodeInstanceKey,
+        startDate,
+        endDate,
+        state,
+        hasIncident,
+        tenantId,
+        treePath,
+        new HashSet<>(),
+        businessId,
+        suspended,
+        suspendedDate);
+  }
+
   public enum ProcessInstanceState {
     ACTIVE,
     COMPLETED,

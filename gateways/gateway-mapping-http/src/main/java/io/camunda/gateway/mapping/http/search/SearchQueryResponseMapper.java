@@ -973,6 +973,8 @@ public final class SearchQueryResponseMapper {
         .startDate(requireNonNullElse(formatDateOrNull(p.startDate()), EPOCH_DATE_SENTINEL))
         .endDate(formatDateOrNull(p.endDate()))
         .state(toProtocolState(requireNonNullElse(p.state(), ProcessInstanceState.ACTIVE)))
+        .suspended(Boolean.TRUE.equals(p.suspended()))
+        .suspendedDate(formatDateOrNull(p.suspendedDate()))
         .hasIncident(Boolean.TRUE.equals(p.hasIncident()))
         .tenantId(p.tenantId())
         .processInstanceKey(keyToString(p.processInstanceKey()))

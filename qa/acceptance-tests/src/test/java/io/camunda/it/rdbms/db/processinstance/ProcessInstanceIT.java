@@ -26,6 +26,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
@@ -262,6 +263,59 @@ public class ProcessInstanceIT {
     assertThat(searchResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
         .containsExactlyInAnyOrder(
             incidentPI1.processInstanceKey(), incidentPI2.processInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldFilterBySuspendedAndSuspendedDate(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var suspendedDate = NOW;
+    final ProcessInstanceDbModel suspendedInstance =
+        ProcessInstanceFixtures.createRandomized(
+            b -> b.suspended(true).suspendedDate(suspendedDate));
+    final ProcessInstanceDbModel activeInstance =
+        ProcessInstanceFixtures.createRandomized(b -> b.suspended(false).suspendedDate(null));
+    createAndSaveProcessInstance(rdbmsWriters, suspendedInstance);
+    createAndSaveProcessInstance(rdbmsWriters, activeInstance);
+
+    final var searchResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.suspended(true)
+                                    .processInstanceKeys(
+                                        suspendedInstance.processInstanceKey(),
+                                        activeInstance.processInstanceKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
+        .contains(suspendedInstance.processInstanceKey())
+        .doesNotContain(activeInstance.processInstanceKey());
+
+    final var dateFilteredResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.suspendedDateOperations(
+                                        Operation.gte(suspendedDate.minusMinutes(1)))
+                                    .processInstanceKeys(
+                                        suspendedInstance.processInstanceKey(),
+                                        activeInstance.processInstanceKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(10))));
+
+    assertThat(dateFilteredResult.items().stream().map(ProcessInstanceEntity::processInstanceKey))
+        .contains(suspendedInstance.processInstanceKey())
+        .doesNotContain(activeInstance.processInstanceKey());
   }
 
   @TestTemplate

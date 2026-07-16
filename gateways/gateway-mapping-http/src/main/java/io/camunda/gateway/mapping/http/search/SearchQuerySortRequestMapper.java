@@ -433,6 +433,8 @@ public class SearchQuerySortRequestMapper {
         case END_DATE -> builder.endDate();
         case STATE -> builder.state();
         case HAS_INCIDENT -> builder.hasIncident();
+        case SUSPENDED -> builder.suspended();
+        case SUSPENDED_DATE -> builder.suspendedDate();
         case TENANT_ID -> builder.tenantId();
         case BUSINESS_ID -> builder.businessId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
