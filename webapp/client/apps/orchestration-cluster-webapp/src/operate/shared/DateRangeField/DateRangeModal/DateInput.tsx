@@ -33,7 +33,6 @@ const DateInput = forwardRef<HTMLDivElement, Props>(({type, onChange, ...props},
 						ref={ref}
 						placeholder="YYYY-MM-DD"
 						pattern="\\d{4}-\\d{1,2}-\\d{1,2}"
-						autoComplete="off"
 					/>
 				);
 			}}
