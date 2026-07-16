@@ -22,7 +22,8 @@ public record ClusterVariableEntity(
     @Nullable Boolean isPreview,
     ClusterVariableScope scope,
     @Nullable String tenantId,
-    @Nullable List<MetadataEntry> metadata)
+    @Nullable List<MetadataEntry> metadata,
+    @Nullable ClusterVariableKind kind)
     implements TenantOwnedEntity {
 
   public ClusterVariableEntity {
