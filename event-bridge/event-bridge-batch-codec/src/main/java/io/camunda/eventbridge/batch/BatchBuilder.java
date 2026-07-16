@@ -38,6 +38,18 @@ public final class BatchBuilder {
     return this;
   }
 
+  /**
+   * Marks this batch {@code KEYED} (bit 3 of attributes): the producer declares that every entry's
+   * key is meaningful for latest-per-key retention (event-bridge ADR 0001), not just a routing
+   * hint. Entries already carry an optional key regardless of this flag — it gates publish
+   * validation against a {@code COMPACT} topic and tombstone semantics (an empty value on a keyed
+   * entry), not the wire framing. Default is unset.
+   */
+  public BatchBuilder keyed() {
+    attributes |= BatchFormat.KEYED_MASK;
+    return this;
+  }
+
   /** Adds an entry with a UTF-8 key. */
   public BatchBuilder add(final String key, final byte[] value) {
     return add(key == null ? null : key.getBytes(StandardCharsets.UTF_8), value);

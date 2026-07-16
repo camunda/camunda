@@ -28,7 +28,8 @@ import org.agrona.concurrent.UnsafeBuffer;
  *   <li>{@code position} and {@code timestamp} — set to 0 (the broker patches them during append)
  *   <li>{@code batchLength} — computed from the entries
  *   <li>{@code version} — set to {@link EventBridgeBatch#VERSION_1}
- *   <li>{@code attributes} — set via {@link #compression(int)}, default is no compression
+ *   <li>{@code attributes} — set via {@link #compression(int)} (default no compression) and {@link
+ *       #keyed()} (default unset)
  *   <li>{@code entryCount} — counted from {@link #addEntry} calls
  *   <li>{@code crc} — computed over the CRC-covered region (attributes, entryCount, reserved, and
  *       all entry bytes) after all entries have been written
@@ -60,6 +61,20 @@ public final class EventBridgeBatchBuilder {
     attributes =
         (attributes & ~EventBridgeBatch.COMPRESSION_MASK)
             | (codec & EventBridgeBatch.COMPRESSION_MASK);
+    return this;
+  }
+
+  /**
+   * Marks this batch {@code KEYED} (bit 3 of attributes): the producer declares that every entry's
+   * key is meaningful for latest-per-key retention (event-bridge ADR 0001), not just a routing
+   * hint. Entries already carry an optional key regardless of this flag — it gates publish
+   * validation against a {@code COMPACT} topic and tombstone semantics (an empty value on a keyed
+   * entry), not the wire framing. Default is unset.
+   *
+   * @return this builder
+   */
+  public EventBridgeBatchBuilder keyed() {
+    attributes |= EventBridgeBatch.KEYED_MASK;
     return this;
   }
 

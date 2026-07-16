@@ -13,6 +13,7 @@ import static io.camunda.eventbridge.gateway.controller.GatewayResponses.PROTOBU
 import io.camunda.eventbridge.api.proto.TopicCreateRequest;
 import io.camunda.eventbridge.api.proto.TopicInfo;
 import io.camunda.eventbridge.api.proto.TopicListResponse;
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.camunda.eventbridge.protocol.request.coordination.CreateTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.DeleteTopicRequest;
 import io.camunda.eventbridge.protocol.request.coordination.ReassignTopicRequest;
@@ -56,7 +57,8 @@ public class TopicController {
         new CreateTopicRequest()
             .setName(body.getName())
             .setPartitionCount(body.getPartitionCount())
-            .setReplicationFactor(body.getReplicationFactor());
+            .setReplicationFactor(body.getReplicationFactor())
+            .setCleanupPolicy(cleanupPolicyOrDefault(body.getCleanupPolicy()));
     return coordinatorService
         .createTopic(request)
         .handleAsync(
@@ -118,6 +120,7 @@ public class TopicController {
                                   .setPartitionCount(topic.partitionCount())
                                   .setReplicationFactor(topic.replicationFactor())
                                   .setStatus(nullToEmpty(topic.status()))
+                                  .setCleanupPolicy(nullToEmpty(topic.cleanupPolicy()))
                                   .build()));
               return ResponseEntity.ok(builder.build());
             });
@@ -125,5 +128,12 @@ public class TopicController {
 
   private static String nullToEmpty(final String value) {
     return value == null ? "" : value;
+  }
+
+  /** An unset ({@code ""}) cleanup policy defaults to {@code DELETE} — today's behavior. */
+  private static CleanupPolicy cleanupPolicyOrDefault(final String cleanupPolicy) {
+    return cleanupPolicy == null || cleanupPolicy.isEmpty()
+        ? CleanupPolicy.DELETE
+        : CleanupPolicy.valueOf(cleanupPolicy);
   }
 }

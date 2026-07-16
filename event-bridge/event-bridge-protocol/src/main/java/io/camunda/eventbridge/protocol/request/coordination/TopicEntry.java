@@ -25,14 +25,17 @@ public final class TopicEntry extends ObjectValue {
   private final StringProperty statusProp = new StringProperty("status", "");
   private final ArrayProperty<TopicPartitionReplicas> assignmentProp =
       new ArrayProperty<>("assignment", TopicPartitionReplicas::new);
+  private final StringProperty cleanupPolicyProp =
+      new StringProperty("cleanupPolicy", CleanupPolicy.DELETE.name());
 
   public TopicEntry() {
-    super(5);
+    super(6);
     declareProperty(nameProp)
         .declareProperty(partitionCountProp)
         .declareProperty(replicationFactorProp)
         .declareProperty(statusProp)
-        .declareProperty(assignmentProp);
+        .declareProperty(assignmentProp)
+        .declareProperty(cleanupPolicyProp);
   }
 
   public String getName() {
@@ -55,17 +58,23 @@ public final class TopicEntry extends ObjectValue {
     return TopicPartitionReplicas.read(assignmentProp);
   }
 
+  public String getCleanupPolicy() {
+    return bufferAsString(cleanupPolicyProp.getValue());
+  }
+
   public TopicEntry set(
       final String name,
       final int partitionCount,
       final int replicationFactor,
       final String status,
-      final Map<Integer, List<Integer>> assignment) {
+      final Map<Integer, List<Integer>> assignment,
+      final String cleanupPolicy) {
     nameProp.setValue(name);
     partitionCountProp.setValue(partitionCount);
     replicationFactorProp.setValue(replicationFactor);
     statusProp.setValue(status);
     TopicPartitionReplicas.write(assignmentProp, assignment);
+    cleanupPolicyProp.setValue(cleanupPolicy);
     return this;
   }
 }

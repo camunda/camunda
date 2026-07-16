@@ -29,16 +29,31 @@ public final class TopicAdminImpl {
   }
 
   /**
-   * Creates a topic. Completes when the coordinator has accepted the request (the topic's Raft
-   * group is provisioned asynchronously, so it is reported {@code CREATING} until ready).
+   * Creates a topic with the default {@code DELETE} cleanup policy. Completes when the coordinator
+   * has accepted the request (the topic's Raft group is provisioned asynchronously, so it is
+   * reported {@code CREATING} until ready).
    */
   public CompletableFuture<Void> createTopic(
       final String name, final int partitionCount, final int replicationFactor) {
+    return createTopic(name, partitionCount, replicationFactor, "DELETE");
+  }
+
+  /**
+   * Creates a topic with an explicit cleanup policy ({@code "DELETE"} or {@code "COMPACT"} — see
+   * event-bridge ADR 0001). Completes when the coordinator has accepted the request (the topic's
+   * Raft group is provisioned asynchronously, so it is reported {@code CREATING} until ready).
+   */
+  public CompletableFuture<Void> createTopic(
+      final String name,
+      final int partitionCount,
+      final int replicationFactor,
+      final String cleanupPolicy) {
     final var request =
         TopicCreateRequest.newBuilder()
             .setName(name)
             .setPartitionCount(partitionCount)
             .setReplicationFactor(replicationFactor)
+            .setCleanupPolicy(cleanupPolicy)
             .build();
     return transport.postProtobuf("/v1/topics", request, 201, "createTopic");
   }
@@ -62,7 +77,8 @@ public final class TopicAdminImpl {
                                 topic.getName(),
                                 topic.getPartitionCount(),
                                 topic.getReplicationFactor(),
-                                topic.getStatus()))
+                                topic.getStatus(),
+                                topic.getCleanupPolicy()))
                     .toList());
   }
 }

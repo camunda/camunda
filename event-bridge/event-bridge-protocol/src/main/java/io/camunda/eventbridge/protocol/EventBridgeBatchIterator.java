@@ -30,6 +30,7 @@ public final class EventBridgeBatchIterator {
   private DirectBuffer buffer;
   private long batchPosition;
   private long batchTimestamp;
+  private int batchAttributes;
   private int batchEntryCount;
   private int currentEntryIndex;
   private int currentEntryOffset;
@@ -55,6 +56,7 @@ public final class EventBridgeBatchIterator {
     this.buffer = buffer;
     batchPosition = EventBridgeBatch.getPosition(buffer, offset);
     batchTimestamp = EventBridgeBatch.getTimestamp(buffer, offset);
+    batchAttributes = EventBridgeBatch.getAttributes(buffer, offset);
     batchEntryCount = EventBridgeBatch.getEntryCount(buffer, offset);
     currentEntryIndex = 0;
     currentEntryOffset = EventBridgeBatch.entriesOffset(offset);
@@ -75,6 +77,7 @@ public final class EventBridgeBatchIterator {
     this.buffer = buffer;
     batchPosition = 0;
     batchTimestamp = 0;
+    batchAttributes = 0;
     batchEntryCount = entryCount;
     currentEntryIndex = 0;
     currentEntryOffset = offset;
@@ -160,6 +163,15 @@ public final class EventBridgeBatchIterator {
   /** Returns the batch timestamp (broker append time). */
   public long getBatchTimestamp() {
     return batchTimestamp;
+  }
+
+  /**
+   * Returns {@code true} if the wrapped batch declares its entry keys meaningful for latest-per-key
+   * retention (the {@code KEYED} attribute — see {@link EventBridgeBatch#isKeyed(int)}). Always
+   * {@code false} after {@link #wrapEntries}, which has no batch header to read attributes from.
+   */
+  public boolean isKeyedBatch() {
+    return EventBridgeBatch.isKeyed(batchAttributes);
   }
 
   /** Returns the number of entries remaining (not yet consumed by {@link #next()}). */

@@ -66,7 +66,8 @@ public final class MetadataQueryHandler extends Actor {
                     meta.partitionCount(),
                     meta.replicationFactor(),
                     meta.status().name(),
-                    meta.assignment()));
+                    meta.assignment(),
+                    meta.cleanupPolicy().name()));
     return response;
   }
 }

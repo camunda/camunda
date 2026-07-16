@@ -67,7 +67,8 @@ public final class CreateTopicProcessor implements TypedRecordProcessor<TopicRec
             .setPartitionCount(cmd.getPartitionCount())
             .setReplicationFactor(cmd.getReplicationFactor())
             .setStatus(TopicMetadata.TopicStatus.CREATING)
-            .setAssignment(assignment);
+            .setAssignment(assignment)
+            .setCleanupPolicy(cmd.getCleanupPolicy());
     writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.TOPIC_REGISTERED, event);
     writers
         .response()

@@ -16,6 +16,7 @@ import io.camunda.eventbridge.clustermetadata.state.MetadataColumnFamilies;
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicDeletedApplier;
 import io.camunda.eventbridge.clustermetadata.state.appliers.TopicRegisteredApplier;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.MetadataIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +81,25 @@ final class TopicStateAndProcessorTest {
   @Test
   void shouldReturnNullForUnknownTopic() {
     assertThat(state.get("missing")).isNull();
+  }
+
+  @Test
+  void shouldDefaultCleanupPolicyToDeleteWhenNotSet() {
+    state.put("orders", new TopicMetadata(8, 3, TopicStatus.CREATING));
+
+    assertThat(state.get("orders").cleanupPolicy()).isEqualTo(CleanupPolicy.DELETE);
+  }
+
+  @Test
+  void shouldStoreAndReadACompactCleanupPolicy() {
+    final var metadata =
+        new TopicMetadata(
+            8, 3, TopicStatus.CREATING, Map.of(), Map.of(), Map.of(), CleanupPolicy.COMPACT);
+
+    state.put("changelog", metadata);
+
+    assertThat(state.get("changelog")).isEqualTo(metadata);
+    assertThat(state.get("changelog").cleanupPolicy()).isEqualTo(CleanupPolicy.COMPACT);
   }
 
   @Test
@@ -144,6 +165,34 @@ final class TopicStateAndProcessorTest {
     // then — follower state matches a leader that registered then deleted
     assertThat(state.get("orders")).isNull();
     assertThat(state.topicsSnapshot()).doesNotContainKey("orders");
+  }
+
+  @Test
+  void shouldRoundTripACompactCleanupPolicyThroughRegisterApplyAndQuery() {
+    // given — a follower replaying a TOPIC_REGISTERED command carrying a COMPACT cleanup policy
+    // (event-bridge ADR 0001), exactly as CreateTopicProcessor/TopicRegisterProcessor produce it
+    final var engine =
+        new RecordProcessingEngine(
+            processors ->
+                processors.withEventApplier(
+                    MetadataIntent.TOPIC_REGISTERED, new TopicRegisteredApplier(state)));
+
+    final var registered =
+        new TopicRecord()
+            .setName("changelog")
+            .setOp(TopicRecord.OP_REGISTER)
+            .setPartitionCount(4)
+            .setReplicationFactor(3)
+            .setStatus(TopicStatus.ACTIVE)
+            .setCleanupPolicy(CleanupPolicy.COMPACT);
+
+    // when
+    engine.replay(recordOf(registered));
+
+    // then — the applied state, a direct query, and the registry snapshot all agree on COMPACT
+    assertThat(state.get("changelog").cleanupPolicy()).isEqualTo(CleanupPolicy.COMPACT);
+    assertThat(state.topicsSnapshot().get("changelog").cleanupPolicy())
+        .isEqualTo(CleanupPolicy.COMPACT);
   }
 
   private static TypedRecord<TopicRecord> recordOf(final TopicRecord value) {

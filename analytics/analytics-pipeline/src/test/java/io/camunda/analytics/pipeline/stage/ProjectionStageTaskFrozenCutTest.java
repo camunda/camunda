@@ -315,6 +315,11 @@ final class ProjectionStageTaskFrozenCutTest {
     }
 
     @Override
+    public BatchPublisher keyed() {
+      return this;
+    }
+
+    @Override
     public CompletableFuture<List<Long>> publishToTopic(final String topic, final int partitionId) {
       publishedFrames.addAll(frames);
       return CompletableFuture.completedFuture(List.of(0L, (long) frames.size()));
