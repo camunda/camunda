@@ -31,4 +31,4 @@ steps:
 
 ## Owner
 
-@camunda/monorepo-devops-team
+@camunda/engineering-operations

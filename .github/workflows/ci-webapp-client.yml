@@ -2,7 +2,7 @@
 # test location: /webapp/client
 # called by: ci.yml
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Webapp Client Jobs
 
 on:

@@ -4,7 +4,7 @@ description: |
   Adjusts pom.xml files so that Maven analysis tools (FOSSA, depgraph, etc.)
   can correctly resolve the full module hierarchy from bom/pom.xml as the root.
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 runs:
   using: composite

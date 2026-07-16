@@ -7,7 +7,7 @@
 ---
 name: Observe Aborted Jobs
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Checks failed jobs of a GHA workflow for runner problems and submits https://confluence.camunda.com/display/HAN/CI+Analytics data on their behalf
 

@@ -1,6 +1,6 @@
 # description: Generate a branch-aware concurrency group name.
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 name: Generate Concurrency Group
 
 permissions:

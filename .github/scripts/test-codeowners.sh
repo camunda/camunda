@@ -338,9 +338,9 @@ assert_owner \
   "@camunda/reliability-testing"
 
 assert_owner \
-  ".claude/skills/ci-validation/ → monorepo-devops-team (overrides orchestration-cluster)" \
+  ".claude/skills/ci-validation/ → engineering-operations (overrides orchestration-cluster)" \
   ".claude/skills/ci-validation/SKILL.md" \
-  "@camunda/monorepo-devops-team"
+  "@camunda/engineering-operations"
 
 # ── Summary ───────────────────────────────────────────────────────────────────
 echo ""
