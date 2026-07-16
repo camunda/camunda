@@ -180,14 +180,16 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
   test('Cancel suspended batch operation transitions to CANCELED', async ({
     request,
   }) => {
-    // Use a large instance count so the cancellation batch stays ACTIVE long
-    // enough for the suspend command to catch it in flight. A batch of only 30
-    // instances can finish cancelling (reaching a terminal state) before the
-    // suspend request is processed under nightly contention, which makes the
-    // suspend endpoint return a permanent 404 NOT_FOUND. This mirrors the proven
-    // suspension pattern in tests/operate/batchOperations.spec.ts.
+    // Use the same 30-instance batch as the sibling suspend tests in this file.
+    // Those tests reliably reach SUSPENDED on every nightly backend (including
+    // fast RDBMS profiles such as MSSQL 2025). A larger batch (e.g. 500) is
+    // counter-productive here: on a fast backend the cancellation completes
+    // before the accepted suspend command is observable, so the batch reports
+    // COMPLETED instead of SUSPENDED. The suspend helper already retries the
+    // transient 404 window (404 -> 204), so 30 instances is the proven,
+    // backend-agnostic size for catching the batch in a suspendable state.
     const key = await test.step('Create cancel batch operation', async () => {
-      return createCancellationBatch(request, 500, 'batch_suspension_process');
+      return createCancellationBatch(request, 30, 'batch_suspension_process');
     });
 
     await test.step('Suspend batch operation', async () => {
