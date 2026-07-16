@@ -61,4 +61,160 @@ class SecretsTest {
       assertThat(secrets.getStores().getFile()).isEmpty();
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws-secrets-manager.aws-prod.region=eu-west-1",
+        "camunda.secrets.stores.aws-secrets-manager.aws-prod.path-prefix=camunda/",
+        "camunda.secrets.stores.aws-secrets-manager.aws-minimal.path-prefix=team/"
+      })
+  class WithAwsSecretsManagerStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithAwsSecretsManagerStoreConfigured(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindAwsSecretsManagerStoreProperties() {
+      // given the camunda.secrets.stores.aws-secrets-manager.aws-prod.* properties are set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named store is present and its fields are bound
+      assertThat(secrets.getStores().getAwsSecretsManager().get("aws-prod"))
+          .satisfies(
+              store -> {
+                assertThat(store.getRegion()).isEqualTo("eu-west-1");
+                assertThat(store.getPathPrefix()).isEqualTo("camunda/");
+              });
+    }
+
+    @Test
+    void shouldDefaultBatchingToDisabled() {
+      // given batch-enabled/batch-size are not set for aws-prod (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then batching defaults to off, with the standard AWS batch size as an inert default
+      assertThat(secrets.getStores().getAwsSecretsManager().get("aws-prod"))
+          .satisfies(
+              store -> {
+                assertThat(store.isBatchEnabled()).isFalse();
+                assertThat(store.getBatchSize()).isEqualTo(20);
+              });
+    }
+
+    @Test
+    void shouldDefaultContainerSecretIdToNull() {
+      // given container-secret-id is not set for aws-prod (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it defaults to the flat one-secret-per-reference mode
+      assertThat(secrets.getStores().getAwsSecretsManager().get("aws-prod").getContainerSecretId())
+          .isNull();
+    }
+
+    @Test
+    void shouldBindMultipleStoresKeyedById() {
+      // given two aws-secrets-manager stores are configured (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both store ids are present
+      assertThat(secrets.getStores().getAwsSecretsManager())
+          .containsKeys("aws-prod", "aws-minimal");
+    }
+
+    @Test
+    void shouldAllowOptionalRegion() {
+      // given aws-minimal has no region set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then region is null and path-prefix is still bound
+      assertThat(secrets.getStores().getAwsSecretsManager().get("aws-minimal"))
+          .satisfies(
+              store -> {
+                assertThat(store.getRegion()).isNull();
+                assertThat(store.getPathPrefix()).isEqualTo("team/");
+              });
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws-secrets-manager.batched.batch-enabled=true",
+        "camunda.secrets.stores.aws-secrets-manager.batched.batch-size=5"
+      })
+  class WithBatchingConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBatchingConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindBatchEnabledAndBatchSize() {
+      // given batch-enabled/batch-size are set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both are bound onto the named store
+      assertThat(secrets.getStores().getAwsSecretsManager().get("batched"))
+          .satisfies(
+              store -> {
+                assertThat(store.isBatchEnabled()).isTrue();
+                assertThat(store.getBatchSize()).isEqualTo(5);
+              });
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.aws-secrets-manager.bundled.container-secret-id=app-config"
+      })
+  class WithContainerSecretIdConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithContainerSecretIdConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindContainerSecretId() {
+      // given container-secret-id is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it is bound onto the named store
+      assertThat(secrets.getStores().getAwsSecretsManager().get("bundled").getContainerSecretId())
+          .isEqualTo("app-config");
+    }
+  }
+
+  @Nested
+  class WithoutAwsSecretsManagerStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutAwsSecretsManagerStoreConfigured(
+        @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultToEmptyAwsSecretsManagerMap() {
+      // given no camunda.secrets.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the aws-secrets-manager map is empty
+      assertThat(secrets.getStores().getAwsSecretsManager()).isEmpty();
+    }
+  }
 }
