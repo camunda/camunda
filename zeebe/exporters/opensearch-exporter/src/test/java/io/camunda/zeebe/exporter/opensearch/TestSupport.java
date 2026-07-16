@@ -148,7 +148,8 @@ final class TestSupport {
             ValueType.CONDITIONAL_EVALUATION,
             ValueType.EXPRESSION,
             ValueType.JOB_METRICS_BATCH,
-            ValueType.RESOURCE_REEXPORT);
+            ValueType.RESOURCE_REEXPORT,
+            ValueType.SECRET_REFERENCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 
