@@ -15,9 +15,11 @@ structure.
   (shared-transaction persist path superseded by 0007; synchronous checkpoint fallback superseded
   by 0008)
 - [0006 — Standby tasks: warm cross-member failover](0006-standby-tasks-warm-failover.md)
-  (supersession of the source-fed state transport proposed by 0009, pending sign-off; the
-  assignment-protocol surface carries over)
+  (state transport superseded by 0009, signed off; the assignment-protocol surface is implemented
+  as this ADR's remaining content)
 - [0007 — A single durability concept: every partition is a self-contained shard](0007-single-durability-concept.md)
   (synchronous `commit(long)` half of the contract superseded by 0008)
 - [0008 — Every commit is a cut](0008-every-commit-is-a-cut.md)
 - [0009 — State changelogs on compacted topics](0009-state-changelog-on-compacted-topics.md)
+  (standby-on-changelog implementation underway per follow-up item 4)
+

@@ -1,8 +1,7 @@
 # ADR 0009 — State changelogs on compacted topics
 
-- Status: Proposed (supersedes the state-transport core of ADR 0006, which is owned by a parallel
-  workstream — that supersession requires explicit sign-off before any standby implementation
-  starts)
+- Status: Accepted (2026-07-16) — supersedes the state-transport core of ADR 0006 (decisions 2,
+  3, 6 there); sign-off recorded in [ADR 0006](0006-standby-tasks-warm-failover.md)'s Status line.
 - Date: 2026-07-15
 - Scope: `event-bridge-streaming` commit path, analytics shards, `event-bridge-consumer-groups`
   roles, disaster/bootstrap recovery
@@ -139,7 +138,8 @@ truth; local RocksDB is a restart accelerator.
    position in the shard transaction.
 2. Epoch fencing on the changelog producer path (reuse coordinator-epoch validation).
 3. Rebuild + intact-disk restore paths; retire the retained-window replay guard.
-4. Standby-on-changelog implementation over 0006's protocol surface — **blocked on 0006
-   supersession sign-off**.
-5. Docs: stamp 0006's Status line on sign-off; consumer-contract note ("state, not events") on
-   the topic/API docs.
+4. Standby-on-changelog implementation over 0006's protocol surface — sign-off recorded, under
+   implementation (`roman/eb-standby-failover`).
+5. Docs: stamp 0006's Status line on sign-off (done); consumer-contract note ("state, not events")
+   on the topic/API docs.
+
