@@ -105,7 +105,7 @@ public final class CleanSegmentReader {
     }
 
     batchIterator.wrap(buffer, cursor, total);
-    final boolean keyed = batchIterator.isKeyedBatch();
+    final int attributes = EventBridgeBatch.getAttributes(buffer, cursor);
     final EventBridgeEntry entry = batchIterator.next();
     final CompactionRecord record =
         new CompactionRecord(
@@ -113,7 +113,7 @@ public final class CleanSegmentReader {
             entry.getTimestamp(),
             entry.getKeyCopy(),
             entry.getValueCopy(),
-            keyed);
+            attributes);
 
     cursor += total;
     return record;

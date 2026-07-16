@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.broker.compaction;
 
 import io.camunda.eventbridge.messaging.stream.EventStreamReader;
+import io.camunda.eventbridge.protocol.EventBridgeBatch;
 import io.camunda.eventbridge.protocol.EventBridgeBatchIterator;
 import io.camunda.eventbridge.protocol.EventBridgeEntry;
 import java.util.function.Supplier;
@@ -65,7 +66,9 @@ public final class EventStreamDirtyLogReader implements DirtyLogReader {
       final long toInclusive,
       final DirtyRecordVisitor visitor) {
     batchIterator.wrap(reader.batchBuffer(), reader.batchOffset(), reader.batchTotalSize());
-    final boolean keyed = batchIterator.isKeyedBatch();
+    // Carry the source batch's full attributes int so the sweep preserves it verbatim on rewrap.
+    final int attributes =
+        EventBridgeBatch.getAttributes(reader.batchBuffer(), reader.batchOffset());
     while (batchIterator.hasNext()) {
       final EventBridgeEntry entry = batchIterator.next();
       final long position = entry.getPosition();
@@ -77,7 +80,7 @@ public final class EventStreamDirtyLogReader implements DirtyLogReader {
       }
       final var record =
           new CompactionRecord(
-              position, entry.getTimestamp(), entry.getKeyCopy(), entry.getValueCopy(), keyed);
+              position, entry.getTimestamp(), entry.getKeyCopy(), entry.getValueCopy(), attributes);
       if (!visitor.visit(record)) {
         return false;
       }

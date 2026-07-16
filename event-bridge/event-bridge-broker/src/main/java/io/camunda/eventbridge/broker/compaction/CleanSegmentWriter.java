@@ -31,9 +31,10 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>For identical input records the output bytes are identical: the batch builder is
  * deterministic, position and timestamp are patched to the record's own values (both lie outside
  * the CRC range, so the CRC stays valid), and segment file names are a deterministic function of
- * first position and cleaner point. Clean segments are always uncompressed; only the {@code KEYED}
- * attribute is preserved from the source (compression is a batch-level concern that single-record
- * re-wrapping does not carry forward).
+ * first position and cleaner point. The source batch's <em>entire</em> attributes int — {@code
+ * KEYED}, compression codec bits, and any future bits — is written back verbatim (with the CRC
+ * recomputed, since attributes are CRC-covered): value bytes are copied raw, so the bits describing
+ * them must survive the rewrap bit-identically.
  *
  * <h3>Rolling and crash safety</h3>
  *
@@ -86,8 +87,8 @@ public final class CleanSegmentWriter {
 
   /**
    * Appends a surviving record, re-wrapped as a single-entry batch, preserving its position,
-   * timestamp, key, value and {@code KEYED} attribute. Rolls to a new segment first if the current
-   * one is non-empty and would exceed the size bound.
+   * timestamp, key, value and raw attributes int. Rolls to a new segment first if the current one
+   * is non-empty and would exceed the size bound.
    *
    * @param record the record to write
    */
@@ -129,16 +130,21 @@ public final class CleanSegmentWriter {
     final byte[] entry = entryBuilder.build();
 
     batchBuilder.reset();
-    if (record.keyed()) {
-      batchBuilder.keyed();
-    }
     batchBuilder.addEntry(entry);
     final byte[] batch = batchBuilder.build();
 
-    // Patch the record's own position and timestamp back in; both are outside the CRC range so the
-    // batch stays valid. The builder writes zeros there because on the producer path the broker
-    // assigns them — here we are preserving already-assigned values verbatim, never renumbering.
     final var buffer = new UnsafeBuffer(batch);
+
+    // Write the source batch's attributes int back verbatim — KEYED, compression codec bits, and
+    // any future bits travel with the raw value bytes they describe. Attributes are inside the CRC
+    // range, so the CRC must be recomputed afterwards.
+    buffer.putInt(EventBridgeBatch.ATTRIBUTES_OFFSET, record.attributes());
+    EventBridgeBatch.writeCrc(buffer, 0);
+
+    // Patch the record's own position and timestamp back in; both are outside the CRC range so the
+    // CRC just computed stays valid. The builder writes zeros there because on the producer path
+    // the broker assigns them — here we preserve already-assigned values verbatim, never
+    // renumbering.
     EventBridgeBatch.patchPosition(buffer, 0, record.position());
     EventBridgeBatch.patchTimestamp(buffer, 0, record.timestamp());
     return batch;

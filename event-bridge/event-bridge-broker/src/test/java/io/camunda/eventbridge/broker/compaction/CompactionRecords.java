@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.broker.compaction;
 
+import io.camunda.eventbridge.protocol.EventBridgeBatch;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,19 +25,23 @@ final class CompactionRecords {
         position,
         key.getBytes(StandardCharsets.UTF_8),
         value.getBytes(StandardCharsets.UTF_8),
-        true);
+        EventBridgeBatch.KEYED_MASK);
   }
 
   /** A keyed tombstone (empty value). */
   static CompactionRecord tombstone(final long position, final String key) {
     return new CompactionRecord(
-        position, position, key.getBytes(StandardCharsets.UTF_8), new byte[0], true);
+        position,
+        position,
+        key.getBytes(StandardCharsets.UTF_8),
+        new byte[0],
+        EventBridgeBatch.KEYED_MASK);
   }
 
   /** A key-less record (legal pre-validation; never compacted). */
   static CompactionRecord unkeyed(final long position, final String value) {
     return new CompactionRecord(
-        position, position, new byte[0], value.getBytes(StandardCharsets.UTF_8), false);
+        position, position, new byte[0], value.getBytes(StandardCharsets.UTF_8), 0);
   }
 
   static String value(final CompactionRecord record) {

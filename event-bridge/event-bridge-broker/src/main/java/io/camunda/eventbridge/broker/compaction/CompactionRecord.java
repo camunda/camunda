@@ -7,12 +7,13 @@
  */
 package io.camunda.eventbridge.broker.compaction;
 
+import io.camunda.eventbridge.protocol.EventBridgeBatch;
 import java.util.Arrays;
 
 /**
  * The unit of work the cleaner reasons about: a single record with its stable log position, its
- * broker append timestamp, its optional key, its value, and whether the batch it came from declared
- * the {@code KEYED} attribute (event-bridge ADR 0001).
+ * broker append timestamp, its optional key, its value, and the full {@code attributes} field of
+ * the batch it came from (event-bridge ADR 0001).
  *
  * <p>This is the common shape flowing through the whole compaction library. The {@link
  * DirtyLogReader} produces it from the raw journal; the {@link CleanSegmentReader} produces it from
@@ -20,15 +21,20 @@ import java.util.Arrays;
  * surviving record as its own single-entry batch. Positions are never renumbered — a dropped record
  * simply leaves a gap.
  *
- * <h3>Keys, tombstones and the {@code KEYED} attribute</h3>
+ * <h3>Attributes travel verbatim</h3>
+ *
+ * <p>{@code attributes} carries the source batch's <em>entire</em> attributes int — the {@code
+ * KEYED} declaration, the compression codec bits, and any future bits. Values are copied through
+ * the sweep as raw bytes, so the bits describing them must survive the rewrap bit-identically; a
+ * sweep must never strip a batch of the metadata its payload depends on. Semantic accessors are
+ * derived:
  *
  * <ul>
  *   <li>{@link #hasKey()} — a record participates in latest-per-key retention only if it carries a
  *       key. Key-less records are copied forward verbatim and are never compacted (see the
  *       un-keyed-record note in {@link CompactionPass}).
  *   <li>{@link #isTombstone()} — a keyed record with an empty value; the deletion marker.
- *   <li>{@link #keyed()} — the batch-level {@code KEYED} attribute, preserved so a rewritten clean
- *       segment is byte-faithful to the source batch's declaration.
+ *   <li>{@link #keyed()} — the batch-level {@code KEYED} attribute bit.
  * </ul>
  *
  * <p>Threading: an immutable value carrier. The {@code key}/{@code value} arrays are treated as
@@ -38,10 +44,10 @@ import java.util.Arrays;
  * @param timestamp the broker append timestamp in millis (preserved verbatim)
  * @param key the key bytes, or an empty array when the record has no key (never {@code null})
  * @param value the value bytes; empty on a keyed record denotes a tombstone (never {@code null})
- * @param keyed whether the source batch declared the {@code KEYED} attribute
+ * @param attributes the source batch's raw attributes int, preserved verbatim through rewrap
  */
 public record CompactionRecord(
-    long position, long timestamp, byte[] key, byte[] value, boolean keyed) {
+    long position, long timestamp, byte[] key, byte[] value, int attributes) {
 
   public CompactionRecord {
     if (key == null) {
@@ -65,6 +71,14 @@ public record CompactionRecord(
     return hasKey() && value.length == 0;
   }
 
+  /**
+   * Returns {@code true} if the source batch declared the {@code KEYED} attribute bit (see {@link
+   * EventBridgeBatch#isKeyed(int)}). Derived from {@link #attributes()}.
+   */
+  public boolean keyed() {
+    return EventBridgeBatch.isKeyed(attributes);
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -75,7 +89,7 @@ public record CompactionRecord(
     }
     return position == other.position
         && timestamp == other.timestamp
-        && keyed == other.keyed
+        && attributes == other.attributes
         && Arrays.equals(key, other.key)
         && Arrays.equals(value, other.value);
   }
@@ -84,7 +98,7 @@ public record CompactionRecord(
   public int hashCode() {
     int result = Long.hashCode(position);
     result = 31 * result + Long.hashCode(timestamp);
-    result = 31 * result + Boolean.hashCode(keyed);
+    result = 31 * result + Integer.hashCode(attributes);
     result = 31 * result + Arrays.hashCode(key);
     result = 31 * result + Arrays.hashCode(value);
     return result;
@@ -102,8 +116,8 @@ public record CompactionRecord(
         + value.length
         + ", tombstone="
         + isTombstone()
-        + ", keyed="
-        + keyed
+        + ", attributes=0x"
+        + Integer.toHexString(attributes)
         + "]";
   }
 }

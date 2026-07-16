@@ -13,11 +13,14 @@ import static io.camunda.eventbridge.broker.compaction.CompactionRecords.tombsto
 import static io.camunda.eventbridge.broker.compaction.CompactionRecords.unkeyed;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.eventbridge.protocol.EventBridgeBatch;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -126,6 +129,35 @@ final class CleanSegmentWriterReaderTest {
     reader.seek(999);
     // then
     assertThat(reader.hasNext()).isFalse();
+  }
+
+  @Test
+  void shouldPreserveRawAttributesBitIdenticallyOnRewrap() throws IOException {
+    // given a record whose source batch carried a non-KEYED attribute bit (a compression codec)
+    final int attributes = EventBridgeBatch.KEYED_MASK | EventBridgeBatch.COMPRESSION_LZ4;
+    final var record =
+        new CompactionRecord(
+            10,
+            10,
+            "a".getBytes(StandardCharsets.UTF_8),
+            "va".getBytes(StandardCharsets.UTF_8),
+            attributes);
+    final var writer = new CleanSegmentWriter(dir, 100, 42L, 1 << 20);
+
+    // when
+    writer.append(record);
+    final CleanSegment segment = writer.finish().get(0);
+
+    // then — the decoded record carries the identical attributes int
+    final var reader = new CleanSegmentReader(dir.resolve(segment.fileName()));
+    final CompactionRecord read = reader.next();
+    assertThat(read.attributes()).isEqualTo(attributes);
+    assertThat(read.keyed()).isTrue();
+
+    // and the raw header int on disk is bit-identical, with a valid recomputed CRC
+    final var bytes = new UnsafeBuffer(Files.readAllBytes(dir.resolve(segment.fileName())));
+    assertThat(EventBridgeBatch.getAttributes(bytes, 0)).isEqualTo(attributes);
+    assertThat(EventBridgeBatch.validateCrc(bytes, 0)).isTrue();
   }
 
   @Test
