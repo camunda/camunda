@@ -404,11 +404,10 @@ public class CamundaMultiDBExtension
    *       targeted by the PT's URL ({@code currentSchema}, the URL database segment, or {@code
    *       databaseName} respectively). The table prefix is empty — isolation is at the
    *       schema/database level.
-   *   <li>{@code RDBMS_ORACLE}: each PT gets a per-tenant table prefix ({@code
-   *       <basePrefix>_<tenantId>}) in the shared {@code camunda} schema, reusing the base
-   *       connection. Oracle's schema == user, so a schema-per-PT would need DBA-only {@code CREATE
-   *       USER}, and the production isolation check rejects two users on the same URL anyway; a
-   *       distinct prefix is the validator's allowed "shared connection, distinct prefix" mode. See
+   *   <li>{@code RDBMS_ORACLE}: each PT gets a dedicated user (== schema) named {@code
+   *       <basePrefix>_<tenantId>}, created via a privileged bootstrap connection before broker
+   *       start; the PT connects as that user (no table prefix) and pins {@code database-vendor-id:
+   *       oracle} so the production isolation check keys the location on the distinct user. See
    *       {@link PhysicalTenantSchemaProvisioner}.
    * </ul>
    *
@@ -434,6 +433,7 @@ public class CamundaMultiDBExtension
     final String ptUsername;
     final String ptPassword;
     final String ptPrefix;
+    final String ptDatabaseVendorId;
     if (databaseType == DatabaseType.RDBMS_H2) {
       // Fresh in-memory database per PT — DBs are already separate, so no prefix needed.
       ptUrl =
@@ -447,11 +447,12 @@ public class CamundaMultiDBExtension
       ptUsername = "sa";
       ptPassword = "";
       ptPrefix = testPrefix;
+      ptDatabaseVendorId = null;
     } else {
       // Per-PT isolated storage derived from the database type: a dedicated schema/database whose
       // namespace lives in the PT URL (Postgres/MySQL/MariaDB/SQL Server), or — on Oracle — a
-      // per-PT table prefix in the shared schema. The provisioner returns the prefix to apply
-      // (empty for the schema/database dialects).
+      // dedicated user/schema the PT connects as. The provisioner returns the prefix to apply
+      // (empty for every dialect) and, for Oracle, the vendor id to pin.
       final var baseRdbms =
           springApplication.unifiedConfig().getData().getSecondaryStorage().getRdbms();
       final var ptConfig =
@@ -466,6 +467,7 @@ public class CamundaMultiDBExtension
       ptUsername = ptConfig.username();
       ptPassword = ptConfig.password();
       ptPrefix = ptConfig.prefix();
+      ptDatabaseVendorId = ptConfig.databaseVendorId();
 
       // Track the provisioned namespace so afterAll can drop it best-effort, preventing schemas /
       // databases from accumulating on persistent shared instances (e.g. Aurora) across CI runs.
@@ -493,6 +495,11 @@ public class CamundaMultiDBExtension
           rdbms.setUsername(ptUsername);
           rdbms.setPassword(ptPassword);
           rdbms.setPrefix(ptPrefix);
+          if (ptDatabaseVendorId != null) {
+            // Oracle: pin the vendor so the production isolation check keys on the connecting user
+            // (schema-per-user), instead of collapsing the two PTs to a single storage location.
+            rdbms.setDatabaseVendorId(ptDatabaseVendorId);
+          }
 
           final var init = camunda.getSecurity().getInitialization();
           init.setUsers(rootInit.getUsers());
