@@ -1050,6 +1050,9 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
           verify(exporterMetrics).recordIncidentUpdatesProcessed(3);
           verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(8);
           verify(exporterMetrics).recordIncidentUpdatesDuplicateIncidents(2);
+          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateProcessInstances(anyInt());
+          verify(exporterMetrics, never())
+              .recordIncidentUpdatesDuplicateFlowNodeInstances(anyInt());
         });
   }
 
@@ -1173,6 +1176,12 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyIncidentNotificationsSent(incidentEntity);
+
+          verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
+          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(10);
+          verify(exporterMetrics).recordIncidentUpdatesDuplicateProcessInstances(2);
+          verify(exporterMetrics).recordIncidentUpdatesDuplicateFlowNodeInstances(4);
+          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
         });
   }
 

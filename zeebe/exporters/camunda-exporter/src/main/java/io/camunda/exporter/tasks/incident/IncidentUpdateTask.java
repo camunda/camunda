@@ -28,12 +28,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.agrona.LangUtil;
@@ -201,11 +204,11 @@ public final class IncidentUpdateTask implements BackgroundTask {
             .map(String::valueOf)
             .distinct()
             .toList();
-    repository
-        .getFlowNodesInListView(flowNodeKeys)
-        .toCompletableFuture()
-        .join()
-        .forEach(doc -> state.addFlowNodeInstanceInListView(doc.id(), doc.index()));
+
+    final var flowNodes =
+        repository.getFlowNodesInListView(flowNodeKeys).toCompletableFuture().join();
+
+    flowNodes.forEach(doc -> state.addFlowNodeInstanceInListView(doc.id(), doc.index()));
 
     return InstancesCheck.OK;
   }
@@ -286,6 +289,11 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
     final var instances =
         repository.getProcessInstances(processInstanceIds).toCompletableFuture().join();
+
+    recordDuplicationMetrics(
+        instances.stream().map(IncidentUpdateRepository.ProcessInstanceDocument::id).toList(),
+        "process instance",
+        metrics::recordIncidentUpdatesDuplicateProcessInstances);
 
     instances.forEach(
         instance -> {
@@ -465,6 +473,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return CompletableFuture.allOf(futures)
         .thenComposeAsync(
             ignored -> {
+              recordFlownodeDuplicationMetrics(state);
               for (final var fniId : fniIds) {
                 final var listViewIndices = state.flowNodeInstanceInListViewIndices().get(fniId);
                 final var flowNodeIndices = state.flowNodeInstanceIndices().get(fniId);
@@ -731,28 +740,73 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
 
     if (incidentIds.size() < incidents.size()) {
-      final var frequencies =
-          incidents.stream()
-              .map(IncidentDocument::id)
-              .collect(Collectors.groupingBy(id -> id, Collectors.counting()));
-      var totalDuplicates = 0;
-      final var duplicates = new ArrayList<String>();
-      for (final var entry : frequencies.entrySet()) {
-        if (entry.getValue() > 1L) {
-          duplicates.add(entry.getKey());
-          totalDuplicates += (entry.getValue().intValue() - 1);
-        }
-      }
-      logger.warn(
-          """
-            Found duplicate incident documents for the following incident IDs: {} - will update all duplicates.
-            This may indicate a problem with archiving.
-          """,
-          duplicates);
-      metrics.recordIncidentUpdatesDuplicateIncidents(totalDuplicates);
+      recordDuplicationMetrics(
+          incidents.stream().map(IncidentDocument::id).toList(),
+          "incident",
+          metrics::recordIncidentUpdatesDuplicateIncidents);
     }
 
     return pendingIncidentsBatch;
+  }
+
+  private <T> void recordDuplicationMetrics(
+      final List<T> ids, final String type, final Consumer<Integer> recordDuplicatesMetric) {
+    final var frequencies =
+        ids.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+    var totalDuplicates = 0;
+    final var duplicates = new ArrayList<T>();
+    for (final var entry : frequencies.entrySet()) {
+      if (entry.getValue() > 1L) {
+        duplicates.add(entry.getKey());
+        totalDuplicates += (entry.getValue().intValue() - 1);
+      }
+    }
+
+    recordDuplication(totalDuplicates, duplicates, type, recordDuplicatesMetric);
+  }
+
+  private void recordFlownodeDuplicationMetrics(final IncidentsState state) {
+    var totalDuplicates = 0;
+    final var duplicates = new LinkedHashSet<>();
+
+    for (final var entry : state.flowNodeInstanceIndices().entrySet()) {
+      final var numIndexes = entry.getValue().size();
+      if (numIndexes > 1) {
+        duplicates.add(entry.getKey());
+        totalDuplicates += (numIndexes - 1);
+      }
+    }
+
+    for (final var entry : state.flowNodeInstanceInListViewIndices().entrySet()) {
+      final var numIndexes = entry.getValue().size();
+      if (numIndexes > 1) {
+        duplicates.add(entry.getKey());
+        totalDuplicates += (numIndexes - 1);
+      }
+    }
+
+    recordDuplication(
+        totalDuplicates,
+        duplicates,
+        "flow node instance",
+        metrics::recordIncidentUpdatesDuplicateFlowNodeInstances);
+  }
+
+  private <T> void recordDuplication(
+      final int totalDuplicates,
+      final Collection<T> duplicates,
+      final String type,
+      final Consumer<Integer> recordDuplicatesMetric) {
+    if (totalDuplicates > 0) {
+      logger.warn(
+          """
+        Found duplicate {} documents for the following IDs: {} - will update all duplicates.
+        This may indicate a problem with archiving.
+      """,
+          type,
+          duplicates);
+      recordDuplicatesMetric.accept(totalDuplicates);
+    }
   }
 
   private void uncheckedThreadSleep() {
