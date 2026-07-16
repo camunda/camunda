@@ -96,6 +96,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   static final String MODIFY_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/modification";
   static final String ASSIGN_BUSINESS_ID_URL =
       PROCESS_INSTANCES_START_URL + "/%s/business-id-assignment";
+  static final String SUSPEND_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/suspension";
+  static final String RESUME_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/resumption";
 
   @Captor ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceCancelRequest> cancelRequestCaptor;
@@ -1088,6 +1090,152 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri(CANCEL_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReturnNotImplementedForSuspendProcessInstance() {
+    // given
+    final var request =
+        """
+            {
+              "operationReference": 123
+            }""";
+
+    // when/then — 501: the engine processor for SUSPEND doesn't exist yet (TODO #57518)
+    webClient
+        .post()
+        .uri(SUSPEND_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.NOT_IMPLEMENTED);
+
+    Mockito.verifyNoInteractions(processInstanceServices);
+  }
+
+  @Test
+  void shouldReturnNotImplementedForSuspendProcessInstanceWithNoBody() {
+    // when/then — 501: the engine processor for SUSPEND doesn't exist yet (TODO #57518)
+    webClient
+        .post()
+        .uri(SUSPEND_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.NOT_IMPLEMENTED);
+
+    Mockito.verifyNoInteractions(processInstanceServices);
+  }
+
+  @Test
+  void shouldRejectSuspendProcessInstanceWithOperationReferenceNotValid() {
+    // given
+    final var request =
+        """
+            {
+              "operationReference": -123
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-123' but must be > 0.",
+                "instance":"/v2/process-instances/1/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(SUSPEND_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReturnNotImplementedForResumeProcessInstance() {
+    // given
+    final var request =
+        """
+            {
+              "operationReference": 123
+            }""";
+
+    // when/then — 501: the engine processor for RESUME doesn't exist yet (TODO #57518)
+    webClient
+        .post()
+        .uri(RESUME_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.NOT_IMPLEMENTED);
+
+    Mockito.verifyNoInteractions(processInstanceServices);
+  }
+
+  @Test
+  void shouldReturnNotImplementedForResumeProcessInstanceWithNoBody() {
+    // when/then — 501: the engine processor for RESUME doesn't exist yet (TODO #57518)
+    webClient
+        .post()
+        .uri(RESUME_PROCESS_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.NOT_IMPLEMENTED);
+
+    Mockito.verifyNoInteractions(processInstanceServices);
+  }
+
+  @Test
+  void shouldRejectResumeProcessInstanceWithOperationReferenceNotValid() {
+    // given
+    final var request =
+        """
+            {
+              "operationReference": -123
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The value for operationReference is '-123' but must be > 0.",
+                "instance":"/v2/process-instances/1/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(RESUME_PROCESS_URL.formatted("1"))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)

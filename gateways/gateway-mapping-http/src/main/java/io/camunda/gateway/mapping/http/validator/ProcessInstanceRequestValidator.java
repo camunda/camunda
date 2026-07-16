@@ -35,8 +35,10 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationMoveInstruct
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByIdInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateByKeyInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationTerminateInstruction;
+import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
+import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -130,6 +132,26 @@ public class ProcessInstanceRequestValidator {
 
   public static Optional<ProblemDetail> validateCancelProcessInstanceRequest(
       final CancelProcessInstanceRequest request) {
+    return validate(
+        violations -> {
+          if (request != null) {
+            validateOperationReference(request.getOperationReference(), violations);
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateSuspendProcessInstanceRequest(
+      final SuspendProcessInstanceRequest request) {
+    return validate(
+        violations -> {
+          if (request != null) {
+            validateOperationReference(request.getOperationReference(), violations);
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateResumeProcessInstanceRequest(
+      final ResumeProcessInstanceRequest request) {
     return validate(
         violations -> {
           if (request != null) {

@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.ResponseMapper;
+import io.camunda.gateway.mapping.http.mapper.ProcessInstanceMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
@@ -28,6 +28,8 @@ import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperati
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
+import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
@@ -61,6 +63,7 @@ public class ProcessInstanceController {
   private final ServiceRegistry serviceRegistry;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final ProcessInstanceMapper processInstanceMapper;
 
   public ProcessInstanceController(
       final ServiceRegistry serviceRegistry,
@@ -69,13 +72,15 @@ public class ProcessInstanceController {
     this.serviceRegistry = serviceRegistry;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
+    processInstanceMapper = new ProcessInstanceMapper();
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceCreationInstruction request) {
-    return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
+    return processInstanceMapper
+        .toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> createProcessInstance(physicalTenantId, mapped));
@@ -86,10 +91,49 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long processInstanceKey,
       @RequestBody(required = false) final CancelProcessInstanceRequest cancelRequest) {
-    return RequestMapper.toCancelProcessInstance(processInstanceKey, cancelRequest)
+    return processInstanceMapper
+        .toCancelProcessInstance(processInstanceKey, cancelRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> cancelProcessInstance(physicalTenantId, mapped));
+  }
+
+  @CamundaPostMapping(path = "/{processInstanceKey}/suspension")
+  public CompletableFuture<ResponseEntity<Object>> suspendProcessInstance(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long processInstanceKey,
+      @RequestBody(required = false) final SuspendProcessInstanceRequest suspendRequest) {
+    return processInstanceMapper
+        .toSuspendProcessInstance(processInstanceKey, suspendRequest)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            // TODO(#57518): dispatch to suspendProcessInstance(physicalTenantId, mapped) — see
+            // ProcessInstanceServices.suspendProcessInstance — once the zeebe/engine SUSPEND
+            // processor exists. Until then, a real dispatch would time out at 504 with no
+            // SUSPEND_PROCESS_INSTANCE check (that check lives in the not-yet-existing processor).
+            ignored ->
+                CompletableFuture.completedFuture(
+                    ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()));
+  }
+
+  @CamundaPostMapping(path = "/{processInstanceKey}/resumption")
+  public CompletableFuture<ResponseEntity<Object>> resumeProcessInstance(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long processInstanceKey,
+      @RequestBody(required = false) final ResumeProcessInstanceRequest resumeRequest) {
+    return processInstanceMapper
+        .toResumeProcessInstance(processInstanceKey, resumeRequest)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            // TODO(#57518): dispatch to resumeProcessInstance(physicalTenantId, mapped) — see
+            // ProcessInstanceServices.resumeProcessInstance — once the zeebe/engine RESUME
+            // processor exists. Until then, a real dispatch would time out at 504 with no
+            // SUSPEND_PROCESS_INSTANCE check (resume shares that same permission type — there is
+            // no separate RESUME_PROCESS_INSTANCE — that check lives in the not-yet-existing
+            // processor).
+            ignored ->
+                CompletableFuture.completedFuture(
+                    ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build()));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/migration")
@@ -97,7 +141,8 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long processInstanceKey,
       @RequestBody final ProcessInstanceMigrationInstruction migrationRequest) {
-    return RequestMapper.toMigrateProcessInstance(processInstanceKey, migrationRequest)
+    return processInstanceMapper
+        .toMigrateProcessInstance(processInstanceKey, migrationRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> migrateProcessInstance(physicalTenantId, mapped));
@@ -108,7 +153,8 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long processInstanceKey,
       @RequestBody final ProcessInstanceBusinessIdAssignmentInstruction assignmentRequest) {
-    return RequestMapper.toAssignProcessInstanceBusinessId(processInstanceKey, assignmentRequest)
+    return processInstanceMapper
+        .toAssignProcessInstanceBusinessId(processInstanceKey, assignmentRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> assignProcessInstanceBusinessId(physicalTenantId, mapped));
@@ -119,7 +165,8 @@ public class ProcessInstanceController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable final long processInstanceKey,
       @RequestBody final ProcessInstanceModificationInstruction modifyRequest) {
-    return RequestMapper.toModifyProcessInstance(processInstanceKey, modifyRequest)
+    return processInstanceMapper
+        .toModifyProcessInstance(processInstanceKey, modifyRequest)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> modifyProcessInstance(physicalTenantId, mapped));
@@ -262,7 +309,8 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> cancelProcessInstancesBatchOperation(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceCancellationBatchOperationRequest request) {
-    return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
+    return processInstanceMapper
+        .toRequiredProcessInstanceFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             filter -> batchOperationCancellation(physicalTenantId, filter));
@@ -273,7 +321,8 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> resolveIncidentsBatchOperation(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceIncidentResolutionBatchOperationRequest request) {
-    return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
+    return processInstanceMapper
+        .toRequiredProcessInstanceFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             filter -> batchOperationResolveIncidents(physicalTenantId, filter));
@@ -284,7 +333,8 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> migrateProcessInstancesBatchOperation(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceMigrationBatchOperationRequest request) {
-    return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(request)
+    return processInstanceMapper
+        .toProcessInstanceMigrationBatchOperationRequest(request)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> batchOperationMigrate(physicalTenantId, mapped));
@@ -295,7 +345,8 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> modifyProcessInstancesBatchOperation(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceModificationBatchOperationRequest request) {
-    return RequestMapper.toProcessInstanceModifyBatchOperationRequest(request)
+    return processInstanceMapper
+        .toProcessInstanceModifyBatchOperationRequest(request)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> batchOperationModify(physicalTenantId, mapped));
@@ -306,7 +357,8 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> deleteProcessInstancesBatchOperation(
       @PhysicalTenantId final String physicalTenantId,
       @RequestBody final ProcessInstanceDeletionBatchOperationRequest request) {
-    return RequestMapper.toRequiredProcessInstanceFilter(request.getFilter())
+    return processInstanceMapper
+        .toRequiredProcessInstanceFilter(request.getFilter())
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             filter -> batchOperationDeletion(physicalTenantId, filter));

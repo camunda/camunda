@@ -50,6 +50,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceW
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendProcessInstanceRequest;
 import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
@@ -388,6 +390,30 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
+  public CompletableFuture<ProcessInstanceRecord> suspendProcessInstance(
+      final ProcessInstanceSuspendRequest request, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerSuspendProcessInstanceRequest()
+            .setProcessInstanceKey(request.processInstanceKey());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<ProcessInstanceRecord> resumeProcessInstance(
+      final ProcessInstanceResumeRequest request, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerResumeProcessInstanceRequest()
+            .setProcessInstanceKey(request.processInstanceKey());
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
   public CompletableFuture<BatchOperationCreationRecord>
       cancelProcessInstanceBatchOperationWithResult(
           final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
@@ -667,6 +693,10 @@ public final class ProcessInstanceServices
   }
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
+
+  public record ProcessInstanceSuspendRequest(Long processInstanceKey, Long operationReference) {}
+
+  public record ProcessInstanceResumeRequest(Long processInstanceKey, Long operationReference) {}
 
   public record ProcessInstanceMigrateRequest(
       Long processInstanceKey,

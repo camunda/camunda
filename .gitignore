@@ -94,5 +94,8 @@ scripts/codeowners-utils/output/
 **/test-results
 .claude/settings.local.json
 
+# Superpowers scratch specs/plans (local workflow docs, not tracked)
+docs/superpowers/
+
 # Load test
 load-tests/setup/c8-*
