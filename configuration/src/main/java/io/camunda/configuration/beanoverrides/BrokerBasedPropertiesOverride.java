@@ -37,7 +37,6 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.Throttle;
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.Write;
 import io.camunda.configuration.Zone;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -938,17 +937,16 @@ public class BrokerBasedPropertiesOverride {
     /* Load exporter config map */
 
     // 'rdbms' is a reserved exporter: it is provisioned internally and configured through
-    // camunda.data.secondary-storage.rdbms.* (resolved per physical tenant, see #57804). Reject any
-    // attempt to configure it through the generic exporter properties — unified
-    // (camunda.data.exporters.rdbms.*) or legacy (zeebe.broker.exporters.rdbms.*) — so nothing is
-    // silently ignored. At this point the reserved exporter has not been added yet, so a non-null
-    // entry can only come from user configuration.
-    if (override.getRdbmsExporter() != null
-        || data.getExporters().containsKey(RDBMS_EXPORTER_NAME)) {
-      throw new UnifiedConfigurationException(
-          "The 'rdbms' exporter is reserved and cannot be configured through the generic exporter "
-              + "properties ('camunda.data.exporters.rdbms.*' or 'zeebe.broker.exporters.rdbms.*'). "
-              + "Configure it through 'camunda.data.secondary-storage.rdbms.*'.");
+    // camunda.data.secondary-storage.rdbms.* (resolved per physical tenant, see #57804). Any
+    // attempt to configure it through the generic exporter properties is ignored: the reserved
+    // config below always wins. Here we only handle the legacy zeebe.broker.exporters.rdbms.*
+    // entry, which was copied into 'override' from the legacy properties and is about to be
+    // overwritten by the reserved config; warn so the ignored config is not silent. The unified
+    // camunda.data.exporters.rdbms.* entry lives in camunda.data.exporters and is warned about +
+    // dropped in populateFromExporters instead. At this point the reserved exporter has not been
+    // added yet, so a non-null entry can only come from user configuration.
+    if (override.getRdbmsExporter() != null) {
+      warnReservedRdbmsExporter("zeebe.broker.exporters.rdbms.*");
     }
 
     final ExporterCfg exporter = new ExporterCfg();
@@ -1132,8 +1130,28 @@ public class BrokerBasedPropertiesOverride {
       LOGGER.warn(warningMessage);
     }
 
+    final boolean rdbmsReserved =
+        camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms;
     exporters.forEach(
-        (name, exporter) -> override.getExporters().put(name, exporter.toExporterCfg()));
+        (name, exporter) -> {
+          // The reserved 'rdbms' exporter is provisioned from
+          // camunda.data.secondary-storage.rdbms.* in populateRdbmsExporter; the unified
+          // camunda.data.exporters.rdbms.* config for it is ignored and must not overwrite the
+          // reserved config. Warn (so it is not silent) and drop it.
+          if (rdbmsReserved && RDBMS_EXPORTER_NAME.equals(name)) {
+            warnReservedRdbmsExporter("camunda.data.exporters.rdbms.*");
+            return;
+          }
+          override.getExporters().put(name, exporter.toExporterCfg());
+        });
+  }
+
+  private static void warnReservedRdbmsExporter(final String genericProperty) {
+    LOGGER.warn(
+        "The 'rdbms' exporter is reserved and cannot be configured through the generic exporter "
+            + "property '{}'. This configuration is ignored; configure it through "
+            + "'camunda.data.secondary-storage.rdbms.*' instead.",
+        genericProperty);
   }
 
   private static void populateFromGlobalListeners(

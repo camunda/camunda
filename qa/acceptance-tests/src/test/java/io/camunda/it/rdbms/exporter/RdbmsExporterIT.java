@@ -117,6 +117,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -176,7 +177,7 @@ class RdbmsExporterIT {
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
-            null));
+            InstantSource.system()));
     exporter.open(controller);
   }
 
@@ -1526,7 +1527,7 @@ class RdbmsExporterIT {
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
-            null));
+            InstantSource.system()));
     intervalExporter.open(intervalController);
 
     // a record with ValueType.TIMER has no registered handler: the exporter updates lastPosition

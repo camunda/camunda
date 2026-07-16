@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +84,7 @@ class RdbmsExporterBatchOperationsIT {
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
-            null));
+            InstantSource.system()));
     exporter.open(controller);
   }
 

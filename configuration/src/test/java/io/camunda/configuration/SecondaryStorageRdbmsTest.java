@@ -8,7 +8,6 @@
 package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
@@ -25,6 +24,11 @@ import io.camunda.zeebe.broker.system.configuration.engine.ValidatorsCfg;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -230,11 +234,13 @@ public class SecondaryStorageRdbmsTest {
   /**
    * The {@code rdbms} exporter is reserved and provisioned internally; it must be configured
    * through {@code camunda.data.secondary-storage.rdbms.*}. Declaring it through the generic
-   * exporter properties — unified or legacy — must fail fast rather than be silently ignored (see
-   * #57804).
+   * exporter properties — unified or legacy — is ignored (the reserved config wins) and a warning
+   * is logged rather than failing startup (see #57804).
    */
   @Nested
-  class ReservedExporterRejected {
+  class ReservedExporterIgnored {
+    private static final String RESERVED_WARNING = "'rdbms' exporter is reserved";
+
     private ApplicationContextRunner runnerWith(final String... properties) {
       return new ApplicationContextRunner()
           .withUserConfiguration(
@@ -247,44 +253,118 @@ public class SecondaryStorageRdbmsTest {
     }
 
     @Test
-    void shouldRejectUnifiedRdbmsExporterConfig() {
-      runnerWith("camunda.data.exporters.rdbms.args.queue-size=0")
-          .run(
-              context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .rootCause()
-                    .isInstanceOf(UnifiedConfigurationException.class)
-                    .hasMessageContaining("'rdbms' exporter is reserved");
-              });
+    void shouldIgnoreUnifiedRdbmsExporterConfig() {
+      try (final LogCapturer logs =
+          new LogCapturer(BrokerBasedPropertiesOverride.class.getName())) {
+        runnerWith("camunda.data.exporters.rdbms.args.queue-size=0")
+            .run(
+                context -> {
+                  assertThat(context).hasNotFailed();
+                  final ExporterCfg exporter =
+                      context.getBean(BrokerBasedProperties.class).getRdbmsExporter();
+                  assertThat(exporter).isNotNull();
+                  assertThat(exporter.getClassName())
+                      .isEqualTo("io.camunda.exporter.rdbms.RdbmsExporter");
+                  // the ignored generic queue-size=0 must not apply; the reserved config keeps the
+                  // default queue size
+                  assertThat(
+                          UnifiedConfigurationHelper.argsToRdbmsExporterConfiguration(
+                                  exporter.getArgs())
+                              .getQueueSize())
+                      .isEqualTo(1000);
+                  // the ignored config must be surfaced to the user as a warning, not silently
+                  assertThat(logs.contains(RESERVED_WARNING)).isTrue();
+                });
+      }
     }
 
     @Test
-    void shouldRejectLegacyRdbmsExporterConfig() {
-      runnerWith("zeebe.broker.exporters.rdbms.class-name=io.camunda.exporter.rdbms.RdbmsExporter")
-          .run(
-              context -> {
-                assertThat(context).hasFailed();
-                assertThat(context.getStartupFailure())
-                    .rootCause()
-                    .isInstanceOf(UnifiedConfigurationException.class)
-                    .hasMessageContaining("'rdbms' exporter is reserved");
-              });
+    void shouldIgnoreLegacyRdbmsExporterConfig() {
+      try (final LogCapturer logs =
+          new LogCapturer(BrokerBasedPropertiesOverride.class.getName())) {
+        runnerWith(
+                "zeebe.broker.exporters.rdbms.class-name=io.camunda.exporter.rdbms.RdbmsExporter")
+            .run(
+                context -> {
+                  assertThat(context).hasNotFailed();
+                  final ExporterCfg exporter =
+                      context.getBean(BrokerBasedProperties.class).getRdbmsExporter();
+                  assertThat(exporter).isNotNull();
+                  assertThat(exporter.getClassName())
+                      .isEqualTo("io.camunda.exporter.rdbms.RdbmsExporter");
+                  assertThat(logs.contains(RESERVED_WARNING)).isTrue();
+                });
+      }
     }
 
     @Test
-    void shouldRejectRdbmsExporterConfiguredPerPhysicalTenant() {
+    void shouldIgnoreRdbmsExporterConfiguredPerPhysicalTenant() {
       // the per-tenant path goes through BrokerBasedPropertiesOverride.convert (invoked per tenant
-      // by SystemContextLoader), which runs the same reserved-exporter check
+      // by SystemContextLoader), which runs the same reserved-exporter handling
       final MockEnvironment environment = new MockEnvironment();
       environment.setProperty("camunda.data.secondary-storage.type", "rdbms");
       environment.setProperty("camunda.data.exporters.rdbms.args.queue-size", "0");
       final Camunda perTenant = new Camunda();
       Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(perTenant));
 
-      assertThatThrownBy(() -> BrokerBasedPropertiesOverride.convert(perTenant))
-          .isInstanceOf(UnifiedConfigurationException.class)
-          .hasMessageContaining("'rdbms' exporter is reserved");
+      final BrokerBasedProperties props;
+      final boolean warned;
+      try (final LogCapturer logs =
+          new LogCapturer(BrokerBasedPropertiesOverride.class.getName())) {
+        props = BrokerBasedPropertiesOverride.convert(perTenant);
+        warned = logs.contains(RESERVED_WARNING);
+      }
+
+      final ExporterCfg exporter = props.getRdbmsExporter();
+      assertThat(exporter).isNotNull();
+      assertThat(exporter.getClassName()).isEqualTo("io.camunda.exporter.rdbms.RdbmsExporter");
+      // the ignored generic queue-size=0 must not apply; the reserved config keeps the default
+      assertThat(
+              UnifiedConfigurationHelper.argsToRdbmsExporterConfiguration(exporter.getArgs())
+                  .getQueueSize())
+          .isEqualTo(1000);
+      // the ignored config must be surfaced to the user as a warning, not silently
+      assertThat(warned).isTrue();
+    }
+  }
+
+  /**
+   * Captures log events emitted for a given logger via a log4j2 {@link ListAppender}, so tests can
+   * assert on messages that are logged instead of thrown (see {@link ReservedExporterIgnored}).
+   */
+  private static final class LogCapturer implements AutoCloseable {
+    private final ListAppender appender;
+    private final String loggerName;
+
+    private LogCapturer(final String loggerName) {
+      this.loggerName = loggerName;
+      appender = new ListAppender("TestAppender");
+      appender.start();
+      // Ensure a dedicated logger config exists at a level that lets WARN through; without a log4j2
+      // config file the default root level is ERROR, which would drop the warning before the
+      // appender sees it.
+      Configurator.setLevel(loggerName, Level.WARN);
+      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+      context
+          .getConfiguration()
+          .getLoggerConfig(loggerName)
+          .addAppender(appender, Level.WARN, null);
+      context.updateLoggers();
+    }
+
+    private boolean contains(final String message) {
+      // the appender has no layout, so formatted strings live in getEvents(), not getMessages()
+      return appender.getEvents().stream()
+          .anyMatch(e -> e.getMessage().getFormattedMessage().contains(message));
+    }
+
+    @Override
+    public void close() {
+      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+      context.getConfiguration().getLoggerConfig(loggerName).removeAppender("TestAppender");
+      context.updateLoggers();
+      appender.stop();
+      appender.clear();
     }
   }
 

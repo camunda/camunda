@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.InstantSource;
 import java.util.Map;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -117,7 +118,7 @@ class RdbmsExporterPhysicalTenantIT {
             "",
             null,
             mock(MeterRegistry.class, RETURNS_DEEP_STUBS),
-            null));
+            InstantSource.system()));
     wrapper.open(new ExporterTestController());
     return wrapper;
   }
