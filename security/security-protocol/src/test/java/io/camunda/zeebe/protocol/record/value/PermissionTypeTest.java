@@ -34,4 +34,18 @@ final class PermissionTypeTest {
     assertThat(AuthorizationResourceType.BATCH.getSupportedPermissionTypes())
         .contains(PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE);
   }
+
+  @Test
+  void shouldNotClassifyResumeProcessInstancePermissionsAsReadPermissions() {
+    // given / when / then
+    assertThat(PermissionType.CREATE_BATCH_OPERATION_RESUME_PROCESS_INSTANCE.isReadPermission())
+        .isFalse();
+  }
+
+  @Test
+  void shouldSupportCreateBatchOperationResumeProcessInstanceOnBatchResourceType() {
+    // given / when / then
+    assertThat(AuthorizationResourceType.BATCH.getSupportedPermissionTypes())
+        .contains(PermissionType.CREATE_BATCH_OPERATION_RESUME_PROCESS_INSTANCE);
+  }
 }
