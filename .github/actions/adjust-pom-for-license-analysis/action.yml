@@ -28,3 +28,8 @@ runs:
         yq -i \
           'del(.project.modules.module[] | select(. == "qa"))' \
           optimize/pom.xml
+    - name: Strip non-shipped dependency scopes so FOSSA's dependency graph stays under the JVM array limit
+      shell: bash
+      run: |
+        # See strip-analysis-scopes.py for why this is needed.
+        python3 "${GITHUB_ACTION_PATH}/strip-analysis-scopes.py" .
