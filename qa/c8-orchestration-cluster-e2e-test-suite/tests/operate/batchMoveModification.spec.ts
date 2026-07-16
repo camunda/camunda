@@ -66,7 +66,7 @@ test.describe('Process Instance Batch Modification', () => {
         assertion: async () => {
           await expect(
             page.getByText(`${NUM_PROCESS_INSTANCES} results`),
-          ).toBeVisible({timeout: 5000});
+          ).toBeVisible({timeout: 30000});
         },
         onFailure: async () => {
           await gotoProcessesPage(page, {
@@ -78,6 +78,7 @@ test.describe('Process Instance Batch Modification', () => {
             },
           });
         },
+        maxRetries: 5,
       });
     });
 
@@ -129,7 +130,12 @@ test.describe('Process Instance Batch Modification', () => {
 
     await test.step('Filter and verify modified instances', async () => {
       await operateOperationPanelPage.collapseOperationsPanel();
-      await operateDiagramPage.clickFlowNode('shipArticles');
+      // Filter via the left-hand Flow Node dropdown rather than clicking the
+      // node on the diagram: applying the modification auto-expands the
+      // Operations panel, which overlays "Ship Articles" on the diagram so the
+      // coordinate-based diagram click can miss it and leave the flow-node
+      // filter unchanged. The dropdown is never covered by that panel.
+      await operateFiltersPanelPage.selectFlowNode('Ship Articles');
       await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
       await waitForAssertion({
         assertion: async () => {

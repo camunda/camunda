@@ -121,6 +121,25 @@ test.describe.serial('Process Instance Migration', () => {
         maxRetries: 5,
       });
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+
+      // The migration target-process dropdown is fetched once when migration
+      // mode mounts (no polling) and omits the source process entirely unless a
+      // version other than the source (v1) has already been imported. Under
+      // importer lag the target version (2) can arrive after the source, which
+      // would leave the target process permanently missing from that static
+      // dropdown. Confirm version 2 is selectable here — before entering
+      // migration mode — so target selection is deterministic.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateFiltersPanelPage.selectVersion(targetVersion);
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
+        },
+        maxRetries: 5,
+      });
+
       await operateFiltersPanelPage.selectVersion(sourceVersion);
 
       await waitForAssertion({
