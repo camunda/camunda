@@ -52,6 +52,8 @@ public class CamundaProcessTestRuntimeConfiguration {
       CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME;
 
   private boolean multiTenancyEnabled = false;
+  private boolean clockResetEnabled = true;
+  private boolean dataDeletionEnabled = true;
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
@@ -232,6 +234,22 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setMultiTenancyEnabled(final boolean multiTenancyEnabled) {
     this.multiTenancyEnabled = multiTenancyEnabled;
+  }
+
+  public boolean isClockResetEnabled() {
+    return clockResetEnabled;
+  }
+
+  public void setClockResetEnabled(final boolean clockResetEnabled) {
+    this.clockResetEnabled = clockResetEnabled;
+  }
+
+  public boolean isDataDeletionEnabled() {
+    return dataDeletionEnabled;
+  }
+
+  public void setDataDeletionEnabled(final boolean dataDeletionEnabled) {
+    this.dataDeletionEnabled = dataDeletionEnabled;
   }
 
   public CoverageReportConfiguration getCoverage() {

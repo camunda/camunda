@@ -60,6 +60,8 @@ public class ContainerRuntimePropertiesUtilTest {
         .isEqualTo("target/coverage-report");
 
     assertThat(propertiesUtil.getRemoteRuntimeConnectionTimeout()).isEqualTo(Duration.ofMinutes(1));
+    assertThat(propertiesUtil.isClockResetEnabled()).isTrue();
+    assertThat(propertiesUtil.isDataDeletionEnabled()).isTrue();
   }
 
   @Test
@@ -371,6 +373,8 @@ public class ContainerRuntimePropertiesUtilTest {
           .isEqualTo(Duration.ofSeconds(30));
 
       assertThat(propertiesUtil.isMultiTenancyEnabled()).isTrue();
+      assertThat(propertiesUtil.isClockResetEnabled()).isFalse();
+      assertThat(propertiesUtil.isDataDeletionEnabled()).isFalse();
 
       final CoverageReportProperties coverageReportProperties =
           propertiesUtil.getCoverageReportProperties();

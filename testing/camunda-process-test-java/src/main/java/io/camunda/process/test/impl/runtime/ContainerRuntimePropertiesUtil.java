@@ -49,6 +49,8 @@ public final class ContainerRuntimePropertiesUtil {
   public static final String PROPERTY_NAME_RUNTIME_MODE = "runtimeMode";
   public static final String PROPERTY_NAME_ELASTICSEARCH_VERSION = "elasticsearch.version";
   public static final String PROPERTY_NAME_MULTI_TENANCY_ENABLED = "multiTenancyEnabled";
+  public static final String PROPERTY_NAME_CLOCK_RESET_ENABLED = "clockResetEnabled";
+  public static final String PROPERTY_NAME_DATA_DELETION_ENABLED = "dataDeletionEnabled";
 
   private static final String BASE_DIR = "/";
 
@@ -63,6 +65,8 @@ public final class ContainerRuntimePropertiesUtil {
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
+  private final boolean clockResetEnabled;
+  private final boolean dataDeletionEnabled;
 
   private final String elasticsearchVersion;
 
@@ -96,6 +100,16 @@ public final class ContainerRuntimePropertiesUtil {
 
     multiTenancyEnabled =
         getPropertyOrDefault(properties, PROPERTY_NAME_MULTI_TENANCY_ENABLED, "false")
+            .trim()
+            .equalsIgnoreCase("true");
+
+    clockResetEnabled =
+        getPropertyOrDefault(properties, PROPERTY_NAME_CLOCK_RESET_ENABLED, "true")
+            .trim()
+            .equalsIgnoreCase("true");
+
+    dataDeletionEnabled =
+        getPropertyOrDefault(properties, PROPERTY_NAME_DATA_DELETION_ENABLED, "true")
             .trim()
             .equalsIgnoreCase("true");
   }
@@ -234,6 +248,14 @@ public final class ContainerRuntimePropertiesUtil {
 
   public boolean isMultiTenancyEnabled() {
     return multiTenancyEnabled;
+  }
+
+  public boolean isClockResetEnabled() {
+    return clockResetEnabled;
+  }
+
+  public boolean isDataDeletionEnabled() {
+    return dataDeletionEnabled;
   }
 
   public CoverageReportProperties getCoverageReportProperties() {

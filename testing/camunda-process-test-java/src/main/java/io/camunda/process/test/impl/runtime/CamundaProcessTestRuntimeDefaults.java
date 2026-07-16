@@ -90,6 +90,8 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getCamundaClientBuilderFactory();
 
   public static final boolean MULTI_TENANCY_ENABLED = PROPERTIES_UTIL.isMultiTenancyEnabled();
+  public static final boolean CLOCK_RESET_ENABLED = PROPERTIES_UTIL.isClockResetEnabled();
+  public static final boolean DATA_DELETION_ENABLED = PROPERTIES_UTIL.isDataDeletionEnabled();
 
   public static final String COVERAGE_REPORT_DIRECTORY =
       PROPERTIES_UTIL.getCoverageReportProperties().getCoverageReportDirectory();
