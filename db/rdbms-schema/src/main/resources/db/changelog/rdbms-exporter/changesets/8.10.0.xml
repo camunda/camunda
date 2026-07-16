@@ -603,7 +603,7 @@
     </addColumn>
   </changeSet>
 
-  <changeSet id="create_cluster_variable_kind_index" author="camunda">
+  <changeSet id="create_cluster_variable_kind_index" author="camunda" runInTransaction="false">
     <preConditions onFail="MARK_RAN">
       <not>
         <indexExists indexName="${prefix}IDX_CLUSTER_VARIABLE_KIND"
