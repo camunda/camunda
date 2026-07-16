@@ -22,7 +22,12 @@ on:
           - "2.19"
           - "3.5"
   schedule:
-    - cron: "0 4 * * Mon-Fri"
+    # Two distinct cron entries so a nightly run produces two independent
+    # workflow instances (one per OpenSearch version), each running its own
+    # verify + cleanup + test jobs against its own cluster, instead of a
+    # single run fanning both versions out into a shared matrix.
+    - cron: "0 4 * * Mon-Fri" # -> 2.19
+    - cron: "30 4 * * Mon-Fri" # -> 3.5
 
 defaults:
   run:
@@ -32,24 +37,73 @@ defaults:
 
 # Prevent concurrent runs of this workflow from stacking additional load on the
 # shared AWS OpenSearch clusters used by the integration-tests matrix below.
+# The group is keyed by resolved OS version so the two per-version scheduled
+# instances (see the `schedule` entries above) queue independently instead of
+# blocking each other.
 concurrency:
-  group: ${{ github.workflow }}
+  group: ${{ github.workflow }}-${{ github.event.inputs.opensearch-version || (github.event.schedule == '30 4 * * Mon-Fri' && '3.5' || '2.19') }}
   cancel-in-progress: false
 
 env:
   TEST_OWNER: '@camunda/core-features'
 
 jobs:
+  verify-opensearch-version:
+    name: "[PRE] Verify AWS OpenSearch cluster version"
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    runs-on: aws-core-8-default
+    env:
+      OS_VERSION: ${{ github.event.inputs.opensearch-version || (github.event.schedule == '30 4 * * Mon-Fri' && '3.5' || '2.19') }}
+    outputs:
+      os_version: ${{ steps.resolve-version.outputs.os_version }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Resolve OpenSearch version for this run
+        id: resolve-version
+        run: |
+          echo "Resolved OpenSearch version: ${OS_VERSION}"
+          echo "os_version=${OS_VERSION}" >> "$GITHUB_OUTPUT"
+      - name: Setup AWS OpenSearch
+        uses: ./.github/actions/setup-aws-opensearch-env
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          opensearch-version: ${{ steps.resolve-version.outputs.os_version }}
+      - name: Python setup
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.x"
+      - name: Install Python dependencies
+        run: |
+          python3 -m pip install -q --disable-pip-version-check boto3==1.42.50 opensearch-py==3.1.0
+      - name: Verify cluster version matches expected version
+        env:
+          OPENSEARCH_URL: ${{ env.OPENSEARCH_URL }}
+          EXPECTED_OPENSEARCH_VERSION: ${{ steps.resolve-version.outputs.os_version }}
+        run: python3 .github/scripts/verify-aws-opensearch-version.py
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "verify-opensearch-version/${{ steps.resolve-version.outputs.os_version }}"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   cleanup-opensearch-indices:
-    name: "[PRE] Cleanup old AWS OpenSearch indices. OS ver.${{ matrix.os_version }}"
+    name: "[PRE] Cleanup old AWS OpenSearch indices. OS ver.${{ needs.verify-opensearch-version.outputs.os_version }}"
+    needs: verify-opensearch-version
     permissions:
       contents: read
     timeout-minutes: 30
     runs-on: aws-core-8-default
-    strategy:
-      fail-fast: false
-      matrix:
-        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -60,7 +114,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          opensearch-version: ${{ matrix.os_version }}
+          opensearch-version: ${{ needs.verify-opensearch-version.outputs.os_version }}
       - name: Python setup
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
@@ -79,15 +133,15 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "cleanup-opensearch-indices/${{ matrix.os_version }}"
+          job_name: "cleanup-opensearch-indices/${{ needs.verify-opensearch-version.outputs.os_version }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   integration-tests:
-    name: "[IT] ${{ matrix.name }}. OS ver.${{ matrix.os_version }}"
-    needs: cleanup-opensearch-indices
+    name: "[IT] ${{ matrix.name }}. OS ver.${{ needs.verify-opensearch-version.outputs.os_version }}"
+    needs: [verify-opensearch-version, cleanup-opensearch-indices]
     permissions:
       contents: read
       actions: write
@@ -97,14 +151,13 @@ jobs:
       TEST_OWNER: ${{ matrix.owner }}
     strategy:
       fail-fast: false
-      # Cap concurrent matrix jobs: all groups for a given os_version share one
-      # AWS OpenSearch cluster, and running all 5 at once overloads it (cluster
-      # event queue timeouts, search_phase_execution_exception, and jobs hanging
-      # until the job timeout). This is a nightly/manual job, so trading some
-      # wall-clock time for reliability is an acceptable tradeoff.
+      # Cap concurrent matrix jobs: all groups share one AWS OpenSearch
+      # cluster, and running all 5 at once overloads it (cluster event queue
+      # timeouts, search_phase_execution_exception, and jobs hanging until the
+      # job timeout). This is a nightly/manual job, so trading some wall-clock
+      # time for reliability is an acceptable tradeoff.
       max-parallel: 1
       matrix:
-        os_version: ${{ fromJSON(format('[{0}]', github.event.inputs.opensearch-version || '"2.19", "3.5"')) }}
         group:
         - camunda-qa-acceptance-tests-client
         - camunda-qa-acceptance-tests-non-client
@@ -160,7 +213,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          opensearch-version: ${{ matrix.os_version }}
+          opensearch-version: ${{ needs.verify-opensearch-version.outputs.os_version }}
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
