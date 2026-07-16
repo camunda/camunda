@@ -8,10 +8,12 @@
 package io.camunda.secretstore.aws;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
+import io.camunda.secretstore.SecretStoreUnavailableException;
 import java.net.URI;
 import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
@@ -137,7 +139,8 @@ class AwsSecretsManagerSecretStoreIT {
   @Test
   void shouldResolveViaFromConfigIdentityPath() {
     // given — exercise the production build path (DefaultCredentialsProvider) with
-    // credentials supplied via system properties, mirroring how a pod identity injects them
+    // credentials supplied via system properties, mirroring how a pod identity injects them.
+    // fromConfig() succeeding at all already proves its startup connectivity validation passed.
     System.setProperty("aws.accessKeyId", LOCALSTACK.getAccessKey());
     System.setProperty("aws.secretAccessKey", LOCALSTACK.getSecretKey());
     try {
@@ -159,6 +162,30 @@ class AwsSecretsManagerSecretStoreIT {
             .extracting(r -> ((Resolved) r).value())
             .isEqualTo("tok3n");
       }
+    } finally {
+      System.clearProperty("aws.accessKeyId");
+      System.clearProperty("aws.secretAccessKey");
+    }
+  }
+
+  @Test
+  void shouldFailFastOnUnreachableEndpoint() {
+    // given — an endpoint nothing listens on, mimicking a network/DNS misconfiguration
+    System.setProperty("aws.accessKeyId", LOCALSTACK.getAccessKey());
+    System.setProperty("aws.secretAccessKey", LOCALSTACK.getSecretKey());
+    try {
+      final var config =
+          new AwsSecretsManagerStoreConfig(
+              LOCALSTACK.getRegion(),
+              "camunda/",
+              URI.create("http://127.0.0.1:1"),
+              // fail fast, don't waste the test retrying an already-deterministic connection
+              // refusal
+              0);
+
+      // when / then — fromConfig() itself must fail, not the first resolve()/list() call
+      assertThatThrownBy(() -> AwsSecretsManagerSecretStore.fromConfig(config))
+          .isInstanceOf(SecretStoreUnavailableException.class);
     } finally {
       System.clearProperty("aws.accessKeyId");
       System.clearProperty("aws.secretAccessKey");
