@@ -47,6 +47,26 @@ describe('<MessageMetrics />', () => {
     );
   });
 
+  it('should render token and duration tags when all metrics are 0', async () => {
+    const {user} = render(
+      <MessageMetrics
+        metrics={{inputTokens: 0, outputTokens: 0, durationMs: 0}}
+      />,
+    );
+
+    expect(screen.getByTestId('message-token-metric')).toHaveTextContent(
+      '0 tokens',
+    );
+    expect(screen.getByTestId('message-duration-metric')).toHaveTextContent(
+      '0ms',
+    );
+
+    await user.hover(screen.getByTestId('message-token-metric'));
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Input: 0 · Output: 0',
+    );
+  });
+
   it('should treat a null inputTokens as 0 but show --- in the tooltip', async () => {
     const {user} = render(
       <MessageMetrics metrics={{...FULL_METRICS, inputTokens: null}} />,
