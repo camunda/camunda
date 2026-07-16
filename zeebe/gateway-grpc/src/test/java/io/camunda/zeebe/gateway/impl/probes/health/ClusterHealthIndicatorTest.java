@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Status;
 
 public class ClusterHealthIndicatorTest {
