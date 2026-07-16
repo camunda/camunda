@@ -322,6 +322,24 @@ public final class ProcessInstanceClient {
                 .withProcessInstanceKey(processInstanceKey)
                 .getFirst();
 
+    public static final Function<Long, Record<ProcessInstanceRecordValue>> SUSPENDED_EXPECTATION =
+        (processInstanceKey) ->
+            RecordingExporter.processInstanceRecords()
+                .withRecordKey(processInstanceKey)
+                .withIntent(ProcessInstanceIntent.SUSPENDED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst();
+
+    public static final Function<Long, Record<ProcessInstanceRecordValue>>
+        SUSPEND_REJECTION_EXPECTATION =
+            (processInstanceKey) ->
+                RecordingExporter.processInstanceRecords()
+                    .onlyCommandRejections()
+                    .withIntent(ProcessInstanceIntent.SUSPEND)
+                    .withRecordKey(processInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .getFirst();
+
     public static final Function<Long, Record<ErrorRecordValue>> ERROR_EXPECTATION =
         (processInstanceKey) ->
             RecordingExporter.errorRecords().withIntent(ErrorIntent.CREATED).getFirst();
@@ -353,6 +371,8 @@ public final class ProcessInstanceClient {
     private Function<Long, Record<ProcessInstanceRecordValue>> expectation = SUCCESS_EXPECTATION;
     private Function<Long, Record<ProcessInstanceRecordValue>> resumeExpectation =
         RESUMED_EXPECTATION;
+    private Function<Long, Record<ProcessInstanceRecordValue>> suspendExpectation =
+        SUSPENDED_EXPECTATION;
 
     public ExistingInstanceClient(final CommandWriter writer, final long processInstanceKey) {
       this.writer = writer;
@@ -403,6 +423,56 @@ public final class ProcessInstanceClient {
     public Record<ProcessInstanceRecordValue> resume(final String username) {
       writeResumeCommandWithUserKey(username);
       return resumeExpectation.apply(processInstanceKey);
+    }
+
+    public ExistingInstanceClient expectSuspendRejection() {
+      suspendExpectation = SUSPEND_REJECTION_EXPECTATION;
+      return this;
+    }
+
+    public Record<ProcessInstanceRecordValue> suspend() {
+      writeSuspendCommand();
+      return suspendExpectation.apply(processInstanceKey);
+    }
+
+    public Record<ProcessInstanceRecordValue> suspend(final String username) {
+      writeSuspendCommandWithUserKey(username);
+      return suspendExpectation.apply(processInstanceKey);
+    }
+
+    private void writeSuspendCommand() {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          ProcessInstanceIntent.SUSPEND,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
+    }
+
+    private void writeSuspendCommandWithUserKey(final String username) {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          ProcessInstanceIntent.SUSPEND,
+          username,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
     }
 
     private void writeCancelCommand() {
