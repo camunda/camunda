@@ -9,6 +9,7 @@ package io.camunda.secretstore.aws;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.secretstore.SecretErrorCode;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretResolutionResult.Resolved;
 import java.net.URI;
@@ -85,8 +86,35 @@ class AwsSecretsManagerSecretStoreIT {
       final var ref = new AwsSecretsManagerSecretReference("does-not-exist");
       final var result = store.resolve(Set.of(ref));
 
-      // then
-      assertThat(result.get(ref)).isInstanceOf(Failed.class);
+      // then — the per-item error entry from BatchGetSecretValue maps to NOT_FOUND
+      assertThat(result.get(ref))
+          .isInstanceOf(Failed.class)
+          .extracting(r -> ((Failed) r).code())
+          .isEqualTo(SecretErrorCode.NOT_FOUND);
+    }
+  }
+
+  @Test
+  void shouldResolveMultipleSecretsInOneBatchCall() {
+    // given
+    try (final var store = storeWithClient("camunda/")) {
+      // when
+      final var dbPassword = new AwsSecretsManagerSecretReference("db-password");
+      final var apiToken = new AwsSecretsManagerSecretReference("api-token");
+      final var missing = new AwsSecretsManagerSecretReference("does-not-exist");
+      final var result = store.resolve(Set.of(dbPassword, apiToken, missing));
+
+      // then — one BatchGetSecretValue call resolves the found secrets and reports the missing
+      // one as a per-item error, not a store-wide failure
+      assertThat(result.get(dbPassword))
+          .isInstanceOf(Resolved.class)
+          .extracting(r -> ((Resolved) r).value())
+          .isEqualTo("s3cr3t");
+      assertThat(result.get(apiToken))
+          .isInstanceOf(Resolved.class)
+          .extracting(r -> ((Resolved) r).value())
+          .isEqualTo("tok3n");
+      assertThat(result.get(missing)).isInstanceOf(Failed.class);
     }
   }
 
