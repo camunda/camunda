@@ -41,7 +41,8 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> {
           Executors.newScheduledThreadPool(
               importMediators.size(),
               r -> {
-                final Thread t = new Thread(r, getClass().getSimpleName() + "-importer");
+                final Thread t = new Thread(r);
+                t.setName(getClass().getSimpleName() + "-importer-" + t.getId());
                 t.setDaemon(true);
                 return t;
               });
