@@ -11,7 +11,6 @@ import {expect} from '@playwright/test';
 import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
-import {sleep} from 'utils/sleep';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -55,7 +54,6 @@ test.describe('Process Instance Job Priority', () => {
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: instanceWithExplicitPriority.processInstanceKey,
     });
-    await sleep(1000);
 
     await operateProcessInstancePage.clickTreeItem(/priority task/i);
     await operateProcessInstancePage.clickDetailsTab();
@@ -70,7 +68,6 @@ test.describe('Process Instance Job Priority', () => {
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: instanceWithDefaultPriority.processInstanceKey,
     });
-    await sleep(1000);
 
     await operateProcessInstancePage.clickTreeItem('task', true);
     await operateProcessInstancePage.clickDetailsTab();
