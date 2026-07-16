@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.serializer;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
@@ -62,6 +63,8 @@ public interface ClusterConfigurationRequestsSerializer {
 
   byte[] encodeUpdatePartitionDistributorConfigRequest(
       UpdatePartitionDistributorConfigRequest request);
+
+  byte[] encodeClusterZoneMigrationRequest(ClusterZoneMigrationRequest request);
 
   ClusterConfigurationManagementRequest.AddMembersRequest decodeAddMembersRequest(
       byte[] encodedState);
@@ -118,6 +121,8 @@ public interface ClusterConfigurationRequestsSerializer {
 
   UpdatePartitionDistributorConfigRequest decodeUpdatePartitionDistributorConfigRequest(
       byte[] bytes);
+
+  ClusterZoneMigrationRequest decodeClusterZoneMigrationRequest(byte[] bytes);
 
   byte[] encodeModeChangeRequest(ModeChangeRequest modeChangeRequest);
 

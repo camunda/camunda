@@ -64,6 +64,11 @@ message UpdatePartitionDistributorConfigRequest {
   bool dryRun = 2;
 }
 
+message ClusterZoneMigrationRequest {
+  string zone = 1;
+  bool dryRun = 2;
+}
+
 message ForceRemoveBrokersRequest {
   repeated string membersToRemove = 1;
   bool dryRun = 2;

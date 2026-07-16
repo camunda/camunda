@@ -17,9 +17,11 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /** Defines the supported requests for the configuration management. */
+@NullMarked
 public sealed interface ClusterConfigurationManagementRequest {
 
   /**
@@ -102,6 +104,18 @@ public sealed interface ClusterConfigurationManagementRequest {
 
   record UpdatePartitionDistributorConfigRequest(PartitionDistributorConfig config, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
+
+  /**
+   * Migrates one persisted zone stage from a bare or partially zoned cluster. The request names the
+   * zone to migrate; the persisted {@code ZoneAwareConfig} remains the single source of truth for
+   * zone order, priorities, and replica counts.
+   */
+  record ClusterZoneMigrationRequest(String zone, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {
+    public ClusterZoneMigrationRequest {
+      assertNonEmpty("zone").accept(zone);
+    }
+  }
 
   record ForceRemoveBrokersRequest(Set<MemberId> membersToRemove, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}

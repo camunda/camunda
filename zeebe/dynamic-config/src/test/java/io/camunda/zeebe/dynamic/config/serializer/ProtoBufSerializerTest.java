@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
@@ -48,6 +49,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 final class ProtoBufSerializerTest {
 
   private final ProtoBufSerializer protoBufSerializer = new ProtoBufSerializer();
+
+  @Test
+  void shouldEncodeAndDecodeClusterZoneMigrationRequest() {
+    // given
+    final var request = new ClusterZoneMigrationRequest("us-west-1", true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeClusterZoneMigrationRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeClusterZoneMigrationRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
 
   @Test
   void shouldEncodeAndDecodeAddMembersRequest() {

@@ -51,6 +51,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerClusterPatchRequestHandler();
     registerUpdateRoutingStateHandler();
     registerUpdatePartitionDistributionHandler();
+    registerZoneMigrationHandler();
     registerForceRemoveBrokersRequestHandler();
     registerPurgeRequestHandler();
     registerModeChangeHandler();
@@ -216,6 +217,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         serializer::decodeUpdatePartitionDistributorConfigRequest,
         request ->
             mapResponse(clusterConfigurationManagementApi.updatePartitionDistribution(request)),
+        this::encodeResponse);
+  }
+
+  private void registerZoneMigrationHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.ZONE_MIGRATION.topic(),
+        serializer::decodeClusterZoneMigrationRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.migrateZone(request)),
         this::encodeResponse);
   }
 

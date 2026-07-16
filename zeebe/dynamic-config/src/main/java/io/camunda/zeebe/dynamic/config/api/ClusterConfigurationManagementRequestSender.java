@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
@@ -241,6 +242,17 @@ public final class ClusterConfigurationManagementRequestSender {
         ClusterConfigurationRequestTopics.UPDATE_PARTITION_DISTRIBUTION.topic(),
         request,
         serializer::encodeUpdatePartitionDistributorConfigRequest,
+        serializer::decodeTopologyChangeResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      migrateToZones(final ClusterZoneMigrationRequest request) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.ZONE_MIGRATION.topic(),
+        request,
+        serializer::encodeClusterZoneMigrationRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);

@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
@@ -484,6 +485,19 @@ public class ClusterEndpoint {
       final var updateRequest = new UpdatePartitionDistributorConfigRequest(internalConfig, dryRun);
       return ClusterApiUtils.mapOperationResponse(
           requestSender.updatePartitionDistribution(updateRequest).join());
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
+    }
+  }
+
+  @PutMapping(path = "/zones", consumes = "application/json")
+  public ResponseEntity<?> migrateZone(
+      @RequestBody final io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest request,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      final var migrationRequest = new ClusterZoneMigrationRequest(request.getZone(), dryRun);
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender.migrateToZones(migrationRequest).join());
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }
