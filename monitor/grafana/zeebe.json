@@ -10110,7 +10110,7 @@
           "datasource": {
             "uid": "$DS_PROMETHEUS"
           },
-          "description": "Quantiles of time spent waiting to acquire the sequencer lock, by who is waiting",
+          "description": "Quantiles of time spent waiting to acquire the sequencer lock, by who is waiting. The metric is only recorded when a thread actually had to wait for the lock — if the lock was acquired immediately, no observation is recorded. Contention ratio (right axis) is the rate of lock waits divided by the rate of lock holds, i.e. the fraction of writes that had to wait.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -10165,7 +10165,30 @@
               },
               "unit": "s"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/^contention ratio.*/"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "percentunit"
+                  },
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  },
+                  {
+                    "id": "custom.scaleDistribution",
+                    "value": {
+                      "type": "linear"
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 7,
@@ -10236,6 +10259,18 @@
               "interval": "30s",
               "legendFormat": "p50 {{waiter}}",
               "refId": "D"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_sequencer_lock_wait_time_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (waiter) / on(waiter) label_replace(sum(rate(zeebe_sequencer_lock_hold_time_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", physicalTenant=~\"$physicalTenant\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval])) by (writer), \"waiter\", \"$1\", \"writer\", \"(.*)\")",
+              "format": "time_series",
+              "interval": "30s",
+              "legendFormat": "contention ratio {{waiter}}",
+              "refId": "E"
             }
           ],
           "title": "Sequencer Lock Wait Time Quantiles",
