@@ -188,6 +188,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newProcessInstanceSearchRequest()
               .filter(processInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
@@ -199,6 +201,8 @@ public class UpdateVariablesTest {
       when(camundaClient
               .newElementInstanceSearchRequest()
               .filter(elementInstanceFilterCaptor.capture())
+              .sort(any(Consumer.class))
+              .page(any(Consumer.class))
               .send()
               .join()
               .items())
