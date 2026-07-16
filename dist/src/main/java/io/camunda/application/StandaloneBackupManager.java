@@ -11,7 +11,6 @@ import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
-import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
@@ -23,7 +22,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeExceptionMapper;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -191,10 +189,5 @@ public class StandaloneBackupManager implements CommandLineRunner {
       return ex -> 1;
     }
 
-    @Bean
-    @ConfigurationProperties(prefix = "camunda.database")
-    public SearchEngineConfiguration searchEngineConfiguration() {
-      return SearchEngineConfiguration.of(b -> b);
-    }
   }
 }
