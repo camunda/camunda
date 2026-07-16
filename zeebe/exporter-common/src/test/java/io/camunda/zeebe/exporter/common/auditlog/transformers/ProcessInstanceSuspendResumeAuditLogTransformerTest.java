@@ -112,4 +112,30 @@ class ProcessInstanceSuspendResumeAuditLogTransformerTest {
     assertThat(log.getOperationType()).isEqualTo(AuditLogOperationType.SUSPEND);
     assertThat(log.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
   }
+
+  @Test
+  void shouldTransformRejectedResumeCommand() {
+    // given
+    final ProcessInstanceRecordValue recordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withProcessInstanceKey(234L)
+            .build();
+
+    final Record<ProcessInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withRecordType(RecordType.COMMAND_REJECTION)
+                    .withRejectionType(RejectionType.INVALID_STATE)
+                    .withIntent(ProcessInstanceIntent.RESUME)
+                    .withValue(recordValue));
+
+    // when / then
+    assertThat(transformer.supports(record)).isTrue();
+
+    final var log = transformer.create(record);
+    assertThat(log.getOperationType()).isEqualTo(AuditLogOperationType.RESUME);
+    assertThat(log.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
+  }
 }
