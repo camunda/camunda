@@ -108,7 +108,8 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
     waitingJobsByJobKeyColumnFamily.whileEqualPrefix(
         this.jobKey,
         (key, value) -> {
-          visitor.accept(storeId.toString(), secretReference.toString());
+          visitor.accept(
+              key.second().inner().first().toString(), key.second().inner().second().toString());
         });
   }
 
