@@ -27,13 +27,11 @@ import org.agrona.concurrent.UnsafeBuffer;
 public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordValue
     implements ProcessInstanceBufferedCommandRecordValue {
 
-  private static final StringValue PROCESS_INSTANCE_KEY_KEY =
-      new StringValue("processInstanceKey");
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue ELEMENT_INSTANCE_KEY_KEY =
-      new StringValue("elementInstanceKey");
+  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
   private static final StringValue VALUE_TYPE_KEY = new StringValue("valueType");
   private static final StringValue INTENT_KEY = new StringValue("intent");
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
@@ -71,8 +69,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return processInstanceKeyProperty.getValue();
   }
 
-  public ProcessInstanceBufferedCommandRecord setProcessInstanceKey(
-      final long processInstanceKey) {
+  public ProcessInstanceBufferedCommandRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProperty.setValue(processInstanceKey);
     return this;
   }
@@ -103,8 +100,7 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return elementInstanceKeyProperty.getValue();
   }
 
-  public ProcessInstanceBufferedCommandRecord setElementInstanceKey(
-      final long elementInstanceKey) {
+  public ProcessInstanceBufferedCommandRecord setElementInstanceKey(final long elementInstanceKey) {
     elementInstanceKeyProperty.setValue(elementInstanceKey);
     return this;
   }
@@ -149,6 +145,12 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     }
 
     final var concreteCommandValue = UnifiedRecordValue.fromValueType(valueType);
+    if (concreteCommandValue == null) {
+      throw new IllegalStateException(
+          "Expected to read the command value, but its value type `"
+              + valueType.name()
+              + "` has no known record value class");
+    }
 
     final var commandValueBuffer = new UnsafeBuffer(0, 0);
     final int encodedLength = storedCommandValue.getEncodedLength();
@@ -159,7 +161,8 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     return concreteCommandValue;
   }
 
-  public ProcessInstanceBufferedCommandRecord setCommandValue(final UnifiedRecordValue commandValue) {
+  public ProcessInstanceBufferedCommandRecord setCommandValue(
+      final UnifiedRecordValue commandValue) {
     if (commandValue == null) {
       commandValueProperty.reset();
       return this;

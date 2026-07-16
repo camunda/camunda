@@ -145,6 +145,12 @@ public final class ProcessInstanceBufferedCommandRecord extends UnifiedRecordVal
     }
 
     final var concreteCommandValue = UnifiedRecordValue.fromValueType(valueType);
+    if (concreteCommandValue == null) {
+      throw new IllegalStateException(
+          "Expected to read the command value, but its value type `"
+              + valueType.name()
+              + "` has no known record value class");
+    }
 
     final var commandValueBuffer = new UnsafeBuffer(0, 0);
     final int encodedLength = storedCommandValue.getEncodedLength();
