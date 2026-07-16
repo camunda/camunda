@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -38,37 +37,25 @@ public class ProcessInstanceBusinessIdAssignProcessor
       "Expected to assign a business id to process instance with key '%d', but no such process instance was found";
   private static final String ERROR_NOT_A_PROCESS_INSTANCE =
       "Expected to assign a business id to process instance with key '%d', but the element with this key is not a process instance";
-  private static final String ERROR_CHILD_INSTANCE =
-      "Expected to assign a business id to process instance with key '%d', but it is a child process instance; a business id can only be assigned to root process instances";
-  private static final String ERROR_NOT_ACTIVE =
-      "Expected to assign a business id to process instance with key '%d', but it is not active; a business id can only be assigned to active process instances";
-  private static final String ERROR_UNIQUENESS_ENABLED =
-      "Expected to assign a business id to process instance with key '%d', but business id assignment is not allowed while business id uniqueness is enabled";
-  private static final String ERROR_EMPTY =
-      "Expected to assign a business id to process instance with key '%d', but the provided business id is empty";
-  private static final String ERROR_INVALID =
-      "Expected to assign a business id to process instance with key '%d', but the business id %s";
-  private static final String ERROR_ALREADY_ASSIGNED =
-      "Expected to assign a business id to process instance with key '%d', but it already has a business id assigned";
 
-  private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final AuthorizationCheckBehavior authCheckBehavior;
-  private final boolean businessIdUniquenessEnabled;
+  private final ProcessInstanceBusinessIdAssignmentBehavior assignmentBehavior;
 
   public ProcessInstanceBusinessIdAssignProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final boolean businessIdUniquenessEnabled) {
-    stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     this.authCheckBehavior = authCheckBehavior;
-    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    assignmentBehavior =
+        new ProcessInstanceBusinessIdAssignmentBehavior(
+            writers.state(), businessIdUniquenessEnabled);
   }
 
   @Override
@@ -96,68 +83,24 @@ public class ProcessInstanceBusinessIdAssignProcessor
       return;
     }
 
-    if (processInstanceRecord.hasParentProcessInstance()) {
-      enrichRejectionCommand(command, processInstanceRecord);
-      reject(
-          command, RejectionType.INVALID_STATE, ERROR_CHILD_INSTANCE.formatted(processInstanceKey));
-      return;
-    }
-
-    if (!processInstance.isActive()) {
-      enrichRejectionCommand(command, processInstanceRecord);
-      reject(command, RejectionType.INVALID_STATE, ERROR_NOT_ACTIVE.formatted(processInstanceKey));
-      return;
-    }
-
-    if (businessIdUniquenessEnabled) {
-      enrichRejectionCommand(command, processInstanceRecord);
-      reject(
-          command,
-          RejectionType.INVALID_STATE,
-          ERROR_UNIQUENESS_ENABLED.formatted(processInstanceKey));
-      return;
-    }
-
-    final String businessId = value.getBusinessId();
-    if (businessId.isEmpty()) {
-      enrichRejectionCommand(command, processInstanceRecord);
-      reject(command, RejectionType.INVALID_ARGUMENT, ERROR_EMPTY.formatted(processInstanceKey));
-      return;
-    }
-
-    final var validation = BusinessIdValidator.validate(businessId);
-    if (validation.isLeft()) {
-      enrichRejectionCommand(command, processInstanceRecord);
-      reject(
-          command,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_INVALID.formatted(processInstanceKey, validation.getLeft()));
-      return;
-    }
-
-    final String existingBusinessId = processInstanceRecord.getBusinessId();
-    if (!existingBusinessId.isEmpty()) {
-      if (existingBusinessId.equals(businessId)) {
-        // Idempotent no-op: the identical value is already assigned. Respond success without
-        // writing a second ASSIGNED event (see ADR 0006, D3).
-        enrichAssignmentCommand(value, processInstanceRecord);
-        responseWriter.writeEventOnCommand(
-            processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGNED, value, command);
-        return;
-      }
-      enrichRejectionCommand(command, processInstanceRecord);
-      reject(
-          command,
-          RejectionType.INVALID_STATE,
-          ERROR_ALREADY_ASSIGNED.formatted(processInstanceKey));
-      return;
-    }
-
-    enrichAssignmentCommand(value, processInstanceRecord);
-    stateWriter.appendFollowUpEvent(
-        processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGNED, value);
-    responseWriter.writeEventOnCommand(
-        processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGNED, value, command);
+    assignmentBehavior
+        .validate(processInstance, value.getBusinessId())
+        .ifRightOrLeft(
+            decision -> {
+              assignmentBehavior.enrich(value, decision.processInstanceRecord());
+              // A truly new assignment writes the ASSIGNED event; re-sending the identical value
+              // is an idempotent no-op that still responds success without a second event (ADR
+              // 0006, D3).
+              if (!decision.idempotent()) {
+                assignmentBehavior.appendAssignedEvent(processInstanceKey, value);
+              }
+              responseWriter.writeEventOnCommand(
+                  processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGNED, value, command);
+            },
+            rejection -> {
+              enrichRejectionCommand(command, processInstanceRecord);
+              reject(command, rejection.type(), rejection.reason());
+            });
   }
 
   private boolean isAuthorized(
@@ -195,20 +138,6 @@ public class ProcessInstanceBusinessIdAssignProcessor
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
     responseWriter.writeRejectionOnCommand(command, rejectionType, reason);
-  }
-
-  /**
-   * Enriches the assignment value with the process instance context so the {@code ASSIGNED} event
-   * and its exporters carry the full process information.
-   */
-  private void enrichAssignmentCommand(
-      final ProcessInstanceBusinessIdRecord value,
-      final ProcessInstanceRecord processInstanceRecord) {
-    value
-        .setTenantId(processInstanceRecord.getTenantId())
-        .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
-        .setBpmnProcessId(processInstanceRecord.getBpmnProcessId())
-        .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
   }
 
   /**
