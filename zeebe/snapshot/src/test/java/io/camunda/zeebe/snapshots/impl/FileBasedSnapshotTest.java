@@ -140,7 +140,7 @@ public final class FileBasedSnapshotTest {
       final var fileContent = entry.getValue().getBytes(StandardCharsets.UTF_8);
       Files.write(fileName, fileContent, CREATE_NEW, StandardOpenOption.WRITE);
     }
-    SnapshotChecksum.persist(checksumPath, SnapshotChecksum.calculate(snapshotPath));
+    SnapshotInfos.persist(checksumPath, SnapshotInfos.calculate(snapshotPath));
 
     return new FileBasedSnapshot(
         snapshotPath,

@@ -105,7 +105,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          checksum = SnapshotChecksum.calculateWithProvidedChecksums(directory, fileInfoProvider);
+          checksum = SnapshotInfos.of(directory, fileInfoProvider).checksum();
 
           snapshot = null;
           isValid = true;

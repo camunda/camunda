@@ -181,9 +181,8 @@ public final class FileBasedSnapshotStoreImpl {
     }
 
     try {
-      final var expectedChecksum = SnapshotChecksum.read(checksumPath);
-      final var actualChecksum =
-          SnapshotChecksum.calculateWithProvidedChecksums(path, fileInfoProvider);
+      final var expectedChecksum = SnapshotInfos.read(checksumPath);
+      final var actualChecksum = SnapshotInfos.of(path, fileInfoProvider).checksum();
       if (!actualChecksum.sameChecksums(expectedChecksum)) {
         LOGGER.warn(
             "Expected snapshot {} to have checksums {}, but the actual checksums are {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
@@ -517,7 +516,7 @@ public final class FileBasedSnapshotStoreImpl {
     final var tmpChecksumPath =
         checksumPath.resolveSibling(checksumPath.getFileName().toString() + ".tmp");
     try {
-      SnapshotChecksum.persist(tmpChecksumPath, immutableChecksumsSFV);
+      SnapshotInfos.persist(tmpChecksumPath, immutableChecksumsSFV);
       FileUtil.moveDurably(tmpChecksumPath, checksumPath);
       return checksumPath;
     } catch (final IOException e) {
