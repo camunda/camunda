@@ -24,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -177,6 +178,77 @@ class AbstractImportSchedulerTest {
                 assertThat(runCount.get())
                     .as("mediator should have run again after backoff elapsed")
                     .isGreaterThanOrEqualTo(2));
+  }
+
+  @Test
+  void shouldWaitForMediatorFutureCompletionBeforeRescheduling() {
+    // given
+    final AtomicInteger runCount = new AtomicInteger(0);
+    final AtomicReference<CompletableFuture<Void>> firstRunFuture = new AtomicReference<>();
+
+    final ImportMediator mediator = mock(ImportMediator.class);
+    when(mediator.getBackoffTimeInMs()).thenReturn(0L);
+    when(mediator.runImport())
+        .thenAnswer(
+            inv -> {
+              final CompletableFuture<Void> importFuture = new CompletableFuture<>();
+              firstRunFuture.compareAndSet(null, importFuture);
+              runCount.incrementAndGet();
+              return importFuture;
+            });
+
+    scheduler = new ZeebeImportScheduler(List.of(mediator), mock(ZeebeConfigDto.class));
+
+    // when
+    scheduler.startImportScheduling();
+
+    // then
+    await()
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> assertThat(runCount.get()).isEqualTo(1));
+    await()
+        .pollDelay(Duration.ZERO)
+        .pollInterval(Duration.ofMillis(10))
+        .during(Duration.ofMillis(50))
+        .atMost(Duration.ofMillis(150))
+        .untilAsserted(() -> assertThat(runCount.get()).isEqualTo(1));
+
+    firstRunFuture.get().complete(null);
+    await()
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> assertThat(runCount.get()).isEqualTo(2));
+  }
+
+  @Test
+  void shouldRescheduleMediatorAfterFutureCompletesExceptionally() {
+    // given
+    final AtomicInteger runCount = new AtomicInteger(0);
+    final AtomicReference<CompletableFuture<Void>> firstRunFuture = new AtomicReference<>();
+
+    final ImportMediator mediator = mock(ImportMediator.class);
+    when(mediator.getBackoffTimeInMs()).thenReturn(0L);
+    when(mediator.runImport())
+        .thenAnswer(
+            inv -> {
+              final CompletableFuture<Void> importFuture = new CompletableFuture<>();
+              firstRunFuture.compareAndSet(null, importFuture);
+              runCount.incrementAndGet();
+              return importFuture;
+            });
+
+    scheduler = new ZeebeImportScheduler(List.of(mediator), mock(ZeebeConfigDto.class));
+
+    // when
+    scheduler.startImportScheduling();
+
+    // then
+    await()
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> assertThat(runCount.get()).isEqualTo(1));
+    firstRunFuture.get().completeExceptionally(new RuntimeException("simulated async failure"));
+    await()
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> assertThat(runCount.get()).isEqualTo(2));
   }
 
   @Test

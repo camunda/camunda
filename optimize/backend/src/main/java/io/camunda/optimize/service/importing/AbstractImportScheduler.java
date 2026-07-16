@@ -9,6 +9,7 @@ package io.camunda.optimize.service.importing;
 
 import io.camunda.optimize.dto.optimize.SchedulerConfig;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -90,11 +91,21 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> {
 
   private void runMediatorAndReschedule(final ImportMediator mediator) {
     try {
-      mediator.runImport();
+      final CompletableFuture<Void> importFuture = mediator.runImport();
+      importFuture.whenComplete(
+          (result, throwable) -> {
+            if (throwable != null) {
+              LOG.error(
+                  "Was not able to execute import of [{}]",
+                  mediator.getClass().getSimpleName(),
+                  throwable);
+            }
+            rescheduleMediator(mediator);
+          });
     } catch (final Exception e) {
       LOG.error("Was not able to execute import of [{}]", mediator.getClass().getSimpleName(), e);
+      rescheduleMediator(mediator);
     }
-    rescheduleMediator(mediator);
   }
 
   private void rescheduleMediator(final ImportMediator mediator) {
