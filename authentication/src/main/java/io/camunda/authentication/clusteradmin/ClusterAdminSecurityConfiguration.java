@@ -9,7 +9,6 @@ package io.camunda.authentication.clusteradmin;
 
 import static io.camunda.security.spring.security.CamundaSecurityFilterChainConstants.ORDER_WEBAPP_API;
 
-import io.camunda.authentication.config.spi.SecurityPathAdapter;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -121,10 +120,10 @@ public class ClusterAdminSecurityConfiguration {
         .formLogin(AbstractHttpConfigurer::disable)
         .anonymous(AbstractHttpConfigurer::disable)
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.NEVER))
-        .requestCache(cache -> cache.requestCache(new NullRequestCache()));
+        .requestCache(cache -> cache.requestCache(new NullRequestCache()))
+        // Stateless per-request Basic auth: no session, no CSRF surface, so disable it explicitly.
+        .csrf(AbstractHttpConfigurer::disable);
 
-    SecurityFilterChainSupport.applyCsrfConfiguration(
-        http, properties, SecurityPathAdapter.INSTANCE);
     SecurityFilterChainSupport.setupSecureHeaders(http, properties.getHttpHeaders());
 
     return http.build();
