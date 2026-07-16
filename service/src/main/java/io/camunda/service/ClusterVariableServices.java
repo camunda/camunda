@@ -58,6 +58,7 @@ public final class ClusterVariableServices
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
             .setMetadata(toDirectBufferMetadata(request.metadata()))
+            .setKind(request.kind())
             .setGlobalScope(),
         authentication);
   }
@@ -69,6 +70,7 @@ public final class ClusterVariableServices
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
             .setMetadata(toDirectBufferMetadata(request.metadata()))
+            .setKind(request.kind())
             .setTenantScope(request.tenantId()),
         authentication);
   }
@@ -158,5 +160,9 @@ public final class ClusterVariableServices
   }
 
   public record ClusterVariableRequest(
-      String name, Object value, String tenantId, Map<String, Object> metadata) {}
+      String name,
+      Object value,
+      String tenantId,
+      Map<String, Object> metadata,
+      io.camunda.zeebe.protocol.record.value.ClusterVariableKind kind) {}
 }
