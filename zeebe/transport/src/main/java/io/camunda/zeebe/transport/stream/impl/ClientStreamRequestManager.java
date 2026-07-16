@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
@@ -182,6 +184,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
                       Function.identity(),
                       serverId,
                       true);
+                  dualSendIfDefaultTenant(physicalTenantId, StreamTopics.REMOVE, payload, serverId);
                   purgeRegistration(streamId, serverId);
                 }));
   }
@@ -206,6 +209,8 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     }
 
     final var payload = BufferUtil.bufferAsArray(request);
+    dualSendIfDefaultTenant(
+        registration.physicalTenantId(), StreamTopics.ADD, payload, registration.serverId());
     sendAddRequest(registration, payload);
   }
 
@@ -222,6 +227,8 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
     final var request = new RemoveStreamRequest().streamId(registration.streamId());
     final var payload = BufferUtil.bufferAsArray(request);
+    dualSendIfDefaultTenant(
+        registration.physicalTenantId(), StreamTopics.REMOVE, payload, registration.serverId());
 
     final var pendingRequest = registration.pendingRequest();
     if (pendingRequest == null) {
@@ -442,5 +449,19 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         Function.identity(),
         brokerId,
         true);
+    dualSendIfDefaultTenant(
+        physicalTenantId, StreamTopics.REMOVE_ALL, REMOVE_ALL_REQUEST, brokerId);
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void dualSendIfDefaultTenant(
+      final String physicalTenantId,
+      final StreamTopics topic,
+      final byte[] payload,
+      final MemberId serverId) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      return;
+    }
+    communicationService.unicast(topic.dualTopic(), payload, Function.identity(), serverId, true);
   }
 }

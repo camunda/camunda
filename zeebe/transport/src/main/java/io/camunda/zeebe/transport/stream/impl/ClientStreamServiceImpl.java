@@ -151,12 +151,22 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
 
   private void registerRestartHandler(final String physicalTenantId) {
     if (registeredRestartPhysicalTenants.add(physicalTenantId)) {
-      communicationService.replyTo(
-          StreamTopics.RESTART_STREAMS.topic(physicalTenantId),
-          Function.identity(),
-          (sender, payload) -> apiHandler.handleRestartRequest(sender, physicalTenantId, payload),
-          Function.identity(),
-          actor::run);
+      registerRestartTopicHandler(
+          StreamTopics.RESTART_STREAMS.topic(physicalTenantId), physicalTenantId);
+
+      if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+        // Rolling-upgrade compat; remove alongside the legacy topic in 8.11.
+        registerRestartTopicHandler(StreamTopics.RESTART_STREAMS.dualTopic(), physicalTenantId);
+      }
     }
+  }
+
+  private void registerRestartTopicHandler(final String topic, final String physicalTenantId) {
+    communicationService.replyTo(
+        topic,
+        Function.identity(),
+        (sender, payload) -> apiHandler.handleRestartRequest(sender, physicalTenantId, payload),
+        Function.identity(),
+        actor::run);
   }
 }

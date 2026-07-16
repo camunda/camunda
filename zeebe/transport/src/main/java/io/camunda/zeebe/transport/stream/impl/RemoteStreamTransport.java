@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
@@ -65,31 +67,33 @@ public final class RemoteStreamTransport<M> extends Actor {
 
   @Override
   protected void onActorStarting() {
-    transport.replyTo(
+    registerTopicHandlers(
         StreamTopics.ADD.topic(physicalTenantId),
-        MessageUtil::parseAddRequest,
-        requestHandler::add,
-        BufferUtil::bufferAsArray,
-        actor::run);
-    transport.replyTo(
         StreamTopics.REMOVE.topic(physicalTenantId),
-        MessageUtil::parseRemoveRequest,
-        requestHandler::remove,
-        BufferUtil::bufferAsArray,
-        actor::run);
-    transport.replyTo(
-        StreamTopics.REMOVE_ALL.topic(physicalTenantId),
-        Function.identity(),
-        this::onRemoveAll,
-        Function.identity(),
-        actor::run);
+        StreamTopics.REMOVE_ALL.topic(physicalTenantId));
+
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      // Rolling-upgrade compat; remove alongside the legacy topic in 8.11.
+      registerTopicHandlers(
+          StreamTopics.ADD.dualTopic(),
+          StreamTopics.REMOVE.dualTopic(),
+          StreamTopics.REMOVE_ALL.dualTopic());
+    }
   }
 
   @Override
   protected void onActorClosing() {
-    transport.unsubscribe(StreamTopics.ADD.topic(physicalTenantId));
-    transport.unsubscribe(StreamTopics.REMOVE.topic(physicalTenantId));
-    transport.unsubscribe(StreamTopics.REMOVE_ALL.topic(physicalTenantId));
+    unsubscribeTopics(
+        StreamTopics.ADD.topic(physicalTenantId),
+        StreamTopics.REMOVE.topic(physicalTenantId),
+        StreamTopics.REMOVE_ALL.topic(physicalTenantId));
+
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      unsubscribeTopics(
+          StreamTopics.ADD.dualTopic(),
+          StreamTopics.REMOVE.dualTopic(),
+          StreamTopics.REMOVE_ALL.dualTopic());
+    }
     requestHandler.close();
   }
 
@@ -105,7 +109,55 @@ public final class RemoteStreamTransport<M> extends Actor {
   public CompletableFuture<Void> restartStreams(final MemberId receiver) {
     final var completed = new CompletableFuture<Void>();
     sendRestartStreamsRequest(receiver, completed, INITIAL_RETRY_DELAY_MS);
+    sendDualRestartStreamsRequest(receiver);
     return completed;
+  }
+
+  private void registerTopicHandlers(
+      final String addTopic, final String removeTopic, final String removeAllTopic) {
+    transport.replyTo(
+        addTopic,
+        MessageUtil::parseAddRequest,
+        requestHandler::add,
+        BufferUtil::bufferAsArray,
+        actor::run);
+    transport.replyTo(
+        removeTopic,
+        MessageUtil::parseRemoveRequest,
+        requestHandler::remove,
+        BufferUtil::bufferAsArray,
+        actor::run);
+    transport.replyTo(
+        removeAllTopic, Function.identity(), this::onRemoveAll, Function.identity(), actor::run);
+  }
+
+  private void unsubscribeTopics(
+      final String addTopic, final String removeTopic, final String removeAllTopic) {
+    transport.unsubscribe(addTopic);
+    transport.unsubscribe(removeTopic);
+    transport.unsubscribe(removeAllTopic);
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void sendDualRestartStreamsRequest(final MemberId receiver) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      return;
+    }
+
+    transport
+        .send(
+            StreamTopics.RESTART_STREAMS.dualTopic(),
+            ArrayUtil.EMPTY_BYTE_ARRAY,
+            Function.identity(),
+            Function.identity(),
+            receiver,
+            REQUEST_TIMEOUT)
+        .exceptionallyAsync(
+            error -> {
+              LOG.trace("Failed to restart streams for dual topic member '{}'", receiver, error);
+              return null;
+            },
+            actor);
   }
 
   private void sendRestartStreamsRequest(

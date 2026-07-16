@@ -26,9 +26,15 @@ public enum StreamTopics {
 
   public String topic(final String physicalTenantId) {
     Objects.requireNonNull(physicalTenantId, "physicalTenantId must not be null");
+    // remove this condition that leads to legacy topic in 8.11
     if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       return topic;
     }
     return physicalTenantId + "-" + topic;
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  public String dualTopic() {
+    return DEFAULT_PHYSICAL_TENANT_ID + "-" + topic;
   }
 }
