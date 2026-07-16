@@ -35,6 +35,7 @@ Protocol record (msgpack / engine state)
 ### 1. Protocol layer (`zeebe/protocol` + `zeebe/protocol-impl`)
 
 **New enum** `ClusterVariableKind` at `io.camunda.zeebe.protocol.record.value.ClusterVariableKind`:
+
 ```java
 public enum ClusterVariableKind {
   JSON,
@@ -45,11 +46,13 @@ public enum ClusterVariableKind {
 No `UNSPECIFIED` sentinel — the protocol record's default is `JSON`, so old records without a `kind` field deserialize as `JSON` automatically.
 
 `ClusterVariableRecordValue` gains:
+
 ```java
 ClusterVariableKind getKind();
 ```
 
 `ClusterVariableRecord` (protocol-impl) gains a new `EnumProperty`:
+
 ```java
 private final EnumProperty<ClusterVariableKind> kindProp =
     new EnumProperty<>(KIND_KEY, ClusterVariableKind.class, ClusterVariableKind.JSON);
@@ -74,6 +77,7 @@ No changes. `ClusterVariableInstance` wraps the full `ClusterVariableRecord` as 
 ### 4. Secondary storage — ES/OS
 
 **`ClusterVariableKind`** enum added to `webapps-schema` at `io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind`:
+
 ```java
 public enum ClusterVariableKind {
   JSON, SECRET_REFERENCE;
@@ -89,15 +93,18 @@ public enum ClusterVariableKind {
 ```
 
 **`ClusterVariableEntity`** (webapps-schema) gains:
+
 ```java
 @SinceVersion(value = "8.10.0", requireDefault = false)
 private ClusterVariableKind kind;
 ```
+
 With getter + setter.
 
 **`ClusterVariableIndex`** gains `public static final String KIND = "kind"`.
 
 **ES/OS index mappings** (`camunda-cluster-variable.json` for both ES and OS) gain:
+
 ```json
 "kind": { "type": "keyword" }
 ```
@@ -114,6 +121,7 @@ With getter + setter.
 - `update` statement is NOT changed (kind is immutable)
 
 **Liquibase changeset** (added to `8.10.0.xml`):
+
 ```xml
 <changeSet id="add_kind_to_cluster_variable" author="camunda">
   <addColumn tableName="${prefix}CLUSTER_VARIABLE">
@@ -129,6 +137,7 @@ Also add an index on KIND for filter performance.
 ### 6. Search domain
 
 **`ClusterVariableKind`** enum added at `io.camunda.search.entities.ClusterVariableKind`:
+
 ```java
 public enum ClusterVariableKind { JSON, SECRET_REFERENCE; }
 ```
@@ -138,6 +147,7 @@ public enum ClusterVariableKind { JSON, SECRET_REFERENCE; }
 **`ClusterVariableFilter`** gains `List<Operation<String>> kindOperations` (parallel to `scopeOperations`). Builder gains `kinds()` and `kindOperations()` methods.
 
 **`ClusterVariableEntityTransformer`**: maps `value.getKind()` with null-default fallback:
+
 ```java
 final var kind = value.getKind() != null
     ? ClusterVariableKind.valueOf(value.getKind().name())
@@ -151,6 +161,7 @@ final var kind = value.getKind() != null
 ### 7. REST API — OpenAPI spec (`cluster-variables.yaml`)
 
 New schema components:
+
 ```yaml
 ClusterVariableKindEnum:
   type: string
@@ -199,6 +210,7 @@ AdvancedClusterVariableKindFilter:
 - `ClusterVariableKindPropertyImpl` implementation
 
 **`ClusterVariableFilter`** API interface gains:
+
 ```java
 ClusterVariableFilter kind(ClusterVariableKind kind);
 ClusterVariableFilter kind(Consumer<ClusterVariableKindProperty> fn);
@@ -207,6 +219,7 @@ ClusterVariableFilter kind(Consumer<ClusterVariableKindProperty> fn);
 **`ClusterVariableFilterImpl`** implements both.
 
 **`GloballyScopedClusterVariableCreationCommandStep1`** gains:
+
 ```java
 GloballyScopedClusterVariableCreationCommandStep1 kind(ClusterVariableKind kind);
 ```
@@ -221,29 +234,30 @@ Both create impls pass `kind` to the REST request body.
 
 ## Backwards compatibility
 
-| Layer | Old state | Migration |
-|-------|-----------|-----------|
-| Engine (msgpack) | Old records have no `kind` field | `EnumProperty` default `JSON` — reads as `JSON` automatically |
-| ES/OS documents | Old documents have no `kind` field | `@JsonIgnoreProperties(ignoreUnknown=true)` + null→JSON fallback in transformer |
-| RDBMS rows | Old rows have no `KIND` column | Liquibase `addColumn` with `defaultValue="JSON"` |
+|      Layer       |             Old state              |                                    Migration                                    |
+|------------------|------------------------------------|---------------------------------------------------------------------------------|
+| Engine (msgpack) | Old records have no `kind` field   | `EnumProperty` default `JSON` — reads as `JSON` automatically                   |
+| ES/OS documents  | Old documents have no `kind` field | `@JsonIgnoreProperties(ignoreUnknown=true)` + null→JSON fallback in transformer |
+| RDBMS rows       | Old rows have no `KIND` column     | Liquibase `addColumn` with `defaultValue="JSON"`                                |
 
 ## Files changed (summary)
 
 ~33 files across 11 modules:
 
-| Module | Files |
-|--------|-------|
-| `zeebe/protocol` | `ClusterVariableKind.java` (new), `ClusterVariableRecordValue.java` |
-| `zeebe/protocol-impl` | `ClusterVariableRecord.java` |
-| `zeebe/gateway` (broker requests) | `BrokerCreateClusterVariableRequest.java` |
-| `zeebe/exporters/camunda-exporter` | `ClusterVariableCreatedUpdatedHandler.java` |
-| `zeebe/exporters/rdbms-exporter` | `ClusterVariableExportHandler.java` |
-| `webapps-schema` | `ClusterVariableKind.java` (new), `ClusterVariableEntity.java`, `ClusterVariableIndex.java`, 2× JSON mappings |
-| `search/search-domain` | `ClusterVariableKind.java` (new), `ClusterVariableEntity.java`, `ClusterVariableFilter.java` |
-| `search/search-client-query-transformer` | `ClusterVariableEntityTransformer.java`, `ClusterVariableFilterTransformer.java` |
-| `db/rdbms` | `ClusterVariableDbModel.java`, `ClusterVariableMapper.xml` |
-| `db/rdbms-schema` | `8.10.0.xml` (add changeset) |
-| `zeebe/gateway-protocol` (OpenAPI) | `cluster-variables.yaml` |
-| `gateways/gateway-mapping-http` | `ClusterVariableMapper.java`, `ResponseMapper.java`, `SearchQueryResponseMapper.java`, `SearchQueryFilterMapper.java` |
-| `service` | `ClusterVariableServices.java` |
-| `clients/java` | `ClusterVariableKind.java` (new), `ClusterVariableKindProperty.java` (new), `ClusterVariableKindPropertyImpl.java` (new), `ClusterVariableFilter.java`, `ClusterVariableFilterImpl.java`, `GloballyScopedClusterVariableCreationCommandStep1.java`, `GloballyScopedCreateClusterVariableImpl.java`, `TenantScopedClusterVariableCreationCommandStep1.java`, `TenantScopedCreateClusterVariableImpl.java`, `CreateClusterVariableResponse.java`, `CreateClusterVariableResponseImpl.java` |
+|                  Module                  |                                                                                                                                                                                                                                          Files                                                                                                                                                                                                                                           |
+|------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `zeebe/protocol`                         | `ClusterVariableKind.java` (new), `ClusterVariableRecordValue.java`                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `zeebe/protocol-impl`                    | `ClusterVariableRecord.java`                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `zeebe/gateway` (broker requests)        | `BrokerCreateClusterVariableRequest.java`                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `zeebe/exporters/camunda-exporter`       | `ClusterVariableCreatedUpdatedHandler.java`                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `zeebe/exporters/rdbms-exporter`         | `ClusterVariableExportHandler.java`                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `webapps-schema`                         | `ClusterVariableKind.java` (new), `ClusterVariableEntity.java`, `ClusterVariableIndex.java`, 2× JSON mappings                                                                                                                                                                                                                                                                                                                                                                            |
+| `search/search-domain`                   | `ClusterVariableKind.java` (new), `ClusterVariableEntity.java`, `ClusterVariableFilter.java`                                                                                                                                                                                                                                                                                                                                                                                             |
+| `search/search-client-query-transformer` | `ClusterVariableEntityTransformer.java`, `ClusterVariableFilterTransformer.java`                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `db/rdbms`                               | `ClusterVariableDbModel.java`, `ClusterVariableMapper.xml`                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `db/rdbms-schema`                        | `8.10.0.xml` (add changeset)                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `zeebe/gateway-protocol` (OpenAPI)       | `cluster-variables.yaml`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `gateways/gateway-mapping-http`          | `ClusterVariableMapper.java`, `ResponseMapper.java`, `SearchQueryResponseMapper.java`, `SearchQueryFilterMapper.java`                                                                                                                                                                                                                                                                                                                                                                    |
+| `service`                                | `ClusterVariableServices.java`                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `clients/java`                           | `ClusterVariableKind.java` (new), `ClusterVariableKindProperty.java` (new), `ClusterVariableKindPropertyImpl.java` (new), `ClusterVariableFilter.java`, `ClusterVariableFilterImpl.java`, `GloballyScopedClusterVariableCreationCommandStep1.java`, `GloballyScopedCreateClusterVariableImpl.java`, `TenantScopedClusterVariableCreationCommandStep1.java`, `TenantScopedCreateClusterVariableImpl.java`, `CreateClusterVariableResponse.java`, `CreateClusterVariableResponseImpl.java` |
+
