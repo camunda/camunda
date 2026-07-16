@@ -43,7 +43,7 @@ public final class ProcessInstanceCreationHandler
             log.setAttribute(BPMN_PROCESS_ID, value.getBpmnProcessId())
                 .setAttribute(VERSION, (long) value.getVersion())
                 .setAttribute(DEFINITION_KEY, value.getProcessDefinitionKey())
-                .setAttribute(INSTANCE_KEY, record.getKey())
+                .setAttribute(INSTANCE_KEY, value.getProcessInstanceKey())
                 .setAttribute(ID, value.getTenantId())
                 .setTimestamp(record.getTimestamp(), TimeUnit.MILLISECONDS));
 
