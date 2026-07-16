@@ -31,6 +31,9 @@ import java.util.List;
 public final class AgentInstanceCreateProcessor
     implements TypedRecordProcessor<AgentInstanceRecord> {
 
+  // CAUTION: callers may parse this message to extract the existing agentInstanceKey from the
+  // second '%d'. Wording changes that alter the position of the numeric values are a breaking
+  // contract change — update connector-side parsing logic in sync.
   private static final String ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS =
       "Expected to associate element instance with key '%d' with an agent instance, but it is already associated with agent instance with key '%d'.";
 
