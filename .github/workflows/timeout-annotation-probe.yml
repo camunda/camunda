@@ -1,0 +1,80 @@
+name: timeout-annotation-probe
+
+# Throwaway experiment for issue #25831: does GitHub expose the job-timeout
+# annotation ("has exceeded the maximum execution time of N minutes") to the
+# SAME job's `if: always()` cleanup step? And to a downstream job afterwards?
+# Delete this workflow once the question is answered.
+
+# pull_request-triggered so it runs pre-merge on the probe PR and is reviewable.
+# (push triggers are reserved for base branches in this repo; workflow_dispatch
+# can't trigger an unmerged workflow.) Path-filtered so it only fires for itself.
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/timeout-annotation-probe.yml'
+
+jobs:
+  # --- Job A: force a real timeout, then try to read our OWN annotations ---
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1          # job is cancelled after 1 min
+    permissions:
+      actions: read             # needed for the runs/*/jobs API
+      checks: read              # needed for check-run annotations
+    steps:
+      - name: Exceed the timeout on purpose
+        run: sleep 300          # 5 min > 1 min timeout -> job cancelled
+
+      - name: Read our own annotations while finalizing (the real question)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -x
+          echo "job.status as GHA sees it: cancelled expected"
+          # Short bounded poll: the cancellation grace window is small, so do
+          # not sleep long. We want to know if the annotation is there NOW, or
+          # appears within a few seconds.
+          for i in 1 2 3 4 5; do
+            jobs_json=$(gh api \
+              "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" \
+              --paginate 2>/dev/null || echo '{"jobs":[]}')
+
+            check_run_url=$(echo "$jobs_json" \
+              | jq -r --arg n "probe" '.jobs[] | select(.name==$n) | .check_run_url' | head -1)
+            echo "attempt $i: check_run_url=$check_run_url"
+            echo "$jobs_json" | jq -r '.jobs[] | {name, status, conclusion}'
+
+            if [ -n "$check_run_url" ] && [ "$check_run_url" != "null" ]; then
+              check_run_id=$(basename "$check_run_url")
+              echo "--- annotations for check_run $check_run_id (attempt $i) ---"
+              gh api "repos/$GITHUB_REPOSITORY/check-runs/$check_run_id/annotations" \
+                | jq -r '.[] | {annotation_level, message}' || echo "no annotations yet"
+            fi
+            sleep 3
+          done
+
+  # --- Job B: after A concludes, read A's annotations from a downstream job ---
+  # This validates the "separate finalizer job" fallback if mid-job read fails.
+  inspect:
+    needs: [probe]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      checks: read
+    steps:
+      - name: Read the probe job's annotations after it concluded
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -x
+          jobs_json=$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/attempts/$GITHUB_RUN_ATTEMPT/jobs" --paginate)
+          echo "$jobs_json" | jq -r '.jobs[] | {name, status, conclusion, check_run_url}'
+          check_run_url=$(echo "$jobs_json" \
+            | jq -r '.jobs[] | select(.name=="probe") | .check_run_url' | head -1)
+          check_run_id=$(basename "$check_run_url")
+          echo "--- probe annotations from downstream job ---"
+          gh api "repos/$GITHUB_REPOSITORY/check-runs/$check_run_id/annotations" \
+            | jq -r '.[] | {annotation_level, message}'
