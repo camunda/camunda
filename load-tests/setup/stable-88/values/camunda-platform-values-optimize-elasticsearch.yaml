@@ -25,9 +25,6 @@ orchestration:
   # Secondary storage configuration is not configured here, but in the
   # Elasticsearch/OpenSearch values file.
   env:
-    - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
-      value: "1"
-
     ## The values below are duplicated from
     ## camunda-platform-values-defaults.yaml. Keep them in sync.
     # Enable JSON logging for google cloud stackdriver

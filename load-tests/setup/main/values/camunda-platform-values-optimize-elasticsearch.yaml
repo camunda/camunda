@@ -1,8 +1,7 @@
-# Elasticsearch values for Camunda Platform Chart.
+# Optimize Elasticsearch values for Camunda Platform Chart.
 # https://github.com/camunda/camunda-platform-helm
 #
-# This configures Elasticsearch when it's used fr Optimize, but NOT as the Camunda secondary storage.
-# storage.
+# This configures Elasticsearch when it's used for Optimize.
 #
 # For the Elasticsearch as secondary storage configuration, see the
 # "camunda-platform-values-elasticsearch.yaml" file.
@@ -18,6 +17,9 @@ orchestration:
   # Secondary storage configuration is not configured here, but in the
   # Elasticsearch/OpenSearch/RDBMS-specific values file.
   env:
+    # We need to configure the Elasticsearch/OpenSearch exporter to use 1 replica for the index,
+    # otherwise it is vulnerable to node restarts
+    # ES/OS exporter configuration is bound to the Optimize usage
     - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_NUMBEROFREPLICAS
       value: "1"
 

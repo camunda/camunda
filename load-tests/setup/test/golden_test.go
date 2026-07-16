@@ -33,6 +33,9 @@ var update = flag.Bool("update-golden", false,
 // PhysicalTenants, when true, passes physical_tenants=true to the platform
 // template target. Only supported for rdbms secondary_storage (main version only).
 //
+// PlatformOnly, when true, renders only the platform chart. Use it for
+// scenarios whose assertions are scoped to platform-only templates.
+//
 // PathFilter, when set, restricts golden comparison (and, under
 // -update-golden, what gets committed) to rendered manifest paths with one of
 // these prefixes, relative to each chart's own output tree — e.g.
@@ -51,6 +54,7 @@ type scenario struct {
 	Workload        string // "" = default profile; e.g. "max", "realistic"
 	SetupTarget     string // named make target for template-load-test-setup variants
 	PhysicalTenants bool
+	PlatformOnly    bool
 	PathFilter      []string
 }
 
@@ -72,7 +76,15 @@ type versionedScenario struct {
 // regenerated when that file changes.
 var defaultScenarios = []scenario{
 	{Name: "elasticsearch", Storage: "elasticsearch", Optimize: true, Stable: false},
+	// no-optimize scenarios only exist to catch the ES/OS exporter/Optimize
+	// interaction bug (see PR #57771) — scoped to the orchestration templates
+	// where that config actually appears, not the full rendered tree.
+	// stable-87 uses the pre-orchestration zeebe template path.
+	{Name: "elasticsearch-no-optimize", Storage: "elasticsearch", Optimize: false, Stable: false,
+		PlatformOnly: true, PathFilter: []string{"templates/orchestration", "templates/zeebe"}},
 	{Name: "opensearch", Storage: "opensearch", Optimize: true, Stable: false},
+	{Name: "opensearch-no-optimize", Storage: "opensearch", Optimize: false, Stable: false,
+		PlatformOnly: true, PathFilter: []string{"templates/orchestration", "templates/zeebe"}},
 	{Name: "rdbms", Storage: "postgresql", Optimize: false, Stable: false},
 	{Name: "rdbms-optimize", Storage: "postgresql", Optimize: true, Stable: false},
 	{Name: "none", Storage: "none", Optimize: false, Stable: false},
@@ -188,6 +200,9 @@ func TestGoldenFiles(t *testing.T) {
 			}
 
 			renderAndAssert(t, s.Version, s.Name, "platform", ns, platformTarget, "", s.PathFilter, extraVars...)
+			if s.PlatformOnly {
+				return
+			}
 			renderAndAssert(t, s.Version, s.Name, "load-test-setup", ns, "template-load-test-setup", "", s.PathFilter, extraVars...)
 		})
 	}
