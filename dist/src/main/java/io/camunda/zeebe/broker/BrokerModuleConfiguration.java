@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
-import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
@@ -73,7 +72,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
   private final NodeIdProvider nodeIdProvider;
-  private final PhysicalTenantIds physicalTenantIds;
   private final WorkingDirectory workingDirectory;
 
   private Broker broker;
@@ -97,7 +95,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
       final NodeIdProvider nodeIdProvider,
-      final PhysicalTenantIds physicalTenantIds,
       final WorkingDirectory workingDirectory) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
@@ -114,7 +111,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
     this.nodeIdProvider = nodeIdProvider;
-    this.physicalTenantIds = physicalTenantIds;
     this.workingDirectory = workingDirectory;
   }
 
@@ -137,14 +133,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withCluster(cluster)
             .withBrokerClient(brokerClient)
             .withMeterRegistry(meterRegistry)
-            .withPhysicalTenants(physicalTenantResolver.getAll())
+            .withPhysicalTenantResolver(physicalTenantResolver)
             .withUserServicesForTenant(userServicesForTenant)
             .withPasswordEncoder(passwordEncoder)
             .withJwtDecoderFactory(jwtDecoderFactory)
             .withOidcClaimsProviderFactory(oidcClaimsProviderFactory)
             .withSearchClientsProxy(searchClientsProxy)
             .withNodeIdProvider(nodeIdProvider)
-            .withPhysicalTenantIds(physicalTenantIds)
             .withWorkingDirectory(workingDirectory.path())
             .withExporterDescriptors(exporterDescriptors)
             .createSystemContext();
