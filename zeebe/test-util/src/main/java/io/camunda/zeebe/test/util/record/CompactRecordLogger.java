@@ -2020,9 +2020,9 @@ public class CompactRecordLogger {
         .append(shortenKey(value.getProcessInstanceKey()))
         .append(" elementInstanceKey: ")
         .append(shortenKey(value.getElementInstanceKey()))
-        .append(" valueType: ")
+        .append(" ")
         .append(value.getValueType())
-        .append(" intent: ")
+        .append(" ")
         .append(value.getIntent())
         .toString();
   }
