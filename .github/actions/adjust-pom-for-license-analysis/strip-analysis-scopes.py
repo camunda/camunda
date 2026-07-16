@@ -15,28 +15,50 @@ anyway -- but that filter is applied after the graph is generated, too late to
 prevent the crash. Removing them from the POMs up front keeps the generated
 graph small and deterministic while producing identical license results.
 
-Only <dependencies> blocks (top-level and inside <profiles>) are edited.
-<dependencyManagement> entries are never added, removed, or modified -- on
-their own they are just version/scope templates, not graph edges -- but a
-<dependencies> entry that omits <scope> inherits its scope from a matching
-<dependencyManagement> entry (its own, or an ancestor POM's), so this script
-first scans every POM's <dependencyManagement> to build a best-effort
-groupId:artifactId -> scope map, then uses it to resolve scope-less entries.
-This is a heuristic, not real Maven inheritance resolution (it does not
-follow parent/import chains), so if two unrelated POMs manage the same
-coordinate under different scopes, whichever is scanned last wins. That is an
-acceptable approximation here: this script only ever touches an ephemeral CI
-checkout used solely to generate FOSSA's license graph, never a real build.
+Scope resolution
+----------------
+Only <dependencies> blocks (top-level and inside <profiles>) are ever edited.
+<dependencyManagement> entries are never added, removed, or modified: on their
+own they are version/scope templates, not graph edges. But a <dependencies>
+entry that omits <scope> inherits its scope from a matching
+<dependencyManagement> entry, so this script first scans every POM's
+<dependencyManagement> to build a best-effort scope map, then uses it to
+resolve the effective scope of scope-less entries.
+
+The map is keyed by (groupId, artifactId, type, classifier) -- the same
+coordinate Maven uses to match a dependency to its management entry -- so a
+managed `test-jar` never leaks its scope onto a plain `jar`, etc.
+
+This is a heuristic, not full Maven resolution: it does not follow the exact
+parent/import inheritance order. To stay safe it *fails closed*:
+
+* a coordinate managed with a single, consistent scope -> that scope is used;
+* a coordinate managed under two or more DIFFERENT scopes anywhere in the repo
+  -> treated as unknown, so a scope-less entry for it is NEVER stripped;
+* a coordinate not managed anywhere -> unknown -> never stripped
+  (Maven's default scope is `compile`, which we must keep).
+
+In other words the only dependencies removed are those we can positively prove
+are test/provided/system -- when in doubt we keep the dependency. Removing a
+shipped (compile/runtime) dependency would be a license-analysis false
+negative, which must never happen; leaving an extra test dependency in only
+makes the graph marginally larger, which is harmless.
 
 The edit is applied to the ephemeral CI checkout only and is idempotent.
+
+Usage:
+    strip-analysis-scopes.py [ROOT]            # edit POMs in place under ROOT (default ".")
+    strip-analysis-scopes.py --dry-run [ROOT]  # print the removal plan as JSON, change nothing
 """
 
+import json
 import sys
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
 NAMESPACE = "http://maven.apache.org/POM/4.0.0"
 EXCLUDED_SCOPES = {"test", "provided", "system"}
+DEFAULT_TYPE = "jar"
 
 ET.register_namespace("", NAMESPACE)
 
@@ -45,70 +67,105 @@ def _q(tag: str) -> str:
     return f"{{{NAMESPACE}}}{tag}"
 
 
-def _dependency_containers(root: ET.Element, parent_tag: str):
-    """Yield every <dependencies> found directly under `parent_tag`, at the top level and inside <profiles>."""
-    if parent_tag == "dependencies":
-        top = root.find(_q("dependencies"))
-    else:
-        management = root.find(_q(parent_tag))
-        top = management.find(_q("dependencies")) if management is not None else None
+def _text(element, tag, default=None):
+    child = element.find(_q(tag))
+    if child is None or child.text is None:
+        return default
+    return child.text.strip()
+
+
+def _coordinate(dep: ET.Element):
+    """(groupId, artifactId, type, classifier) -- Maven's dependency management key."""
+    group = _text(dep, "groupId")
+    artifact = _text(dep, "artifactId")
+    if not group or not artifact:
+        return None
+    return (group, artifact, _text(dep, "type", DEFAULT_TYPE), _text(dep, "classifier", ""))
+
+
+def _dependency_blocks(root: ET.Element, parent_tag: str):
+    """Yield every <dependencies> under `parent_tag`, at the top level and inside <profiles>."""
+
+    def under(node):
+        if parent_tag == "dependencies":
+            return node.find(_q("dependencies"))
+        management = node.find(_q(parent_tag))
+        return management.find(_q("dependencies")) if management is not None else None
+
+    top = under(root)
     if top is not None:
         yield top
     profiles = root.find(_q("profiles"))
     if profiles is not None:
         for profile in profiles.findall(_q("profile")):
-            if parent_tag == "dependencies":
-                deps = profile.find(_q("dependencies"))
-            else:
-                management = profile.find(_q(parent_tag))
-                deps = management.find(_q("dependencies")) if management is not None else None
-            if deps is not None:
-                yield deps
+            block = under(profile)
+            if block is not None:
+                yield block
 
 
-def _coordinate(dep: ET.Element):
-    group = dep.find(_q("groupId"))
-    artifact = dep.find(_q("artifactId"))
-    if group is None or artifact is None or not (group.text and artifact.text):
-        return None
-    return (group.text.strip(), artifact.text.strip())
+_CONFLICT = object()  # sentinel: coordinate managed under conflicting scopes -> never infer
 
 
-def scan_managed_scopes(trees: dict) -> dict:
-    """Build a best-effort {(groupId, artifactId): scope} map from every <dependencyManagement> block."""
-    managed = {}
+def build_managed_scopes(trees) -> dict:
+    """Best-effort {coordinate: scope} from every <dependencyManagement>, failing closed on conflicts."""
+    managed: dict = {}
     for tree in trees.values():
-        for deps in _dependency_containers(tree.getroot(), "dependencyManagement"):
-            for dep in deps.findall(_q("dependency")):
+        for block in _dependency_blocks(tree.getroot(), "dependencyManagement"):
+            for dep in block.findall(_q("dependency")):
                 coordinate = _coordinate(dep)
-                scope = dep.find(_q("scope"))
-                if coordinate and scope is not None and (scope.text or "").strip():
-                    managed[coordinate] = scope.text.strip()
+                scope = _text(dep, "scope")
+                if not coordinate or not scope:
+                    continue
+                existing = managed.get(coordinate, None)
+                if existing is None:
+                    managed[coordinate] = scope
+                elif existing is not _CONFLICT and existing != scope:
+                    managed[coordinate] = _CONFLICT  # fail closed
     return managed
 
 
-def strip_pom(tree: ET.ElementTree, managed_scopes: dict) -> int:
-    removed = 0
-    for deps in _dependency_containers(tree.getroot(), "dependencies"):
-        for dep in list(deps.findall(_q("dependency"))):
-            scope = dep.find(_q("scope"))
-            if scope is not None:
-                effective_scope = (scope.text or "").strip()
-            else:
-                effective_scope = managed_scopes.get(_coordinate(dep))
-            if effective_scope in EXCLUDED_SCOPES:
-                deps.remove(dep)
-                removed += 1
-    return removed
+def _effective_scope(dep: ET.Element, managed: dict):
+    """Explicit <scope> wins; otherwise inherit from management (unless unknown/conflicting)."""
+    explicit = _text(dep, "scope")
+    if explicit is not None:
+        return explicit, "explicit"
+    inherited = managed.get(_coordinate(dep))
+    if inherited is None or inherited is _CONFLICT:
+        return None, "unknown"
+    return inherited, "inherited"
 
 
-def find_poms(root: str):
-    return [p for p in Path(root).rglob("pom.xml") if "target" not in p.parts]
+def plan_removals(trees, managed: dict):
+    """Return {path: [dep_elements_to_remove]} and a JSON-serialisable report."""
+    removals: dict = {}
+    report = []
+    for path, tree in trees.items():
+        for block in _dependency_blocks(tree.getroot(), "dependencies"):
+            for dep in block.findall(_q("dependency")):
+                scope, source = _effective_scope(dep, managed)
+                if scope in EXCLUDED_SCOPES:
+                    removals.setdefault(path, []).append((block, dep))
+                    group, artifact, dtype, classifier = _coordinate(dep)
+                    report.append(
+                        {
+                            "path": str(path),
+                            "groupId": group,
+                            "artifactId": artifact,
+                            "type": dtype,
+                            "classifier": classifier,
+                            "scope": scope,
+                            "source": source,
+                        }
+                    )
+    return removals, report
 
 
-def main(argv: list[str]) -> int:
-    root = argv[0] if argv else "."
-    paths = find_poms(root)
+def main(argv) -> int:
+    dry_run = "--dry-run" in argv
+    positional = [a for a in argv if not a.startswith("--")]
+    root = positional[0] if positional else "."
+
+    paths = [p for p in Path(root).rglob("pom.xml") if "target" not in p.parts]
 
     trees = {}
     failures = 0
@@ -119,16 +176,22 @@ def main(argv: list[str]) -> int:
             print(f"WARN could not parse {path}: {exc}", file=sys.stderr)
             failures += 1
 
-    managed_scopes = scan_managed_scopes(trees)
+    managed = build_managed_scopes(trees)
+    removals, report = plan_removals(trees, managed)
+
+    if dry_run:
+        json.dump(report, sys.stdout, indent=2, sort_keys=True)
+        sys.stdout.write("\n")
+        return 1 if failures else 0
 
     files_touched = 0
     deps_removed = 0
-    for path, tree in trees.items():
-        removed = strip_pom(tree, managed_scopes)
-        if removed:
-            tree.write(path, encoding="UTF-8", xml_declaration=True)
-            files_touched += 1
-            deps_removed += removed
+    for path, pairs in removals.items():
+        for block, dep in pairs:
+            block.remove(dep)
+        trees[path].write(path, encoding="UTF-8", xml_declaration=True)
+        files_touched += 1
+        deps_removed += len(pairs)
 
     print(f"stripped {deps_removed} test/provided/system dependencies from {files_touched} pom.xml file(s)")
     return 1 if failures else 0
