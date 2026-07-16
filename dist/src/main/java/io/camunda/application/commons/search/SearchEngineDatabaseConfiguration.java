@@ -82,17 +82,13 @@ public class SearchEngineDatabaseConfiguration {
         isGatewayEnabled);
   }
 
+  // Still required as an unqualified bean: io.camunda.operate.management.IndicesCheck autowires
+  // a plain SearchEngineConfiguration for the default physical tenant.
   @Bean
   public SearchEngineConfiguration searchEngineConfiguration(
-      final SearchEngineConnectProperties searchEngineConnectProperties,
-      final SearchEngineIndexProperties searchEngineIndexProperties,
-      final SearchEngineRetentionProperties searchEngineRetentionProperties,
-      final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
-    return buildConfiguration(
-        searchEngineConnectProperties,
-        searchEngineIndexProperties,
-        searchEngineRetentionProperties,
-        searchEngineSchemaManagerProperties);
+      @Qualifier("searchEngineConfigurationsByTenant")
+          final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant) {
+    return searchEngineConfigurationsByTenant.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
   }
 
   private static SearchEngineConfiguration convert(final Camunda tenantCamunda) {
