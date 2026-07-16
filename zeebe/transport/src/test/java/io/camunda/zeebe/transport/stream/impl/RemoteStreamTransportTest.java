@@ -19,17 +19,23 @@ import io.atomix.cluster.messaging.MessagingException.RemoteHandlerFailure;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
+import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
 import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -161,6 +167,121 @@ final class RemoteStreamTransportTest {
         .havingRootCause()
         .isInstanceOf(RemoteHandlerFailure.class);
     assertThat(senderBackoffSupplier.recorded).isEmpty();
+  }
+
+  @Test
+  void shouldReplyOnDualAddRemoveAndRemoveAllTopicsForDefaultTenant() {
+    // given
+    final var streamId = UUID.randomUUID();
+    final var senderMemberId = sender.getMembershipService().getLocalMember().id();
+
+    // when / then - ADD
+    final var addRequest =
+        new AddStreamRequest()
+            .streamId(streamId)
+            .streamType(new UnsafeBuffer(BufferUtil.wrapString("foo")))
+            .metadata(new UnsafeBuffer(new byte[Integer.BYTES]));
+    final var addResponse =
+        receiver
+            .getCommunicationService()
+            .send(
+                StreamTopics.ADD.dualTopic(),
+                BufferUtil.bufferAsArray(addRequest),
+                Function.identity(),
+                Function.identity(),
+                senderMemberId,
+                Duration.ofSeconds(5));
+    assertThat(addResponse).succeedsWithin(Duration.ofSeconds(5));
+
+    // when / then - REMOVE
+    final var removeRequest = new RemoveStreamRequest().streamId(streamId);
+    final var removeResponse =
+        receiver
+            .getCommunicationService()
+            .send(
+                StreamTopics.REMOVE.dualTopic(),
+                BufferUtil.bufferAsArray(removeRequest),
+                Function.identity(),
+                Function.identity(),
+                senderMemberId,
+                Duration.ofSeconds(5));
+    assertThat(removeResponse).succeedsWithin(Duration.ofSeconds(5));
+
+    // when / then - REMOVE_ALL
+    final var removeAllResponse =
+        receiver
+            .getCommunicationService()
+            .send(
+                StreamTopics.REMOVE_ALL.dualTopic(),
+                ArrayUtil.EMPTY_BYTE_ARRAY,
+                Function.identity(),
+                Function.identity(),
+                senderMemberId,
+                Duration.ofSeconds(5));
+    assertThat(removeAllResponse).succeedsWithin(Duration.ofSeconds(5));
+  }
+
+  @Test
+  void shouldNotReplyOnDualTopicsForNonDefaultTenant() {
+    // given
+    CloseHelper.quietClose(transport);
+    final var nonDefaultTransport =
+        new RemoteStreamTransport<>(
+            sender.getCommunicationService(),
+            new RemoteStreamApiHandler<>(
+                new RemoteStreamRegistry<>(RemoteStreamMetrics.noop()),
+                buffer -> {
+                  final var data = new TestSerializableData();
+                  data.wrap(buffer, 0, buffer.capacity());
+                  return data;
+                }),
+            senderBackoffSupplier,
+            "tenant1");
+    scheduler.submitActor(nonDefaultTransport).join();
+    try {
+      // when
+      final var addResponse =
+          receiver
+              .getCommunicationService()
+              .send(
+                  StreamTopics.ADD.dualTopic(),
+                  ArrayUtil.EMPTY_BYTE_ARRAY,
+                  Function.identity(),
+                  Function.identity(),
+                  sender.getMembershipService().getLocalMember().id(),
+                  Duration.ofSeconds(5));
+
+      // then - no handler registered on the default-prefixed dual topic for a non-default tenant
+      assertThat(addResponse).failsWithin(Duration.ofSeconds(5));
+    } finally {
+      CloseHelper.quietClose(nonDefaultTransport);
+    }
+  }
+
+  @Test
+  void shouldDualSendRestartStreamsOnDefaultPrefixedTopicForDefaultTenant() {
+    // given
+    final var dualRestartReceived = new AtomicBoolean(false);
+    receiver
+        .getCommunicationService()
+        .replyTo(
+            StreamTopics.RESTART_STREAMS.dualTopic(),
+            Function.identity(),
+            (id, ignored) -> {
+              dualRestartReceived.set(true);
+              return ArrayUtil.EMPTY_BYTE_ARRAY;
+            },
+            Function.identity(),
+            Runnable::run);
+
+    // when
+    final var completed =
+        transport.restartStreams(receiver.getMembershipService().getLocalMember().id());
+
+    // then
+    assertThat(completed).succeedsWithin(Duration.ofSeconds(5));
+    Awaitility.await("until the dual RESTART_STREAMS request is received")
+        .untilTrue(dualRestartReceived);
   }
 
   private Node createNode(final String id) {

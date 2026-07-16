@@ -721,6 +721,60 @@ final class ClientStreamRequestManagerTest {
     assertThat(otherStream.isConnected(serverId)).isTrue();
   }
 
+  @Test
+  void shouldDualSendAddRemoveAndRemoveAllForDefaultTenant() {
+    // given
+    final var serverId = MemberId.anonymous();
+
+    // when - ADD
+    requestManager.add(clientStream, serverId);
+
+    // then - dual-sent on the default-prefixed topic (rolling-upgrade compatibility)
+    verify(mockTransport)
+        .unicast(eq(StreamTopics.ADD.dualTopic()), any(), any(), eq(serverId), anyBoolean());
+
+    // when - REMOVE
+    requestManager.remove(clientStream, serverId);
+
+    // then
+    verify(mockTransport)
+        .unicast(eq(StreamTopics.REMOVE.dualTopic()), any(), any(), eq(serverId), anyBoolean());
+
+    // when - REMOVE_ALL
+    requestManager.removeAll(Map.of(DEFAULT_PHYSICAL_TENANT_ID, Set.of(serverId)));
+
+    // then
+    verify(mockTransport)
+        .unicast(eq(StreamTopics.REMOVE_ALL.dualTopic()), any(), any(), eq(serverId), anyBoolean());
+  }
+
+  @Test
+  void shouldNotDualSendForNonDefaultTenant() {
+    // given
+    final String physicalTenantId = "tenant1";
+    final var tenantStream =
+        new AggregatedClientStream<>(
+            UUID.randomUUID(),
+            new LogicalId<>(
+                new UnsafeBuffer(BufferUtil.wrapString("tenant-foo")), new TestMetadata()),
+            physicalTenantId);
+    tenantStream.open(requestManager, Collections.emptySet());
+    final var serverId = MemberId.anonymous();
+
+    // when
+    requestManager.add(tenantStream, serverId);
+    requestManager.remove(tenantStream, serverId);
+    requestManager.removeAll(Map.of(physicalTenantId, Set.of(serverId)));
+
+    // then - never sent on any default-prefixed dual topic
+    verify(mockTransport, never())
+        .unicast(eq(StreamTopics.ADD.dualTopic()), any(), any(), any(), anyBoolean());
+    verify(mockTransport, never())
+        .unicast(eq(StreamTopics.REMOVE.dualTopic()), any(), any(), any(), anyBoolean());
+    verify(mockTransport, never())
+        .unicast(eq(StreamTopics.REMOVE_ALL.dualTopic()), any(), any(), any(), anyBoolean());
+  }
+
   private static Stream<MessagingException> provideMessagingFailures() {
     return Stream.of(
         new NoSuchMemberException("failed"),
