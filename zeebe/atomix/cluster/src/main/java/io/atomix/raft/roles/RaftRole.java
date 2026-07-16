@@ -28,6 +28,8 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
@@ -108,6 +110,16 @@ public interface RaftRole extends Managed<RaftRole> {
    * @return A completable future to be completed with the request response.
    */
   CompletableFuture<TimeoutNowResponse> onTimeoutNow(TimeoutNowRequest request);
+
+  /**
+   * Handles a coordinated-leadership-transfer initiate request. Only the leader drives the
+   * transfer; other roles reject it and point the coordinator at the leader they know.
+   *
+   * @param request The request to handle.
+   * @return A completable future to be completed with the acknowledgement.
+   */
+  CompletableFuture<LeadershipTransferInitiateResponse> onLeadershipTransferInitiate(
+      LeadershipTransferInitiateRequest request);
 
   /**
    * Handles an append request.

@@ -30,6 +30,10 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
+import io.atomix.raft.protocol.LeadershipTransferResultRequest;
+import io.atomix.raft.protocol.LeadershipTransferResultResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
@@ -138,6 +142,18 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<LeadershipTransferInitiateResponse> leadershipTransferInitiate(
+      final MemberId memberId, final LeadershipTransferInitiateRequest request) {
+    return sendAndReceive(sendingSubject.getLeadershipTransferInitiateSubject(), request, memberId);
+  }
+
+  @Override
+  public CompletableFuture<LeadershipTransferResultResponse> leadershipTransferResult(
+      final MemberId memberId, final LeadershipTransferResultRequest request) {
+    return sendAndReceive(sendingSubject.getLeadershipTransferResultSubject(), request, memberId);
+  }
+
+  @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
     return sendAndReceive(sendingSubject.getPollSubject(), request, memberId);
   }
@@ -179,6 +195,33 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public void unregisterTimeoutNowHandler() {
     unregisterHandler(RaftMessageContext::getTimeoutNowSubject);
+  }
+
+  @Override
+  public void registerLeadershipTransferInitiateHandler(
+      final Function<
+              LeadershipTransferInitiateRequest,
+              CompletableFuture<LeadershipTransferInitiateResponse>>
+          handler) {
+    registerHandler(RaftMessageContext::getLeadershipTransferInitiateSubject, handler);
+  }
+
+  @Override
+  public void unregisterLeadershipTransferInitiateHandler() {
+    unregisterHandler(RaftMessageContext::getLeadershipTransferInitiateSubject);
+  }
+
+  @Override
+  public void registerLeadershipTransferResultHandler(
+      final Function<
+              LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
+          handler) {
+    registerHandler(RaftMessageContext::getLeadershipTransferResultSubject, handler);
+  }
+
+  @Override
+  public void unregisterLeadershipTransferResultHandler() {
+    unregisterHandler(RaftMessageContext::getLeadershipTransferResultSubject);
   }
 
   @Override

@@ -38,6 +38,9 @@ import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateRequest;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
+import io.atomix.raft.protocol.LeadershipTransferResultRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollRequest;
@@ -848,6 +851,145 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     timeoutNowTarget = null;
     timeoutNowAttempts = 0;
     steppedDownDuringTransfer = false;
+  }
+
+  /**
+   * Leader-side composing handler for a coordinated leadership transfer. Runs the pre-checks; on a
+   * failure it acknowledges immediately with the skip result, otherwise it accepts the request and
+   * drives the transfer asynchronously — freeze (pause barrier) → catch the desired leader up to
+   * the frozen index → promote via TimeoutNow — then reports the terminal outcome to the
+   * coordinator. On any failure/timeout/role change the partition is resumed before reporting. The
+   * whole attempt is timed on the transfer-duration metric, labelled with the result.
+   */
+  @Override
+  public CompletableFuture<LeadershipTransferInitiateResponse> onLeadershipTransferInitiate(
+      final LeadershipTransferInitiateRequest request) {
+    raft.checkThread();
+    logRequest(request);
+    final var self = raft.getCluster().getLocalMember().memberId();
+    final var precheck =
+        precheckTransfer(
+            request.desiredLeader(), request.coordinator(), request.coordinatorConfigVersion());
+    if (precheck.isPresent()) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              LeadershipTransferInitiateResponse.builder()
+                  .withStatus(Status.OK)
+                  .withAccepted(false)
+                  .withResult(precheck.get())
+                  .withLeader(self)
+                  .build()));
+    }
+    // Accepted: claim the transfer so a concurrent request is rejected, then drive it and report
+    // the
+    // terminal outcome to the coordinator asynchronously.
+    transferInProgress = true;
+    runCoordinatedTransfer(request);
+    return CompletableFuture.completedFuture(
+        logResponse(
+            LeadershipTransferInitiateResponse.builder()
+                .withStatus(Status.OK)
+                .withAccepted(true)
+                .withLeader(self)
+                .build()));
+  }
+
+  private void runCoordinatedTransfer(final LeadershipTransferInitiateRequest request) {
+    raft.checkThread();
+    final long startMs = System.currentTimeMillis();
+    final var desiredLeader = request.desiredLeader();
+    final var coordinator = request.coordinator();
+    final var resumeTimeout = raft.getRebalanceReplicationTimeout();
+    pauseForCoordinatedTransfer(resumeTimeout)
+        .whenCompleteAsync(
+            (targetIndex, error) -> {
+              if (error != null) {
+                log.warn("Failed to pause partition for transfer to {}", desiredLeader, error);
+                finishCoordinatedTransfer(
+                    coordinator, desiredLeader, LeadershipTransferResult.TRANSFER_FAILED, startMs);
+                return;
+              }
+              awaitDesiredLeaderCaughtUp(desiredLeader, targetIndex, resumeTimeout)
+                  .whenComplete(
+                      (catchUpResult, e) -> {
+                        if (catchUpResult.isPresent()) {
+                          finishCoordinatedTransfer(
+                              coordinator, desiredLeader, catchUpResult.get(), startMs);
+                        } else {
+                          promoteDesiredLeader(desiredLeader)
+                              .whenComplete(
+                                  (promoteResult, e2) ->
+                                      finishCoordinatedTransfer(
+                                          coordinator, desiredLeader, promoteResult, startMs));
+                        }
+                      });
+            },
+            raft.getThreadContext());
+  }
+
+  private void finishCoordinatedTransfer(
+      final MemberId coordinator,
+      final MemberId desiredLeader,
+      final LeadershipTransferResult result,
+      final long startMs) {
+    rebalanceMetrics.observeTransferDuration(
+        result, Duration.ofMillis(System.currentTimeMillis() - startMs));
+    // Undo the pause on any outcome (best-effort: on success leadership has already moved and the
+    // role transition rebuilt the partition unpaused), then report the result to the coordinator.
+    resumeForCoordinatedTransfer()
+        .whenComplete(
+            (ignored, resumeError) -> {
+              if (resumeError != null) {
+                // Cleanup failed: the partition may still be frozen. On a successful transfer this
+                // is moot (leadership already moved and the role transition rebuilds it unpaused);
+                // otherwise the pause watchdog is the safety net and steps the leader down once the
+                // resume deadline passes. Log prominently so a stuck-paused partition is
+                // diagnosable rather than silent.
+                log.error(
+                    "Failed to resume partition after leadership transfer to {} (result {}); "
+                        + "relying on the pause watchdog to recover if still frozen",
+                    desiredLeader,
+                    result,
+                    resumeError);
+              }
+              final var notification =
+                  LeadershipTransferResultRequest.builder()
+                      .withLeader(raft.getCluster().getLocalMember().memberId())
+                      .withDesiredLeader(desiredLeader)
+                      .withResult(result)
+                      .build();
+              raft.getProtocol()
+                  .leadershipTransferResult(coordinator, notification)
+                  .whenComplete(
+                      (ack, notifyError) -> {
+                        if (notifyError != null) {
+                          log.debug(
+                              "Failed to notify coordinator {} of transfer result {}",
+                              coordinator,
+                              result,
+                              notifyError);
+                        }
+                      });
+            });
+  }
+
+  private CompletableFuture<Long> pauseForCoordinatedTransfer(final Duration resumeTimeout) {
+    final var control = raft.getLeadershipTransferPauseControl();
+    if (control != null) {
+      return control.pauseForTransfer(resumeTimeout);
+    }
+    // No broker control registered (e.g. Raft-only tests with no writes to freeze): capture the
+    // frozen index and arm the watchdog directly on the Raft thread.
+    return CompletableFuture.completedFuture(pauseForTransfer(resumeTimeout));
+  }
+
+  private CompletableFuture<Void> resumeForCoordinatedTransfer() {
+    final var control = raft.getLeadershipTransferPauseControl();
+    if (control != null) {
+      return control.resumeFromTransfer();
+    }
+    resumeFromTransfer();
+    return CompletableFuture.completedFuture(null);
   }
 
   /** Ensures the local server is not the leader. */

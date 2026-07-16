@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions;
 
+import io.atomix.raft.LeadershipTransferPauseControl;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.SnapshotReplicationListener;
@@ -35,6 +36,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
@@ -143,6 +145,38 @@ public final class ZeebePartition extends Actor
     // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
     // components.
     context.getComponentHealthMonitor().registerComponent(zeebePartitionHealth);
+    // Register the pause barrier so the leader-side transfer handler in Raft can freeze/unfreeze
+    // this partition (write admission + processing) during a coordinated leadership transfer.
+    // Registered once on the persistent Raft context, so it is available regardless of the
+    // role the partition is in when an initiate request arrives.
+    context.getRaftPartition().getServer().setLeadershipTransferPauseControl(pauseControl);
+  }
+
+  /** Bridges the actor-scheduled pause barrier to the {@link CompletableFuture}-based Raft hook. */
+  private final LeadershipTransferPauseControl pauseControl =
+      new LeadershipTransferPauseControl() {
+        @Override
+        public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+          return toCompletableFuture(ZeebePartition.this.pauseForTransfer(resumeTimeout));
+        }
+
+        @Override
+        public CompletableFuture<Void> resumeFromTransfer() {
+          return toCompletableFuture(ZeebePartition.this.resumeFromTransfer());
+        }
+      };
+
+  private static <T> CompletableFuture<T> toCompletableFuture(final ActorFuture<T> actorFuture) {
+    final var future = new CompletableFuture<T>();
+    actorFuture.onComplete(
+        (result, error) -> {
+          if (error != null) {
+            future.completeExceptionally(error);
+          } else {
+            future.complete(result);
+          }
+        });
+    return future;
   }
 
   @Override

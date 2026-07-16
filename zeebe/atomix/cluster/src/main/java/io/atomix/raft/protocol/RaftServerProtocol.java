@@ -97,6 +97,26 @@ public interface RaftServerProtocol {
   CompletableFuture<TimeoutNowResponse> timeoutNow(MemberId memberId, TimeoutNowRequest request);
 
   /**
+   * Sends a coordinated-leadership-transfer initiate request to the given node.
+   *
+   * @param memberId the node to which to send the request
+   * @param request the request to send
+   * @return a future to be completed with the response
+   */
+  CompletableFuture<LeadershipTransferInitiateResponse> leadershipTransferInitiate(
+      MemberId memberId, LeadershipTransferInitiateRequest request);
+
+  /**
+   * Reports the terminal outcome of a coordinated leadership transfer to the coordinator.
+   *
+   * @param memberId the coordinator to notify
+   * @param request the result to report
+   * @return a future to be completed with the acknowledgement
+   */
+  CompletableFuture<LeadershipTransferResultResponse> leadershipTransferResult(
+      MemberId memberId, LeadershipTransferResultRequest request);
+
+  /**
    * Sends a poll request to the given node.
    *
    * @param memberId the node to which to send the request
@@ -146,6 +166,32 @@ public interface RaftServerProtocol {
 
   /** Unregisters the timeout-now request handler. */
   void unregisterTimeoutNowHandler();
+
+  /**
+   * Registers a coordinated-leadership-transfer initiate request callback.
+   *
+   * @param handler the initiate request handler to register
+   */
+  void registerLeadershipTransferInitiateHandler(
+      Function<
+              LeadershipTransferInitiateRequest,
+              CompletableFuture<LeadershipTransferInitiateResponse>>
+          handler);
+
+  /** Unregisters the leadership-transfer initiate request handler. */
+  void unregisterLeadershipTransferInitiateHandler();
+
+  /**
+   * Registers a coordinated-leadership-transfer result callback on the coordinator.
+   *
+   * @param handler the result request handler to register
+   */
+  void registerLeadershipTransferResultHandler(
+      Function<LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
+          handler);
+
+  /** Unregisters the leadership-transfer result request handler. */
+  void unregisterLeadershipTransferResultHandler();
 
   /**
    * Registers a configure request callback.

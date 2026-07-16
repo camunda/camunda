@@ -24,6 +24,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
+import io.atomix.raft.LeadershipTransferPauseControl;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftException.CommitFailedException;
@@ -45,6 +46,7 @@ import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinResponse;
+import io.atomix.raft.protocol.LeadershipTransferInitiateResponse;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.ProtocolVersionHandler;
@@ -150,6 +152,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private long firstCommitIndex;
   private volatile boolean started;
   private EntryValidator entryValidator;
+  private LeadershipTransferPauseControl leadershipTransferPauseControl;
   // Used for randomizing election timeout
   private final Random random;
   private PersistedSnapshot currentSnapshot;
@@ -374,6 +377,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         request ->
             handleRequestOnContext(
                 request, () -> role.onTimeoutNow(request), TimeoutNowResponse::builder));
+    protocol.registerLeadershipTransferInitiateHandler(
+        request ->
+            handleRequestOnContext(
+                request,
+                () -> role.onLeadershipTransferInitiate(request),
+                LeadershipTransferInitiateResponse::builder));
     protocol.registerAppendV1Handler(
         request ->
             handleRequestOnContext(
@@ -906,6 +915,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     protocol.unregisterLeaveHandler();
     protocol.unregisterTransferHandler();
     protocol.unregisterTimeoutNowHandler();
+    protocol.unregisterLeadershipTransferInitiateHandler();
     protocol.unregisterAppendHandler();
     protocol.unregisterPollHandler();
     protocol.unregisterVoteHandler();
@@ -1015,6 +1025,18 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    */
   public void setEntryValidator(final EntryValidator validator) {
     entryValidator = validator;
+  }
+
+  /**
+   * The broker-supplied control the leader uses to freeze/unfreeze the partition during a
+   * coordinated leadership transfer, or {@code null} when none is registered.
+   */
+  public LeadershipTransferPauseControl getLeadershipTransferPauseControl() {
+    return leadershipTransferPauseControl;
+  }
+
+  public void setLeadershipTransferPauseControl(final LeadershipTransferPauseControl control) {
+    leadershipTransferPauseControl = control;
   }
 
   /**

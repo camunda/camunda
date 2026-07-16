@@ -44,6 +44,12 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
   private Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> timeoutNowHandler;
+  private Function<
+          LeadershipTransferInitiateRequest, CompletableFuture<LeadershipTransferInitiateResponse>>
+      leadershipTransferInitiateHandler;
+  private Function<
+          LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
+      leadershipTransferResultHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> appendHandler;
@@ -160,6 +166,30 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<LeadershipTransferInitiateResponse> leadershipTransferInitiate(
+      final MemberId memberId, final LeadershipTransferInitiateRequest request) {
+    return getServer(memberId)
+        .thenCompose(
+            listener -> intercept(listener, request, LeadershipTransferInitiateRequest.class))
+        .thenCompose(listener -> listener.leadershipTransferInitiate(request))
+        .thenCompose(
+            response -> transformResponse(response, LeadershipTransferInitiateResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
+  public CompletableFuture<LeadershipTransferResultResponse> leadershipTransferResult(
+      final MemberId memberId, final LeadershipTransferResultRequest request) {
+    return getServer(memberId)
+        .thenCompose(
+            listener -> intercept(listener, request, LeadershipTransferResultRequest.class))
+        .thenCompose(listener -> listener.leadershipTransferResult(request))
+        .thenCompose(
+            response -> transformResponse(response, LeadershipTransferResultResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
     return getServer(memberId)
         .thenCompose(listener -> intercept(listener, request, PollRequest.class))
@@ -213,6 +243,33 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   @Override
   public void unregisterTimeoutNowHandler() {
     timeoutNowHandler = null;
+  }
+
+  @Override
+  public void registerLeadershipTransferInitiateHandler(
+      final Function<
+              LeadershipTransferInitiateRequest,
+              CompletableFuture<LeadershipTransferInitiateResponse>>
+          handler) {
+    leadershipTransferInitiateHandler = handler;
+  }
+
+  @Override
+  public void unregisterLeadershipTransferInitiateHandler() {
+    leadershipTransferInitiateHandler = null;
+  }
+
+  @Override
+  public void registerLeadershipTransferResultHandler(
+      final Function<
+              LeadershipTransferResultRequest, CompletableFuture<LeadershipTransferResultResponse>>
+          handler) {
+    leadershipTransferResultHandler = handler;
+  }
+
+  @Override
+  public void unregisterLeadershipTransferResultHandler() {
+    leadershipTransferResultHandler = null;
   }
 
   @Override
@@ -365,6 +422,24 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   CompletableFuture<TimeoutNowResponse> timeoutNow(final TimeoutNowRequest request) {
     if (timeoutNowHandler != null) {
       return timeoutNowHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<LeadershipTransferInitiateResponse> leadershipTransferInitiate(
+      final LeadershipTransferInitiateRequest request) {
+    if (leadershipTransferInitiateHandler != null) {
+      return leadershipTransferInitiateHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<LeadershipTransferResultResponse> leadershipTransferResult(
+      final LeadershipTransferResultRequest request) {
+    if (leadershipTransferResultHandler != null) {
+      return leadershipTransferResultHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }
