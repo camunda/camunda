@@ -57,5 +57,5 @@ public final class ErrorMessages {
   public static final String ERROR_MESSAGE_TOO_MANY_METADATA_ENTRIES =
       "The provided metadata has %d entries but must not exceed %d entries";
   public static final String ERROR_MESSAGE_METADATA_TOO_LARGE =
-      "The provided metadata exceeds the maximum serialized size of %d characters";
+      "The provided metadata exceeds the maximum serialized size of %d bytes";
 }

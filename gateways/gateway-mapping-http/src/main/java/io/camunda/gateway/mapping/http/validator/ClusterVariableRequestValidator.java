@@ -99,10 +99,10 @@ public class ClusterVariableRequestValidator {
     }
     metadata.forEach(
         (key, value) -> {
-          if (value != null && !(value instanceof String) && !(value instanceof Number)) {
+          if (!(value instanceof String) && !(value instanceof Number)) {
             violations.add(
                 ERROR_MESSAGE_INVALID_METADATA_VALUE_TYPE.formatted(
-                    key, value.getClass().getSimpleName()));
+                    key, value == null ? "null" : value.getClass().getSimpleName()));
           }
         });
     if (metadata.size() > MAX_METADATA_ENTRIES) {
@@ -118,7 +118,7 @@ public class ClusterVariableRequestValidator {
 
   private int serializedMetadataLength(final Map<String, Object> metadata) {
     try {
-      return OBJECT_MAPPER.writeValueAsString(metadata).length();
+      return OBJECT_MAPPER.writeValueAsBytes(metadata).length;
     } catch (final Exception e) {
       // metadata values are only strings/numbers by this point in most cases, but if
       // serialization still fails, treat it as oversized rather than throwing.

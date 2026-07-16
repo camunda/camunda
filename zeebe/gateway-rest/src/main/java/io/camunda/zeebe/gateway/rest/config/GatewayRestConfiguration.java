@@ -18,23 +18,12 @@ public class GatewayRestConfiguration {
 
   /**
    * Matches the default length of the {@code CLUSTER_VARIABLE.VAR_NAME} RDBMS column ({@code
-   * NVARCHAR(256)}).
+   * NVARCHAR(256)}) and {@code CLUSTER_VARIABLE.VAR_VALUE} RDBMS column ({@code VARCHAR(8192)}.
    */
-  private static final int MAX_CLUSTER_VARIABLE_METADATA_KEY_LENGTH = 256;
+  private static final int MAX_CLUSTER_VARIABLE_METADATA_ENTRY_LENGTH = 256 + 8192;
 
-  /**
-   * Matches the default length of the {@code CLUSTER_VARIABLE.VAR_VALUE} RDBMS column ({@code
-   * VARCHAR(8192)}, and the {@code ignore_above: 8191} ES/OS mapping limit).
-   */
-  private static final int MAX_CLUSTER_VARIABLE_METADATA_VALUE_LENGTH = 8191;
-
-  /**
-   * Worst case: every entry uses the maximum key and value length allowed by the RDBMS/ES/OS
-   * schemas, up to the maximum number of entries.
-   */
   private static final int DEFAULT_MAX_CLUSTER_VARIABLE_METADATA_SIZE =
-      MAX_CLUSTER_VARIABLE_METADATA_ENTRIES
-          * (MAX_CLUSTER_VARIABLE_METADATA_KEY_LENGTH + MAX_CLUSTER_VARIABLE_METADATA_VALUE_LENGTH);
+      MAX_CLUSTER_VARIABLE_METADATA_ENTRIES * MAX_CLUSTER_VARIABLE_METADATA_ENTRY_LENGTH;
 
   private final JobMetricsConfiguration jobMetrics = new JobMetricsConfiguration();
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
@@ -59,7 +48,7 @@ public class GatewayRestConfiguration {
   }
 
   /**
-   * Maximum allowed length (in characters) of a cluster variable's serialized metadata JSON.
+   * Maximum allowed size (in UTF-8 bytes) of a cluster variable's serialized metadata JSON.
    *
    * <p>Defaults to {@link #DEFAULT_MAX_CLUSTER_VARIABLE_METADATA_SIZE}.
    */

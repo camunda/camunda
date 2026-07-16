@@ -851,8 +851,8 @@ public final class ResponseMapper {
         .name(clusterVariableRecord.getName())
         .scope(scope)
         .tenantId(tenantId)
-        .value(clusterVariableRecord.getValue())
         .metadata(clusterVariableRecord.getMetadata())
+        .value(clusterVariableRecord.getValue())
         .build();
   }
 

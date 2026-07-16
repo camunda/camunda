@@ -283,7 +283,7 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .expectBody()
         .jsonPath("$.detail")
         .isEqualTo(
-            "The provided metadata exceeds the maximum serialized size of %d characters."
+            "The provided metadata exceeds the maximum serialized size of %d bytes."
                 .formatted(TEST_MAX_CLUSTER_VARIABLE_METADATA_SIZE));
   }
 

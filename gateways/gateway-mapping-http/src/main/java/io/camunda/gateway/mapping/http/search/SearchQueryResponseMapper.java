@@ -1656,6 +1656,7 @@ public final class SearchQueryResponseMapper {
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
+        .metadata(toMetadataMap(clusterVariableEntity))
         .value(
             requireNonNull(
                 !truncateValues
@@ -1664,7 +1665,6 @@ public final class SearchQueryResponseMapper {
                 "value"))
         .isTruncated(
             truncateValues && requireNonNull(clusterVariableEntity.isPreview(), "isPreview"))
-        .metadata(toMetadataMap(clusterVariableEntity))
         .build();
   }
 
@@ -1683,8 +1683,8 @@ public final class SearchQueryResponseMapper {
         .name(clusterVariableEntity.name())
         .scope(scope)
         .tenantId(tenantId)
-        .value(requireNonNull(getFullValueIfPresent(clusterVariableEntity), "value"))
         .metadata(toMetadataMap(clusterVariableEntity))
+        .value(requireNonNull(getFullValueIfPresent(clusterVariableEntity), "value"))
         .build();
   }
 

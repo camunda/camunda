@@ -93,11 +93,12 @@ public class ClusterVariableCreatedUpdatedHandler
     final Map<String, Object> metadata = recordValue.getMetadata();
     entity.setMetadata(
         metadata.entrySet().stream()
+            .filter(e -> e.getValue() != null)
             .map(
                 e ->
                     new MetadataEntry(
                         e.getKey(),
-                        e.getValue() == null ? "" : String.valueOf(e.getValue()),
+                        String.valueOf(e.getValue()),
                         e.getValue() instanceof Number n ? n.doubleValue() : null))
             .toList());
   }
