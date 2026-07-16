@@ -9,12 +9,13 @@ package io.camunda.application.commons.secrets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.NoopSecretStore;
-import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
+import io.camunda.secretstore.SecretStoreUnavailableException;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -164,22 +165,21 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
-  void shouldBuildAwsSecretsManagerStoreWhenConfigured() {
-    // given
+  void shouldFailFastWhenAwsSecretsManagerStoreHasNoReachableCredentials() {
+    // given — AwsSecretsManagerSecretStore.fromConfig() validates connectivity/credentials
+    // eagerly, so wiring an aws-secrets-manager store outside a real AWS/LocalStack environment
+    // fails fast here rather than constructing successfully. The happy-path construction (real
+    // credentials, real batching) is covered at the integration level by
+    // AwsSecretsManagerSecretStoreIT, which runs against LocalStack.
     final var resolver =
         resolverFor(
             Map.of(
                 "camunda.secrets.stores.aws.aws-main.region", "eu-west-1",
                 "camunda.secrets.stores.aws.aws-main.path-prefix", "camunda/"));
 
-    // when
-    final var registries = CONFIG.secretStoreRegistries(resolver);
-
-    // then
-    final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    assertThat(registry.getStores()).containsKey("aws-main");
-    assertThat(registry.getStores().get("aws-main"))
-        .isInstanceOf(AwsSecretsManagerSecretStore.class);
+    // when / then
+    assertThatThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .isInstanceOf(SecretStoreUnavailableException.class);
   }
 
   @Test
