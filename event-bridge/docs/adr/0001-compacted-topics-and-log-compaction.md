@@ -37,9 +37,11 @@ Add a per-topic cleanup policy, `DELETE` (today's retention) or `COMPACT`, and i
 compaction as a **deterministic, replica-local background pass whose atomic commit point is the
 partition's Raft snapshot**.
 
-1. **Keyed records.** A `KEYED` batch attribute changes entry framing from `[len][data]` to
-   `[keyLen][key][len][data]`, covered by the existing batch CRC. A keyed record with an empty
-   value is a tombstone. Publishing un-keyed batches to a compacted topic is rejected at
+1. **Keyed records.** Entry framing already carries an unconditional `keyLength` field
+   (`[entryLength][keyLength][key][value]`, `keyLength == 0` meaning no key), inside the existing
+   batch CRC. What compaction adds is semantics: a `KEYED` batch attribute declares that keys are
+   meaningful for latest-per-key retention, and a keyed entry with an empty value is a tombstone.
+   Publishing batches without the `KEYED` attribute to a compacted topic is rejected at
    validation. The producer API gains a keyed publish variant.
 2. **Topic flag in the metadata plane.** `TopicMetadata` carries the cleanup policy; it flows
    through the topic record, create/validate/apply, the query service, and declarative topic
