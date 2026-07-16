@@ -635,6 +635,22 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final ProcessInstanceSelector processInstanceSelector,
       final ElementSelector elementSelector,
       final Map<String, Object> variables) {
+    setVariablesOnElementInstance(processInstanceSelector, elementSelector, variables, false);
+  }
+
+  @Override
+  public void createLocalVariables(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables) {
+    setVariablesOnElementInstance(processInstanceSelector, elementSelector, variables, true);
+  }
+
+  private void setVariablesOnElementInstance(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables,
+      final boolean local) {
     final CamundaClient client = createClient();
 
     awaitProcessInstance(
@@ -647,7 +663,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                 client,
                 ei -> {
                   LOGGER.debug(
-                      "Update local variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
+                      "{} variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
+                      local ? "Create local" : "Update local",
                       elementSelector.describe(),
                       ei.getElementInstanceKey(),
                       pi.getProcessInstanceKey(),
@@ -656,6 +673,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                   client
                       .newSetVariablesCommand(ei.getElementInstanceKey())
                       .variables(variables)
+                      .local(local)
                       .send()
                       .join();
                 }));

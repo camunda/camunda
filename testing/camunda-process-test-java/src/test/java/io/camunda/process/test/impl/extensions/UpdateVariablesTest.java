@@ -163,7 +163,50 @@ public class UpdateVariablesTest {
           variables);
 
       // then
-      verify(camundaClient.newSetVariablesCommand(ELEMENT_INSTANCE_KEY).variables(variables))
+      verify(
+              camundaClient
+                  .newSetVariablesCommand(ELEMENT_INSTANCE_KEY)
+                  .variables(variables)
+                  .local(false))
+          .send();
+    }
+
+    @Test
+    void shouldCreateLocalVariables() {
+      // given
+      final Map<String, Object> variables = Collections.singletonMap("localVar", "localValue");
+
+      when(camundaClient
+              .newProcessInstanceSearchRequest()
+              .filter(processInstanceFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.singletonList(processInstance));
+
+      when(elementInstance.getElementInstanceKey()).thenReturn(ELEMENT_INSTANCE_KEY);
+      when(elementInstance.getElementId()).thenReturn(ELEMENT_ID);
+
+      when(camundaClient
+              .newElementInstanceSearchRequest()
+              .filter(elementInstanceFilterCaptor.capture())
+              .send()
+              .join()
+              .items())
+          .thenReturn(Collections.singletonList(elementInstance));
+
+      // when
+      camundaProcessTestContext.createLocalVariables(
+          ProcessInstanceSelectors.byProcessId(PROCESS_DEFINITION_ID),
+          ElementSelectors.byId(ELEMENT_ID),
+          variables);
+
+      // then
+      verify(
+              camundaClient
+                  .newSetVariablesCommand(ELEMENT_INSTANCE_KEY)
+                  .variables(variables)
+                  .local(true))
           .send();
     }
 
