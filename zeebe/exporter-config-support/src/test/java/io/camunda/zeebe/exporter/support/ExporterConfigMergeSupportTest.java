@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -113,6 +114,28 @@ final class ExporterConfigMergeSupportTest {
     // then
     assertThat(merged)
         .containsOnly(Map.entry("url", "http://root:9200"), Map.entry("indexprefix", "tenant"));
+  }
+
+  @Test
+  void shouldNormalizeIndexedListPropertiesFromRelaxedBinding() {
+    // given — Spring Boot's relaxed binding of "hosts[0]=a, hosts[1]=b" as a numeric-keyed map
+    final Map<String, Object> rootArgs = Map.of("hosts", Map.of("0", "a", "1", "b"));
+
+    // when
+    final var normalized = ExporterConfigMergeSupport.normalize(SampleConfig.class, rootArgs);
+
+    // then — recursed into as if it were a real list, values normalized element-wise
+    assertThat(normalized).containsEntry("hosts", Map.of("0", "a", "1", "b"));
+  }
+
+  @Test
+  void shouldRejectListPropertyWithMixedIndexedAndNamedKeys() {
+    // given — a map targeting a collection property that mixes numeric and named keys
+    final Map<String, Object> rootArgs = Map.of("hosts", Map.of("0", "a", "extra", "b"));
+
+    // when / then
+    assertThatThrownBy(() -> ExporterConfigMergeSupport.normalize(SampleConfig.class, rootArgs))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
