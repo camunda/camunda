@@ -138,8 +138,46 @@ Repo rules: never inline FQNs; no Kafka/KIP names in comments or javadoc (descri
 our own vocabulary — "static membership takeover", not the KIP number); JUnit 5 + AssertJ +
 should… + given/when/then.
 
+## Phase 2 — consumer-client metrics (the deferred phase 4 of the monitoring spec)
+
+After the takeover lands, instrument the client along the SAME pattern this repo's flagship
+Java client uses for job workers — read
+`clients/java/src/main/java/io/camunda/client/api/worker/JobWorkerMetrics.java` and
+`metrics/MicrometerJobWorkerMetricsBuilder.java` first; that is the precedent to copy, not to
+improve upon:
+
+1. A dependency-free `ConsumerMetrics` interface in `event-bridge-client`, next to the existing
+   `RebalanceListener`, with NO-OP DEFAULTS for every method — the client calls it
+   unconditionally and never sees Micrometer:
+   - `onRebalance(int revoked, int assigned)` — the owned-partitions change path
+     (`GroupCoordinator.applyOwnedPartitions` / `notifyRebalance`, ~lines 548/570)
+   - `onHeartbeatFailure()` — the heartbeat error branches (`scheduleSendHeartbeat`
+     whenComplete error path ~line 240, `onHeartbeatResponse` error branch ~line 296)
+   - `onFencedRejoin()` and `onRejoinRejected()` — the fenced-rejoin path (~lines 312-330);
+     count the HTTP-409 rejection separately from a successful fenced rejoin
+   - `onEpochChanged(long memberEpoch)` — wherever the volatile `memberEpoch` (~line 77) is
+     written (`applyJoinResponse` ~line 171 and the heartbeat/rejoin paths). A CALLBACK, not a
+     gauge: gauges are the adapter's business.
+2. Thread it through consumer construction (builder/subscribe parameter defaulting to the
+   no-op instance) — an ADDITIVE public-API change, same shape as the SDK's
+   `JobWorkerBuilderStep3.metrics(...)`.
+3. The Micrometer adapter lives in `event-bridge-streaming` (already depends on Micrometer;
+   `StreamRuntime.subscribeWithRetry` holds the registry): meters `eb.consumer.rebalances`
+   (counter, tag group), `eb.consumer.heartbeat.failures` (counter, tag group),
+   `eb.consumer.rejoins.rejected` (counter, tag group), `eb.consumer.assignment.epoch`
+   (gauge over an adapter-owned AtomicLong, tag group). Register gauges once per subscription;
+   on resubscribe REUSE the same AtomicLong rather than re-registering (Micrometer keeps the
+   first registration per id+tags).
+4. Tests: the no-op default is used when nothing is configured; each callback fires at its
+   seam (SimpleMeterRegistry through the adapter); the epoch gauge tracks a takeover — after a
+   takeover the gauge must show the INCREASED epoch (the observable end-to-end proof of
+   invariant 1) — and `eb.consumer.rebalances` must NOT increment on a static restart.
+5. Update `analytics/docs/monitoring.md` with the four meters and their alert story (pinned
+   epoch while rebalances climb = the wedge signature; rejoins.rejected bursts = the 409
+   storm observed live on 2026-07-16).
+
 ## Out of scope
 
-Join-as-heartbeat (item 3 — separate milestone, gated on a validated smoke run), coordinator
-metrics (separate spec exists), server-side member capacity/quota changes, any protocol field
-additions beyond what the takeover event needs, and rebalance-algorithm changes.
+Join-as-heartbeat (item 3 — separate milestone, gated on a validated smoke run), SERVER-side
+coordinator metrics, member capacity/quota changes, any protocol field additions beyond what
+the takeover event needs, and rebalance-algorithm changes.
