@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.Set;
 
 /**
  * Performs the local, broker-side switch of a member's partition manager between normal processing
@@ -37,11 +38,18 @@ public interface ModeChangeExecutor {
   ActorFuture<Void> exitRecovery();
 
   /**
-   * Completes once the partition manager started by the most recent transition into {@code mode}
-   * has finished starting. Completes immediately if no transition is in flight (e.g. the member was
-   * already in {@code mode}). A failed start is propagated so the cluster change can be retried.
+   * Completes once every local partition has reached the role expected for {@code mode} - and, when
+   * entering recovery, once health has been reported for each (closing a race between
+   * RecoveryPartitionManager's role and health reporting). Completes immediately if no transition
+   * is in flight (e.g. the member was already in {@code mode}). A failed check is propagated so the
+   * cluster change can be retried.
+   *
+   * @return the subset of local partitions confirmed ready for {@code mode}: for {@code
+   *     PROCESSING}, every role-confirmed partition; for {@code RECOVERING}, only those also
+   *     reported healthy (a partition reported DEAD still lets the operation complete but is
+   *     excluded from this set).
    */
-  ActorFuture<Void> awaitModeApplied(Mode mode);
+  ActorFuture<Set<Integer>> awaitModeApplied(Mode mode);
 
   final class NoopModeChangeExecutor implements ModeChangeExecutor {
     @Override
@@ -55,8 +63,8 @@ public interface ModeChangeExecutor {
     }
 
     @Override
-    public ActorFuture<Void> awaitModeApplied(final Mode mode) {
-      return CompletableActorFuture.completed(null);
+    public ActorFuture<Set<Integer>> awaitModeApplied(final Mode mode) {
+      return CompletableActorFuture.completed(Set.of());
     }
   }
 }
