@@ -18,10 +18,14 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.AgentHistoryServices;
 import io.camunda.service.AgentInstanceServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.registry.ServiceRegistry;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -33,6 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -160,6 +165,65 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getLimits().getMaxToolCalls()).isEqualTo(50);
                 }),
             any());
+  }
+
+  @Test
+  void shouldReturn409WhenAgentInstanceAlreadyExistsForElementInstance() {
+    // given -- service layer signals ALREADY_EXISTS (e.g. duplicate CREATE from the engine).
+    final var rejectionReason =
+        "Expected to associate element instance with key '%d' with an agent instance,"
+            + " but it is already associated with agent instance with key '%d'."
+                .formatted(ELEMENT_INSTANCE_KEY, AGENT_INSTANCE_KEY);
+    final var expectedDetail =
+        "Command 'CREATE' rejected with code 'ALREADY_EXISTS': " + rejectionReason;
+    when(agentInstanceServices.createAgentInstance(any(AgentInstanceRecord.class), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapBrokerRejection(
+                    new BrokerRejection(
+                        AgentInstanceIntent.CREATE,
+                        ELEMENT_INSTANCE_KEY,
+                        RejectionType.ALREADY_EXISTS,
+                        rejectionReason))));
+
+    final var requestBody =
+        """
+        {
+          "elementInstanceKey": "%d",
+          "definition": {
+            "model": "gpt-4o",
+            "provider": "openai",
+            "systemPrompt": "You are a helpful assistant."
+          }
+        }
+        """
+            .formatted(ELEMENT_INSTANCE_KEY);
+
+    // when / then
+    webClient
+        .post()
+        .uri(AGENT_INSTANCES_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(requestBody)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT)
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "ALREADY_EXISTS",
+              "status": 409,
+              "detail": "%s",
+              "instance": "/v2/agent-instances"
+            }
+            """
+                .formatted(expectedDetail),
+            JsonCompareMode.STRICT);
   }
 
   @ParameterizedTest(name = "[{index}] {0}")
