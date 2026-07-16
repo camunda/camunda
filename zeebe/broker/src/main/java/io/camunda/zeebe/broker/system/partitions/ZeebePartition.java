@@ -526,6 +526,9 @@ public final class ZeebePartition extends Actor
     actor.run(
         () -> {
           LOG.info("Pausing partition {} for leadership transfer", context.getPartitionId());
+          // The availability impact begins here, when writes are frozen; capture it so the pause
+          // metric spans the whole barrier window, not just the Raft arming step.
+          final long pausedSinceMs = ActorClock.currentTimeMillis();
           // 1. Freeze write admission and drain in-flight writers: acquiring the sequencer lock
           //    ensures any writer already past tryAcquire but still waiting for the lock is
           // rejected
@@ -538,7 +541,7 @@ public final class ZeebePartition extends Actor
           final var streamProcessor = context.getStreamProcessor();
           if (streamProcessor == null) {
             // No processor installed to pause: capture the frozen head and arm the watchdog.
-            armRaftPause(resumeTimeout, result);
+            armRaftPause(resumeTimeout, pausedSinceMs, result);
             return;
           }
           // 2. Await the processor confirming it is paused. When this completes the processor actor
@@ -550,7 +553,7 @@ public final class ZeebePartition extends Actor
                     if (error != null) {
                       result.completeExceptionally(error);
                     } else {
-                      armRaftPause(resumeTimeout, result);
+                      armRaftPause(resumeTimeout, pausedSinceMs, result);
                     }
                   });
         });
@@ -563,11 +566,12 @@ public final class ZeebePartition extends Actor
    * target (step 4) and arming the watchdog (step 5). Bounces the result back onto the partition
    * actor before completing {@code result}.
    */
-  private void armRaftPause(final Duration resumeTimeout, final ActorFuture<Long> result) {
+  private void armRaftPause(
+      final Duration resumeTimeout, final long pausedSinceMs, final ActorFuture<Long> result) {
     context
         .getRaftPartition()
         .getServer()
-        .pauseForTransfer(resumeTimeout)
+        .pauseForTransfer(resumeTimeout, pausedSinceMs)
         .whenComplete(
             (targetIndex, error) ->
                 actor.run(

@@ -162,6 +162,30 @@ public class RaftLeadershipTransferPromoteTest {
     assertThat(leader.getRole()).isEqualTo(Role.LEADER);
   }
 
+  @Test
+  public void shouldKeepRebalanceMetricsRegisteredAfterLeaderStepsDown() throws Exception {
+    // given — rebalance metrics are partition-lifetime (owned by RaftContext), not owned by the
+    // LeaderRole term: a successful transfer necessarily stops the role, but its completion
+    // continuation may still need to record against these meters afterwards.
+    final var leader = raftRule.getLeader().orElseThrow();
+    final var registry = leader.getContext().getMeterRegistry();
+    leader.getContext().getRebalanceMetrics().observePauseDuration(Duration.ofMillis(1));
+    assertThat(registry.find("zeebe.cluster.rebalance.partition.pause.duration").timer())
+        .isNotNull();
+
+    // when
+    leader.stepDown().get();
+    Awaitility.await("leader steps down")
+        .atMost(Duration.ofSeconds(15))
+        .until(() -> leader.getRole() != Role.LEADER);
+
+    // then — previously the LeaderRole's stop() closed (removed) these meters on every role
+    // transition; they must now survive it
+    assertThat(registry.find("zeebe.cluster.rebalance.partition.pause.duration").timer())
+        .as("rebalance metrics are partition-lifetime and are not removed when the role stops")
+        .isNotNull();
+  }
+
   private CompletableFuture<LeadershipTransferResult> promoteOnRaftThread(
       final RaftServer leader, final MemberId targetId) {
     final var future = new CompletableFuture<LeadershipTransferResult>();

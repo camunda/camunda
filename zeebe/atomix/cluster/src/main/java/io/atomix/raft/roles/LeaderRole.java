@@ -29,7 +29,6 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.metrics.RebalanceMetrics;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
@@ -94,7 +93,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   // The leader keeps its term and keeps replicating; the write freeze and processing pause are
   // applied by the broker. This role only owns the watchdog that guarantees the partition is never
   // left paused: if not resumed in time it steps down, which forces a role transition.
-  private final RebalanceMetrics rebalanceMetrics;
+  // rebalanceMetrics itself is partition-lifetime (owned by RaftContext, see there for why); this
+  // role only ever reads it via raft.getRebalanceMetrics().
   private Scheduled transferPauseWatchdog;
   private boolean transferPaused;
   private long transferPauseStartMs;
@@ -118,7 +118,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   public LeaderRole(final RaftContext context) {
     super(context);
     appender = new LeaderAppender(this);
-    rebalanceMetrics = new RebalanceMetrics(context.getName(), context.getMeterRegistry());
   }
 
   @Override
@@ -157,6 +156,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     return super.stop()
         .thenRun(appender::close)
+        // rebalanceMetrics is partition-lifetime (see RaftContext), not closed here; only the
+        // paused gauge is reset, since a role that has stopped being leader can no longer be
+        // mid-transfer-pause.
+        .thenRun(() -> raft.getRebalanceMetrics().setPartitionPaused(false))
         .thenRun(this::cancelTimers)
         .thenRun(this::stepDown);
   }
@@ -450,6 +453,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
    *     append has been applied; this is the catch-up target the desired leader must reach
    */
   public long pauseForTransfer(final Duration resumeTimeout) {
+    return pauseForTransfer(resumeTimeout, System.currentTimeMillis());
+  }
+
+  /**
+   * As {@link #pauseForTransfer(Duration)}, but taking the instant the broker froze write admission
+   * (the first barrier step) so the pause-duration metric covers the whole availability window, not
+   * just from this arming step.
+   *
+   * @param pausedSinceMs epoch millis at which write admission was frozen
+   */
+  public long pauseForTransfer(final Duration resumeTimeout, final long pausedSinceMs) {
     raft.checkThread();
     if (transferPaused) {
       // Idempotent: the watchdog is already armed. Report the current head so a repeat caller still
@@ -457,7 +471,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       return raft.getLog().getLastIndex();
     }
     transferPaused = true;
-    transferPauseStartMs = System.currentTimeMillis();
+    transferPauseStartMs = pausedSinceMs;
     // The broker has frozen write admission and paused (and drained) the stream processor before
     // this Raft-thread task runs, so by FIFO ordering every write admitted before the freeze has
     // already been appended: the last index is the true frozen head.
@@ -465,6 +479,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     log.info("Pausing partition for leadership transfer; resume deadline in {}", resumeTimeout);
     transferPauseWatchdog =
         raft.getThreadContext().schedule(resumeTimeout, this::onTransferPauseDeadline);
+    // Both restrictions are now in place (writes frozen, processing paused): mark the partition
+    // paused for transfer.
+    raft.getRebalanceMetrics().setPartitionPaused(true);
     return targetIndex;
   }
 
@@ -506,8 +523,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     }
     if (transferPaused) {
       transferPaused = false;
-      rebalanceMetrics.observePauseDuration(
-          Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
+      raft.getRebalanceMetrics().setPartitionPaused(false);
+      raft.getRebalanceMetrics()
+          .observePauseDuration(
+              Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
     }
     // Never discard a pending catch-up without completing it. The precise reason is set by the
     // callers that know it (watchdog expiry, role transition); this is the safety net for any other
@@ -932,8 +951,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       final MemberId desiredLeader,
       final LeadershipTransferResult result,
       final long startMs) {
-    rebalanceMetrics.observeTransferDuration(
-        result, Duration.ofMillis(System.currentTimeMillis() - startMs));
+    raft.getRebalanceMetrics()
+        .observeTransferDuration(result, Duration.ofMillis(System.currentTimeMillis() - startMs));
     // Undo the pause on any outcome (best-effort: on success leadership has already moved and the
     // role transition rebuilt the partition unpaused), then report the result to the coordinator.
     resumeForCoordinatedTransfer()

@@ -48,6 +48,34 @@ public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
+   * Whether a partition is currently paused for a coordinated leadership transfer: {@code 1} only
+   * while write admission is frozen <em>and</em> processing is paused for the transfer, {@code 0}
+   * otherwise. Distinct from {@code zeebe.stream.processor.state}, which reports processing paused
+   * for any reason.
+   */
+  PARTITION_PAUSED {
+    @Override
+    public String getName() {
+      return "zeebe.cluster.rebalance.partition.paused";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public String getDescription() {
+      return "1 while a partition is paused for a coordinated leadership transfer, 0 otherwise";
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return new KeyName[] {PartitionKeyNames.PARTITION, PartitionKeyNames.PHYSICAL_TENANT};
+    }
+  },
+
+  /**
    * How long a whole per-partition transfer attempt took, from initiate to terminal result,
    * labelled with that result. Covers both transfers that end at the catch-up step and those that
    * proceed to promotion.

@@ -232,7 +232,8 @@ public class ZeebePartitionTest {
     when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
     when(streamProcessor.pauseProcessing()).thenReturn(CompletableActorFuture.completed());
     final var raftServer = raft.getServer();
-    when(raftServer.pauseForTransfer(any())).thenReturn(CompletableFuture.completedFuture(99L));
+    when(raftServer.pauseForTransfer(any(), anyLong()))
+        .thenReturn(CompletableFuture.completedFuture(99L));
     schedulerRule.submitActor(partition);
     schedulerRule.workUntilDone();
 
@@ -245,7 +246,7 @@ public class ZeebePartitionTest {
     inOrder.verify(logStream).pauseWrites();
     inOrder.verify(ctx).setPausedForTransfer(true);
     inOrder.verify(streamProcessor).pauseProcessing();
-    inOrder.verify(raftServer).pauseForTransfer(any());
+    inOrder.verify(raftServer).pauseForTransfer(any(), anyLong());
     assertThat(targetIndex).succeedsWithin(Duration.ofSeconds(5)).isEqualTo(99L);
   }
 

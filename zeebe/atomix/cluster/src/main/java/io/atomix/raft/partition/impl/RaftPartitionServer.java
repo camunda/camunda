@@ -300,11 +300,14 @@ public class RaftPartitionServer implements HealthMonitorable {
    * resumeTimeout}. The caller is responsible for freezing writes and pausing processing; this only
    * guarantees the partition cannot be left paused forever.
    *
+   * @param pausedSinceMs epoch millis at which the caller froze write admission, so the pause
+   *     metric covers the full availability window
    * @return a future completing with the frozen last log index (the catch-up target) once the pause
    *     is armed, or failing if this node is not the leader
    */
-  public CompletableFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
-    return runOnLeaderRole(leader -> leader.pauseForTransfer(resumeTimeout));
+  public CompletableFuture<Long> pauseForTransfer(
+      final Duration resumeTimeout, final long pausedSinceMs) {
+    return runOnLeaderRole(leader -> leader.pauseForTransfer(resumeTimeout, pausedSinceMs));
   }
 
   /**
