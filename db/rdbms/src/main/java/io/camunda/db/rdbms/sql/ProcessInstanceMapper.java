@@ -29,6 +29,8 @@ public interface ProcessInstanceMapper {
 
   void updateBusinessId(UpdateBusinessIdDto dto);
 
+  void updateSuspendedState(UpdateSuspendedStateDto dto);
+
   void incrementIncidentCount(Long processInstanceKey);
 
   void decrementIncidentCount(Long processInstanceKey);
@@ -106,6 +108,11 @@ public interface ProcessInstanceMapper {
       OffsetDateTime endDate) {}
 
   record UpdateBusinessIdDto(long processInstanceKey, String businessId) {}
+
+  record UpdateSuspendedStateDto(
+      long processInstanceKey,
+      ProcessInstanceEntity.ProcessInstanceState state,
+      OffsetDateTime suspendedDate) {}
 
   record SelectExpiredRootProcessInstancesDto(
       int partitionId, OffsetDateTime cleanupDate, DbQueryPage page) {}
