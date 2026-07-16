@@ -47,7 +47,11 @@ const changedFolders =
 export default defineConfig({
   testDir: `./tests/`,
   timeout: 12 * 60 * 1000,
-  workers: 4,
+  // stable/8.7 runs Zeebe/Elasticsearch/Operate/Tasklist as 5 separate
+  // docker-compose containers on a single CI runner (unlike 8.8+/main's
+  // unified container), so 4 parallel workers oversaturate the shared
+  // ES importer / operation executor under concurrent batch operations.
+  workers: 2,
   retries: 1,
   expect: {
     timeout: 10_000,
