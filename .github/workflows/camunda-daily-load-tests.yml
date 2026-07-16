@@ -166,6 +166,7 @@ jobs:
       name: c8-${{ needs.benchmark-data.outputs.benchmark }}
       pod: ''
       database: elasticsearch
+      test-type: grpc
       duration-seconds: '1800'
 
   profile-rest:
@@ -181,6 +182,7 @@ jobs:
       name: c8-${{ needs.benchmark-data.outputs.benchmark }}-rest
       pod: ''
       database: elasticsearch
+      test-type: rest
       duration-seconds: '1800'
 
   # Wait 3 hours per variant, anchored to that variant's own setup completion,
