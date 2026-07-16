@@ -243,12 +243,23 @@ test.describe('Decision Navigation', () => {
       // step runs even though this spec's own data no longer competes with
       // decisionFilters.spec.ts's. A single wait with no reload/retry can't
       // recover if indexing is still catching up when it expires.
+      //
+      // page.reload() drops the "Assign Approver Group Navigation" name
+      // filter applied in the previous step — it's client-side React state,
+      // not a URL parameter (confirmed: the Name filter combobox is empty
+      // after reload in a failure snapshot). Without it, decisionInstanceLink
+      // is searching whatever the default (unfiltered) decisions view
+      // happens to render, not the scoped one this test set up. Re-apply the
+      // filter after each reload instead of assuming it survives.
       await waitForAssertion({
         assertion: async () => {
           await expect(decisionInstanceLink).toBeVisible({timeout: 10_000});
         },
         onFailure: async () => {
           await page.reload();
+          await operateDecisionsPage.selectDecisionName(
+            'Assign Approver Group Navigation',
+          );
         },
         maxRetries: 6,
       });
