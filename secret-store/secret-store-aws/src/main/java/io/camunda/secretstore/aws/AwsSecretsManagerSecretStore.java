@@ -76,8 +76,10 @@ public final class AwsSecretsManagerSecretStore
   }
 
   /**
-   * Builds a store from configuration, eagerly constructing the underlying client. Building the
-   * client validates the region and endpoint at startup, failing fast on misconfiguration.
+   * Builds a store from configuration, eagerly constructing the underlying client and validating
+   * connectivity/credentials with a minimal AWS call. Failing fast here means a bad region,
+   * unreachable endpoint, or invalid/missing credentials surfaces immediately at startup instead of
+   * being deferred to the first real {@link #resolve} or {@link #list} call.
    */
   public static AwsSecretsManagerSecretStore fromConfig(final AwsSecretsManagerStoreConfig config) {
     final var builder =
@@ -104,7 +106,25 @@ public final class AwsSecretsManagerSecretStore
       throw new SecretStoreUnavailableException(
           "Failed to initialize AWS Secrets Manager client: " + e.getMessage(), e);
     }
+    validateConnectivity(client);
     return new AwsSecretsManagerSecretStore(client, config.pathPrefix());
+  }
+
+  /**
+   * Proves the client can authenticate and reach AWS Secrets Manager with a minimal call. Closes
+   * the client and fails fast on any error, rather than leaving misconfiguration (bad
+   * region/credentials/network) to surface on the first real {@link #resolve} or {@link #list}.
+   */
+  private static void validateConnectivity(final SecretsManagerClient client) {
+    try {
+      client.listSecrets(ListSecretsRequest.builder().maxResults(1).build());
+    } catch (final RuntimeException e) {
+      client.close();
+      throw new SecretStoreUnavailableException(
+          "Failed to validate AWS Secrets Manager connectivity/credentials at startup: "
+              + e.getMessage(),
+          e);
+    }
   }
 
   @Override
