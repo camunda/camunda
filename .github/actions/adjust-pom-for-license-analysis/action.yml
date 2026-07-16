@@ -28,3 +28,15 @@ runs:
         yq -i \
           'del(.project.modules.module[] | select(. == "qa"))' \
           optimize/pom.xml
+    - name: Strip non-shipped dependency scopes so FOSSA's dependency graph stays under the JVM array limit
+      shell: bash
+      run: |
+        # FOSSA runs `depgraph:aggregate` with -DmergeScopes -DrepeatTransitiveDependenciesInTextGraph=true,
+        # which folds test/provided/system dependencies into the graph and repeats every transitive
+        # dependency under every path. On a monorepo this size the resulting text graph can exceed the JVM's
+        # maximum array length (~2 GiB), crashing the analyzer with "Required array length ... is too large ->
+        # OutOfMemoryError". These scopes are not part of any shipped artifact and are already dropped via
+        # `maven.scope-exclude` in .fossa.yml (but only after the graph is built, too late to avoid the crash),
+        # so removing them from the POMs up front keeps the graph small while producing identical results.
+        find . -name pom.xml -not -path '*/target/*' -print0 \
+          | xargs -0 python3 "${GITHUB_ACTION_PATH}/strip-analysis-scopes.py"
