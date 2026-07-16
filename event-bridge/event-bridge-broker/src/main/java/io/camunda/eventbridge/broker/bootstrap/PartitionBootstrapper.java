@@ -19,7 +19,7 @@ import io.camunda.eventbridge.broker.BrokerMembers;
 import io.camunda.eventbridge.broker.compaction.CompactionConfig;
 import io.camunda.eventbridge.broker.compaction.CompactionPartitionWiring;
 import io.camunda.eventbridge.broker.compaction.CompactionPartitionWiring.CompactionRuntime;
-import io.camunda.eventbridge.broker.compaction.FileManifestStore;
+import io.camunda.eventbridge.broker.compaction.SnapshotManifestStore;
 import io.camunda.eventbridge.broker.logstreams.LogRetentionCompactor;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory;
 import io.camunda.eventbridge.broker.partitioning.PartitionFactory.CreatedPartition;
@@ -37,6 +37,8 @@ import io.camunda.eventbridge.messaging.stream.EventStreamReader;
 import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
+import io.camunda.zeebe.broker.system.partitions.impl.AtomixRecordEntrySupplierImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
@@ -47,6 +49,7 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -660,12 +663,10 @@ final class PartitionBootstrapper {
   /**
    * Builds the compaction runtime (manifest store + reader-lease registry + cleaner) for one
    * replica of a {@code COMPACT} partition. Runs unconditionally regardless of raft role — every
-   * replica cleans its own committed log prefix independently (ADR 0001, decision 6).
-   *
-   * <p>The manifest store here is {@link FileManifestStore}, a directory-local seam durable across
-   * restarts but not yet integrated with Raft snapshotting/InstallSnapshot — that integration is
-   * the {@code SnapshotManifestStore} adapter (event-bridge ADR 0001, decision 3), a follow-up
-   * commit.
+   * replica cleans its own committed log prefix independently (ADR 0001, decision 6), persists its
+   * own snapshots, and receives lagging-follower catch-up through the existing InstallSnapshot
+   * machinery (decision 10) — nothing extra is wired for that here, see {@link
+   * SnapshotManifestStore}'s javadoc.
    */
   private CompactionRuntime buildCompactionRuntime(
       final String groupName, final int partitionId, final CreatedPartition created) {
@@ -678,7 +679,25 @@ final class PartitionBootstrapper {
           "Failed to create compaction directory for partition " + partitionId, e);
     }
 
-    final var manifestStore = new FileManifestStore(compactionDirectory);
+    final var raftPartition = created.raftPartition();
+    // Fetched fresh on every call, exactly like dirtyLogReaderSupplier/lastCommittedPosition below:
+    // AtomixRecordEntrySupplierImpl binds to a specific RaftPartitionServer instance at
+    // construction, and the server does not exist yet at this point (it is created during raft
+    // bootstrap, which runs after this method returns) — constructing it eagerly here would bake
+    // in a permanent null.
+    final AtomixRecordEntrySupplier entrySupplier =
+        position -> {
+          final var server = raftPartition.getServer();
+          return server == null
+              ? Optional.empty()
+              : new AtomixRecordEntrySupplierImpl(server).getPreviousIndexedEntry(position);
+        };
+    final var manifestStore =
+        new SnapshotManifestStore(
+            partitionId,
+            compactionDirectory,
+            (ConstructableSnapshotStore) created.snapshotStore(),
+            entrySupplier);
 
     final var cfg = properties.compaction();
     final var compactionConfig =
@@ -689,7 +708,6 @@ final class PartitionBootstrapper {
             cfg.keyMapCapacity(),
             Duration.ofMillis(cfg.passIntervalMs()));
 
-    final var raftPartition = created.raftPartition();
     final Supplier<EventStreamReader> dirtyLogReaderSupplier =
         () -> {
           // Fetched fresh on every pass: the server is created during raft bootstrap, after this
