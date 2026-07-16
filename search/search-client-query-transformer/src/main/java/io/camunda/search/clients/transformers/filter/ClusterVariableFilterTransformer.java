@@ -50,6 +50,7 @@ public final class ClusterVariableFilterTransformer
     queries.addAll(getScopeQuery(filter.scopeOperations()));
     queries.addAll(getTenantQuery(filter.tenantIdOperations()));
     queries.addAll(getMetadataQuery(filter.metadataOperations()));
+    queries.addAll(getKindQuery(filter.kindOperations()));
     ofNullable(getIsTruncatedQuery(filter.isTruncated())).ifPresent(queries::add);
     return and(queries);
   }
@@ -74,6 +75,10 @@ public final class ClusterVariableFilterTransformer
   protected SearchQuery toAuthorizationCheckSearchQuery(
       final RequiredAuthorization<?> authorization) {
     return stringTerms(ClusterVariableIndex.NAME, authorization.resourceIds());
+  }
+
+  private Collection<SearchQuery> getKindQuery(final List<Operation<String>> operations) {
+    return stringOperations(ClusterVariableIndex.KIND, operations);
   }
 
   private Collection<SearchQuery> getNamesQuery(final List<Operation<String>> operations) {
