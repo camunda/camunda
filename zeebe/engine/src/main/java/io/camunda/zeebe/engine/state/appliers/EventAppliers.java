@@ -71,6 +71,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -169,7 +170,16 @@ public final class EventAppliers implements EventApplier {
     registerJobMetricsBatchEventAppliers(state);
     registerAgentInstanceEventAppliers(state);
     registerAgentHistoryEventAppliers(state);
+    registerSecretReferenceEventAppliers();
     return this;
+  }
+
+  private void registerSecretReferenceEventAppliers() {
+    register(SecretReferenceIntent.RESOLUTION_REQUESTED, NOOP_EVENT_APPLIER);
+    register(SecretReferenceIntent.RESOLUTION_COMPLETED, NOOP_EVENT_APPLIER);
+    register(SecretReferenceIntent.RESOLUTION_FAILED, NOOP_EVENT_APPLIER);
+    register(SecretReferenceIntent.BATCH_JOBS_REACTIVATED, NOOP_EVENT_APPLIER);
+    register(SecretReferenceIntent.BATCH_INCIDENTS_CREATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerAgentHistoryEventAppliers(final MutableProcessingState state) {
