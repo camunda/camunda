@@ -14,6 +14,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.NoopSecretStore;
+import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -160,6 +161,41 @@ class SecretStoreConfigurationTest {
     assertThat(registries).containsKeys("tenanta", "tenantb");
     assertThat(registries.get("tenanta").getStores()).containsKey("main");
     assertThat(registries.get("tenantb").getStores()).containsKey("other");
+  }
+
+  @Test
+  void shouldBuildAwsSecretsManagerStoreWhenConfigured() {
+    // given
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.aws-secrets-manager.aws-main.region", "eu-west-1",
+                "camunda.secrets.stores.aws-secrets-manager.aws-main.path-prefix", "camunda/"));
+
+    // when
+    final var registries = CONFIG.secretStoreRegistries(resolver);
+
+    // then
+    final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+    assertThat(registry.getStores()).containsKey("aws-main");
+    assertThat(registry.getStores().get("aws-main"))
+        .isInstanceOf(AwsSecretsManagerSecretStore.class);
+  }
+
+  @Test
+  void shouldThrowWhenFileAndAwsSecretsManagerStoresCombinedExceedOne() {
+    // given one file store and one aws-secrets-manager store for the same tenant
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.file-store.path", "/etc/camunda/secrets",
+                "camunda.secrets.stores.aws-secrets-manager.aws-store.region", "eu-west-1"));
+
+    // when / then
+    assertThatIllegalStateException()
+        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("only one is supported");
   }
 
   private static PhysicalTenantResolver resolverFor(final Map<String, Object> properties) {
