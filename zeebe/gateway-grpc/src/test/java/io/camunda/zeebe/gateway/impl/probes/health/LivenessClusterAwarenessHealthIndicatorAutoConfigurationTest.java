@@ -17,8 +17,8 @@ import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.Status;
 
@@ -28,7 +28,7 @@ public class LivenessClusterAwarenessHealthIndicatorAutoConfigurationTest {
 
   private ClusterAwarenessHealthIndicatorAutoConfiguration sutAutoConfig;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     helperGatewayBridge = new SpringGatewayBridge();
     sutAutoConfig = new ClusterAwarenessHealthIndicatorAutoConfiguration();

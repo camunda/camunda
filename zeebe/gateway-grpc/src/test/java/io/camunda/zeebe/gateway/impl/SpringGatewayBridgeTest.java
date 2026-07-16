@@ -13,15 +13,15 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.health.Status;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 public class SpringGatewayBridgeTest {
 
   private SpringGatewayBridge sutBrigde;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     sutBrigde = new SpringGatewayBridge();
   }
