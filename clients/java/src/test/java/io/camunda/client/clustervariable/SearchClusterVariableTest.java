@@ -201,7 +201,8 @@ public class SearchClusterVariableTest extends ClientRestTest {
     final io.camunda.client.protocol.rest.ClusterVariableSearchQueryRequest request =
         gatewayService.getLastRequest(
             io.camunda.client.protocol.rest.ClusterVariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getKind()).isNotNull();
+    assertThat(request.getFilter().getKind().get$Eq())
+        .isEqualTo(io.camunda.client.protocol.rest.ClusterVariableKindEnum.SECRET_REFERENCE);
   }
 
   @Test
