@@ -24,13 +24,17 @@ import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscr
 import {mockSearchElementInstanceInspection} from 'modules/mocks/api/v2/elementInstanceInspection/searchElementInstanceInspection';
 import {searchResult} from 'modules/testUtils';
 import * as clientConfig from 'modules/utils/getClientConfig';
-import type {
-  ElementInstance,
-  Job,
-  ProcessInstance,
-  DecisionInstance,
-  UserTask,
-  MessageSubscription,
+import {http, HttpResponse} from 'msw';
+import {mockServer} from 'modules/mock-server/node';
+import {
+  endpoints,
+  type ElementInstance,
+  type Job,
+  type ProcessInstance,
+  type DecisionInstance,
+  type UserTask,
+  type MessageSubscription,
+  type QueryAgentInstancesRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {mockSearchAgentInstances} from 'modules/mocks/api/v2/agentInstances/searchAgentInstances';
 import {mockAgentInstance} from 'modules/mocks/mockAgentInstance';
@@ -378,6 +382,46 @@ describe('<DetailsTab />', () => {
         'To view the details, select a single element instance in the instance history.',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('should render agent-details for a multi-instance element instance by filtering on elementId only', async () => {
+    let agentFilter: QueryAgentInstancesRequestBody['filter'] | undefined;
+    mockServer.use(
+      http.post(
+        endpoints.queryAgentInstances.getUrl(),
+        async ({request}) => {
+          const body = (await request.json()) as QueryAgentInstancesRequestBody;
+          agentFilter = body.filter;
+          return HttpResponse.json(
+            searchResult([mockAgentInstance({elementId: 'Task_1'})]),
+          );
+        },
+        {once: true},
+      ),
+    );
+    mockSearchAgentInstanceHistory().withSuccess(searchResult([]));
+    mockFetchElementInstance('999000111').withSuccess({
+      ...mockElementInstance,
+      elementInstanceKey: '999000111',
+      type: 'MULTI_INSTANCE_BODY',
+    });
+
+    render(<DetailsTab />, {
+      wrapper: getWrapper(
+        'elementId=Task_1&elementInstanceKey=999000111&isMultiInstanceBody=true',
+      ),
+    });
+
+    expect(
+      await screen.findByRole('heading', {name: 'AI Agent', level: 5}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: 'Element Instance', level: 5}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('999000111')).toBeInTheDocument();
+
+    expect(agentFilter?.elementId).toEqual('Task_1');
+    expect(agentFilter?.elementInstanceKeys).toBeUndefined();
   });
 
   it('should render element instance details when a single instance is resolved', async () => {
