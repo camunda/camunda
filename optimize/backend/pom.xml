@@ -116,6 +116,23 @@
       </exclusions>
     </dependency>
 
+    <!-- SPIKE (ADR-0036): Camunda Security Library. Versions managed in the parent pom.
+         Runtime correctness needs the CSL build that contains the deny-chain toggle and the
+         API/webapp order split (unreleased on this spike); build that CSL branch with
+         `mvn install` and bump `version.camunda-security-library` to that version. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+    </dependency>
+
     <!-- Spring -->
     <!-- Do not add versions: parent/pom.xml manages spring-framework-bom -->
     <dependency>

@@ -9,63 +9,45 @@ package io.camunda.optimize.rest.security.csl;
 
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
-import io.camunda.security.core.port.out.SessionStorePort;
+import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 
 /**
- * SPIKE (ADR-0036): single opt-in configuration that adopts CSL for Optimize. Gate it as needed
- * (property/profile); during prototyping it coexists with the legacy security config so both can be
- * compared.
+ * SPIKE (ADR-0036): opt-in configuration that adopts CSL for Optimize.
  *
- * <h2>Why individual imports instead of the umbrella</h2>
+ * <p>Activated by {@code optimize.security.csl.enabled=true}. The legacy adapters
+ * ({@code CCSMSecurityConfigurerAdapter} / {@code CCSaaSSecurityConfigurerAdapter}) carry the
+ * inverse condition, so exactly one security setup is active. This makes the spike manually
+ * testable by flipping a single flag.
  *
- * <p>OC activates CSL via {@code @ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)}.
- * That umbrella includes {@code OidcWebappSecurityConfiguration}, whose chain runs at {@code
- * ORDER_WEBAPP_API = 1} — the same order as the bearer API chain. Optimize's webapp chain is a
- * {@code /**} catch-all and MUST sort below the API chain (see {@link
- * OptimizeWebappSecurityConfiguration}). So Optimize cannot take the stock webapp chain from the
- * umbrella; it imports the CSL pieces it needs and supplies its own catch-all webapp chain.
+ * <p>Because CSL now gives the API and webapp chains distinct orders (API before webapp,
+ * ADR-0036), Optimize can use the umbrella {@code CamundaSecurityAutoConfiguration} directly and
+ * return {@code /**} from {@link SecurityPathPort#webappPaths()}: the stock webapp chain becomes
+ * the catch-all that sorts below the bearer API chain. No custom webapp chain bean is needed.
  *
- * <p>SPIKE NOTE: the import list below is the best-effort subset of the umbrella minus {@code
- * OidcWebappSecurityConfiguration} and the scoped/basic-auth/admin pieces Optimize does not use. It
- * must be verified against {@code CamundaSecurityAutoConfiguration}. The cleaner long-term fix is a
- * CSL change that makes the webapp chain order configurable (or a catch-all webapp variant), after
- * which Optimize could use the umbrella directly. See SPIKE-NOTES.md.
- *
- * <p>Required application config for this to hold together:
+ * <p>Required application config (see {@code application-csl-spike.yaml}):
  *
  * <ul>
+ *   <li>{@code optimize.security.csl.enabled=true}
  *   <li>{@code camunda.security.authentication.method=oidc}
- *   <li>{@code camunda.security.unhandled-paths-chain.enabled=false} (so the CSL deny chain does not
- *       collide with the {@code /**} webapp chain)
+ *   <li>{@code camunda.security.unhandled-paths-chain.enabled=false} (so the CSL deny chain does
+ *       not collide with the {@code /**} webapp chain)
  *   <li>{@code camunda.security.authentication.oidc.*} for the Identity (CCSM) / Auth0 (CCSaaS)
  *       client registration
- *   <li>{@code camunda.security.session.persistent.enabled=true} once the session store adapter is
- *       implemented
  * </ul>
+ *
+ * <p>Session storage: for single-node manual testing this leaves persistent sessions off, so CSL
+ * uses the in-memory servlet {@code HttpSession} and no {@code SessionStorePort} bean is required.
+ * Multi-instance deployments need an Elasticsearch-backed {@code SessionStorePort} (see
+ * {@link OptimizeSessionStoreAdapter} and SPIKE-NOTES.md).
  */
 @Configuration
-@Import(OptimizeWebappSecurityConfiguration.class)
-// TODO(spike): replace this hand-picked list with the umbrella once CSL makes the webapp chain
-// order configurable. Verify each class name against io.camunda.security.spring
-// .CamundaSecurityAutoConfiguration. Excludes OidcWebappSecurityConfiguration by design.
-@org.springframework.boot.autoconfigure.ImportAutoConfiguration({
-  io.camunda.security.spring.CamundaSecurityConfiguration.class,
-  io.camunda.security.spring.security.BaseSecurityConfiguration.class,
-  io.camunda.security.spring.security.OidcApiSecurityConfiguration.class,
-  io.camunda.security.spring.oidc.OidcBeansConfiguration.class,
-  io.camunda.security.spring.oidc.OidcClaimsProviderConfiguration.class,
-  io.camunda.security.spring.oidc.ScopedOidcInfrastructureConfiguration.class,
-  io.camunda.security.spring.context.CamundaAuthenticationBeansConfiguration.class,
-  io.camunda.security.spring.authz.AuthorizationCheckerConfiguration.class,
-  io.camunda.security.spring.authz.AuthorizationConfiguration.class,
-  io.camunda.security.spring.handler.AuthFailureHandlerConfiguration.class,
-  io.camunda.security.spring.security.WebAppAuthorizationFilterConfiguration.class,
-  io.camunda.security.spring.user.UserConfiguration.class,
-})
+@ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
+@ImportAutoConfiguration(CamundaSecurityAutoConfiguration.class)
 public class OptimizeCamundaSecurityConfig {
 
   @Bean
@@ -78,11 +60,5 @@ public class OptimizeCamundaSecurityConfig {
   @ConditionalOnMissingBean
   public MembershipPort membershipPort() {
     return new OptimizeMembershipAdapter();
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  public SessionStorePort sessionStorePort() {
-    return new OptimizeSessionStoreAdapter();
   }
 }

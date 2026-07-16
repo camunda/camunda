@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -57,9 +58,16 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
+// SPIKE (ADR-0036): backs off when the CSL security setup is active
+// (optimize.security.csl.enabled=true) so the two do not register colliding chains. Default
+// (property absent/false) keeps the legacy setup, so existing deployments are unaffected.
 @Configuration
 @EnableWebSecurity
 @Conditional(CCSMCondition.class)
+@ConditionalOnProperty(
+    name = "optimize.security.csl.enabled",
+    havingValue = "false",
+    matchIfMissing = true)
 public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSMSecurityConfigurerAdapter.class);
