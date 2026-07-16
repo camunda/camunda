@@ -42,13 +42,21 @@ import scala.jdk.javaapi.CollectionConverters;
  * camunda.secrets.token} else null}) is reported at the enclosing path, not the inner {@code x}.
  */
 @NullMarked
-public record SecretReference(String name) {
+public record SecretReference(String storeId, String name) {
 
   private static final String ROOT = "camunda";
   private static final String NAMESPACE = "secrets";
 
   /** Segments a {@code camunda.secrets.<name>} reference has: root, namespace and name. */
   private static final int REFERENCE_SEGMENT_COUNT = 3;
+
+  /**
+   * Creates a reference with no store id. The {@code camunda.secrets.<name>} syntax carries no
+   * store dimension, so the store is left empty until store selection is wired to the engine.
+   */
+  public SecretReference(final String name) {
+    this("", name);
+  }
 
   /**
    * Parses the secret references used as expressions in a mapping source, each with the FEEL

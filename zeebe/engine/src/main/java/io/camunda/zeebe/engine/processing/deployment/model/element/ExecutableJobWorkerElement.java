@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
  * A representation of an element that is based on a job and should be processed by a job worker.
  * For example, a service task.
@@ -16,4 +19,12 @@ public interface ExecutableJobWorkerElement extends ExecutableFlowElement {
   JobWorkerProperties getJobWorkerProperties();
 
   void setJobWorkerProperties(JobWorkerProperties jobWorkerProperties);
+
+  /**
+   * Returns the input-mapping secret references detected at deploy time, keyed by the JSON pointer
+   * (RFC 6901) where each secret is injected. Every job-worker element is a flow node, so this
+   * mirrors {@link ExecutableFlowNode#getSecretReferences()}. Empty when no input mapping
+   * references a secret.
+   */
+  Map<String, Set<SecretReference>> getSecretReferences();
 }

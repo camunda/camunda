@@ -946,7 +946,8 @@ final class JsonSerializableToJsonTest {
                         ],
                         "completionConditionFulfilled": true,
                         "cancelRemainingInstances": true
-                      }
+                      },
+                      "secretReferences": []
                     }
                   ],
                   "timeout": 2,
@@ -1067,7 +1068,8 @@ final class JsonSerializableToJsonTest {
                       .setIsJobToUserTaskMigration(true)
                       .setPriority(42)
                       .setBusinessId("biz-42")
-                      .setLeaseToken("lease-abc-123");
+                      .setLeaseToken("lease-abc-123")
+                      .addSecretReference("store-1", "token", "/tokens/token");
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
@@ -1142,7 +1144,14 @@ final class JsonSerializableToJsonTest {
                     ],
                     "completionConditionFulfilled": true,
                     "cancelRemainingInstances": true
-                  }
+                  },
+                  "secretReferences": [
+                    {
+                      "storeId": "store-1",
+                      "secretReference": "token",
+                      "path": "/tokens/token"
+                    }
+                  ]
                 }
                 """
       },
@@ -1201,7 +1210,8 @@ final class JsonSerializableToJsonTest {
                     "activateElements": [],
                     "completionConditionFulfilled": false,
                     "cancelRemainingInstances": false
-                  }
+                  },
+                  "secretReferences": []
                 }
                 """
       },
@@ -1265,7 +1275,8 @@ final class JsonSerializableToJsonTest {
                     "activateElements": [],
                     "completionConditionFulfilled": false,
                     "cancelRemainingInstances": false
-                  }
+                  },
+                  "secretReferences": []
                 }
                 """
       },
