@@ -26,6 +26,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 
 /**
@@ -37,6 +38,10 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  *
  * <p>This chain and the Basic chain ({@link ClusterAdminSecurityConfiguration}) are mutually
  * exclusive by deployment method — only one is instantiated.
+ *
+ * <p><strong>Statelessness:</strong> the chain binds a request-scoped, session-free {@link
+ * RequestAttributeSecurityContextRepository} explicitly and never creates a session, so an existing
+ * webapp OIDC session cookie cannot authenticate {@code /cluster/v2/**} without a bearer token.
  */
 @Configuration
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
@@ -87,9 +92,13 @@ public class ClusterAdminOidcSecurityConfiguration {
         .cors(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .anonymous(AbstractHttpConfigurer::disable)
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+        // Request-scoped, session-free context repository bound explicitly so a webapp OIDC session
+        // cookie can't authenticate this bearer chain. Explicit is required: STATELESS installs one
+        // only if none was set already (SessionManagementConfigurer's `if (repo == null)` guard).
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .securityContext(
+            sc -> sc.securityContextRepository(new RequestAttributeSecurityContextRepository()))
         .requestCache(cache -> cache.requestCache(new NullRequestCache()))
-        // Stateless bearer chain: no session, no CSRF surface, so disable it explicitly.
         .csrf(AbstractHttpConfigurer::disable);
 
     SecurityFilterChainSupport.setupSecureHeaders(http, properties.getHttpHeaders());
