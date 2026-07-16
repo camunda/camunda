@@ -13,11 +13,11 @@ instance.
 
 | meter | type | tags | meaning | alert on |
 |---|---|---|---|---|
-| `eb.streaming.watermark.lag` | gauge (ms) | stage, partition | `now − operator clock`: the min-of-sources stream-time clock across the partition's cube-tier mergers (stage 2). 0 before the first delta establishes a clock. | growing without bound = the pipeline is falling behind its sources |
-| `eb.streaming.records.processed` | counter | stage | records the task's `process()` loop consumed (folded or skipped) | flat while the source topic keeps moving = wedged consumer (the #23 signature) |
-| `eb.streaming.dedup.skipped` | counter | stage | producer duplicates skipped before the fold: the pre-fold Zeebe-position watermark (stage 1) or the segment-coordinate dedup (stage 2). A spike right after a restart is EXPECTED — it is recovery working. | nonzero rate OUTSIDE a restart window = duplicate source traffic |
-| `eb.streaming.segments.sealed` | counter | stage=projection | completed segments sealed into the shuffle (one per seal, not per cell) | flat while records.processed moves = nothing reaching stage 2 |
-| `eb.streaming.deltas.merged` | counter | stage=aggregation | deduped segment deltas folded into running cells | flat while stage 1 seals = shuffle or dedup problem |
+| `eb.streaming.watermark.lag` | gauge (ms) | stage, partition | `now − operator clock`: the min-of-sources stream-time clock across the partition's cube-tier mergers (stage 2). 0 before the first delta establishes a clock. The clock HOLDS while sources are quiet, so lag also climbs during genuine idle. | lag growth WHILE the source end-offset moves = falling behind; lag growth alone can just be an idle source |
+| `eb.streaming.records.processed` | counter | stage, partition | records the task's `process()` loop consumed (folded or skipped). Unit per stage: one Zeebe record (stage 1), one shuffle envelope — a batch of cell deltas (stage 2). | a PARTITION flat while the source topic keeps moving = wedged consumer (the #23 signature); watch per partition, not the stage aggregate |
+| `eb.streaming.dedup.skipped` | counter | stage, partition | producer duplicates skipped before the fold: the pre-fold Zeebe-position watermark (stage 1) or the segment-coordinate dedup (stage 2). A spike right after a restart is EXPECTED — it is recovery working. | nonzero rate OUTSIDE a restart window = duplicate source traffic |
+| `eb.streaming.segments.sealed` | counter | stage=projection, partition | completed segments sealed into the shuffle (one per seal, not per cell) | flat while records.processed moves = nothing reaching stage 2 |
+| `eb.streaming.deltas.merged` | counter | stage=aggregation, partition, tier | deduped cell deltas folded into the tier's running cells — one count per (delta, tier), since a composite delta rolls into every tier; sum across tiers ≠ delta count | a tier flat while stage 1 seals = shuffle or dedup problem |
 | `analytics.facts.emitted` | counter | partition, factType | facts the base projection emitted into the dispatch fan-out | a factType at zero that should flow = projection gap |
 | `analytics.projection.fact.dropped` | counter | partition | a derivation lost its fact (missing row) — a silent undercount surfaced | any nonzero value |
 
@@ -27,7 +27,7 @@ instance.
 |---|---|---|---|---|
 | `eb.streaming.store.overlay.entries` | gauge | stage, partition, store | active-overlay entries pinned in the bounded cache until the next checkpoint | sustained growth between cuts = overlay undersized |
 | `eb.streaming.store.overlay.bytes` | gauge | stage, partition, store | approximate byte footprint of the cache (active + frozen + clean layers combined; heap-estimate, not serialized-to-measure) | approaching the configured budget = early cuts imminent |
-| `eb.streaming.cut.early` | counter | partition | cuts triggered by `needsCheckpoint()` (overlay full) rather than the commit cadence | sustained nonzero rate = overlay undersized for the load |
+| `eb.streaming.cut.early` | counter | stage, partition | cuts triggered by `needsCheckpoint()` (overlay full) rather than the commit cadence | sustained nonzero rate = overlay undersized for the load |
 | `eb.streaming.write.stalls` | counter | partition | entries into the budget-exhausted write stall while a cut was in flight | any sustained rate = folding is blocking on persistence |
 | `zeebe.rocksdb.*` | gauges | store (= state directory name), partition via directory | RocksDB property metrics (live-data vs SST sizes, memtable sizes, tombstones, pending compaction) exported by the state-store provider whenever a registry is wired (which the app always does) | tombstone/SST growth without bound = compaction not keeping up |
 
@@ -64,9 +64,10 @@ instance.
 
 ## Alerting story (documented, not implemented)
 
-- **Falling behind**: `eb.streaming.watermark.lag` growing monotonically.
-- **Wedged** (the #23 signature): `eb.streaming.records.processed` flat while the source topic's
-  end offset keeps moving.
+- **Falling behind**: `eb.streaming.watermark.lag` growing monotonically WHILE the source end-offset moves — the clock holds during genuine idle, so lag alone also climbs when no data flows; gate the alert on source movement (or on `records.processed` still ticking).
+- **Wedged** (the #23 signature): a single partition's `eb.streaming.records.processed` flat
+  while the source topic's end offset keeps moving — alert per partition; a wedged partition is
+  invisible under the healthy partitions' stage aggregate.
 - **Duplicate source traffic**: `eb.streaming.dedup.skipped` increasing outside a restart window
   (correlate with process start time / rebalance events).
 - **Zombie writer**: `analytics.serving.fenced.rejected` (or `.fenced.writes`) nonzero outside a

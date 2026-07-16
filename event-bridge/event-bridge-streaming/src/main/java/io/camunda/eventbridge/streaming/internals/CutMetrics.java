@@ -29,10 +29,14 @@ public interface CutMetrics {
 
   /**
    * Cut instrumentation for {@code partitionId} on {@code registry}, or {@link #NOOP} when {@code
-   * registry} is {@code null}.
+   * registry} is {@code null}. {@code stageLabel} (nullable) distinguishes runtimes that share one
+   * registry with overlapping partition-id spaces; it tags only the new {@code
+   * eb.streaming.cut.early} counter — the pre-existing cut timers/counters keep their
+   * partition-only tags.
    */
-  static CutMetrics of(final MeterRegistry registry, final int partitionId) {
-    return registry == null ? NOOP : new MicrometerCutMetrics(registry, partitionId);
+  static CutMetrics of(
+      final MeterRegistry registry, final int partitionId, final String stageLabel) {
+    return registry == null ? NOOP : new MicrometerCutMetrics(registry, partitionId, stageLabel);
   }
 
   /**
@@ -77,7 +81,8 @@ public interface CutMetrics {
     private final Counter writeStalls;
     private final Counter earlyCuts;
 
-    private MicrometerCutMetrics(final MeterRegistry registry, final int partitionId) {
+    private MicrometerCutMetrics(
+        final MeterRegistry registry, final int partitionId, final String stageLabel) {
       final String partition = Integer.toString(partitionId);
       freezeDuration =
           Timer.builder("eb.streaming.cut.freeze.duration")
@@ -100,13 +105,18 @@ public interface CutMetrics {
                   "Entries into the budget-exhausted write stall while a cut was in flight")
               .tag("partition", partition)
               .register(registry);
-      earlyCuts =
+      // The stage tag on the early-cut counter only: runtimes sharing one registry have
+      // overlapping partition-id spaces, and an early-cut storm must be attributable to a stage.
+      final Counter.Builder earlyCutsBuilder =
           Counter.builder("eb.streaming.cut.early")
               .description(
                   "Cuts triggered by needsCheckpoint() (overlay full) rather than the commit"
                       + " cadence")
-              .tag("partition", partition)
-              .register(registry);
+              .tag("partition", partition);
+      if (stageLabel != null) {
+        earlyCutsBuilder.tag("stage", stageLabel);
+      }
+      earlyCuts = earlyCutsBuilder.register(registry);
     }
 
     @Override

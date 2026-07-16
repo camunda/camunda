@@ -135,7 +135,7 @@ final class SegmentSealingAggregationTest {
     // given a metrics-wired aggregation and two keys accumulating in segment 0
     final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
     final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-    aggregation.metrics(FlowMetrics.of(registry, "projection"));
+    aggregation.metrics(FlowMetrics.of(registry, "projection", 1));
     aggregation.accept(new Ev(0, 1L, 100L, "a", 2L));
     aggregation.accept(new Ev(0, 2L, 100L, "b", 7L));
 
@@ -158,7 +158,7 @@ final class SegmentSealingAggregationTest {
     // given a metrics-wired aggregation that never accepted a record
     final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
     final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-    aggregation.metrics(FlowMetrics.of(registry, "projection"));
+    aggregation.metrics(FlowMetrics.of(registry, "projection", 1));
 
     // when the freshness/shutdown paths run without ever sealing anything
     aggregation.flush();

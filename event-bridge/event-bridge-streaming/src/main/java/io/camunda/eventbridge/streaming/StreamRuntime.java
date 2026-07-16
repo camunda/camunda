@@ -91,6 +91,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final int maxProcessBatch;
   private final int sinkIoThreads;
   private final MeterRegistry meterRegistry;
+  private final String stageLabel;
   private final ActorScheduler injectedScheduler;
   private final ExecutorService injectedSinkExecutor;
   private final ThreadFactory sinkThreadFactory;
@@ -119,6 +120,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     maxProcessBatch = builder.maxProcessBatch;
     sinkIoThreads = builder.sinkIoThreads;
     meterRegistry = builder.meterRegistry;
+    stageLabel = builder.stageLabel;
     injectedScheduler = builder.actorScheduler;
     injectedSinkExecutor = builder.sinkExecutor;
     sinkThreadFactory =
@@ -206,7 +208,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
                   punctuationInterval,
                   commitIntervalNanos,
                   maxProcessBatch,
-                  CutMetrics.of(meterRegistry, partition.id()),
+                  CutMetrics.of(meterRegistry, partition.id(), stageLabel),
                   () -> running,
                   this::stop);
           scheduler.submitActor(partitionActor.actor(), SchedulingHints.cpuBound()).join();
@@ -334,6 +336,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private int maxProcessBatch = 2_000;
     private int sinkIoThreads = 4;
     private MeterRegistry meterRegistry;
+    private String stageLabel;
     private ActorScheduler actorScheduler;
     private ExecutorService sinkExecutor;
     private ThreadFactory sinkThreadFactory;
@@ -489,6 +492,17 @@ public final class StreamRuntime<R> implements AutoCloseable {
      */
     public Builder<R> meterRegistry(final MeterRegistry meterRegistry) {
       this.meterRegistry = meterRegistry;
+      return this;
+    }
+
+    /**
+     * An observability label naming this runtime's stage (e.g. {@code "projection"}) on meters
+     * whose partition tag alone would collide across runtimes sharing one registry — today the
+     * {@code eb.streaming.cut.early} counter. Optional; when unset the counter carries only its
+     * partition tag.
+     */
+    public Builder<R> stageLabel(final String stageLabel) {
+      this.stageLabel = stageLabel;
       return this;
     }
 

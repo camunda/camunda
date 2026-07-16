@@ -140,8 +140,9 @@ public final class SegmentMergingAggregation<K, ACC> {
 
   private FinalizationListener<K, ACC> finalizationListener = (cell, value) -> {};
   private LateDropListener<K> lateDropListener = (cell, eventTimeHint, maxEventTime) -> {};
-  // Optional flow instrumentation (records/deltas lag pack); NOOP until the owning task wires it.
-  private FlowMetrics metrics = FlowMetrics.NOOP;
+  // Optional flow instrumentation (the lag pack's per-tier merge recorder, pre-resolved at
+  // wiring); a shared no-op until the owning task wires it via metrics(FlowMetrics).
+  private Runnable deltaMerged = FlowMetrics.NOOP_DELTA_COUNTER;
 
   // Heap working set: one running accumulator per open cell, indexed by window end for due-window
   // finalization and tracked for flush/checkpoint deltas.
@@ -157,7 +158,10 @@ public final class SegmentMergingAggregation<K, ACC> {
   // monotonically non-decreasing. All hot-path state is primitive — the fold stays garbage-free.
   private final Long2LongHashMap sourceMaxEventTime = new Long2LongHashMap(Long.MIN_VALUE);
   private final Long2LongHashMap sourceLastSeenMs = new Long2LongHashMap(Long.MIN_VALUE);
-  private long clock = Long.MIN_VALUE;
+  // Volatile solely for the clock() gauge read from a scrape thread: without it a racily-published
+  // read could observe a torn/stale value. Written only by the owner thread; the fold's other
+  // state stays plain.
+  private volatile long clock = Long.MIN_VALUE;
   // The max recovered window end — adopted by the drained-and-gone escape hatch once no source
   // has been live for a full idle timeout (see advanceClock).
   private long recoveredEventTime = Long.MIN_VALUE;
@@ -232,11 +236,13 @@ public final class SegmentMergingAggregation<K, ACC> {
   }
 
   /**
-   * Wires the flow instrumentation (before processing starts); at most one. Optional — without it
-   * every recording is a zero-allocation no-op ({@link FlowMetrics#NOOP}).
+   * Wires the flow instrumentation (before processing starts); at most one. This merger's merge
+   * counter is pre-resolved here, tagged by its own window size (the tier) — a composite delta is
+   * rolled into every tier, so per-tier counters keep the rate honest. Optional — without it every
+   * recording is a zero-allocation no-op ({@link FlowMetrics#NOOP}).
    */
   public void metrics(final FlowMetrics metrics) {
-    this.metrics = metrics;
+    deltaMerged = metrics.deltaMergedCounter(windows.sizeMs());
   }
 
   /**
@@ -317,7 +323,7 @@ public final class SegmentMergingAggregation<K, ACC> {
     }
     open.markChanged(cell);
     serializedSinceFlush.remove(cell); // the cached serialized form (if any) is stale now
-    metrics.countDeltaMerged();
+    deltaMerged.run();
     observeSource(sourceId, eventTimeHint);
     advanceClock();
   }

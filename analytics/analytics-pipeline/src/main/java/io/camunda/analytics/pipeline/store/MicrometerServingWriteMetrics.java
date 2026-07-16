@@ -58,16 +58,22 @@ public final class MicrometerServingWriteMetrics implements ServingWriteMetrics 
 
   @Override
   public void rowWritten(final String datasetName) {
-    rowsWritten
-        .computeIfAbsent(
-            datasetName == null ? "unknown" : datasetName,
-            name ->
-                Counter.builder("analytics.serving.rows.written")
-                    .description("Rows (cells/snapshot rows/table rows) upserted successfully")
-                    .tag("backend", backend)
-                    .tag("dataset", name)
-                    .register(registry))
-        .increment();
+    final String name = datasetName == null ? "unknown" : datasetName;
+    // Fast path: a plain get avoids computeIfAbsent's per-call capturing lambda on the per-row
+    // hot path — the miss (and its allocation) happens once per dataset.
+    Counter counter = rowsWritten.get(name);
+    if (counter == null) {
+      counter =
+          rowsWritten.computeIfAbsent(
+              name,
+              missing ->
+                  Counter.builder("analytics.serving.rows.written")
+                      .description("Rows (cells/snapshot rows/table rows) upserted successfully")
+                      .tag("backend", backend)
+                      .tag("dataset", missing)
+                      .register(registry));
+    }
+    counter.increment();
   }
 
   @Override

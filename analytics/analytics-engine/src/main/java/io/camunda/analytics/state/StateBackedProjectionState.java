@@ -10,7 +10,6 @@ package io.camunda.analytics.state;
 import io.camunda.analytics.dimension.Utf8View;
 import io.camunda.analytics.projection.AnalyticsColumnFamilies;
 import io.camunda.analytics.state.mutable.MutableProjectionState;
-import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.StoreBuilder;
 import io.camunda.eventbridge.streaming.state.api.StateStoreProvider;
 import io.camunda.eventbridge.streaming.state.cache.CachingKeyValueStore;
@@ -61,7 +60,7 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   private final CachingKeyValueStore<DbLong, IncidentEntity> incidents;
   private final CachingKeyValueStore<DbBytes, DbLong> variantElements;
   private final List<CachingKeyValueStore<?, ?>> caches;
-  // Named the same way for the overlay gauges (see bindMetrics) as for lookups above.
+  // Named the same way for the overlay-gauge accessors (overlayEntries/overlayBytes) as above.
   private final Map<String, CachingKeyValueStore<?, ?>> namedCaches;
 
   private final DbLong elementKey = new DbLong();
@@ -123,11 +122,24 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   }
 
   /**
-   * Wires the "is state healthy" overlay gauges (entries + approximate bytes) for every store this
-   * base projection opened, tagged by each store's name. Call once, before processing starts.
+   * The fixed store names this projection serves, for binding overlay gauges once per owning task:
+   * the task's suppliers read {@link #overlayEntries}/{@link #overlayBytes} through its live state
+   * field, so the gauges track whichever state generation a live reload installed. Binding gauges
+   * to one generation instead would silently keep reading the abandoned caches forever — Micrometer
+   * keeps the first registration under an id.
    */
-  public void bindMetrics(final StoreMetrics metrics) {
-    namedCaches.forEach((name, cache) -> cache.metrics(metrics, name));
+  public static List<String> storeNames() {
+    return List.of("elements", "variables", "variableScopes", "incidents", "variantElements");
+  }
+
+  /** The named store's active-overlay entry count (racy-read-safe for gauges). */
+  public long overlayEntries(final String store) {
+    return namedCaches.get(store).activeOverlayEntries();
+  }
+
+  /** The named store's approximate byte footprint (racy-read-safe for gauges). */
+  public long overlayBytes(final String store) {
+    return namedCaches.get(store).approximateBytes();
   }
 
   /** Shares an already-open provider (the caller owns its lifecycle) — the production wiring. */

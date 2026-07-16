@@ -475,6 +475,10 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
       // A fenced write matches an existing row but fails the version predicate: it affects
       // zero rows. That is the fence working, not an error — count it as the signal it is.
       // (Deletes skip the count: an absent row is indistinguishable from a fenced one here.)
+      // CAVEAT: this detection relies on per-item update counts. If the DataSource is ever
+      // configured with a driver's batch-rewrite optimization (statements coalesced client-side),
+      // executeBatch reports Statement.SUCCESS_NO_INFO (-2) per item — never 0 — so fenced writes
+      // would silently count as written rows and the fence meters would go dark.
       for (final int updated : statement.executeBatch()) {
         if (updated == 0 && countFenced) {
           fencedWrites.increment();

@@ -147,6 +147,9 @@ public final class AnalyticsProjectionStage {
             .actorScheduler(scheduler)
             .sinkExecutor(sinkExecutor)
             .meterRegistry(meterRegistry)
+            // Both stage runtimes share this registry with overlapping partition-id spaces; the
+            // label keeps the runtime-level meters (cut.early) attributable to a stage.
+            .stageLabel("projection")
             .build();
 
     LOG.info(

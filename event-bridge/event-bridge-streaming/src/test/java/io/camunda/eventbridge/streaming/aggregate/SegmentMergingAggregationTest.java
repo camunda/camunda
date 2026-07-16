@@ -163,7 +163,7 @@ final class SegmentMergingAggregationTest {
             sink,
             TumblingWindows.of(1_000L));
     final SimpleMeterRegistry registry = new SimpleMeterRegistry();
-    merger.metrics(FlowMetrics.of(registry, "aggregation"));
+    merger.metrics(FlowMetrics.of(registry, "aggregation", 1));
     final Windowed<String> cell = new Windowed<>("k", 0L);
 
     // when an accepted delta closes the window and a late delta follows
@@ -172,11 +172,14 @@ final class SegmentMergingAggregationTest {
     merger.merge(cell, 100L);
     merger.flush();
 
-    // then only the accepted merge is counted — the late-dropped delta never reaches the fold
+    // then only the accepted merge is counted — the late-dropped delta never reaches the fold —
+    // tagged by this merger's own window size (the tier)
     assertThat(
             registry
                 .get("eb.streaming.deltas.merged")
                 .tag("stage", "aggregation")
+                .tag("partition", "1")
+                .tag("tier", "1000")
                 .counter()
                 .count())
         .isEqualTo(1.0);

@@ -167,6 +167,11 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private Set<Long> appliedTableIds = Set.of();
   private boolean definitionsTableEnsured;
 
+  // Per-task meter deregistrations run at close (see disposeOnClose): a re-opened partition task
+  // re-registers meters under the same ids, and Micrometer keeps the first — without the removal
+  // the dead task's meters would shadow the live one's forever.
+  private final List<Runnable> meterDisposals = new ArrayList<>();
+
   ProjectionStageTask(
       final int partition,
       final OwnershipEpoch epoch,
@@ -218,6 +223,17 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final DatasetCatalog.Snapshot snapshot = catalog.snapshot();
     installTopology(snapshot.cubes(), snapshot.tables());
     appliedVersion = snapshot.version();
+    // Bind the overlay gauges ONCE, over suppliers that read the projectionState FIELD: a live
+    // catalog reload rebuilds the base state's caches, and a gauge bound to one generation would
+    // silently keep reading (and strongly pin) the abandoned caches forever — Micrometer keeps the
+    // first registration under an id. The task's close() deregisters them so a re-opened partition
+    // task's fresh binding is not ignored either.
+    for (final String store : StateBackedProjectionState.storeNames()) {
+      storeMetrics.bindOverlay(
+          store,
+          () -> projectionState.overlayEntries(store),
+          () -> projectionState.overlayBytes(store));
+    }
   }
 
   public static ProjectionStageTask open(
@@ -249,33 +265,42 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final VersionedDatasetWriter servingWriter = datasetStore.writer();
     // The write fence's observability: rejections are the fence working (zero outside
     // rebalances/replays), so they are exposed as a counter rather than logged as errors.
-    FunctionCounter.builder(
-            "analytics.serving.fenced.writes", servingWriter, VersionedDatasetWriter::fencedWrites)
-        .description("Serving writes rejected by the version fence (stale by arrival)")
-        .tag("stage", "projection")
-        .tag("partition", String.valueOf(partition))
-        .register(meterRegistry);
-    return new ProjectionStageTask(
-        partition,
-        epoch,
-        client,
-        factsTopic,
-        factsPartitions,
-        segmentStride,
-        schemaVersion,
-        datasetStore,
-        servingWriter,
-        provider,
-        openSegments,
-        offsets,
-        appliedPositions,
-        catalog,
-        reloadCheckIntervalMs,
-        eagerShufflePublish,
-        new MicrometerProjectionMetrics(meterRegistry, partition),
-        FlowMetrics.of(meterRegistry, "projection"),
-        StoreMetrics.of(meterRegistry, "projection", partition),
-        System.currentTimeMillis());
+    final FunctionCounter fencedWrites =
+        FunctionCounter.builder(
+                "analytics.serving.fenced.writes",
+                servingWriter,
+                VersionedDatasetWriter::fencedWrites)
+            .description("Serving writes rejected by the version fence (stale by arrival)")
+            .tag("stage", "projection")
+            .tag("partition", String.valueOf(partition))
+            .register(meterRegistry);
+    final ProjectionStageTask task =
+        new ProjectionStageTask(
+            partition,
+            epoch,
+            client,
+            factsTopic,
+            factsPartitions,
+            segmentStride,
+            schemaVersion,
+            datasetStore,
+            servingWriter,
+            provider,
+            openSegments,
+            offsets,
+            appliedPositions,
+            catalog,
+            reloadCheckIntervalMs,
+            eagerShufflePublish,
+            new MicrometerProjectionMetrics(meterRegistry, partition),
+            FlowMetrics.of(meterRegistry, "projection", partition),
+            StoreMetrics.of(meterRegistry, "projection", partition),
+            System.currentTimeMillis());
+    // Deregistered at close: a re-opened partition task registers its own FunctionCounter over its
+    // own writer, which Micrometer would otherwise ignore in favor of the closed task's (weakly
+    // referenced) one — the counter would silently freeze, then read nothing.
+    task.disposeOnClose(() -> meterRegistry.remove(fencedWrites));
+    return task;
   }
 
   /**
@@ -311,10 +336,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   private void installTopology(final List<ActiveCube> cubes, final List<ActiveTable> tables) {
     final StateBackedProjectionState state = StateBackedProjectionState.fromProvider(provider);
-    // Advisory, like the cube gate counters: a reload rebuilds the base state's caches, but a
-    // gauge already registered under this store's id/tags keeps reading the prior (now-abandoned)
-    // cache — Micrometer keeps the first registration. Harmless for these advisory overlay gauges.
-    state.bindMetrics(storeMetrics);
+    // No gauge binding here: the overlay gauges are bound once at construction over suppliers
+    // that read the projectionState field, so re-pointing it below is all a reload needs to do
+    // for the gauges to track the new generation.
     projectionState = state;
     final EnvelopePublisher publisher =
         new EnvelopePublisher(
@@ -649,5 +673,15 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     } catch (final Exception e) {
       LOG.warn("Failed to close state provider for partition {}", partition, e);
     }
+    // Deregister this task's meters so a re-opened partition task's registrations are not
+    // silently ignored and this task becomes collectable (the gauges hold strong references).
+    storeMetrics.close();
+    meterDisposals.forEach(Runnable::run);
+    meterDisposals.clear();
+  }
+
+  /** Registers a per-task meter deregistration to run when this task closes. */
+  void disposeOnClose(final Runnable disposal) {
+    meterDisposals.add(disposal);
   }
 }

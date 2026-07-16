@@ -158,7 +158,44 @@ final class ProjectionStageTaskDedupTest {
     assertThat(openSegmentTotal()).isEqualTo(2L);
   }
 
+  @Test
+  void shouldTrackTheReloadedStateGenerationInTheOverlayGauges() {
+    // given a task that reload-checks at every commit, with a folded (uncommitted) activation
+    openTask(0L);
+    task.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, 10L, 100L));
+    assertThat(elementsOverlayEntries()).isGreaterThan(0.0);
+
+    // when the cut retires the overlay, and a catalog change then reloads the topology — which
+    // installs a NEW base-state generation (fresh caches) over the same RocksDB
+    Cuts.commit(task, 100L);
+    assertThat(elementsOverlayEntries()).isZero();
+    provision("cube-b");
+    Cuts.commit(task, 100L); // the reload check runs on the successful cut's completion
+
+    // and the reloaded generation folds a new activation
+    task.process(process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 2000L, 11L, 101L));
+
+    // then the gauge reads the NEW generation's overlay — a gauge pinned to the first generation
+    // would keep reading (and strongly pin) the abandoned caches, at zero, forever
+    assertThat(elementsOverlayEntries()).isGreaterThan(0.0);
+  }
+
+  /** The elements store's active-overlay entries gauge, from the task's meter registry. */
+  private double elementsOverlayEntries() {
+    return meterRegistry
+        .get("eb.streaming.store.overlay.entries")
+        .tag("stage", "projection")
+        .tag("partition", String.valueOf(EB_PARTITION))
+        .tag("store", "elements")
+        .gauge()
+        .value();
+  }
+
   private void openTask() {
+    openTask(Long.MAX_VALUE); // no reload in most tests
+  }
+
+  private void openTask(final long reloadCheckIntervalMs) {
     catalog = new DatasetCatalog(metadataStore);
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL("jdbc:h2:mem:dedup-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
@@ -190,10 +227,10 @@ final class ProjectionStageTaskDedupTest {
             offsets,
             appliedPositions,
             catalog,
-            Long.MAX_VALUE, // no reload in these tests
+            reloadCheckIntervalMs,
             false,
             new MicrometerProjectionMetrics(meterRegistry, EB_PARTITION),
-            FlowMetrics.of(meterRegistry, "projection"),
+            FlowMetrics.of(meterRegistry, "projection", EB_PARTITION),
             StoreMetrics.of(meterRegistry, "projection", EB_PARTITION),
             0L);
     task.init();

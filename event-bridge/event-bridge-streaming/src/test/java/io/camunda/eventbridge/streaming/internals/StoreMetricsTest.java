@@ -72,6 +72,24 @@ final class StoreMetricsTest {
         .isEqualTo(7.0);
   }
 
+  @Test
+  void shouldDeregisterItsGaugesOnCloseSoAReopenedOwnerRebinds() {
+    // given a closed owner's instance (a revoked partition task) that had bound its gauges
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    final StoreMetrics closedTask = StoreMetrics.of(registry, "projection", 1);
+    closedTask.bindOverlay("elements", () -> 5L, () -> 50L);
+
+    // when the owner closes and a re-opened task (same stage/partition) binds its own gauges —
+    // without the close-time removal, Micrometer would keep the dead task's registration
+    closedTask.close();
+    final StoreMetrics reopenedTask = StoreMetrics.of(registry, "projection", 1);
+    reopenedTask.bindOverlay("elements", () -> 9L, () -> 90L);
+
+    // then the gauge reads the re-opened task's live suppliers, not the closed task's
+    assertThat(entriesGauge(registry)).isEqualTo(9.0);
+    assertThat(bytesGauge(registry)).isEqualTo(90.0);
+  }
+
   private static double entriesGauge(final SimpleMeterRegistry registry) {
     return registry
         .get("eb.streaming.store.overlay.entries")

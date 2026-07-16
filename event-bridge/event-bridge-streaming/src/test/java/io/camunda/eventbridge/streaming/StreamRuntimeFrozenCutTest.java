@@ -95,6 +95,7 @@ final class StreamRuntimeFrozenCutTest {
         .sinkIoThreads(1)
         .commitInterval(commitInterval)
         .meterRegistry(meterRegistry)
+        .stageLabel("stage-a")
         .build();
   }
 
@@ -640,7 +641,13 @@ final class StreamRuntimeFrozenCutTest {
   }
 
   private static double earlyCutCount(final SimpleMeterRegistry registry) {
-    return registry.get("eb.streaming.cut.early").tag("partition", "1").counter().count();
+    // The stage label reaches exactly the early-cut counter; the cut timers stay partition-only.
+    return registry
+        .get("eb.streaming.cut.early")
+        .tag("partition", "1")
+        .tag("stage", "stage-a")
+        .counter()
+        .count();
   }
 
   /**

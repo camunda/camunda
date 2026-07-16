@@ -46,6 +46,7 @@ import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -152,6 +153,11 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   private final List<ParkedDelta> parkedToPersist = new ArrayList<>();
   private final List<byte[]> parkedToDelete = new ArrayList<>();
 
+  // Per-task meters registered by the constructor and removed at close(): a re-opened partition
+  // task re-registers under the same ids, and Micrometer keeps the first — without the removal
+  // the dead task's meters would shadow the live one's forever.
+  private final List<Meter> ownedMeters = new ArrayList<>();
+
   AggregationStageTask(
       final int partition,
       final OwnershipEpoch epoch,
@@ -168,7 +174,7 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       final long nowMs) {
     this.partition = partition;
     this.meterRegistry = meterRegistry;
-    flowMetrics = FlowMetrics.of(meterRegistry, "aggregation");
+    flowMetrics = FlowMetrics.of(meterRegistry, "aggregation", partition);
     this.epoch = epoch;
     this.datasetStore = datasetStore;
     // Stage the serving writes on the heap so a frozen cut flushes exactly the rows its barrier
@@ -201,6 +207,34 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     final DatasetCatalog.Snapshot snapshot = catalog.snapshot();
     installTopology(snapshot.cubes());
     appliedVersion = snapshot.version();
+    if (meterRegistry != null) {
+      // Registered per task and DEREGISTERED at close(): a partition revoked and re-assigned in
+      // the same JVM opens a fresh task whose re-registration Micrometer would otherwise ignore —
+      // the gauge would keep reading the closed task (false lag during failover, then nothing).
+      // The write fence's observability: rejections are the fence working (zero outside
+      // rebalances/replays), so they are exposed as a counter rather than logged as errors.
+      ownedMeters.add(
+          FunctionCounter.builder(
+                  "analytics.serving.fenced.writes",
+                  servingWriter,
+                  VersionedDatasetWriter::fencedWrites)
+              .description("Serving writes rejected by the version fence (stale by arrival)")
+              .tag("stage", "aggregation")
+              .tag("partition", String.valueOf(partition))
+              .register(meterRegistry));
+      // "now - clock": the min-of-sources stream-time clock lives on the mergers themselves;
+      // tagged by partition (in addition to the spec's "stage") because every partition task in
+      // this JVM shares one MeterRegistry — an untagged-by-partition gauge would silently only
+      // ever expose the first-registered partition's clock.
+      ownedMeters.add(
+          Gauge.builder("eb.streaming.watermark.lag", this, AggregationStageTask::watermarkLagMs)
+              .description(
+                  "now - the min-of-sources stream-time clock across this partition's mergers")
+              .tag("stage", "aggregation")
+              .tag("partition", String.valueOf(partition))
+              .strongReference(true)
+              .register(meterRegistry));
+    }
   }
 
   public static AggregationStageTask open(
@@ -226,40 +260,22 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
     final KeyValueStore<DbBytes, DbBytes> parkedStore =
         provider.keyValueStore(AnalyticsColumnFamilies.PARKED_DELTAS, new DbBytes(), new DbBytes());
     final VersionedDatasetWriter servingWriter = datasetStore.writer();
-    // The write fence's observability: rejections are the fence working (zero outside
-    // rebalances/replays), so they are exposed as a counter rather than logged as errors.
-    FunctionCounter.builder(
-            "analytics.serving.fenced.writes", servingWriter, VersionedDatasetWriter::fencedWrites)
-        .description("Serving writes rejected by the version fence (stale by arrival)")
-        .tag("stage", "aggregation")
-        .tag("partition", String.valueOf(partition))
-        .register(meterRegistry);
-    final AggregationStageTask task =
-        new AggregationStageTask(
-            partition,
-            epoch,
-            datasetStore,
-            servingWriter,
-            provider,
-            cellStore,
-            offsets,
-            dedupStore,
-            parkedStore,
-            catalog,
-            meterRegistry,
-            reloadCheckIntervalMs,
-            System.currentTimeMillis());
-    // "now - clock": the min-of-sources stream-time clock lives on the mergers themselves; tagged
-    // by partition (in addition to the spec's "stage") because every partition task in this JVM
-    // shares one MeterRegistry — an untagged-by-partition gauge would silently only ever expose
-    // the first-registered partition's clock (Micrometer keeps the first Gauge registered under a
-    // given id/tags and ignores later ones), which is not what "am I keeping up" should mean here.
-    Gauge.builder("eb.streaming.watermark.lag", task, AggregationStageTask::watermarkLagMs)
-        .description("now - the min-of-sources stream-time clock across this partition's mergers")
-        .tag("stage", "aggregation")
-        .tag("partition", String.valueOf(partition))
-        .register(meterRegistry);
-    return task;
+    // The per-task meters (fenced-writes counter, watermark-lag gauge) are registered by the
+    // constructor and deregistered by close(), so a re-opened partition rebinds cleanly.
+    return new AggregationStageTask(
+        partition,
+        epoch,
+        datasetStore,
+        servingWriter,
+        provider,
+        cellStore,
+        offsets,
+        dedupStore,
+        parkedStore,
+        catalog,
+        meterRegistry,
+        reloadCheckIntervalMs,
+        System.currentTimeMillis());
   }
 
   /**
@@ -572,15 +588,18 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
   /**
    * {@code now - clock} over the active mergers' min-of-sources stream-time clock (see {@link
    * SegmentMergingAggregation#clock()}) — the most-behind cube tier this partition owns. {@code 0}
-   * before any merger has seen a delta (no clock established yet), never negative. Racy-read: a
-   * scrape may see a topology mid-reload, which is harmless for an advisory gauge.
+   * before any merger has seen a delta (no clock established yet), never negative. Only positive
+   * clocks count: a merger's clock is an epoch-millisecond watermark, so a non-positive reading is
+   * either unset or a racily-published zero — folding one in would spike the gauge to {@code now}
+   * for one scrape. Racy-read: a scrape may see a topology mid-reload, which is harmless for an
+   * advisory gauge.
    */
   long watermarkLagMs() {
     long minClock = Long.MAX_VALUE;
     boolean any = false;
     for (final SegmentMergingAggregation<?, ?> merger : activeMergers) {
       final long clock = merger.clock();
-      if (clock != Long.MIN_VALUE) {
+      if (clock > 0) {
         any = true;
         minClock = Math.min(minClock, clock);
       }
@@ -769,6 +788,12 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       provider.close();
     } catch (final Exception e) {
       LOG.warn("Failed to close state provider for facts partition {}", partition, e);
+    }
+    // Deregister this task's meters so a re-opened partition task's registrations are not
+    // silently ignored and this task becomes collectable (the lag gauge holds a strong reference).
+    if (meterRegistry != null) {
+      ownedMeters.forEach(meterRegistry::remove);
+      ownedMeters.clear();
     }
   }
 }

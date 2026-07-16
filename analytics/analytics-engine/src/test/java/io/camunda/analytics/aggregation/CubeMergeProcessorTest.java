@@ -41,7 +41,7 @@ final class CubeMergeProcessorTest {
             (sourcePartition, segment, chunk, cell) -> {
               throw new AssertionError("no stream is unknown in this test");
             },
-            FlowMetrics.of(registry, "aggregation"));
+            FlowMetrics.of(registry, "aggregation", 1));
 
     // when the same (sourcePartition, segment, chunk) batch is delivered twice — a producer re-emit
     processor.process(envelope(0L, 0));
@@ -70,7 +70,7 @@ final class CubeMergeProcessorTest {
             (sourcePartition, segment, chunk, cell) -> {
               throw new AssertionError("no stream is unknown in this test");
             },
-            FlowMetrics.of(registry, "aggregation"));
+            FlowMetrics.of(registry, "aggregation", 1));
 
     // when two genuinely distinct segments are delivered
     processor.process(envelope(0L, 0));
