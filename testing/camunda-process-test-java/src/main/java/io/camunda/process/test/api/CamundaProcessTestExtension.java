@@ -126,6 +126,7 @@ public class CamundaProcessTestExtension
   private JsonMapper jsonMapper;
 
   private CamundaManagementClient camundaManagementClient;
+  private CamundaDataSource dataSource;
   private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
   private boolean dataDeletionEnabled = CamundaProcessTestRuntimeDefaults.DATA_DELETION_ENABLED;
 
@@ -189,7 +190,8 @@ public class CamundaProcessTestExtension
             camundaManagementClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
-            conditionalBehaviorEngine);
+            conditionalBehaviorEngine,
+            () -> dataSource);
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
@@ -315,8 +317,8 @@ public class CamundaProcessTestExtension
     }
 
     // initialize assertions
-    final CamundaDataSource dataSource =
-        new CamundaDataSource(camundaProcessTestContext.createClient());
+    final Instant testCaseStartTime = readCurrentRuntimeTime();
+    dataSource = new CamundaDataSource(camundaProcessTestContext.createClient(), testCaseStartTime);
     CamundaAssert.initialize(dataSource);
 
     // initialize result collector
@@ -380,8 +382,6 @@ public class CamundaProcessTestExtension
     conditionalBehaviorEngine.stop();
 
     try {
-      final CamundaDataSource dataSource =
-          new CamundaDataSource(camundaProcessTestContext.createClient());
       final CoverageTestData coverageData = CoverageTestDataCollector.collectData(dataSource);
       coverageCollector.collectTestRunCoverage(
           context.getRequiredTestClass(),
@@ -473,6 +473,18 @@ public class CamundaProcessTestExtension
           "Failed to reset the time, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
+    }
+  }
+
+  private Instant readCurrentRuntimeTime() {
+    try {
+      return camundaManagementClient.getCurrentTime();
+    } catch (final Exception e) {
+      LOG.warn(
+          "Failed to read the current runtime time. Test case isolation by start time will be "
+              + "disabled for this test case.",
+          e);
+      return null;
     }
   }
 
