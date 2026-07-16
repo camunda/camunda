@@ -51,6 +51,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceReexportIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -111,6 +112,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -361,6 +363,16 @@ public final class RecordingExporter implements Exporter {
 
   public static AgentHistoryRecordStream agentHistoryRecords(final AgentHistoryIntent intent) {
     return agentHistoryRecords().withIntent(intent);
+  }
+
+  public static SecretReferenceRecordStream secretReferenceRecords() {
+    return new SecretReferenceRecordStream(
+        records(ValueType.SECRET_REFERENCE, SecretReferenceRecordValue.class));
+  }
+
+  public static SecretReferenceRecordStream secretReferenceRecords(
+      final SecretReferenceIntent intent) {
+    return secretReferenceRecords().withIntent(intent);
   }
 
   public static JobRecordStream jobRecords() {

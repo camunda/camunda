@@ -134,6 +134,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -343,6 +344,7 @@ public class CompactRecordLogger {
     valueLoggers.put(RESOURCE_REEXPORT, this::summarizeResourceReexport);
     valueLoggers.put(ValueType.AGENT_INSTANCE, this::summarizeAgentInstance);
     valueLoggers.put(ValueType.AGENT_HISTORY, this::summarizeAgentHistory);
+    valueLoggers.put(ValueType.SECRET_REFERENCE, this::summarizeSecretReference);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -634,6 +636,26 @@ public class CompactRecordLogger {
               toolCalls.stream()
                   .map(AgentHistoryRecordValue.AgentHistoryEmbeddedToolCallValue::getToolName)
                   .collect(Collectors.joining(", ")));
+    }
+
+    return result.toString();
+  }
+
+  private String summarizeSecretReference(final Record<?> record) {
+    final var value = (SecretReferenceRecordValue) record.getValue();
+    final var result = new StringBuilder();
+
+    result
+        .append("store:")
+        .append(value.getStoreId())
+        .append(" ref:")
+        .append(value.getSecretReference())
+        .append(" state:")
+        .append(value.getResolutionState());
+
+    final var jobKeys = value.getJobKeys();
+    if (jobKeys != null && !jobKeys.isEmpty()) {
+      result.append(" jobs:").append(jobKeys.size());
     }
 
     return result.toString();
