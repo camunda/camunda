@@ -104,6 +104,33 @@ public final class CompactionManifest {
   }
 
   /**
+   * Binary-searches {@link #segments()} (sorted ascending by {@link CleanSegment#firstPosition})
+   * for the segment covering {@code position}: the one with the greatest {@code firstPosition} that
+   * is still {@code <= position}. Segments never overlap — a pass rewrites the entire previous
+   * clean set plus the dirty range as one monotonically increasing sequence, split into files only
+   * by {@code maxSegmentBytes} — so this is a well-defined O(log n) lookup (ADR 0001, decision 5).
+   *
+   * @param position the log position to resolve
+   * @return the covering segment's index into {@link #segments()}, or {@code -1} if {@code
+   *     position} precedes every segment's {@code firstPosition} (below the clean set's start)
+   */
+  public int floorSegmentIndex(final long position) {
+    int lo = 0;
+    int hi = segments.size() - 1;
+    int floorIndex = -1;
+    while (lo <= hi) {
+      final int mid = (lo + hi) >>> 1;
+      if (segments.get(mid).firstPosition() <= position) {
+        floorIndex = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return floorIndex;
+  }
+
+  /**
    * Serializes the manifest into its deterministic byte form.
    *
    * @return the manifest bytes (UTF-8)

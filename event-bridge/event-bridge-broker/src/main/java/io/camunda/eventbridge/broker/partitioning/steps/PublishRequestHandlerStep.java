@@ -26,7 +26,8 @@ public final class PublishRequestHandlerStep implements PartitionStartupStep {
         new PublishRequestHandler(
             context.getPartitionId(),
             context.getEventStream().getWriter(),
-            context.getCorrelator());
+            context.getCorrelator(),
+            context.getCleanupPolicy());
     context.setPublishRequestHandler(handler);
 
     final var topic =
