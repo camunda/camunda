@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,9 @@ public class CamundaProcessTestRuntimeConfiguration {
       CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME;
 
   private boolean multiTenancyEnabled = false;
+
+  private Duration containerStartupTimeout =
+      CamundaProcessTestRuntimeDefaults.DEFAULT_CONTAINER_STARTUP_TIMEOUT;
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
@@ -232,6 +236,14 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setMultiTenancyEnabled(final boolean multiTenancyEnabled) {
     this.multiTenancyEnabled = multiTenancyEnabled;
+  }
+
+  public Duration getContainerStartupTimeout() {
+    return containerStartupTimeout;
+  }
+
+  public void setContainerStartupTimeout(final Duration containerStartupTimeout) {
+    this.containerStartupTimeout = containerStartupTimeout;
   }
 
   public CoverageReportConfiguration getCoverage() {

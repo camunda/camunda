@@ -91,6 +91,9 @@ public class CamundaProcessTestRuntimeBuilder {
   private Duration remoteRuntimeConnectionTimeout =
       CamundaProcessTestRuntimeDefaults.REMOTE_RUNTIME_CONNECTION_TIMEOUT;
 
+  private Duration containerStartupTimeout =
+      CamundaProcessTestRuntimeDefaults.DEFAULT_CONTAINER_STARTUP_TIMEOUT;
+
   private boolean isMultiTenancyEnabled = CamundaProcessTestRuntimeDefaults.MULTI_TENANCY_ENABLED;
 
   private String coverageReportDirectory =
@@ -253,6 +256,12 @@ public class CamundaProcessTestRuntimeBuilder {
   public CamundaProcessTestRuntimeBuilder withRemoteRuntimeConnectionTimeout(
       final Duration remoteRuntimeConnectionTimeout) {
     this.remoteRuntimeConnectionTimeout = remoteRuntimeConnectionTimeout;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withContainerStartupTimeout(
+      final Duration containerStartupTimeout) {
+    this.containerStartupTimeout = containerStartupTimeout;
     return this;
   }
 
@@ -435,6 +444,10 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public Duration getRemoteRuntimeConnectionTimeout() {
     return remoteRuntimeConnectionTimeout;
+  }
+
+  public Duration getContainerStartupTimeout() {
+    return containerStartupTimeout;
   }
 
   public String getCoverageReportDirectory() {

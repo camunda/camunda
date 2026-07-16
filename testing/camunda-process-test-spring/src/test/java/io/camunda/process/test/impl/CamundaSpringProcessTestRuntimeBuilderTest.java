@@ -75,6 +75,8 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         .isEqualTo(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
     assertThat(runtimeBuilder.getCamundaEnvVars()).isEmpty();
     assertThat(runtimeBuilder.getCamundaExposedPorts()).isEmpty();
+    assertThat(runtimeBuilder.getContainerStartupTimeout())
+        .isEqualTo(CamundaProcessTestRuntimeDefaults.DEFAULT_CONTAINER_STARTUP_TIMEOUT);
 
     assertThat(runtimeBuilder.isConnectorsEnabled()).isFalse();
   }
@@ -101,6 +103,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setCamundaExposedPorts(camundaExposedPorts);
     runtimeConfiguration.setCamundaLoggerName("io.camunda.custom.logger.name");
     runtimeConfiguration.setConnectorsLoggerName("io.camunda.custom.logger.name");
+    runtimeConfiguration.setContainerStartupTimeout(Duration.ofMinutes(2));
 
     // when
     CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
@@ -112,6 +115,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.getCamundaExposedPorts()).isEqualTo(camundaExposedPorts);
     assertThat(runtimeBuilder.getCamundaLoggerName()).isEqualTo("io.camunda.custom.logger.name");
     assertThat(runtimeBuilder.getConnectorsLoggerName()).isEqualTo("io.camunda.custom.logger.name");
+    assertThat(runtimeBuilder.getContainerStartupTimeout()).isEqualTo(Duration.ofMinutes(2));
   }
 
   @ParameterizedTest

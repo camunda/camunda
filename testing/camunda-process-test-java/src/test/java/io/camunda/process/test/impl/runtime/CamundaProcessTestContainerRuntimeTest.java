@@ -27,6 +27,7 @@ import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -136,6 +137,26 @@ public class CamundaProcessTestContainerRuntimeTest {
         .createConnectorsContainer(
             CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME,
             CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION);
+    verify(camundaContainer)
+        .withStartupTimeout(CamundaProcessTestRuntimeDefaults.DEFAULT_CONTAINER_STARTUP_TIMEOUT);
+    verify(connectorsContainer)
+        .withStartupTimeout(CamundaProcessTestRuntimeDefaults.DEFAULT_CONTAINER_STARTUP_TIMEOUT);
+  }
+
+  @Test
+  void shouldConfigureContainerStartupTimeout() {
+    // given
+    final Duration startupTimeout = Duration.ofMinutes(2);
+
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withContainerStartupTimeout(startupTimeout)
+        .build();
+
+    // then
+    verify(camundaContainer).withStartupTimeout(startupTimeout);
+    verify(connectorsContainer).withStartupTimeout(startupTimeout);
   }
 
   @Test

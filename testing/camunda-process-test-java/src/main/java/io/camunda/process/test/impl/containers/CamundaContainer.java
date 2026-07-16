@@ -31,6 +31,7 @@ import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME;
 
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
 import java.net.URI;
@@ -47,7 +48,6 @@ import org.testcontainers.utility.DockerImageName;
 
 public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
-  private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
   private static final Duration DEFAULT_READINESS_TIMEOUT = Duration.ofSeconds(10);
 
   private static final String READY_ENDPOINT = "/actuator/health/status";
@@ -206,14 +206,14 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
     return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
         .withStrategy(newDefaultBrokerReadyCheck())
         .withStrategy(newDefaultTopologyReadyCheck())
-        .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
+        .withStartupTimeout(CamundaProcessTestRuntimeDefaults.DEFAULT_CONTAINER_STARTUP_TIMEOUT);
   }
 
   private WaitAllStrategy newBasicAuthWaitStrategy() {
     return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
         .withStrategy(newBasicAuthBrokerReadyCheck())
         .withStrategy(newBasicAuthTopologyReadyCheck())
-        .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
+        .withStartupTimeout(CamundaProcessTestRuntimeDefaults.DEFAULT_CONTAINER_STARTUP_TIMEOUT);
   }
 
   public int getGrpcApiPort() {

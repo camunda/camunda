@@ -19,6 +19,7 @@ import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CONNECTO
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_REST_ADDRESS;
 import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CONNECTORS_ENV_SECRET_PREFIX;
 
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
 import java.net.URI;
@@ -32,8 +33,6 @@ import org.testcontainers.containers.wait.strategy.WaitAllStrategy.Mode;
 import org.testcontainers.utility.DockerImageName;
 
 public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
-
-  private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
 
   private static final String DEFAULT_CONNECTOR_POLLING_INTERVAL_IN_MILLIS = "500";
 
@@ -109,14 +108,14 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
     return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
         .withStrategy(new HostPortWaitStrategy())
         .withStrategy(newBasicAuthConnectorsReadyCheck())
-        .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
+        .withStartupTimeout(CamundaProcessTestRuntimeDefaults.DEFAULT_CONTAINER_STARTUP_TIMEOUT);
   }
 
   private WaitAllStrategy newDefaultWaitStrategy() {
     return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
         .withStrategy(new HostPortWaitStrategy())
         .withStrategy(newDefaultConnectorsReadyCheck())
-        .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
+        .withStartupTimeout(CamundaProcessTestRuntimeDefaults.DEFAULT_CONTAINER_STARTUP_TIMEOUT);
   }
 
   public int getRestApiPort() {

@@ -166,6 +166,7 @@ public class CamundaProcessTestContainerRuntime
       container.withMultiTenancy();
     }
 
+    container.withStartupTimeout(builder.getContainerStartupTimeout());
     container.withEnv(builder.getCamundaEnvVars());
     builder.getCamundaExposedPorts().forEach(container::addExposedPort);
 
@@ -193,6 +194,7 @@ public class CamundaProcessTestContainerRuntime
       container.withMultiTenancy();
     }
 
+    container.withStartupTimeout(builder.getContainerStartupTimeout());
     container.withEnv(builder.getConnectorsEnvVars());
     builder.getConnectorsExposedPorts().forEach(container::addExposedPort);
 

@@ -233,6 +233,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
         "camunda.process-test.connectors-enabled=true",
         "camunda.process-test.camunda-docker-image-version=8.8.0-new",
         "camunda.process-test.camunda-docker-image-name=camunda/camunda-new",
+        "camunda.process-test.container-startup-timeout=PT2M",
         "io.camunda.process.test.camunda-docker-image-name=camunda/camunda-legacy",
       })
   class ShouldApplyRuntimeConfigurationWithNewPrefix {
@@ -244,6 +245,7 @@ public class CamundaProcessTestDefaultConfigurationTest {
       assertThat(configuration.isConnectorsEnabled()).isTrue();
       assertThat(configuration.getCamundaDockerImageVersion()).isEqualTo("8.8.0-new");
       assertThat(configuration.getCamundaDockerImageName()).isEqualTo("camunda/camunda-new");
+      assertThat(configuration.getContainerStartupTimeout()).isEqualTo(Duration.ofMinutes(2));
     }
   }
 
