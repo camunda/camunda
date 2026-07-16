@@ -105,7 +105,8 @@ public class MultiCamundaClientAutoConfiguration {
       final ObjectProvider<JsonMapper> jsonMapper,
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
-      final CamundaClientExecutorService camundaClientExecutorService) {
+      final CamundaClientExecutorService camundaClientExecutorService,
+      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier) {
     final String primaryClientName = properties.getPrimaryClientName().orElseThrow();
     final CamundaClientProperties primaryProperties =
         properties.getClients().get(primaryClientName);
@@ -116,7 +117,10 @@ public class MultiCamundaClientAutoConfiguration {
         chainHandlers,
         camundaClientExecutorService,
         credentialsProviderConfiguration.camundaClientCredentialsProvider(primaryProperties),
-        context -> JobExceptionHandler.createDefault());
+        // prefer the context's supplier (so user overrides are reflected), matching the clients
+        // built by CamundaClientFactory
+        jobExceptionHandlerSupplier.getIfAvailable(
+            () -> context -> JobExceptionHandler.createDefault()));
   }
 
   @Bean

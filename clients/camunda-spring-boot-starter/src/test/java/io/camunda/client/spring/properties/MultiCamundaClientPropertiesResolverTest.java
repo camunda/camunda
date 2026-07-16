@@ -34,16 +34,20 @@ class MultiCamundaClientPropertiesResolverTest {
   }
 
   @Test
-  void shouldResolveNoClientsWhenNoneConfigured() {
-    // given
-    final StandardEnvironment environment = environmentWith(Map.of());
+  void shouldProjectSingleDefaultClientWhenNoneConfigured() {
+    // given no explicit camunda.clients.<name>.* entries (single-client / unconfigured app)
+    final StandardEnvironment environment =
+        environmentWith(Map.of("camunda.client.rest-address", "https://oc.example.com"));
 
     // when
     final MultiCamundaClientProperties properties =
         MultiCamundaClientPropertiesResolver.resolve(environment);
 
-    // then
-    assertThat(properties.getClients()).isEmpty();
+    // then it is projected onto exactly one client named 'default', seeded from camunda.client.*
+    assertThat(properties.getClients().keySet()).containsExactly("default");
+    assertThat(properties.getPrimaryClientName()).contains("default");
+    assertThat(properties.getClients().get("default").getRestAddress().toString())
+        .isEqualTo("https://oc.example.com");
   }
 
   @Test
