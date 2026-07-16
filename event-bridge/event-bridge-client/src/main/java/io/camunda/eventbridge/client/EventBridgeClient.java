@@ -273,6 +273,16 @@ public interface EventBridgeClient extends AutoCloseable {
     BatchPublisher add(String value);
 
     /**
+     * Marks this batch {@code KEYED}: declares that every added entry's key is meaningful for
+     * latest-per-key retention (event-bridge ADR 0001), the convention a {@code COMPACT} topic
+     * requires. Publishing without this to a {@code COMPACT} topic is rejected; keyed publishes to
+     * a {@code DELETE} topic are always allowed. Unset by default.
+     *
+     * @return this builder
+     */
+    BatchPublisher keyed();
+
+    /**
      * Publishes the batch to a partition of a topic ({@code POST /v1/topics/{topic}/...}).
      *
      * @return a future resolving to the log positions assigned by the broker. The POC gateway

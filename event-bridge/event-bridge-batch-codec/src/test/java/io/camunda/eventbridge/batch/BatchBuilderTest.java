@@ -45,6 +45,25 @@ final class BatchBuilderTest {
   }
 
   @Test
+  void shouldSetOnlyTheKeyedAttributeBitAndLeaveEntriesUnchanged() {
+    // given: the same entries, built once plain and once marked keyed()
+    final byte[] plain = newBatch().add("k1", bytes("v1")).build();
+    final byte[] keyed = newBatch().keyed().add("k1", bytes("v1")).build();
+
+    // then: identical length and entry bytes; only the attributes field (bit 3) differs
+    assertThat(keyed.length).isEqualTo(plain.length);
+    assertThat(BatchFormat.getIntLE(plain, BatchFormat.ATTRIBUTES_OFFSET)).isZero();
+    assertThat(BatchFormat.getIntLE(keyed, BatchFormat.ATTRIBUTES_OFFSET))
+        .isEqualTo(BatchFormat.KEYED_MASK);
+
+    final byte[] plainEntries = new byte[plain.length - BatchFormat.HEADER_LENGTH];
+    final byte[] keyedEntries = new byte[keyed.length - BatchFormat.HEADER_LENGTH];
+    System.arraycopy(plain, BatchFormat.HEADER_LENGTH, plainEntries, 0, plainEntries.length);
+    System.arraycopy(keyed, BatchFormat.HEADER_LENGTH, keyedEntries, 0, keyedEntries.length);
+    assertThat(keyedEntries).isEqualTo(plainEntries);
+  }
+
+  @Test
   void shouldRoundTripKeylessEntriesWithEmptyKeysAndIntactValues() {
     // given a batch of keyless entries (the producer's allocation-free path)
     final byte[] built = newBatch().add(bytes("v1")).add(bytes("v2")).build();

@@ -29,11 +29,19 @@ import org.agrona.MutableDirectBuffer;
  * 12      4     version       4-byte     no      no        format version (1)
  * 16      8     timestamp     8-byte     no      yes       broker append time (producer sends 0)
  * 24      4     crc           4-byte     no      no        CRC-32C of [28..end)
- * 28      4     attributes    4-byte     yes     no        bit flags (compression, future)
+ * 28      4     attributes    4-byte     yes     no        bit flags (compression, KEYED, future)
  * 32      4     entryCount    4-byte     yes     no        number of records
  * 36      4     reserved      4-byte     yes     no        must be 0 (future use)
- * 40      var   entries...    —          yes     no        [len(4)][data] × entryCount
+ * 40      var   entries...    —          yes     no        [entryLength(4)][keyLength(4)][key][value] × entryCount
  * </pre>
+ *
+ * <p>Every entry always carries the {@code keyLength} field (0 = no key) — this is not gated by any
+ * attribute bit. A keyed entry with an empty value is a <em>tombstone</em> (see {@link
+ * EventBridgeEntry#isTombstone()}). The {@code KEYED} attribute ({@link #KEYED_MASK}) is a
+ * batch-level declaration, not a framing switch: it says the producer intends these keys as
+ * meaningful for latest-per-key retention (event-bridge ADR 0001), which gates publish validation
+ * against a {@code COMPACT} topic. A batch built without {@link EventBridgeBatchBuilder#keyed()} is
+ * byte-identical to one from before this attribute existed.
  *
  * <h3>Field semantics</h3>
  *
@@ -52,7 +60,8 @@ import org.agrona.MutableDirectBuffer;
  *       and timestamp are excluded because the broker patches them after the producer computes the
  *       CRC — this avoids CRC recomputation on the broker's hot path.
  *   <li>{@code attributes} — bit flags. Bits 0-2: compression codec (0=none, 1=lz4, 2=zstd,
- *       3=snappy). Bits 3-31: reserved (must be 0).
+ *       3=snappy). Bit 3: {@code KEYED} — the producer declares this batch's entry keys meaningful
+ *       for latest-per-key retention (see {@link #KEYED_MASK}). Bits 4-31: reserved (must be 0).
  *   <li>{@code entryCount} — number of records in this batch. The broker uses this to advance the
  *       position counter.
  *   <li>{@code reserved} — must be 0. Available for future fields without a version bump if the
@@ -106,6 +115,9 @@ public final class EventBridgeBatch {
   public static final int COMPRESSION_LZ4 = BatchFormat.COMPRESSION_LZ4;
   public static final int COMPRESSION_ZSTD = BatchFormat.COMPRESSION_ZSTD;
   public static final int COMPRESSION_SNAPPY = BatchFormat.COMPRESSION_SNAPPY;
+
+  // -- Attribute bit mask: KEYED flag in bit 3 --
+  public static final int KEYED_MASK = BatchFormat.KEYED_MASK;
 
   // -- CRC range: from ATTRIBUTES_OFFSET to end of batch --
   //
@@ -308,5 +320,15 @@ public final class EventBridgeBatch {
   /** Extracts the compression codec from the attributes field. */
   public static int compressionCodec(final int attributes) {
     return attributes & COMPRESSION_MASK;
+  }
+
+  /**
+   * Returns {@code true} if the batch declares its entry keys meaningful for latest-per-key
+   * retention (the {@code KEYED} attribute bit). Entries carry an optional key regardless of this
+   * flag; this only gates publish validation against a {@code COMPACT} topic and tombstone
+   * semantics.
+   */
+  public static boolean isKeyed(final int attributes) {
+    return (attributes & KEYED_MASK) != 0;
   }
 }
