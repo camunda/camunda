@@ -182,6 +182,15 @@ public final class FetchResult {
   }
 
   /**
+   * Like {@link #entries(long)}, but also copies each entry's key — needed by a consumer that reads
+   * a keyed batch (e.g. a state changelog, event-bridge-streaming ADR 0009) rather than a plain
+   * event stream, where {@link BatchReader.Entry#key()} would otherwise always be empty.
+   */
+  public List<BatchReader.Entry> entriesWithKeys(final long startOffset) {
+    return BatchReader.read(body, dataOffset, dataLength, startOffset);
+  }
+
+  /**
    * Visits each entry at or after {@code startOffset} in place — the cursor counterpart of {@link
    * #entries(long)} for the hot fetch path: no list and no per-entry object are allocated; the
    * visitor reads position and value coordinates directly against the shared response array and
