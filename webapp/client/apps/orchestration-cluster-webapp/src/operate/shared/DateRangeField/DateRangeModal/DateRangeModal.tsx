@@ -9,7 +9,6 @@
 import {useEffect, useState} from 'react';
 import {Form} from 'react-final-form';
 import {DatePicker, Layer, Modal, Stack} from '@carbon/react';
-import englishLocale from 'flatpickr/dist/l10n/default';
 import {createPortal} from 'react-dom';
 import {logger} from '#/operate/shared/utils/logger';
 import {tracking} from '#/shared/tracking';
@@ -117,7 +116,6 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, filt
 									<div>
 										<DatePicker
 											datePickerType="range"
-											locale={englishLocale}
 											// Carbon's `DatePickerInput` explicitly doesn't support a `value` prop on
 											// itself for range pickers; the parent `DatePicker` is the supported,
 											// documented way to control the selected dates.
