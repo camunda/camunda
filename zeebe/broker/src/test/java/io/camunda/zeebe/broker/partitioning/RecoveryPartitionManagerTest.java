@@ -26,6 +26,7 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -202,6 +203,20 @@ final class RecoveryPartitionManagerTest {
                               .containsEntry(PARTITION_ID, PartitionRole.INACTIVE)
                               .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
             });
+
+    // and: only the partition that failed to start is reported as DEAD, since it never
+    // recovered and nothing is left running to ever bring it back
+    await()
+        .untilAsserted(
+            () -> {
+              final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
+              assertThat(publishedInfos)
+                  .anySatisfy(
+                      info ->
+                          assertThat(info.getPartitionHealthStatuses())
+                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD)
+                              .doesNotContainKey(PARTITION_ID));
+            });
   }
 
   @Test
@@ -228,6 +243,21 @@ final class RecoveryPartitionManagerTest {
                           assertThat(info.getPartitionRoles())
                               .containsEntry(PARTITION_ID, PartitionRole.INACTIVE)
                               .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
+            });
+
+    // and: both partitions are reported as DEAD, since neither recovered and nothing is left
+    // running to ever bring them back - this is the signal that the mode-change bookkeeping
+    // (which only checks the INACTIVE role above) otherwise misses
+    await()
+        .untilAsserted(
+            () -> {
+              final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
+              assertThat(publishedInfos)
+                  .anySatisfy(
+                      info ->
+                          assertThat(info.getPartitionHealthStatuses())
+                              .containsEntry(PARTITION_ID, PartitionHealthStatus.DEAD)
+                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD));
             });
   }
 

@@ -30,6 +30,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -56,6 +57,7 @@ public final class RecoveryPartitionManager
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryPartitionManager.class);
   private final List<RecoveryPartition> recoveryPartitions = new ArrayList<>();
+  private final List<Integer> failedPartitionIds = new ArrayList<>();
   private final String partitionGroup;
   private final ConcurrencyControl concurrencyControl;
   private final ActorSchedulingService actorSchedulingService;
@@ -177,6 +179,10 @@ public final class RecoveryPartitionManager
           concurrencyControl.runOnCompletion(
               deactivateFutures,
               (ignoredDeactivate, deactivateError) -> {
+                // reported once the partition is registered as INACTIVE above, since
+                // onHealthChanged is a no-op for a partition the topology doesn't know about yet
+                failedPartitionIds.forEach(
+                    id -> topologyManager.onHealthChanged(id, HealthStatus.DEAD));
                 if (recoveryPartitions.isEmpty()) {
                   if (deactivateError != null) {
                     LOG.error(
@@ -302,6 +308,7 @@ public final class RecoveryPartitionManager
                   "Failed to start recovery partition for {}, stopping it",
                   partition.partitionId(),
                   startError);
+              failedPartitionIds.add(partition.partitionId().number());
               return partition
                   .stop()
                   .andThen(
