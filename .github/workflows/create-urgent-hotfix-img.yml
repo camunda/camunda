@@ -316,7 +316,11 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           push: false
           provenance: false
+<<<<<<< HEAD
           outputs: type=image,oci-mediatypes=false,push=true
+=======
+          outputs: type=image,oci-mediatypes=false
+>>>>>>> ff9d18fdf (fix: force Docker manifest-list media type for multi-arch image pushes)
           build-args: ${{ steps.build-args.outputs.args }}
           tags: |
             ${{ env.HOTFIX_REGISTRY }}/${{ matrix.component }}:${{ steps.set-version.outputs.hotfix-version }}

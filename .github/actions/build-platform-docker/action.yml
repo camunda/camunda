@@ -150,7 +150,11 @@ runs:
         push: false
         platforms: ${{ inputs.platforms }}
         provenance: false
+<<<<<<< HEAD
         outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false,push=true' || '' }}
+=======
+        outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false' || '' }}
+>>>>>>> ff9d18fdf (fix: force Docker manifest-list media type for multi-arch image pushes)
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
