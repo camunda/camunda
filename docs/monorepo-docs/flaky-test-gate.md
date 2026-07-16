@@ -249,7 +249,7 @@ To replay a single PR's baseline query at a chosen cutoff (to classify an alert 
 1. **Look at the comment first.** It tells you which test, which job, and how many clean re-runs you have.
 2. **If the test name is from your diff**, you introduced it — fix the method and push. The next 3 clean CI runs will clear it.
 3. **If you didn't touch anything related**, it's a pre-existing flake that just hit you. Apply `ci:flaky-test-bypass` (after opening a `kind/flake` issue) and re-run CI.
-4. **If you're convinced it's a false positive from the gate itself** (e.g. the test has clearly flaked on `main` recently), confirm with the BigQuery replay query and reach out to `#ask-monorepo-devops`. The bypass label always works as an escape hatch.
+4. **If you're convinced it's a false positive from the gate itself** (e.g. the test has clearly flaked on `main` recently), confirm with the BigQuery replay query and reach out to `#ask-eng-ops`. The bypass label always works as an escape hatch.
 
 ### Disabling the gate temporarily
 

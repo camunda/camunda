@@ -1012,7 +1012,7 @@ jobs:
                 # The artifact was unreachable. Distinguish this from a
                 # genuinely "unknown" categorisation so consumers don't
                 # confuse "we couldn't tell" with "we tried and the data
-                # was ambiguous". Routing falls to monorepo-devops since
+                # was ambiguous". Routing falls to monorepo-ci-medic since
                 # this is an integration / permissions problem with the
                 # parent workflow, not a downstream test failure.
                 DOWNLOAD_ERR=$(tr '\n' ' ' < "$DOWNLOAD_LOG" 2>/dev/null | sed 's/  */ /g' | cut -c1-300)

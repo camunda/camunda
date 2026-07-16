@@ -33,7 +33,7 @@ actions and the caching policy for this repo. Common shapes:
 - **Docker builds**: do **not** add `cache-from: type=gha` / `cache-to: type=gha` to
   `docker/build-push-action` — `ci.md` explicitly forbids it.
 - **External registry / dependency that has caused outages**: configure a mirror or fallback URL
-  if one exists, or pin to a known-good version. Coordinate with monorepo-devops if the change
+  if one exists, or pin to a known-good version. Coordinate with Engineering Operations if the change
   touches `Artifactory` / `DockerHub` integration.
 - **Right-sizing / Splitting** (runner class): only justified when the timeout is the
   actual constraint *and* the slowdown is intrinsic. Don't bump timeouts. Use

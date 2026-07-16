@@ -27,11 +27,11 @@ const RELIABILITY =
 const MEDIC = {
   '@camunda/test-automation-team': '<!subteam^S09UF0EV0HG|test-automation-medic>',
   '@camunda/distribution': '<!subteam^S053K7C7QKU|distribution-medic>',
-  '@camunda/monorepo-devops-team': '<!subteam^S07D6C6B18T|monorepo-devops-medic>',
+  '@camunda/engineering-operations': '<!subteam^S07D6C6B18T|monorepo-ci-medic>',
   '@camunda/core-features': '<!subteam^S08P2CU9V8W|core-features-medic>',
 };
 // No fallback: an unmapped/missing owner (e.g. the "unknown" default) must not
-// silently page monorepo-devops-medic. Returns '' (nothing to concatenate) when
+// silently page monorepo-ci-medic. Returns '' (nothing to concatenate) when
 // there's no mapping, so callers don't need to worry about spacing either.
 const medicMention = (owner) => (MEDIC[owner] ? ` ${MEDIC[owner]}` : '');
 
