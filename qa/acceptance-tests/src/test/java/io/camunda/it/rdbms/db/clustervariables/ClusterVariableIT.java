@@ -441,6 +441,36 @@ public class ClusterVariableIT {
     assertThat(deletedInstance).isNull();
   }
 
+  @TestTemplate
+  public void shouldSaveAndFindClusterVariableWithKind(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var dbModel =
+        new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
+            .name(generateRandomString(10))
+            .value("\"secret\"")
+            .scope(ClusterVariableScope.GLOBAL)
+            .tenantId(null)
+            .kind(io.camunda.search.entities.ClusterVariableKind.SECRET_REFERENCE)
+            .build();
+    createAndSaveVariables(testApplication.getRdbmsService(), dbModel);
+
+    // when
+    final var found =
+        testApplication
+            .getRdbmsService()
+            .getClusterVariableReader()
+            .getGloballyScopedClusterVariable(
+                dbModel.name(),
+                CommonFixtures.resourceAccessChecksFromResourceIds(
+                    AuthorizationResourceType.CLUSTER_VARIABLE, dbModel.name()));
+
+    // then
+    assertThat(found).isNotNull();
+    assertThat(found.kind())
+        .isEqualTo(io.camunda.search.entities.ClusterVariableKind.SECRET_REFERENCE);
+  }
+
   private void assertVariableDbModelEqualToEntity(
       final ClusterVariableDbModel dbModel, final ClusterVariableEntity entity) {
     // metadata is not yet persisted in ClusterVariableDbModel, so it has no equivalent to compare

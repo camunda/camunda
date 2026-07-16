@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.value.ClusterVariableScope.GLOBAL
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.db.rdbms.write.service.ClusterVariableWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -51,7 +52,8 @@ public class ClusterVariableExportHandler
     final var builder =
         new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
             .name(value.getName())
-            .value(value.getValue());
+            .value(value.getValue())
+            .kind(ClusterVariableKind.valueOf(value.getKind().name()));
     if (value.getScope() == GLOBAL) {
       builder.scope(ClusterVariableScope.GLOBAL).tenantId(null);
     } else {

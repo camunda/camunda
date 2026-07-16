@@ -25,6 +25,7 @@
        empty list. We use the ObjectTypeHandler because no other typeHandler can map NULL to List -->
       <arg column="METADATA" javaType="java.util.List"
         typeHandler="org.apache.ibatis.type.ObjectTypeHandler"/>
+      <arg column="KIND" javaType="io.camunda.search.entities.ClusterVariableKind"/>
     </constructor>
   </resultMap>
 
@@ -48,7 +49,8 @@
     TENANT_ID,
     SCOPE,
     IS_PREVIEW,
-    NULL AS METADATA
+    NULL AS METADATA,
+    KIND
     FROM ${prefix}CLUSTER_VARIABLE
     <include refid="io.camunda.db.rdbms.sql.ClusterVariableMapper.searchFilter"/>
     ) t
@@ -68,7 +70,8 @@
     TENANT_ID,
     SCOPE,
     IS_PREVIEW,
-    NULL AS METADATA
+    NULL AS METADATA,
+    KIND
     FROM ${prefix}CLUSTER_VARIABLE
     WHERE CLUSTER_VARIABLE_ID = #{id}
   </select>
@@ -76,12 +79,11 @@
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
     INSERT INTO ${prefix}CLUSTER_VARIABLE (CLUSTER_VARIABLE_ID, VAR_NAME, TYPE, DOUBLE_VALUE,
                                            LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, IS_PREVIEW,
-                                           TENANT_ID,
-                                           SCOPE)
+                                           TENANT_ID, SCOPE, KIND)
     VALUES (#{id}, #{name}, #{type}, #{doubleValue, jdbcType=DOUBLE},
             #{longValue, jdbcType=NUMERIC},
             #{value},
-            #{fullValue}, #{isPreview}, #{tenantId}, #{scope})
+            #{fullValue}, #{isPreview}, #{tenantId}, #{scope}, #{kind})
   </insert>
 
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
@@ -137,6 +139,13 @@
       <if test="filter.scopeOperations != null and !filter.scopeOperations.isEmpty()">
         <foreach collection="filter.scopeOperations" item="operation">
           AND SCOPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+
+      <if test="filter.kindOperations != null and !filter.kindOperations.isEmpty()">
+        <foreach collection="filter.kindOperations" item="operation">
+          AND KIND
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
