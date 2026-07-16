@@ -10,6 +10,7 @@ package io.camunda.analytics.store.rdbms;
 import io.camunda.analytics.serving.spi.DatasetQueryClient;
 import io.camunda.analytics.serving.spi.DatasetSchemaManager;
 import io.camunda.analytics.serving.spi.DatasetStore;
+import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -34,6 +35,10 @@ public final class RdbmsDatasetStore implements DatasetStore {
   private final RdbmsDatasetWriter writer;
 
   public RdbmsDatasetStore(final DataSource dataSource) {
+    this(dataSource, ServingWriteMetrics.NOOP);
+  }
+
+  public RdbmsDatasetStore(final DataSource dataSource, final ServingWriteMetrics metrics) {
     this.dialect = detectDialect(dataSource);
     final Environment environment =
         new Environment("analytics-rdbms", new JdbcTransactionFactory(), dataSource);
@@ -43,7 +48,7 @@ public final class RdbmsDatasetStore implements DatasetStore {
     // Shared so the writer can ensure a cell's time partition (Layer C) on the same seam that
     // provisions the parent table.
     this.schemaManager = new RdbmsDatasetSchemaManager(sessionFactory, dialect);
-    this.writer = new RdbmsDatasetWriter(sessionFactory, dialect, schemaManager);
+    this.writer = new RdbmsDatasetWriter(sessionFactory, dialect, schemaManager, metrics);
   }
 
   @Override

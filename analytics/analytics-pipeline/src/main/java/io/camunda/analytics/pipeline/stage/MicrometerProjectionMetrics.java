@@ -14,6 +14,7 @@ import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -35,6 +36,9 @@ public final class MicrometerProjectionMetrics implements ProjectionMetrics {
   private final Counter foldRowMissing;
   private final Counter factDropped;
   private final Map<FactType, Counter> factsEmitted = new EnumMap<>(FactType.class);
+  // Lazily created per dataset, on the single owner (actor) thread that wires and warns cubes —
+  // never touched concurrently, so a plain HashMap is safe.
+  private final Map<String, Counter> emptyAlarms = new HashMap<>();
 
   public MicrometerProjectionMetrics(final MeterRegistry registry, final int partition) {
     this.registry = registry;
@@ -84,6 +88,21 @@ public final class MicrometerProjectionMetrics implements ProjectionMetrics {
   @Override
   public void factEmitted(final FactType factType) {
     factsEmitted.get(factType).increment();
+  }
+
+  @Override
+  public void datasetEmptyAlarm(final String datasetName) {
+    emptyAlarms
+        .computeIfAbsent(
+            datasetName,
+            name ->
+                Counter.builder("analytics.dataset.empty.alarm")
+                    .description(
+                        "The silent-empty-cube alarm fired: many admitted facts inspected, none"
+                            + " folded")
+                    .tag("dataset", name)
+                    .register(registry))
+        .increment();
   }
 
   /**

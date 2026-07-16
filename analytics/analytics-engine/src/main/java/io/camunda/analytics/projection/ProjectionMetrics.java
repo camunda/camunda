@@ -59,6 +59,13 @@ public interface ProjectionMetrics {
    */
   default void registerCubeGate(final CubeGateStats stats) {}
 
+  /**
+   * The silent-empty-cube alarm fired: a cube has inspected many admitted facts and folded none —
+   * its declared filters match nothing (see {@code CubeAggregationProcessor#warnIfSilent}). Counted
+   * so the alarm is graphable, not only logged; tagged by the dataset's name.
+   */
+  default void datasetEmptyAlarm(final String datasetName) {}
+
   /** One cube's gate observability: what the fold gate admitted and what its filters let fold. */
   interface CubeGateStats {
 

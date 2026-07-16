@@ -56,6 +56,7 @@ public final class CubeAggregationProcessor
   private final List<CompiledFilter> filters;
   private final SegmentSealingAggregation<Fact, ?, ?> aggregation;
   private final ForwardingSegmentSink<?> sink;
+  private final ProjectionMetrics metrics;
 
   // Plain longs on purpose: single-writer (the partition's actor thread), checked at commit
   // boundaries, exposed through racy-read gauges where staleness is harmless. No allocation and
@@ -70,12 +71,23 @@ public final class CubeAggregationProcessor
       final List<FilterPredicate> filters,
       final SegmentSealingAggregation<Fact, ?, ?> aggregation,
       final ForwardingSegmentSink<?> sink) {
+    this(factType, dataset, filters, aggregation, sink, ProjectionMetrics.NOOP);
+  }
+
+  public CubeAggregationProcessor(
+      final FactType factType,
+      final RegisteredDataset dataset,
+      final List<FilterPredicate> filters,
+      final SegmentSealingAggregation<Fact, ?, ?> aggregation,
+      final ForwardingSegmentSink<?> sink,
+      final ProjectionMetrics metrics) {
     this.factType = factType;
     this.dataset = dataset;
     declaredFilters = List.copyOf(filters);
     this.filters = filters.stream().map(CompiledFilter::new).toList();
     this.aggregation = aggregation;
     this.sink = sink;
+    this.metrics = metrics;
   }
 
   /** The bound fact type this cube folds — the stage routes only matching facts here. */
@@ -137,6 +149,7 @@ public final class CubeAggregationProcessor
       return;
     }
     silenceWarned = true;
+    metrics.datasetEmptyAlarm(datasetName());
     LOG.warn(
         "Cube '{}' (id {}) inspected {} admitted {} facts and folded NONE — its declared filters"
             + " match nothing (e.g. a filter on a variable that is not visible at this fact's"

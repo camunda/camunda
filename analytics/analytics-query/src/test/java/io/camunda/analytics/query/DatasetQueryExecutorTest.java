@@ -232,6 +232,38 @@ final class DatasetQueryExecutorTest {
         .hasMessageContaining("duplicate group-by dimension");
   }
 
+  @Test
+  void shouldRecordQueryDurationTaggedByDatasetOnSuccessAndOnFailure() {
+    // given an executor wired with a counting metrics fake
+    final RecordingQueryMetrics metrics = new RecordingQueryMetrics();
+    final DatasetQueryExecutor executor =
+        new DatasetQueryExecutor(new DatasetQueryPlanner(), new FakeClient(), metrics);
+
+    // when a query executes successfully
+    executor.execute(
+        new ReportQuery(List.of("bpmnProcessId"), 0L, MINUTE, MINUTE, List.of(), List.of("count")),
+        dataset);
+
+    // then one duration sample is recorded, tagged by this dataset's name, and it is positive
+    assertThat(metrics.datasetNames).containsExactly("pi-mixed");
+    assertThat(metrics.durationsNanos).hasSize(1).allSatisfy(d -> assertThat(d).isPositive());
+
+    // when the plan itself rejects the query (no fetch ever runs)
+    final ReportQuery invalid =
+        new ReportQuery(
+            List.of("bpmnProcessId", "bpmnProcessId"),
+            0L,
+            MINUTE,
+            MINUTE,
+            List.of(),
+            List.of("count"));
+    assertThatThrownBy(() -> executor.execute(invalid, dataset))
+        .isInstanceOf(IllegalArgumentException.class);
+
+    // then the failed attempt is still timed (the finally-block records regardless of outcome)
+    assertThat(metrics.datasetNames).hasSize(2);
+  }
+
   private byte[] p95(final long... durationsMs) {
     final CompiledMeter meter = meter("p95");
     @SuppressWarnings("unchecked")
@@ -308,5 +340,18 @@ final class DatasetQueryExecutorTest {
 
     @Override
     public void close() {}
+  }
+
+  /** A {@link QueryMetrics} fake recording every recorded duration and the dataset it named. */
+  private static final class RecordingQueryMetrics implements QueryMetrics {
+
+    private final List<String> datasetNames = new ArrayList<>();
+    private final List<Long> durationsNanos = new ArrayList<>();
+
+    @Override
+    public void recordQueryDuration(final String datasetName, final long durationNanos) {
+      datasetNames.add(datasetName);
+      durationsNanos.add(durationNanos);
+    }
   }
 }

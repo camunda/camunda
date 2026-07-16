@@ -9,10 +9,12 @@ package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.pipeline.store.AnalyticsBackend;
 import io.camunda.analytics.pipeline.store.AnalyticsBackends;
+import io.camunda.analytics.pipeline.store.MicrometerServingWriteMetrics;
 import io.camunda.analytics.projection.AnalyticsBaseProjection;
 import io.camunda.analytics.projection.SourceRecord;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.MetadataStore;
+import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
@@ -92,6 +94,10 @@ public final class AnalyticsProjectionStage {
     // from it at a commit boundary when its version moves (live reload — ADR 0005).
     final DatasetCatalog catalog = new DatasetCatalog(metadataStore);
     final ZeebeRecordCodec codec = new ZeebeRecordCodec();
+    // One shared write-path instrumentation for every partition task's writer (thread-safe;
+    // tagged by the backend's identity).
+    final ServingWriteMetrics servingWriteMetrics =
+        new MicrometerServingWriteMetrics(meterRegistry, backend.name());
 
     final StreamRuntime<SourceRecord> runtime =
         StreamRuntime.<SourceRecord>builder()
@@ -131,7 +137,7 @@ public final class AnalyticsProjectionStage {
                         catalog,
                         config.reloadCheckIntervalMs(),
                         config.eagerShufflePublish(),
-                        backend.newDatasetStore(),
+                        backend.newDatasetStore(servingWriteMetrics),
                         meterRegistry,
                         config.storeTuning()))
             .maxPoll(MAX_RECORDS)

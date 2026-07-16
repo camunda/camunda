@@ -9,8 +9,10 @@ package io.camunda.analytics.pipeline.stage;
 
 import io.camunda.analytics.pipeline.store.AnalyticsBackend;
 import io.camunda.analytics.pipeline.store.AnalyticsBackends;
+import io.camunda.analytics.pipeline.store.MicrometerServingWriteMetrics;
 import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.serving.spi.MetadataStore;
+import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
@@ -85,6 +87,10 @@ public final class AnalyticsAggregationStage {
     // One codec for this runtime's deserializer: the runtime invokes it only on its single
     // source-loop thread, so the codec's reused decode flyweights are thread-confined.
     final ShuffleEnvelopeCodec codec = new ShuffleEnvelopeCodec();
+    // One shared write-path instrumentation for every partition task's writer (thread-safe;
+    // tagged by the backend's identity).
+    final ServingWriteMetrics servingWriteMetrics =
+        new MicrometerServingWriteMetrics(meterRegistry, backend.name());
     final StreamRuntime<ShuffleEnvelope> runtime =
         StreamRuntime.<ShuffleEnvelope>builder()
             .client(client)
@@ -100,7 +106,7 @@ public final class AnalyticsAggregationStage {
                         partition,
                         epoch,
                         config.stateDir(),
-                        backend.newDatasetStore(),
+                        backend.newDatasetStore(servingWriteMetrics),
                         catalog,
                         config.reloadCheckIntervalMs(),
                         meterRegistry,

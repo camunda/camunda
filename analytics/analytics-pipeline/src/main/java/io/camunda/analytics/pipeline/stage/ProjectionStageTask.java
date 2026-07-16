@@ -361,7 +361,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
               streamId,
               id -> {
                 final CubeWiring created =
-                    cubeWiring(cube, segmentStride, openSegments, provider, flowMetrics);
+                    cubeWiring(cube, segmentStride, openSegments, provider, flowMetrics, metrics);
                 // Expose the new cube's gate counters + silent-empty alarm (once per wiring).
                 metrics.registerCubeGate(created.processor());
                 return created;
@@ -425,7 +425,8 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final int segmentStride,
       final KeyValueStore<DbBytes, DbBytes> openSegments,
       final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
-      final FlowMetrics flowMetrics) {
+      final FlowMetrics flowMetrics,
+      final ProjectionMetrics metrics) {
     final CompiledDataset compiled = cube.compiled();
     final List<BoundMeter<?, ?>> bounds = compiled.meterBounds();
     final ForwardingSegmentSink<Object[]> sink =
@@ -454,7 +455,8 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             cube.registered(),
             compiled.factBinding().filters(),
             sealing,
-            sink),
+            sink,
+            metrics),
         sealing);
   }
 
