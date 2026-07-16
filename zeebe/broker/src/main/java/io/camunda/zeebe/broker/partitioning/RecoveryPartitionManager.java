@@ -181,6 +181,10 @@ public final class RecoveryPartitionManager
               (ignoredDeactivate, deactivateError) -> {
                 // reported once the partition is registered as INACTIVE above, since
                 // onHealthChanged is a no-op for a partition the topology doesn't know about yet
+                recoveryPartitions.forEach(
+                    p ->
+                        topologyManager.onHealthChanged(
+                            p.partitionId().number(), HealthStatus.HEALTHY));
                 failedPartitionIds.forEach(
                     id -> topologyManager.onHealthChanged(id, HealthStatus.DEAD));
                 if (recoveryPartitions.isEmpty()) {

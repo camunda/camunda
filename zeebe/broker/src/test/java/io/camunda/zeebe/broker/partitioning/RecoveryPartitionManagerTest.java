@@ -205,7 +205,8 @@ final class RecoveryPartitionManagerTest {
             });
 
     // and: only the partition that failed to start is reported as DEAD, since it never
-    // recovered and nothing is left running to ever bring it back
+    // recovered and nothing is left running to ever bring it back; the one that succeeded is
+    // reported HEALTHY
     await()
         .untilAsserted(
             () -> {
@@ -214,8 +215,27 @@ final class RecoveryPartitionManagerTest {
                   .anySatisfy(
                       info ->
                           assertThat(info.getPartitionHealthStatuses())
-                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD)
-                              .doesNotContainKey(PARTITION_ID));
+                              .containsEntry(PARTITION_ID, PartitionHealthStatus.HEALTHY)
+                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD));
+            });
+  }
+
+  @Test
+  void shouldReportHealthyForSuccessfullyRecoveredPartitions() {
+    // when
+    controlActor.run(() -> partitionManager.start());
+
+    // then - both partitions started successfully, so both are reported healthy
+    await()
+        .untilAsserted(
+            () -> {
+              final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
+              assertThat(publishedInfos)
+                  .anySatisfy(
+                      info ->
+                          assertThat(info.getPartitionHealthStatuses())
+                              .containsEntry(PARTITION_ID, PartitionHealthStatus.HEALTHY)
+                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.HEALTHY));
             });
   }
 
