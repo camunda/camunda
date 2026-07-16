@@ -31,7 +31,8 @@ import {
 	validateBatchOperationKeyComplete,
 } from '#/operate/shared/utils/validators';
 
-// ponytail: the legacy 'variable' optional filter stays hidden until #57671/#57672 land
+// The legacy 'variable' optional filter is deliberately omitted here — it stays hidden until
+// #57671 (conditions logic) and #57672 (modal) land.
 type OptionalFilter =
 	| 'processInstanceKey'
 	| 'parentProcessInstanceKey'
@@ -171,7 +172,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 					label: t(OPTIONAL_FILTER_FIELDS[id].labelKey),
 				}))}
 				onFilterSelect={(filter) => {
-					onVisibleFilterChange(Array.from(new Set([...visibleFilters, filter])));
+					onVisibleFilterChange((currentVisibleFilters) => Array.from(new Set([...currentVisibleFilters, filter])));
 					tracking.track({
 						eventName: 'operate:optional-filter-selected',
 						filterName: filter,
@@ -275,7 +276,9 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 								align="top-end"
 								size="sm"
 								onClick={() => {
-									onVisibleFilterChange(visibleFilters.filter((visibleFilter) => visibleFilter !== filter));
+									onVisibleFilterChange((currentVisibleFilters) =>
+										currentVisibleFilters.filter((visibleFilter) => visibleFilter !== filter),
+									);
 
 									OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
 										form.change(key, undefined);
