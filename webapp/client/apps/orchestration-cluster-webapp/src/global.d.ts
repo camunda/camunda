@@ -14,6 +14,15 @@ declare module '@tanstack/history' {
 	}
 }
 
+// Carbon types DatePickerInput's props as HTMLAttributes (not InputHTMLAttributes),
+// omitting input-only attributes even though the component spreads them onto the
+// underlying <input>.
+declare module '@carbon/react/lib/components/DatePickerInput/DatePickerInput' {
+	interface DatePickerInputProps {
+		autoComplete?: string;
+	}
+}
+
 export declare global {
 	interface Window {
 		Osano?: {
