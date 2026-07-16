@@ -78,7 +78,7 @@ public abstract class BackgroundTaskIT<T extends BackgroundTask> {
   protected void setup() {
     context =
         new ExporterTestContext().setPartitionId(PARTITION_ID).setClock(InstantSource.fixed(NOW));
-    exporterMetrics = new CamundaExporterMetrics(context.getMeterRegistry());
+    exporterMetrics = mock(CamundaExporterMetrics.class);
     executor = Executors.newSingleThreadExecutor();
     testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase(Locale.ROOT);
   }
