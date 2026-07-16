@@ -65,4 +65,27 @@ final class AnalyticsPipelineConfigTest {
     // then
     assertThat(config.storeTuning()).isEqualTo(new StoreTuning(true, false));
   }
+
+  @Test
+  void shouldGiveEachStageItsOwnChangelogTopicSoBothCoexist() {
+    // given — the same one coherent config surface both stages read (streaming ADR 0009)
+    final AnalyticsPipelineConfig stage1 = AnalyticsPipelineConfig.fromSystemProperties("stage1");
+    final AnalyticsPipelineConfig stage2 = AnalyticsPipelineConfig.fromSystemProperties("stage2");
+
+    // then — distinct topics, so provisioning both for one pipeline never collides
+    assertThat(stage1.changelogTopic()).isEqualTo("analytics-stage1-changelog");
+    assertThat(stage2.changelogTopic()).isEqualTo("analytics-stage2-changelog");
+    assertThat(stage1.changelogTopic()).isNotEqualTo(stage2.changelogTopic());
+  }
+
+  @Test
+  void shouldDefaultChangelogToEnabledForBothStages() {
+    // when — no analytics.changelog.enabled property set
+    final AnalyticsPipelineConfig stage1 = AnalyticsPipelineConfig.fromSystemProperties("stage1");
+    final AnalyticsPipelineConfig stage2 = AnalyticsPipelineConfig.fromSystemProperties("stage2");
+
+    // then
+    assertThat(stage1.changelogEnabled()).isTrue();
+    assertThat(stage2.changelogEnabled()).isTrue();
+  }
 }

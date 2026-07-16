@@ -17,6 +17,7 @@ import io.camunda.analytics.serving.spi.MetadataStore;
 import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.StreamRuntime;
+import io.camunda.eventbridge.streaming.changelog.ChangelogTopics;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecordCodec;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -82,6 +83,15 @@ public final class AnalyticsProjectionStage {
       LOG.info("Facts topic {} already exists", config.factsTopic());
     }
 
+    // The changelog (streaming ADR 0009 Decision 1): one COMPACT topic for this stage, one
+    // partition per source partition — provisioned idempotently, same tolerance as the facts
+    // topic's own creation above. The source topic's partition count is the same lookup the
+    // standalone launcher uses to size its sink pool (PipelineRuntimes#topicPartitions).
+    if (config.changelogEnabled()) {
+      final int sourcePartitions = PipelineRuntimes.topicPartitions(client, config.sourceTopic());
+      ChangelogTopics.ensure(client, config.changelogTopic(), sourcePartitions);
+    }
+
     // Projected (raw) datasets are written straight to the serving store from Stage 1.
     final AnalyticsBackend backend = AnalyticsBackends.fromSystemProperties();
 
@@ -139,7 +149,9 @@ public final class AnalyticsProjectionStage {
                         config.eagerShufflePublish(),
                         backend.newDatasetStore(servingWriteMetrics),
                         meterRegistry,
-                        config.storeTuning()))
+                        config.storeTuning(),
+                        config.changelogTopic(),
+                        config.changelogEnabled()))
             .maxPoll(MAX_RECORDS)
             .pollTimeout(POLL_TIMEOUT)
             .commitInterval(config.checkpointInterval())
