@@ -153,8 +153,6 @@ public abstract class AbstractCamundaDockerIT {
         .withEnv(
             "CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD", TestSearchContainers.CAMUNDA_PASSWORD)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_DATABASE_VENDOR_ID", vendorId)
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME", "io.camunda.exporter.rdbms.RdbmsExporter")
         // ---
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
