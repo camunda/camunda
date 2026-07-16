@@ -32,7 +32,7 @@ const getWrapper = (processInstanceId = PROCESS_INSTANCE_ID) => {
 };
 
 describe('useAgentInstancesStatusPerElement', () => {
-  it('should return an empty results when there are no agent instances', async () => {
+  it('should return an empty result when there are no agent instances', async () => {
     mockSearchAgentInstances().withSuccess(searchResult([]));
 
     const {result} = renderHook(() => useAgentInstancesStatusPerElement(), {
@@ -45,7 +45,7 @@ describe('useAgentInstancesStatusPerElement', () => {
     expect(result.current.elementsWithAgent.size).toBe(0);
   });
 
-  it('should map a agent instance to its element', async () => {
+  it('should map an agent instance to its element', async () => {
     mockSearchAgentInstances().withSuccess(
       searchResult([
         mockAgentInstance({

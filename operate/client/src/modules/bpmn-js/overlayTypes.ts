@@ -80,7 +80,8 @@ const isAgentStatusPayload = (
     typeof payload === 'object' &&
     payload !== null &&
     'status' in payload &&
-    'agentInstanceKey' in payload
+    'agentInstanceKey' in payload &&
+    'additionalActiveCount' in payload
   );
 };
 
