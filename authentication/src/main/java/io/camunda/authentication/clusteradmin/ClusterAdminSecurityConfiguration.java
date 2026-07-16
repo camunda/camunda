@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -83,31 +84,7 @@ public class ClusterAdminSecurityConfiguration {
       final AuthFailureHandler authFailureHandler,
       final CamundaSecurityLibraryProperties properties)
       throws Exception {
-    final var users = ClusterAdminBasicAuthProperties.loadAndValidate(environment);
-
-    // The shared PasswordEncoder bean is present because this chain and that bean share the same
-    // @ConditionalOnAuthenticationMethod(BASIC) gate. It encodes the configured passwords below and
-    // verifies them on every request, so encode and verify always agree.
-    final var userDetailsManager = new InMemoryUserDetailsManager();
-    for (final ClusterAdminUser user : users) {
-      userDetailsManager.createUser(
-          User.withUsername(user.name())
-              .password(passwordEncoder.encode(user.password()))
-              .authorities(CLUSTER_ADMIN_AUTHORITY)
-              .build());
-    }
-    LOG.info(
-        "Loaded {} cluster-admin basic-auth user(s) for {}",
-        users.size(),
-        CLUSTER_ADMIN_API_PATTERN);
-
-    // Use an explicit, parent-less ProviderManager so credentials are checked only against the
-    // in-memory store. Not http.getSharedObject(AuthenticationManagerBuilder.class): its builder
-    // parents to the global manager, so unknown users would fall through to the DB-backed manager
-    // and a DB user could authenticate on /cluster/v2/**.
-    final var authenticationProvider = new DaoAuthenticationProvider(userDetailsManager);
-    authenticationProvider.setPasswordEncoder(passwordEncoder);
-    http.authenticationManager(new ProviderManager(authenticationProvider));
+    http.authenticationManager(clusterAdminAuthenticationManager(environment, passwordEncoder));
 
     http.securityMatcher(CLUSTER_ADMIN_API_PATTERN)
         .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
@@ -127,6 +104,38 @@ public class ClusterAdminSecurityConfiguration {
     SecurityFilterChainSupport.setupSecureHeaders(http, properties.getHttpHeaders());
 
     return http.build();
+  }
+
+  /**
+   * Builds the isolated authentication manager for this chain: the configured cluster-admin users
+   * in in-memory store behind an explicit, parent-less {@link ProviderManager}. Parent-less (not
+   * {@code http.getSharedObject(AuthenticationManagerBuilder.class)}) so credentials are checked
+   * only against this store — otherwise unknown users would fall through to the global DB-backed
+   * manager and a DB user could authenticate on {@code /cluster/v2/**}.
+   */
+  private AuthenticationManager clusterAdminAuthenticationManager(
+      final Environment environment, final PasswordEncoder passwordEncoder) {
+    final var users = ClusterAdminBasicAuthProperties.loadAndValidate(environment);
+
+    // The shared PasswordEncoder bean is present because this chain and that bean share the same
+    // @ConditionalOnAuthenticationMethod(BASIC) gate. It encodes the configured passwords below and
+    // verifies them on every request, so encode and verify always agree.
+    final var userDetailsManager = new InMemoryUserDetailsManager();
+    for (final ClusterAdminUser user : users) {
+      userDetailsManager.createUser(
+          User.withUsername(user.name())
+              .password(passwordEncoder.encode(user.password()))
+              .authorities(CLUSTER_ADMIN_AUTHORITY)
+              .build());
+    }
+    LOG.info(
+        "Loaded {} cluster-admin basic-auth user(s) for {}",
+        users.size(),
+        CLUSTER_ADMIN_API_PATTERN);
+
+    final var authenticationProvider = new DaoAuthenticationProvider(userDetailsManager);
+    authenticationProvider.setPasswordEncoder(passwordEncoder);
+    return new ProviderManager(authenticationProvider);
   }
 
   /**
