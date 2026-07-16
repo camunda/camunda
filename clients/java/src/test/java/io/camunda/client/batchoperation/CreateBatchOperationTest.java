@@ -28,6 +28,7 @@ import io.camunda.client.protocol.rest.ProcessInstanceIncidentResolutionBatchOpe
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceResumptionBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceSuspensionBatchOperationRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -130,6 +131,54 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
     final ProcessInstanceSuspensionBatchOperationRequest lastRequest =
         gatewayService.getLastRequest(ProcessInstanceSuspensionBatchOperationRequest.class);
+    assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+  }
+
+  @Test
+  public void shouldSendProcessInstanceResumeCommandEmptyFilter() {
+    // given
+    gatewayService.onResumeProcessInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
+    // when
+    client
+        .newCreateBatchOperationCommand()
+        .processInstanceResume()
+        .filter(filter -> {})
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/resumption");
+
+    final ProcessInstanceResumptionBatchOperationRequest lastRequest =
+        gatewayService.getLastRequest(ProcessInstanceResumptionBatchOperationRequest.class);
+    assertThat(lastRequest.getFilter()).isNotNull();
+  }
+
+  @Test
+  public void shouldSendProcessInstanceResumeCommandWithFilter() {
+    // given
+    gatewayService.onResumeProcessInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
+    // when
+    client
+        .newCreateBatchOperationCommand()
+        .processInstanceResume()
+        .filter(filter -> filter.processDefinitionId("test-01"))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/resumption");
+
+    final ProcessInstanceResumptionBatchOperationRequest lastRequest =
+        gatewayService.getLastRequest(ProcessInstanceResumptionBatchOperationRequest.class);
     assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
   }
 

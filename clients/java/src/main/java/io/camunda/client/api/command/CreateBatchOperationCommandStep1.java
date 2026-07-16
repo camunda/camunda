@@ -40,6 +40,13 @@ public interface CreateBatchOperationCommandStep1 {
   CreateBatchOperationCommandStep2<ProcessInstanceFilter> processInstanceSuspend();
 
   /**
+   * Defines the type of the batch operation to resume process instances.
+   *
+   * @return the builder for this command
+   */
+  CreateBatchOperationCommandStep2<ProcessInstanceFilter> processInstanceResume();
+
+  /**
    * Defines the type of the batch operation to delete process instances.
    *
    * @return the builder for this command
