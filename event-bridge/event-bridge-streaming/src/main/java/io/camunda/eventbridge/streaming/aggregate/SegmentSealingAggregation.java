@@ -9,6 +9,7 @@ package io.camunda.eventbridge.streaming.aggregate;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
 import io.camunda.eventbridge.streaming.aggregate.WindowedCellState.CheckpointDelta;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.window.Windowed;
 import io.camunda.eventbridge.streaming.window.Windows;
@@ -93,6 +94,10 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
   private final WindowedCellState<K, ACC> open = new WindowedCellState<>();
   private long openSegment = NO_SEGMENT;
   private int sourcePartition = -1;
+
+  // Optional flow instrumentation (records/segments lag pack); NOOP until the owning task wires
+  // it, mirroring onLateDrop/onFinalization on the merging side.
+  private FlowMetrics metrics = FlowMetrics.NOOP;
 
   /** Model R: no durable state; the open segment replays from {@link #safeOffset()}. */
   public SegmentSealingAggregation(
@@ -252,9 +257,18 @@ public final class SegmentSealingAggregation<IN, K, ACC> implements Aggregation<
     if (open.isEmpty()) {
       return;
     }
+    metrics.countSegmentSealed(); // one count per seal, not per sealed cell
     open.forEachOpen((cell, acc) -> sink.emit(cell, sourcePartition, openSegment, acc));
     sink.flush();
     open.clear();
+  }
+
+  /**
+   * Wires the flow instrumentation (before processing starts); at most one. Optional — without it
+   * every recording is a zero-allocation no-op ({@link FlowMetrics#NOOP}).
+   */
+  public void metrics(final FlowMetrics metrics) {
+    this.metrics = metrics;
   }
 
   @Override

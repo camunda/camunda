@@ -11,10 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.eventbridge.streaming.TransactionRunner;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
 import io.camunda.eventbridge.streaming.window.TumblingWindows;
 import io.camunda.zeebe.db.impl.DbBytes;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -126,6 +128,50 @@ final class SegmentSealingAggregationTest {
     // then one delta per cell
     assertThat(emitted)
         .containsExactlyInAnyOrder(new Sealed("a", 0L, 0, 0L, 2L), new Sealed("b", 0L, 0, 0L, 7L));
+  }
+
+  @Test
+  void shouldCountOneSealPerSealNotPerSealedCell() {
+    // given a metrics-wired aggregation and two keys accumulating in segment 0
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    aggregation.metrics(FlowMetrics.of(registry, "projection", 1));
+    aggregation.accept(new Ev(0, 1L, 100L, "a", 2L));
+    aggregation.accept(new Ev(0, 2L, 100L, "b", 7L));
+
+    // when a record crosses into segment 1, sealing both keys' cells in the same seal
+    aggregation.accept(new Ev(0, 12L, 100L, "a", 1L));
+
+    // then two cells sealed, but the seal counter moved only once
+    assertThat(emitted).hasSize(2);
+    assertThat(
+            registry
+                .get("eb.streaming.segments.sealed")
+                .tag("stage", "projection")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
+  }
+
+  @Test
+  void shouldNotCountASealWhenNothingIsOpen() {
+    // given a metrics-wired aggregation that never accepted a record
+    final SegmentSealingAggregation<Ev, String, MutableLong> aggregation = aggregation();
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    aggregation.metrics(FlowMetrics.of(registry, "projection", 1));
+
+    // when the freshness/shutdown paths run without ever sealing anything
+    aggregation.flush();
+    aggregation.close();
+
+    // then the seal counter never registered a recording (still zero)
+    assertThat(
+            registry
+                .get("eb.streaming.segments.sealed")
+                .tag("stage", "projection")
+                .counter()
+                .count())
+        .isZero();
   }
 
   @Test

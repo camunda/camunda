@@ -7,6 +7,8 @@
  */
 package io.camunda.analytics.projection;
 
+import io.camunda.analytics.fact.FactType;
+
 /**
  * The base projection's correctness signals. {@link #duplicateSkipped()} is expected traffic — it
  * makes exporter retries visible (the pre-fold watermark absorbing producer duplicates, ADR 0007).
@@ -28,6 +30,9 @@ public interface ProjectionMetrics {
 
         @Override
         public void factDropped() {}
+
+        @Override
+        public void factEmitted(final FactType factType) {}
       };
 
   /**
@@ -43,6 +48,9 @@ public interface ProjectionMetrics {
   /** A derivation dropped its fact because the row was missing — a silent undercount surfaced. */
   void factDropped();
 
+  /** The base projection emitted a fact of {@code factType} into the dispatch fan-out. */
+  void factEmitted(FactType factType);
+
   /**
    * Registers one cube's gate counters for exposure (facts inspected vs facts folded, plus the
    * derived silent-empty-cube alarm). Called once per constructed cube wiring; implementations bind
@@ -50,6 +58,13 @@ public interface ProjectionMetrics {
    * updated on the fold path, so a stale read from a scrape thread is harmless.
    */
   default void registerCubeGate(final CubeGateStats stats) {}
+
+  /**
+   * The silent-empty-cube alarm fired: a cube has inspected many admitted facts and folded none —
+   * its declared filters match nothing (see {@code CubeAggregationProcessor#warnIfSilent}). Counted
+   * so the alarm is graphable, not only logged; tagged by the dataset's name.
+   */
+  default void datasetEmptyAlarm(final String datasetName) {}
 
   /** One cube's gate observability: what the fold gate admitted and what its filters let fold. */
   interface CubeGateStats {

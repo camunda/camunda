@@ -42,6 +42,8 @@ import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.aggregate.SegmentSealingAggregation;
 import io.camunda.eventbridge.streaming.aggregate.Segments;
 import io.camunda.eventbridge.streaming.aggregate.SourceCoordinate;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
+import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
@@ -125,6 +127,8 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private final long reloadCheckIntervalMs;
   private final boolean eagerShufflePublish;
   private final ProjectionMetrics metrics;
+  private final FlowMetrics flowMetrics;
+  private final StoreMetrics storeMetrics;
 
   private final DbInt offsetKey = new DbInt();
   private final DbLong offsetValue = new DbLong();
@@ -163,6 +167,11 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
   private Set<Long> appliedTableIds = Set.of();
   private boolean definitionsTableEnsured;
 
+  // Per-task meter deregistrations run at close (see disposeOnClose): a re-opened partition task
+  // re-registers meters under the same ids, and Micrometer keeps the first — without the removal
+  // the dead task's meters would shadow the live one's forever.
+  private final List<Runnable> meterDisposals = new ArrayList<>();
+
   ProjectionStageTask(
       final int partition,
       final OwnershipEpoch epoch,
@@ -181,6 +190,8 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final long reloadCheckIntervalMs,
       final boolean eagerShufflePublish,
       final ProjectionMetrics metrics,
+      final FlowMetrics flowMetrics,
+      final StoreMetrics storeMetrics,
       final long nowMs) {
     this.partition = partition;
     this.epoch = epoch;
@@ -206,10 +217,23 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     this.reloadCheckIntervalMs = reloadCheckIntervalMs;
     this.eagerShufflePublish = eagerShufflePublish;
     this.metrics = metrics;
+    this.flowMetrics = flowMetrics;
+    this.storeMetrics = storeMetrics;
     this.lastReloadCheckMs = nowMs;
     final DatasetCatalog.Snapshot snapshot = catalog.snapshot();
     installTopology(snapshot.cubes(), snapshot.tables());
     appliedVersion = snapshot.version();
+    // Bind the overlay gauges ONCE, over suppliers that read the projectionState FIELD: a live
+    // catalog reload rebuilds the base state's caches, and a gauge bound to one generation would
+    // silently keep reading (and strongly pin) the abandoned caches forever — Micrometer keeps the
+    // first registration under an id. The task's close() deregisters them so a re-opened partition
+    // task's fresh binding is not ignored either.
+    for (final String store : StateBackedProjectionState.storeNames()) {
+      storeMetrics.bindOverlay(
+          store,
+          () -> projectionState.overlayEntries(store),
+          () -> projectionState.overlayBytes(store));
+    }
   }
 
   public static ProjectionStageTask open(
@@ -241,31 +265,42 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final VersionedDatasetWriter servingWriter = datasetStore.writer();
     // The write fence's observability: rejections are the fence working (zero outside
     // rebalances/replays), so they are exposed as a counter rather than logged as errors.
-    FunctionCounter.builder(
-            "analytics.serving.fenced.writes", servingWriter, VersionedDatasetWriter::fencedWrites)
-        .description("Serving writes rejected by the version fence (stale by arrival)")
-        .tag("stage", "projection")
-        .tag("partition", String.valueOf(partition))
-        .register(meterRegistry);
-    return new ProjectionStageTask(
-        partition,
-        epoch,
-        client,
-        factsTopic,
-        factsPartitions,
-        segmentStride,
-        schemaVersion,
-        datasetStore,
-        servingWriter,
-        provider,
-        openSegments,
-        offsets,
-        appliedPositions,
-        catalog,
-        reloadCheckIntervalMs,
-        eagerShufflePublish,
-        new MicrometerProjectionMetrics(meterRegistry, partition),
-        System.currentTimeMillis());
+    final FunctionCounter fencedWrites =
+        FunctionCounter.builder(
+                "analytics.serving.fenced.writes",
+                servingWriter,
+                VersionedDatasetWriter::fencedWrites)
+            .description("Serving writes rejected by the version fence (stale by arrival)")
+            .tag("stage", "projection")
+            .tag("partition", String.valueOf(partition))
+            .register(meterRegistry);
+    final ProjectionStageTask task =
+        new ProjectionStageTask(
+            partition,
+            epoch,
+            client,
+            factsTopic,
+            factsPartitions,
+            segmentStride,
+            schemaVersion,
+            datasetStore,
+            servingWriter,
+            provider,
+            openSegments,
+            offsets,
+            appliedPositions,
+            catalog,
+            reloadCheckIntervalMs,
+            eagerShufflePublish,
+            new MicrometerProjectionMetrics(meterRegistry, partition),
+            FlowMetrics.of(meterRegistry, "projection", partition),
+            StoreMetrics.of(meterRegistry, "projection", partition),
+            System.currentTimeMillis());
+    // Deregistered at close: a re-opened partition task registers its own FunctionCounter over its
+    // own writer, which Micrometer would otherwise ignore in favor of the closed task's (weakly
+    // referenced) one — the counter would silently freeze, then read nothing.
+    task.disposeOnClose(() -> meterRegistry.remove(fencedWrites));
+    return task;
   }
 
   /**
@@ -301,6 +336,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   private void installTopology(final List<ActiveCube> cubes, final List<ActiveTable> tables) {
     final StateBackedProjectionState state = StateBackedProjectionState.fromProvider(provider);
+    // No gauge binding here: the overlay gauges are bound once at construction over suppliers
+    // that read the projectionState field, so re-pointing it below is all a reload needs to do
+    // for the gauges to track the new generation.
     projectionState = state;
     final EnvelopePublisher publisher =
         new EnvelopePublisher(
@@ -320,7 +358,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     // variable enrichment resolves only those names (point lookups, early-terminating) instead of
     // scanning the whole scope. Recomputed on each catalog reload.
     final VariableNames variableNames = VariableNames.of(variableNames(cubes, tables));
-    final FactTypeDispatcher dispatcher = new FactTypeDispatcher();
+    final FactTypeDispatcher dispatcher = new FactTypeDispatcher(metrics);
     final ProcessorTopology.Builder<SourceRecord> builder =
         ProcessorTopology.<SourceRecord>builder()
             .source("projection", new AnalyticsBaseProjection(state, variableNames, metrics))
@@ -346,7 +384,8 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
           wiringByStreamId.computeIfAbsent(
               streamId,
               id -> {
-                final CubeWiring created = cubeWiring(cube, segmentStride, openSegments, provider);
+                final CubeWiring created =
+                    cubeWiring(cube, segmentStride, openSegments, provider, flowMetrics, metrics);
                 // Expose the new cube's gate counters + silent-empty alarm (once per wiring).
                 metrics.registerCubeGate(created.processor());
                 return created;
@@ -409,7 +448,9 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
       final ActiveCube cube,
       final int segmentStride,
       final KeyValueStore<DbBytes, DbBytes> openSegments,
-      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider) {
+      final RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider,
+      final FlowMetrics flowMetrics,
+      final ProjectionMetrics metrics) {
     final CompiledDataset compiled = cube.compiled();
     final List<BoundMeter<?, ?>> bounds = compiled.meterBounds();
     final ForwardingSegmentSink<Object[]> sink =
@@ -431,13 +472,15 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
             new DimensionKeyValue(compiled.grain()),
             new CompositeAccumulatorValue(bounds),
             provider::runInTransaction);
+    sealing.metrics(flowMetrics);
     return new CubeWiring(
         new CubeAggregationProcessor(
             compiled.factBinding().factType(),
             cube.registered(),
             compiled.factBinding().filters(),
             sealing,
-            sink),
+            sink,
+            metrics),
         sealing);
   }
 
@@ -454,6 +497,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   @Override
   public void process(final SourceRecord record) {
+    flowMetrics.countRecordProcessed();
     // Pre-fold dedup (ADR 0007): skip a producer duplicate — the same Zeebe record re-appended at
     // a later Event Bridge offset arrives at-or-below its Zeebe partition's applied-position
     // watermark. The Event Bridge offset still advances for skipped records (the runtime marks
@@ -463,6 +507,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     final Long watermark = appliedWatermarks.get(zeebePartition);
     if (watermark != null && zeebePosition <= watermark) {
       metrics.duplicateSkipped();
+      flowMetrics.countDedupSkipped();
       return;
     }
     topology.process(record);
@@ -628,5 +673,15 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     } catch (final Exception e) {
       LOG.warn("Failed to close state provider for partition {}", partition, e);
     }
+    // Deregister this task's meters so a re-opened partition task's registrations are not
+    // silently ignored and this task becomes collectable (the gauges hold strong references).
+    storeMetrics.close();
+    meterDisposals.forEach(Runnable::run);
+    meterDisposals.clear();
+  }
+
+  /** Registers a per-task meter deregistration to run when this task closes. */
+  void disposeOnClose(final Runnable disposal) {
+    meterDisposals.add(disposal);
   }
 }

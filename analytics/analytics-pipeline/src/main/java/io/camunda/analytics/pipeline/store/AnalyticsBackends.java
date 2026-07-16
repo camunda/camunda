@@ -9,6 +9,7 @@ package io.camunda.analytics.pipeline.store;
 
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.MetadataStore;
+import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.analytics.store.document.DocumentStores;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
@@ -65,25 +66,35 @@ public final class AnalyticsBackends {
 
   private record RdbmsBackend(DataSource dataSource) implements AnalyticsBackend {
     @Override
+    public String name() {
+      return "rdbms";
+    }
+
+    @Override
     public MetadataStore metadataStore() {
       return new RdbmsMetadataStore(dataSource);
     }
 
     @Override
-    public DatasetStore newDatasetStore() {
-      return new RdbmsDatasetStore(dataSource);
+    public DatasetStore newDatasetStore(final ServingWriteMetrics metrics) {
+      return new RdbmsDatasetStore(dataSource, metrics);
     }
   }
 
   private record DocumentBackend(ConnectConfiguration configuration) implements AnalyticsBackend {
+    @Override
+    public String name() {
+      return configuration.getType();
+    }
+
     @Override
     public MetadataStore metadataStore() {
       return DocumentStores.metadataStore(configuration);
     }
 
     @Override
-    public DatasetStore newDatasetStore() {
-      return DocumentStores.datasetStore(configuration);
+    public DatasetStore newDatasetStore(final ServingWriteMetrics metrics) {
+      return DocumentStores.datasetStore(configuration, metrics);
     }
   }
 }

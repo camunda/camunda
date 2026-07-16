@@ -37,13 +37,31 @@ public final class DatasetQueryExecutor {
 
   private final DatasetQueryPlanner planner;
   private final DatasetQueryClient client;
+  private final QueryMetrics metrics;
 
   public DatasetQueryExecutor(final DatasetQueryPlanner planner, final DatasetQueryClient client) {
+    this(planner, client, QueryMetrics.NOOP);
+  }
+
+  public DatasetQueryExecutor(
+      final DatasetQueryPlanner planner,
+      final DatasetQueryClient client,
+      final QueryMetrics metrics) {
     this.planner = planner;
     this.client = client;
+    this.metrics = metrics;
   }
 
   public ReportResult execute(final ReportQuery query, final CompiledDataset dataset) {
+    final long start = System.nanoTime();
+    try {
+      return doExecute(query, dataset);
+    } finally {
+      metrics.recordQueryDuration(dataset.name(), System.nanoTime() - start);
+    }
+  }
+
+  private ReportResult doExecute(final ReportQuery query, final CompiledDataset dataset) {
     final QueryPlan plan = planner.plan(query, dataset);
 
     // (group-by values + time bucket) -> meter name -> finalized measure.

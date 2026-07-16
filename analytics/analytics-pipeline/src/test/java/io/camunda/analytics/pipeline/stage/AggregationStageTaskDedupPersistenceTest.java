@@ -8,6 +8,7 @@
 package io.camunda.analytics.pipeline.stage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.analytics.dataset.ActiveCube;
 import io.camunda.analytics.dataset.CompiledDataset;
@@ -66,6 +67,7 @@ final class AggregationStageTaskDedupPersistenceTest {
   private DatasetRegistry registry;
   private DatasetCatalog catalog;
   private RocksDbStateStoreProvider<AnalyticsColumnFamilies> provider;
+  private SimpleMeterRegistry meterRegistry;
   private AggregationStageTask task;
 
   @BeforeEach
@@ -80,6 +82,64 @@ final class AggregationStageTaskDedupPersistenceTest {
     if (task != null) {
       task.close(); // also closes the dataset store and the provider
     }
+  }
+
+  @Test
+  void shouldExposeANonNegativeWatermarkLagOnceAMergerHasSeenADelta() {
+    // given a task with no delta processed yet
+    openTask();
+    assertThat(task.watermarkLagMs()).isZero(); // no merger clock established yet
+
+    // when a delta is processed
+    final CubeHandle handle = resolve();
+    task.process(envelope(handle, 1L, 0));
+
+    // then the watermark lag reflects the merger's now-established stream-time clock
+    assertThat(task.watermarkLagMs()).isGreaterThanOrEqualTo(0L);
+  }
+
+  @Test
+  void shouldIgnoreANonPositiveClockInTheWatermarkLag() {
+    // given a delta whose event-time hint is exactly 0 (windowStart = -windowMs) — a merger's
+    // clock can transiently publish 0, and folding it in would spike the lag to "now"
+    openTask();
+    final CubeHandle handle = resolve();
+    task.process(envelopeAt(handle, -60_000L, 1L, 0));
+
+    // then the non-positive clock is filtered — no absurd one-scrape spike
+    assertThat(task.watermarkLagMs()).isZero();
+  }
+
+  @Test
+  void shouldRebindTheWatermarkLagGaugeToTheReopenedTask() {
+    // given a task registered on a registry that outlives it (a partition revoke + re-assign in
+    // the same JVM), with no clock established yet
+    final SimpleMeterRegistry shared = new SimpleMeterRegistry();
+    openTask(shared);
+    assertThat(lagGauge(shared)).isZero();
+
+    // when the task closes and the partition re-opens against the same registry
+    task.close();
+    task = null;
+    openTask(shared);
+
+    // and the re-opened task establishes a clock
+    final CubeHandle reopened = resolve();
+    task.process(envelopeAt(reopened, 0L, 1L, 0));
+
+    // then the gauge tracks the RE-OPENED task — a stale first registration would still read the
+    // closed task's empty mergers (0) because Micrometer keeps the first gauge under an id
+    assertThat(lagGauge(shared)).isGreaterThan(0.0);
+    assertThat((long) lagGauge(shared)).isCloseTo(task.watermarkLagMs(), within(60_000L));
+  }
+
+  private static double lagGauge(final SimpleMeterRegistry registry) {
+    return registry
+        .get("eb.streaming.watermark.lag")
+        .tag("stage", "aggregation")
+        .tag("partition", "1")
+        .gauge()
+        .value();
   }
 
   @Test
@@ -107,16 +167,36 @@ final class AggregationStageTaskDedupPersistenceTest {
     task.process(envelope(reopened, 2L, 0));
     Cuts.commit(task, 2L);
     assertThat(durableTotal(reopened)).isEqualTo(2L);
+
+    // and the library-level lag pack (this task's post-restart meter registry: openTask() rebinds
+    // it) saw both post-restart envelopes and exactly the one dedup skip among them
+    assertThat(
+            meterRegistry
+                .get("eb.streaming.records.processed")
+                .tag("stage", "aggregation")
+                .counter()
+                .count())
+        .isEqualTo(2.0);
+    assertThat(
+            meterRegistry
+                .get("eb.streaming.dedup.skipped")
+                .tag("stage", "aggregation")
+                .counter()
+                .count())
+        .isEqualTo(1.0);
   }
 
   private void openTask() {
+    openTask(new SimpleMeterRegistry());
+  }
+
+  private void openTask(final SimpleMeterRegistry registry) {
     catalog = new DatasetCatalog(metadataStore);
     final JdbcDataSource dataSource = new JdbcDataSource();
     dataSource.setURL("jdbc:h2:mem:dedup-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
     dataSource.setUser("sa");
-    provider =
-        RocksDbStateStoreProvider.open(
-            new File(stateDir.toFile(), "stage2"), new SimpleMeterRegistry());
+    meterRegistry = registry;
+    provider = RocksDbStateStoreProvider.open(new File(stateDir.toFile(), "stage2"), meterRegistry);
     final KeyValueStore<DbBytes, DbBytes> cellStore =
         provider.keyValueStore(AnalyticsColumnFamilies.CUBE_CELLS, new DbBytes(), new DbBytes());
     final KeyValueStore<DbInt, DbLong> offsets =
@@ -140,7 +220,7 @@ final class AggregationStageTaskDedupPersistenceTest {
             dedupStore,
             parkedStore,
             catalog,
-            null, // no meter registry: the late-drop alarm logs only
+            meterRegistry,
             Long.MAX_VALUE, // no reload in these tests
             0L);
     task.init();
@@ -186,6 +266,12 @@ final class AggregationStageTaskDedupPersistenceTest {
 
   /** One AGGREGATE_DELTA/MERGE envelope with a single one-fact cell delta for window 0. */
   private ShuffleEnvelope envelope(final CubeHandle handle, final long segment, final int chunk) {
+    return envelopeAt(handle, 0L, segment, chunk);
+  }
+
+  /** One AGGREGATE_DELTA/MERGE envelope whose single cell delta targets {@code windowStart}. */
+  private ShuffleEnvelope envelopeAt(
+      final CubeHandle handle, final long windowStart, final long segment, final int chunk) {
     final byte[] key =
         new DimensionKeyValue(handle.grain()).toBytes(DimensionKey.of(handle.grain(), PROCESS));
     return new ShuffleEnvelope(
@@ -197,7 +283,9 @@ final class AggregationStageTaskDedupPersistenceTest {
         false,
         ShufflePayloadKind.AGGREGATE_DELTA,
         ShuffleOperation.MERGE,
-        List.of(new CellDelta(handle.streamId(), 0L, key, oneFact(handle.dataset(), segment))));
+        List.of(
+            new CellDelta(
+                handle.streamId(), windowStart, key, oneFact(handle.dataset(), segment))));
   }
 
   /** A one-fact composite COUNT accumulator, encoded the way Stage 1 ships deltas. */

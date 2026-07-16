@@ -25,6 +25,7 @@ import io.camunda.analytics.store.document.DocumentStores;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.analytics.store.rdbms.metadata.RdbmsMetadataStore;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -65,10 +66,18 @@ public class AnalyticsServingConfig {
     return backend.datasetStore();
   }
 
-  /** The read-path executor: plan, fetch cells, app-merge, finalize. */
+  /**
+   * The read-path executor: plan, fetch cells, app-merge, finalize. Timed end to end ({@code
+   * analytics.query.duration}, tagged by dataset) — the simplest correct seam for "is serving
+   * healthy" rather than per-controller-method plumbing.
+   */
   @Bean
-  public DatasetQueryExecutor datasetQueryExecutor(final DatasetStore datasetStore) {
-    return new DatasetQueryExecutor(new DatasetQueryPlanner(), datasetStore.queryClient());
+  public DatasetQueryExecutor datasetQueryExecutor(
+      final DatasetStore datasetStore, final MeterRegistry meterRegistry) {
+    return new DatasetQueryExecutor(
+        new DatasetQueryPlanner(),
+        datasetStore.queryClient(),
+        new MicrometerQueryMetrics(meterRegistry));
   }
 
   /** The SNAPSHOT executor (ADR 0010): baseline + sparse range points + carry-forward walk. */

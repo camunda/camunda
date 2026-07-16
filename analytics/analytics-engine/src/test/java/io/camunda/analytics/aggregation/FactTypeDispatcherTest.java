@@ -11,11 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.analytics.fact.Fact;
 import io.camunda.analytics.fact.FactType;
+import io.camunda.analytics.projection.ProjectionMetrics;
 import io.camunda.eventbridge.streaming.processor.Processor;
 import io.camunda.eventbridge.streaming.processor.ProcessorContext;
 import io.camunda.eventbridge.streaming.processor.ProcessorTopology;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 final class FactTypeDispatcherTest {
@@ -135,8 +138,53 @@ final class FactTypeDispatcherTest {
         .isEqualTo(FactType.INCIDENT);
   }
 
+  @Test
+  void shouldCountEveryEmittedFactByType() {
+    // given a dispatcher wired with a counting metrics fake
+    final CountingProjectionMetrics metrics = new CountingProjectionMetrics();
+    final RecordingSink instances = new RecordingSink();
+    final FactTypeDispatcher dispatcher = new FactTypeDispatcher(metrics);
+    final ProcessorTopology<Fact> topology =
+        ProcessorTopology.<Fact>builder()
+            .source("dispatch", dispatcher)
+            .processor("instances", instances, "dispatch")
+            .build();
+    dispatcher.route("instances", FactType.PROCESS_INSTANCE);
+    topology.init();
+
+    // when two facts of the same type and one of another type flow through (the untyped one has no
+    // routed child, but is still emitted)
+    topology.process(fact(FactType.PROCESS_INSTANCE));
+    topology.process(fact(FactType.PROCESS_INSTANCE));
+    topology.process(fact(FactType.INCIDENT));
+
+    // then each type's emitted count reflects every fact seen, regardless of routing
+    assertThat(metrics.emitted.get(FactType.PROCESS_INSTANCE)).isEqualTo(2);
+    assertThat(metrics.emitted.get(FactType.INCIDENT)).isEqualTo(1);
+  }
+
   private static Fact fact(final FactType type) {
     return Fact.builder(type).eventTime(1L).source(1, 1L).build();
+  }
+
+  /** A {@link ProjectionMetrics} fake counting {@link ProjectionMetrics#factEmitted} by type. */
+  private static final class CountingProjectionMetrics implements ProjectionMetrics {
+
+    private final Map<FactType, Integer> emitted = new EnumMap<>(FactType.class);
+
+    @Override
+    public void duplicateSkipped() {}
+
+    @Override
+    public void foldRowMissing() {}
+
+    @Override
+    public void factDropped() {}
+
+    @Override
+    public void factEmitted(final FactType factType) {
+      emitted.merge(factType, 1, Integer::sum);
+    }
   }
 
   private static final class RecordingSink implements Processor<Fact, Void> {

@@ -10,12 +10,14 @@ package io.camunda.eventbridge.streaming.state.cache;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +58,49 @@ final class CachingKeyValueStoreTest {
     // then — the cache serves it; the delegate has nothing yet
     assertThat(get(cache, "a")).isEqualTo(7L);
     assertThat(get(delegate, "a")).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldExposeActiveOverlaySizeAndApproxBytesAsGauges() {
+    // given a metrics-wired cache
+    final CountingDelegate delegate = new CountingDelegate();
+    final CachingKeyValueStore<DbString, DbLong> cache = cacheOver(delegate, LARGE_BUDGET);
+    final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+    cache.metrics(StoreMetrics.of(registry, "projection", 1), "elements");
+
+    // when two entries are buffered in the active overlay (not yet checkpointed)
+    put(cache, "a", 1L);
+    put(cache, "b", 2L);
+
+    // then the entries gauge reflects the active overlay, and the bytes gauge moved off zero
+    assertThat(entriesGauge(registry)).isEqualTo(2.0);
+    assertThat(bytesGauge(registry)).isGreaterThan(0.0);
+
+    // when the overlay checkpoints (active entries retire into the clean cache)
+    cache.checkpoint();
+
+    // then the active-overlay entry count drops back to zero
+    assertThat(entriesGauge(registry)).isZero();
+  }
+
+  private static double entriesGauge(final SimpleMeterRegistry registry) {
+    return registry
+        .get("eb.streaming.store.overlay.entries")
+        .tag("stage", "projection")
+        .tag("partition", "1")
+        .tag("store", "elements")
+        .gauge()
+        .value();
+  }
+
+  private static double bytesGauge(final SimpleMeterRegistry registry) {
+    return registry
+        .get("eb.streaming.store.overlay.bytes")
+        .tag("stage", "projection")
+        .tag("partition", "1")
+        .tag("store", "elements")
+        .gauge()
+        .value();
   }
 
   @Test

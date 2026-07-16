@@ -23,6 +23,8 @@ import io.camunda.analytics.serving.catalog.DatasetCatalog;
 import io.camunda.analytics.store.rdbms.RdbmsDatasetStore;
 import io.camunda.analytics.table.ProcessDefinitionSink;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.streaming.internals.FlowMetrics;
+import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -156,6 +158,8 @@ final class ProjectionStageTaskReloadTest {
             0L, // check the catalog at every commit
             false,
             ProjectionMetrics.NOOP,
+            FlowMetrics.NOOP,
+            StoreMetrics.NOOP,
             0L);
   }
 

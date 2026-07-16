@@ -18,6 +18,7 @@ import io.camunda.analytics.meter.CompositeAccumulatorValue;
 import io.camunda.analytics.meter.PushdownColumn;
 import io.camunda.analytics.meter.PushdownSpec;
 import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
 import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.analytics.serving.support.SketchScalar;
@@ -85,15 +86,29 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
    */
   private final Set<String> deleteStatements = new HashSet<>();
 
+  /** The owning dataset/table name of each distinct SQL, so a batch's rows can be tagged. */
+  private final Map<String, String> sqlDataset = new LinkedHashMap<>();
+
+  private final ServingWriteMetrics metrics;
+
   private SqlSession session;
 
   public RdbmsDatasetWriter(
       final SqlSessionFactory sessionFactory,
       final RdbmsDialect dialect,
       final RdbmsDatasetSchemaManager schemaManager) {
+    this(sessionFactory, dialect, schemaManager, ServingWriteMetrics.NOOP);
+  }
+
+  public RdbmsDatasetWriter(
+      final SqlSessionFactory sessionFactory,
+      final RdbmsDialect dialect,
+      final RdbmsDatasetSchemaManager schemaManager,
+      final ServingWriteMetrics metrics) {
     this.sessionFactory = sessionFactory;
     this.dialect = dialect;
     this.schemaManager = schemaManager;
+    this.metrics = metrics;
   }
 
   @Override
@@ -201,7 +216,8 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
           statement.setLong(index++, version.epoch());
           statement.setLong(index, version.offset());
         },
-        "cube " + dataset.name());
+        "cube " + dataset.name(),
+        dataset.name());
   }
 
   @Override
@@ -278,7 +294,8 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
           statement.setLong(index++, version.epoch());
           statement.setLong(index, version.offset());
         },
-        "cube snapshots " + dataset.name());
+        "cube snapshots " + dataset.name(),
+        dataset.name());
   }
 
   /** Binds one meter-derived column value at its statement index. */
@@ -360,7 +377,8 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
           statement.setLong(index++, version.epoch());
           statement.setLong(index, version.offset());
         },
-        "table " + table.name());
+        "table " + table.name(),
+        table.name());
   }
 
   /**
@@ -387,7 +405,8 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
           statement.setLong(3, version.epoch());
           statement.setLong(4, version.offset());
         },
-        "table " + table.name());
+        "table " + table.name(),
+        table.name());
     deleteStatements.add(sql);
   }
 
@@ -396,10 +415,12 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
     if (session == null) {
       return;
     }
+    final long start = System.nanoTime();
     executeBatches();
     // force: the batched upserts run as raw JDBC on the session's connection, so MyBatis does not
     // see the session as dirty and a plain commit() would be a no-op, dropping the writes on close.
     session.commit(true);
+    metrics.writeDuration(System.nanoTime() - start);
   }
 
   @Override
@@ -437,25 +458,33 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
     statements.forEach(
         (sql, statement) -> {
           if (!deleteStatements.contains(sql)) {
-            executeBatch(statement, true);
+            executeBatch(sql, statement, true);
           }
         });
     statements.forEach(
         (sql, statement) -> {
           if (deleteStatements.contains(sql)) {
-            executeBatch(statement, false);
+            executeBatch(sql, statement, false);
           }
         });
   }
 
-  private void executeBatch(final PreparedStatement statement, final boolean countFenced) {
+  private void executeBatch(
+      final String sql, final PreparedStatement statement, final boolean countFenced) {
     try {
       // A fenced write matches an existing row but fails the version predicate: it affects
       // zero rows. That is the fence working, not an error — count it as the signal it is.
       // (Deletes skip the count: an absent row is indistinguishable from a fenced one here.)
+      // CAVEAT: this detection relies on per-item update counts. If the DataSource is ever
+      // configured with a driver's batch-rewrite optimization (statements coalesced client-side),
+      // executeBatch reports Statement.SUCCESS_NO_INFO (-2) per item — never 0 — so fenced writes
+      // would silently count as written rows and the fence meters would go dark.
       for (final int updated : statement.executeBatch()) {
         if (updated == 0 && countFenced) {
           fencedWrites.increment();
+          metrics.fencedRejected();
+        } else if (updated != 0 && countFenced) {
+          metrics.rowWritten(sqlDataset.get(sql));
         }
       }
     } catch (final SQLException e) {
@@ -564,9 +593,11 @@ public final class RdbmsDatasetWriter implements VersionedDatasetWriter {
         + ")";
   }
 
-  private void execute(final String sql, final Binder binder, final String what) {
+  private void execute(
+      final String sql, final Binder binder, final String what, final String datasetName) {
     try {
       final PreparedStatement statement = statementFor(sql);
+      sqlDataset.putIfAbsent(sql, datasetName);
       binder.bind(statement);
       statement.addBatch();
     } catch (final SQLException e) {

@@ -60,6 +60,8 @@ public final class StateBackedProjectionState implements MutableProjectionState,
   private final CachingKeyValueStore<DbLong, IncidentEntity> incidents;
   private final CachingKeyValueStore<DbBytes, DbLong> variantElements;
   private final List<CachingKeyValueStore<?, ?>> caches;
+  // Named the same way for the overlay-gauge accessors (overlayEntries/overlayBytes) as above.
+  private final Map<String, CachingKeyValueStore<?, ?>> namedCaches;
 
   private final DbLong elementKey = new DbLong();
   private final ElementEntity elementWrite = new ElementEntity();
@@ -110,6 +112,34 @@ public final class StateBackedProjectionState implements MutableProjectionState,
             .withDeleteAbsorption()
             .buildCache(provider);
     caches = List.of(elements, variables, variableScopes, incidents, variantElements);
+    namedCaches =
+        Map.of(
+            "elements", elements,
+            "variables", variables,
+            "variableScopes", variableScopes,
+            "incidents", incidents,
+            "variantElements", variantElements);
+  }
+
+  /**
+   * The fixed store names this projection serves, for binding overlay gauges once per owning task:
+   * the task's suppliers read {@link #overlayEntries}/{@link #overlayBytes} through its live state
+   * field, so the gauges track whichever state generation a live reload installed. Binding gauges
+   * to one generation instead would silently keep reading the abandoned caches forever — Micrometer
+   * keeps the first registration under an id.
+   */
+  public static List<String> storeNames() {
+    return List.of("elements", "variables", "variableScopes", "incidents", "variantElements");
+  }
+
+  /** The named store's active-overlay entry count (racy-read-safe for gauges). */
+  public long overlayEntries(final String store) {
+    return namedCaches.get(store).activeOverlayEntries();
+  }
+
+  /** The named store's approximate byte footprint (racy-read-safe for gauges). */
+  public long overlayBytes(final String store) {
+    return namedCaches.get(store).approximateBytes();
   }
 
   /** Shares an already-open provider (the caller owns its lifecycle) — the production wiring. */

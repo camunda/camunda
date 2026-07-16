@@ -9,6 +9,7 @@ package io.camunda.analytics.store.document;
 
 import io.camunda.analytics.serving.spi.DatasetStore;
 import io.camunda.analytics.serving.spi.MetadataStore;
+import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -38,12 +39,21 @@ public final class DocumentStores {
 
   /** The serving store (schema/writer/query) for the configured document backend. */
   public static DatasetStore datasetStore(final ConnectConfiguration configuration) {
+    return datasetStore(configuration, ServingWriteMetrics.NOOP);
+  }
+
+  /**
+   * The serving store whose writer reports its write-path health through {@code metrics} (rows
+   * written, fence rejections, flush duration, bulk batch size).
+   */
+  public static DatasetStore datasetStore(
+      final ConnectConfiguration configuration, final ServingWriteMetrics metrics) {
     if (isOpensearch(configuration)) {
       final OpensearchSearchClient client = opensearchClient(configuration);
-      return new DocumentDatasetStore(client, client, client);
+      return new DocumentDatasetStore(client, client, client, metrics);
     }
     final ElasticsearchSearchClient client = elasticsearchClient(configuration);
-    return new DocumentDatasetStore(client, client, client);
+    return new DocumentDatasetStore(client, client, client, metrics);
   }
 
   private static boolean isOpensearch(final ConnectConfiguration configuration) {

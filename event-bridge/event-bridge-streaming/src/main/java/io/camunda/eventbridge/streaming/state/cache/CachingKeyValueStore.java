@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.streaming.state.cache;
 
+import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.api.Checkpointable;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.zeebe.db.DbKey;
@@ -417,6 +418,33 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
    */
   public boolean overCapacity() {
     return approxBytes > maxBytes;
+  }
+
+  /**
+   * Wires the "is state healthy" overlay gauges for {@code storeName}; at most one, and only for a
+   * cache that lives as long as its {@code metrics} instance — the bound suppliers capture
+   * <em>this</em> cache generation. An owner that rebuilds its caches (live reload) must instead
+   * bind suppliers over its own live-state field using {@link #activeOverlayEntries()} and {@link
+   * #approximateBytes()}, so the gauge tracks whichever generation is current.
+   */
+  public void metrics(final StoreMetrics metrics, final String storeName) {
+    metrics.bindOverlay(storeName, this::activeOverlayEntries, this::approximateBytes);
+  }
+
+  /**
+   * The active overlay's entry count — the records cache whose growth forces early cuts.
+   * Racy-read-safe for gauges: a stale reading from a scrape thread is harmless.
+   */
+  public long activeOverlayEntries() {
+    return activeMap.size();
+  }
+
+  /**
+   * The approximate byte footprint of this cache — active, frozen and clean layers combined (they
+   * are not tracked separately). Racy-read-safe for gauges.
+   */
+  public long approximateBytes() {
+    return approxBytes;
   }
 
   private void evictIfNeeded() {

@@ -17,6 +17,7 @@ import io.camunda.analytics.meter.CompositeAccumulatorValue;
 import io.camunda.analytics.meter.PushdownColumn;
 import io.camunda.analytics.meter.PushdownSpec;
 import io.camunda.analytics.serving.spi.DatasetWriter;
+import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
 import io.camunda.analytics.serving.spi.WriteVersion;
 import io.camunda.analytics.serving.support.SketchScalar;
@@ -82,8 +83,19 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
   /** Writes rejected by the version fence — stale by the time they reached the store. */
   private final LongAdder fencedWrites = new LongAdder();
 
+  /** The owning dataset/table name of each staged index, so a bulk item's result can be tagged. */
+  private final Map<String, String> indexDataset = new LinkedHashMap<>();
+
+  private final ServingWriteMetrics metrics;
+
   public DocumentDatasetWriter(final DocumentBasedWriteClient writeClient) {
+    this(writeClient, ServingWriteMetrics.NOOP);
+  }
+
+  public DocumentDatasetWriter(
+      final DocumentBasedWriteClient writeClient, final ServingWriteMetrics metrics) {
     this.writeClient = writeClient;
+    this.metrics = metrics;
   }
 
   /** Writes rejected by the version fence since this writer opened (zero outside rebalances). */
@@ -109,7 +121,7 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
     putMeterFields(doc, dataset, compositeAccumulator);
 
     final String id = DocumentCubeNames.cellDocId(key, windowStart, windowSize);
-    stage(DocumentCubeNames.datasetIndex(dataset.cubeId()), id, doc, version);
+    stage(DocumentCubeNames.datasetIndex(dataset.cubeId()), id, doc, version, dataset.name());
   }
 
   @Override
@@ -130,7 +142,7 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
     putMeterFields(doc, dataset, compositeAccumulator);
 
     final String id = DocumentCubeNames.snapshotDocId(key, sampleTime);
-    stage(DocumentCubeNames.snapshotIndex(dataset.cubeId()), id, doc, version);
+    stage(DocumentCubeNames.snapshotIndex(dataset.cubeId()), id, doc, version, dataset.name());
   }
 
   @Override
@@ -144,7 +156,7 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
     for (int i = 0; i < columns.size(); i++) {
       doc.put(DocumentCubeNames.field(columns.get(i).name()), values.get(i));
     }
-    stage(DocumentCubeNames.rowIndex(table.cubeId()), rowKey, doc, version);
+    stage(DocumentCubeNames.rowIndex(table.cubeId()), rowKey, doc, version, table.name());
   }
 
   /**
@@ -210,12 +222,14 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
       final String index,
       final String id,
       final Map<String, Object> doc,
-      final WriteVersion version) {
+      final WriteVersion version,
+      final String datasetName) {
     doc.put(DocumentCubeNames.DOC_KEY, id); // sortable copy of the id, for search_after streaming
     // The version fields are also stored as plain fields so documents stay diagnosable — the
     // enforcing copy is the packed external version on the request.
     doc.put(DocumentCubeNames.VER_EPOCH, version.epoch());
     doc.put(DocumentCubeNames.VER_OFFSET, version.offset());
+    indexDataset.putIfAbsent(index, datasetName);
     staged.put(
         new DocumentKey(index, id),
         new StagedIndex(
@@ -265,6 +279,7 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
     if (staged.isEmpty()) {
       return;
     }
+    final long start = System.nanoTime();
     final List<SearchIndexRequest<Map<String, Object>>> upserts = new ArrayList<>();
     final List<SearchDeleteRequest> deletes = new ArrayList<>();
     for (final StagedOp op : staged.values()) {
@@ -282,17 +297,22 @@ public final class DocumentDatasetWriter implements VersionedDatasetWriter {
       writeClient.delete(delete);
     }
     staged.clear();
+    metrics.writeDuration(System.nanoTime() - start);
   }
 
   private void sendBulk(final List<SearchIndexRequest<Map<String, Object>>> chunk) {
+    metrics.batchSize(chunk.size());
     final SearchBulkResponse response = writeClient.bulk(new SearchBulkIndexRequest<>(chunk));
     SearchBulkResponse.Item firstFailure = null;
     for (final SearchBulkResponse.Item item : response.items()) {
       switch (item.result()) {
         // The fence working, not an error: the store already holds an equal-or-newer row.
-        case NOOP -> fencedWrites.increment();
+        case NOOP -> {
+          fencedWrites.increment();
+          metrics.fencedRejected();
+        }
         case FAILED -> firstFailure = firstFailure == null ? item : firstFailure;
-        case APPLIED -> {}
+        case APPLIED -> metrics.rowWritten(indexDataset.get(item.index()));
       }
     }
     if (firstFailure != null) {

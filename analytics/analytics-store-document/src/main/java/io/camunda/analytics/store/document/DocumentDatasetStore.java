@@ -10,6 +10,7 @@ package io.camunda.analytics.store.document;
 import io.camunda.analytics.serving.spi.DatasetQueryClient;
 import io.camunda.analytics.serving.spi.DatasetSchemaManager;
 import io.camunda.analytics.serving.spi.DatasetStore;
+import io.camunda.analytics.serving.spi.ServingWriteMetrics;
 import io.camunda.analytics.serving.spi.VersionedDatasetWriter;
 import io.camunda.search.clients.DocumentBasedSchemaClient;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -27,14 +28,24 @@ public final class DocumentDatasetStore implements DatasetStore {
   private final DocumentBasedSearchClient searchClient;
   private final DocumentBasedWriteClient writeClient;
   private final DocumentBasedSchemaClient schemaClient;
+  private final ServingWriteMetrics metrics;
 
   public DocumentDatasetStore(
       final DocumentBasedSearchClient searchClient,
       final DocumentBasedWriteClient writeClient,
       final DocumentBasedSchemaClient schemaClient) {
+    this(searchClient, writeClient, schemaClient, ServingWriteMetrics.NOOP);
+  }
+
+  public DocumentDatasetStore(
+      final DocumentBasedSearchClient searchClient,
+      final DocumentBasedWriteClient writeClient,
+      final DocumentBasedSchemaClient schemaClient,
+      final ServingWriteMetrics metrics) {
     this.searchClient = searchClient;
     this.writeClient = writeClient;
     this.schemaClient = schemaClient;
+    this.metrics = metrics;
   }
 
   @Override
@@ -44,7 +55,7 @@ public final class DocumentDatasetStore implements DatasetStore {
 
   @Override
   public VersionedDatasetWriter writer() {
-    return new DocumentDatasetWriter(writeClient);
+    return new DocumentDatasetWriter(writeClient, metrics);
   }
 
   @Override
