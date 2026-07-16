@@ -25,6 +25,8 @@ import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.cleanup.CleanupStrategy;
+import io.camunda.process.test.impl.cleanup.CleanupStrategyResolver;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
@@ -128,7 +130,8 @@ public class CamundaProcessTestExtension
   private CamundaManagementClient camundaManagementClient;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = CamundaProcessTestRuntimeDefaults.CLOCK_RESET_ENABLED;
-  private boolean dataDeletionEnabled = CamundaProcessTestRuntimeDefaults.DATA_DELETION_ENABLED;
+  private DataDeletionMode dataDeletionMode = CamundaProcessTestRuntimeDefaults.DATA_DELETION_MODE;
+  private Instant testCaseStartTime;
 
   private CamundaProcessTestContext camundaProcessTestContext;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine =
@@ -317,7 +320,7 @@ public class CamundaProcessTestExtension
     }
 
     // initialize assertions
-    final Instant testCaseStartTime = readCurrentRuntimeTime();
+    testCaseStartTime = readCurrentRuntimeTime();
     dataSource = new CamundaDataSource(camundaProcessTestContext.createClient(), testCaseStartTime);
     CamundaAssert.initialize(dataSource);
 
@@ -406,10 +409,10 @@ public class CamundaProcessTestExtension
       LOG.info("Runtime clock reset is disabled. Skipping.");
     }
 
-    if (dataDeletionEnabled) {
+    if (dataDeletionMode != DataDeletionMode.NONE) {
       deleteRuntimeData();
     } else {
-      LOG.info("Runtime data deletion is disabled. Skipping.");
+      LOG.info("Runtime data deletion mode is NONE. Skipping.");
     }
   }
 
@@ -450,7 +453,11 @@ public class CamundaProcessTestExtension
       LOG.debug("Deleting the runtime data");
       final Instant startTime = Instant.now();
 
-      camundaManagementClient.purgeCluster();
+      final CleanupStrategy cleanupStrategy = CleanupStrategyResolver.resolve(dataDeletionMode);
+      cleanupStrategy.cleanup(
+          camundaManagementClient,
+          () -> runtime.getCamundaClientBuilderFactory().get().build(),
+          testCaseStartTime);
       final Instant endTime = Instant.now();
       final Duration duration = Duration.between(startTime, endTime);
       LOG.debug("Runtime data deleted in {}", duration);
@@ -788,13 +795,13 @@ public class CamundaProcessTestExtension
   }
 
   /**
-   * Enable or disable runtime data deletion after each test. By default, data deletion is enabled.
+   * Configure runtime data deletion mode after each test.
    *
-   * @param enabled set {@code true} to enable runtime data deletion
+   * @param mode the runtime data deletion mode
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withDataDeletionEnabled(final boolean enabled) {
-    dataDeletionEnabled = enabled;
+  public CamundaProcessTestExtension withDataDeletionMode(final DataDeletionMode mode) {
+    dataDeletionMode = mode;
     return this;
   }
 

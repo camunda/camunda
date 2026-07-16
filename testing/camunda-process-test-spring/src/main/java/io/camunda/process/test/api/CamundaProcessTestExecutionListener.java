@@ -23,6 +23,8 @@ import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.cleanup.CleanupStrategy;
+import io.camunda.process.test.impl.cleanup.CleanupStrategyResolver;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
@@ -101,7 +103,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaManagementClient camundaManagementClient;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = true;
-  private boolean dataDeletionEnabled = true;
+  private DataDeletionMode dataDeletionMode = DataDeletionMode.CLUSTER_PURGE;
+  private Instant testCaseStartTime;
 
   private CamundaClient client;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine =
@@ -127,7 +130,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
     clockResetEnabled = runtimeConfiguration.isClockResetEnabled();
-    dataDeletionEnabled = runtimeConfiguration.isDataDeletionEnabled();
+    dataDeletionMode = runtimeConfiguration.getDataDeletionMode();
 
     final JsonMapper jsonMapper = testContext.getApplicationContext().getBean(JsonMapper.class);
 
@@ -185,7 +188,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .publishEvent(new CamundaClientCreatedSpringEvent(this, client));
 
     // initialize assertions
-    final Instant testCaseStartTime = readCurrentRuntimeTime();
+    testCaseStartTime = readCurrentRuntimeTime();
     dataSource = new CamundaDataSource(client, testCaseStartTime);
     CamundaAssert.initialize(dataSource);
 
@@ -255,10 +258,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       LOG.info("Runtime clock reset is disabled. Skipping.");
     }
 
-    if (dataDeletionEnabled) {
+    if (dataDeletionMode != DataDeletionMode.NONE) {
       deleteRuntimeData();
     } else {
-      LOG.info("Runtime data deletion is disabled. Skipping.");
+      LOG.info("Runtime data deletion mode is NONE. Skipping.");
     }
   }
 
@@ -328,7 +331,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       LOG.debug("Deleting the runtime data");
       final Instant startTime = Instant.now();
 
-      camundaManagementClient.purgeCluster();
+      final CleanupStrategy cleanupStrategy = CleanupStrategyResolver.resolve(dataDeletionMode);
+      cleanupStrategy.cleanup(
+          camundaManagementClient,
+          () -> runtime.getCamundaClientBuilderFactory().get().build(),
+          testCaseStartTime);
       final Instant endTime = Instant.now();
       final Duration duration = Duration.between(startTime, endTime);
       LOG.debug("Runtime data deleted in {}", duration);

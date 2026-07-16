@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.runtime;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
@@ -50,7 +51,7 @@ public final class ContainerRuntimePropertiesUtil {
   public static final String PROPERTY_NAME_ELASTICSEARCH_VERSION = "elasticsearch.version";
   public static final String PROPERTY_NAME_MULTI_TENANCY_ENABLED = "multiTenancyEnabled";
   public static final String PROPERTY_NAME_CLOCK_RESET_ENABLED = "clockResetEnabled";
-  public static final String PROPERTY_NAME_DATA_DELETION_ENABLED = "dataDeletionEnabled";
+  public static final String PROPERTY_NAME_DATA_DELETION_MODE = "dataDeletionMode";
 
   private static final String BASE_DIR = "/";
 
@@ -66,7 +67,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
   private final boolean clockResetEnabled;
-  private final boolean dataDeletionEnabled;
+  private final DataDeletionMode dataDeletionMode;
 
   private final String elasticsearchVersion;
 
@@ -108,10 +109,12 @@ public final class ContainerRuntimePropertiesUtil {
             .trim()
             .equalsIgnoreCase("true");
 
-    dataDeletionEnabled =
-        getPropertyOrDefault(properties, PROPERTY_NAME_DATA_DELETION_ENABLED, "true")
-            .trim()
-            .equalsIgnoreCase("true");
+    dataDeletionMode =
+        getPropertyOrDefault(
+            properties,
+            PROPERTY_NAME_DATA_DELETION_MODE,
+            value -> parseDataDeletionModeOrDefault(value, DataDeletionMode.CLUSTER_PURGE),
+            DataDeletionMode.CLUSTER_PURGE);
   }
 
   public static ContainerRuntimePropertiesUtil readProperties() {
@@ -159,6 +162,15 @@ public final class ContainerRuntimePropertiesUtil {
 
     try {
       return CamundaProcessTestRuntimeMode.valueOf(value.trim().toUpperCase());
+    } catch (final IllegalArgumentException e) {
+      return defaultValue;
+    }
+  }
+
+  private static DataDeletionMode parseDataDeletionModeOrDefault(
+      final String value, final DataDeletionMode defaultValue) {
+    try {
+      return DataDeletionMode.valueOf(value.trim().toUpperCase());
     } catch (final IllegalArgumentException e) {
       return defaultValue;
     }
@@ -254,8 +266,8 @@ public final class ContainerRuntimePropertiesUtil {
     return clockResetEnabled;
   }
 
-  public boolean isDataDeletionEnabled() {
-    return dataDeletionEnabled;
+  public DataDeletionMode getDataDeletionMode() {
+    return dataDeletionMode;
   }
 
   public CoverageReportProperties getCoverageReportProperties() {
