@@ -15,8 +15,11 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class HeartbeatRequest extends UnpackedObject {
 
@@ -25,13 +28,24 @@ public class HeartbeatRequest extends UnpackedObject {
   private final LongProperty memberEpochProp = new LongProperty("memberEpoch", -1L);
   private final ArrayProperty<TopicPartitionValue> ownedPartitionsProp =
       new ArrayProperty<>("ownedPartitions", TopicPartitionValue::new);
+  // Standby readiness (event-bridge-streaming ADR 0009 decision 6 / consumer-groups ADR 0006
+  // decision 1): the member's changelog lag for each standby partition it is warming, as two
+  // parallel arrays (partition[i] -> lag[i]), mirroring the committedOffsets encoding below.
+  // Absent/empty for a member with no standby partitions, so a request encoded before this field
+  // existed decodes unchanged.
+  private final ArrayProperty<TopicPartitionValue> standbyReadinessPartitionsProp =
+      new ArrayProperty<>("standbyReadinessPartitions", TopicPartitionValue::new);
+  private final ArrayProperty<LongValue> standbyReadinessLagProp =
+      new ArrayProperty<>("standbyReadinessLag", LongValue::new);
 
   public HeartbeatRequest() {
-    super(4);
+    super(6);
     declareProperty(groupIdProp)
         .declareProperty(memberIdProp)
         .declareProperty(memberEpochProp)
-        .declareProperty(ownedPartitionsProp);
+        .declareProperty(ownedPartitionsProp)
+        .declareProperty(standbyReadinessPartitionsProp)
+        .declareProperty(standbyReadinessLagProp);
   }
 
   public String getGroupId() {
@@ -74,6 +88,38 @@ public class HeartbeatRequest extends UnpackedObject {
     ownedPartitionsProp.reset();
     if (ownedPartitions != null && !ownedPartitions.isEmpty()) {
       ownedPartitions.forEach(p -> ownedPartitionsProp.add().copyFrom(p));
+    }
+    return this;
+  }
+
+  /**
+   * The member's reported changelog lag per standby partition it is warming (event-bridge-streaming
+   * ADR 0009); empty for a member with no standby role. The coordinator derives readiness from this
+   * (see {@code GroupReconciliation}) — it is never itself replicated, only the resulting promotion
+   * decision is.
+   */
+  public Map<TopicPartition, Long> getStandbyReadiness() {
+    final var partitions = new ArrayList<TopicPartition>();
+    standbyReadinessPartitionsProp.forEach(e -> partitions.add(e.toTopicPartition()));
+    final var lags = new ArrayList<Long>();
+    standbyReadinessLagProp.forEach(e -> lags.add(e.getValue()));
+
+    final var result = new TreeMap<TopicPartition, Long>();
+    for (int i = 0; i < Math.min(partitions.size(), lags.size()); i++) {
+      result.put(partitions.get(i), lags.get(i));
+    }
+    return result;
+  }
+
+  public HeartbeatRequest setStandbyReadiness(final Map<TopicPartition, Long> standbyReadiness) {
+    standbyReadinessPartitionsProp.reset();
+    standbyReadinessLagProp.reset();
+    if (standbyReadiness != null) {
+      standbyReadiness.forEach(
+          (partition, lag) -> {
+            standbyReadinessPartitionsProp.add().copyFrom(partition);
+            standbyReadinessLagProp.add().setValue(lag);
+          });
     }
     return this;
   }

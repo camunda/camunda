@@ -42,9 +42,17 @@ public class HeartbeatResponse extends UnpackedObject {
       new ArrayProperty<>("committedPartitions", TopicPartitionValue::new);
   private final ArrayProperty<LongValue> committedOffsetsProp =
       new ArrayProperty<>("committedOffsets", LongValue::new);
+  // The member's current standby target (event-bridge-streaming ADR 0009 / consumer-groups ADR
+  // 0006 decision 1) — delivered as a full target, not an incremental assign/revoke delta: unlike
+  // active ownership, holding a standby partition a moment longer during a handoff is harmless (no
+  // exclusive-owner invariant to protect), so the coordinator need not run the cooperative
+  // assign-after-revoke handshake for it. Empty for a group with no standby replicas configured, so
+  // a response encoded before this field existed decodes unchanged.
+  private final ArrayProperty<TopicPartitionValue> standbyAssignmentProp =
+      new ArrayProperty<>("standbyAssignment", TopicPartitionValue::new);
 
   public HeartbeatResponse() {
-    super(9);
+    super(10);
     declareProperty(errorCodeProp)
         .declareProperty(memberIdProp)
         .declareProperty(memberEpochProp)
@@ -53,7 +61,8 @@ public class HeartbeatResponse extends UnpackedObject {
         .declareProperty(assignmentProp)
         .declareProperty(assignmentEpochProp)
         .declareProperty(committedPartitionsProp)
-        .declareProperty(committedOffsetsProp);
+        .declareProperty(committedOffsetsProp)
+        .declareProperty(standbyAssignmentProp);
   }
 
   public CoordinationErrorCode getErrorCode() {
@@ -142,6 +151,19 @@ public class HeartbeatResponse extends UnpackedObject {
             committedOffsetsProp.add().setValue(offset);
           });
     }
+    return this;
+  }
+
+  /**
+   * The member's current standby target — the whole set, not an assign/revoke delta (see the field
+   * javadoc above). Empty when the group has no standby replicas configured.
+   */
+  public List<TopicPartition> getStandbyAssignment() {
+    return readPartitions(standbyAssignmentProp);
+  }
+
+  public HeartbeatResponse setStandbyAssignment(final List<TopicPartition> standbyAssignment) {
+    writePartitions(standbyAssignmentProp, standbyAssignment);
     return this;
   }
 
