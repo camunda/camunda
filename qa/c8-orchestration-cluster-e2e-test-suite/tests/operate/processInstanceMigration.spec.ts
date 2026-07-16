@@ -151,12 +151,25 @@ test.describe.serial('Process Instance Migration', () => {
       // view loads; under import lag the combobox stays empty. Actively select the
       // target process (which also triggers the flow-node auto-mapping verified
       // below) to make the step deterministic.
-      await operateProcessMigrationModePage.targetProcessCombobox.click();
-      // The option may take up to 60s to appear under import lag; override the
-      // default 10s actionTimeout to match the tolerance used by toHaveValue below.
-      await operateProcessMigrationModePage
-        .getOptionByName(targetBpmnProcessId)
-        .click({timeout: 60000});
+      //
+      // The combobox's option list is fetched once when it opens and does not
+      // refresh while it stays open, so under heavy import lag the target
+      // process can be entirely absent from that snapshot — waiting longer on
+      // the same open combobox never helps, since there's nothing to converge
+      // on. Close (Escape) and reopen it on each retry to force a fresh query
+      // instead of waiting once on a stale one.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessMigrationModePage.targetProcessCombobox.click();
+          await operateProcessMigrationModePage
+            .getOptionByName(targetBpmnProcessId)
+            .click({timeout: 10000});
+        },
+        onFailure: async () => {
+          await page.keyboard.press('Escape');
+        },
+        maxRetries: 8,
+      });
 
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
@@ -434,10 +447,22 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Manually select target process and version', async () => {
-      await operateProcessMigrationModePage.targetProcessCombobox.click();
-      await operateProcessMigrationModePage
-        .getOptionByName(targetBpmnProcessId)
-        .click();
+      // Same import-lag hazard as the auto-mapping test above: the combobox's
+      // option list is fetched once on open and won't refresh while it stays
+      // open, so retry by closing (Escape) and reopening rather than waiting
+      // once on a potentially stale list.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateProcessMigrationModePage.targetProcessCombobox.click();
+          await operateProcessMigrationModePage
+            .getOptionByName(targetBpmnProcessId)
+            .click({timeout: 10000});
+        },
+        onFailure: async () => {
+          await page.keyboard.press('Escape');
+        },
+        maxRetries: 8,
+      });
 
       await operateProcessMigrationModePage.targetVersionDropdown.click();
       await operateProcessMigrationModePage
