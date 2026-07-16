@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.engine.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -50,22 +49,24 @@ public final class CreateAgentInstanceTest {
     // yields 503 UNAVAILABLE (PartitionNotFoundException).
     final long elementInstanceKey = Protocol.encodePartitionId(999, 1);
 
-    // when
-    final var responseFuture =
-        client
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(elementInstanceKey)
-            .model("test-model")
-            .provider("test-provider")
-            .systemPrompt("You are a helpful assistant.")
-            .send();
+    // when / then
+    final var exception =
+        AssertionsForClassTypes.assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () ->
+                    client
+                        .newCreateAgentInstanceCommand()
+                        .elementInstanceKey(elementInstanceKey)
+                        .model("test-model")
+                        .provider("test-provider")
+                        .systemPrompt("You are a helpful assistant.")
+                        .execute())
+            .actual();
 
-    // then
-    assertThatThrownBy(responseFuture::join)
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("title: UNAVAILABLE")
-        .hasMessageContaining("status: 503")
-        .hasMessageContaining("Expected to handle request, but request could not be delivered");
+    assertThat(exception.details().getStatus()).isEqualTo(HttpStatus.SC_SERVICE_UNAVAILABLE);
+    assertThat(exception.details().getTitle()).isEqualTo("UNAVAILABLE");
+    assertThat(exception.details().getDetail())
+        .contains("Expected to handle request, but request could not be delivered");
   }
 
   @Test
@@ -74,22 +75,24 @@ public final class CreateAgentInstanceTest {
     final int partition = resourcesHelper.getPartitions().getFirst();
     final long nonExistingKey = Protocol.encodePartitionId(partition, 2);
 
-    // when
-    final var responseFuture =
-        client
-            .newCreateAgentInstanceCommand()
-            .elementInstanceKey(nonExistingKey)
-            .model("test-model")
-            .provider("test-provider")
-            .systemPrompt("You are a helpful assistant.")
-            .send();
+    // when / then
+    final var exception =
+        AssertionsForClassTypes.assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () ->
+                    client
+                        .newCreateAgentInstanceCommand()
+                        .elementInstanceKey(nonExistingKey)
+                        .model("test-model")
+                        .provider("test-provider")
+                        .systemPrompt("You are a helpful assistant.")
+                        .execute())
+            .actual();
 
-    // then
-    assertThatThrownBy(responseFuture::join)
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("title: NOT_FOUND")
-        .hasMessageContaining("status: 404")
-        .hasMessageContaining(
+    assertThat(exception.details().getStatus()).isEqualTo(HttpStatus.SC_NOT_FOUND);
+    assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
+    assertThat(exception.details().getDetail())
+        .contains(
             "Expected to create agent instance for element instance with key '%d', but no such element instance was found."
                 .formatted(nonExistingKey));
   }
