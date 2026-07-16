@@ -855,7 +855,7 @@
     {
       "description": "Track camunda-platform-helm chart tags pinned in load test scripts.",
       "customType": "regex",
-      "managerFilePatterns": ["load-tests/setup/*/newLoadTest.sh"],
+      "managerFilePatterns": ["load-tests/setup/newLoadTest.sh"],
       "matchStrings": [
         "renovate: version=(?<parentVersion>.*?)\\s+camunda_platform_helm_chart_version=\"(?<currentValue>[^\"]+)\""
       ],
