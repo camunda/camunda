@@ -1103,7 +1103,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldSuspendProcessInstance() {
+  void shouldReturnNotImplementedForSuspendProcessInstance() {
     // given
     final var request =
         """
@@ -1126,7 +1126,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldSuspendProcessInstanceWithNoBody() {
+  void shouldReturnNotImplementedForSuspendProcessInstanceWithNoBody() {
     // when/then — 501: the engine processor for SUSPEND doesn't exist yet (TODO #57518)
     webClient
         .post()
@@ -1176,7 +1176,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldResumeProcessInstance() {
+  void shouldReturnNotImplementedForResumeProcessInstance() {
     // given
     final var request =
         """
@@ -1199,7 +1199,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldResumeProcessInstanceWithNoBody() {
+  void shouldReturnNotImplementedForResumeProcessInstanceWithNoBody() {
     // when/then — 501: the engine processor for RESUME doesn't exist yet (TODO #57518)
     webClient
         .post()
