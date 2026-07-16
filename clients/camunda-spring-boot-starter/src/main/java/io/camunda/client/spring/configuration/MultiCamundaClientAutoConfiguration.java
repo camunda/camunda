@@ -119,30 +119,6 @@ public class MultiCamundaClientAutoConfiguration {
         context -> JobExceptionHandler.createDefault());
   }
 
-  /** Matches when a primary (default) client is resolvable from the multi-client configuration. */
-  static final class OnResolvablePrimaryClientCondition extends SpringBootCondition {
-    @Override
-    public ConditionOutcome getMatchOutcome(
-        final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final boolean hasPrimary;
-      try {
-        hasPrimary =
-            MultiCamundaClientPropertiesResolver.resolve(context.getEnvironment())
-                .getPrimaryClientName()
-                .isPresent();
-      } catch (final RuntimeException e) {
-        // invalid configuration: do not register the bean and let the real validation error
-        // surface from the MultiCamundaClientProperties bean creation instead of from here
-        return ConditionOutcome.noMatch("multi-client configuration could not be resolved");
-      }
-      return new ConditionOutcome(
-          hasPrimary,
-          hasPrimary
-              ? "a primary client is resolvable"
-              : "no primary client is resolvable (multiple clients without a designated primary)");
-    }
-  }
-
   @Bean
   @ConditionalOnMissingBean
   public MultiCamundaClientProperties multiCamundaClientProperties(final Environment environment) {
@@ -207,5 +183,29 @@ public class MultiCamundaClientAutoConfiguration {
         beanNamesByClientName,
         beanName -> beanFactory.getBean(beanName, CamundaClient.class),
         properties.getPrimaryClientName().orElse(null));
+  }
+
+  /** Matches when a primary (default) client is resolvable from the multi-client configuration. */
+  static final class OnResolvablePrimaryClientCondition extends SpringBootCondition {
+    @Override
+    public ConditionOutcome getMatchOutcome(
+        final ConditionContext context, final AnnotatedTypeMetadata metadata) {
+      final boolean hasPrimary;
+      try {
+        hasPrimary =
+            MultiCamundaClientPropertiesResolver.resolve(context.getEnvironment())
+                .getPrimaryClientName()
+                .isPresent();
+      } catch (final RuntimeException e) {
+        // invalid configuration: do not register the bean and let the real validation error
+        // surface from the MultiCamundaClientProperties bean creation instead of from here
+        return ConditionOutcome.noMatch("multi-client configuration could not be resolved");
+      }
+      return new ConditionOutcome(
+          hasPrimary,
+          hasPrimary
+              ? "a primary client is resolvable"
+              : "no primary client is resolvable (multiple clients without a designated primary)");
+    }
   }
 }
