@@ -32,6 +32,14 @@ final class CleanSegmentFiles {
   static final String SUFFIX = ".log";
   static final String TMP_SUFFIX = ".log.tmp";
 
+  /**
+   * Suffix appended to a segment's name when the trash queue condemns it (renames it ahead of the
+   * deferred physical unlink) — the journal's {@code *-deleted} marker convention. A condemned name
+   * never collides with a future segment: names embed the cleaner point, which strictly advances
+   * per committed pass, so a superseded name is never written again.
+   */
+  static final String DELETED_SUFFIX = "-deleted";
+
   private static final Pattern SEGMENT_PATTERN =
       Pattern.compile(Pattern.quote(PREFIX) + "\\d{19}-\\d{19}" + Pattern.quote(SUFFIX));
 
@@ -47,6 +55,11 @@ final class CleanSegmentFiles {
     return PREFIX + pad(firstPosition) + "-" + pad(cleanerPoint) + TMP_SUFFIX;
   }
 
+  /** Returns the condemned marker name for a segment file name. */
+  static String condemnedName(final String segmentFileName) {
+    return segmentFileName + DELETED_SUFFIX;
+  }
+
   /** Returns {@code true} if the given file name is a finalized clean-segment file. */
   static boolean isSegment(final String fileName) {
     return SEGMENT_PATTERN.matcher(fileName).matches();
@@ -55,6 +68,11 @@ final class CleanSegmentFiles {
   /** Returns {@code true} if the given file name is a clean-segment temp (staging) file. */
   static boolean isTmp(final String fileName) {
     return fileName.startsWith(PREFIX) && fileName.endsWith(TMP_SUFFIX);
+  }
+
+  /** Returns {@code true} if the given file name is a condemned ({@code *-deleted}) marker. */
+  static boolean isCondemned(final String fileName) {
+    return fileName.startsWith(PREFIX) && fileName.endsWith(SUFFIX + DELETED_SUFFIX);
   }
 
   private static String pad(final long value) {

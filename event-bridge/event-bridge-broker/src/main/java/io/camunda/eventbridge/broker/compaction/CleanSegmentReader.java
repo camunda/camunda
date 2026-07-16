@@ -12,6 +12,8 @@ import io.camunda.eventbridge.protocol.EventBridgeBatchIterator;
 import io.camunda.eventbridge.protocol.EventBridgeEntry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
@@ -38,19 +40,60 @@ public final class CleanSegmentReader {
   private int cursor;
 
   /**
-   * Opens a clean segment for reading, loading its bytes into memory.
+   * Opens a clean segment for reading, loading its bytes into memory. Callers on a concurrent
+   * deletion path should prefer {@link #CleanSegmentReader(ReaderLease)}: this constructor resolves
+   * the path directly and is only safe where the file cannot be condemned concurrently (e.g. the
+   * cleaner actor reading segments referenced by the latest committed manifest).
    *
    * @param segmentFile the segment file
    */
   public CleanSegmentReader(final Path segmentFile) {
+    this(readFile(segmentFile));
+  }
+
+  /**
+   * Reads a clean segment through a held {@link ReaderLease}, using the lease's already-open
+   * channel. This is the safe way to read a segment that the trash queue may condemn concurrently:
+   * the open descriptor keeps the bytes readable even after the file is renamed or unlinked. The
+   * lease stays owned by the caller — this reader does not release it.
+   *
+   * @param lease a held lease on the segment
+   */
+  public CleanSegmentReader(final ReaderLease lease) {
+    this(readChannel(lease));
+  }
+
+  private CleanSegmentReader(final byte[] bytes) {
+    buffer = new UnsafeBuffer(bytes);
+    length = bytes.length;
+    cursor = 0;
+  }
+
+  private static byte[] readFile(final Path segmentFile) {
     try {
-      final byte[] bytes = Files.readAllBytes(segmentFile);
-      buffer = new UnsafeBuffer(bytes);
-      length = bytes.length;
+      return Files.readAllBytes(segmentFile);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to read clean segment " + segmentFile, e);
     }
-    cursor = 0;
+  }
+
+  private static byte[] readChannel(final ReaderLease lease) {
+    try {
+      final FileChannel channel = lease.channel();
+      final int size = Math.toIntExact(channel.size());
+      final ByteBuffer bytes = ByteBuffer.allocate(size);
+      int position = 0;
+      while (bytes.hasRemaining()) {
+        final int read = channel.read(bytes, position);
+        if (read < 0) {
+          throw new IOException("Unexpected end of clean segment at byte " + position);
+        }
+        position += read;
+      }
+      return bytes.array();
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to read clean segment " + lease.file(), e);
+    }
   }
 
   /**

@@ -33,7 +33,7 @@ import java.util.zip.CRC32;
 public final class FileManifestStore implements ManifestStore {
 
   static final String MANIFEST_FILE = "manifest";
-  private static final String MANIFEST_TMP = "manifest.tmp";
+  static final String MANIFEST_TMP = "manifest.tmp";
 
   private final Path directory;
 

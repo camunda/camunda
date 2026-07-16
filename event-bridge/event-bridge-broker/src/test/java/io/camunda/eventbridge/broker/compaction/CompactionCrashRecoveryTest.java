@@ -127,12 +127,19 @@ final class CompactionCrashRecoveryTest {
       assertThat(crashing.store().latest().orElseThrow().cleanerPoint()).isEqualTo(9);
     }
 
+    // and the crash additionally left a torn manifest write and a stale condemned marker behind
+    Files.write(dir.resolve(FileManifestStore.MANIFEST_TMP), new byte[] {1, 2, 3});
+    Files.write(
+        dir.resolve(CleanSegmentFiles.condemnedName(CleanSegmentFiles.segmentName(700, 800))),
+        new byte[] {4});
+
     // when a fresh pass reruns from the durable state
     final Harness rerun = harness(dir, Fault.none());
     lastCommitted.set(9);
     rerun.pass().runOnce();
 
-    // then it converges to the uninterrupted result and leaves no orphan or temp files
+    // then it converges to the uninterrupted result and leaves no orphan, temp, marker, or torn
+    // manifest files
     assertThat(readCleanSet(dir, rerun.store())).containsExactlyElementsOf(golden);
     assertThat(rerun.store().latest().orElseThrow().cleanerPoint()).isEqualTo(9);
     assertNoOrphanFiles(dir, rerun.store());
@@ -158,6 +165,12 @@ final class CompactionCrashRecoveryTest {
             final String name = p.getFileName().toString();
             if (CleanSegmentFiles.isTmp(name)) {
               fail("leftover temp file: " + name);
+            }
+            if (CleanSegmentFiles.isCondemned(name)) {
+              fail("leftover condemned marker: " + name);
+            }
+            if (FileManifestStore.MANIFEST_TMP.equals(name)) {
+              fail("leftover torn manifest write: " + name);
             }
             if (CleanSegmentFiles.isSegment(name) && !referenced.contains(name)) {
               fail("leftover orphan segment: " + name);

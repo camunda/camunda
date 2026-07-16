@@ -22,7 +22,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Deferred, refcount-guarded deletion: lease, external predicate, reference and crash recovery. */
+/**
+ * Deferred, condemn-then-unlink deletion: reference and external-predicate gates, the lease
+ * interlock (marker unlinked by the last release), open-descriptor survival, and crash recovery
+ * from the directory/manifest diff.
+ */
 final class TrashQueueTest {
 
   @TempDir Path dir;
@@ -51,57 +55,103 @@ final class TrashQueueTest {
     return new TrashQueue(dir, leases, latest, externalPredicate);
   }
 
-  private Path orphanFile(final long firstPosition, final long cleanerPoint) throws IOException {
-    final Path orphan = dir.resolve(CleanSegmentFiles.segmentName(firstPosition, cleanerPoint));
-    Files.write(orphan, new byte[] {1, 2, 3});
-    return orphan;
+  /** Writes a real (readable) orphan segment not referenced by the committed manifest. */
+  private Path orphanSegment(final long firstPosition, final long cleanerPoint) {
+    final var writer = new CleanSegmentWriter(dir, cleanerPoint, 1 << 20);
+    writer.append(put(firstPosition, "orphan", "orphan-value"));
+    final CleanSegment segment = writer.finish().get(0);
+    return dir.resolve(segment.fileName());
+  }
+
+  private Path condemnedPathOf(final Path original) {
+    return dir.resolve(CleanSegmentFiles.condemnedName(original.getFileName().toString()));
   }
 
   @Test
-  void shouldNotUnlinkFileWhileLeaseHeldThenUnlinkOnceReleased() throws IOException {
-    // given a superseded file with a reader lease held
-    final Path orphan = orphanFile(100, 200);
+  void shouldDeferUnlinkToLeaseReleaseAndKeepBytesReadable() {
+    // given a superseded file with a reader lease (and its open channel) held
+    final Path orphan = orphanSegment(100, 200);
     final TrashQueue trash = trashQueue(() -> true);
     trash.enqueue(orphan);
-    final ReaderLease lease = leases.acquire(orphan);
+    final ReaderLease lease = leases.acquire(orphan).orElseThrow();
 
     // when draining while the lease is held
-    assertThat(trash.drain()).isZero();
+    final int unlinkedNow = trash.drain();
 
-    // then the file survives all other conditions
-    assertThat(Files.exists(orphan)).isTrue();
-
-    // when the lease is released and we drain again
-    lease.release();
-    final int deleted = trash.drain();
-
-    // then it is unlinked
-    assertThat(deleted).isEqualTo(1);
+    // then — the file is condemned (renamed) but not unlinked; the lease keeps the bytes readable
+    assertThat(unlinkedNow).isZero();
     assertThat(Files.exists(orphan)).isFalse();
+    assertThat(Files.exists(condemnedPathOf(orphan))).isTrue();
+    final var reader = new CleanSegmentReader(lease);
+    assertThat(CompactionRecords.value(reader.next())).isEqualTo("orphan-value");
+
+    // when the lease is released
+    lease.release();
+
+    // then — the last release performs the deferred unlink of the marker
+    assertThat(Files.exists(condemnedPathOf(orphan))).isFalse();
   }
 
   @Test
-  void shouldNotUnlinkWhileExternalPredicateFalse() throws IOException {
+  void shouldKeepLeasedBytesReadableEvenAfterTheMarkerIsUnlinked() {
+    // given a held lease on a file that gets condemned AND its marker swept (as recoverOrphans
+    // does on the next pass after a crash)
+    final Path orphan = orphanSegment(100, 200);
+    final TrashQueue trash = trashQueue(() -> true);
+    trash.enqueue(orphan);
+    final ReaderLease lease = leases.acquire(orphan).orElseThrow();
+    trash.drain();
+
+    // when the marker is unlinked while the lease is still held
+    final TrashQueue recovered = trashQueue(() -> true);
+    recovered.recoverOrphans();
+    assertThat(Files.exists(condemnedPathOf(orphan))).isFalse();
+
+    // then — the lease's open descriptor still reads the full content (POSIX unlink semantics)
+    final var reader = new CleanSegmentReader(lease);
+    assertThat(CompactionRecords.value(reader.next())).isEqualTo("orphan-value");
+    lease.release();
+  }
+
+  @Test
+  void shouldSignalRetryWhenAcquiringACondemnedFile() {
+    // given a file that the queue has already condemned
+    final Path orphan = orphanSegment(100, 200);
+    final TrashQueue trash = trashQueue(() -> true);
+    trash.enqueue(orphan);
+    assertThat(trash.drain()).isEqualTo(1);
+
+    // when a reader tries to acquire it under its original name
+    final Optional<ReaderLease> lease = leases.acquire(orphan);
+
+    // then — no lease; the caller re-resolves from the latest committed manifest
+    assertThat(lease).isEmpty();
+    assertThat(leases.leaseCount(orphan)).isZero();
+  }
+
+  @Test
+  void shouldNotCondemnWhileExternalPredicateFalse() {
     // given an external predicate that is currently false
-    final Path orphan = orphanFile(100, 200);
+    final Path orphan = orphanSegment(100, 200);
     final var allowed = new AtomicBoolean(false);
     final TrashQueue trash = trashQueue(allowed::get);
     trash.enqueue(orphan);
 
     // when draining
     assertThat(trash.drain()).isZero();
-    // then it survives
+    // then — the file is untouched under its original name (not even condemned)
     assertThat(Files.exists(orphan)).isTrue();
 
     // when the predicate permits deletion
     allowed.set(true);
-    // then it is unlinked
+    // then — condemned and unlinked in one drain (no leases)
     assertThat(trash.drain()).isEqualTo(1);
     assertThat(Files.exists(orphan)).isFalse();
+    assertThat(Files.exists(condemnedPathOf(orphan))).isFalse();
   }
 
   @Test
-  void shouldNeverUnlinkFileReferencedByLatestManifest() {
+  void shouldNeverCondemnFileReferencedByLatestManifest() {
     // given the committed manifest's own segment is (incorrectly) enqueued
     final TrashQueue trash = trashQueue(() -> true);
     trash.enqueue(keptFile);
@@ -109,30 +159,38 @@ final class TrashQueueTest {
     // when draining
     final int deleted = trash.drain();
 
-    // then it is protected by the reference check
+    // then — it is protected by the reference check, untouched under its original name
     assertThat(deleted).isZero();
     assertThat(Files.exists(keptFile)).isTrue();
   }
 
   @Test
-  void shouldRecoverOrphansFromManifestDiffAfterCrashBeforeDrain() throws IOException {
-    // given a crash lost the in-memory queue: an orphan segment and a stale temp file are on disk
-    final Path orphan = orphanFile(100, 200);
+  void shouldRecoverOrphansMarkersAndTornManifestTmpAfterCrash() throws IOException {
+    // given a crash lost the in-memory queue: an orphan segment, a stale staging temp file, a
+    // stale condemned marker, and a torn manifest.tmp are on disk
+    final Path orphan = orphanSegment(100, 200);
     final Path staleTmp = dir.resolve(CleanSegmentFiles.tmpName(300, 400));
     Files.write(staleTmp, new byte[] {9});
+    final Path staleMarker =
+        dir.resolve(CleanSegmentFiles.condemnedName(CleanSegmentFiles.segmentName(500, 600)));
+    Files.write(staleMarker, new byte[] {8});
+    final Path tornManifestTmp = dir.resolve(FileManifestStore.MANIFEST_TMP);
+    Files.write(tornManifestTmp, new byte[] {7});
 
     // when a fresh queue recovers from the directory/manifest diff on restart
     final TrashQueue trash = trashQueue(() -> true);
     trash.recoverOrphans();
 
-    // then the temp file is gone immediately and the orphan is re-enqueued
+    // then — all unconditional garbage is gone immediately and the orphan is re-enqueued
     assertThat(Files.exists(staleTmp)).isFalse();
+    assertThat(Files.exists(staleMarker)).isFalse();
+    assertThat(Files.exists(tornManifestTmp)).isFalse();
     assertThat(trash.pendingCount()).isEqualTo(1);
 
     // when draining
     assertThat(trash.drain()).isEqualTo(1);
 
-    // then the orphan is unlinked and the referenced file is untouched
+    // then — the orphan is unlinked and the referenced file is untouched
     assertThat(Files.exists(orphan)).isFalse();
     assertThat(Files.exists(keptFile)).isTrue();
   }
