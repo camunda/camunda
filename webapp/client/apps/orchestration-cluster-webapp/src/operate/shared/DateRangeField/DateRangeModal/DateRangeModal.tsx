@@ -22,6 +22,11 @@ const defaultTime = {
 	to: '23:59:59',
 };
 
+// Only complete dates may reach the DatePicker: while the user is typing,
+// partial values ("2022-0") would be parsed by flatpickr, formatted as
+// garbage back into the input, and crash its range plugin on blur.
+const isCompleteDate = (date: string | undefined): date is string => /^\d{4}-\d{1,2}-\d{1,2}$/.test(date ?? '');
+
 type Props = {
 	title: string;
 	filterName: string;
@@ -119,7 +124,7 @@ const DateRangeModal: React.FC<Props> = ({defaultValues, onApply, onCancel, filt
 											// Carbon's `DatePickerInput` explicitly doesn't support a `value` prop on
 											// itself for range pickers; the parent `DatePicker` is the supported,
 											// documented way to control the selected dates.
-											value={[values.fromDate, values.toDate].filter((date): date is string => Boolean(date))}
+											value={[values.fromDate, values.toDate].filter(isCompleteDate)}
 											onChange={(event) => {
 												const [fromDateTime, toDateTime] = event;
 												if (fromDateTime !== undefined) {
