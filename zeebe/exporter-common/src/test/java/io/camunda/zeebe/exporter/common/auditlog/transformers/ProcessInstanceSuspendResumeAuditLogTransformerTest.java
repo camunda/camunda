@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
@@ -109,7 +110,6 @@ class ProcessInstanceSuspendResumeAuditLogTransformerTest {
 
     final var log = transformer.create(record);
     assertThat(log.getOperationType()).isEqualTo(AuditLogOperationType.SUSPEND);
-    assertThat(log.getResult())
-        .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
+    assertThat(log.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
   }
 }
