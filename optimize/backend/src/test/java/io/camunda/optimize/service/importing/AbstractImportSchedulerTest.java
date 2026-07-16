@@ -12,6 +12,7 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,8 +51,8 @@ class AbstractImportSchedulerTest {
     final CountDownLatch slowMediatorStarted = new CountDownLatch(1);
     final AtomicBoolean slowMediatorCompleted = new AtomicBoolean(false);
 
-    final ImportMediator slowMediator = mock(ImportMediator.class);
-    final ImportMediator fastMediator = mock(ImportMediator.class);
+    final ImportMediator slowMediator = readyMediator();
+    final ImportMediator fastMediator = readyMediator();
 
     // lenient: whether these get invoked before the test ends is a timing race against the
     // background reschedule threads, not something this test asserts on.
@@ -100,7 +101,7 @@ class AbstractImportSchedulerTest {
     final int expectedRuns = 3;
     final CountDownLatch runsCompleted = new CountDownLatch(expectedRuns);
 
-    final ImportMediator mediator = mock(ImportMediator.class);
+    final ImportMediator mediator = readyMediator();
     when(mediator.getBackoffTimeInMs()).thenReturn(0L);
     when(mediator.runImport())
         .thenAnswer(
@@ -130,7 +131,7 @@ class AbstractImportSchedulerTest {
     final AtomicInteger backoffCallCount = new AtomicInteger(0);
     final CountDownLatch firstRunComplete = new CountDownLatch(1);
 
-    final ImportMediator mediator = mock(ImportMediator.class);
+    final ImportMediator mediator = readyMediator();
     // return backoff on the first reschedule decision, 0 on subsequent ones. Tracked via a
     // dedicated counter (rather than runCount) since getBackoffTimeInMs() is evaluated by the
     // scheduler right after runImport() has already incremented runCount for that run.
@@ -181,12 +182,98 @@ class AbstractImportSchedulerTest {
   }
 
   @Test
+  void shouldWaitUntilMediatorCanImportBeforeRunning() throws Exception {
+    // given
+    final CountDownLatch canImportChecked = new CountDownLatch(1);
+
+    final ImportMediator mediator = mock(ImportMediator.class);
+    when(mediator.canImport())
+        .thenAnswer(
+            inv -> {
+              canImportChecked.countDown();
+              return false;
+            });
+    when(mediator.getBackoffTimeInMs()).thenReturn(60_000L);
+
+    scheduler = new ZeebeImportScheduler(List.of(mediator), mock(ZeebeConfigDto.class));
+
+    // when
+    scheduler.startImportScheduling();
+
+    // then
+    assertThat(canImportChecked.await(2, TimeUnit.SECONDS))
+        .as("scheduler should check mediator readiness")
+        .isTrue();
+    await()
+        .pollDelay(Duration.ZERO)
+        .pollInterval(Duration.ofMillis(10))
+        .during(Duration.ofMillis(50))
+        .atMost(Duration.ofMillis(150))
+        .untilAsserted(() -> verify(mediator, never()).runImport());
+  }
+
+  @Test
+  void shouldRunMediatorAfterCanImportBecomesTrue() throws Exception {
+    // given
+    final CountDownLatch mediatorRan = new CountDownLatch(1);
+    final AtomicInteger canImportChecks = new AtomicInteger(0);
+
+    final ImportMediator mediator = mock(ImportMediator.class);
+    when(mediator.canImport()).thenAnswer(inv -> canImportChecks.getAndIncrement() == 1);
+    when(mediator.getBackoffTimeInMs()).thenReturn(50L, 60_000L);
+    when(mediator.runImport())
+        .thenAnswer(
+            inv -> {
+              mediatorRan.countDown();
+              return CompletableFuture.completedFuture(null);
+            });
+
+    scheduler = new ZeebeImportScheduler(List.of(mediator), mock(ZeebeConfigDto.class));
+
+    // when
+    scheduler.startImportScheduling();
+
+    // then
+    assertThat(mediatorRan.await(2, TimeUnit.SECONDS))
+        .as("mediator should run after its backoff makes it ready")
+        .isTrue();
+  }
+
+  @Test
+  void shouldRescheduleMediatorWhenRunImportReturnsNullFuture() {
+    // given
+    final AtomicInteger runCount = new AtomicInteger(0);
+
+    final ImportMediator mediator = mock(ImportMediator.class);
+    when(mediator.canImport()).thenReturn(true);
+    when(mediator.getBackoffTimeInMs()).thenReturn(0L, 60_000L);
+    when(mediator.runImport())
+        .thenAnswer(
+            inv -> {
+              if (runCount.incrementAndGet() == 1) {
+                return null;
+              }
+              return CompletableFuture.completedFuture(null);
+            });
+
+    scheduler = new ZeebeImportScheduler(List.of(mediator), mock(ZeebeConfigDto.class));
+
+    // when
+    scheduler.startImportScheduling();
+
+    // then
+    await()
+        .atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> assertThat(runCount.get()).isEqualTo(2));
+  }
+
+  @Test
   void shouldWaitForMediatorFutureCompletionBeforeRescheduling() {
     // given
     final AtomicInteger runCount = new AtomicInteger(0);
     final AtomicReference<CompletableFuture<Void>> firstRunFuture = new AtomicReference<>();
 
-    final ImportMediator mediator = mock(ImportMediator.class);
+    final ImportMediator mediator = readyMediator();
     when(mediator.getBackoffTimeInMs()).thenReturn(0L);
     when(mediator.runImport())
         .thenAnswer(
@@ -225,7 +312,7 @@ class AbstractImportSchedulerTest {
     final AtomicInteger runCount = new AtomicInteger(0);
     final AtomicReference<CompletableFuture<Void>> firstRunFuture = new AtomicReference<>();
 
-    final ImportMediator mediator = mock(ImportMediator.class);
+    final ImportMediator mediator = readyMediator();
     when(mediator.getBackoffTimeInMs()).thenReturn(0L);
     when(mediator.runImport())
         .thenAnswer(
@@ -256,8 +343,8 @@ class AbstractImportSchedulerTest {
     // given
     final CountDownLatch successMediatorRan = new CountDownLatch(1);
 
-    final ImportMediator failingMediator = mock(ImportMediator.class);
-    final ImportMediator successMediator = mock(ImportMediator.class);
+    final ImportMediator failingMediator = readyMediator();
+    final ImportMediator successMediator = readyMediator();
 
     // small backoff so the failing mediator retries a few times without spinning in a tight,
     // zero-delay loop (and flooding the log) for the duration of the test. lenient: the test only
@@ -291,7 +378,7 @@ class AbstractImportSchedulerTest {
   void shouldReportIsImportingWhileExecutorIsRunning() throws Exception {
     // given
     final CountDownLatch mediatorRan = new CountDownLatch(1);
-    final ImportMediator mediator = mock(ImportMediator.class);
+    final ImportMediator mediator = readyMediator();
     lenient().when(mediator.getBackoffTimeInMs()).thenReturn(60_000L);
     when(mediator.runImport())
         .thenAnswer(
@@ -323,5 +410,11 @@ class AbstractImportSchedulerTest {
     // when / then: no exception on start or stop
     scheduler.startImportScheduling();
     scheduler.stopImportScheduling();
+  }
+
+  private ImportMediator readyMediator() {
+    final ImportMediator mediator = mock(ImportMediator.class);
+    when(mediator.canImport()).thenReturn(true);
+    return mediator;
   }
 }

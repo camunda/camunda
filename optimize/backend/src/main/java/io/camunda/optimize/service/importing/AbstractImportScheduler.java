@@ -91,7 +91,18 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig> {
 
   private void runMediatorAndReschedule(final ImportMediator mediator) {
     try {
+      if (!mediator.canImport()) {
+        rescheduleMediator(mediator);
+        return;
+      }
       final CompletableFuture<Void> importFuture = mediator.runImport();
+      if (importFuture == null) {
+        LOG.error(
+            "Import of [{}] returned a null future, skipping this round.",
+            mediator.getClass().getSimpleName());
+        rescheduleMediator(mediator);
+        return;
+      }
       importFuture.whenComplete(
           (result, throwable) -> {
             if (throwable != null) {
