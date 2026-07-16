@@ -237,8 +237,21 @@ test.describe('Decision Navigation', () => {
         .filter({hasText: 'Assign Approver Group Navigation'})
         .getByRole('link', {name: /View decision instance/})
         .first();
-      // Wait for the freshly created decision instance to be indexed and rendered.
-      await expect(decisionInstanceLink).toBeVisible({timeout: 30_000});
+      // Wait for the freshly created decision instance to be indexed and
+      // rendered. beforeAll creates two instances back-to-back (failed, then
+      // successful); under load the second can still be unindexed when this
+      // step runs even though this spec's own data no longer competes with
+      // decisionFilters.spec.ts's. A single wait with no reload/retry can't
+      // recover if indexing is still catching up when it expires.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(decisionInstanceLink).toBeVisible({timeout: 10_000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 6,
+      });
       // The decision instances list live-polls and re-renders, which can drop a
       // click before it navigates. Retry the click until the decision instance
       // page is actually opened.
@@ -254,15 +267,28 @@ test.describe('Decision Navigation', () => {
     });
 
     await test.step('Verify we are on the Assign Approver Group Navigation decision instance', async () => {
-      await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
-        timeout: 30_000,
+      // Same import-lag hazard as the previous step: a single wait here (no
+      // retry) was the exact assertion observed failing on a Playwright
+      // retry attempt in CI, after the row-visibility wait above had already
+      // succeeded — the decision instance page itself can still be slow to
+      // populate right after navigating to it.
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
+            timeout: 10_000,
+          });
+          // Input column header for Assign Approver Group Navigation is "Invoice Classification Navigation"
+          await expect(
+            operateDecisionInstancePage.decisionPanel.getByText(
+              'Invoice Classification Navigation',
+            ),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+        maxRetries: 6,
       });
-      // Input column header for Assign Approver Group Navigation is "Invoice Classification Navigation"
-      await expect(
-        operateDecisionInstancePage.decisionPanel.getByText(
-          'Invoice Classification Navigation',
-        ),
-      ).toBeVisible();
     });
 
     await test.step('Verify the DRD panel is open', async () => {
