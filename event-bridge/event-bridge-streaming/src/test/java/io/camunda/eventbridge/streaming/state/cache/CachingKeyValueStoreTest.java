@@ -10,6 +10,7 @@ package io.camunda.eventbridge.streaming.state.cache;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.eventbridge.streaming.changelog.ChangelogRecord;
 import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.memory.InMemoryKeyValueStore;
@@ -665,6 +666,97 @@ final class CachingKeyValueStoreTest {
     // then — no writes reached the delegate
     assertThat(delegate.deletes).isZero();
     assertThat(get(delegate, "anything")).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldBuildChangelogRecordsMirroringExactlyWhatPersistFrozenWrites() {
+    // given — a frozen snapshot with one put and one tombstone (a delegate-backed key deleted)
+    final CountingDelegate delegate = new CountingDelegate();
+    put(delegate, "gone", 1L);
+    final CachingKeyValueStore<DbString, DbLong> cache = cacheOver(delegate, LARGE_BUDGET);
+    put(cache, "kept", 5L);
+    delete(cache, "gone");
+    cache.freeze();
+
+    // when
+    final List<ChangelogRecord> records = cache.changelogRecords();
+
+    // then — one put carrying the exact bytes persistFrozen would write, one tombstone; the
+    // marker analogy holds (put before persist, same content)
+    assertThat(records).hasSize(2);
+    final ChangelogRecord put =
+        records.stream().filter(r -> !r.isTombstone()).findFirst().orElseThrow();
+    final ChangelogRecord tombstone =
+        records.stream().filter(ChangelogRecord::isTombstone).findFirst().orElseThrow();
+    assertThat(new String(put.key(), java.nio.charset.StandardCharsets.UTF_8)).contains("kept");
+    assertThat(new String(tombstone.key(), java.nio.charset.StandardCharsets.UTF_8))
+        .contains("gone");
+
+    // and persisting afterwards still writes the identical delta — changelogRecords did not
+    // consume or mutate the frozen snapshot
+    cache.persistFrozen();
+    cache.completeFrozen(true);
+    assertThat(get(delegate, "kept")).isEqualTo(5L);
+    assertThat(get(delegate, "gone")).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldProduceNoChangelogRecordForAPutThenDeletePairAbsorbedWithinOneCut() {
+    // given — an absorbing cache where a key is created and deleted within the same interval
+    // before ever being flushed (the flushed-flag guarantee: absorption happens purely in the
+    // active overlay, before freeze() ever runs)
+    final CountingDelegate delegate = new CountingDelegate();
+    final CachingKeyValueStore<DbString, DbLong> cache =
+        new CachingKeyValueStore<>(delegate, DbString::new, DbLong::new, LARGE_BUDGET, true);
+    put(cache, "ephemeral", 7L);
+    delete(cache, "ephemeral");
+    cache.freeze();
+
+    // when
+    final List<ChangelogRecord> records = cache.changelogRecords();
+
+    // then — the pair never reached the frozen snapshot, so the changelog carries nothing for it
+    assertThat(records).isEmpty();
+  }
+
+  @Test
+  void shouldReturnAnEmptyListForAnEmptyFrozenSnapshot() {
+    // given
+    final CachingKeyValueStore<DbString, DbLong> cache =
+        cacheOver(new CountingDelegate(), LARGE_BUDGET);
+    cache.freeze();
+
+    // when / then
+    assertThat(cache.changelogRecords()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectBuildingChangelogRecordsWithoutAFrozenSnapshot() {
+    // given
+    final CachingKeyValueStore<DbString, DbLong> cache =
+        cacheOver(new CountingDelegate(), LARGE_BUDGET);
+
+    // when / then
+    assertThatThrownBy(cache::changelogRecords).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldNotReemitAnUnchangedKeyAcrossCuts() {
+    // given — a key checkpointed once, then a second cut with an unrelated new key
+    final CountingDelegate delegate = new CountingDelegate();
+    final CachingKeyValueStore<DbString, DbLong> cache = cacheOver(delegate, LARGE_BUDGET);
+    put(cache, "stable", 1L);
+    cache.checkpoint();
+
+    // when the next cut touches only a different key
+    put(cache, "fresh", 2L);
+    cache.freeze();
+    final List<ChangelogRecord> records = cache.changelogRecords();
+
+    // then — only the newly-dirtied key is in the changelog, the unchanged one is not re-emitted
+    assertThat(records).hasSize(1);
+    assertThat(new String(records.get(0).key(), java.nio.charset.StandardCharsets.UTF_8))
+        .contains("fresh");
   }
 
   private static DbCompositeKey<DbLong, DbString> compositeKey(

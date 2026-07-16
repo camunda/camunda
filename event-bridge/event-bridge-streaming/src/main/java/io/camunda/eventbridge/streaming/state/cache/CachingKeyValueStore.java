@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.streaming.state.cache;
 
+import io.camunda.eventbridge.streaming.changelog.ChangelogRecord;
 import io.camunda.eventbridge.streaming.internals.StoreMetrics;
 import io.camunda.eventbridge.streaming.state.api.Checkpointable;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
@@ -15,10 +16,12 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
@@ -326,6 +329,39 @@ public final class CachingKeyValueStore<K extends DbKey, V extends DbValue>
         delegate.put(persistKeyFlyweight, persistValueFlyweight);
       }
     }
+  }
+
+  /**
+   * The frozen snapshot as changelog records (streaming ADR 0009 Decisions 1/2): one {@linkplain
+   * ChangelogRecord#put put} per frozen put — the store's own row key bytes and the exact value
+   * bytes {@link #persistFrozen()} writes — and one {@linkplain ChangelogRecord#tombstone
+   * tombstone} per frozen delete. Mirrors {@link #persistFrozen()} exactly, including the
+   * absorption guarantee: a put-then-delete pair that never reached the delegate (see {@code
+   * absorbDeletes}) annihilates in the active overlay before {@link #freeze()} ever runs, so it
+   * never appears in the frozen snapshot and produces no changelog record either — the same
+   * born-and-died absorption the ADR asks for, inherited rather than re-derived. Keys and values
+   * are the frozen snapshot's own byte arrays (never a reused flyweight), so callers may retain
+   * them past this call without copying. Callable only while a cut is frozen, normally from a cut's
+   * {@link io.camunda.eventbridge.streaming.CommitCut#publish()} before {@link #persistFrozen()}
+   * runs.
+   *
+   * @throws IllegalStateException if no frozen snapshot is outstanding
+   */
+  public List<ChangelogRecord> changelogRecords() {
+    if (frozenIndex == null) {
+      throw new IllegalStateException(
+          "cannot build changelog records: no frozen snapshot is outstanding");
+    }
+    final List<ChangelogRecord> records = new ArrayList<>(frozenIndex.size());
+    for (final Map.Entry<byte[], CacheEntry> frozen : frozenIndex.entrySet()) {
+      final CacheEntry entry = frozen.getValue();
+      if (entry.tombstone) {
+        records.add(ChangelogRecord.tombstone(frozen.getKey()));
+      } else {
+        records.add(ChangelogRecord.put(frozen.getKey(), entry.value));
+      }
+    }
+    return records;
   }
 
   /**
