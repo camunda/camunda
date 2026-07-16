@@ -566,6 +566,51 @@ class RdbmsExporterTest {
   }
 
   @Test
+  void shouldRequestReplayWhenInstanceFlushedFurtherThanBrokerAcked() {
+    // given - exporter opens with broker and DB both at position 500 (a normal, in-sync start)
+    final long initialPosition = 500L;
+    final var initialRdbmsPosition =
+        new ExporterPositionModel(
+            0,
+            RdbmsExporter.class.getSimpleName(),
+            initialPosition,
+            LocalDateTime.now(),
+            LocalDateTime.now());
+    final var jobHandler = mockHandler(ValueType.JOB);
+    createExporter(b -> b.withHandler(ValueType.JOB, jobHandler), true, true, initialRdbmsPosition);
+
+    // this instance flushes further than what gets acked to the broker - e.g. under async
+    // LSN-based replication (LsnReplicationController), acking is intentionally delayed until
+    // replication is confirmed, so the broker position lags this instance's real progress
+    final long instanceFlushedPosition = 1000L;
+    exporter.export(mockRecord(ValueType.JOB, instanceFlushedPosition));
+    executionQueue.flush(); // trigger the postFlushListener that sets lastFlushedPosition
+
+    // simulate a failover: the broker only ever got acked up to 900 (replication-confirmed floor)
+    // and the new (promoted) DB position is 950 - between the broker's ack and what this instance
+    // had actually flushed
+    final long brokerAckedPosition = 900L;
+    final long dbPositionAfterFailover = 950L;
+    when(controller.getLastExportedRecordPosition()).thenReturn(brokerAckedPosition);
+    when(positionService.findOne(anyInt()))
+        .thenReturn(
+            new ExporterPositionModel(
+                0,
+                RdbmsExporter.class.getSimpleName(),
+                dbPositionAfterFailover,
+                LocalDateTime.now(),
+                LocalDateTime.now()));
+    when(controller.requestReplay(anyLong())).thenReturn(true);
+
+    // when - exporter is reopened (simulating ExporterContainer.reopenExporter)
+    exporter.open(controller);
+
+    // then - replay is requested from the DB position; the broker position (900) alone would not
+    // have looked "ahead" of the DB (950), but this instance's own last-flushed position (1000) is
+    verify(controller).requestReplay(dbPositionAfterFailover);
+  }
+
+  @Test
   void shouldThrowReopenExceptionWhenPositionIsAhead() {
     // given
     final var jobHandler = mockHandler(ValueType.JOB);
