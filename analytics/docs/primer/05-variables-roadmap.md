@@ -1,9 +1,24 @@
-# 05 — Variables from day 1: profiler, promotion, strata (DESIGN — not yet built)
+# 05 — The insight layer: profiler, promotion, strata, census (DESIGN — not yet built)
 
 Everything in chapters 01–04 is implemented and live. This chapter documents the **agreed
-design** for the next capability jump: making process variables useful without anyone declaring
-them first — and answering questions nobody anticipated. Nothing here is code yet; the natural
-next step is an ADR for the profiler + promotion pair.
+design** for the next capability jump. Nothing here is code yet; the natural next step is an ADR
+for the profiler + promotion pair.
+
+It is deliberately NOT "a variables feature". It is one design with **two products**:
+
+```
+① VARIABLES FROM DAY 1        breakdowns and correlations for variables nobody
+                              declared — the discovery/automation product
+② EXPLANATION                 "there are outliers — WHEN, and show me" — the
+                              root-cause product: multi-variable rules, cohort-
+                              relative anomalies, real example instances
+```
+
+The two share every mechanism below, because explaining an outlier IS the day-2 problem in its
+sharpest form: the attribute that explains it is, almost by definition, one nobody declared.
+Chapter 04's built machinery answers "when" for *promoted* variables; this layer extends the
+answer to unpromoted variables, variable *combinations*, structural attributes (version, variant,
+hour, tenant), and concrete evidence cases.
 
 ## The problem, stated honestly
 
@@ -12,6 +27,8 @@ variables are:   many per instance, unknown names, unbounded values
 storing them raw per instance:   too costly, and queries over raw rows are slow
 declaring cubes per variable:    works (corr-* proves it) but needs a human who
                                  KNOWS the variable — the "day 2" problem
+and for explanation:             the outlier's cause is usually exactly the
+                                 attribute (or combination) nobody anticipated
 ```
 
 The resolution rests on one observation: **aggregate analytics never needs per-instance variable
@@ -99,10 +116,25 @@ number). Keep-all strata give **exact** numbers ("64% of slow claims are manual-
 not a sample"); bulk gives estimates with visible bars. Exemplar rows are for *showing* (click →
 Operate), never for counting — mixing them into estimates would bias toward what was kept.
 
-## Layer 4 — the outlier census: answering "outliers WHEN…?"
+## Layer 4 — the outlier census: the explanation product (product ②)
 
-Because all outliers are kept whole, multi-variable explanation becomes a small two-class
-contrast problem, solvable interactively at click time:
+This layer is why the design is more than a variables feature. The full explanation pipeline —
+each stage answering one word of "there ARE outliers, WHEN, here's PROOF, keep WATCHING":
+
+```
+① DETECT     fence per cohort (element / variant)      cubes, exact        (built, ch. 04)
+② QUANTIFY   outlier share per time window             cubes, exact        (built — the
+                                                       literal "when": a deploy shows
+                                                       as a step in the series)
+③ EXPLAIN-1  single-variable lift                      corr cubes, exact   (built, ch. 04)
+④ EXPLAIN-2  multi-variable rules from the census      sample, approx      (THIS layer)
+⑤ PROVE      exemplars → real cases in Operate         sample              (THIS layer)
+   WATCH     rule → matched-predicate RATIO meter      cubes, exact        (meter built)
+```
+
+Stage ④ works because all outliers are kept whole (the VARIANT-SLOW / INCIDENT strata):
+multi-variable explanation becomes a small two-class contrast problem — a complete positive
+class versus a weighted normal baseline — solvable interactively at click time:
 
 ```
 condition                     among outliers   among normal    lift
@@ -115,8 +147,11 @@ manual AND > 4 000                 61%              4%        ×15.3   ◄ the s
 Greedy, shallow search (single conditions, then pairs of the best; split points from profile
 bands), MIN-support on the outlier side, error bars on the normal side. Crucially it sees
 **every captured attribute** — unpromoted variables, suppressed high-cardinality ones
-(`clerk=j.doe` over 200 census rows is trivial), and structural columns (definition version,
-variant, start hour, tenant) that explain most real incidents without any variable at all.
+(`clerk=j.doe` over 200 census rows is trivial — cardinality guardrails protect the always-on
+layer, and the census is too small to need protecting), and structural columns (definition
+version, variant, start hour, tenant) that explain most real incidents without any variable at
+all. When even the census finds nothing, the exemplars are the graceful floor: "no captured
+attribute explains these — here are 5 real cases", and a human clicks into Operate.
 
 The loop closes with industrialization: a discovered rule becomes a **matched-predicate RATIO
 meter** (already built, ch. 02) — exact, windowed, compared period-over-period — and a
