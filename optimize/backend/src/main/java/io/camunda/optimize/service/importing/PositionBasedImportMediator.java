@@ -9,7 +9,6 @@ package io.camunda.optimize.service.importing;
 
 import static io.camunda.optimize.MetricEnum.IMPORT_CYCLE_DURATION_METRIC;
 import static io.camunda.optimize.MetricEnum.IMPORT_MEDIATOR_ERROR_METRIC;
-import static io.camunda.optimize.MetricEnum.IMPORT_RECORDS_IMPORTED_METRIC;
 import static io.camunda.optimize.MetricEnum.INDEXING_DURATION_METRIC;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -123,10 +122,6 @@ public abstract class PositionBasedImportMediator<
                 endTime.toInstant().toEpochMilli() - startTime.toInstant().toEpochMilli();
             final Timer indexingDurationTimer = getIndexingDurationTimer();
             indexingDurationTimer.record(took, MILLISECONDS);
-
-            OptimizeMetrics.getCounter(
-                    IMPORT_RECORDS_IMPORTED_METRIC, getRecordType(), getPartitionId())
-                .increment(entitiesNextPage.size());
 
             importIndexHandler.updateLastPersistedEntityPositionAndSequence(
                 currentPageLastEntityPosition, currentPageLastEntitySequence);
