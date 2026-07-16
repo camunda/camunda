@@ -35,14 +35,6 @@ const MessageHeader = styled.div`
   gap: var(--cds-spacing-03);
 `;
 
-const MetricsContainer = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-02);
-  --cds-tooltip-padding-block: var(--cds-spacing-02);
-  --cds-tooltip-padding-inline: var(--cds-spacing-03);
-`;
-
 const ActorLabel = styled.h5`
   font-size: var(--cds-label-01-font-size);
   font-weight: var(--cds-heading-compact-01-font-weight);
@@ -158,7 +150,6 @@ const ViewSwitcher = styled(ContentSwitcher)`
 export {
   Container,
   MessageHeader,
-  MetricsContainer,
   MessageBlock,
   ActorLabel,
   TextContent,
