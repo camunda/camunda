@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "a6f0c33f9c06f6cd712c824e8deadbfd228f6a54",
-    "generatedAt": "2026-07-14T14:45:30.550Z",
+    "commit": "c24ac6d3515d2c9e5e0acb66c43ee54b29b92647",
+    "generatedAt": "2026-07-16T12:34:09.045Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "29738751c16125081b1a7ab2b1a568fed2819bd3c1c824374fb5e332c40543c6"
+    "specSha256": "b47da7c1636e6676c0fc54a0adc3f53f68c668b98702b939add1ef25cc470b47"
   },
   "responses": [
     {
@@ -1311,6 +1311,8 @@
                     "MIGRATE_PROCESS_INSTANCE",
                     "MODIFY_PROCESS_INSTANCE",
                     "RESOLVE_INCIDENT",
+                    "RESUME_PROCESS_INSTANCE",
+                    "SUSPEND_PROCESS_INSTANCE",
                     "UPDATE_JOB",
                     "UPDATE_VARIABLE"
                   ],
@@ -1417,6 +1419,8 @@
                     "MIGRATE_PROCESS_INSTANCE",
                     "MODIFY_PROCESS_INSTANCE",
                     "RESOLVE_INCIDENT",
+                    "RESUME_PROCESS_INSTANCE",
+                    "SUSPEND_PROCESS_INSTANCE",
                     "UPDATE_JOB",
                     "UPDATE_VARIABLE"
                   ],
@@ -1552,6 +1556,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ],
@@ -2653,6 +2659,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -5120,6 +5128,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6463,6 +6473,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6494,6 +6506,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6525,6 +6539,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6556,6 +6572,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6587,6 +6605,41 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
+              "UPDATE_JOB",
+              "UPDATE_VARIABLE"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-instances/resumption",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "ADD_VARIABLE",
+              "CANCEL_PROCESS_INSTANCE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_DECISION_INSTANCE",
+              "DELETE_PROCESS_DEFINITION",
+              "DELETE_PROCESS_INSTANCE",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -6722,6 +6775,39 @@
       }
     },
     {
+      "path": "/process-instances/suspension",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "batchOperationKey",
+            "type": "string"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "string",
+            "enumValues": [
+              "ADD_VARIABLE",
+              "CANCEL_PROCESS_INSTANCE",
+              "DELETE_DECISION_DEFINITION",
+              "DELETE_DECISION_INSTANCE",
+              "DELETE_PROCESS_DEFINITION",
+              "DELETE_PROCESS_INSTANCE",
+              "MIGRATE_PROCESS_INSTANCE",
+              "MODIFY_PROCESS_INSTANCE",
+              "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
+              "UPDATE_JOB",
+              "UPDATE_VARIABLE"
+            ]
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/process-instances/{processInstanceKey}",
       "method": "GET",
       "status": "200",
@@ -6843,6 +6929,8 @@
               "MIGRATE_PROCESS_INSTANCE",
               "MODIFY_PROCESS_INSTANCE",
               "RESOLVE_INCIDENT",
+              "RESUME_PROCESS_INSTANCE",
+              "SUSPEND_PROCESS_INSTANCE",
               "UPDATE_JOB",
               "UPDATE_VARIABLE"
             ]
@@ -7237,6 +7325,8 @@
                     "MIGRATE_PROCESS_INSTANCE",
                     "MODIFY_PROCESS_INSTANCE",
                     "RESOLVE_INCIDENT",
+                    "RESUME_PROCESS_INSTANCE",
+                    "SUSPEND_PROCESS_INSTANCE",
                     "UPDATE_JOB",
                     "UPDATE_VARIABLE"
                   ]
