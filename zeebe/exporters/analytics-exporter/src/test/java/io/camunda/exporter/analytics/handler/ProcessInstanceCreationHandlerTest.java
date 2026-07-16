@@ -8,6 +8,7 @@
 package io.camunda.exporter.analytics.handler;
 
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.BPMN_PROCESS_ID;
+import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.INSTANCE_KEY;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Process.VERSION;
 import static io.camunda.exporter.analytics.AnalyticsAttributes.Tenant.ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.opentelemetry.sdk.metrics.data.LongPointData;
 import io.opentelemetry.sdk.metrics.data.MetricData;
@@ -27,6 +30,7 @@ import io.opentelemetry.sdk.testing.exporter.InMemoryLogRecordExporter;
 import io.opentelemetry.sdk.testing.exporter.InMemoryMetricReader;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -69,19 +73,49 @@ class ProcessInstanceCreationHandlerTest {
   class LogEvent {
 
     @Test
-    void shouldEmitLogEventWithCorrectName() {
+    void shouldEmitLogEventWithAllAttributes() {
+      // given
+      final var value =
+          ImmutableProcessInstanceCreationRecordValue.builder()
+              .from(FACTORY.generateObject(ProcessInstanceCreationRecordValue.class))
+              .withBpmnProcessId("my-process")
+              .withVersion(3)
+              .withProcessDefinitionKey(42L)
+              .withProcessInstanceKey(100L)
+              .withTenantId("tenant-a")
+              .build();
+      final var record =
+          FACTORY.generateRecord(
+              ValueType.PROCESS_INSTANCE_CREATION,
+              r ->
+                  r.withRecordType(RecordType.EVENT)
+                      .withIntent(ProcessInstanceCreationIntent.CREATED)
+                      .withKey(999L)
+                      .withValue(value));
+
       // when
-      handler.handle(typed(piCreatedRecord()));
+      handler.handle(typed(record));
 
       // then
       assertThat(logExporter.getFinishedLogRecordItems())
           .singleElement()
           .satisfies(
-              log ->
-                  assertThat(log.getAttributes().asMap())
-                      .containsEntry(
-                          AnalyticsAttributes.Event.NAME,
-                          AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED));
+              logRecord -> {
+                assertThat(logRecord.getAttributes().asMap())
+                    .containsEntry(
+                        AnalyticsAttributes.Event.NAME,
+                        AnalyticsAttributes.Event.PROCESS_INSTANCE_CREATED)
+                    .containsEntry(BPMN_PROCESS_ID, "my-process")
+                    .containsEntry(VERSION, 3L)
+                    .containsEntry(AnalyticsAttributes.Process.DEFINITION_KEY, 42L)
+                    .containsEntry(INSTANCE_KEY, 100L)
+                    .containsEntry(ID, "tenant-a")
+                    .containsKey(AnalyticsAttributes.Log.POSITION)
+                    .containsKey(AnalyticsAttributes.Event.SEQUENCE_NUMBER);
+
+                assertThat(logRecord.getTimestampEpochNanos())
+                    .isEqualTo(TimeUnit.MILLISECONDS.toNanos(record.getTimestamp()));
+              });
     }
   }
 
