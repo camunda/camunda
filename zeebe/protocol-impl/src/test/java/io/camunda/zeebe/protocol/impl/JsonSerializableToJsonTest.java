@@ -117,6 +117,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
@@ -3379,7 +3380,8 @@ final class JsonSerializableToJsonTest {
                     .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack("42")))
                     .setMetadata(
                         new UnsafeBuffer(
-                            MsgPackConverter.convertToMsgPack(Map.of("credentialType", "OAUTH2")))),
+                            MsgPackConverter.convertToMsgPack(Map.of("credentialType", "OAUTH2"))))
+                    .setKind(ClusterVariableKind.SECRET_REFERENCE),
         """
                 {
                   "name": "myVar",
@@ -3387,7 +3389,7 @@ final class JsonSerializableToJsonTest {
                   "scope": "GLOBAL",
                   "tenantId": "<default>",
                   "metadata": { "credentialType": "OAUTH2" },
-                  "kind": "JSON"
+                  "kind": "SECRET_REFERENCE"
                 }
                 """
       },
