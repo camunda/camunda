@@ -14,6 +14,7 @@ import {navigateToApp, validateURL} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {getNewOperationIds} from 'utils/getNewOperationIds';
+import {waitForProcessVersion} from 'utils/processDefinitions.helper';
 
 const PROCESS_INSTANCE_COUNT = 10;
 const AUTO_MIGRATION_INSTANCE_COUNT = 6;
@@ -79,6 +80,15 @@ test.beforeAll(async () => {
     processV3,
   };
   await sleep(3000);
+
+  // Operate's migration wizard fetches the list of available target processes
+  // exactly once when it mounts (no polling afterward) — if a target version
+  // isn't indexed yet at that moment, no in-wizard retry can make it appear;
+  // only remounting the wizard would trigger a fresh fetch. Confirm both
+  // target versions are already queryable via the same REST endpoint the
+  // wizard itself uses before any test enters migration mode.
+  await waitForProcessVersion(processV2.bpmnProcessId, processV2.version);
+  await waitForProcessVersion(processV3.bpmnProcessId, processV3.version);
 });
 
 test.describe.serial('Process Instance Migration', () => {
@@ -148,15 +158,18 @@ test.describe.serial('Process Instance Migration', () => {
     await test.step('Select target process, verify auto-mapping and Complete Migration', async () => {
       // Operate can auto-preselect the target via a mobx autorun, but that only
       // fires when the newer process version is already imported as the migration
-      // view loads; under import lag the combobox stays empty. Actively select the
-      // target process (which also triggers the flow-node auto-mapping verified
-      // below) to make the step deterministic.
+      // view loads. The migration wizard fetches its list of available target
+      // processes exactly once on mount (no polling afterward), so — unlike most
+      // import-lag races elsewhere in this suite — retrying the combobox
+      // interaction itself cannot help if the target isn't in that one-shot
+      // fetch: closing and reopening the combobox re-renders the same already
+      // -fetched data. beforeAll now confirms the target version is queryable
+      // via the REST API before any test enters migration mode, so a single
+      // attempt is sufficient here.
       await operateProcessMigrationModePage.targetProcessCombobox.click();
-      // The option may take up to 60s to appear under import lag; override the
-      // default 10s actionTimeout to match the tolerance used by toHaveValue below.
       await operateProcessMigrationModePage
         .getOptionByName(targetBpmnProcessId)
-        .click({timeout: 60000});
+        .click({timeout: 30_000});
 
       await expect(
         operateProcessMigrationModePage.targetProcessCombobox,
@@ -434,10 +447,15 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Manually select target process and version', async () => {
+      // The migration wizard fetches its list of available target processes
+      // exactly once on mount, so retrying this combobox interaction can't
+      // help if the target isn't in that one-shot fetch — beforeAll already
+      // confirms it's queryable via the REST API before entering migration
+      // mode. See the identical comment on the auto-mapping test above.
       await operateProcessMigrationModePage.targetProcessCombobox.click();
       await operateProcessMigrationModePage
         .getOptionByName(targetBpmnProcessId)
-        .click();
+        .click({timeout: 30_000});
 
       await operateProcessMigrationModePage.targetVersionDropdown.click();
       await operateProcessMigrationModePage
@@ -695,6 +713,11 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify Business rule task incident migration', async () => {
+      // This step is not sharing data with anything else and already retries
+      // with reload — it failed in CI anyway after 3 attempts. Unlike the
+      // other fixes in this file, this isn't a data-uniqueness issue; it's
+      // backend contention from concurrently-running specs outlasting the
+      // retry budget. Bumping retries is a stopgap, not a fix for that.
       await waitForAssertion({
         assertion: async () => {
           await operateDiagramPage.clickFlowNode('BusinessRuleTask2');
@@ -706,7 +729,7 @@ test.describe.serial('Process Instance Migration', () => {
           await page.reload();
           await operateDiagramPage.resetDiagramZoomButton.click();
         },
-        maxRetries: 3,
+        maxRetries: 5,
       });
     });
   });

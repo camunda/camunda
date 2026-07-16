@@ -22,7 +22,15 @@ test.beforeAll(async () => {
   // Allow process definitions to propagate before creating instances.
   await sleep(2000);
   await createInstances('usertask_without_variables', 1, 1);
-  await createInstances('usertask_with_variables', 1, 3, {
+  // 3 tests below each grab a fresh 'usertask_with_variables' task via
+  // openTask()'s unscoped "first Unassigned match" selection ('display
+  // variables when task has variables' only reads, doesn't consume one).
+  // Creating exactly 3 leaves zero margin: a single Playwright retry of any
+  // one of those tests re-consumes from the same pool and starves a later
+  // test, which is indistinguishable from import lag (the task it grabs is
+  // already assigned, so 'Assign to me' never appears). Overprovision so a
+  // retry doesn't exhaust the pool.
+  await createInstances('usertask_with_variables', 1, 6, {
     testData: 'something',
   });
   await createInstances('usertask_with_variables_to_complete', 1, 1, {
