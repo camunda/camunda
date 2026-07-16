@@ -153,13 +153,19 @@ cp -v  "$VERSION_DIR/values/camunda-platform-values-${secondary_storage}.yaml"  
 # Don't configure Elasticsearch unless specifically enabled (secondary storage,
 # or via Optimize)
 elasticsearchEnabled=false
+opensearchEnabled=false
+# The Elasticsearch/OpenSearch URI for the Prometheus exporter for Elasticsearch.
+es_uri=""
 
 # Storage-specific copies.
 case "$secondary_storage" in
   elasticsearch|opensearch)
-    cp -v "$VERSION_DIR/values/prometheus-elasticsearch-exporter-values.yaml" "$TARGET_DIRECTORY/"
     if [ "$secondary_storage" = elasticsearch ]; then
       elasticsearchEnabled=true
+      es_uri="http://elasticsearch-es-http:9200"
+    else
+      opensearchEnabled=true
+      es_uri="http://opensearch:9200"
     fi
     ;;
   postgresql|mysql|mariadb|mssql|oracle)
@@ -199,9 +205,9 @@ elif [[ "$enable_optimize" == "true" ]]; then
   else
     # Non-ES/non-OS storage: forcefully configure Optimize to use Elasticsearch.
     elasticsearchEnabled=true
+    es_uri="http://elasticsearch-es-http:9200"
     echo "Forcefully enabling Elasticsearch for Optimize"
     cp -v "$VERSION_DIR/values/camunda-platform-values-optimize-elasticsearch.yaml" "$TARGET_DIRECTORY/"
-    cp -v "$VERSION_DIR/values/prometheus-elasticsearch-exporter-values.yaml"       "$TARGET_DIRECTORY/"
   fi
 fi
 
@@ -221,11 +227,6 @@ sed_inplace "s/__AUTHOR__/$git_author/"                   "${sed_targets[@]}"
 
 {
   cat <<EOF
-name: "$namespace"
-author: "$git_author"
-deadlineDate: "$deadline_date"
-topologyZone: $availability_zone
-
 # Propagated to the camunda-load-tests (load-tester) subchart via Helm global
 # coalescing.
 global:
@@ -233,6 +234,12 @@ global:
     camunda.io/created-by: "$git_author"
   nodeSelector:
     topology.kubernetes.io/zone: $availability_zone
+
+name: "$namespace"
+author: "$git_author"
+deadlineDate: "$deadline_date"
+topologyZone: $availability_zone
+
 EOF
 
   if [[ "$target_version" == "stable-87" ]]; then
@@ -256,21 +263,53 @@ loadTest:
 EOF
   fi
 
-  cat <<EOF
+  # Keep the option unset if Elasticsearch is **not** enabled.
+  # Explicitly turning it off may forcefully disable dependent subcharts.
+  if [[ "$elasticsearchEnabled" == "true" ]]; then
+    cat <<EOF
 elasticsearch:
   # Elasticsearch settings are configured through the options from
   # charts/load-test-setup/values.yaml
   enabled: $elasticsearchEnabled
-EOF
 
-  if [[ -n "$elasticsearch_version" ]]; then
-    echo "  version: \"$elasticsearch_version\""
+EOF
+    if [[ -n "$elasticsearch_version" ]]; then
+      echo "  version: \"$elasticsearch_version\""
+    fi
+  fi
+
+  # Keep the option unset if OpenSearch is **not** enabled.
+  # Explicitly turning it off may forcefully disable dependent subcharts.
+  if [[ "$opensearchEnabled" == "true" ]]; then
+    cat <<EOF
+opensearch:
+  enabled: $opensearchEnabled
+EOF
+  fi
+
+  if [[ -n "$es_uri" ]]; then
+    cat <<EOF
+metricsExporter:
+  database:
+    url: "$es_uri"
+
+# Auto-enabled by the "load-test-setup" chart's own condition chain, based on
+# the elasticsearch/opensearch enabled flags set above.
+prometheus-elasticsearch-exporter:
+  es:
+    uri: "$es_uri"
+
+  commonLabels:
+    camunda.io/created-by: "$git_author"
+
+  nodeSelector:
+    topology.kubernetes.io/zone: "$availability_zone"
+EOF
   fi
 } > load-test-setup-values.yaml
 
 # Add/update helm repositories
 helm repo add camunda https://helm.camunda.io/ --force-update
-helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/ --force-update
 if [[ "$secondary_storage" == "opensearch" ]]; then
   helm repo add opensearch https://opensearch-project.github.io/helm-charts/ --force-update
 fi

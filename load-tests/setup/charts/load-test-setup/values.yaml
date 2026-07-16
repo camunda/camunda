@@ -139,7 +139,6 @@ elasticsearch:
     operator: Equal
     value: n2-standard-8
 
-
 # -- Configure the Keycloak deployment.
 keycloak:
   # -- Whether to deploy Keycloak or not.
@@ -245,3 +244,39 @@ keycloak:
         operator: Equal
         value: n2-standard-4
         effect: NoSchedule
+
+# -- Configuration for OpenSearch
+opensearch:
+  # -- Set to true to deploy an OpenSearch cluster via the OpenSearch Helm Chart (not implemented yet).
+  # Leave unset rather than explicitly "false" — see the dependency condition in "Chart.yaml".
+  enabled:
+
+# -- Configuration for the Prometheus exporter for Elasticsearch
+# See https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-elasticsearch-exporter
+prometheus-elasticsearch-exporter:
+  # -- Forcefully enable/disable the exporter, regardless of "elasticsearch.enabled"/"opensearch.enabled".
+  # Leave unset to auto-enable based on those — see the dependency condition in "Chart.yaml".
+  enabled:
+
+  # Other options for the Prometheus exporter for Elasticsearch.
+  # See https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-elasticsearch-exporter/values.yaml for the list of options.
+  fullnameOverride: prom-els-exporter
+
+  commonLabels:
+    camunda.io/purpose: load-test
+
+  image:
+    # Route through colocated GAR pull-through cache to avoid quay.io rate limiting
+    # Original: quay.io/prometheuscommunity/elasticsearch-exporter
+    repository: europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter
+
+  log:
+    format: json
+
+  serviceMonitor:
+    enabled: true
+    # Same label as when the exporter is deployed as a standalone Helm Chart (not as a dependency).
+    jobLabel: elasticsearch-exporter
+    # Labels used by the service monitor, specific to our prometheus installation
+    labels:
+      release: monitoring
