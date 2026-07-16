@@ -550,7 +550,7 @@ class RequestMapperTest {
       final var result = RequestMapper.toJobCompletionRequest(request, 1L);
 
       // then
-      assertThat(result.leaseToken()).isEqualTo("lease-1");
+      assertThat(result.get().leaseToken()).isEqualTo("lease-1");
     }
 
     @Test
@@ -562,7 +562,61 @@ class RequestMapperTest {
       final var result = RequestMapper.toJobCompletionRequest(request, 1L);
 
       // then
-      assertThat(result.leaseToken()).isNull();
+      assertThat(result.get().leaseToken()).isNull();
+    }
+
+    @Test
+    void shouldMapBusinessIdOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().businessId("biz-1").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.get().businessId()).isEqualTo("biz-1");
+    }
+
+    @Test
+    void shouldMapAbsentBusinessIdOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.get().businessId()).isNull();
+    }
+
+    @Test
+    void shouldRejectEmptyBusinessIdOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().businessId("").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      final var problemDetail = result.getLeft();
+      assertThat(problemDetail.getStatus()).isEqualTo(400);
+      assertThat(problemDetail.getDetail()).contains("businessId");
+    }
+
+    @Test
+    void shouldRejectBlankBusinessIdOnJobCompletion() {
+      // given
+      final var request = JobCompletionRequest.Builder.create().businessId("   ").build();
+
+      // when
+      final var result = RequestMapper.toJobCompletionRequest(request, 1L);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      final var problemDetail = result.getLeft();
+      assertThat(problemDetail.getStatus()).isEqualTo(400);
+      assertThat(problemDetail.getDetail()).contains("businessId");
     }
 
     @Test
