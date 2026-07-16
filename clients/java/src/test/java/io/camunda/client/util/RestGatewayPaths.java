@@ -80,6 +80,10 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-instances/%s/cancellation";
   private static final String URL_PROCESS_INSTANCE_DELETION =
       REST_API_PATH + "/process-instances/%s/deletion";
+  private static final String URL_PROCESS_INSTANCE_SUSPENSION =
+      REST_API_PATH + "/process-instances/%s/suspension";
+  private static final String URL_PROCESS_INSTANCE_RESUMPTION =
+      REST_API_PATH + "/process-instances/%s/resumption";
   private static final String URL_PROCESS_INSTANCE_CALL_HIERARCHY =
       REST_API_PATH + "/process-instances/%s/call-hierarchy";
   private static final String URL_PROCESS_INSTANCE_SEQUENCE_FLOWS =
@@ -234,6 +238,14 @@ public class RestGatewayPaths {
 
   public static String getDeleteProcessInstanceUrl(final long processInstanceKey) {
     return String.format(URL_PROCESS_INSTANCE_DELETION, processInstanceKey);
+  }
+
+  public static String getSuspendProcessInstanceUrl(final long processInstanceKey) {
+    return String.format(URL_PROCESS_INSTANCE_SUSPENSION, processInstanceKey);
+  }
+
+  public static String getResumeProcessInstanceUrl(final long processInstanceKey) {
+    return String.format(URL_PROCESS_INSTANCE_RESUMPTION, processInstanceKey);
   }
 
   public static String getBroadcastSignalUrl() {

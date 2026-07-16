@@ -86,10 +86,12 @@ import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResolveProcessInstanceIncidentsCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
+import io.camunda.client.api.command.ResumeProcessInstanceCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
+import io.camunda.client.api.command.SuspendProcessInstanceCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
@@ -280,10 +282,12 @@ import io.camunda.client.impl.command.ResetClockCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.ResolveProcessInstanceIncidentsCommandImpl;
 import io.camunda.client.impl.command.ResumeBatchOperationCommandImpl;
+import io.camunda.client.impl.command.ResumeProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.client.impl.command.StatusRequestImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.SuspendBatchOperationCommandImpl;
+import io.camunda.client.impl.command.SuspendProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.TenantScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedDeleteClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedUpdateClusterVariableImpl;
@@ -777,6 +781,19 @@ public final class CamundaClientImpl implements CamundaClient {
         httpClient,
         config,
         jsonMapper);
+  }
+
+  @Override
+  public SuspendProcessInstanceCommandStep1 newSuspendProcessInstanceCommand(
+      final long processInstanceKey) {
+    return new SuspendProcessInstanceCommandImpl(
+        processInstanceKey, config, httpClient, jsonMapper);
+  }
+
+  @Override
+  public ResumeProcessInstanceCommandStep1 newResumeProcessInstanceCommand(
+      final long processInstanceKey) {
+    return new ResumeProcessInstanceCommandImpl(processInstanceKey, config, httpClient, jsonMapper);
   }
 
   @Override
