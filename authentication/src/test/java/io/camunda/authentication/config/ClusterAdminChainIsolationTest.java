@@ -14,10 +14,16 @@ import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 /**
@@ -69,6 +75,33 @@ public class ClusterAdminChainIsolationTest extends AbstractWebSecurityConfigTes
     // then
     assertThat(result)
         .as("a DB-backed user must not authenticate against the cluster-admin API")
+        .hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
+  public void shouldRejectWebappSessionOnClusterAdminEndpoint() {
+    // given — a session holding an authenticated DB user's security context, exactly what a webapp
+    // form login leaves behind (the browser then carries the JSESSIONID cookie)
+    final SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+    securityContext.setAuthentication(
+        UsernamePasswordAuthenticationToken.authenticated(
+            TestUserDetailsService.DEMO_USERNAME, null, List.of()));
+    final MockHttpSession session = new MockHttpSession();
+    session.setAttribute(
+        HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
+
+    // when — that session cookie is presented to the cluster-admin API with no Basic credentials
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .session(session)
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_ENDPOINT)
+            .exchange();
+
+    // then — the chain binds a session-free context repository, so the session must not
+    // authenticate
+    assertThat(result)
+        .as("a webapp session cookie must not authenticate the cluster-admin API")
         .hasStatus(HttpStatus.UNAUTHORIZED);
   }
 

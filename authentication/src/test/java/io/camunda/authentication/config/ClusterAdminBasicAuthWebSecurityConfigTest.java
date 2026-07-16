@@ -118,7 +118,7 @@ public class ClusterAdminBasicAuthWebSecurityConfigTest extends AbstractWebSecur
             .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_ENDPOINT)
             .exchange();
 
-    // then — the chain is SessionCreationPolicy.NEVER, so the request creates no session
+    // then — the chain is SessionCreationPolicy.STATELESS, so the request creates no session
     assertThat(result.getRequest().getSession(false))
         .as("cluster-admin Basic auth is stateless and must not establish a session")
         .isNull();

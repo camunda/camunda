@@ -34,6 +34,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.NullSecurityContextRepository;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 
 /**
@@ -50,6 +51,10 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * accidentally suppressing CSL's global DB-backed auth beans, and allowing unknown in-memory
  * credentials to fall through to the global manager. Without this isolation, a DB-backed user could
  * authenticate on {@code /cluster/v2/**}.
+ *
+ * <p><strong>Statelessness:</strong> the chain binds a session-free {@link
+ * NullSecurityContextRepository} explicitly and never creates a session, so an existing webapp
+ * session cookie can never authenticate {@code /cluster/v2/**}.
  *
  * <p><strong>#57708 (OIDC):</strong> {@code cluster-admin.basic} and {@code cluster-admin.oidc} are
  * independent sibling config trees, so either mechanism can authenticate this chain based on the
@@ -96,9 +101,12 @@ public class ClusterAdminSecurityConfiguration {
         .cors(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
         .anonymous(AbstractHttpConfigurer::disable)
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.NEVER))
+        // Explicit session-free context repository so a webapp session cookie can't authenticate
+        // this chain. Explicit is required: STATELESS installs one only if none was set already
+        // (SessionManagementConfigurer's `if (repo == null)` guard).
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .securityContext(sc -> sc.securityContextRepository(new NullSecurityContextRepository()))
         .requestCache(cache -> cache.requestCache(new NullRequestCache()))
-        // Stateless per-request Basic auth: no session, no CSRF surface, so disable it explicitly.
         .csrf(AbstractHttpConfigurer::disable);
 
     SecurityFilterChainSupport.setupSecureHeaders(http, properties.getHttpHeaders());
