@@ -9,7 +9,9 @@ package io.camunda.exporter.tasks.incident;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -347,6 +349,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyIncidentNotificationsSent(incidentEntity);
+
+          verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
+          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(4);
+          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
         });
   }
 
@@ -452,6 +458,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyIncidentNotificationsSent(incidentEntity);
+
+          verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
+          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(4);
+          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
         });
   }
 
@@ -526,6 +536,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyIncidentNotificationsSent(updatedIncident);
+
+          verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
+          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(2);
+          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
         });
   }
 
@@ -635,6 +649,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyNoInteractions(incidentNotifier);
+
+          verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
+          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(4);
+          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
         });
   }
 
@@ -765,6 +783,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           assertThat(exporterMetadata.getLastIncidentUpdatePosition()).isEqualTo(1L);
           verifyNoInteractions(incidentNotifier);
+
+          verify(exporterMetrics).recordIncidentUpdatesProcessed(1);
+          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(1);
+          verify(exporterMetrics, never()).recordIncidentUpdatesDuplicateIncidents(anyInt());
         });
   }
 
@@ -1019,6 +1041,10 @@ class IncidentUpdateTaskIT extends BackgroundTaskIT<IncidentUpdateTask> {
 
           // despite duplicates we should only send one notification per incident key
           verifyIncidentNotificationsSent(updatedIncident1, updatedIncident2, updatedIncident3);
+
+          verify(exporterMetrics).recordIncidentUpdatesProcessed(3);
+          verify(exporterMetrics).recordIncidentUpdatesDocumentsUpdated(8);
+          verify(exporterMetrics).recordIncidentUpdatesDuplicateIncidents(2);
         });
   }
 
