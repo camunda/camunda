@@ -8,13 +8,19 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.MetadataEntry;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
@@ -140,7 +146,7 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() {
+  void shouldUpsertEntityOnFlushWithMutableFieldsOnly() {
     // given
     final ClusterVariableEntity inputEntity =
         new ClusterVariableEntity()
@@ -149,14 +155,19 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
             .setValue("value")
             .setTenantId("tenantId")
             .setScope(
-                io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.TENANT);
+                io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.TENANT)
+            .setKind(ClusterVariableKind.SECRET_REFERENCE);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    // upsert is used so that the immutable "kind" field is never overwritten on UPDATED records
+    verify(mockRequest, times(1)).upsert(eq(indexName), eq("id"), eq(inputEntity), anyMap());
+    // batchRequest.add() must not be called — it does a full document replace that would
+    // overwrite the stored kind with null on UPDATED records
+    verify(mockRequest, never()).add(anyString(), any());
   }
 
   @ParameterizedTest
@@ -264,6 +275,81 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
     assertThat(clusterVariableEntity.getIsPreview()).isTrue();
     assertThat(clusterVariableEntity.getMetadata())
         .containsExactly(new MetadataEntry("kind", "CREDENTIALS", null));
+  }
+
+  @Test
+  void shouldSetKindOnEntityForCreatedRecord() {
+    // given
+    final ClusterVariableRecordValue recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .from(factory.generateObject(ClusterVariableRecordValue.class))
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.SECRET_REFERENCE)
+            .build();
+
+    final Record<ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE,
+            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(recordValue));
+
+    // when
+    final ClusterVariableEntity entity = new ClusterVariableEntity();
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getKind())
+        .isEqualTo(
+            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind
+                .SECRET_REFERENCE);
+  }
+
+  @Test
+  void shouldNotOverwriteKindOnUpdatedRecord() {
+    // given — UPDATED records carry the EnumProperty default (JSON), not the stored kind
+    final ClusterVariableRecordValue recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .from(factory.generateObject(ClusterVariableRecordValue.class))
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.JSON)
+            .build();
+
+    final Record<ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE,
+            r -> r.withIntent(ClusterVariableIntent.UPDATED).withValue(recordValue));
+
+    final ClusterVariableEntity entity = new ClusterVariableEntity();
+    entity.setKind(ClusterVariableKind.SECRET_REFERENCE);
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then — kind must not be overwritten on UPDATED so the stored value survives the upsert
+    assertThat(entity.getKind()).isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
+  }
+
+  @Test
+  void shouldDefaultKindToJsonOnCreatedWhenRecordKindIsJson() {
+    // given
+    final ClusterVariableRecordValue recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .from(factory.generateObject(ClusterVariableRecordValue.class))
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.JSON)
+            .build();
+
+    final Record<ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE,
+            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(recordValue));
+
+    // when
+    final ClusterVariableEntity entity = new ClusterVariableEntity();
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getKind())
+        .isEqualTo(io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind.JSON);
   }
 
   @ParameterizedTest

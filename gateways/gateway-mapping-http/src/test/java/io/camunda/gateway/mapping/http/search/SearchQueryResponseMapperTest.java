@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse;
 import io.camunda.gateway.protocol.model.BatchOperationItemResponse.StateEnum;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
+import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ConditionWaitStateDetails;
 import io.camunda.gateway.protocol.model.IncidentErrorTypeEnum;
 import io.camunda.gateway.protocol.model.IncidentStateEnum;
@@ -41,6 +42,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.search.entities.ClusterVariableEntity;
 import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -1231,7 +1233,8 @@ class SearchQueryResponseMapperTest {
             null,
             List.of(
                 new MetadataEntry("kind", "CREDENTIAL", null),
-                new MetadataEntry("schemaVersion", null, 2.0)));
+                new MetadataEntry("schemaVersion", null, 2.0)),
+            null);
 
     // when
     final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
@@ -1239,6 +1242,7 @@ class SearchQueryResponseMapperTest {
     // then
     assertThat(result.getMetadata())
         .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "CREDENTIAL", "schemaVersion", 2.0));
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKindEnum.JSON);
   }
 
   @Test
@@ -1246,13 +1250,14 @@ class SearchQueryResponseMapperTest {
     // given
     final var entity =
         new ClusterVariableEntity(
-            "id", "name", "value", null, false, ClusterVariableScope.GLOBAL, null, List.of());
+            "id", "name", "value", null, false, ClusterVariableScope.GLOBAL, null, List.of(), null);
 
     // when
     final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
 
     // then
     assertThat(result.getMetadata()).isEmpty();
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKindEnum.JSON);
   }
 
   @Test
@@ -1267,7 +1272,8 @@ class SearchQueryResponseMapperTest {
             false,
             ClusterVariableScope.GLOBAL,
             null,
-            List.of(new MetadataEntry("kind", "CREDENTIAL", null)));
+            List.of(new MetadataEntry("kind", "CREDENTIAL", null)),
+            null);
 
     // when
     final var result = SearchQueryResponseMapper.toClusterVariableSearchResult(entity, true);
@@ -1275,6 +1281,29 @@ class SearchQueryResponseMapperTest {
     // then
     assertThat(result.getMetadata())
         .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "CREDENTIAL"));
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKindEnum.JSON);
+  }
+
+  @Test
+  void shouldMapClusterVariableGetResultWithExplicitKind() {
+    // given
+    final var entity =
+        new ClusterVariableEntity(
+            "id",
+            "name",
+            "value",
+            null,
+            false,
+            ClusterVariableScope.GLOBAL,
+            null,
+            List.of(),
+            ClusterVariableKind.SECRET_REFERENCE);
+
+    // when
+    final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
+
+    // then
+    assertThat(result.getKind()).isEqualTo(ClusterVariableKindEnum.SECRET_REFERENCE);
   }
 
   @Nested

@@ -13,6 +13,7 @@ import static io.camunda.util.ValueTypeUtil.mapLong;
 
 import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ClusterVariableUtil;
@@ -32,7 +33,8 @@ public record ClusterVariableDbModel(
     boolean isPreview,
     String tenantId,
     ClusterVariableScope scope,
-    List<MetadataEntry> metadata)
+    List<MetadataEntry> metadata,
+    ClusterVariableKind kind)
     implements Copyable<ClusterVariableDbModel> {
 
   @Override
@@ -46,7 +48,8 @@ public record ClusterVariableDbModel(
                 .value(value)
                 .tenantId(tenantId)
                 .scope(scope)
-                .metadata(metadata))
+                .metadata(metadata)
+                .kind(kind))
         .build();
   }
 
@@ -75,7 +78,8 @@ public record ClusterVariableDbModel(
         isPreview,
         tenantId,
         scope,
-        truncateMetadata(sizeLimit, byteLimit));
+        truncateMetadata(sizeLimit, byteLimit),
+        kind);
   }
 
   // Metadata values have no full-value fallback column, so oversized values are truncated to fit
@@ -103,6 +107,7 @@ public record ClusterVariableDbModel(
     private String tenantId;
     private ClusterVariableScope scope;
     private List<MetadataEntry> metadata = List.of();
+    private ClusterVariableKind kind;
 
     public ClusterVariableDbModelBuilder name(final String name) {
       this.name = name;
@@ -129,6 +134,11 @@ public record ClusterVariableDbModel(
       return this;
     }
 
+    public ClusterVariableDbModelBuilder kind(final ClusterVariableKind kind) {
+      this.kind = kind;
+      return this;
+    }
+
     @Override
     public ClusterVariableDbModel build() {
       return switch (ValueTypeUtil.getValueType(value)) {
@@ -152,7 +162,8 @@ public record ClusterVariableDbModel(
           false,
           tenantId,
           scope,
-          metadata);
+          metadata,
+          kind);
     }
 
     private String getCompositeId() {
@@ -171,7 +182,8 @@ public record ClusterVariableDbModel(
           false,
           tenantId,
           scope,
-          metadata);
+          metadata,
+          kind);
     }
 
     private ClusterVariableDbModel getDoubleModel() {
@@ -186,7 +198,8 @@ public record ClusterVariableDbModel(
           false,
           tenantId,
           scope,
-          metadata);
+          metadata,
+          kind);
     }
   }
 }

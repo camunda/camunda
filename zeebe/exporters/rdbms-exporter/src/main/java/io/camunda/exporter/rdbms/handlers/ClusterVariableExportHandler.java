@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.db.rdbms.write.service.ClusterVariableWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -60,6 +61,13 @@ public class ClusterVariableExportHandler
       builder.scope(ClusterVariableScope.GLOBAL).tenantId(null);
     } else {
       builder.scope(ClusterVariableScope.TENANT).tenantId(value.getTenantId());
+    }
+    if (record.getIntent() == ClusterVariableIntent.CREATED) {
+      builder.kind(
+          switch (value.getKind()) {
+            case SECRET_REFERENCE -> ClusterVariableKind.SECRET_REFERENCE;
+            case JSON -> ClusterVariableKind.JSON;
+          });
     }
     return builder.build();
   }

@@ -1135,6 +1135,68 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .json(expectedBody, JsonCompareMode.STRICT);
   }
 
+  @Test
+  void shouldCreateGlobalClusterVariableWithSecretReferenceKind() {
+    // given
+    final var record =
+        new ClusterVariableRecord()
+            .setName("myVar")
+            .setScope(io.camunda.zeebe.protocol.record.value.ClusterVariableScope.GLOBAL)
+            .setKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.SECRET_REFERENCE);
+    when(clusterVariableServices.createGloballyScopedClusterVariable(
+            createRequestCaptor.capture(), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    // when / then
+    webClient
+        .post()
+        .uri(GLOBAL_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            "{\"name\":\"myVar\",\"value\":\"camunda.secrets.MY_SECRET\",\"kind\":\"SECRET_REFERENCE\"}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json("{\"kind\":\"SECRET_REFERENCE\"}", JsonCompareMode.LENIENT);
+
+    assertThat(createRequestCaptor.getValue().kind())
+        .isEqualTo(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.SECRET_REFERENCE);
+  }
+
+  @Test
+  void shouldCreateGlobalClusterVariableWithDefaultJsonKind() {
+    // given
+    final var record =
+        new ClusterVariableRecord()
+            .setName("myVar")
+            .setScope(io.camunda.zeebe.protocol.record.value.ClusterVariableScope.GLOBAL)
+            .setKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.JSON);
+    when(clusterVariableServices.createGloballyScopedClusterVariable(
+            createRequestCaptor.capture(), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    // when / then
+    webClient
+        .post()
+        .uri(GLOBAL_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{\"name\":\"myVar\",\"value\":\"val\"}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json("{\"kind\":\"JSON\"}", JsonCompareMode.LENIENT);
+
+    assertThat(createRequestCaptor.getValue().kind()).isNull();
+  }
+
   @TestConfiguration
   static class TestConfig {
     @Bean
