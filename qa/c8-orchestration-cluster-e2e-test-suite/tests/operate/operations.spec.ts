@@ -16,6 +16,7 @@ import {sleep} from 'utils/sleep';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {createDemoOperations} from 'utils/operations.helper';
 import {waitForIncidents} from 'utils/incidentsHelper';
+import {getNewOperationIds} from 'utils/getNewOperationIds';
 
 type ProcessInstance = {
   processInstanceKey: string;
@@ -99,6 +100,14 @@ test.describe('Operations', () => {
     });
 
     await test.step('Cancel single instance using operation button', async () => {
+      // operations-list is cluster-wide (fed by /api/batch-operations), so other
+      // concurrently-running specs' operations land in it too. Snapshot the IDs
+      // present before this action so the operation we just triggered can be
+      // identified by ID afterwards, instead of by ambient type+count text that
+      // another spec's operation could equally match.
+      operateOperationPanelPage.beforeOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
+
       await operateProcessesPage.clickCancelInstanceButton(
         instance.processInstanceKey,
       );
@@ -116,14 +125,25 @@ test.describe('Operations', () => {
 
       await expect(operateOperationPanelPage.operationList).toBeVisible();
 
-      const operationEntry =
-        operateOperationPanelPage.getCancelOperationEntry(1);
-
       // The cancel operation's success count is only rendered once Operate's
       // importer marks the cancellation complete, which can lag under load.
       // Reload and retry generously so this importer delay does not flake.
+      let cancelOperationIds: string[] = [];
       await waitForAssertion({
         assertion: async () => {
+          operateOperationPanelPage.afterOperationOperationPanelEntries =
+            await operateOperationPanelPage.operationIdsEntries();
+          cancelOperationIds = getNewOperationIds(
+            operateOperationPanelPage.beforeOperationOperationPanelEntries,
+            operateOperationPanelPage.afterOperationOperationPanelEntries,
+            'Cancel',
+          );
+          expect(cancelOperationIds.length).toBeGreaterThan(0);
+
+          const operationEntry =
+            operateOperationPanelPage.getOperationEntryById(
+              cancelOperationIds[0],
+            );
           await expect(operationEntry).toBeVisible();
           await expect(operationEntry.getByText(DATE_REGEX)).toBeVisible();
         },
@@ -133,7 +153,9 @@ test.describe('Operations', () => {
         maxRetries: 15,
       });
 
-      const operationId = await operationEntry.getByRole('link').innerText();
+      const operationId = cancelOperationIds[0];
+      const operationEntry =
+        operateOperationPanelPage.getOperationEntryById(operationId);
 
       await operateOperationPanelPage.clickOperationLink(operationEntry);
       await expect(operateFiltersPanelPage.operationIdFilter).toHaveValue(
@@ -194,6 +216,12 @@ test.describe('Operations', () => {
     await test.step('Select all instances and retry', async () => {
       await operateProcessesPage.selectAllRowsCheckbox.click();
 
+      // Snapshot before triggering, so the operation this test creates can be
+      // told apart by ID from any operation another concurrently-running spec
+      // adds to this same cluster-wide operations-list.
+      operateOperationPanelPage.beforeOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
+
       await operateProcessesPage.retryButton.click();
 
       await expect(operateOperationPanelPage.operationList).toBeHidden();
@@ -209,19 +237,31 @@ test.describe('Operations', () => {
     });
 
     await test.step('Wait for operation to complete', async () => {
-      const operationEntry = operateOperationPanelPage.getRetryOperationEntry(
-        instances.length,
-      );
-
+      let retryOperationIds: string[] = [];
       await waitForAssertion({
         assertion: async () => {
-          await expect(operationEntry).toBeVisible({timeout: 30000});
+          operateOperationPanelPage.afterOperationOperationPanelEntries =
+            await operateOperationPanelPage.operationIdsEntries();
+          retryOperationIds = getNewOperationIds(
+            operateOperationPanelPage.beforeOperationOperationPanelEntries,
+            operateOperationPanelPage.afterOperationOperationPanelEntries,
+            'Retry',
+          );
+          expect(retryOperationIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
           await page.reload();
         },
         maxRetries: 10,
       });
+
+      const operationEntry = operateOperationPanelPage.getOperationEntryById(
+        retryOperationIds[0],
+      );
+      // Wait for the full batch to succeed, not just for the entry to appear.
+      await expect(
+        operationEntry.getByText(`${instances.length} success`),
+      ).toBeVisible({timeout: 60000});
 
       await operateOperationPanelPage.clickOperationLink(operationEntry);
 
@@ -242,6 +282,12 @@ test.describe('Operations', () => {
       await operateOperationPanelPage.collapseOperationIdField();
       await operateProcessesPage.selectAllRowsCheckbox.click();
 
+      // Snapshot before triggering, so the operation this test creates can be
+      // told apart by ID from any operation another concurrently-running spec
+      // adds to this same cluster-wide operations-list.
+      operateOperationPanelPage.beforeOperationOperationPanelEntries =
+        await operateOperationPanelPage.operationIdsEntries();
+
       await operateProcessesPage.cancelButton.click();
       await operateProcessesPage.applyButton.click();
 
@@ -258,19 +304,31 @@ test.describe('Operations', () => {
         })
         .toBe(instances.length);
 
-      const operationEntry = operateOperationPanelPage.getCancelOperationEntry(
-        instances.length,
-      );
-
+      let cancelOperationIds: string[] = [];
       await waitForAssertion({
         assertion: async () => {
-          await expect(operationEntry).toBeVisible();
+          operateOperationPanelPage.afterOperationOperationPanelEntries =
+            await operateOperationPanelPage.operationIdsEntries();
+          cancelOperationIds = getNewOperationIds(
+            operateOperationPanelPage.beforeOperationOperationPanelEntries,
+            operateOperationPanelPage.afterOperationOperationPanelEntries,
+            'Cancel',
+          );
+          expect(cancelOperationIds.length).toBeGreaterThan(0);
         },
         onFailure: async () => {
           await page.reload();
         },
         maxRetries: 10,
       });
+
+      const operationEntry = operateOperationPanelPage.getOperationEntryById(
+        cancelOperationIds[0],
+      );
+      // Wait for the full batch to succeed, not just for the entry to appear.
+      await expect(
+        operationEntry.getByText(`${instances.length} success`),
+      ).toBeVisible({timeout: 60000});
 
       await Promise.all(
         instances.map((instance) =>

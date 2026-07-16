@@ -131,17 +131,15 @@ export class OperateOperationPanelPage {
     await operationEntryById.click();
   }
 
-  getRetryOperationEntry(successCount: number): Locator {
-    return this.getAllOperationEntries()
-      .filter({hasText: 'Retry'})
-      .filter({hasText: `${successCount} success`})
-      .first();
-  }
-
-  getCancelOperationEntry(successCount: number): Locator {
-    return this.getAllOperationEntries()
-      .filter({hasText: 'Cancel'})
-      .filter({hasText: `${successCount} success`});
+  // operations-list is a cluster-wide feed (backed by /api/batch-operations):
+  // every operation from every concurrently-running spec lands in it. Filtering
+  // by type + "N success" text can match another spec's operation of the same
+  // type and count instead of this test's own. Scope to the specific operation
+  // ID (diffed via getNewOperationIds against a before/after snapshot) instead.
+  getOperationEntryById(operationId: string): Locator {
+    return this.getAllOperationEntries().filter({
+      has: this.page.getByTestId('operation-id').filter({hasText: operationId}),
+    });
   }
 
   async clickOperationLink(operationEntry: Locator): Promise<void> {
