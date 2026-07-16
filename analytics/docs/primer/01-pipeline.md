@@ -30,8 +30,9 @@ fact: PROCESS_INSTANCE / COMPLETED
 ```
 
 Why the intermediate state: a completion record alone doesn't know when the instance started,
-which variables it had, or which elements it executed. Stage 1 is the memory that lets one fact
-carry the whole story.
+which variables it had, or which elements it executed. Stage 1's durable state (a heap
+write-cache over RocksDB, committed with every cut — ch. 06 §4) is what lets one fact carry the
+whole story.
 
 **Stage 2 — from facts to cubes.** Every dataset declaration subscribes to a fact type and folds
 matching facts into its cells. A cell is one `(dataset, dimension values, time window)` bucket

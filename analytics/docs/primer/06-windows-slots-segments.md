@@ -86,7 +86,8 @@ the other axis:
 
 ```
 STAGE 1 (per source partition)
-fold the open segment's records into an in-memory (window, key) → accumulator buffer
+fold the open segment's records into a working (window, key) → accumulator buffer
+(heap-resident between cuts, persisted INSIDE every atomic cut — see section 4)
      │
      │  a record crosses into the next segment
      ▼
@@ -119,7 +120,53 @@ cells, by the same argument as always: same fact multiset, monoid merges, dedup 
 
 ---
 
-## The symmetry worth putting on one slide
+## 4. What "in-memory" really means here — and why it cannot lose data
+
+Several places in this primer say a buffer or state is "held in memory". An engineer should
+challenge that, so here is the precise story. All hot state lives behind one layered write path:
+
+```
+   write ──►  HEAP OVERLAY (the records cache)          fast, absorbs re-writes of the
+              dirty entries since the last cut          same key; bounded — filling up
+                   │                                    forces an EARLY cut
+                   │  at every commit cut:
+                   ▼
+              FREEZE: dirty entries become an           immutable snapshot, so folding
+              immutable snapshot delta                  resumes IMMEDIATELY; the slow
+                   │                                    disk write runs off the hot path
+                   ▼
+              ROCKSDB, inside ONE transaction           state + consumed offset + dedup
+              (the atomic cut, ch. 01/07)               watermarks + event-time clock
+                                                        commit TOGETHER
+
+   read  ──►  overlay first, then frozen snapshot, then RocksDB (newest wins)
+```
+
+So: between cuts, recent writes exist only on the heap. Why that is safe — the invariant that
+carries everything:
+
+```
+   DURABILITY AND PROGRESS COMMIT TOGETHER.
+
+   The consumed offset advances in the SAME transaction that persists the state.
+   Therefore a crash can only lose heap changes whose offsets were NOT yet
+   committed — and exactly those records are replayed from the log on recovery,
+   and the folds are deterministic (ch. 07), so the rebuilt state is identical.
+
+   lost from heap  ⇔  not yet claimed as processed  ⇔  replayed  ⇒  nothing is lost
+```
+
+This covers every "in-memory" structure in the system: the state stores' overlay (element rows,
+variables, variant accumulators, cube cells), the open segment's partial buffer (persisted
+incrementally at each cut and restored on reopen, so replay resumes mid-segment), and the
+watermark clock. None of them is memory-*durable*; all of them are memory-*fast* with
+cut-anchored durability. The one genuinely memory-only category is read-path computation
+(merging sketches for a chart, the census contrast search) — transient by nature, recomputed on
+the next request, nothing to lose.
+
+The failure this design rules out is the classic one: a system that commits offsets eagerly and
+flushes state lazily silently drops the gap on every crash. Here that gap cannot exist — the
+offset IS part of the state write.
 
 ```
                    WINDOWS                      SEGMENTS

@@ -53,9 +53,10 @@ Four layers deliver that. Overview picture, then each layer with its example:
 
 ## Layer ① — the profiler: know every variable, store none of them
 
-Stage 1 already holds each instance's variables in memory while it runs (it needs them for fact
-enrichment; they're evicted at the end). The profiler taps that — **raw values never leave
-Stage 1** — and maintains one summary row per variable name:
+Stage 1 already keeps each instance's variables in its state store while the instance runs (it
+needs them for fact enrichment; they're evicted at the end) — a heap write-cache over RocksDB,
+snapshotted into every atomic cut (ch. 06 §4), not memory-only. The profiler taps that — **raw
+values never leave Stage 1** — and maintains one summary row per variable name:
 
 ```
    profile of claim-process (what the panel shows after a few minutes of traffic):
