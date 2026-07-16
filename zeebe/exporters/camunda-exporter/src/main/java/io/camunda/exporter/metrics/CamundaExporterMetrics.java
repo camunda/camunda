@@ -91,6 +91,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of document updated when incident updates were processed. */
   private final Counter incidentUpdatesDocumentsUpdated;
 
+  /** Count of duplicate incidents found. */
+  private final Counter incidentUpdatesDuplicateIncidents;
+
   /** Count of archiver batch retries due to retryable errors. */
   private final Counter archiverBatchRetries;
 
@@ -278,6 +281,11 @@ public class CamundaExporterMetrics implements AutoCloseable {
         Counter.builder(meterName("incident.updates.documents"))
             .tag("action", "updated")
             .description("Count of documents that were updated when incidents were processed.")
+            .register(meterRegistry);
+    incidentUpdatesDuplicateIncidents =
+        Counter.builder(meterName("incident.updates.duplicates"))
+            .tag("type", "incidents")
+            .description("Count of duplicate incidents processed found")
             .register(meterRegistry);
     bulkSize =
         DistributionSummary.builder(meterName("bulk.size"))
@@ -480,6 +488,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
     incidentUpdatesDocumentsUpdated.increment(count);
   }
 
+  public void recordIncidentUpdatesDuplicateIncidents(final int count) {
+    incidentUpdatesDuplicateIncidents.increment(count);
+  }
+
   public void recordFlushFailureType(final String failureType) {
     meterRegistry.counter(FLUSH_FAILURE_TYPE_METER_NAME, "failure_type", failureType).increment();
   }
@@ -595,6 +607,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(incidentUpdatesRetriesNeeded);
     meterRegistry.remove(incidentUpdatesProcessed);
     meterRegistry.remove(incidentUpdatesDocumentsUpdated);
+    meterRegistry.remove(incidentUpdatesDuplicateIncidents);
     meterRegistry.remove(jobBatchMetricsArchiving);
     meterRegistry.remove(jobBatchMetricsArchived);
     meterRegistry.remove(usageMetricsArchived);

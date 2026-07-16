@@ -730,6 +730,28 @@ public final class IncidentUpdateTask implements BackgroundTask {
           absentIncidents);
     }
 
+    if (incidentIds.size() < incidents.size()) {
+      final var frequencies =
+          incidents.stream()
+              .map(IncidentDocument::id)
+              .collect(Collectors.groupingBy(id -> id, Collectors.counting()));
+      var totalDuplicates = 0;
+      final var duplicates = new ArrayList<String>();
+      for (final var entry : frequencies.entrySet()) {
+        if (entry.getValue() > 1L) {
+          duplicates.add(entry.getKey());
+          totalDuplicates += (entry.getValue().intValue() - 1);
+        }
+      }
+      logger.warn(
+          """
+            Found duplicate incident documents for the following incident IDs: {} - will update all duplicates.
+            This may indicate a problem with archiving.
+          """,
+          duplicates);
+      metrics.recordIncidentUpdatesDuplicateIncidents(totalDuplicates);
+    }
+
     return pendingIncidentsBatch;
   }
 
