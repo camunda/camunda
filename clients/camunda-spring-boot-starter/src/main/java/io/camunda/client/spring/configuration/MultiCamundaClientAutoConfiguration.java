@@ -20,6 +20,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.spring.bean.CamundaClientRegistry;
 import io.camunda.client.spring.bean.DefaultCamundaClientRegistry;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
@@ -37,11 +38,16 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
  * The single auto-configuration path for the starter. Every application is a multi-client
@@ -85,12 +91,14 @@ public class MultiCamundaClientAutoConfiguration {
    * Exposes the primary (default) client's {@link CamundaClientConfiguration} so {@code @Autowired
    * CamundaClientConfiguration} keeps working as on the single-client path. Built from the primary
    * client's resolved properties (independent of the client bean), reusing the shared executor.
-   * Lazy so no executor threads are created for applications that never inject it. Returns {@code
-   * null} (no bean) when several clients are configured with no designated primary.
+   * Lazy so no executor threads are created for applications that never inject it. Registered only
+   * when a primary client is resolvable (a single client, or several with a designated primary) —
+   * see {@link OnResolvablePrimaryClientCondition} — so it never resolves to a {@code null} bean.
    */
   @Bean
   @Lazy
   @ConditionalOnMissingBean
+  @Conditional(OnResolvablePrimaryClientCondition.class)
   public CamundaClientConfiguration camundaClientConfiguration(
       final MultiCamundaClientProperties properties,
       final CredentialsProviderConfiguration credentialsProviderConfiguration,
@@ -98,10 +106,7 @@ public class MultiCamundaClientAutoConfiguration {
       final List<ClientInterceptor> interceptors,
       final List<AsyncExecChainHandler> chainHandlers,
       final CamundaClientExecutorService camundaClientExecutorService) {
-    final String primaryClientName = properties.getPrimaryClientName().orElse(null);
-    if (primaryClientName == null) {
-      return null;
-    }
+    final String primaryClientName = properties.getPrimaryClientName().orElseThrow();
     final CamundaClientProperties primaryProperties =
         properties.getClients().get(primaryClientName);
     return new SpringCamundaClientConfiguration(
@@ -112,6 +117,30 @@ public class MultiCamundaClientAutoConfiguration {
         camundaClientExecutorService,
         credentialsProviderConfiguration.camundaClientCredentialsProvider(primaryProperties),
         context -> JobExceptionHandler.createDefault());
+  }
+
+  /** Matches when a primary (default) client is resolvable from the multi-client configuration. */
+  static final class OnResolvablePrimaryClientCondition extends SpringBootCondition {
+    @Override
+    public ConditionOutcome getMatchOutcome(
+        final ConditionContext context, final AnnotatedTypeMetadata metadata) {
+      final boolean hasPrimary;
+      try {
+        hasPrimary =
+            MultiCamundaClientPropertiesResolver.resolve(context.getEnvironment())
+                .getPrimaryClientName()
+                .isPresent();
+      } catch (final RuntimeException e) {
+        // invalid configuration: do not register the bean and let the real validation error
+        // surface from the MultiCamundaClientProperties bean creation instead of from here
+        return ConditionOutcome.noMatch("multi-client configuration could not be resolved");
+      }
+      return new ConditionOutcome(
+          hasPrimary,
+          hasPrimary
+              ? "a primary client is resolvable"
+              : "no primary client is resolvable (multiple clients without a designated primary)");
+    }
   }
 
   @Bean
@@ -138,9 +167,16 @@ public class MultiCamundaClientAutoConfiguration {
       final CredentialsProviderConfiguration credentialsProviderConfiguration,
       final ObjectProvider<JsonMapper> jsonMapper,
       final List<ClientInterceptor> interceptors,
-      final List<AsyncExecChainHandler> chainHandlers) {
+      final List<AsyncExecChainHandler> chainHandlers,
+      final ObjectProvider<CamundaClientExecutorService> executorService,
+      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier) {
     return new CamundaClientFactory(
-        credentialsProviderConfiguration, jsonMapper, interceptors, chainHandlers);
+        credentialsProviderConfiguration,
+        jsonMapper,
+        interceptors,
+        chainHandlers,
+        executorService,
+        jobExceptionHandlerSupplier);
   }
 
   /**

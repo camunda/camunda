@@ -21,6 +21,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
 import java.util.List;
@@ -55,16 +56,22 @@ public class CamundaClientFactory {
   private final ObjectProvider<JsonMapper> jsonMapper;
   private final List<ClientInterceptor> interceptors;
   private final List<AsyncExecChainHandler> chainHandlers;
+  private final ObjectProvider<CamundaClientExecutorService> executorService;
+  private final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier;
 
   public CamundaClientFactory(
       final CredentialsProviderConfiguration credentialsProviderConfiguration,
       final ObjectProvider<JsonMapper> jsonMapper,
       final List<ClientInterceptor> interceptors,
-      final List<AsyncExecChainHandler> chainHandlers) {
+      final List<AsyncExecChainHandler> chainHandlers,
+      final ObjectProvider<CamundaClientExecutorService> executorService,
+      final ObjectProvider<JobExceptionHandlerSupplier> jobExceptionHandlerSupplier) {
     this.credentialsProviderConfiguration = credentialsProviderConfiguration;
     this.jsonMapper = jsonMapper;
     this.interceptors = interceptors;
     this.chainHandlers = chainHandlers;
+    this.executorService = executorService;
+    this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
   }
 
   public CamundaClient createClient(final String name, final CamundaClientProperties properties) {
@@ -73,18 +80,21 @@ public class CamundaClientFactory {
         credentialsProviderConfiguration.camundaClientCredentialsProvider(properties);
 
     // Reuse the single-client adapter for the full property mapping, wired with the context
-    // collaborators. The json mapper falls back to the client default when no bean is defined; the
-    // executor and exception handler are self-contained (their single-client beans do not exist in
-    // multi-client mode) — each client gets its own owned executor.
+    // collaborators. The json mapper falls back to the client default when no bean is defined.
+    // Prefer the context's executor and job-exception-handler beans (so overrides such as
+    // VirtualThreadsAutoConfiguration's executor take effect), falling back to self-contained
+    // defaults when none are defined.
     final CamundaClientConfiguration configuration =
         new SpringCamundaClientConfiguration(
             properties,
             jsonMapper.getIfAvailable(),
             interceptors,
             chainHandlers,
-            CamundaClientExecutorService.createDefault(properties.getExecutionThreads()),
+            executorService.getIfAvailable(
+                () -> CamundaClientExecutorService.createDefault(properties.getExecutionThreads())),
             credentialsProvider,
-            context -> JobExceptionHandler.createDefault());
+            jobExceptionHandlerSupplier.getIfAvailable(
+                () -> context -> JobExceptionHandler.createDefault()));
 
     return CamundaClient.newClientBuilder()
         .withConfiguration(configuration)
