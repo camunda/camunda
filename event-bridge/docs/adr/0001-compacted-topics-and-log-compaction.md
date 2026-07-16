@@ -61,12 +61,12 @@ partition's Raft snapshot**.
    manifest's first-position-per-segment list gives O(log n) segment selection. Consistent with
    the journal's in-memory sparse index: the disk holds only truth, never acceleration structures.
 6. **The cleaner pass** runs per replica, on an actor, with no cross-replica coordination:
-   1. *Pick C*: the highest sealed journal-segment boundary that preserves a configured minimum
-      lag of raw history behind the head (tailing readers always see un-compacted recent records).
-      C is computed only from the committed log, which Raft guarantees identical on every replica
-      — so every replica picks the same C for the same log state and produces byte-identical
-      output. Cleaner-point advancement is **deterministic-local**; no leader announcement, no
-      control records.
+   1. *Pick C*: the last committed position minus a configured minimum lag of raw history
+      (tailing readers always see un-compacted recent records). A position-based C derives only
+      from the committed log, which Raft guarantees identical on every replica — so every replica
+      picks the same C for the same log state and produces byte-identical output — and it
+      decouples the cleaner from journal-segment internals. Cleaner-point advancement is
+      **deterministic-local**; no leader announcement, no control records.
    2. *Build map*: one sequential read of the dirty zone up to C, filling a bounded map of
       128-bit key hash → latest position (collision probability negligible; on overflow, lower C
       and multi-pass).
@@ -78,10 +78,18 @@ partition's Raft snapshot**.
       anywhere earlier leaves the previous snapshot authoritative and the pass simply reruns.
    5. *Tidy*: Raft truncates the raw log ≤ C on its own; superseded clean files enter a
       refcounted deferred-delete queue.
-7. **Tombstone grace (two-touch).** A tombstone survives its first sweep into the clean set and is
-   stamped (per clean segment, in the manifest). Only a later pass, after a configured grace
-   window, may drop it — a rebuilding reader that already applied the old value must still see
-   the delete.
+7. **Tombstone grace (log-clock two-touch).** A tombstone at position P may be dropped only when
+   (a) it survived at least one committed pass (P ≤ the previous cleaner point) and (b) the *log
+   clock* at C — the running maximum of record timestamps up to C, persisted in the manifest —
+   has advanced more than the configured grace window past the tombstone's own timestamp. A
+   rebuilding reader that already applied the old value must still see the delete, so the grace
+   window must exceed the longest plausible rebuild. Every input to the expiry decision is
+   replicated log content, never a local clock, so expiry is deterministic across replicas and
+   the manifest stays purely log-derived; on an idle partition the log clock freezes and boundary
+   tombstones are simply retained until traffic resumes — the safe failure direction. (Wall-clock
+   grace per replica — the approach our reference systems use, priced by a generous default
+   window — was considered and rejected: it makes clean sets diverge transiently and an NTP jump
+   can expire a tombstone early.)
 8. **Deletion safety checklist.** A superseded clean file is unlinked only when all hold: it is
    not referenced by the newest persisted snapshot; its replacement is durable; Raft's snapshot
    has advanced past it; and its zero-copy reader refcount is zero. Never an immediate unlink.
