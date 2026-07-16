@@ -121,17 +121,32 @@ test.describe('Dashboard', () => {
 
   test('Navigation to Processes View', async ({operateDashboardPage}) => {
     await test.step('Navigate to active instances and verify count', async () => {
-      const activeProcessInstancesCount =
-        await operateDashboardPage.activeInstancesBadge.innerText();
+      // activeInstancesBadge is the cluster-wide total across every
+      // concurrently-running spec, not scoped to this test's own data — any
+      // other spec creating/completing an instance between reading it and
+      // the processes view's own live count makes them diverge. Retry by
+      // going back to the dashboard and re-reading a fresh count, rather
+      // than comparing the processes view against an increasingly stale
+      // snapshot.
+      await waitForAssertion({
+        assertion: async () => {
+          const activeProcessInstancesCount =
+            await operateDashboardPage.activeInstancesBadge.innerText();
 
-      await operateDashboardPage.clickActiveInstancesLink();
+          await operateDashboardPage.clickActiveInstancesLink();
 
-      await expect(
-        operateDashboardPage.processInstancesHeading(
-          activeProcessInstancesCount,
-          Number(activeProcessInstancesCount) > 1,
-        ),
-      ).toBeVisible();
+          await expect(
+            operateDashboardPage.processInstancesHeading(
+              activeProcessInstancesCount,
+              Number(activeProcessInstancesCount) > 1,
+            ),
+          ).toBeVisible({timeout: 5000});
+        },
+        onFailure: async () => {
+          await operateDashboardPage.gotoDashboardPage();
+        },
+        maxRetries: 5,
+      });
     });
 
     await test.step('Navigate to incident instances and verify count', async () => {
