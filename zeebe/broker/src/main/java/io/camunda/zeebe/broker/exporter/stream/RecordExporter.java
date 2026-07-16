@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
@@ -66,6 +67,8 @@ class RecordExporter {
     // this allows us to observe that exporting latency is increasing
     exporterMetrics.exportingLatency(valueType, typedEvent.getTimestamp(), currentMillis);
 
+    final var copied = ImmutableRecord.copyOf(typedEvent);
+
     final int exportersCount = containers.size();
 
     // current error handling strategy is simply to repeat forever until the record can be
@@ -75,7 +78,7 @@ class RecordExporter {
 
       try (final var timer =
           exporterMetrics.startExporterExportingTimer(valueType, container.getId())) {
-        if (container.exportRecord(rawMetadata, typedEvent)) {
+        if (container.exportRecord(rawMetadata, copied)) {
           exporterIndex++;
           exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
         } else {

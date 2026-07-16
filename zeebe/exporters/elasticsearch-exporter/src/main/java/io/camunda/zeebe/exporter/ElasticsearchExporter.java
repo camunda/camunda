@@ -61,6 +61,11 @@ public class ElasticsearchExporter implements Exporter {
   private ScheduledTask scheduledFlushTask;
 
   @Override
+  public boolean isAsyncAllowed() {
+    return true;
+  }
+
+  @Override
   public void configure(final Context context) {
     log = context.getLogger();
     configuration =
