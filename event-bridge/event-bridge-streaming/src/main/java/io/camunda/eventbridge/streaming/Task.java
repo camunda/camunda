@@ -103,4 +103,18 @@ public interface Task<R> {
 
   /** Called once on shutdown — release resources. */
   default void close() {}
+
+  /**
+   * Releases this task's own driving resources <b>without</b> closing whatever store backs it —
+   * used for a role change (event-bridge-streaming ADR 0009 decision 6 / consumer-groups ADR 0006
+   * decision 1's promotion lifecycle): a demoted active hands its open store to a {@code
+   * ChangelogApplier} instead of tearing it down, and a promoted standby's fold is constructed
+   * against that same still-open store. Default delegates to {@link #close()} — today's full
+   * teardown — since a task built the ordinary way (opening its own store) has nothing else to
+   * detach; only a task built to participate in role changes (constructed against an externally
+   * owned store) overrides this to skip closing it.
+   */
+  default void closeKeepingStores() {
+    close();
+  }
 }
