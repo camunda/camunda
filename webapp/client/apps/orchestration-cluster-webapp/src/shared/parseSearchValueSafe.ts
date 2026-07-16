@@ -11,6 +11,13 @@
 // value past that range before any route's own validateSearch runs, corrupting
 // keys in copy-pasted or hand-built URLs. Keep integer-looking values that
 // JSON.parse can't round-trip exactly as strings instead of parsing them.
+//
+// This must behave like a JSON.parse drop-in otherwise, including throwing on
+// non-JSON input (e.g. a plain string like "custom") — parseSearchWith and
+// stringifySearchWith each wrap calls to this in their own try/catch and rely
+// on that throw to decide a value needs no further parsing/quoting. Swallowing
+// it here would make stringifySearchWith treat every string as "parseable"
+// and wrap it in quotes, corrupting every plain string search param.
 function parseSearchValueSafe(raw: string) {
 	if (/^-?\d+$/.test(raw)) {
 		const num = Number(raw);
@@ -18,11 +25,7 @@ function parseSearchValueSafe(raw: string) {
 			return raw;
 		}
 	}
-	try {
-		return JSON.parse(raw);
-	} catch {
-		return raw;
-	}
+	return JSON.parse(raw);
 }
 
 export {parseSearchValueSafe};

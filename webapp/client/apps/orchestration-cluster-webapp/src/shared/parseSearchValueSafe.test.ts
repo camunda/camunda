@@ -38,7 +38,7 @@ describe('parseSearchValueSafe', () => {
 		expect(parseSearchValueSafe('"2251799813685467123456789"')).toBe('2251799813685467123456789');
 	});
 
-	it('should leave a non-numeric string as-is via the JSON.parse fallback', () => {
-		expect(parseSearchValueSafe('order-process')).toBe('order-process');
+	it('should throw for a non-JSON string, matching JSON.parse — callers rely on this to leave plain strings unparsed', () => {
+		expect(() => parseSearchValueSafe('order-process')).toThrow();
 	});
 });
