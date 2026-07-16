@@ -121,6 +121,10 @@ public final class ProcessInstanceSuspendProcessor
     return true;
   }
 
+  /**
+   * Enriches the command value with fields from the element instance to ensure rejection records
+   * have the proper context for audit logs export.
+   */
   private void enrichRejectionCommand(
       final TypedRecord<ProcessInstanceRecord> command,
       final ProcessInstanceRecord processInstanceRecord) {
