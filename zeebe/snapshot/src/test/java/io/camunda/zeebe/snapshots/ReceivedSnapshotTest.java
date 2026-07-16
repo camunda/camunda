@@ -18,7 +18,6 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,12 +40,20 @@ public class ReceivedSnapshotTest {
 
     senderSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0,
+            partitionId,
+            senderDirectory,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
     scheduler.get().submitActor((Actor) senderSnapshotStore).join();
 
     receiverSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+            0,
+            partitionId,
+            receiverDirectory,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
 
     scheduler.get().submitActor((Actor) receiverSnapshotStore).join();
   }
@@ -104,6 +111,10 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot.getId())
         .as("the received snapshot has the same ID as the sent snapshot")
         .isEqualTo(persistedSnapshot.getId());
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).isPresent();
+    assertThat(receivedSnapshot.getTotalSizeInBytes())
+        .as("the received snapshot carries the sender's total size")
+        .hasValue(persistedSnapshot.getTotalSizeInBytes().getAsLong());
   }
 
   @Test

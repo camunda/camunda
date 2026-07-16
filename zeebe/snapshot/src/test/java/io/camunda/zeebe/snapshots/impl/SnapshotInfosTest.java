@@ -10,6 +10,8 @@ package io.camunda.zeebe.snapshots.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.test.util.STracer;
 import io.camunda.zeebe.test.util.STracer.Syscall;
 import io.camunda.zeebe.test.util.asserts.strace.FSyncTraceAssert;
@@ -21,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.util.Map;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
 import org.agrona.IoUtil;
@@ -29,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public final class SnapshotChecksumTest {
+public final class SnapshotInfosTest {
 
   private @TempDir Path temporaryFolder;
 
@@ -65,10 +68,10 @@ public final class SnapshotChecksumTest {
   @Test
   void shouldGenerateTheSameChecksumForOneFile() throws Exception {
     // given
-    final var expectedChecksums = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var expectedChecksums = SnapshotInfos.calculate(singleFileSnapshot);
 
     // when
-    final var actual = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var actual = SnapshotInfos.calculate(singleFileSnapshot);
 
     // then
     assertThat(expectedChecksums.sameChecksums(actual)).isTrue();
@@ -77,11 +80,11 @@ public final class SnapshotChecksumTest {
   @Test
   void shouldGenerateDifferentChecksumWhenFileNameIsDifferent() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var expectedChecksum = SnapshotInfos.calculate(singleFileSnapshot);
 
     // when
     Files.move(singleFileSnapshot.resolve("file1.txt"), singleFileSnapshot.resolve("renamed"));
-    final var actual = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var actual = SnapshotInfos.calculate(singleFileSnapshot);
 
     // then
     assertThat(expectedChecksum.sameChecksums(actual)).isFalse();
@@ -90,10 +93,10 @@ public final class SnapshotChecksumTest {
   @Test
   void shouldGenerateTheSameChecksumForMultipleFiles() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var expectedChecksum = SnapshotInfos.calculate(multipleFileSnapshot);
 
     // when
-    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var actual = SnapshotInfos.calculate(multipleFileSnapshot);
 
     // then
     assertThat(expectedChecksum.sameChecksums(actual)).isTrue();
@@ -102,24 +105,41 @@ public final class SnapshotChecksumTest {
   @Test
   void shouldGenerateDifferentChecksumForDifferentFiles() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(singleFileSnapshot);
+    final var expectedChecksum = SnapshotInfos.calculate(singleFileSnapshot);
 
     // when
-    final var actual = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var actual = SnapshotInfos.calculate(multipleFileSnapshot);
 
     // then
     assertThat(expectedChecksum.sameChecksums(actual)).isFalse();
   }
 
   @Test
-  void shouldPersistChecksum() throws Exception {
+  void shouldSumSizesFromProviderAndFstatFilesNotReported() throws Exception {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
-    final var checksumPath = multipleFileSnapshot.resolveSibling("checksum");
-    SnapshotChecksum.persist(checksumPath, expectedChecksum);
+    final long reportedSize = Files.size(multipleFileSnapshot.resolve("file1.txt")) + 1000;
+    final SnapshotFileInfoProvider provider =
+        path -> new SnapshotFilesInfo(Map.of(), Map.of("file1.txt", reportedSize));
 
     // when
-    final var actual = SnapshotChecksum.read(checksumPath);
+    final var result = SnapshotInfos.of(multipleFileSnapshot, provider);
+
+    // then
+    final long fstatSize =
+        Files.size(multipleFileSnapshot.resolve("file2.txt"))
+            + Files.size(multipleFileSnapshot.resolve("file3.txt"));
+    assertThat(result.totalSizeInBytes()).isEqualTo(reportedSize + fstatSize);
+  }
+
+  @Test
+  void shouldPersistChecksum() throws Exception {
+    // given
+    final var expectedChecksum = SnapshotInfos.calculate(multipleFileSnapshot);
+    final var checksumPath = multipleFileSnapshot.resolveSibling("checksum");
+    SnapshotInfos.persist(checksumPath, expectedChecksum);
+
+    // when
+    final var actual = SnapshotInfos.read(checksumPath);
 
     // then
     assertThat(expectedChecksum.sameChecksums(actual)).isTrue();
@@ -133,13 +153,13 @@ public final class SnapshotChecksumTest {
   void shouldFlushOnPersist() throws Exception {
     // given
     final var traceFile = temporaryFolder.resolve("traceFile");
-    final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
+    final var expectedChecksum = SnapshotInfos.calculate(multipleFileSnapshot);
     final var checksumPath = multipleFileSnapshot.resolveSibling("checksum");
     final var tracer = STracer.tracerFor(Syscall.FSYNC, traceFile);
 
     // when
     try (tracer) {
-      SnapshotChecksum.persist(checksumPath, expectedChecksum);
+      SnapshotInfos.persist(checksumPath, expectedChecksum);
 
       // then
       Awaitility.await("until fsync was called for our checksum file")
@@ -158,13 +178,13 @@ public final class SnapshotChecksumTest {
   @Test
   void shouldDetectCorruptedSnapshot() throws IOException {
     // given
-    final var expectedChecksum = SnapshotChecksum.calculate(corruptedSnapshot);
+    final var expectedChecksum = SnapshotInfos.calculate(corruptedSnapshot);
     final var checksumPath = corruptedSnapshot.resolveSibling("checksum");
-    SnapshotChecksum.persist(checksumPath, expectedChecksum);
+    SnapshotInfos.persist(checksumPath, expectedChecksum);
 
     // when
     Files.delete(corruptedSnapshot.resolve("file1.txt"));
-    final var actualChecksum = SnapshotChecksum.calculate(corruptedSnapshot);
+    final var actualChecksum = SnapshotInfos.calculate(corruptedSnapshot);
 
     // then
     assertThat(expectedChecksum.sameChecksums(actualChecksum)).isFalse();
@@ -183,7 +203,7 @@ public final class SnapshotChecksumTest {
     final var expected = checksum.getValue();
 
     // when
-    final var actual = SnapshotChecksum.calculate(largeSnapshot);
+    final var actual = SnapshotInfos.calculate(largeSnapshot);
 
     // then
     assertThat(actual.getChecksums().get("file")).isEqualTo(expected);
@@ -196,7 +216,7 @@ public final class SnapshotChecksumTest {
     createChunk(folder, "file1.txt");
     createChunk(folder, "file2.txt");
     createChunk(folder, "file3.txt");
-    final var checksumCalculatedInSteps = SnapshotChecksum.calculate(folder);
+    final var checksumCalculatedInSteps = SnapshotInfos.calculate(folder);
 
     // when
     createChunk(folder, FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
@@ -205,7 +225,7 @@ public final class SnapshotChecksumTest {
         folder.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
 
     // This is how checksum is calculated when verifying
-    final ImmutableChecksumsSFV checksumCalculatedAtOnce = SnapshotChecksum.calculate(folder);
+    final ImmutableChecksumsSFV checksumCalculatedAtOnce = SnapshotInfos.calculate(folder);
 
     // then
     assertThat(checksumCalculatedInSteps.sameChecksums(checksumCalculatedAtOnce)).isTrue();

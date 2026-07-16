@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.test.DynamicAutoCloseable;
@@ -88,7 +89,11 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     snapshotStore =
         manage(
             new FileBasedSnapshotStore(
-                0, partitionId, dataDirectory, snapshotPath -> Map.of(), meterRegistry));
+                0,
+                partitionId,
+                dataDirectory,
+                snapshotPath -> SnapshotFilesInfo.none(),
+                meterRegistry));
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     final var partitionMetadata =

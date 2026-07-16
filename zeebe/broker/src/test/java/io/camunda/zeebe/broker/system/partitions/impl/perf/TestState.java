@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -27,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -48,7 +48,8 @@ final class TestState {
     actorScheduler.start();
 
     final var snapshotStore =
-        new FileBasedSnapshotStore(0, 1, tempDirectory, snapshotPath -> Map.of(), meterRegistry);
+        new FileBasedSnapshotStore(
+            0, 1, tempDirectory, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
     actorScheduler.submitActor(snapshotStore).join();
 
     generateSnapshot(snapshotStore, sizeInBytes);

@@ -112,7 +112,7 @@ public final class FileBasedSnapshotTest {
   @Test
   public void shouldNotMarkAsReservedBootstrappedSnapshots() throws IOException {
     // given
-    final var metadata = new FileBasedSnapshotMetadata(1, 1L, 1L, 1L, 0, true);
+    final var metadata = new FileBasedSnapshotMetadata(1, 1L, 1L, 1L, 0, true, 0L);
     final var snapshotPath = snapshotDir.resolve("snapshot");
     final Path checksumPath = snapshotDir.resolve("checksum");
 
@@ -126,7 +126,8 @@ public final class FileBasedSnapshotTest {
 
   private FileBasedSnapshot createSnapshot(final Path snapshotPath, final Path checksumPath)
       throws IOException {
-    return createSnapshot(snapshotPath, checksumPath, null);
+    return createSnapshot(
+        snapshotPath, checksumPath, new FileBasedSnapshotMetadata(1, 1L, 1L, 1L, 0, false, 0L));
   }
 
   private FileBasedSnapshot createSnapshot(
@@ -140,7 +141,7 @@ public final class FileBasedSnapshotTest {
       final var fileContent = entry.getValue().getBytes(StandardCharsets.UTF_8);
       Files.write(fileName, fileContent, CREATE_NEW, StandardOpenOption.WRITE);
     }
-    SnapshotChecksum.persist(checksumPath, SnapshotChecksum.calculate(snapshotPath));
+    SnapshotInfos.persist(checksumPath, SnapshotInfos.calculate(snapshotPath));
 
     return new FileBasedSnapshot(
         snapshotPath,

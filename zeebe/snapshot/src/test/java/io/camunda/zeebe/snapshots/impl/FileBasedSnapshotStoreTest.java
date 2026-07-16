@@ -14,12 +14,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
-import io.camunda.zeebe.snapshots.TestChecksumProvider;
+import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
+import io.camunda.zeebe.snapshots.TestSnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -74,7 +77,8 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     final var store =
-        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), meterRegistry);
+        new FileBasedSnapshotStore(
+            0, 1, root, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
 
     // then
     assertThat(root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
@@ -131,6 +135,132 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldPersistTotalSizeInMetadata() throws IOException {
+    // given / when
+    final var persistedSnapshot =
+        (FileBasedSnapshot) takeTransientSnapshotWithFiles(123L).persist().join();
+
+    // then
+    final long expectedSize = sumOfFilesExcludingMetadata(persistedSnapshot.getPath());
+    assertThat(expectedSize).isPositive();
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(expectedSize);
+    assertThat(persistedSnapshot.getMetadata()).isNotNull();
+    assertThat(persistedSnapshot.getMetadata().totalSizeBytes()).isEqualTo(expectedSize);
+  }
+
+  private static long sumOfFilesExcludingMetadata(final Path directory) throws IOException {
+    try (final var files = Files.list(directory)) {
+      return files
+          .filter(
+              path ->
+                  !path.getFileName()
+                      .toString()
+                      .equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME))
+          .mapToLong(
+              path -> {
+                try {
+                  return Files.size(path);
+                } catch (final IOException e) {
+                  throw new UncheckedIOException(e);
+                }
+              })
+          .sum();
+    }
+  }
+
+  @Test
+  public void shouldPersistAndReloadTotalSnapshotSize() throws IOException {
+    // given
+    final long providerReportedSize = 1_000_000L;
+    final var root = temporaryFolder.newFolder("with-provided-size").toPath();
+    var store =
+        createStore(
+            root,
+            snapshotPath ->
+                new SnapshotFilesInfo(Map.of(), Map.of("table-0.sst", providerReportedSize)));
+
+    // when
+    final var persistedSnapshot =
+        (FileBasedSnapshot) takeTransientSnapshotWithFiles(123L, store).persist().join();
+
+    // then
+    final var snapshotPath = persistedSnapshot.getPath();
+    final long expectedSize =
+        providerReportedSize
+            + Files.size(snapshotPath.resolve("table-1.sst"))
+            + Files.size(snapshotPath.resolve("table-2.sst"));
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(expectedSize);
+    assertThat(decodeMetadata(snapshotPath).totalSizeBytes()).isEqualTo(expectedSize);
+
+    store.close();
+    store = createStore(root);
+    assertThat(store.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
+        .hasValue(expectedSize);
+  }
+
+  @Test
+  public void shouldCalculateSizeWhenLoadingSnapshotWithoutPersistedSize() throws IOException {
+    // given
+    final var persistedSnapshot =
+        (FileBasedSnapshot) takeTransientSnapshotWithFiles(123L).persist().join();
+    final long expectedSize = sumOfFilesExcludingMetadata(persistedSnapshot.getPath());
+    downgradeMetadataToLegacy(persistedSnapshot);
+    final var metadataPath =
+        persistedSnapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
+    final var legacyMetadataOnDisk = Files.readAllBytes(metadataPath);
+
+    // when
+    snapshotStore.close();
+    snapshotStore = createStore(rootDirectory);
+
+    // then
+    assertThat(snapshotStore.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
+        .hasValue(expectedSize);
+    assertThat(Files.readAllBytes(metadataPath)).isEqualTo(legacyMetadataOnDisk);
+    assertThat(decodeMetadata(persistedSnapshot.getPath()).totalSizeBytes()).isZero();
+
+    snapshotStore.close();
+    snapshotStore = createStore(rootDirectory);
+    assertThat(snapshotStore.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
+        .hasValue(expectedSize);
+  }
+
+  @Test
+  public void shouldNotLoadSnapshotWithoutMetadataFile() throws IOException {
+    // given
+    final var persistedSnapshot =
+        (FileBasedSnapshot) takeTransientSnapshotWithFiles(123L).persist().join();
+    Files.delete(
+        persistedSnapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
+    SnapshotInfos.persist(
+        persistedSnapshot.getChecksumPath(), SnapshotInfos.calculate(persistedSnapshot.getPath()));
+
+    // when
+    snapshotStore.close();
+    snapshotStore = createStore(rootDirectory);
+
+    // then
+    assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
+  }
+
+  private void downgradeMetadataToLegacy(final FileBasedSnapshot snapshot) throws IOException {
+    final var legacyMetadata =
+        ((FileBasedSnapshotMetadata) snapshot.getMetadata()).withTotalSizeBytes(0L);
+    final var encoded = new ByteArrayOutputStream();
+    legacyMetadata.encode(encoded);
+    Files.write(
+        snapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME),
+        encoded.toByteArray());
+    SnapshotInfos.persist(snapshot.getChecksumPath(), SnapshotInfos.calculate(snapshot.getPath()));
+  }
+
+  private static FileBasedSnapshotMetadata decodeMetadata(final Path snapshotPath)
+      throws IOException {
+    return FileBasedSnapshotMetadata.decode(
+        Files.readAllBytes(snapshotPath.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)));
+  }
+
+  @Test
   public void shouldLoadLatestSnapshotWhenMoreThanOneExistsAndDeleteOlder() throws IOException {
     // given
     final FileBasedSnapshotStore otherStore = createStore(rootDirectory);
@@ -158,7 +288,7 @@ public class FileBasedSnapshotStoreTest {
   public void shouldNotLoadCorruptedSnapshot() throws Exception {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    SnapshotChecksum.persist(persistedSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotInfos.persist(persistedSnapshot.getChecksumPath(), new SfvChecksumImpl());
 
     // when
     snapshotStore.close();
@@ -189,7 +319,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
     final var corruptOlderSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptOlderSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotInfos.persist(corruptOlderSnapshot.getChecksumPath(), new SfvChecksumImpl());
 
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, snapshotStore).persist().join();
@@ -237,7 +367,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
 
     // when - corrupting old snapshot and adding new valid snapshot
-    SnapshotChecksum.persist(olderSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotInfos.persist(olderSnapshot.getChecksumPath(), new SfvChecksumImpl());
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, otherStore).persist().join();
 
@@ -255,7 +385,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
     final var corruptSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptSnapshot.getChecksumPath(), new SfvChecksumImpl());
+    SnapshotInfos.persist(corruptSnapshot.getChecksumPath(), new SfvChecksumImpl());
 
     // when
     snapshotStore.close();
@@ -268,21 +398,21 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldUseChecksumProviderForChecksumsIfSupplied() throws IOException {
+  public void shouldUseFileInfoProviderForChecksumsIfSupplied() throws IOException {
     // given
     final Map<String, Long> badChecksums = new HashMap<>();
     badChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, 123L);
-    final var testChecksumProvider = new TestChecksumProvider(badChecksums);
+    final var testFileInfoProvider = new TestSnapshotFileInfoProvider(badChecksums);
 
     // when
     final var store =
         new FileBasedSnapshotStore(
-            0, 1, rootDirectory, testChecksumProvider, new SimpleMeterRegistry());
+            0, 1, rootDirectory, testFileInfoProvider, new SimpleMeterRegistry());
     scheduler.submitActor(store).join();
     final var takenSnapshot = (FileBasedSnapshot) takeTransientSnapshot(1, store).persist().join();
 
     // then
-    final var persistedChecksums = SnapshotChecksum.read(takenSnapshot.getChecksumPath());
+    final var persistedChecksums = SnapshotInfos.read(takenSnapshot.getChecksumPath());
     assertThat(persistedChecksums.getChecksums().get(SNAPSHOT_CONTENT_FILE_NAME)).isEqualTo(123L);
   }
 
@@ -391,7 +521,7 @@ public class FileBasedSnapshotStoreTest {
             0,
             PARTITION_ID,
             receiverStorePath,
-            new TestChecksumProvider(fileChecksums),
+            new TestSnapshotFileInfoProvider(fileChecksums),
             new SimpleMeterRegistry());
     scheduler.submitActor(store);
 
@@ -415,7 +545,7 @@ public class FileBasedSnapshotStoreTest {
             0,
             PARTITION_ID,
             receiverStorePath,
-            new TestChecksumProvider(fileChecksums),
+            new TestSnapshotFileInfoProvider(fileChecksums),
             new SimpleMeterRegistry());
     scheduler.submitActor(restartedStore).join();
 
@@ -441,9 +571,11 @@ public class FileBasedSnapshotStoreTest {
             s -> {
               assertThat(s.getId()).startsWith("1-1-0-0-0-");
               assertThat(s.getPath().getFileName().toString()).startsWith("1-1-0-0-0-");
+              assertThat(s.getTotalSizeInBytes()).isPresent();
               assertThat(s.getMetadata())
                   .isEqualTo(
-                      FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION));
+                      FileBasedSnapshotMetadata.forBootstrap(
+                          FileBasedSnapshotStoreImpl.VERSION, s.getTotalSizeInBytes().getAsLong()));
             });
 
     assertThat(snapshotStore.getBootstrapSnapshot())
@@ -567,8 +699,12 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private TransientSnapshot takeTransientSnapshotWithFiles(final long index) {
-    final var transientSnapshot =
-        snapshotStore.newTransientSnapshot(index, 1, 123L, 0, false).get();
+    return takeTransientSnapshotWithFiles(index, snapshotStore);
+  }
+
+  private TransientSnapshot takeTransientSnapshotWithFiles(
+      final long index, final FileBasedSnapshotStore store) {
+    final var transientSnapshot = store.newTransientSnapshot(index, 1, 123L, 0, false).get();
 
     final var snapshotFileNames =
         List.of("zeebe.metadata", "table-0.sst", "table-1.sst", "table-2.sst");
@@ -602,8 +738,12 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store =
-        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), meterRegistry);
+    return createStore(root, snapshotPath -> SnapshotFilesInfo.none());
+  }
+
+  private FileBasedSnapshotStore createStore(
+      final Path root, final SnapshotFileInfoProvider fileInfoProvider) {
+    final var store = new FileBasedSnapshotStore(0, 1, root, fileInfoProvider, meterRegistry);
     scheduler.submitActor(store).join();
 
     return store;

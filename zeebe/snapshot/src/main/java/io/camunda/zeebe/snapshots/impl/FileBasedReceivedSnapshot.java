@@ -19,9 +19,11 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Parsed;
 import io.camunda.zeebe.util.FileUtil;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -265,26 +267,31 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     try {
-      if (metadata == null) {
-        // backward compatibility
-        metadata =
-            new FileBasedSnapshotMetadata(
-                FileBasedSnapshotStoreImpl.VERSION,
-                snapshotId.getProcessedPosition(),
-                snapshotId.getExportedPosition(),
-                Long.MAX_VALUE,
-                Long.MAX_VALUE,
-                false);
+      var persistedMetadata =
+          Objects.requireNonNull(metadata, "Expected the received snapshot to contain metadata");
+      if (persistedMetadata.totalSizeBytes() == 0) {
+        persistedMetadata = persistedMetadata.withTotalSizeBytes(sumDataFileSizes(files));
       }
+      metadata = persistedMetadata;
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(
-              directory, snapshotId, getChecksumCollection(), metadata);
+              directory, snapshotId, getChecksumCollection(), persistedMetadata);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);
     }
 
     snapshotStore.removePendingSnapshot(this);
+  }
+
+  private static long sumDataFileSizes(final File[] files) throws IOException {
+    var totalSize = 0L;
+    for (final var file : files) {
+      if (file.isFile() && !file.getName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
+        totalSize += Files.size(file.toPath());
+      }
+    }
+    return totalSize;
   }
 
   private SfvChecksumImpl getChecksumCollection() {

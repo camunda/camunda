@@ -25,6 +25,7 @@ import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.SfvChecksumImpl;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -32,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -178,7 +180,13 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
 
   @Override
   public SnapshotMetadata getMetadata() {
-    return null;
+    return new FileBasedSnapshotMetadata(1, 0L, 0L, 0L, 0L, false, 0L);
+  }
+
+  @Override
+  public OptionalLong getTotalSizeInBytes() {
+    return OptionalLong.of(
+        chunks.values().stream().mapToLong(chunk -> StringUtil.getBytes(chunk).length).sum());
   }
 
   @Override

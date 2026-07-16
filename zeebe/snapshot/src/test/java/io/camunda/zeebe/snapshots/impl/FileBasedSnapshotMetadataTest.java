@@ -34,14 +34,31 @@ public class FileBasedSnapshotMetadataTest {
     assertThat(deserialized.processedPosition()).isEqualTo(71662471L);
     assertThat(deserialized.lastFollowupEventPosition()).isEqualTo(74708149L);
     assertThat(deserialized.maxExportedPosition()).isEqualTo(Long.MAX_VALUE);
+    assertThat(deserialized.totalSizeBytes()).isZero();
   }
 
   @Test
   void shouldSerializeDeserialize() throws IOException {
-    final var metadata = new FileBasedSnapshotMetadata(1, 100L, 200L, 300L, 350L, true);
+    final var metadata = new FileBasedSnapshotMetadata(1, 100L, 200L, 300L, 350L, true, 4096L);
     final var bos = new ByteArrayOutputStream(1024);
     metadata.encode(bos);
     final var deserialized = FileBasedSnapshotMetadata.decode(bos.toByteArray());
     assertThat(deserialized).isEqualTo(metadata);
+    assertThat(deserialized.totalSizeBytes()).isEqualTo(4096L);
+  }
+
+  @Test
+  void shouldCopyWithTotalSizeBytes() {
+    // given
+    final var metadata = new FileBasedSnapshotMetadata(1, 100L, 200L, 300L, 350L, false, 0L);
+
+    // when
+    final var withSize = metadata.withTotalSizeBytes(2048L);
+
+    // then
+    assertThat(withSize.totalSizeBytes()).isEqualTo(2048L);
+    assertThat(withSize).isEqualTo(metadata.withTotalSizeBytes(2048L));
+    assertThat(withSize.processedPosition()).isEqualTo(metadata.processedPosition());
+    assertThat(withSize.maxExportedPosition()).isEqualTo(metadata.maxExportedPosition());
   }
 }
