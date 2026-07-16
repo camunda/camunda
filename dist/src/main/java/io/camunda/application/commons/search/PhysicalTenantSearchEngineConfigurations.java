@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride.Converter;
@@ -42,10 +43,30 @@ public class PhysicalTenantSearchEngineConfigurations {
 
   @Bean
   public Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant(
-      final PhysicalTenantResolver physicalTenantResolver) {
+      final PhysicalTenantResolver physicalTenantResolver,
+      final SearchEngineConnectProperties searchEngineConnectProperties,
+      final SearchEngineIndexProperties searchEngineIndexProperties,
+      final SearchEngineRetentionProperties searchEngineRetentionProperties,
+      final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
     final var byTenant = new LinkedHashMap<String, SearchEngineConfiguration>();
     for (final String tenantId : physicalTenantResolver.known()) {
-      byTenant.put(tenantId, convert(physicalTenantResolver.forPhysicalTenant(tenantId)));
+      byTenant.put(
+          tenantId,
+          // The default tenant must keep resolving from the root properties beans rather than
+          // through convert(physicalTenantResolver.forPhysicalTenant(tenantId)) like other
+          // tenants: those beans are still bound from the legacy `camunda.database.*` prefix,
+          // which several call sites (e.g. test infra injecting a dynamic ES/OS URL) still rely
+          // on, and which isn't mirrored into the unified `camunda.data.secondary-storage.*` tree
+          // that PhysicalTenantResolver/Converter read from. Dropping this fell back to a
+          // non-existent local Elasticsearch and hung schema initialization at startup. See
+          // https://github.com/camunda/camunda/issues/57950 before removing this special case.
+          PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId)
+              ? buildConfiguration(
+                  searchEngineConnectProperties,
+                  searchEngineIndexProperties,
+                  searchEngineRetentionProperties,
+                  searchEngineSchemaManagerProperties)
+              : convert(physicalTenantResolver.forPhysicalTenant(tenantId)));
     }
     return Collections.unmodifiableMap(byTenant);
   }

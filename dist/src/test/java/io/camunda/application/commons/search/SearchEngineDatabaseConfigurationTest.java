@@ -35,7 +35,11 @@ class SearchEngineDatabaseConfigurationTest {
   private static Map<String, SearchEngineConfiguration> configsByTenant(final Camunda camunda) {
     return new PhysicalTenantSearchEngineConfigurations()
         .searchEngineConfigurationsByTenant(
-            PhysicalTenantResolver.of(new MockEnvironment(), camunda));
+            PhysicalTenantResolver.of(new MockEnvironment(), camunda),
+            new SearchEngineConnectProperties(),
+            new SearchEngineIndexProperties(),
+            new SearchEngineRetentionProperties(),
+            new SearchEngineSchemaManagerProperties());
   }
 
   @Test
@@ -46,17 +50,21 @@ class SearchEngineDatabaseConfigurationTest {
     final SearchEngineSchemaManagerProperties schemaManager =
         new SearchEngineSchemaManagerProperties();
     schemaManager.setCreateSchema(true);
+    final Camunda camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
 
     // when
-    final SearchEngineConfiguration config =
-        PhysicalTenantSearchEngineConfigurations.buildConfiguration(
-            connect,
-            new SearchEngineIndexProperties(),
-            new SearchEngineRetentionProperties(),
-            schemaManager);
+    final Map<String, SearchEngineConfiguration> configsByTenant =
+        new PhysicalTenantSearchEngineConfigurations()
+            .searchEngineConfigurationsByTenant(
+                PhysicalTenantResolver.of(new MockEnvironment(), camunda),
+                connect,
+                new SearchEngineIndexProperties(),
+                new SearchEngineRetentionProperties(),
+                schemaManager);
 
     // then
-    assertThat(config.schemaManager().isCreateSchema()).isFalse();
+    assertThat(configsByTenant.get("default").schemaManager().isCreateSchema()).isFalse();
   }
 
   @Test
