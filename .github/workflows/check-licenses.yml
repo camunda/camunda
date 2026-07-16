@@ -136,6 +136,8 @@ jobs:
         yq -i \
           'del(.project.modules.module[] | select(. == "qa"))' \
           optimize/pom.xml
+        # Strip test/provided/system scopes so depgraph's text graph stays under the JVM ~2 GiB array limit.
+        python3 .github/scripts/strip-analysis-scopes.py .
 
     - name: Analyze project
       uses: camunda/infra-global-github-actions/fossa/analyze@fc4fa13813cbc1835129967f10a12f24aa7a393c
