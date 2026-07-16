@@ -1,0 +1,28 @@
+# SPIKE (ADR-0036): example CSL configuration for Optimize adopting the stateful OIDC webapp chain.
+# This replaces Optimize's custom Identity-SDK / Auth0 cookie setup. Values are illustrative.
+camunda:
+  security:
+    authentication:
+      # Selects the OIDC chains (bearer API chain + the webapp oauth2Login chain).
+      method: oidc
+      oidc:
+        # CCSM: Camunda Identity as the OIDC provider (issuer discovery).
+        # CCSaaS would point issuer-uri at the Auth0 tenant instead.
+        issuer-uri: https://identity.example.com
+        client-id: optimize
+        client-secret: ${OPTIMIZE_OIDC_CLIENT_SECRET}
+        # Claim mapping (matches what OC configures).
+        username-claim: sub
+        groups-claim: groups
+    # Optimize's webapp chain is a /** catch-all, so the always-on CSL deny chain must be off,
+    # otherwise Spring Security rejects two /** matchers at startup (needs the CSL change from
+    # this spike: BaseSecurityConfiguration deny chain made suppressible).
+    unhandled-paths-chain:
+      enabled: false
+    # Server-side sessions on Optimize's existing Elasticsearch (replaces the split cookie).
+    session:
+      persistent:
+        enabled: true
+    # CSRF is handled by CSL defaults now (was disabled + SameSite-only in the legacy setup).
+    csrf:
+      enabled: true
