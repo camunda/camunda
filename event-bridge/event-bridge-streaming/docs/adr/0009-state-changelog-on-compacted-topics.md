@@ -74,7 +74,9 @@ truth; local RocksDB is a restart accelerator.
    lands, unstamped history is simply outside the fence's memory — no rewrite, no migration.
    The broker-side design (per-producer epoch map, engine-pattern replay recovery, the
    key-disjointness contract that makes transactions unnecessary) is settled in principle and
-   parked with its seven open questions for a dedicated fencing ADR.
+   parked with its seven open questions for a dedicated fencing ADR — the full problem statement
+   and design space are documented in
+   [event-bridge/docs/multi-producer-compacted-topics.md](../../../docs/multi-producer-compacted-topics.md).
 5. **Disaster rebuild** (no usable local state anywhere): consume the compacted changelog from the
    start — O(live keyspace), not O(history) — apply bytes into the store, read the latest
    offset-marker, resume the source at X+1. No determinism requirement, no coupling to source
