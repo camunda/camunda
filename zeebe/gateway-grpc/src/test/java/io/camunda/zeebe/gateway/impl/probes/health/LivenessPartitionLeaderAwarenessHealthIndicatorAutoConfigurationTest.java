@@ -15,7 +15,7 @@ import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,19 +46,19 @@ public class LivenessPartitionLeaderAwarenessHealthIndicatorAutoConfigurationTes
 
   @Test
   public void
-      shouldCreateHealthIndicatorThatReportsHealthBasedOnResultOfRegisteredClusterStateSupplier() {
+      shouldCreateHealthIndicatorThatReportsHealthBasedOnResultOfRegisteredClusterStatesSupplier() {
     // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
     when(mockClusterState.getLeaderForPartition(1)).thenReturn(BrokerMemberId.from(42));
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> statesSupplier =
+        () -> Map.of("default", mockClusterState);
     final var healthIndicator =
         sutAutoConfig.gatewayPartitionLeaderAwarenessHealthIndicator(helperGatewayBridge);
 
     // when
-    helperGatewayBridge.registerClusterStateSupplier(stateSupplier);
+    helperGatewayBridge.registerClusterStatesSupplier(statesSupplier);
     final Health actualHealth = healthIndicator.health();
 
     // then

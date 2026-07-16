@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.health.Status;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,5 +71,29 @@ public class SpringGatewayBridgeTest {
 
     // then
     assertThat(actual).contains(mockClusterState);
+  }
+
+  @Test
+  public void shouldReturnEmptyClusterStatesByDefault() {
+    // when
+    final var actual = sutBrigde.getClusterStates();
+
+    // then
+    assertThat(actual).describedAs("Cluster states when no supplier is set").isEmpty();
+  }
+
+  @Test
+  public void shouldUseClusterStatesSupplierWhenRegistered() {
+    // given
+    final var mockClusterState = Mockito.mock(BrokerClusterState.class);
+    final Supplier<Map<String, BrokerClusterState>> testSupplier =
+        () -> Map.of("default", mockClusterState);
+    sutBrigde.registerClusterStatesSupplier(testSupplier);
+
+    // when
+    final var actual = sutBrigde.getClusterStates();
+
+    // then
+    assertThat(actual).containsExactly(Map.entry("default", mockClusterState));
   }
 }
