@@ -123,6 +123,23 @@
         </configuration>
       </plugin>
 
+      <!-- Build this module's own sources jar before the package phase, so the shade plugin
+     (createSourcesJar) can merge it with the base module sources. Reuses the release
+     parent's "attach-sources" execution id to move it from package to prepare-package. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+            <phase>prepare-package</phase>
+          </execution>
+        </executions>
+      </plugin>
+
       <!-- Shade plugin to include and relocate classes from spring-boot-starter-camunda-sdk -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -135,6 +152,9 @@
             <phase>package</phase>
             <configuration>
               <createDependencyReducedPom>true</createDependencyReducedPom>
+              <!-- Also shade the sources jar so it carries the base module sources plus our
+                   overrides, instead of only this module's few files (see #48090). -->
+              <createSourcesJar>true</createSourcesJar>
               <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
               <artifactSet>
                 <includes>
@@ -152,6 +172,13 @@
                     <exclude>io/camunda/zeebe/spring/client/configuration/ZeebeClientProdAutoConfiguration.class</exclude>
                     <exclude>io/camunda/zeebe/spring/client/configuration/CamundaAutoConfiguration.class</exclude>
                     <exclude>io/camunda/zeebe/spring/client/configuration/ExecutorServiceConfiguration.class</exclude>
+                    <!-- The same overrides in the shaded sources jar (createSourcesJar). Filters
+                         match by literal path, so the .class excludes above don't cover .java. -->
+                    <exclude>io/camunda/zeebe/spring/client/actuator/ZeebeClientHealthIndicator.java</exclude>
+                    <exclude>io/camunda/zeebe/spring/client/configuration/ZeebeActuatorConfiguration.java</exclude>
+                    <exclude>io/camunda/zeebe/spring/client/configuration/ZeebeClientProdAutoConfiguration.java</exclude>
+                    <exclude>io/camunda/zeebe/spring/client/configuration/CamundaAutoConfiguration.java</exclude>
+                    <exclude>io/camunda/zeebe/spring/client/configuration/ExecutorServiceConfiguration.java</exclude>
                     <!-- Exclude META-INF services that we override -->
                     <exclude>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exclude>
                   </excludes>
