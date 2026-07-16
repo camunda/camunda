@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.streaming.internals;
 
+import io.camunda.eventbridge.client.ConsumerNotRegisteredException;
 import io.camunda.eventbridge.streaming.CommitCut;
 import io.camunda.eventbridge.streaming.RecordExceptionHandler;
 import io.camunda.eventbridge.streaming.Task;
@@ -50,6 +51,16 @@ import org.slf4j.LoggerFactory;
  * Every task is a self-contained shard, so cuts of different partitions never contend on anything
  * durable.
  *
+ * <p><b>Halt discipline (streaming ADR 0009 §4, interim contract).</b> Every other cut failure — a
+ * failed publish/persist, or a source-offset commit rejected for any reason other than fencing —
+ * merges the cut back for retry, as above. A source-offset commit rejected specifically because
+ * this member was <em>fenced</em> (deposed by a successor that already owns the partition, surfaced
+ * as {@link io.camunda.eventbridge.client.ConsumerNotRegisteredException} once the client's own
+ * single rejoin-and-retry is exhausted) is different: retrying it would only repeat the same
+ * rejection forever, since the cut's local transaction (and changelog append, if any) already
+ * committed durably before that commit was even sent — so this halts the shard immediately instead,
+ * in {@link #onCutPersisted}: no retry, no further cuts. See {@link #isHalted()}.
+ *
  * @param <R> the decoded record type
  */
 public final class PartitionActor<R> {
@@ -85,6 +96,10 @@ public final class PartitionActor<R> {
   private boolean writeStalled;
   private boolean stopRequested;
   private boolean finalized;
+  // Set once a rejected (fenced) source-offset commit halts this shard (see the class javadoc's
+  // "Halt discipline"): finalizeStop() then skips the final cut, since another attempt would only
+  // repeat the same rejection.
+  private volatile boolean halted;
 
   // The reused drain batch and the resume cursor into it. Entries drained from the queue live
   // ONLY here until handled — when a write stall (memory pressure while a cut is in flight) parks
@@ -140,6 +155,15 @@ public final class PartitionActor<R> {
 
   public int id() {
     return partition.id();
+  }
+
+  /**
+   * Whether this shard halted after a rejected (fenced) source-offset commit (see the class
+   * javadoc's "Halt discipline"). Once {@code true} it never reverts: no further cuts run for this
+   * partition. Safe to read from any thread.
+   */
+  public boolean isHalted() {
+    return halted;
   }
 
   /**
@@ -369,6 +393,28 @@ public final class PartitionActor<R> {
   private void onCutPersisted(final long offset, final CommitCut cut, final Throwable error) {
     cutInFlight = false;
     writeStalled = false;
+    if (error != null && isFencedOffsetCommitRejection(error)) {
+      // Halt discipline (streaming ADR 0009 §4, interim contract ahead of broker-enforced epoch
+      // fencing): the source-offset commit was rejected because this member was fenced — deposed
+      // by a successor that already owns the partition. The cut's changelog append (if any) and
+      // local transaction ran strictly BEFORE this commit in the chain (PartitionCommitter), so
+      // nothing durable was lost; only the advisory offset bookkeeping was rejected. Retrying
+      // would only repeat the same rejection forever, so this halts the shard instead of merging
+      // back: no retry, no further cuts. The successor re-folds the same source records
+      // deterministically and re-persists the same keys, so the blast radius is at most one
+      // harmless "zombie cut" of duplicated (idempotent) output — the bound the ADR accepts.
+      cut.complete(true);
+      halted = true;
+      metrics.countHalt();
+      LOG.error(
+          "Partition {} halted at offset {}: the source-offset commit was rejected (fenced); no"
+              + " further cuts will run for this shard",
+          id(),
+          offset,
+          error);
+      finalizeStop();
+      return;
+    }
     cut.complete(error == null);
     if (error != null) {
       // Merged back: the next freeze re-includes this cut's delta. The commit clock was not
@@ -396,18 +442,41 @@ public final class PartitionActor<R> {
     control.submit(this::onWork);
   }
 
+  /**
+   * Whether {@code error} is (or wraps, at any depth — {@code CompletableFuture} composition may
+   * nest a {@code CompletionException}) a {@link ConsumerNotRegisteredException} — the coordinator
+   * rejecting a source-offset commit because this member's epoch is stale (fenced). This is the
+   * only failure this actor treats as a halt rather than a retry; every other cut failure
+   * (including any other {@code commitOffset} rejection) merges back for retry as before.
+   */
+  private static boolean isFencedOffsetCommitRejection(final Throwable error) {
+    Throwable cause = error;
+    while (cause != null) {
+      if (cause instanceof ConsumerNotRegisteredException) {
+        return true;
+      }
+      final Throwable next = cause.getCause();
+      cause = next == cause ? null : next;
+    }
+    return false;
+  }
+
   private void onStop() {
     stopRequested = true;
     finalizeStop();
   }
 
-  /** Final cut + close, once no cut is in flight. Actor thread only. */
+  /**
+   * Final cut + close, once no cut is in flight. Actor thread only. A halted shard (see the class
+   * javadoc's "Halt discipline") skips the final cut entirely — another attempt would only repeat
+   * the same fencing rejection — and only closes the task.
+   */
   private void finalizeStop() {
     if (finalized || cutInFlight) {
       return; // an in-flight cut finishes first; its completion re-enters finalizeStop
     }
     finalized = true;
-    if (partition.hasPending()) {
+    if (!halted && partition.hasPending()) {
       finalCut(partition.pending());
     }
     partition.task().close();
