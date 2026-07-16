@@ -23,6 +23,18 @@ const ASK = 'https://camunda.slack.com/archives/C0AQ378VBEV'; // #ask-alwaysgree
 const RELIABILITY =
   'https://camunda.slack.com/archives/C0AK0AVKRL0'; // #alwaysgreen-reliability
 
+// Owner→medic Slack subteam map — keep in sync with alwaysgreen-streak-detector.yml.
+const MEDIC = {
+  '@camunda/test-automation-team': '<!subteam^S09UF0EV0HG|test-automation-medic>',
+  '@camunda/distribution': '<!subteam^S053K7C7QKU|distribution-medic>',
+  '@camunda/monorepo-devops-team': '<!subteam^S07D6C6B18T|monorepo-devops-medic>',
+  '@camunda/core-features': '<!subteam^S08P2CU9V8W|core-features-medic>',
+};
+// No fallback: an unmapped/missing owner (e.g. the "unknown" default) must not
+// silently page monorepo-devops-medic. Returns '' (nothing to concatenate) when
+// there's no mapping, so callers don't need to worry about spacing either.
+const medicMention = (owner) => (MEDIC[owner] ? ` ${MEDIC[owner]}` : '');
+
 const CATALOG = {
   product: {
     title: 'Real failure — likely your change',
@@ -141,7 +153,7 @@ function slackText(m) {
   ]
     .filter(Boolean)
     .join(' · ');
-  return `${m.emoji} *AlwaysGreen — ${m.title}*\n*Stage:* \`${m.stage}\` · *Category:* \`${m.category}\` · *Owner:* ${m.owner}${prLink}\n*Evidence:* ${ev}\n*Next steps:*\n${steps}\n${links}`;
+  return `${m.emoji} *AlwaysGreen — ${m.title}*\n*Stage:* \`${m.stage}\` · *Category:* \`${m.category}\` · *Owner:* ${m.owner}${medicMention(m.owner)}${prLink}\n*Evidence:* ${ev}\n*Next steps:*\n${steps}\n${links}`;
 }
 
 const gh = (args) => exec('gh', args, {maxBuffer: 64 * 1024 * 1024});
