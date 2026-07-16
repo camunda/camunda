@@ -313,8 +313,9 @@ jobs:
           context: ./build-repo
           file: ./build-repo/${{ matrix.component == 'zeebe' && 'Dockerfile' || format('{0}.Dockerfile', matrix.component) }}
           platforms: ${{ env.PLATFORMS }}
-          push: true
+          push: false
           provenance: false
+          outputs: type=image,oci-mediatypes=false,push=true
           build-args: ${{ steps.build-args.outputs.args }}
           tags: |
             ${{ env.HOTFIX_REGISTRY }}/${{ matrix.component }}:${{ steps.set-version.outputs.hotfix-version }}
