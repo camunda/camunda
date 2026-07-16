@@ -50,6 +50,38 @@ final class CompactionManifestTest {
   }
 
   @Test
+  void shouldResolveFloorSegmentIndex() {
+    // given three non-overlapping segments starting at positions 1, 30, 60
+    final var manifest =
+        new CompactionManifest(
+            CompactionManifest.VERSION_1,
+            100,
+            1,
+            List.of(
+                new CleanSegment("clean-a.log", 1, 10, 1),
+                new CleanSegment("clean-b.log", 30, 10, 1),
+                new CleanSegment("clean-c.log", 60, 10, 1)));
+
+    // then
+    assertThat(manifest.floorSegmentIndex(0)).isEqualTo(-1); // below the clean set's start
+    assertThat(manifest.floorSegmentIndex(1)).isZero(); // exactly the first segment's start
+    assertThat(manifest.floorSegmentIndex(25)).isZero(); // within the first segment's range
+    assertThat(manifest.floorSegmentIndex(30)).isEqualTo(1); // exactly the second segment's start
+    assertThat(manifest.floorSegmentIndex(59)).isEqualTo(1); // the gap before the third segment
+    assertThat(manifest.floorSegmentIndex(60)).isEqualTo(2);
+    assertThat(manifest.floorSegmentIndex(1_000)).isEqualTo(2); // past the last segment's start
+  }
+
+  @Test
+  void shouldResolveFloorSegmentIndexOnAnEmptyManifest() {
+    // given
+    final var manifest = CompactionManifest.empty();
+
+    // then
+    assertThat(manifest.floorSegmentIndex(0)).isEqualTo(-1);
+  }
+
+  @Test
   void shouldRejectUnknownVersion() {
     // given a manifest header with an unsupported version
     final byte[] bytes = "EBCOMPACT-MANIFEST\t99\nC\t0\nM\t0\n".getBytes(StandardCharsets.UTF_8);

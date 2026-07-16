@@ -107,6 +107,6 @@ final class EventBridgePropertiesTest {
     final var raft =
         raftReplicationFactor == null ? null : new RaftProperties(raftReplicationFactor);
     return new EventBridgeProperties(
-        null, broker, null, null, null, null, raft, null, topics, null);
+        null, broker, null, null, null, null, null, raft, null, topics, null);
   }
 }

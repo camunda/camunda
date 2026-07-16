@@ -47,6 +47,7 @@ final class TopicReconciler {
   private final PartitionBootstrapper partitionBootstrapper;
   private final TopologySetup topologySetup;
   private final int localNodeId;
+  private final TopicCleanupPolicies cleanupPolicies;
 
   // Per-topic routing topology manager, shared by reconcile and join (created on first need).
   private final Map<String, TopologyManagerImpl> topologyManagers = new ConcurrentHashMap<>();
@@ -54,9 +55,11 @@ final class TopicReconciler {
   TopicReconciler(
       final PartitionBootstrapper partitionBootstrapper,
       final TopologySetup topologySetup,
-      final MemberId localMemberId) {
+      final MemberId localMemberId,
+      final TopicCleanupPolicies cleanupPolicies) {
     this.partitionBootstrapper = partitionBootstrapper;
     this.topologySetup = topologySetup;
+    this.cleanupPolicies = cleanupPolicies;
     localNodeId = BrokerMembers.nodeId(localMemberId);
   }
 
@@ -92,7 +95,11 @@ final class TopicReconciler {
         continue;
       }
       partitionBootstrapper.provisionDataPartition(
-          groupName, partitionId, memberSet(replicas), topologyFor(name, meta.partitionCount()));
+          groupName,
+          partitionId,
+          memberSet(replicas),
+          topologyFor(name, meta.partitionCount()),
+          meta.cleanupPolicy());
       started.add(partitionId);
     }
 
@@ -141,7 +148,11 @@ final class TopicReconciler {
     }
     LOG.info("Joining topic {} partition {} as member {}", topic, partitionId, localNodeId);
     return partitionBootstrapper.joinDataPartition(
-        groupName, partitionId, memberSet(members), topologyFor(topic, partitionCount));
+        groupName,
+        partitionId,
+        memberSet(members),
+        topologyFor(topic, partitionCount),
+        cleanupPolicies.get(topic));
   }
 
   /**
@@ -160,7 +171,11 @@ final class TopicReconciler {
     LOG.info(
         "Passive-joining topic {} partition {} as observer {}", topic, partitionId, localNodeId);
     return partitionBootstrapper.joinDataPartitionAsPassive(
-        groupName, partitionId, memberSet(members), topologyFor(topic, partitionCount));
+        groupName,
+        partitionId,
+        memberSet(members),
+        topologyFor(topic, partitionCount),
+        cleanupPolicies.get(topic));
   }
 
   /**

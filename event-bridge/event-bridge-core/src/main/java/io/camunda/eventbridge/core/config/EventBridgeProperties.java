@@ -24,6 +24,7 @@ public record EventBridgeProperties(
     ConsumerProperties consumer,
     PublishProperties publish,
     RetentionProperties retention,
+    CompactionProperties compaction,
     RaftProperties raft,
     ClusterProperties cluster,
     List<TopicProperties> topics,
@@ -58,6 +59,9 @@ public record EventBridgeProperties(
     }
     if (retention == null) {
       retention = new RetentionProperties(1_000_000, 60_000, 32 * 1024 * 1024);
+    }
+    if (compaction == null) {
+      compaction = new CompactionProperties(10_000, 32 * 1024 * 1024, 300_000, 1_000_000, 60_000);
     }
     if (raft == null) {
       raft = new RaftProperties(1);
@@ -251,6 +255,30 @@ public record EventBridgeProperties(
       @DefaultValue("1000000") long maxRecordsPerPartition,
       @DefaultValue("60000") long compactionIntervalMs,
       @DefaultValue("33554432") long segmentSizeBytes) {}
+
+  /**
+   * Log compaction configuration for {@code COMPACT}-policy topics (event-bridge ADR 0001).
+   * Mutually exclusive with {@link RetentionProperties}: a partition runs either the retention
+   * compactor ({@code DELETE}) or the log cleaner ({@code COMPACT}), never both.
+   *
+   * @param minLagRecords how many records of raw history the cleaner keeps behind the committed
+   *     head before the cleaner point C, so tailing readers always see un-compacted recent records
+   *     (default 10000)
+   * @param maxSegmentBytes soft upper bound on a clean segment's size before the writer rolls to a
+   *     new one (default 32 MiB)
+   * @param graceWindowMs how far the log clock must have advanced past a tombstone's own timestamp
+   *     before a later pass may drop it — the two-touch grace of ADR 0001 decision 7 (default
+   *     300000, i.e. 5 minutes)
+   * @param keyMapCapacity the maximum number of distinct keys the per-pass key-offset map holds
+   *     before it overflows and forces a lower cleaner point and a multi-pass (default 1000000)
+   * @param passIntervalMs how often (in milliseconds) the cleaner actor runs a pass (default 60000)
+   */
+  public record CompactionProperties(
+      @DefaultValue("10000") long minLagRecords,
+      @DefaultValue("33554432") long maxSegmentBytes,
+      @DefaultValue("300000") long graceWindowMs,
+      @DefaultValue("1000000") int keyMapCapacity,
+      @DefaultValue("60000") long passIntervalMs) {}
 
   /**
    * RAFT consensus configuration.

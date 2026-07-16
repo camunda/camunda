@@ -13,6 +13,13 @@ import io.atomix.cluster.messaging.InboundPayload;
 import io.camunda.eventbridge.messaging.flowcontrol.FlowControl;
 import io.camunda.eventbridge.messaging.publish.InboundQueue;
 import io.camunda.eventbridge.messaging.stream.EventStreamWriter;
+import io.camunda.eventbridge.protocol.EventBridgeBatch;
+import io.camunda.eventbridge.protocol.ExecutePublishRequestDecoder;
+import io.camunda.eventbridge.protocol.ExecutePublishResponseDecoder;
+import io.camunda.eventbridge.protocol.MessageHeaderDecoder;
+import io.camunda.eventbridge.protocol.PublishResponseStatus;
+import io.camunda.eventbridge.protocol.RejectionReason;
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.netty.buffer.ByteBuf;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +41,7 @@ final class PublishRequestHandlerTest {
   @Test
   void shouldReleasePayloadWhenRequestIsTooShort() {
     // given
-    final var handler = handlerWith(admittingFlowControl());
+    final var handler = handlerWith(admittingFlowControl(), CleanupPolicy.DELETE);
     final var payload = new TrackingPayload(new byte[4]);
 
     // when
@@ -48,7 +55,7 @@ final class PublishRequestHandlerTest {
   @Test
   void shouldReleasePayloadOnBackpressure() {
     // given
-    final var handler = handlerWith(rejectingFlowControl());
+    final var handler = handlerWith(rejectingFlowControl(), CleanupPolicy.DELETE);
     final var payload = new TrackingPayload(validRequestBytes());
 
     // when
@@ -62,7 +69,7 @@ final class PublishRequestHandlerTest {
   @Test
   void shouldTransferOwnershipToThePipelineOnAcceptance() {
     // given
-    final var handler = handlerWith(admittingFlowControl());
+    final var handler = handlerWith(admittingFlowControl(), CleanupPolicy.DELETE);
     final var payload = new TrackingPayload(validRequestBytes());
 
     // when
@@ -73,10 +80,62 @@ final class PublishRequestHandlerTest {
     assertThat(payload.releases.get()).isZero();
   }
 
-  private PublishRequestHandler handlerWith(final FlowControl flowControl) {
+  @Test
+  void shouldRejectUnkeyedBatchOnCompactedTopic() {
+    // given
+    final var handler = handlerWith(admittingFlowControl(), CleanupPolicy.COMPACT);
+    final var payload = new TrackingPayload(validRequestBytes());
+
+    // when
+    final var response = handler.handleInbound(payload);
+
+    // then
+    assertThat(response).isCompleted();
+    assertThat(payload.releases.get()).isEqualTo(1);
+    final var decoded = decodeResponse(response.join());
+    assertThat(decoded.status).isEqualTo(PublishResponseStatus.ERROR);
+    assertThat(decoded.rejectionReason).isEqualTo(RejectionReason.UNKEYED_ON_COMPACTED_TOPIC);
+  }
+
+  @Test
+  void shouldAcceptKeyedBatchOnCompactedTopic() {
+    // given
+    final var handler = handlerWith(admittingFlowControl(), CleanupPolicy.COMPACT);
+    final var payload = new TrackingPayload(keyedRequestBytes());
+
+    // when
+    final var response = handler.handleInbound(payload);
+
+    // then: the request is in flight, the payload stays alive for the appender
+    assertThat(response).isNotDone();
+    assertThat(payload.releases.get()).isZero();
+  }
+
+  @Test
+  void shouldAcceptKeyedBatchOnDeleteTopic() {
+    // given: keyed publishes to a DELETE topic remain allowed (KEYED is simply unused there)
+    final var handler = handlerWith(admittingFlowControl(), CleanupPolicy.DELETE);
+    final var payload = new TrackingPayload(keyedRequestBytes());
+
+    // when
+    final var response = handler.handleInbound(payload);
+
+    // then
+    assertThat(response).isNotDone();
+    assertThat(payload.releases.get()).isZero();
+  }
+
+  private PublishRequestHandler handlerWith(
+      final FlowControl flowControl, final CleanupPolicy cleanupPolicy) {
     final var inbound = new InboundQueue(16, flowControl);
     final var writer = new EventStreamWriter(inbound, () -> {});
-    return new PublishRequestHandler(PARTITION_ID, writer, correlator);
+    return new PublishRequestHandler(PARTITION_ID, writer, correlator, cleanupPolicy);
+  }
+
+  private static int batchOffset() {
+    return MessageHeaderDecoder.ENCODED_LENGTH
+        + ExecutePublishRequestDecoder.BLOCK_LENGTH
+        + ExecutePublishRequestDecoder.entryBatchHeaderLength();
   }
 
   private static byte[] validRequestBytes() {
@@ -84,6 +143,24 @@ final class PublishRequestHandlerTest {
     // entry count is read by the pipeline
     return new byte[256];
   }
+
+  /** {@link #validRequestBytes()} with the batch's KEYED attribute bit set. */
+  private static byte[] keyedRequestBytes() {
+    final byte[] bytes = validRequestBytes();
+    final var buffer = new UnsafeBuffer(bytes);
+    buffer.putInt(batchOffset() + EventBridgeBatch.ATTRIBUTES_OFFSET, EventBridgeBatch.KEYED_MASK);
+    return bytes;
+  }
+
+  private static DecodedResponse decodeResponse(final byte[] responseBytes) {
+    final var headerDecoder = new MessageHeaderDecoder();
+    final var bodyDecoder = new ExecutePublishResponseDecoder();
+    final var buffer = new UnsafeBuffer(responseBytes);
+    bodyDecoder.wrapAndApplyHeader(buffer, 0, headerDecoder);
+    return new DecodedResponse(bodyDecoder.status(), bodyDecoder.rejectionReason());
+  }
+
+  private record DecodedResponse(PublishResponseStatus status, RejectionReason rejectionReason) {}
 
   private static FlowControl admittingFlowControl() {
     return new FlowControl() {
