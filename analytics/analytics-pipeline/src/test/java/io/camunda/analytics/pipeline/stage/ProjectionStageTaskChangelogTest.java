@@ -49,6 +49,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -77,6 +78,7 @@ final class ProjectionStageTaskChangelogTest {
   private static final String CHANGELOG_TOPIC = "analytics-stage1-changelog";
   private static final long PI_KEY = 123L;
   private static final int ZEEBE_PARTITION = 3;
+  private static final int OTHER_ZEEBE_PARTITION = 4;
   private static final int EB_PARTITION = 1;
 
   @TempDir Path stateDir;
@@ -229,6 +231,47 @@ final class ProjectionStageTaskChangelogTest {
     assertThat(client.publishedRecords).isNotEmpty();
   }
 
+  @Test
+  void shouldEmitOnlyTheMovedWatermarkAcrossCuts() {
+    // given a first cut that folds on TWO Zeebe partitions and durably persists both watermarks
+    final RecordingClient client = recordingClient();
+    openTask(client.client, true);
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, ZEEBE_PARTITION, 10L, 100L));
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, OTHER_ZEEBE_PARTITION, 5L, 101L));
+    Cuts.commit(task, 101L);
+    client.publishedRecords.clear();
+
+    // when a second cut folds only on the first partition — the other one does not move
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_COMPLETED, 1500L, ZEEBE_PARTITION, 11L, 102L));
+    final CommitCut cut = task.freezeCut(102L);
+    cut.publish();
+
+    // then the second cut's changelog carries a watermark record for the moved partition only —
+    // the unmoved partition's already-durable watermark is absent, not re-emitted
+    final Set<Integer> emittedWatermarkPartitions = emittedWatermarkPartitions(client);
+    assertThat(emittedWatermarkPartitions).containsExactly(ZEEBE_PARTITION);
+    assertThat(emittedWatermarkPartitions).doesNotContain(OTHER_ZEEBE_PARTITION);
+  }
+
+  /**
+   * The Zeebe partitions carried by {@link AnalyticsColumnFamilies#ZEEBE_APPLIED_POSITION}-tagged
+   * records among {@code client}'s published records so far (decoding each such record's enveloped
+   * store key — {@code zeebePartitionId(4)}, big-endian — back to the partition id).
+   */
+  private static Set<Integer> emittedWatermarkPartitions(final RecordingClient client) {
+    final int watermarkTag = AnalyticsColumnFamilies.ZEEBE_APPLIED_POSITION.getValue();
+    return client.publishedRecords.stream()
+        .map(entry -> entry[0])
+        .filter(key -> !ChangelogMarker.isMarkerKey(key))
+        .map(ChangelogKeyEnvelope::decode)
+        .filter(envelope -> envelope.cfTag() == watermarkTag)
+        .map(envelope -> ByteBuffer.wrap(envelope.storeKey()).getInt())
+        .collect(Collectors.toSet());
+  }
+
   private void openTask(final EventBridgeClient client, final boolean changelogEnabled) {
     metadataStore = new TestMetadataStore();
     registry = new DatasetRegistry();
@@ -293,6 +336,19 @@ final class ProjectionStageTaskChangelogTest {
       final long timestamp,
       final long zeebePosition,
       final long ebOffset) {
+    return process(intent, timestamp, ZEEBE_PARTITION, zeebePosition, ebOffset);
+  }
+
+  /**
+   * As {@link #process(ProcessInstanceIntent, long, long, long)}, with an explicit real Zeebe
+   * partition — for exercising the pre-fold dedup watermark of more than one Zeebe partition.
+   */
+  private static SourceRecord process(
+      final ProcessInstanceIntent intent,
+      final long timestamp,
+      final int zeebePartition,
+      final long zeebePosition,
+      final long ebOffset) {
     final ProcessInstanceRecord value =
         new ProcessInstanceRecord()
             .setProcessInstanceKey(PI_KEY)
@@ -309,7 +365,7 @@ final class ProjectionStageTaskChangelogTest {
             .valueType(ValueType.PROCESS_INSTANCE)
             .intent(intent);
     final Record<?> record =
-        new CopiedRecord<>(value, metadata, PI_KEY, ZEEBE_PARTITION, zeebePosition, -1L, timestamp);
+        new CopiedRecord<>(value, metadata, PI_KEY, zeebePartition, zeebePosition, -1L, timestamp);
     return new SourceRecord(EB_PARTITION, ebOffset, record);
   }
 

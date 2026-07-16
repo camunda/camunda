@@ -82,9 +82,9 @@ import org.slf4j.LoggerFactory;
  *
  * <p><b>Frozen cuts (streaming ADR 0005, 0008).</b> {@link #freezeCut(long)} detaches the cut at
  * the barrier — the watermark seal, the encoded shuffle frames, the staged serving rows, the
- * at-barrier pre-fold dedup watermarks and every store's frozen overlay — and the runtime drives
- * publish → persist → complete: on an IO thread while the partition keeps folding, or inline on the
- * actor thread for the final cut at shutdown.
+ * at-barrier pre-fold dedup watermarks that moved since the last completed cut, and every store's
+ * frozen overlay — and the runtime drives publish → persist → complete: on an IO thread while the
+ * partition keeps folding, or inline on the actor thread for the final cut at shutdown.
  *
  * <p><b>Live reload (ADR 0005).</b> The topology is built from the shared versioned {@link
  * DatasetCatalog}, not a frozen list. On each successful cut's completion — after the durable cut,
@@ -153,10 +153,31 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
    * Zeebe partition. The exporter appends each Zeebe partition's records in non-decreasing position
    * order and a retry only re-appends positions at-or-below what was already appended, so a record
    * at-or-below its partition's watermark is a producer duplicate and is skipped before the fold.
-   * Heap-authoritative between commits; persisted into {@link #appliedPositions} inside the same
-   * atomic cut as the topology state and the consumed offset.
+   * Heap-authoritative between commits — never rolled back, whatever a cut's outcome — and
+   * persisted into {@link #appliedPositions} inside the same atomic cut as the topology state and
+   * the consumed offset.
    */
   private final Map<Integer, Long> appliedWatermarks = new HashMap<>();
+
+  /**
+   * The Zeebe partitions whose {@link #appliedWatermarks} entry moved (by a fold in {@link
+   * #process}) since the last <em>completed</em> cut — mirrors the sealing aggregation's dirty-cell
+   * tracking (streaming commits e6bde7eae44/510d8be7584) applied to this per-partition watermark
+   * map instead of a cell store. {@link #freezeCut(long)} steals this set at the barrier so {@link
+   * CommitCut#persist()} and {@link CommitCut#publish()} write and emit only the watermarks that
+   * actually changed, instead of re-writing every known partition's watermark on every cut; a
+   * failed cut merges the stolen set back (see {@code CommitCut#complete}) so the next successful
+   * cut re-carries it — no watermark <em>value</em> needs to be carried back, since {@link
+   * #appliedWatermarks} itself is never rolled back and is still authoritative for it.
+   *
+   * <p><b>Restore correctness.</b> An unmoved partition's row from an earlier cut remains exactly
+   * valid: it was written by the cut that last moved that partition's watermark and is never
+   * invalidated (no delete path exists for this column family), so recovery — which loads every row
+   * of {@link #appliedPositions} into {@link #appliedWatermarks} at construction — and a changelog
+   * rebuild both still see every partition's correct watermark, not only the ones the most recent
+   * cut happened to touch.
+   */
+  private final Set<Integer> movedWatermarkPartitions = new HashSet<>();
 
   // Rebuilt on reload; the sealing aggregations are collected from the current topology so commit
   // can watermark-seal them, and the projection state is kept so the frozen cut can drive its
@@ -630,6 +651,7 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     }
     topology.process(record);
     appliedWatermarks.put(zeebePartition, zeebePosition);
+    movedWatermarkPartitions.add(zeebePartition);
     // Eager shuffle publish (opt-in, no-op otherwise): any segment this fold sealed forwarded its
     // cells into the publisher synchronously above, so they can leave for the facts topic now —
     // non-blocking — instead of waiting for the commit barrier's publish burst.
@@ -691,7 +713,17 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
     // describe exactly the folds in the frozen state. A snapshot taken at persist time would cover
     // positions folded after the freeze — folds the frozen cut does not contain — and a
     // crash-replay would skip them as producer duplicates: silent data loss.
-    final Map<Integer, Long> frozenWatermarks = Map.copyOf(appliedWatermarks);
+    //
+    // Only the partitions that moved since the last completed cut are carried (see
+    // movedWatermarkPartitions' javadoc): the stolen set is resolved against the live
+    // appliedWatermarks map at the barrier, exactly as the sealing aggregation resolves its stolen
+    // dirty-cell set against the live open buffer at freeze (SegmentSealingAggregation#freeze).
+    final Set<Integer> frozenMovedPartitions = Set.copyOf(movedWatermarkPartitions);
+    movedWatermarkPartitions.clear();
+    final Map<Integer, Long> frozenWatermarks = new HashMap<>();
+    for (final Integer zeebePartition : frozenMovedPartitions) {
+      frozenWatermarks.put(zeebePartition, appliedWatermarks.get(zeebePartition));
+    }
     final StateBackedProjectionState state = projectionState;
     state.freeze();
     final List<SegmentSealingAggregation<Fact, ?, ?>> aggregations = sealingAggregations;
@@ -764,11 +796,15 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
         servingWriter.completeFrozen(success);
         state.completeFrozen(success);
         aggregations.forEach(aggregation -> aggregation.completeFrozen(success));
-        // The live appliedWatermarks map stayed authoritative throughout; the frozen copy is
-        // simply dropped either way — a failed cut's watermarks are re-captured (together with
-        // any newer ones) by the next freeze.
+        // The live appliedWatermarks map stayed authoritative throughout, so a failed cut needs no
+        // value to be carried back — only the moved-partition set (mirrors
+        // SegmentSealingAggregation#completeFrozen's dirty-cell merge-back): the next freeze re-
+        // includes exactly the partitions this cut carried, plus any that moved again meanwhile
+        // (already back in the live set, so the union is a no-op for those).
         if (success) {
           maybeReload();
+        } else {
+          movedWatermarkPartitions.addAll(frozenMovedPartitions);
         }
       }
     };
@@ -795,11 +831,10 @@ public final class ProjectionStageTask implements Task<SourceRecord>, AutoClosea
 
   /**
    * Appends one put per frozen pre-fold dedup watermark, enveloped under the {@code
-   * ZEEBE_APPLIED_POSITION} column-family tag — mirroring {@code persist()} exactly: every known
-   * Zeebe-partition watermark is (re-)written every cut, not only the ones that moved since the
-   * last cut (unlike Stage 2's dedup-watermark handling). The changelog therefore carries the same
-   * occasional redundant re-put {@code persist()} itself already does; fixing that redundancy is
-   * out of this change's scope.
+   * ZEEBE_APPLIED_POSITION} column-family tag — mirroring {@code persist()} exactly: only the
+   * Zeebe-partition watermarks that moved since the last completed cut are (re-)written, never an
+   * unmoved partition's already-durable watermark (see {@link #movedWatermarkPartitions}'s
+   * javadoc).
    */
   private static void appendEnvelopedZeebeWatermarkRecords(
       final List<ChangelogRecord> out, final Map<Integer, Long> frozenWatermarks) {
