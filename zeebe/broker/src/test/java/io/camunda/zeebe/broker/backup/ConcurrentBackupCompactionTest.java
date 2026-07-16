@@ -89,7 +89,11 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
     snapshotStore =
         manage(
             new FileBasedSnapshotStore(
-                0, partitionId, dataDirectory, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry));
+                0,
+                partitionId,
+                dataDirectory,
+                snapshotPath -> SnapshotFilesInfo.none(),
+                meterRegistry));
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
 
     final var partitionMetadata =

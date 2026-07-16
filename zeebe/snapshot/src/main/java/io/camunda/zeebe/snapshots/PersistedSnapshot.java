@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.OptionalLong;
 
 /** Represents a snapshot, which was persisted at the {@link PersistedSnapshotStore}. */
 public interface PersistedSnapshot {
@@ -90,6 +91,17 @@ public interface PersistedSnapshot {
    * @return the metadata of the snapshot.
    */
   SnapshotMetadata getMetadata();
+
+  /**
+   * Returns the total size in bytes of the snapshot's files, excluding the metadata file itself.
+   *
+   * <p>The value is read from the snapshot metadata (with no filesystem access), and is empty if
+   * the size is unknown (e.g. a snapshot persisted before this field existed whose size has not
+   * been reconstructed). Callers must not treat an empty value as zero.
+   *
+   * @return the total size in bytes, if known from metadata.
+   */
+  OptionalLong getTotalSizeInBytes();
 
   /**
    * Reserves this snapshot. When the snapshot is reserved, it is not deleted until it is released.

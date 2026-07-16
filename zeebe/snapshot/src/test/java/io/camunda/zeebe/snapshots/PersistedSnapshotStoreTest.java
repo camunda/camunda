@@ -18,7 +18,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +38,11 @@ public class PersistedSnapshotStoreTest {
 
     final var snapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, root.toPath(), snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
+            0,
+            partitionId,
+            root.toPath(),
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
     scheduler.submitActor(snapshotStore).join();
     persistedSnapshotStore = snapshotStore;
   }

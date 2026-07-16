@@ -14,14 +14,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkWrapper;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -348,6 +349,76 @@ public class FileBasedReceivedSnapshotTest {
     }
   }
 
+  @Test
+  public void shouldCalculateSizeWhenReceivedMetadataDoesNotContainSize() throws IOException {
+    // given
+    final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
+    rewriteMetadataSize(senderSnapshot, 0L);
+
+    // when
+    final var persistedSnapshot = receiveSnapshot(senderSnapshot).persist().join();
+
+    // then
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(expectedTotalDataSize());
+
+    receiverSnapshotStore.close();
+    receiverSnapshotStore = createStore(receiverSnapshotsDir.getParent());
+    assertThat(receiverSnapshotStore.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
+        .hasValue(expectedTotalDataSize());
+  }
+
+  @Test
+  public void shouldCalculateSizeCorrectlyWithDuplicatedChunks() throws IOException {
+    // given
+    final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
+    rewriteMetadataSize(senderSnapshot, 0L);
+
+    // when
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(senderSnapshot.getId()).join();
+    try (final var reader = senderSnapshot.newChunkReader()) {
+      var replayedDataChunk = false;
+      while (reader.hasNext()) {
+        final var chunk = reader.next();
+        receivedSnapshot.apply(chunk).join();
+        if (!replayedDataChunk
+            && !chunk.getChunkName().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME)) {
+          receivedSnapshot.apply(chunk).join();
+          replayedDataChunk = true;
+        }
+      }
+    }
+    final var persistedSnapshot = receivedSnapshot.persist().join();
+
+    // then
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(expectedTotalDataSize());
+  }
+
+  @Test
+  public void shouldPreserveSizeFromReceivedMetadata() throws IOException {
+    // given
+    final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
+    final long advertisedSize = 123_456_789L;
+    rewriteMetadataSize(senderSnapshot, advertisedSize);
+
+    // when
+    final var persistedSnapshot = receiveSnapshot(senderSnapshot).persist().join();
+
+    // then
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(advertisedSize);
+  }
+
+  private void rewriteMetadataSize(final FileBasedSnapshot snapshot, final long totalSizeBytes)
+      throws IOException {
+    final var metadata =
+        ((FileBasedSnapshotMetadata) snapshot.getMetadata()).withTotalSizeBytes(totalSizeBytes);
+    final var encoded = new ByteArrayOutputStream();
+    metadata.encode(encoded);
+    Files.write(
+        snapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME),
+        encoded.toByteArray());
+  }
+
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
     final var receivedSnapshot =
         receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
@@ -359,6 +430,12 @@ public class FileBasedReceivedSnapshotTest {
     }
 
     return receivedSnapshot;
+  }
+
+  private long expectedTotalDataSize() {
+    return SNAPSHOT_FILE_CONTENTS.values().stream()
+        .mapToLong(content -> content.getBytes(StandardCharsets.UTF_8).length)
+        .sum();
   }
 
   private PersistedSnapshot takePersistedSnapshot(final long index) {
@@ -386,8 +463,12 @@ public class FileBasedReceivedSnapshotTest {
   private FileBasedSnapshotStore createStore(final Path root) {
     final var store =
         new FileBasedSnapshotStore(
-            0, PARTITION_ID, root, snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
-    scheduler.submitActor(store);
+            0,
+            PARTITION_ID,
+            root,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
+    scheduler.submitActor(store).join();
 
     return store;
   }

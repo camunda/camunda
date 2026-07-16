@@ -28,7 +28,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -49,7 +48,8 @@ final class TestState {
     actorScheduler.start();
 
     final var snapshotStore =
-        new FileBasedSnapshotStore(0, 1, tempDirectory, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
+        new FileBasedSnapshotStore(
+            0, 1, tempDirectory, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
     actorScheduler.submitActor(snapshotStore).join();
 
     generateSnapshot(snapshotStore, sizeInBytes);

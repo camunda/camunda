@@ -46,4 +46,11 @@ public interface SnapshotMetadata {
    *     partition with the "global" data from another partition
    */
   boolean isBootstrap();
+
+  /**
+   * @return the total size in bytes of the snapshot's data files, excluding the metadata file and
+   *     the external checksum file, or {@code 0} if unknown (e.g. a snapshot persisted before this
+   *     field was introduced)
+   */
+  long totalSizeBytes();
 }

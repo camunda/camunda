@@ -31,8 +31,8 @@ import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator.BackupNo
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
@@ -104,7 +104,11 @@ class PartitionRestoreServiceTest {
         new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile(), meterRegistry);
     restoreService =
         new PartitionRestoreService(
-            backupStore, raftPartition, nodeId, snapshotPath -> SnapshotFilesInfo.none(), meterRegistry);
+            backupStore,
+            raftPartition,
+            nodeId,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            meterRegistry);
 
     journal =
         SegmentedJournal.builder(meterRegistry)

@@ -32,7 +32,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,13 +61,21 @@ public class SnapshotTransferTest {
 
     senderSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, senderDirectory, snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
+            0,
+            partitionId,
+            senderDirectory,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
     actorScheduler.submitActor(senderSnapshotStore);
     actorScheduler.workUntilDone();
 
     receiverSnapshotStore =
         new FileBasedSnapshotStore(
-            0, partitionId, receiverDirectory, snapshotPath -> SnapshotFilesInfo.none(), new SimpleMeterRegistry());
+            0,
+            partitionId,
+            receiverDirectory,
+            snapshotPath -> SnapshotFilesInfo.none(),
+            new SimpleMeterRegistry());
 
     actorScheduler.submitActor(receiverSnapshotStore);
     actorScheduler.workUntilDone();
@@ -115,8 +122,11 @@ public class SnapshotTransferTest {
         .satisfies(
             snapshot -> {
               assertThat(snapshot.getId()).startsWith("1-1-0-0-0-");
+              assertThat(snapshot.getTotalSizeInBytes()).isPresent();
               assertThat(snapshot.getMetadata())
-                  .isEqualTo(FileBasedSnapshotMetadata.forBootstrap(1));
+                  .isEqualTo(
+                      FileBasedSnapshotMetadata.forBootstrap(
+                          1, snapshot.getTotalSizeInBytes().getAsLong()));
               assertThat(snapshot.isBootstrap()).isTrue();
               assertThat(snapshot.files()).isNotEmpty();
             });

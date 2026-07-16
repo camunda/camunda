@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.NavigableMap;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -180,6 +181,12 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
   @Override
   public SnapshotMetadata getMetadata() {
     return new FileBasedSnapshotMetadata(1, 0L, 0L, 0L, 0L, false, 0L);
+  }
+
+  @Override
+  public OptionalLong getTotalSizeInBytes() {
+    return OptionalLong.of(
+        chunks.values().stream().mapToLong(chunk -> StringUtil.getBytes(chunk).length).sum());
   }
 
   @Override

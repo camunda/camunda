@@ -22,7 +22,6 @@ public record SnapshotFilesInfo(Map<String, Long> checksums, Map<String, Long> s
 
   private static final SnapshotFilesInfo NONE = new SnapshotFilesInfo(Map.of(), Map.of());
 
-  /** Returns an empty instance, reporting neither checksums nor sizes for any file. */
   public static SnapshotFilesInfo none() {
     return NONE;
   }

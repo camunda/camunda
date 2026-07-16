@@ -23,6 +23,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -127,6 +128,12 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   @Override
   public SnapshotMetadata getMetadata() {
     return metadata;
+  }
+
+  @Override
+  public OptionalLong getTotalSizeInBytes() {
+    final var totalSizeBytes = metadata.totalSizeBytes();
+    return totalSizeBytes > 0 ? OptionalLong.of(totalSizeBytes) : OptionalLong.empty();
   }
 
   @Override
