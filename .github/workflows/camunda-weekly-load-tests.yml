@@ -242,8 +242,13 @@ jobs:
       - test-data
       - build-camunda-image
       - build-load-test-images
+    # ECS benchmark identity is derived from the current calendar week and a live scan of
+    # running ECS services, with no notion of reuse-tag. Re-running with reuse-tag set is only
+    # meant to recreate a specific week's Helm-based load tests; ECS doesn't support updating an
+    # existing week's benchmark in place, so skip it entirely in that case.
     if: |
       always() &&
+      inputs.reuse-tag == '' &&
       needs.test-data.result == 'success' &&
       (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
       (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
