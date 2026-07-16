@@ -267,6 +267,23 @@ describe('useProcessInstanceFilters', () => {
     });
   });
 
+  it('should not add a variables filter when variable values are empty', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      variableName: 'orderId',
+      variableValues: '',
+    };
+
+    mockedUseFilters.mockReturnValue({
+      getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
+    });
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual({filter: {}});
+  });
+
   it('should not add a variables filter for invalid variable values', () => {
     const mockFilters: ProcessInstanceFilters = {
       variableName: 'orderId',
