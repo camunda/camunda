@@ -271,6 +271,62 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
       value = ClusterVariableIntent.class,
       names = {"CREATED", "UPDATED"},
       mode = Mode.INCLUDE)
+  void shouldSetKindOnEntity(final ClusterVariableIntent intent) {
+    // given
+    final ClusterVariableRecordValue recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .from(factory.generateObject(ClusterVariableRecordValue.class))
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.SECRET_REFERENCE)
+            .build();
+
+    final Record<ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE, r -> r.withIntent(intent).withValue(recordValue));
+
+    // when
+    final ClusterVariableEntity entity = new ClusterVariableEntity();
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getKind())
+        .isEqualTo(
+            io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind
+                .SECRET_REFERENCE);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ClusterVariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldDefaultKindToJsonWhenNotInRecord(final ClusterVariableIntent intent) {
+    // given
+    final ClusterVariableRecordValue recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .from(factory.generateObject(ClusterVariableRecordValue.class))
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withKind(io.camunda.zeebe.protocol.record.value.ClusterVariableKind.JSON)
+            .build();
+
+    final Record<ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE, r -> r.withIntent(intent).withValue(recordValue));
+
+    // when
+    final ClusterVariableEntity entity = new ClusterVariableEntity();
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getKind())
+        .isEqualTo(io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind.JSON);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = ClusterVariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
   void shouldMapMetadataWithNumericAndStringValues(final ClusterVariableIntent intent) {
     // given
     final ClusterVariableRecordValue clusterVariableRecordValue =
