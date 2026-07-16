@@ -20,6 +20,7 @@ import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import io.camunda.zeebe.test.DynamicAutoCloseable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -31,12 +32,15 @@ import java.util.List;
 import java.util.stream.IntStream;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 @Timeout(2 * 60) // 2 minutes
 abstract class ClusterEndpointIT {
+
+  @AutoClose protected final DynamicAutoCloseable closeables = new DynamicAutoCloseable();
 
   protected abstract int brokerCount();
 

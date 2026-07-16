@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.it.cluster.management;
 
+import static io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers.addBrokerInZone;
+import static io.camunda.zeebe.qa.util.cluster.TestClusterBuilder.DEFAULT_CLUSTER_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -24,9 +26,11 @@ import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
@@ -260,6 +264,56 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           new PartitionDistributionConfig().type(PartitionDistributionConfig.TypeEnum.ROUND_ROBIN);
       assertThatCode(() -> actuator.patchPartitionDistribution(config, false))
           .isInstanceOf(FeignException.BadRequest.class);
+    }
+  }
+
+  @Test
+  @Timeout(3 * 60) // 6 broker JVMs total over the run; override the class-level 2-min timeout
+  @SuppressWarnings("resource")
+  void shouldRecoverZoneAwareClusterAfterZoneFailover() {
+    // given -- zoneA x2, zoneB x2, RF=4 (2 replicas/zone), 2 partitions
+    try (final var cluster = createCluster(4, 2, 4)) {
+      cluster.awaitCompleteTopology();
+      // Pin the actuator to a surviving zoneB broker -- availableGateway() may resolve to a
+      // zoneA broker, which is closed below and would take the actuator connection down with it.
+      final var actuator = ClusterActuator.of(cluster.brokers().get(MemberId.from("zoneB", 0)));
+
+      // when
+      // 1. stop both zoneA brokers (incl. coordinator zoneA_0)
+      cluster.brokers().get(MemberId.from("zoneA", 0)).close();
+      cluster.brokers().get(MemberId.from("zoneA", 1)).close();
+
+      // 2. force-remove both zoneA brokers; remaining member set = zoneB only
+      final var remaining =
+          List.<BrokerId>of(
+              new BrokerId.String(MemberId.from("zoneB", 0).toString()),
+              new BrokerId.String(MemberId.from("zoneB", 1).toString()));
+      final var removed = actuator.scaleByBrokerIds(remaining, false, true);
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(60))
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(removed));
+
+      // 3. add 2 new brokers to zoneB (zoneB_2, zoneB_3)
+      final var targetZones = List.of(new Zone("zoneB", 4, 4, 10));
+      closeables.manage(
+          addBrokerInZone(cluster, actuator, DEFAULT_CLUSTER_NAME, "zoneB", 2, 3, targetZones));
+      closeables.manage(
+          addBrokerInZone(cluster, actuator, DEFAULT_CLUSTER_NAME, "zoneB", 3, 4, targetZones));
+
+      // 4. reconfigure partition distribution: RF=4 all in zoneB, no zoneA
+      final var config =
+          new PartitionDistributionConfig()
+              .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
+              .zones(List.of(new ZoneSpec().name("zoneB").numberOfReplicas(4).priority(10)));
+      final var response = actuator.patchPartitionDistribution(config, false);
+
+      // then -- recovery applied; RF=4 all in zoneB
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(60))
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
+      assertThat(actuator.getTopology().getPartitionDistribution()).isEqualTo(config);
     }
   }
 

@@ -20,18 +20,13 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import io.camunda.zeebe.test.DynamicAutoCloseable;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 
 public class ZoneHelpers {
 
-  @AutoClose protected final DynamicAutoCloseable closeables = new DynamicAutoCloseable();
-
-  @SuppressWarnings("resource")
-  protected TestCluster createCluster(
+  public static TestCluster createCluster(
       final String name,
       final List<Zone> zones,
       final int partitionCount,
@@ -53,7 +48,7 @@ public class ZoneHelpers {
    * {@link TestStandaloneBroker#start()} runs on a virtual thread because it only returns once the
    * broker has joined the topology (i.e. after {@code addBroker}).
    */
-  protected void addBrokerInZone(
+  public static AutoCloseable addBrokerInZone(
       final TestCluster cluster,
       final ClusterActuator actuator,
       final String clusterName,
@@ -83,19 +78,18 @@ public class ZoneHelpers {
         Thread.ofVirtual().name("start-" + zone + "-" + nodeId).start(broker::start);
     // Close the broker first to unblock the (potentially still blocked) start() call, then join the
     // virtual thread so it does not leak beyond the test.
-    closeables.manage(
-        () -> {
-          broker.close();
-          startThread.interrupt();
-          startThread.join(Duration.ofSeconds(30));
-        });
 
     final var added = actuator.addBroker(MemberId.from(zone, nodeId).toString());
     Awaitility.await()
         .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(added));
+    return () -> {
+      broker.close();
+      startThread.interrupt();
+      startThread.join(Duration.ofSeconds(30));
+    };
   }
 
-  protected static void assertZoneHostsPartitions(
+  public static void assertZoneHostsPartitions(
       final ClusterActuator actuator, final String zone, final int nodeId) {
     final var brokerId = new BrokerId.String(MemberId.from(zone, nodeId).toString());
     Awaitility.await()
@@ -117,7 +111,7 @@ public class ZoneHelpers {
    * start a cluster over {@code initialZones}, add a broker in {@code newZone}, then update the
    * partition distribution to {@code targetZones}.
    */
-  protected record AddZoneScenario(
+  public record AddZoneScenario(
       String clusterName, List<Zone> initialZones, List<Zone> targetZones, String newZone) {
     @Override
     public String toString() {

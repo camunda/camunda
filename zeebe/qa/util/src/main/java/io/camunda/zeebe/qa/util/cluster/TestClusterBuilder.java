@@ -24,7 +24,7 @@ import java.util.stream.IntStream;
 @SuppressWarnings({"unused", "resource"})
 public final class TestClusterBuilder {
 
-  private static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
+  public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
 
   private String name = DEFAULT_CLUSTER_NAME;
 

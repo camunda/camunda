@@ -7,18 +7,22 @@
  */
 package io.camunda.zeebe.it.cluster.clustering.zoneaware;
 
+import static io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Zone;
+import io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers.AddZoneScenario;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import io.camunda.zeebe.test.DynamicAutoCloseable;
 import java.util.List;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -42,9 +46,11 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @ZeebeIntegration
 @Timeout(2 * 60)
-final class AddZoneToClusterIT extends ZoneHelpers {
+final class AddZoneToClusterIT {
 
   private static final int PARTITIONS_COUNT = 2;
+  @AutoClose
+  final DynamicAutoCloseable closeables = new DynamicAutoCloseable();
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("addZoneScenarios")
@@ -57,14 +63,14 @@ final class AddZoneToClusterIT extends ZoneHelpers {
 
       // when - start a broker in the new zone, add it to the topology, then add the zone to the
       // partition distribution
-      addBrokerInZone(
+      closeables.manage(addBrokerInZone(
           cluster,
           actuator,
           scenario.clusterName(),
           scenario.newZone(),
           0,
           3,
-          scenario.targetZones());
+          scenario.targetZones()));
 
       final var config =
           new PartitionDistributionConfig()
