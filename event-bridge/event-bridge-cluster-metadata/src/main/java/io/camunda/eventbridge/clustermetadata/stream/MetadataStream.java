@@ -256,7 +256,8 @@ public final class MetadataStream extends ReplicatedStream<MetadataColumnFamilie
             .setStatus(metadata.status())
             .setAssignment(metadata.assignment())
             .setTarget(metadata.target())
-            .setPassive(metadata.passive());
+            .setPassive(metadata.passive())
+            .setCleanupPolicy(metadata.cleanupPolicy());
     writeTopicCommand(name, command, MetadataIntent.REGISTER_TOPIC);
   }
 

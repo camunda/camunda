@@ -17,6 +17,7 @@ import io.camunda.eventbridge.clustermetadata.state.topic.TopicQueryService;
 import io.camunda.eventbridge.clustermetadata.stream.MetadataStream;
 import io.camunda.eventbridge.core.coordinator.CoordinatorRouting;
 import io.camunda.eventbridge.core.topic.AutoCreatedTopic;
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.camunda.eventbridge.protocol.request.coordination.ReportPartitionLeaderRequest;
 import io.camunda.eventbridge.stream.CommandRejectionException;
 import io.camunda.zeebe.scheduler.Actor;
@@ -191,7 +192,8 @@ public class MetadataManager extends Actor {
         new TopicRecord()
             .setName(topic.name())
             .setPartitionCount(topic.partitionCount())
-            .setReplicationFactor(topic.replicationFactor());
+            .setReplicationFactor(topic.replicationFactor())
+            .setCleanupPolicy(CleanupPolicy.valueOf(topic.cleanupPolicy()));
     handleCreateTopic(command)
         .whenComplete(
             (reply, error) ->
@@ -290,7 +292,8 @@ public class MetadataManager extends Actor {
               meta.status(),
               committed,
               Map.of(),
-              Map.of()));
+              Map.of(),
+              meta.cleanupPolicy()));
       reconfiguring.remove(name);
       return;
     }
@@ -366,7 +369,8 @@ public class MetadataManager extends Actor {
                               meta.status(),
                               advancedCommitted,
                               target,
-                              advancedPassive));
+                              advancedPassive,
+                              meta.cleanupPolicy()));
                       driveReconfiguration(name);
                     }));
   }

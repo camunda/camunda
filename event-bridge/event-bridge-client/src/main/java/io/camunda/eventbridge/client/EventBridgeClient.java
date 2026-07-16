@@ -157,10 +157,21 @@ public interface EventBridgeClient extends AutoCloseable {
   // Topic administration
 
   /**
-   * Creates a topic. Completes when the coordinator has accepted the request (the topic's Raft
-   * group is provisioned asynchronously, so it is reported {@code CREATING} until ready).
+   * Creates a topic with the default {@code DELETE} cleanup policy. Completes when the coordinator
+   * has accepted the request (the topic's Raft group is provisioned asynchronously, so it is
+   * reported {@code CREATING} until ready).
    */
   CompletableFuture<Void> createTopic(String name, int partitionCount, int replicationFactor);
+
+  /**
+   * Creates a topic with an explicit cleanup policy: {@code "DELETE"} (today's default behavior) or
+   * {@code "COMPACT"} (latest-per-key retention — publishing to it requires keyed batches, see
+   * {@link BatchPublisher#keyed()}). See event-bridge ADR 0001. Completes when the coordinator has
+   * accepted the request (the topic's Raft group is provisioned asynchronously, so it is reported
+   * {@code CREATING} until ready).
+   */
+  CompletableFuture<Void> createTopic(
+      String name, int partitionCount, int replicationFactor, String cleanupPolicy);
 
   /** Deletes a topic. Completes when the coordinator has accepted the request. */
   CompletableFuture<Void> deleteTopic(String name);
@@ -176,7 +187,12 @@ public interface EventBridgeClient extends AutoCloseable {
   void close();
 
   /** A topic as reported by the registry. */
-  record TopicInfo(String name, int partitionCount, int replicationFactor, String status) {}
+  record TopicInfo(
+      String name,
+      int partitionCount,
+      int replicationFactor,
+      String status,
+      String cleanupPolicy) {}
 
   /**
    * Fluent builder for an {@link EventBridgeClient}. Surfaces the previously-hardcoded consumer
@@ -271,6 +287,16 @@ public interface EventBridgeClient extends AutoCloseable {
 
     /** Adds a keyless entry from a UTF-8 string value. */
     BatchPublisher add(String value);
+
+    /**
+     * Marks this batch {@code KEYED}: declares that every added entry's key is meaningful for
+     * latest-per-key retention (event-bridge ADR 0001), the convention a {@code COMPACT} topic
+     * requires. Publishing without this to a {@code COMPACT} topic is rejected; keyed publishes to
+     * a {@code DELETE} topic are always allowed. Unset by default.
+     *
+     * @return this builder
+     */
+    BatchPublisher keyed();
 
     /**
      * Publishes the batch to a partition of a topic ({@code POST /v1/topics/{topic}/...}).

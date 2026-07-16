@@ -39,7 +39,8 @@ public final class TopicRegisterProcessor implements TypedRecordProcessor<TopicR
             .setStatus(TopicMetadata.TopicStatus.valueOf(cmd.getStatus()))
             .setAssignment(cmd.getAssignment())
             .setTarget(cmd.getTarget())
-            .setPassive(cmd.getPassive());
+            .setPassive(cmd.getPassive())
+            .setCleanupPolicy(cmd.getCleanupPolicy());
     writers.state().appendFollowUpEvent(command.getKey(), MetadataIntent.TOPIC_REGISTERED, event);
   }
 }

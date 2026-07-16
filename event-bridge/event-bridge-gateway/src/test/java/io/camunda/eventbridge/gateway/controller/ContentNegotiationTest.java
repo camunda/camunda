@@ -304,7 +304,8 @@ final class ContentNegotiationTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.topics[0].name").value("t1"))
         .andExpect(jsonPath("$.topics[0].partitionCount").value(3))
-        .andExpect(jsonPath("$.topics[0].status").value("READY"));
+        .andExpect(jsonPath("$.topics[0].status").value("READY"))
+        .andExpect(jsonPath("$.topics[0].cleanupPolicy").value("DELETE"));
   }
 
   @Test
@@ -319,6 +320,7 @@ final class ContentNegotiationTest {
     assertThat(response.getTopics(0).getName()).isEqualTo("t1");
     assertThat(response.getTopics(0).getPartitionCount()).isEqualTo(3);
     assertThat(response.getTopics(0).getStatus()).isEqualTo("READY");
+    assertThat(response.getTopics(0).getCleanupPolicy()).isEqualTo("DELETE");
   }
 
   // -------------------------------------------------------------------------
@@ -340,7 +342,7 @@ final class ContentNegotiationTest {
     final var res =
         new ListTopicsResponse()
             .setErrorCode(CoordinationErrorCode.NONE)
-            .addTopic("t1", 3, 1, "READY", Map.of());
+            .addTopic("t1", 3, 1, "READY", Map.of(), "DELETE");
     when(coordinatorService.listTopics()).thenReturn(CompletableFuture.completedFuture(res));
   }
 

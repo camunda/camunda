@@ -24,7 +24,9 @@ import org.agrona.DirectBuffer;
  * </pre>
  *
  * <p>The key is optional. When {@code keyLength == 0}, there is no key and the value starts
- * immediately after the keyLength field.
+ * immediately after the keyLength field. A keyed entry ({@code keyLength > 0}) with an empty value
+ * is a <em>tombstone</em> — see {@link #isTombstone()} — the deletion marker for latest-per-key
+ * retention on a {@code COMPACT} topic (event-bridge ADR 0001).
  *
  * <p>The value is the raw event payload. The broker treats it as opaque bytes. The content type
  * (JSON, Protobuf, etc.) is defined per-batch in the batch header's {@code attributes} field — not
@@ -124,6 +126,16 @@ public final class EventBridgeEntry {
   /** Returns {@code true} if this entry has a key (keyLength &gt; 0). */
   public boolean hasKey() {
     return keyLength > 0;
+  }
+
+  /**
+   * Returns {@code true} if this entry is a tombstone: a keyed entry (see {@link #hasKey()}) with
+   * an empty value — the deletion marker for latest-per-key retention (event-bridge ADR 0001).
+   * Callers must use this accessor rather than inferring the convention from {@link
+   * #getValueLength()} themselves.
+   */
+  public boolean isTombstone() {
+    return hasKey() && valueLength == 0;
   }
 
   /** Returns the byte length of the key (0 if no key). */

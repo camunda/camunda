@@ -84,7 +84,8 @@ public record EventBridgeProperties(
                     t.partitionCount() != null ? t.partitionCount() : broker.partitionCount(),
                     t.replicationFactor() != null
                         ? t.replicationFactor()
-                        : raft.replicationFactor()))
+                        : raft.replicationFactor(),
+                    t.cleanupPolicy() != null ? t.cleanupPolicy() : "DELETE"))
         .toList();
   }
 
@@ -96,8 +97,11 @@ public record EventBridgeProperties(
    *     unset
    * @param replicationFactor number of replicas per partition; defaults to {@code
    *     raft.replicationFactor} when unset
+   * @param cleanupPolicy retention policy, {@code "DELETE"} or {@code "COMPACT"} (event-bridge ADR
+   *     0001); defaults to {@code "DELETE"} — today's behavior — when unset
    */
-  public record TopicProperties(String name, Integer partitionCount, Integer replicationFactor) {}
+  public record TopicProperties(
+      String name, Integer partitionCount, Integer replicationFactor, String cleanupPolicy) {}
 
   /**
    * Auto-rebalance configuration. When enabled, the metadata leader incrementally spreads each

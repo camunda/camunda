@@ -9,6 +9,7 @@ package io.camunda.eventbridge.clustermetadata.record;
 
 import io.camunda.eventbridge.clustermetadata.state.topic.PartitionReplicas;
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata;
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -37,6 +38,10 @@ public final class TopicRecord extends UnifiedRecordValue {
   private final IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor", 0);
   private final StringProperty statusProp =
       new StringProperty("status", TopicMetadata.TopicStatus.CREATING.name());
+  // Retention policy (event-bridge ADR 0001); defaults to DELETE (today's behavior) so a command
+  // encoded before this field existed decodes unchanged.
+  private final StringProperty cleanupPolicyProp =
+      new StringProperty("cleanupPolicy", CleanupPolicy.DELETE.name());
 
   // Centrally-decided placement (partition id -> replica node ids), as structured msgpack.
   private final ArrayProperty<PartitionReplicas> assignmentProp =
@@ -55,7 +60,7 @@ public final class TopicRecord extends UnifiedRecordValue {
   private final LongProperty leaderTermProp = new LongProperty("leaderTerm", -1L);
 
   public TopicRecord() {
-    super(11);
+    super(12);
     declareProperty(nameProp)
         .declareProperty(opProp)
         .declareProperty(partitionCountProp)
@@ -66,7 +71,8 @@ public final class TopicRecord extends UnifiedRecordValue {
         .declareProperty(passiveProp)
         .declareProperty(partitionIdProp)
         .declareProperty(leaderNodeProp)
-        .declareProperty(leaderTermProp);
+        .declareProperty(leaderTermProp)
+        .declareProperty(cleanupPolicyProp);
   }
 
   /**
@@ -171,6 +177,16 @@ public final class TopicRecord extends UnifiedRecordValue {
     return this;
   }
 
+  /** The topic's retention policy (event-bridge ADR 0001); {@code DELETE} unless set otherwise. */
+  public CleanupPolicy getCleanupPolicy() {
+    return CleanupPolicy.valueOf(BufferUtil.bufferAsString(cleanupPolicyProp.getValue()));
+  }
+
+  public TopicRecord setCleanupPolicy(final CleanupPolicy cleanupPolicy) {
+    cleanupPolicyProp.setValue(cleanupPolicy.name());
+    return this;
+  }
+
   public int getLeaderNode() {
     return leaderNodeProp.getValue();
   }
@@ -197,6 +213,7 @@ public final class TopicRecord extends UnifiedRecordValue {
         TopicMetadata.TopicStatus.valueOf(getStatus()),
         getAssignment(),
         getTarget(),
-        getPassive());
+        getPassive(),
+        getCleanupPolicy());
   }
 }

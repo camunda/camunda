@@ -47,8 +47,11 @@ public class ListTopicsResponse extends UnpackedObject {
       final int partitionCount,
       final int replicationFactor,
       final String status,
-      final Map<Integer, List<Integer>> assignment) {
-    topicsProp.add().set(name, partitionCount, replicationFactor, status, assignment);
+      final Map<Integer, List<Integer>> assignment,
+      final String cleanupPolicy) {
+    topicsProp
+        .add()
+        .set(name, partitionCount, replicationFactor, status, assignment, cleanupPolicy);
     return this;
   }
 
@@ -63,7 +66,8 @@ public class ListTopicsResponse extends UnpackedObject {
                     entry.getPartitionCount(),
                     entry.getReplicationFactor(),
                     entry.getStatus(),
-                    entry.getAssignment())));
+                    entry.getAssignment(),
+                    entry.getCleanupPolicy())));
     return topics;
   }
 
@@ -73,5 +77,6 @@ public class ListTopicsResponse extends UnpackedObject {
       int partitionCount,
       int replicationFactor,
       String status,
-      Map<Integer, List<Integer>> assignment) {}
+      Map<Integer, List<Integer>> assignment,
+      String cleanupPolicy) {}
 }

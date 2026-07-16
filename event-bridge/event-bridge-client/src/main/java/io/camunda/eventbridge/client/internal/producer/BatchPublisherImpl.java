@@ -63,6 +63,12 @@ public final class BatchPublisherImpl implements BatchPublisher {
   }
 
   @Override
+  public BatchPublisher keyed() {
+    batchBuilder.keyed();
+    return this;
+  }
+
+  @Override
   public CompletableFuture<List<Long>> publishToTopic(final String topic, final int partitionId) {
     if (batchBuilder.entryCount() == 0) {
       return CompletableFuture.failedFuture(new IllegalStateException("Batch is empty"));

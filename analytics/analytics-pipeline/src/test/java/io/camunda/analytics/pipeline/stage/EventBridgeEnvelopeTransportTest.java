@@ -164,6 +164,11 @@ final class EventBridgeEnvelopeTransportTest {
     }
 
     @Override
+    public BatchPublisher keyed() {
+      return this;
+    }
+
+    @Override
     public CompletableFuture<List<Long>> publishToTopic(final String topic, final int partitionId) {
       final Publish publish =
           new Publish(partitionId, List.copyOf(frames), new CompletableFuture<>());

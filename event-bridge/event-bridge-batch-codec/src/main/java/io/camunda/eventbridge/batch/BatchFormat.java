@@ -30,7 +30,12 @@ package io.camunda.eventbridge.batch;
  *
  * <p>The CRC covers bytes from {@code attributes} (offset 28) to the end of the batch; position,
  * batchLength, version, timestamp and the crc field itself are excluded so the broker can patch
- * position/timestamp without recomputing it.
+ * position/timestamp without recomputing it — the CRC range includes every entry's key and value
+ * bytes, so a corrupted key is caught exactly like a corrupted value.
+ *
+ * <p>{@code attributes} bits: 0-2 compression codec ({@link #COMPRESSION_MASK}), bit 3 {@link
+ * #KEYED_MASK} (the producer declares this batch's keys meaningful for latest-per-key retention),
+ * bits 4-31 reserved.
  */
 public final class BatchFormat {
 
@@ -56,6 +61,14 @@ public final class BatchFormat {
   public static final int COMPRESSION_LZ4 = 1;
   public static final int COMPRESSION_ZSTD = 2;
   public static final int COMPRESSION_SNAPPY = 3;
+
+  // -- Attribute bit mask: KEYED flag in bit 3 --
+  //
+  // Every entry already carries an optional key (keyLength = 0 means none) — this is not a framing
+  // switch. KEYED is a batch-level declaration that the producer intends the keys to be meaningful
+  // for latest-per-key retention (event-bridge ADR 0001): it gates publish validation against a
+  // COMPACT topic and marks empty-value keyed entries as tombstones rather than plain empty values.
+  public static final int KEYED_MASK = 0x08;
 
   // -- Entry layout: [entryLength(4)][keyLength(4)][key][value] --
   public static final int ENTRY_LENGTH_SIZE = Integer.BYTES;

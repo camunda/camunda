@@ -98,6 +98,9 @@ message TopicCreateRequest {
   string name = 1;
   int32 partition_count = 2;
   int32 replication_factor = 3;
+  // Retention policy: "DELETE" or "COMPACT" (event-bridge ADR 0001). Unset (empty string) defaults
+  // to "DELETE" — today's behavior — so existing callers are unaffected.
+  string cleanup_policy = 4;
 }
 
 // A topic as held in the registry.
@@ -106,6 +109,7 @@ message TopicInfo {
   int32 partition_count = 2;
   int32 replication_factor = 3;
   string status = 4;
+  string cleanup_policy = 5;
 }
 
 // Response to GET /v1/topics.
