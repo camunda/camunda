@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.AgentInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -50,7 +49,6 @@ public final class AgentInstanceCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
-  private final AgentInstanceState agentInstanceState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
 
@@ -64,7 +62,6 @@ public final class AgentInstanceCreateProcessor
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
-    agentInstanceState = processingState.getAgentInstanceState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
   }
@@ -99,28 +96,18 @@ public final class AgentInstanceCreateProcessor
       return;
     }
 
-    // Idempotent CREATE: if an agent instance already exists, return the existing one to the
-    // client (the public API has no 409). Reject on the stream to suppress a duplicate CREATED
-    // event, but respond with the existing record so the client sees the same result as the
-    // original CREATE. This check runs before the active-state and element-type guards so that a
-    // late retry against an element instance that has since left ACTIVE (e.g. parked in
-    // COMPLETING behind an incident) still returns the existing record rather than INVALID_STATE.
+    // Reject CREATE when an agent instance already exists for this element instance. The existence
+    // check runs before the active-state and element-type guards so that a late retry against an
+    // element instance that has since left ACTIVE (e.g. parked in COMPLETING behind an incident)
+    // gets ALREADY_EXISTS rather than INVALID_STATE. Both the stream rejection and the HTTP
+    // response are consistent: no success event is emitted.
     final var existingAgentInstanceKey = elementInstance.getAgentInstanceKey();
     if (existingAgentInstanceKey != -1L) {
-      final var existingRecord = agentInstanceState.getRecord(existingAgentInstanceKey);
-      // The stored record carries the changedAttributes from the last UPDATE that touched it. On
-      // CREATED that field is contractually empty (see
-      // AgentInstanceRecordValue#getChangedAttributes),
-      // so strip it before responding. getRecord returns a fresh deserialization, so this mutation
-      // does not leak back into state.
-      existingRecord.setChangedAttributes(List.of());
-      rejectionWriter.appendRejection(
+      writeRejection(
           command,
           RejectionType.ALREADY_EXISTS,
           ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS.formatted(
               elementInstanceKey, existingAgentInstanceKey));
-      responseWriter.writeAcceptedResponseOnCommand(
-          existingAgentInstanceKey, AgentInstanceIntent.CREATED, existingRecord, command);
       return;
     }
 
