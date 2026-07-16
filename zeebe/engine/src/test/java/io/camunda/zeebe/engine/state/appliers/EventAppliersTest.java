@@ -180,10 +180,9 @@ public class EventAppliersTest {
             .filter(Intent::isEvent)
             // CheckpointIntent is not handled by the engine
             .filter(intent -> !(intent instanceof CheckpointIntent))
-            // todo delete these filters after the suspend/resume appliers are implemented
+            // todo delete this filter after the suspend applier is implemented
             //  (https://github.com/camunda/camunda/issues/57506)
-            .filter(intent -> intent != ProcessInstanceIntent.SUSPENDED)
-            .filter(intent -> intent != ProcessInstanceIntent.RESUMED);
+            .filter(intent -> intent != ProcessInstanceIntent.SUSPENDED);
 
     // when
     eventAppliers.registerEventAppliers(mock(MutableProcessingState.class));

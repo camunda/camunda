@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreatio
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationMigrateProcessor;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceModificationModifyProcessor;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceResumeProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -167,6 +168,10 @@ public final class BpmnProcessors {
         ProcessInstanceIntent.CANCEL,
         new ProcessInstanceCancelProcessor(
             processingState, writers, asyncRequestBehavior, authCheckBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.PROCESS_INSTANCE,
+        ProcessInstanceIntent.RESUME,
+        new ProcessInstanceResumeProcessor(processingState, writers, authCheckBehavior));
   }
 
   private static void addBpmnStepProcessor(

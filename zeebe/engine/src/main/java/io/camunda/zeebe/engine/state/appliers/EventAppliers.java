@@ -412,6 +412,7 @@ public final class EventAppliers implements EventApplier {
         RuntimeInstructionIntent.INTERRUPTED,
         new RuntimeInstructionInterruptedApplier(elementInstanceState));
     register(ProcessInstanceIntent.CANCELING, NOOP_EVENT_APPLIER);
+    register(ProcessInstanceIntent.RESUMED, new ProcessInstanceResumedApplier());
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {

@@ -326,6 +326,24 @@ public final class ProcessInstanceClient {
         (processInstanceKey) ->
             RecordingExporter.errorRecords().withIntent(ErrorIntent.CREATED).getFirst();
 
+    public static final Function<Long, Record<ProcessInstanceRecordValue>> RESUMED_EXPECTATION =
+        (processInstanceKey) ->
+            RecordingExporter.processInstanceRecords()
+                .withRecordKey(processInstanceKey)
+                .withIntent(ProcessInstanceIntent.RESUMED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst();
+
+    public static final Function<Long, Record<ProcessInstanceRecordValue>>
+        RESUME_REJECTION_EXPECTATION =
+            (processInstanceKey) ->
+                RecordingExporter.processInstanceRecords()
+                    .onlyCommandRejections()
+                    .withIntent(ProcessInstanceIntent.RESUME)
+                    .withRecordKey(processInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .getFirst();
+
     private static final int DEFAULT_PARTITION = -1;
     private final CommandWriter writer;
     private final long processInstanceKey;
@@ -333,6 +351,8 @@ public final class ProcessInstanceClient {
     private String[] authorizedTenants;
     private int partition = DEFAULT_PARTITION;
     private Function<Long, Record<ProcessInstanceRecordValue>> expectation = SUCCESS_EXPECTATION;
+    private Function<Long, Record<ProcessInstanceRecordValue>> resumeExpectation =
+        RESUMED_EXPECTATION;
 
     public ExistingInstanceClient(final CommandWriter writer, final long processInstanceKey) {
       this.writer = writer;
@@ -355,6 +375,11 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ExistingInstanceClient expectResumeRejection() {
+      resumeExpectation = RESUME_REJECTION_EXPECTATION;
+      return this;
+    }
+
     public Record<ProcessInstanceRecordValue> cancel() {
       writeCancelCommand();
       return expectation.apply(processInstanceKey);
@@ -368,6 +393,16 @@ public final class ProcessInstanceClient {
     public Record<ErrorRecordValue> cancelWithError() {
       writeCancelCommand();
       return ERROR_EXPECTATION.apply(processInstanceKey);
+    }
+
+    public Record<ProcessInstanceRecordValue> resume() {
+      writeResumeCommand();
+      return resumeExpectation.apply(processInstanceKey);
+    }
+
+    public Record<ProcessInstanceRecordValue> resume(final String username) {
+      writeResumeCommandWithUserKey(username);
+      return resumeExpectation.apply(processInstanceKey);
     }
 
     private void writeCancelCommand() {
@@ -400,6 +435,41 @@ public final class ProcessInstanceClient {
           partition,
           processInstanceKey,
           ProcessInstanceIntent.CANCEL,
+          username,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
+    }
+
+    private void writeResumeCommand() {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          ProcessInstanceIntent.RESUME,
+          new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
+          authorizedTenants);
+    }
+
+    private void writeResumeCommandWithUserKey(final String username) {
+      if (partition == DEFAULT_PARTITION) {
+        partition =
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getPartitionId();
+      }
+
+      writer.writeCommandOnPartition(
+          partition,
+          processInstanceKey,
+          ProcessInstanceIntent.RESUME,
           username,
           new ProcessInstanceRecord().setProcessInstanceKey(processInstanceKey),
           authorizedTenants);
