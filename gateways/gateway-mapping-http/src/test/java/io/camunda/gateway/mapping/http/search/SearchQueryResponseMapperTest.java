@@ -1217,6 +1217,66 @@ class SearchQueryResponseMapperTest {
         .containsExactly("create", "update");
   }
 
+  @Test
+  void shouldMapClusterVariableGetResult() {
+    // given
+    final var entity =
+        new ClusterVariableEntity(
+            "id",
+            "name",
+            "value",
+            null,
+            false,
+            ClusterVariableScope.GLOBAL,
+            null,
+            List.of(
+                new MetadataEntry("kind", "CREDENTIAL", null),
+                new MetadataEntry("schemaVersion", null, 2.0)));
+
+    // when
+    final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
+
+    // then
+    assertThat(result.getMetadata())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "CREDENTIAL", "schemaVersion", 2.0));
+  }
+
+  @Test
+  void shouldMapClusterVariableGetResultWithoutMetadata() {
+    // given
+    final var entity =
+        new ClusterVariableEntity(
+            "id", "name", "value", null, false, ClusterVariableScope.GLOBAL, null, List.of());
+
+    // when
+    final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
+
+    // then
+    assertThat(result.getMetadata()).isEmpty();
+  }
+
+  @Test
+  void shouldMapClusterVariableSearchResult() {
+    // given
+    final var entity =
+        new ClusterVariableEntity(
+            "id",
+            "name",
+            "value",
+            null,
+            false,
+            ClusterVariableScope.GLOBAL,
+            null,
+            List.of(new MetadataEntry("kind", "CREDENTIAL", null)));
+
+    // when
+    final var result = SearchQueryResponseMapper.toClusterVariableSearchResult(entity, true);
+
+    // then
+    assertThat(result.getMetadata())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "CREDENTIAL"));
+  }
+
   @Nested
   class AgentHistoryItemResult {
 
@@ -1390,65 +1450,5 @@ class SearchQueryResponseMapperTest {
       assertThat(response.getItems()).hasSize(1);
       assertThat(response.getItems().get(0).getHistoryItemKey()).isEqualTo("42");
     }
-  }
-
-  @Test
-  void shouldMapClusterVariableGetResult() {
-    // given
-    final var entity =
-        new ClusterVariableEntity(
-            "id",
-            "name",
-            "value",
-            null,
-            false,
-            ClusterVariableScope.GLOBAL,
-            null,
-            List.of(
-                new MetadataEntry("kind", "CREDENTIAL", null),
-                new MetadataEntry("schemaVersion", null, 2.0)));
-
-    // when
-    final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
-
-    // then
-    assertThat(result.getMetadata())
-        .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "CREDENTIAL", "schemaVersion", 2.0));
-  }
-
-  @Test
-  void shouldMapClusterVariableGetResultWithoutMetadata() {
-    // given
-    final var entity =
-        new ClusterVariableEntity(
-            "id", "name", "value", null, false, ClusterVariableScope.GLOBAL, null, List.of());
-
-    // when
-    final var result = SearchQueryResponseMapper.toClusterVariableResult(entity);
-
-    // then
-    assertThat(result.getMetadata()).isEmpty();
-  }
-
-  @Test
-  void shouldMapClusterVariableSearchResult() {
-    // given
-    final var entity =
-        new ClusterVariableEntity(
-            "id",
-            "name",
-            "value",
-            null,
-            false,
-            ClusterVariableScope.GLOBAL,
-            null,
-            List.of(new MetadataEntry("kind", "CREDENTIAL", null)));
-
-    // when
-    final var result = SearchQueryResponseMapper.toClusterVariableSearchResult(entity, true);
-
-    // then
-    assertThat(result.getMetadata())
-        .containsExactlyInAnyOrderEntriesOf(Map.of("kind", "CREDENTIAL"));
   }
 }

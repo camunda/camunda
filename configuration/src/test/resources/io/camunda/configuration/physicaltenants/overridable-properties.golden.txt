@@ -15,6 +15,7 @@ api.long-polling.enabled
 api.long-polling.min-empty-responses
 api.long-polling.probe-timeout
 api.long-polling.timeout
+api.rest.cluster-variable.max-metadata-size
 api.rest.process-cache.expiration-idle
 api.rest.process-cache.max-size
 cluster.global-listeners.user-task

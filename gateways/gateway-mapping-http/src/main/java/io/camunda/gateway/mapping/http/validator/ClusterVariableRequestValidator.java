@@ -97,6 +97,13 @@ public class ClusterVariableRequestValidator {
     if (metadata == null || metadata.isEmpty()) {
       return violations;
     }
+
+    if (metadata.size() > MAX_METADATA_ENTRIES) {
+      violations.add(
+          ERROR_MESSAGE_TOO_MANY_METADATA_ENTRIES.formatted(metadata.size(), MAX_METADATA_ENTRIES));
+      return violations;
+    }
+
     metadata.forEach(
         (key, value) -> {
           if (!(value instanceof String) && !(value instanceof Number)) {
@@ -105,10 +112,6 @@ public class ClusterVariableRequestValidator {
                     key, value == null ? "null" : value.getClass().getSimpleName()));
           }
         });
-    if (metadata.size() > MAX_METADATA_ENTRIES) {
-      violations.add(
-          ERROR_MESSAGE_TOO_MANY_METADATA_ENTRIES.formatted(metadata.size(), MAX_METADATA_ENTRIES));
-    }
     final int serializedSize = serializedMetadataLength(metadata);
     if (serializedSize > maxMetadataSize) {
       violations.add(ERROR_MESSAGE_METADATA_TOO_LARGE.formatted(maxMetadataSize));

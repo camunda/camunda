@@ -18,7 +18,7 @@ public class GatewayRestConfiguration {
 
   /**
    * Matches the default length of the {@code CLUSTER_VARIABLE.VAR_NAME} RDBMS column ({@code
-   * NVARCHAR(256)}) and {@code CLUSTER_VARIABLE.VAR_VALUE} RDBMS column ({@code VARCHAR(8192)}.
+   * NVARCHAR(256)}) and {@code CLUSTER_VARIABLE.VAR_VALUE} RDBMS column ({@code VARCHAR(8192)}).
    */
   private static final int MAX_CLUSTER_VARIABLE_METADATA_ENTRY_LENGTH = 256 + 8192;
 
