@@ -229,6 +229,45 @@ public final class JobSecretReferenceTest {
     assertThat(listenerJob.getValue().getSecretReferences()).isEmpty();
   }
 
+  @Test
+  public void shouldStoreSecretReferenceOnAdHocSubProcessJob() {
+    // given a job-based ad-hoc sub-process that references a secret in its input mapping
+    final String processId = "process-ahsp";
+    final String jobType = "ahsp-type";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .adHocSubProcess(
+                    TASK_ID,
+                    ahsp -> {
+                      ahsp.task("inner");
+                      ahsp.zeebeInputExpression("camunda.secrets.token", "auth.token");
+                    })
+                .zeebeJobType(jobType)
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withJobKind(JobKind.AD_HOC_SUB_PROCESS)
+            .getFirst();
+
+    assertThat(jobCreated.getValue().getSecretReferences())
+        .extracting(
+            JobSecretReferenceValue::getStoreId,
+            JobSecretReferenceValue::getSecretReference,
+            JobSecretReferenceValue::getPath)
+        .containsExactly(tuple("", "token", "/auth/token"));
+  }
+
   private static BpmnModelInstance processWithServiceTask(
       final Consumer<io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder> modifier) {
     return Bpmn.createExecutableProcess(PROCESS_ID)

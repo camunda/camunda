@@ -443,7 +443,7 @@ public final class BpmnJobBehavior {
         JobKind.AD_HOC_SUB_PROCESS,
         JobListenerEventType.UNSPECIFIED,
         element.getJobWorkerProperties().getTaskHeaders(),
-        Map.of());
+        element.getSecretReferences());
   }
 
   private Either<Failure, JobProperties> evaluateTaskListenerJobExpressions(
