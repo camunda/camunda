@@ -8,11 +8,8 @@
 package io.camunda.eventbridge.broker.compaction;
 
 import java.nio.file.Path;
-import java.time.Instant;
-import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 
@@ -26,7 +23,6 @@ final class CompactionTestSupport {
       final Path directory,
       final CompactionConfig config,
       final DirtyLogReader dirtyLog,
-      final InstantSource clock,
       final LongSupplier lastCommittedPosition,
       final CompactionPass.Fault fault) {
     final var store = new FileManifestStore(directory);
@@ -34,8 +30,7 @@ final class CompactionTestSupport {
     final BooleanSupplier externalPredicate = () -> true;
     final var trash = new TrashQueue(directory, leases, store::latest, externalPredicate);
     final var pass =
-        new CompactionPass(
-            directory, config, store, dirtyLog, trash, clock, lastCommittedPosition, fault);
+        new CompactionPass(directory, config, store, dirtyLog, trash, lastCommittedPosition, fault);
     return new Harness(directory, store, leases, trash, pass);
   }
 
@@ -70,33 +65,6 @@ final class CompactionTestSupport {
           return;
         }
       }
-    }
-  }
-
-  /** A settable {@link InstantSource} for deterministic tombstone-grace tests (no wall-clock). */
-  static final class MutableInstantSource implements InstantSource {
-    private final AtomicLong millis;
-
-    MutableInstantSource(final long initialMillis) {
-      millis = new AtomicLong(initialMillis);
-    }
-
-    void advance(final long deltaMillis) {
-      millis.addAndGet(deltaMillis);
-    }
-
-    void set(final long absoluteMillis) {
-      millis.set(absoluteMillis);
-    }
-
-    @Override
-    public Instant instant() {
-      return Instant.ofEpochMilli(millis.get());
-    }
-
-    @Override
-    public long millis() {
-      return millis.get();
     }
   }
 }

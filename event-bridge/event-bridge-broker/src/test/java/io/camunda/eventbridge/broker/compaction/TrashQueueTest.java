@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
@@ -38,11 +37,11 @@ final class TrashQueueTest {
     leases = new ReaderLeaseRegistry();
 
     // Commit a manifest that references one "kept" segment.
-    final var writer = new CleanSegmentWriter(dir, 5, 1, 1 << 20);
+    final var writer = new CleanSegmentWriter(dir, 5, 1 << 20);
     writer.append(put(1, "a", "va"));
     final List<CleanSegment> segments = writer.finish();
     store.commit(
-        new CompactionManifest(CompactionManifest.VERSION_1, 5, segments, Map.of()),
+        new CompactionManifest(CompactionManifest.VERSION_1, 5, 1, segments),
         List.of(dir.resolve(segments.get(0).fileName())));
     keptFile = dir.resolve(segments.get(0).fileName());
   }

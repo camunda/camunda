@@ -17,7 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.eventbridge.broker.compaction.CompactionPass.Fault;
 import io.camunda.eventbridge.broker.compaction.CompactionTestSupport.Harness;
 import io.camunda.eventbridge.broker.compaction.CompactionTestSupport.ListDirtyLogReader;
-import io.camunda.eventbridge.broker.compaction.CompactionTestSupport.MutableInstantSource;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -31,7 +30,6 @@ final class CompactionPassTest {
   @TempDir Path dir;
 
   private final AtomicLong lastCommitted = new AtomicLong();
-  private final MutableInstantSource clock = new MutableInstantSource(1_000);
 
   private static CompactionConfig config() {
     return new CompactionConfig(0, 1 << 20, Duration.ofHours(1), 1 << 16, Duration.ofSeconds(1));
@@ -39,7 +37,7 @@ final class CompactionPassTest {
 
   private Harness harness(final List<CompactionRecord> records) {
     return CompactionTestSupport.harness(
-        dir, config(), new ListDirtyLogReader(records), clock, lastCommitted::get, Fault.none());
+        dir, config(), new ListDirtyLogReader(records), lastCommitted::get, Fault.none());
   }
 
   @Test
@@ -119,7 +117,6 @@ final class CompactionPassTest {
             dir,
             lagged,
             new ListDirtyLogReader(List.of(put(1, "a", "v1"))),
-            clock,
             lastCommitted::get,
             Fault.none());
     lastCommitted.set(1);

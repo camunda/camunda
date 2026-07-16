@@ -43,7 +43,7 @@ final class CleanSegmentWriterReaderTest {
   @Test
   void shouldRoundTripRecordsPreservingAllFields() {
     // given
-    final var writer = new CleanSegmentWriter(dir, 100, 42L, 1 << 20);
+    final var writer = new CleanSegmentWriter(dir, 100, 1 << 20);
     final var records =
         List.of(put(10, "a", "va"), tombstone(20, "b"), unkeyed(30, "raw"), put(40, "c", "vc"));
 
@@ -63,7 +63,7 @@ final class CleanSegmentWriterReaderTest {
   @Test
   void shouldRollToMultipleSegmentsAtSizeBound() {
     // given a tiny size bound so every record rolls into its own segment
-    final var writer = new CleanSegmentWriter(dir, 100, 1L, 64);
+    final var writer = new CleanSegmentWriter(dir, 100, 64);
     final var records = List.of(put(1, "a", "va"), put(2, "b", "vb"), put(3, "c", "vc"));
 
     // when
@@ -79,7 +79,7 @@ final class CleanSegmentWriterReaderTest {
   @Test
   void shouldSeekToFirstBatchAtOrAfterTarget() {
     // given a segment with a gap between positions 20 and 50
-    final var writer = new CleanSegmentWriter(dir, 100, 1L, 1 << 20);
+    final var writer = new CleanSegmentWriter(dir, 100, 1 << 20);
     writer.append(put(10, "a", "va"));
     writer.append(put(20, "b", "vb"));
     writer.append(put(50, "c", "vc"));
@@ -97,7 +97,7 @@ final class CleanSegmentWriterReaderTest {
   @Test
   void shouldSeekToExactPosition() {
     // given
-    final var writer = new CleanSegmentWriter(dir, 100, 1L, 1 << 20);
+    final var writer = new CleanSegmentWriter(dir, 100, 1 << 20);
     writer.append(put(10, "a", "va"));
     writer.append(put(20, "b", "vb"));
     final CleanSegment segment = writer.finish().get(0);
@@ -113,7 +113,7 @@ final class CleanSegmentWriterReaderTest {
   @Test
   void shouldBehaveDistinctlyBelowStartAndBeyondEnd() {
     // given
-    final var writer = new CleanSegmentWriter(dir, 100, 1L, 1 << 20);
+    final var writer = new CleanSegmentWriter(dir, 100, 1 << 20);
     writer.append(put(10, "a", "va"));
     writer.append(put(20, "b", "vb"));
     final CleanSegment segment = writer.finish().get(0);
@@ -142,7 +142,7 @@ final class CleanSegmentWriterReaderTest {
             "a".getBytes(StandardCharsets.UTF_8),
             "va".getBytes(StandardCharsets.UTF_8),
             attributes);
-    final var writer = new CleanSegmentWriter(dir, 100, 42L, 1 << 20);
+    final var writer = new CleanSegmentWriter(dir, 100, 1 << 20);
 
     // when
     writer.append(record);
@@ -170,8 +170,8 @@ final class CleanSegmentWriterReaderTest {
     final var records = List.of(put(10, "a", "va"), tombstone(20, "b"), put(30, "c", "vc"));
 
     // when
-    final var writerA = new CleanSegmentWriter(dirA, 100, 7L, 1 << 20);
-    final var writerB = new CleanSegmentWriter(dirB, 100, 7L, 1 << 20);
+    final var writerA = new CleanSegmentWriter(dirA, 100, 1 << 20);
+    final var writerB = new CleanSegmentWriter(dirB, 100, 1 << 20);
     records.forEach(writerA::append);
     records.forEach(writerB::append);
     final CleanSegment a = writerA.finish().get(0);

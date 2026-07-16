@@ -9,21 +9,18 @@ package io.camunda.eventbridge.broker.compaction;
 
 import io.camunda.eventbridge.broker.compaction.KeyHash.Hash128;
 import java.nio.file.Path;
-import java.time.InstantSource;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 /**
- * The deterministic core of the cleaner — a stateless idempotent function of the durable log and
- * the committed manifest (ADR 0001, consequences). One {@link #runOnce()} folds the raw log up to a
+ * The deterministic core of the cleaner — a pure, idempotent function of the durable log and the
+ * committed manifest (ADR 0001, consequences). One {@link #runOnce()} folds the raw log up to a
  * freshly-picked cleaner point into a new clean set and commits it. It has no mutable state of its
- * own between passes: everything it needs it reads from the injected seams, so it is directly
- * unit-testable without a running partition, and a crash simply means the next call reruns from the
- * last committed manifest.
+ * own between passes and takes <em>no wall-clock input</em>: everything it needs it reads from the
+ * injected seams, so it is directly unit-testable without a running partition, its determinism is
+ * unconditional, and a crash simply means the next call reruns from the last committed manifest.
  *
  * <h3>The pass, step by step</h3>
  *
@@ -34,16 +31,34 @@ import java.util.stream.Collectors;
  *       from the committed log, so every replica picks the same C for the same log state — the
  *       basis of replica-local determinism. (See the position-based-C note below.)
  *   <li><b>Build map.</b> One ascending scan of the dirty range {@code (C_prev, C]} fills the
- *       {@link KeyOffsetMap} with the latest position per key. On overflow the effective C is
- *       lowered to the highest fully-absorbed position and a later pass finishes the range.
+ *       {@link KeyOffsetMap} with the latest position per key and advances the log clock (below).
+ *       On overflow the effective C is lowered to the highest fully-absorbed position and a later
+ *       pass finishes the range.
  *   <li><b>Sweep.</b> The previous clean set then the dirty range are streamed in position order; a
  *       record is kept only if it is the latest for its key (or key-less), with tombstone two-touch
- *       grace applied. Positions are preserved verbatim — dropped records leave gaps.
+ *       grace applied against the log clock. Positions are preserved verbatim — dropped records
+ *       leave gaps.
  *   <li><b>Commit.</b> The new manifest + segments are published atomically through {@link
  *       ManifestStore}. This is the only durability point.
  *   <li><b>Tidy.</b> Superseded segment files are handed to the {@link TrashQueue} and a drain is
  *       attempted.
  * </ol>
+ *
+ * <h3>Tombstone grace on the log clock (fully deterministic)</h3>
+ *
+ * <p>A tombstone at position {@code P} is dropped iff {@code logClock(C) − timestamp(P) >
+ * graceMillis} <em>and</em> {@code P ≤ C_prev} (two-touch: it survived at least one committed
+ * pass). {@code timestamp(P)} is the record's own broker-assigned timestamp, preserved through
+ * rewrap; {@code logClock(C)} is the running maximum of record timestamps observed up to C,
+ * persisted as the manifest's {@code maxLogTimestamp} and advanced monotonically each pass — the
+ * running maximum, never the raw last timestamp, because leader changes can make raw timestamps
+ * wobble backwards. Both inputs are log-derived, so every replica makes the identical drop
+ * decision.
+ *
+ * <p>Consequence: an <em>idle partition freezes the log clock</em> — no new records means {@code
+ * logClock} does not advance, so tombstones at the grace boundary are RETAINED until traffic
+ * resumes. That is the safe failure direction: a rebuilding reader keeps seeing the delete for as
+ * long as the partition is quiet.
  *
  * <h3>Position-based cleaner point (deviation flag)</h3>
  *
@@ -60,14 +75,6 @@ import java.util.stream.Collectors;
  * treats them as compactable — they have no key to coalesce on. Once step 5 lands, a compacted
  * topic will contain only keyed records; until then this is the faithful pre-validation behavior.
  *
- * <h3>Determinism and the tombstone-grace caveat</h3>
- *
- * <p>Given identical inputs and identical {@link InstantSource} readings, two runs produce
- * byte-identical segments and manifest. The one wall-clock input is the tombstone grace stamp: it
- * is read from {@link InstantSource} (never the system clock directly, never {@code Thread.sleep}).
- * Note that grace is therefore wall-clock <em>per replica</em> — see {@link LogCleaner} for the
- * cross-replica implications.
- *
  * <p>Threading: a pass instance is owned and driven by the single cleaner actor; {@link #runOnce()}
  * is not re-entrant.
  */
@@ -78,7 +85,6 @@ public final class CompactionPass {
   private final ManifestStore manifestStore;
   private final DirtyLogReader dirtyLog;
   private final TrashQueue trashQueue;
-  private final InstantSource clock;
   private final LongSupplier lastCommittedPosition;
   private final Fault fault;
 
@@ -88,7 +94,6 @@ public final class CompactionPass {
    * @param manifestStore the durability seam (the commit point)
    * @param dirtyLog the raw-log read seam
    * @param trashQueue the deferred-deletion queue for superseded files
-   * @param clock the time source for tombstone grace stamps (inject a fixed source in tests)
    * @param lastCommittedPosition supplies the partition's highest committed position
    * @param fault a crash-injection hook for tests; use {@link Fault#none()} in production
    */
@@ -98,7 +103,6 @@ public final class CompactionPass {
       final ManifestStore manifestStore,
       final DirtyLogReader dirtyLog,
       final TrashQueue trashQueue,
-      final InstantSource clock,
       final LongSupplier lastCommittedPosition,
       final Fault fault) {
     this.directory = directory;
@@ -106,7 +110,6 @@ public final class CompactionPass {
     this.manifestStore = manifestStore;
     this.dirtyLog = dirtyLog;
     this.trashQueue = trashQueue;
-    this.clock = clock;
     this.lastCommittedPosition = lastCommittedPosition;
     this.fault = fault;
   }
@@ -128,18 +131,32 @@ public final class CompactionPass {
       return PassResult.nothingToDo(cPrev);
     }
 
-    // -- Phase: build the latest-per-key map over the dirty range (cPrev, targetC] --
+    // -- Phase: build the latest-per-key map over the dirty range (cPrev, targetC] and advance the
+    // log clock. Positions arrive in ascending order, so when a keyed record at position p is
+    // absorbed, runningMax covers exactly the scanned prefix ≤ p — that is what makes the clock at
+    // an overflow-lowered C well-defined (it must be a function of the log up to C, not beyond).
     final var map = new KeyOffsetMap(config.keyMapCapacity());
+    final long[] runningMax = {prev.maxLogTimestamp()};
+    final long[] runningMaxAtFit = {prev.maxLogTimestamp()};
     dirtyLog.read(
         cPrev,
         targetC,
         record -> {
+          if (record.timestamp() > runningMax[0]) {
+            runningMax[0] = record.timestamp();
+          }
           if (record.hasKey()) {
-            return map.recordLatest(KeyHash.hash(record.key()), record.position());
+            final boolean absorbed =
+                map.recordLatest(KeyHash.hash(record.key()), record.position());
+            if (absorbed) {
+              runningMaxAtFit[0] = runningMax[0];
+            }
+            return absorbed;
           }
           return true;
         });
     final long effectiveC = map.overflowed() ? map.highestFitPosition() : targetC;
+    final long logClock = map.overflowed() ? runningMaxAtFit[0] : runningMax[0];
     fault.onPhase(Phase.MAP_BUILT);
     if (effectiveC <= cPrev) {
       // Overflowed before absorbing anything past the previous point; cannot make progress this
@@ -150,15 +167,13 @@ public final class CompactionPass {
     }
 
     // -- Phase: sweep previous clean set + dirty range in position order --
-    final long now = clock.millis();
-    final var writer = new CleanSegmentWriter(directory, effectiveC, now, config.maxSegmentBytes());
-    final var newStamps = new HashMap<Long, Long>();
+    final var writer = new CleanSegmentWriter(directory, effectiveC, config.maxSegmentBytes());
     final long graceMillis = config.graceWindow().toMillis();
 
     for (final CleanSegment segment : prev.segments()) {
       final var reader = new CleanSegmentReader(directory.resolve(segment.fileName()));
       while (reader.hasNext()) {
-        decide(reader.next(), map, prev, now, graceMillis, writer, newStamps);
+        decide(reader.next(), map, cPrev, logClock, graceMillis, writer);
       }
     }
     fault.onPhase(Phase.MID_SWEEP);
@@ -166,7 +181,7 @@ public final class CompactionPass {
         cPrev,
         effectiveC,
         record -> {
-          decide(record, map, prev, now, graceMillis, writer, newStamps);
+          decide(record, map, cPrev, logClock, graceMillis, writer);
           return true;
         });
 
@@ -174,7 +189,7 @@ public final class CompactionPass {
 
     // -- Phase: commit the new clean set atomically --
     final var next =
-        new CompactionManifest(CompactionManifest.VERSION_1, effectiveC, segments, newStamps);
+        new CompactionManifest(CompactionManifest.VERSION_1, effectiveC, logClock, segments);
     final List<Path> newPaths =
         segments.stream().map(s -> directory.resolve(s.fileName())).toList();
     fault.onPhase(Phase.BEFORE_COMMIT);
@@ -197,11 +212,10 @@ public final class CompactionPass {
   private void decide(
       final CompactionRecord record,
       final KeyOffsetMap map,
-      final CompactionManifest prev,
-      final long now,
+      final long prevCleanerPoint,
+      final long logClock,
       final long graceMillis,
-      final CleanSegmentWriter writer,
-      final Map<Long, Long> newStamps) {
+      final CleanSegmentWriter writer) {
     if (!record.hasKey()) {
       // Un-keyed record: copy forward verbatim, never compactable.
       writer.append(record);
@@ -211,27 +225,17 @@ public final class CompactionPass {
     final Hash128 hash = KeyHash.hash(record.key());
     final long latest = map.latest(hash);
     if (latest != KeyOffsetMap.NO_ENTRY && latest != record.position()) {
-      // A newer record for this key exists in the dirty range — this one is superseded. If it was a
-      // stamped tombstone, dropping it here (and not carrying its stamp) is exactly the
-      // resurrection
-      // path: the newer record wins.
+      // A newer record for this key exists in the dirty range — this one is superseded. For a
+      // tombstone this is exactly the resurrection path: the newer record wins immediately.
       return;
     }
 
-    if (record.isTombstone()) {
-      final long stamp = prev.tombstoneStamp(record.position());
-      if (stamp == CompactionManifest.NO_STAMP) {
-        // First time this tombstone enters the clean set: keep it, stamp it now.
-        writer.append(record);
-        newStamps.put(record.position(), now);
-      } else if (now - stamp > graceMillis) {
-        // Two-touch: grace has elapsed on a later pass — drop it.
-        return;
-      } else {
-        // Still within grace: keep it, preserving the original stamp so grace actually elapses.
-        writer.append(record);
-        newStamps.put(record.position(), stamp);
-      }
+    if (record.isTombstone()
+        && record.position() <= prevCleanerPoint
+        && logClock - record.timestamp() > graceMillis) {
+      // Two-touch grace on the log clock: the tombstone survived at least one committed pass
+      // (P ≤ C_prev) and the log clock has advanced past its timestamp by more than the grace
+      // window — drop it. Both inputs are log-derived, so every replica decides identically.
       return;
     }
 

@@ -52,7 +52,6 @@ public final class CleanSegmentWriter {
 
   private final Path directory;
   private final long cleanerPoint;
-  private final long cleanedAtTimestamp;
   private final long maxSegmentBytes;
 
   private final EventBridgeBatchBuilder batchBuilder = new EventBridgeBatchBuilder();
@@ -67,21 +66,16 @@ public final class CleanSegmentWriter {
    * @param directory the compaction directory the segments are written into
    * @param cleanerPoint the cleaner point C of this pass (encoded into segment names to keep
    *     passes' outputs uniquely named)
-   * @param cleanedAtTimestamp the wall-clock millis of this pass (recorded per segment)
    * @param maxSegmentBytes the soft upper bound on a segment's size in bytes (must be positive)
    */
   public CleanSegmentWriter(
-      final Path directory,
-      final long cleanerPoint,
-      final long cleanedAtTimestamp,
-      final long maxSegmentBytes) {
+      final Path directory, final long cleanerPoint, final long maxSegmentBytes) {
     if (maxSegmentBytes <= 0) {
       throw new IllegalArgumentException(
           "maxSegmentBytes must be positive, was " + maxSegmentBytes);
     }
     this.directory = directory;
     this.cleanerPoint = cleanerPoint;
-    this.cleanedAtTimestamp = cleanedAtTimestamp;
     this.maxSegmentBytes = maxSegmentBytes;
   }
 
@@ -166,9 +160,7 @@ public final class CleanSegmentWriter {
 
     final var crc = new CRC32();
     crc.update(bytes);
-    finalized.add(
-        new CleanSegment(
-            name, currentFirstPosition, cleanedAtTimestamp, bytes.length, crc.getValue()));
+    finalized.add(new CleanSegment(name, currentFirstPosition, bytes.length, crc.getValue()));
     currentSegment = null;
   }
 

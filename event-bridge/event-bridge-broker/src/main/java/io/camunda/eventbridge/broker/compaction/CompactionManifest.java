@@ -10,34 +10,31 @@ package io.camunda.eventbridge.broker.compaction;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * The authoritative description of a compacted partition's clean set: the ordered list of clean
- * segments, the cleaner point C the pass reached, the format version, and the per-tombstone grace
- * stamps. Together with the segment files it references, the manifest is the content that becomes
- * the partition's Raft snapshot (ADR 0001, decision 3) — here it is committed through the
- * injectable {@link ManifestStore} seam.
+ * segments, the cleaner point C the pass reached, the log clock, and the format version. Together
+ * with the segment files it references, the manifest is the content that becomes the partition's
+ * Raft snapshot (ADR 0001, decision 3) — here it is committed through the injectable {@link
+ * ManifestStore} seam.
  *
- * <h3>Deterministic serialization</h3>
+ * <h3>Everything is log-derived — determinism is unconditional</h3>
  *
- * <p>{@link #serialize()} emits a line-oriented UTF-8 form with segments sorted by first position
- * and tombstone stamps sorted by position, so identical logical content always produces identical
- * bytes — the manifest half of the determinism guarantee (two replicas' identical logs must yield
- * byte-identical clean sets and manifest).
+ * <p>Every field of the manifest is a pure function of the replicated committed log and the
+ * previous committed manifest; no replica wall-clock value is ever persisted. {@link #serialize()}
+ * emits a line-oriented UTF-8 form with segments sorted by first position, so identical logical
+ * content always produces identical bytes — replicas with the same log and pass lineage hold
+ * byte-identical manifests and clean sets.
  *
- * <h3>Tombstone grace stamps (per position, not per segment)</h3>
+ * <h3>The log clock ({@code maxLogTimestamp})</h3>
  *
- * <p>The ADR describes stamping a tombstone "per clean segment". This implementation stamps per
- * <em>tombstone position</em> instead, because clean segments are rewritten on every pass: a stamp
- * tied to the segment would reset each pass and the grace window would never elapse. Positions are
- * stable forever, so a per-position stamp is a strictly finer, rewrite-stable carrier of the same
- * information — a tombstone keeps its original stamp across passes until the grace window passes
- * and a later pass drops it. The per-segment {@code cleanedAtTimestamp} is retained as segment
- * metadata. (Flagged for the ADR to be amended.)
+ * <p>{@code maxLogTimestamp} is the <em>running maximum</em> of broker-assigned record timestamps
+ * observed up to the cleaner point, advanced monotonically each pass from the dirty-range scan. The
+ * running maximum — never the raw last timestamp — is used because leader changes can make raw
+ * timestamps wobble backwards; the maximum only moves forward. It is the clock against which
+ * tombstone grace is measured (see {@link CompactionPass}): being derived from the log, it is
+ * identical on every replica.
  *
  * <p>Threading: immutable; safe to share. Defensive copies are taken at construction.
  */
@@ -46,44 +43,43 @@ public final class CompactionManifest {
   /** Current manifest format version. */
   public static final int VERSION_1 = 1;
 
-  /** Sentinel returned by {@link #tombstoneStamp(long)} when a position has no stamp. */
-  public static final long NO_STAMP = Long.MIN_VALUE;
-
   /** The cleaner point of an empty (never-cleaned) partition; nothing has been swept yet. */
   public static final long NO_CLEANER_POINT = -1L;
+
+  /** The log clock of an empty (never-cleaned) partition; no record timestamp observed yet. */
+  public static final long NO_TIMESTAMP = -1L;
 
   private static final String MAGIC = "EBCOMPACT-MANIFEST";
 
   private final int version;
   private final long cleanerPoint;
+  private final long maxLogTimestamp;
   private final List<CleanSegment> segments;
-  private final Map<Long, Long> tombstoneStamps;
 
   /**
    * @param version the format version
    * @param cleanerPoint the cleaner point C this manifest was committed at
+   * @param maxLogTimestamp the log clock: the running maximum record timestamp observed up to C
    * @param segments the clean segments (copied and sorted by first position)
-   * @param tombstoneStamps position → first-cleaned-at-millis for tombstones still within grace
-   *     (copied)
    */
   public CompactionManifest(
       final int version,
       final long cleanerPoint,
-      final List<CleanSegment> segments,
-      final Map<Long, Long> tombstoneStamps) {
+      final long maxLogTimestamp,
+      final List<CleanSegment> segments) {
     this.version = version;
     this.cleanerPoint = cleanerPoint;
+    this.maxLogTimestamp = maxLogTimestamp;
     final List<CleanSegment> sorted = new ArrayList<>(segments);
     sorted.sort(
         Comparator.comparingLong(CleanSegment::firstPosition)
             .thenComparing(CleanSegment::fileName));
     this.segments = List.copyOf(sorted);
-    this.tombstoneStamps = Map.copyOf(tombstoneStamps);
   }
 
   /** Returns an empty manifest for a partition that has never been cleaned. */
   public static CompactionManifest empty() {
-    return new CompactionManifest(VERSION_1, NO_CLEANER_POINT, List.of(), Map.of());
+    return new CompactionManifest(VERSION_1, NO_CLEANER_POINT, NO_TIMESTAMP, List.of());
   }
 
   public int version() {
@@ -94,23 +90,17 @@ public final class CompactionManifest {
     return cleanerPoint;
   }
 
+  /**
+   * Returns the log clock: the running maximum record timestamp observed up to {@link
+   * #cleanerPoint()}, or {@link #NO_TIMESTAMP} if the partition has never been cleaned.
+   */
+  public long maxLogTimestamp() {
+    return maxLogTimestamp;
+  }
+
   /** Returns the clean segments in ascending first-position order. */
   public List<CleanSegment> segments() {
     return segments;
-  }
-
-  /** Returns the tombstone grace stamps, keyed by position. */
-  public Map<Long, Long> tombstoneStamps() {
-    return tombstoneStamps;
-  }
-
-  /**
-   * Returns the grace stamp for the tombstone at {@code position}, or {@link #NO_STAMP} if that
-   * position has no recorded stamp (the tombstone has not yet entered the clean set).
-   */
-  public long tombstoneStamp(final long position) {
-    final Long stamp = tombstoneStamps.get(position);
-    return stamp == null ? NO_STAMP : stamp;
   }
 
   /**
@@ -122,6 +112,7 @@ public final class CompactionManifest {
     final var sb = new StringBuilder();
     sb.append(MAGIC).append('\t').append(version).append('\n');
     sb.append("C").append('\t').append(cleanerPoint).append('\n');
+    sb.append("M").append('\t').append(maxLogTimestamp).append('\n');
     for (final CleanSegment s : segments) {
       sb.append("S")
           .append('\t')
@@ -129,24 +120,17 @@ public final class CompactionManifest {
           .append('\t')
           .append(s.firstPosition())
           .append('\t')
-          .append(s.cleanedAtTimestamp())
-          .append('\t')
           .append(s.byteLength())
           .append('\t')
           .append(s.crc32())
           .append('\n');
-    }
-    // Sort tombstone stamps by position for deterministic output.
-    final var sortedStamps = new TreeMap<>(tombstoneStamps);
-    for (final Map.Entry<Long, Long> e : sortedStamps.entrySet()) {
-      sb.append("T").append('\t').append(e.getKey()).append('\t').append(e.getValue()).append('\n');
     }
     return sb.toString().getBytes(StandardCharsets.UTF_8);
   }
 
   /**
    * Parses a manifest from its serialized byte form. Structural problems (bad magic, unknown
-   * version, malformed line) fail loudly.
+   * version, malformed line, missing cleaner point or log clock) fail loudly.
    *
    * @param bytes the serialized manifest
    * @return the parsed manifest
@@ -170,8 +154,9 @@ public final class CompactionManifest {
 
     long parsedCleanerPoint = NO_CLEANER_POINT;
     boolean sawCleanerPoint = false;
+    long parsedMaxLogTimestamp = NO_TIMESTAMP;
+    boolean sawMaxLogTimestamp = false;
     final var parsedSegments = new ArrayList<CleanSegment>();
-    final var parsedStamps = new LinkedHashMap<Long, Long>();
 
     for (int i = 1; i < lines.length; i++) {
       final String line = lines[i];
@@ -185,19 +170,19 @@ public final class CompactionManifest {
           parsedCleanerPoint = parseLong(f[1], "cleanerPoint");
           sawCleanerPoint = true;
         }
+        case "M" -> {
+          requireFieldCount(f, 2, line);
+          parsedMaxLogTimestamp = parseLong(f[1], "maxLogTimestamp");
+          sawMaxLogTimestamp = true;
+        }
         case "S" -> {
-          requireFieldCount(f, 6, line);
+          requireFieldCount(f, 5, line);
           parsedSegments.add(
               new CleanSegment(
                   f[1],
                   parseLong(f[2], "firstPosition"),
-                  parseLong(f[3], "cleanedAtTimestamp"),
-                  parseLong(f[4], "byteLength"),
-                  parseLong(f[5], "crc32")));
-        }
-        case "T" -> {
-          requireFieldCount(f, 3, line);
-          parsedStamps.put(parseLong(f[1], "tombstonePosition"), parseLong(f[2], "tombstoneStamp"));
+                  parseLong(f[3], "byteLength"),
+                  parseLong(f[4], "crc32")));
         }
         default -> throw new IllegalStateException("Unknown manifest line: " + line);
       }
@@ -206,7 +191,11 @@ public final class CompactionManifest {
     if (!sawCleanerPoint) {
       throw new IllegalStateException("Manifest missing cleaner point line");
     }
-    return new CompactionManifest(parsedVersion, parsedCleanerPoint, parsedSegments, parsedStamps);
+    if (!sawMaxLogTimestamp) {
+      throw new IllegalStateException("Manifest missing log clock (maxLogTimestamp) line");
+    }
+    return new CompactionManifest(
+        parsedVersion, parsedCleanerPoint, parsedMaxLogTimestamp, parsedSegments);
   }
 
   private static void requireFieldCount(

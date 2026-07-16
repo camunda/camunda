@@ -16,8 +16,10 @@ import java.time.Duration;
  *     cleaner point C; guarantees tailing readers always see un-compacted recent records
  * @param maxSegmentBytes soft upper bound on a clean segment's size before the writer rolls to a
  *     new one
- * @param graceWindow how long a tombstone must remain in the clean set (wall-clock) before a later
- *     pass may drop it — the two-touch grace of ADR 0001 decision 7
+ * @param graceWindow how far the log clock (the running maximum record timestamp up to the cleaner
+ *     point) must have advanced past a tombstone's own record timestamp before a later pass may
+ *     drop it — the two-touch grace of ADR 0001 decision 7, measured entirely on log-derived time
+ *     (an idle partition freezes the clock and retains boundary tombstones)
  * @param keyMapCapacity the maximum number of distinct keys the per-pass {@link KeyOffsetMap} holds
  *     before it overflows and forces a lower C and a multi-pass
  * @param passInterval how often the {@link LogCleaner} actor runs a pass

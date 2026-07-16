@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.eventbridge.broker.compaction.CompactionPass.Fault;
 import io.camunda.eventbridge.broker.compaction.CompactionTestSupport.Harness;
 import io.camunda.eventbridge.broker.compaction.CompactionTestSupport.ListDirtyLogReader;
-import io.camunda.eventbridge.broker.compaction.CompactionTestSupport.MutableInstantSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,8 +30,6 @@ final class CompactionOverflowTest {
 
   @TempDir Path base;
 
-  private final MutableInstantSource clock = new MutableInstantSource(1_000);
-
   private List<CompactionRecord> log() {
     return List.of(
         put(1, "a", "v1"),
@@ -46,7 +43,7 @@ final class CompactionOverflowTest {
     final var config =
         new CompactionConfig(0, 1 << 20, Duration.ofHours(1), capacity, Duration.ofSeconds(1));
     return CompactionTestSupport.harness(
-        dir, config, new ListDirtyLogReader(log()), clock, () -> 5L, Fault.none());
+        dir, config, new ListDirtyLogReader(log()), () -> 5L, Fault.none());
   }
 
   @Test

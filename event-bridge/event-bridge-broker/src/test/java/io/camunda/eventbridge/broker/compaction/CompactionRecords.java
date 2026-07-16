@@ -20,9 +20,15 @@ final class CompactionRecords {
 
   /** A keyed put record (timestamp mirrors position for deterministic tests). */
   static CompactionRecord put(final long position, final String key, final String value) {
+    return put(position, position, key, value);
+  }
+
+  /** A keyed put record with an explicit broker timestamp (drives log-clock grace tests). */
+  static CompactionRecord put(
+      final long position, final long timestamp, final String key, final String value) {
     return new CompactionRecord(
         position,
-        position,
+        timestamp,
         key.getBytes(StandardCharsets.UTF_8),
         value.getBytes(StandardCharsets.UTF_8),
         EventBridgeBatch.KEYED_MASK);
@@ -30,9 +36,14 @@ final class CompactionRecords {
 
   /** A keyed tombstone (empty value). */
   static CompactionRecord tombstone(final long position, final String key) {
+    return tombstone(position, position, key);
+  }
+
+  /** A keyed tombstone with an explicit broker timestamp (drives log-clock grace tests). */
+  static CompactionRecord tombstone(final long position, final long timestamp, final String key) {
     return new CompactionRecord(
         position,
-        position,
+        timestamp,
         key.getBytes(StandardCharsets.UTF_8),
         new byte[0],
         EventBridgeBatch.KEYED_MASK);

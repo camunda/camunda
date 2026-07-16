@@ -17,7 +17,6 @@ import io.camunda.eventbridge.broker.compaction.CompactionPass.Fault;
 import io.camunda.eventbridge.broker.compaction.CompactionPass.Phase;
 import io.camunda.eventbridge.broker.compaction.CompactionTestSupport.Harness;
 import io.camunda.eventbridge.broker.compaction.CompactionTestSupport.ListDirtyLogReader;
-import io.camunda.eventbridge.broker.compaction.CompactionTestSupport.MutableInstantSource;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -43,7 +42,6 @@ final class CompactionCrashRecoveryTest {
   @TempDir Path base;
 
   private final AtomicLong lastCommitted = new AtomicLong();
-  private final MutableInstantSource clock = new MutableInstantSource(1_000);
 
   private static final class CrashSimulated extends RuntimeException {
     CrashSimulated(final Phase phase) {
@@ -70,7 +68,7 @@ final class CompactionCrashRecoveryTest {
     final var config =
         new CompactionConfig(0, 96, Duration.ofHours(1), 1 << 16, Duration.ofSeconds(1));
     return CompactionTestSupport.harness(
-        dir, config, new ListDirtyLogReader(log()), clock, lastCommitted::get, fault);
+        dir, config, new ListDirtyLogReader(log()), lastCommitted::get, fault);
   }
 
   private List<CompactionRecord> golden(final Path dir) throws IOException {

@@ -24,19 +24,18 @@ import org.slf4j.LoggerFactory;
  * passes are run immediately (bounded) to finish the range, since each overflow pass advances the
  * cleaner point and therefore terminates.
  *
- * <h3>Tombstone grace is wall-clock per replica (design caveat)</h3>
+ * <h3>Tombstone grace runs on the log clock — determinism is unconditional</h3>
  *
- * <p>The one non-log input to the pass is the tombstone grace clock (an {@link
- * java.time.InstantSource}). Because each replica stamps and expires tombstones against its own
- * wall-clock, replicas can drop a given tombstone on <em>different passes</em> — one replica may
- * still carry a tombstone its clean set that another has already dropped. This does not violate the
- * latest-per-key contract (a consumer rebuilding from either replica sees the delete or sees
- * nothing for the key, both correct) and positions are never reused, so it does not corrupt fetch.
- * But it does mean the "two replicas' logs → byte-identical clean sets" property holds only up to
- * in-flight tombstones near their grace boundary; the digest can differ transiently by exactly
- * those tombstones until every replica's clock has passed the window. This is called out for
- * dedicated design review; a fully deterministic alternative would derive the grace deadline from a
- * log-carried timestamp rather than replica wall-clock.
+ * <p>The pass takes no wall-clock input at all: tombstone grace is measured against the manifest's
+ * {@code maxLogTimestamp} — the running maximum of broker-assigned record timestamps up to the
+ * cleaner point — compared with each tombstone's own record timestamp (see {@link CompactionPass}).
+ * Both are log-derived, so replicas with the same log and pass lineage make identical drop
+ * decisions and hold byte-identical clean sets and manifests. The scheduling interval is the only
+ * time-based input this actor has, and it never influences the pass's output — only when it runs.
+ *
+ * <p>Consequence: an idle partition freezes the log clock, so tombstones at the grace boundary are
+ * retained until traffic resumes — the safe failure direction (a rebuilding reader keeps seeing the
+ * delete).
  *
  * <p>Threading: all pass work runs on this actor's thread; injected seams are only touched here
  * (the reader-lease counts the trash queue consults are independently thread-safe).
