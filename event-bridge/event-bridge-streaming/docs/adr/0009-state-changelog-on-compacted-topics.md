@@ -60,19 +60,36 @@ truth; local RocksDB is a restart accelerator.
 3. **The changelog is state replication, never an event feed** (normative consumer contract).
    It says *what is*, not *what happened*: born-and-died keys never appear at all, and
    mid-interval values coalesce away. Anything needing business events reads a source topic.
-4. **Fencing is mandatory.** Changelog producers carry the shard epoch (the coordinator-epoch
-   mechanism already used for exactly-once serving writes); the broker rejects appends from a
-   superseded epoch. A zombie active plus a promoted active writing one changelog is split brain
-   on the state itself — this is not deferrable the way the serving-sink fence was in 0006.
+4. **Fencing is deferred behind failover — a conscious re-scoping (2026-07-16).** Broker-enforced
+   producer-epoch fencing (this decision's original form: the broker rejects appends from a
+   superseded epoch) is postponed until after the failover milestone. The interim guards, both
+   load-bearing and therefore contractual: (a) source offset commits remain coordinator-epoch
+   fenced, and (b) the cut chain ends with that commit and **a rejected offset commit halts the
+   shard immediately** — no retry, no continue — so a deposed zombie discovers its deposition at
+   the end of its next cut and the blast radius is bounded to **one zombie cut per failover**,
+   whose content is a deterministic fold of source records the successor also folds. The
+   residual mixed-marker window (zombie cut interleaving a rebuild) is accepted as bounded and
+   converging — the same deferral shape 0006 used for its serving-sink fence. Epoch *stamping*
+   of changelog batches is deferred with it (the wire format exists, unmerged); when enforcement
+   lands, unstamped history is simply outside the fence's memory — no rewrite, no migration.
+   The broker-side design (per-producer epoch map, engine-pattern replay recovery, the
+   key-disjointness contract that makes transactions unnecessary) is settled in principle and
+   parked with its seven open questions for a dedicated fencing ADR.
 5. **Disaster rebuild** (no usable local state anywhere): consume the compacted changelog from the
    start — O(live keyspace), not O(history) — apply bytes into the store, read the latest
    offset-marker, resume the source at X+1. No determinism requirement, no coupling to source
    retention, no snapshot store.
-6. **A standby is a changelog follower.** It tails its partitions' changelogs and applies bytes to
-   its own store — no source fetch, no fold, no staged output to discard. Readiness = changelog
-   lag. Promotion = drain the remaining tail, read the marker, flip active with epoch E+1, resume
-   the source at X+1. A restarting member with an intact disk resumes from its local cut's
-   changelog position P instead of from the start.
+6. **A standby is a changelog follower, and it applies whole cuts only.** It tails its
+   partitions' changelogs and applies bytes to its own store — no source fetch, no fold, no
+   staged output to discard. The apply is **cut-atomic**: records are buffered until their cut's
+   offset-marker arrives (the marker is the last record of every cut), then applied as one unit —
+   a writer crashing mid-publish leaves a torn tail beyond the last marker, and cut-atomic apply
+   makes it invisible instead of half-applied (half-applied cells without their dedup watermark
+   would double-merge on post-promotion replay). Readiness = changelog lag. Promotion = drain to
+   the last marker, flip active with epoch E+1, resume the source at X+1. An empty joiner warms
+   by running the same apply loop from the changelog start — off the availability-critical path.
+   A restarting member with an intact disk resumes from its local cut's changelog position P
+   instead of from the start.
 7. **From 0006, the protocol surface is retained** (roles in the assignment, anti-affinity,
    readiness-triggered assignor runs, ready-only promotion, warming caps); **not built** are the
    snapshot subsystem (checkpoint-diff upload, restore, pruning, snapshot-age monitoring) and the
