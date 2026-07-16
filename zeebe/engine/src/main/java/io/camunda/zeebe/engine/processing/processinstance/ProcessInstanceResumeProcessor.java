@@ -72,7 +72,7 @@ public final class ProcessInstanceResumeProcessor
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 
-    if (elementInstance == null) {
+    if (elementInstance == null || elementInstance.getParentKey() > 0) {
       rejectionWriter.appendRejection(
           command,
           RejectionType.NOT_FOUND,
@@ -119,5 +119,6 @@ public final class ProcessInstanceResumeProcessor
       final TypedRecord<ProcessInstanceRecord> command,
       final ProcessInstanceRecord processInstanceRecord) {
     command.getValue().setTenantId(processInstanceRecord.getTenantId());
+    command.getValue().setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey());
   }
 }
