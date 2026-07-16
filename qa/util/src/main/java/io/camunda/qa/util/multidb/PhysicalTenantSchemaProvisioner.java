@@ -55,6 +55,9 @@ final class PhysicalTenantSchemaProvisioner {
    */
   private static final String ORACLE_VENDOR_ID = "oracle";
 
+  /** ORA-01918: "user '…' does not exist" — the expected DROP USER outcome when none is present. */
+  private static final int ORA_USER_DOES_NOT_EXIST = 1918;
+
   private PhysicalTenantSchemaProvisioner() {}
 
   /**
@@ -227,9 +230,6 @@ final class PhysicalTenantSchemaProvisioner {
         "GRANT CONNECT, RESOURCE TO " + namespace,
         "GRANT UNLIMITED TABLESPACE TO " + namespace);
   }
-
-  /** ORA-01918: "user '…' does not exist" — the expected DROP USER outcome when none is present. */
-  private static final int ORA_USER_DOES_NOT_EXIST = 1918;
 
   private static boolean isOracleUserDoesNotExist(final RuntimeException e) {
     return e.getCause() instanceof final SQLException sqlException
