@@ -516,6 +516,45 @@ public class ProcessDefinitionStatisticsTest {
   }
 
   @Test
+  void shouldGetStatisticsAndFilterByVariableWithMultipleValues() {
+    // given
+    final var processDefinitionKey = deployActiveBPMN();
+    TestHelper.startScopedProcessInstance(
+        camundaClient, processDefinitionKey, testScopeId, Map.of("orderId", "1"));
+    TestHelper.startScopedProcessInstance(
+        camundaClient, processDefinitionKey, testScopeId, Map.of("orderId", "2"));
+    TestHelper.startScopedProcessInstance(
+        camundaClient, processDefinitionKey, testScopeId, Map.of("orderId", "3"));
+    waitForProcessInstances(
+        camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 3);
+    waitForActiveScopedUserTasks(camundaClient, testScopeId, 3);
+
+    Awaitility.await("should return element statistics for both matching instances")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+                            .filter(
+                                f ->
+                                    f.variables(
+                                        List.of(
+                                            vf ->
+                                                vf.name("orderId")
+                                                    .value(v -> v.in("\"1\"", "\"2\"")))))
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 2L),
+                        new ProcessElementStatisticsImpl("UserTask", 2L, 0L, 0L, 0L)));
+  }
+
+  @Test
   void shouldGetDistinctStatisticsForMultiInstanceActivity() {
     // given
     final var processModel =
