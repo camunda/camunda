@@ -465,7 +465,20 @@
 					"active": "Active",
 					"incidents": "Incidents",
 					"completed": "Completed",
-					"canceled": "Canceled"
+					"canceled": "Canceled",
+					"tenant": "Tenant",
+					"processInstanceKey": "Process Instance Key(s)",
+					"processInstanceKeyPlaceholder": "separated by space or comma",
+					"businessId": "Business ID",
+					"batchOperationKey": "Batch Operation Key",
+					"parentProcessInstanceKey": "Parent Process Instance Key",
+					"errorMessage": "Error Message",
+					"hasRetriesLeft": "Failed job but retries left",
+					"startDateRange": "Start Date Range",
+					"endDateRange": "End Date Range",
+					"removeFilter": "Remove {{label}} Filter",
+					"startDatePopoverTitle": "Filter instances by start date",
+					"endDatePopoverTitle": "Filter instances by end date"
 				}
 			},
 			"decisions": {

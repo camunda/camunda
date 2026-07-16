@@ -451,7 +451,20 @@
 					"active": "Aktiv",
 					"incidents": "Vorfälle",
 					"completed": "Abgeschlossen",
-					"canceled": "Abgebrochen"
+					"canceled": "Abgebrochen",
+					"tenant": "Mandant",
+					"processInstanceKey": "Prozessinstanz-Schlüssel",
+					"processInstanceKeyPlaceholder": "getrennt durch Leerzeichen oder Komma",
+					"businessId": "Business ID",
+					"batchOperationKey": "Batch-Operation-Schlüssel",
+					"parentProcessInstanceKey": "Schlüssel der übergeordneten Prozessinstanz",
+					"errorMessage": "Fehlermeldung",
+					"hasRetriesLeft": "Fehlgeschlagener Job mit verbleibenden Wiederholungen",
+					"startDateRange": "Startdatumsbereich",
+					"endDateRange": "Enddatumsbereich",
+					"removeFilter": "Filter {{label}} entfernen",
+					"startDatePopoverTitle": "Instanzen nach Startdatum filtern",
+					"endDatePopoverTitle": "Instanzen nach Enddatum filtern"
 				}
 			},
 			"decisions": {

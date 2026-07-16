@@ -6,17 +6,24 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useNavigate} from '@tanstack/react-router';
+import {Form} from 'react-final-form';
 import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {queries} from '#/shared/http/queries';
+import {getClientConfig} from '#/shared/config/getClientConfig';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
-import {Title} from '#/operate/shared/FiltersPanel/styled';
+import {Title, Form as StyledForm} from '#/operate/shared/FiltersPanel/styled';
+import {AutoSubmit} from '#/operate/shared/AutoSubmit/AutoSubmit';
+import {TenantField} from '#/operate/shared/TenantField/TenantField';
 import {RadioButtonChecked, WarningFilled, CheckmarkOutline} from '#/operate/shared/StateIcon/styled';
 import {IndentedGroup, CanceledIcon} from './styled';
+import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
+
+type FiltersFormValues = OptionalFilterValues & {tenantId?: string};
 
 type Props = {
 	process?: string;
@@ -26,14 +33,61 @@ type Props = {
 	incidents: boolean;
 	completed: boolean;
 	canceled: boolean;
-};
+} & FiltersFormValues;
 
 type ProcessItem = {id: string; label: string};
 
-const Processes: React.FC<Props> = ({process, version, elementId, active, incidents, completed, canceled}) => {
+const Processes: React.FC<Props> = ({
+	process,
+	version,
+	elementId,
+	active,
+	incidents,
+	completed,
+	canceled,
+	tenantId,
+	processInstanceKey,
+	parentProcessInstanceKey,
+	businessId,
+	batchOperationKey,
+	errorMessage,
+	hasRetriesLeft,
+	startDateFrom,
+	startDateTo,
+	endDateFrom,
+	endDateTo,
+}) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
 	const {data} = useSuspenseQuery(queries.queryProcessDefinitions({page: {limit: 1000}}));
+	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
+
+	const optionalFilterValues = useMemo<OptionalFilterValues>(
+		() => ({
+			processInstanceKey,
+			parentProcessInstanceKey,
+			businessId,
+			batchOperationKey,
+			errorMessage,
+			hasRetriesLeft,
+			startDateFrom,
+			startDateTo,
+			endDateFrom,
+			endDateTo,
+		}),
+		[
+			processInstanceKey,
+			parentProcessInstanceKey,
+			businessId,
+			batchOperationKey,
+			errorMessage,
+			hasRetriesLeft,
+			startDateFrom,
+			startDateTo,
+			endDateFrom,
+			endDateTo,
+		],
+	);
 
 	const processItems = useMemo<ProcessItem[]>(() => {
 		const seen = new Set<string>();
@@ -65,158 +119,222 @@ const Processes: React.FC<Props> = ({process, version, elementId, active, incide
 	const finishedChecked = completed && canceled;
 	const finishedIndeterminate = !finishedChecked && (completed || canceled);
 
+	const hasOptionalFilters =
+		tenantId !== undefined || Object.values(optionalFilterValues).some((value) => value !== undefined);
+
 	const isResetDisabled =
-		active && incidents && !completed && !canceled && !process && version === undefined && elementId === undefined;
+		active &&
+		incidents &&
+		!completed &&
+		!canceled &&
+		!process &&
+		version === undefined &&
+		elementId === undefined &&
+		!hasOptionalFilters &&
+		visibleFilters.length === 0;
+
+	const handleFiltersSubmit = (values: FiltersFormValues) => {
+		void navigate({
+			to: '.',
+			search: (prev) => ({
+				...prev,
+				...((values.tenantId || undefined) !== prev.tenantId
+					? {process: undefined, version: undefined, elementId: undefined}
+					: {}),
+				tenantId: values.tenantId || undefined,
+				processInstanceKey: values.processInstanceKey || undefined,
+				parentProcessInstanceKey: values.parentProcessInstanceKey || undefined,
+				businessId: values.businessId || undefined,
+				batchOperationKey: values.batchOperationKey || undefined,
+				errorMessage: values.errorMessage || undefined,
+				hasRetriesLeft: values.hasRetriesLeft || undefined,
+				startDateFrom: values.startDateFrom || undefined,
+				startDateTo: values.startDateTo || undefined,
+				endDateFrom: values.endDateFrom || undefined,
+				endDateTo: values.endDateTo || undefined,
+			}),
+		});
+	};
 
 	return (
 		<InstancesList
 			type="process"
 			leftPanel={
-				<FiltersPanel
-					localStorageKey="isProcessesFiltersCollapsed"
-					isResetButtonDisabled={isResetDisabled}
-					onResetClick={() => void navigate({to: '.', search: {}})}
-				>
-					<Stack gap={5}>
-						<div>
-							<Title>{t('operate.processes.filters.processSection')}</Title>
-							<Stack gap={5}>
-								<ComboBox
-									id="process-name-filter"
-									titleText={t('operate.processes.filters.name')}
-									placeholder={t('operate.processes.filters.searchByName')}
-									items={processItems}
-									itemToString={(item) => item?.label ?? ''}
-									selectedItem={selectedProcess}
-									size="sm"
-									onChange={({selectedItem}) => {
-										void navigate({
-											to: '.',
-											search: (prev) => ({
-												...prev,
-												process: selectedItem?.id,
-												version: undefined,
-												elementId: undefined,
-											}),
-										});
-									}}
-								/>
-								<Dropdown
-									id="process-version-filter"
-									titleText={t('operate.processes.filters.version')}
-									label={t('operate.processes.filters.selectVersion')}
-									items={versionNumbers}
-									itemToString={(item) =>
-										item === undefined || item === null ? t('operate.processes.filters.allVersions') : String(item)
-									}
-									selectedItem={selectedVersion}
-									disabled={!process}
-									size="sm"
-									onChange={({selectedItem}) => {
-										void navigate({
-											to: '.',
-											search: (prev) => ({...prev, version: selectedItem ?? undefined, elementId: undefined}),
-										});
-									}}
-								/>
-								<ComboBox
-									id="process-element-filter"
-									titleText={t('operate.processes.filters.element')}
-									placeholder={t('operate.processes.filters.searchByElement')}
-									items={[]}
-									itemToString={(item: {label?: string} | null) => item?.label ?? ''}
-									selectedItem={null}
-									disabled
-									size="sm"
-									onChange={() => {}}
-								/>
-							</Stack>
-						</div>
-						<div>
-							<Title>{t('operate.processes.filters.instancesStates')}</Title>
-							<Stack gap={3}>
-								<Stack gap={1}>
-									<Checkbox
-										id="filter-running-instances"
-										labelText={t('operate.processes.filters.runningInstances')}
-										checked={runningChecked}
-										indeterminate={runningIndeterminate}
-										onChange={(_, {checked}) => {
-											void navigate({to: '.', search: (prev) => ({...prev, active: checked, incidents: checked})});
-										}}
+				<Form<FiltersFormValues> onSubmit={handleFiltersSubmit} initialValues={{tenantId, ...optionalFilterValues}}>
+					{({handleSubmit, form}) => (
+						<StyledForm onSubmit={handleSubmit}>
+							<AutoSubmit fieldsToSkipTimeout={['tenantId', 'hasRetriesLeft']} />
+							<FiltersPanel
+								localStorageKey="isProcessesFiltersCollapsed"
+								isResetButtonDisabled={isResetDisabled}
+								onResetClick={() => {
+									form.reset();
+									setVisibleFilters([]);
+									void navigate({to: '.', search: {}});
+								}}
+							>
+								<Stack gap={5}>
+									{getClientConfig().deployment.isMultiTenancyEnabled && (
+										<div>
+											<Title>{t('operate.processes.filters.tenant')}</Title>
+											<TenantField />
+										</div>
+									)}
+									<div>
+										<Title>{t('operate.processes.filters.processSection')}</Title>
+										<Stack gap={5}>
+											<ComboBox
+												id="process-name-filter"
+												titleText={t('operate.processes.filters.name')}
+												placeholder={t('operate.processes.filters.searchByName')}
+												items={processItems}
+												itemToString={(item) => item?.label ?? ''}
+												selectedItem={selectedProcess}
+												size="sm"
+												onChange={({selectedItem}) => {
+													void navigate({
+														to: '.',
+														search: (prev) => ({
+															...prev,
+															process: selectedItem?.id,
+															version: undefined,
+															elementId: undefined,
+														}),
+													});
+												}}
+											/>
+											<Dropdown
+												id="process-version-filter"
+												titleText={t('operate.processes.filters.version')}
+												label={t('operate.processes.filters.selectVersion')}
+												items={versionNumbers}
+												itemToString={(item) =>
+													item === undefined || item === null
+														? t('operate.processes.filters.allVersions')
+														: String(item)
+												}
+												selectedItem={selectedVersion}
+												disabled={!process}
+												size="sm"
+												onChange={({selectedItem}) => {
+													void navigate({
+														to: '.',
+														search: (prev) => ({...prev, version: selectedItem ?? undefined, elementId: undefined}),
+													});
+												}}
+											/>
+											<ComboBox
+												id="process-element-filter"
+												titleText={t('operate.processes.filters.element')}
+												placeholder={t('operate.processes.filters.searchByElement')}
+												items={[]}
+												itemToString={(item: {label?: string} | null) => item?.label ?? ''}
+												selectedItem={null}
+												disabled
+												size="sm"
+												onChange={() => {}}
+											/>
+										</Stack>
+									</div>
+									<div>
+										<Title>{t('operate.processes.filters.instancesStates')}</Title>
+										<Stack gap={3}>
+											<Stack gap={1}>
+												<Checkbox
+													id="filter-running-instances"
+													labelText={t('operate.processes.filters.runningInstances')}
+													checked={runningChecked}
+													indeterminate={runningIndeterminate}
+													onChange={(_, {checked}) => {
+														void navigate({
+															to: '.',
+															search: (prev) => ({...prev, active: checked, incidents: checked}),
+														});
+													}}
+												/>
+												<IndentedGroup>
+													<Checkbox
+														id="filter-active"
+														labelText={
+															<Stack orientation="horizontal" gap={3}>
+																<RadioButtonChecked size={20} />
+																<div>{t('operate.processes.filters.active')}</div>
+															</Stack>
+														}
+														checked={active}
+														onChange={(_, {checked}) => {
+															void navigate({to: '.', search: (prev) => ({...prev, active: checked})});
+														}}
+													/>
+													<Checkbox
+														id="filter-incidents"
+														labelText={
+															<Stack orientation="horizontal" gap={3}>
+																<WarningFilled size={20} />
+																<div>{t('operate.processes.filters.incidents')}</div>
+															</Stack>
+														}
+														checked={incidents}
+														onChange={(_, {checked}) => {
+															void navigate({to: '.', search: (prev) => ({...prev, incidents: checked})});
+														}}
+													/>
+												</IndentedGroup>
+											</Stack>
+											<Stack gap={1}>
+												<Checkbox
+													id="filter-finished-instances"
+													labelText={t('operate.processes.filters.finishedInstances')}
+													checked={finishedChecked}
+													indeterminate={finishedIndeterminate}
+													onChange={(_, {checked}) => {
+														void navigate({
+															to: '.',
+															search: (prev) => ({...prev, completed: checked, canceled: checked}),
+														});
+													}}
+												/>
+												<IndentedGroup>
+													<Checkbox
+														id="filter-completed"
+														labelText={
+															<Stack orientation="horizontal" gap={3}>
+																<CheckmarkOutline size={20} />
+																<div>{t('operate.processes.filters.completed')}</div>
+															</Stack>
+														}
+														checked={completed}
+														onChange={(_, {checked}) => {
+															void navigate({to: '.', search: (prev) => ({...prev, completed: checked})});
+														}}
+													/>
+													<Checkbox
+														id="filter-canceled"
+														labelText={
+															<Stack orientation="horizontal" gap={3}>
+																<CanceledIcon size={20} />
+																<div>{t('operate.processes.filters.canceled')}</div>
+															</Stack>
+														}
+														checked={canceled}
+														onChange={(_, {checked}) => {
+															void navigate({to: '.', search: (prev) => ({...prev, canceled: checked})});
+														}}
+													/>
+												</IndentedGroup>
+											</Stack>
+										</Stack>
+									</div>
+									<OptionalFiltersFormGroup
+										filters={optionalFilterValues}
+										visibleFilters={visibleFilters}
+										onVisibleFilterChange={setVisibleFilters}
 									/>
-									<IndentedGroup>
-										<Checkbox
-											id="filter-active"
-											labelText={
-												<Stack orientation="horizontal" gap={3}>
-													<RadioButtonChecked size={20} />
-													<div>{t('operate.processes.filters.active')}</div>
-												</Stack>
-											}
-											checked={active}
-											onChange={(_, {checked}) => {
-												void navigate({to: '.', search: (prev) => ({...prev, active: checked})});
-											}}
-										/>
-										<Checkbox
-											id="filter-incidents"
-											labelText={
-												<Stack orientation="horizontal" gap={3}>
-													<WarningFilled size={20} />
-													<div>{t('operate.processes.filters.incidents')}</div>
-												</Stack>
-											}
-											checked={incidents}
-											onChange={(_, {checked}) => {
-												void navigate({to: '.', search: (prev) => ({...prev, incidents: checked})});
-											}}
-										/>
-									</IndentedGroup>
 								</Stack>
-								<Stack gap={1}>
-									<Checkbox
-										id="filter-finished-instances"
-										labelText={t('operate.processes.filters.finishedInstances')}
-										checked={finishedChecked}
-										indeterminate={finishedIndeterminate}
-										onChange={(_, {checked}) => {
-											void navigate({to: '.', search: (prev) => ({...prev, completed: checked, canceled: checked})});
-										}}
-									/>
-									<IndentedGroup>
-										<Checkbox
-											id="filter-completed"
-											labelText={
-												<Stack orientation="horizontal" gap={3}>
-													<CheckmarkOutline size={20} />
-													<div>{t('operate.processes.filters.completed')}</div>
-												</Stack>
-											}
-											checked={completed}
-											onChange={(_, {checked}) => {
-												void navigate({to: '.', search: (prev) => ({...prev, completed: checked})});
-											}}
-										/>
-										<Checkbox
-											id="filter-canceled"
-											labelText={
-												<Stack orientation="horizontal" gap={3}>
-													<CanceledIcon size={20} />
-													<div>{t('operate.processes.filters.canceled')}</div>
-												</Stack>
-											}
-											checked={canceled}
-											onChange={(_, {checked}) => {
-												void navigate({to: '.', search: (prev) => ({...prev, canceled: checked})});
-											}}
-										/>
-									</IndentedGroup>
-								</Stack>
-							</Stack>
-						</div>
-					</Stack>
-				</FiltersPanel>
+							</FiltersPanel>
+						</StyledForm>
+					)}
+				</Form>
 			}
 			topPanel={<div />}
 			bottomPanel={<div />}
