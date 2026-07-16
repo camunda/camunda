@@ -101,7 +101,8 @@ public final class PlacementHealTask implements Task, StreamProcessorLifecycleAw
                       .setReplicationFactor(meta.replicationFactor())
                       .setStatus(meta.status())
                       .setAssignment(meta.assignment())
-                      .setTarget(target));
+                      .setTarget(target)
+                      .setCleanupPolicy(meta.cleanupPolicy()));
             });
     return taskResultBuilder.build();
   }

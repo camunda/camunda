@@ -7,6 +7,7 @@
  */
 package io.camunda.eventbridge.clustermetadata.state.topic;
 
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +33,9 @@ import java.util.Map;
  *     passive-joined a partition's Raft group during a grow-first heal but have not yet been
  *     promoted to voting. Coordinator-internal sequencing state (JOIN_PASSIVE → PROMOTE → LEAVE);
  *     {@code assignment} holds only voting members, so brokers ignore {@code passive} too.
+ * @param cleanupPolicy the topic's retention policy (event-bridge ADR 0001); defaults to {@link
+ *     CleanupPolicy#DELETE} — today's behavior — for every convenience constructor below and for
+ *     any encoded registry entry that predates this field.
  */
 public record TopicMetadata(
     int partitionCount,
@@ -39,7 +43,8 @@ public record TopicMetadata(
     TopicStatus status,
     Map<Integer, List<Integer>> assignment,
     Map<Integer, List<Integer>> target,
-    Map<Integer, List<Integer>> passive) {
+    Map<Integer, List<Integer>> passive,
+    CleanupPolicy cleanupPolicy) {
 
   /** Convenience for callers/tests that don't carry an assignment (defaults to empty). */
   public TopicMetadata(
@@ -64,6 +69,24 @@ public record TopicMetadata(
       final Map<Integer, List<Integer>> assignment,
       final Map<Integer, List<Integer>> target) {
     this(partitionCount, replicationFactor, status, assignment, target, Map.of());
+  }
+
+  /** Convenience for callers that don't set a cleanup policy (defaults to {@code DELETE}). */
+  public TopicMetadata(
+      final int partitionCount,
+      final int replicationFactor,
+      final TopicStatus status,
+      final Map<Integer, List<Integer>> assignment,
+      final Map<Integer, List<Integer>> target,
+      final Map<Integer, List<Integer>> passive) {
+    this(
+        partitionCount,
+        replicationFactor,
+        status,
+        assignment,
+        target,
+        passive,
+        CleanupPolicy.DELETE);
   }
 
   /** Whether a reassignment is in flight. */

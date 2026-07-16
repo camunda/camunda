@@ -31,25 +31,25 @@ final class EventBridgePropertiesTest {
   @Test
   void shouldUseExplicitPartitionCountAndReplicationFactor() {
     // given
-    final var topics = List.of(new TopicProperties("orders", 6, 3));
+    final var topics = List.of(new TopicProperties("orders", 6, 3, null));
 
     // when
     final var resolved = propertiesWith(topics, 1, 1).resolvedTopics();
 
     // then
-    assertThat(resolved).containsExactly(new AutoCreatedTopic("orders", 6, 3));
+    assertThat(resolved).containsExactly(new AutoCreatedTopic("orders", 6, 3, "DELETE"));
   }
 
   @Test
   void shouldFallBackToBrokerAndRaftDefaultsWhenUnset() {
     // given — neither count is set on the topic
-    final var topics = List.of(new TopicProperties("orders", null, null));
+    final var topics = List.of(new TopicProperties("orders", null, null, null));
 
     // when — broker.partitionCount=4, raft.replicationFactor=2
     final var resolved = propertiesWith(topics, 4, 2).resolvedTopics();
 
     // then
-    assertThat(resolved).containsExactly(new AutoCreatedTopic("orders", 4, 2));
+    assertThat(resolved).containsExactly(new AutoCreatedTopic("orders", 4, 2, "DELETE"));
   }
 
   @Test
@@ -57,9 +57,9 @@ final class EventBridgePropertiesTest {
     // given
     final var topics =
         List.of(
-            new TopicProperties("explicit", 2, 3),
-            new TopicProperties("defaulted", null, null),
-            new TopicProperties("partial", 5, null));
+            new TopicProperties("explicit", 2, 3, null),
+            new TopicProperties("defaulted", null, null, null),
+            new TopicProperties("partial", 5, null, null));
 
     // when
     final var resolved = propertiesWith(topics, 4, 1).resolvedTopics();
@@ -67,9 +67,33 @@ final class EventBridgePropertiesTest {
     // then — explicit kept, missing values fall back to broker/raft defaults
     assertThat(resolved)
         .containsExactly(
-            new AutoCreatedTopic("explicit", 2, 3),
-            new AutoCreatedTopic("defaulted", 4, 1),
-            new AutoCreatedTopic("partial", 5, 1));
+            new AutoCreatedTopic("explicit", 2, 3, "DELETE"),
+            new AutoCreatedTopic("defaulted", 4, 1, "DELETE"),
+            new AutoCreatedTopic("partial", 5, 1, "DELETE"));
+  }
+
+  @Test
+  void shouldDefaultCleanupPolicyToDeleteWhenUnset() {
+    // given — a topic configured with no cleanupPolicy at all (today's config, unaffected)
+    final var topics = List.of(new TopicProperties("orders", 3, 1, null));
+
+    // when
+    final var resolved = propertiesWith(topics, 1, 1).resolvedTopics();
+
+    // then
+    assertThat(resolved).extracting(AutoCreatedTopic::cleanupPolicy).containsExactly("DELETE");
+  }
+
+  @Test
+  void shouldResolveAnExplicitCompactCleanupPolicy() {
+    // given — a topic explicitly configured for latest-per-key retention (event-bridge ADR 0001)
+    final var topics = List.of(new TopicProperties("changelog", 3, 1, "COMPACT"));
+
+    // when
+    final var resolved = propertiesWith(topics, 1, 1).resolvedTopics();
+
+    // then
+    assertThat(resolved).containsExactly(new AutoCreatedTopic("changelog", 3, 1, "COMPACT"));
   }
 
   private static EventBridgeProperties propertiesWith(

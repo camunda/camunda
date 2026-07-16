@@ -167,6 +167,15 @@ public final class EventBridgeClientImpl implements EventBridgeClient, Fetcher {
   }
 
   @Override
+  public CompletableFuture<Void> createTopic(
+      final String name,
+      final int partitionCount,
+      final int replicationFactor,
+      final String cleanupPolicy) {
+    return topicAdmin.createTopic(name, partitionCount, replicationFactor, cleanupPolicy);
+  }
+
+  @Override
   public CompletableFuture<Void> deleteTopic(final String name) {
     return topicAdmin.deleteTopic(name);
   }

@@ -30,7 +30,8 @@ public class BrokerCreateTopicRequest extends BrokerExecuteCoordinateRequest<Cre
         .setName(req.getName())
         .setOp(TopicRecord.OP_REGISTER)
         .setPartitionCount(req.getPartitionCount())
-        .setReplicationFactor(req.getReplicationFactor());
+        .setReplicationFactor(req.getReplicationFactor())
+        .setCleanupPolicy(req.getCleanupPolicy());
     return this;
   }
 

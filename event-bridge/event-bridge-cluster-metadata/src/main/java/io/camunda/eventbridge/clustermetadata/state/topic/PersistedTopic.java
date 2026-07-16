@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.clustermetadata.state.topic;
 
 import io.camunda.eventbridge.clustermetadata.state.topic.TopicMetadata.TopicStatus;
+import io.camunda.eventbridge.protocol.request.coordination.CleanupPolicy;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
@@ -34,15 +35,20 @@ public final class PersistedTopic extends UnpackedObject implements DbValue {
   // In-flight non-voting members per partition (grow-first heal sequencing); empty when none.
   private final ArrayProperty<PartitionReplicas> passiveProp =
       new ArrayProperty<>("passive", PartitionReplicas::new);
+  // Retention policy (event-bridge ADR 0001); defaults to DELETE (today's behavior) so a
+  // pre-existing encoded entry without this property decodes unchanged.
+  private final EnumProperty<CleanupPolicy> cleanupPolicyProp =
+      new EnumProperty<>("cleanupPolicy", CleanupPolicy.class, CleanupPolicy.DELETE);
 
   public PersistedTopic() {
-    super(6);
+    super(7);
     declareProperty(partitionCountProp)
         .declareProperty(replicationFactorProp)
         .declareProperty(statusProp)
         .declareProperty(assignmentProp)
         .declareProperty(targetProp)
-        .declareProperty(passiveProp);
+        .declareProperty(passiveProp)
+        .declareProperty(cleanupPolicyProp);
   }
 
   /** Wraps a {@link TopicMetadata} for storage. */
@@ -53,6 +59,7 @@ public final class PersistedTopic extends UnpackedObject implements DbValue {
     PartitionReplicas.write(assignmentProp, metadata.assignment());
     PartitionReplicas.write(targetProp, metadata.target());
     PartitionReplicas.write(passiveProp, metadata.passive());
+    cleanupPolicyProp.setValue(metadata.cleanupPolicy());
     return this;
   }
 
@@ -63,6 +70,7 @@ public final class PersistedTopic extends UnpackedObject implements DbValue {
         statusProp.getValue(),
         PartitionReplicas.read(assignmentProp),
         PartitionReplicas.read(targetProp),
-        PartitionReplicas.read(passiveProp));
+        PartitionReplicas.read(passiveProp),
+        cleanupPolicyProp.getValue());
   }
 }

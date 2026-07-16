@@ -111,7 +111,8 @@ public final class RebalanceTask implements Task, StreamProcessorLifecycleAware 
               .setReplicationFactor(meta.replicationFactor())
               .setStatus(meta.status())
               .setAssignment(meta.assignment())
-              .setTarget(target));
+              .setTarget(target)
+              .setCleanupPolicy(meta.cleanupPolicy()));
       // One move per tick, cluster-wide — the quiescence gate above holds the next until this
       // lands.
       return taskResultBuilder.build();
