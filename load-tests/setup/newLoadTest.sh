@@ -187,7 +187,9 @@ if [[ "$enable_optimize" == "true" ]]; then
     if [[ -f "$optimize_opensearch_config_file" ]]; then
       cp -v "$optimize_opensearch_config_file" "$TARGET_DIRECTORY/"
     fi
-  elif [[ "$secondary_storage" != "opensearch" ]]; then
+  elif [[ "$secondary_storage" == "none" ]]; then
+    echo "Optimize requires a secondary storage backend; ignoring enable_optimize=true because secondary_storage=none"
+  else
     # Non-ES/non-OS storage: forcefully configure Optimize to use Elasticsearch.
     elasticsearchEnabled=true
     echo "Forcefully enabling Elasticsearch for Optimize"

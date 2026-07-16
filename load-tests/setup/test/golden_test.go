@@ -88,6 +88,10 @@ var defaultScenarios = []scenario{
 	{Name: "rdbms", Storage: "postgresql", Optimize: false, Stable: false},
 	{Name: "rdbms-optimize", Storage: "postgresql", Optimize: true, Stable: false},
 	{Name: "none", Storage: "none", Optimize: false, Stable: false},
+	// Optimize cannot run without a secondary storage backend, so this covers
+	// that enable_optimize=true is correctly ignored (rather than crashing or
+	// silently misconfiguring the ES/OS exporter) when storage is disabled.
+	{Name: "none-optimize", Storage: "none", Optimize: true, Stable: false},
 	{Name: "elasticsearch-stable", Storage: "elasticsearch", Optimize: true, Stable: true},
 	{Name: "opensearch-stable", Storage: "opensearch", Optimize: true, Stable: true},
 	{Name: "rdbms-stable", Storage: "postgresql", Optimize: false, Stable: true},

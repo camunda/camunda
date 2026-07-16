@@ -1,0 +1,17 @@
+---
+# Source: load-test-setup/charts/load-tester/templates/load-test-config.yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: load-test-config
+  labels:
+
+    app.kubernetes.io/name: load-tester
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+data:
+  load-test-config.yaml: |
+    # Extra configuration for the load test applications
+    load-tester:
+      monitor-data-availability: false

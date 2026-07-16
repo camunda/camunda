@@ -128,6 +128,11 @@ platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
+else ifeq ($(secondary_storage),none)
+	# Optimize requires a secondary storage backend (Elasticsearch, OpenSearch,
+	# or a dedicated Elasticsearch cluster); it cannot run at all when secondary
+	# storage is disabled entirely.
+	platform_values += --set optimize.enabled=false
 else ifeq ($(secondary_storage),opensearch)
 	# When deploying the OpenSearch secondary storage, Optimize needs the
 	# OpenSearch-specific exporter/client configuration.
