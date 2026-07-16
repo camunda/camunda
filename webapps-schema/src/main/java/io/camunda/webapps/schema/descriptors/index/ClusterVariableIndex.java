@@ -29,6 +29,7 @@ public class ClusterVariableIndex extends AbstractIndexDescriptor implements Pri
   public static final String METADATA_KEY = "metadata.key";
   public static final String METADATA_VALUE = "metadata.value";
   public static final String METADATA_VALUE_NUMBER = "metadata.valueNumber";
+  public static final String KIND = "kind";
 
   public ClusterVariableIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
