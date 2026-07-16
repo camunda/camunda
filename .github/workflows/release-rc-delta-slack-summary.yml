@@ -4,7 +4,7 @@
 #   Trigger wiring (BPMN dispatch after a successful RC build) is deferred to a follow-up change;
 #   for now this workflow is invoked manually via workflow_dispatch.
 # type: CI Helper
-# owner: camunda/monorepo-devops-team
+# owner: camunda/engineering-operations
 ---
 name: RC Delta Slack Summary
 
@@ -31,7 +31,7 @@ on:
         type: boolean
 
 env:
-  TEST_OWNER: '@camunda/monorepo-devops-team'
+  TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 permissions: {}
@@ -44,7 +44,7 @@ jobs:
   compute-and-post-digest:
     name: Compute RC delta and post to Slack
     runs-on: ubuntu-slim
-    timeout-minutes: 15
+    timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
@@ -56,6 +56,9 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
+          # Read-only git (git log / rev-parse) only; the API is authenticated
+          # separately via GH_TOKEN, so no on-disk credential is needed.
+          persist-credentials: false
 
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -93,7 +96,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
           {
-            echo "### RC delta digest — ${{ inputs.rc_version }}"
+            echo "### RC delta digest — ${RC_VERSION}"
             echo '```json'
             echo "$payload" | jq .
             echo '```'
