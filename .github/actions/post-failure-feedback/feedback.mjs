@@ -30,7 +30,10 @@ const MEDIC = {
   '@camunda/monorepo-devops-team': '<!subteam^S07D6C6B18T|monorepo-devops-medic>',
   '@camunda/core-features': '<!subteam^S08P2CU9V8W|core-features-medic>',
 };
-const medicMention = (owner) => MEDIC[owner] || MEDIC['@camunda/monorepo-devops-team'];
+// No fallback: an unmapped/missing owner (e.g. the "unknown" default) must not
+// silently page monorepo-devops-medic. Returns '' (nothing to concatenate) when
+// there's no mapping, so callers don't need to worry about spacing either.
+const medicMention = (owner) => (MEDIC[owner] ? ` ${MEDIC[owner]}` : '');
 
 const CATALOG = {
   product: {
@@ -150,7 +153,7 @@ function slackText(m) {
   ]
     .filter(Boolean)
     .join(' · ');
-  return `${m.emoji} *AlwaysGreen — ${m.title}*\n*Stage:* \`${m.stage}\` · *Category:* \`${m.category}\` · *Owner:* ${m.owner} ${medicMention(m.owner)}${prLink}\n*Evidence:* ${ev}\n*Next steps:*\n${steps}\n${links}`;
+  return `${m.emoji} *AlwaysGreen — ${m.title}*\n*Stage:* \`${m.stage}\` · *Category:* \`${m.category}\` · *Owner:* ${m.owner}${medicMention(m.owner)}${prLink}\n*Evidence:* ${ev}\n*Next steps:*\n${steps}\n${links}`;
 }
 
 const gh = (args) => exec('gh', args, {maxBuffer: 64 * 1024 * 1024});
