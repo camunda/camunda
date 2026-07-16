@@ -192,6 +192,7 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE,
                         PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION,
                         PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION,
+                        PermissionType.CREATE_BATCH_OPERATION_RESUME_PROCESS_INSTANCE,
                         PermissionType.CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE,
                         PermissionType.CREATE_BATCH_OPERATION_UPDATE_JOB,
                         PermissionType.UPDATE,
