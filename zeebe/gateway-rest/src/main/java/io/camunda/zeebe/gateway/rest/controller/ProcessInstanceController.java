@@ -17,6 +17,7 @@ import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.DeleteProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.IncidentSearchQuery;
 import io.camunda.gateway.protocol.model.IncidentSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCancellationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceDeletionBatchOperationRequest;
@@ -31,6 +32,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
+import io.camunda.service.ProcessInstanceServices.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
@@ -99,6 +101,17 @@ public class ProcessInstanceController {
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
             mapped -> migrateProcessInstance(physicalTenantId, mapped));
+  }
+
+  @CamundaPostMapping(path = "/{processInstanceKey}/business-id-assignment")
+  public CompletableFuture<ResponseEntity<Object>> assignProcessInstanceBusinessId(
+      @PhysicalTenantId final String physicalTenantId,
+      @PathVariable final long processInstanceKey,
+      @RequestBody final ProcessInstanceBusinessIdAssignmentInstruction assignmentRequest) {
+    return RequestMapper.toAssignProcessInstanceBusinessId(processInstanceKey, assignmentRequest)
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            mapped -> assignProcessInstanceBusinessId(physicalTenantId, mapped));
   }
 
   @CamundaPostMapping(path = "/{processInstanceKey}/modification")
@@ -426,6 +439,15 @@ public class ProcessInstanceController {
     return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices.migrateProcessInstance(
+                request, authenticationProvider.getCamundaAuthentication()));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> assignProcessInstanceBusinessId(
+      final String physicalTenantId, final AssignProcessInstanceBusinessIdRequest request) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
+        () ->
+            processInstanceServices.assignProcessInstanceBusinessId(
                 request, authenticationProvider.getCamundaAuthentication()));
   }
 

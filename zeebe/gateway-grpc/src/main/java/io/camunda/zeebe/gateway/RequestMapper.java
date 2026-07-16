@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.gateway.cmd.InvalidBusinessIdException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesReques
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobTimeoutRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -468,6 +470,14 @@ public final class RequestMapper extends RequestUtil {
     return brokerRequest;
   }
 
+  public static BrokerAssignProcessInstanceBusinessIdRequest
+      toAssignProcessInstanceBusinessIdRequest(
+          final AssignProcessInstanceBusinessIdRequest grpcRequest) {
+    return new BrokerAssignProcessInstanceBusinessIdRequest()
+        .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
+        .setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));
+  }
+
   public static BrokerDeleteResourceRequest toDeleteResourceRequest(
       final DeleteResourceRequest grpcRequest) {
     final var brokerRequest =
@@ -540,6 +550,13 @@ public final class RequestMapper extends RequestUtil {
           "business id exceeds the limit of %d characters".formatted(MAX_BUSINESS_ID_LENGTH));
     }
     return businessId;
+  }
+
+  public static String ensureRequiredBusinessIdValid(final String businessId) {
+    if (StringUtils.isBlank(businessId)) {
+      throw new InvalidBusinessIdException(businessId, "no business id was provided");
+    }
+    return ensureBusinessIdValid(businessId);
   }
 
   public static String ensureTenantIdSet(final String commandName, final String tenantId) {

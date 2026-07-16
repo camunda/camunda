@@ -860,6 +860,67 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
       x-added-in-version: "8.6"
 
+  /process-instances/{processInstanceKey}/business-id-assignment:
+    post:
+      x-eventually-consistent: false
+      tags:
+        - Process instance
+      operationId: assignProcessInstanceBusinessId
+      x-required-permissions:
+        - { resourceType: PROCESS_DEFINITION, permissionType: UPDATE_PROCESS_INSTANCE }
+      security:
+        - bearerAuth: []
+        - basicAuth: []
+      summary: Assign business id to process instance
+      description: |
+        Assigns a business id to an already-running process instance that currently has none.
+
+        The assignment is single and irreversible: only artifacts created after the assignment
+        (for example future jobs, user tasks, decision instances, and message subscriptions) carry
+        the business id, while existing artifacts are not retroactively enriched. Re-sending the
+        same business id succeeds as a no-op. This endpoint is only useful while business id
+        uniqueness enforcement is disabled; when it is enabled, the request is rejected with a 409
+        response.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The key of the process instance to assign the business id to.
+          schema:
+            $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessInstanceBusinessIdAssignmentInstruction'
+      responses:
+        "204":
+          description: The business id is assigned to the process instance.
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "404":
+          description: The process instance is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "409":
+          description: >
+            The business id assignment failed because the process instance is not eligible,
+            for example it already has a different business id, it is a call-activity child, or
+            business id uniqueness enforcement is enabled.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+        "503":
+          $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+      x-added-in-version: "8.10"
+
   /process-instances/{processInstanceKey}/modification:
     post:
       x-eventually-consistent: false
@@ -1963,6 +2024,17 @@ components:
           addedInVersion: "8.6"
         - propertyName: targetElementId
           addedInVersion: "8.6"
+
+    ProcessInstanceBusinessIdAssignmentInstruction:
+      type: object
+      additionalProperties: false
+      description: |
+        The instruction describing the business id to assign to a running process instance.
+      properties:
+        businessId:
+          $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+      required:
+        - businessId
 
     ProcessInstanceModificationInstruction:
       type: object

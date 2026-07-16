@@ -42,6 +42,7 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
@@ -54,6 +55,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -462,6 +464,16 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
+  public CompletableFuture<ProcessInstanceBusinessIdRecord> assignProcessInstanceBusinessId(
+      final AssignProcessInstanceBusinessIdRequest request,
+      final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerAssignProcessInstanceBusinessIdRequest()
+            .setProcessInstanceKey(request.processInstanceKey())
+            .setBusinessId(request.businessId());
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
   public CompletableFuture<ProcessInstanceModificationRecord> modifyProcessInstance(
       final ProcessInstanceModifyRequest request, final CamundaAuthentication authentication) {
     final var brokerRequest =
@@ -661,6 +673,9 @@ public final class ProcessInstanceServices
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions,
       Long operationReference) {}
+
+  public record AssignProcessInstanceBusinessIdRequest(
+      Long processInstanceKey, String businessId) {}
 
   public record ProcessInstanceModifyRequest(
       Long processInstanceKey,

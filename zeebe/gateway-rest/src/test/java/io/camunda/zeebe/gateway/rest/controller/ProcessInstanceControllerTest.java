@@ -26,6 +26,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.config.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.ProcessInstanceServices.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
@@ -92,10 +94,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   static final String DELETE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/deletion";
   static final String MIGRATE_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/migration";
   static final String MODIFY_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/modification";
+  static final String ASSIGN_BUSINESS_ID_URL =
+      PROCESS_INSTANCES_START_URL + "/%s/business-id-assignment";
 
   @Captor ArgumentCaptor<ProcessInstanceCreateRequest> createRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceCancelRequest> cancelRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceMigrateRequest> migrateRequestCaptor;
+  @Captor ArgumentCaptor<AssignProcessInstanceBusinessIdRequest> assignBusinessIdRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceModifyRequest> modifyRequestCaptor;
   @MockitoBean ProcessInstanceServices processInstanceServices;
   @MockitoBean ServiceRegistry serviceRegistry;
@@ -1243,6 +1248,191 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldAssignProcessInstanceBusinessId() {
+    // given
+    when(processInstanceServices.assignProcessInstanceBusinessId(
+            any(AssignProcessInstanceBusinessIdRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceBusinessIdRecord()));
+
+    final var request =
+        """
+            {
+              "businessId": "order-12345"
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(processInstanceServices)
+        .assignProcessInstanceBusinessId(assignBusinessIdRequestCaptor.capture(), any());
+    final var capturedRequest = assignBusinessIdRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.businessId()).isEqualTo("order-12345");
+  }
+
+  @Test
+  void shouldRejectAssignProcessInstanceBusinessIdWithoutBusinessId() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No businessId provided.",
+                "instance":"/v2/process-instances/1/business-id-assignment"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectAssignProcessInstanceBusinessIdWithBlankBusinessId() {
+    // given
+    final var request =
+        """
+            {
+              "businessId": "   "
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No businessId provided.",
+                "instance":"/v2/process-instances/1/business-id-assignment"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldMapNotFoundWhenAssigningBusinessIdToUnknownProcessInstance() {
+    // given
+    final var rejectionReason =
+        "Expected to assign a business id to process instance with key '1', but no such process instance was found";
+    when(processInstanceServices.assignProcessInstanceBusinessId(
+            any(AssignProcessInstanceBusinessIdRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(rejectionReason, ServiceException.Status.NOT_FOUND)));
+
+    final var request =
+        """
+            {
+              "businessId": "order-12345"
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"NOT_FOUND",
+                "status":404,
+                "detail":"%s",
+                "instance":"/v2/process-instances/1/business-id-assignment"
+             }"""
+            .formatted(rejectionReason);
+
+    // when / then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldMapConflictWhenProcessInstanceNotEligibleForBusinessIdAssignment() {
+    // given
+    final var rejectionReason =
+        "Expected to assign a business id to process instance with key '1', but it already has a business id assigned";
+    when(processInstanceServices.assignProcessInstanceBusinessId(
+            any(AssignProcessInstanceBusinessIdRequest.class), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new ServiceException(rejectionReason, ServiceException.Status.INVALID_STATE)));
+
+    final var request =
+        """
+            {
+              "businessId": "order-12345"
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_STATE",
+                "status":409,
+                "detail":"%s",
+                "instance":"/v2/process-instances/1/business-id-assignment"
+             }"""
+            .formatted(rejectionReason);
+
+    // when / then
+    webClient
+        .post()
+        .uri(ASSIGN_BUSINESS_ID_URL.formatted("1"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isEqualTo(HttpStatus.CONFLICT)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()

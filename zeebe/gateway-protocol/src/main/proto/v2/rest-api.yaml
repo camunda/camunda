@@ -346,6 +346,8 @@ paths:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1suspension'
   /process-instances/{processInstanceKey}:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}'
+  /process-instances/{processInstanceKey}/business-id-assignment:
+    $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1business-id-assignment'
   /process-instances/{processInstanceKey}/call-hierarchy:
     $ref: 'process-instances.yaml#/paths/~1process-instances~1{processInstanceKey}~1call-hierarchy'
   /process-instances/{processInstanceKey}/cancellation:

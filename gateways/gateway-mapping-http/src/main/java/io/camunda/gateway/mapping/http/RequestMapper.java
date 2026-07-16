@@ -24,6 +24,7 @@ import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.gateway.mapping.http.validator.MultiTenancyValidator.validateTenantIds;
+import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateAssignProcessInstanceBusinessIdRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.gateway.mapping.http.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest;
@@ -68,6 +69,7 @@ import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import io.camunda.gateway.protocol.model.MessageCorrelationRequest;
 import io.camunda.gateway.protocol.model.MessagePublicationRequest;
 import io.camunda.gateway.protocol.model.ModifyProcessInstanceVariableInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceBusinessIdAssignmentInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionById;
 import io.camunda.gateway.protocol.model.ProcessInstanceCreationInstructionByKey;
@@ -102,6 +104,7 @@ import io.camunda.service.JobServices.BatchUpdateJobRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
+import io.camunda.service.ProcessInstanceServices.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
@@ -813,6 +816,17 @@ public class RequestMapper {
                                 .setTargetElementId(instruction.getTargetElementId()))
                     .toList(),
                 request.getOperationReference()));
+  }
+
+  public static Either<ProblemDetail, AssignProcessInstanceBusinessIdRequest>
+      toAssignProcessInstanceBusinessId(
+          final long processInstanceKey,
+          final ProcessInstanceBusinessIdAssignmentInstruction request) {
+    return getResult(
+        validateAssignProcessInstanceBusinessIdRequest(request),
+        () ->
+            new AssignProcessInstanceBusinessIdRequest(
+                processInstanceKey, request.getBusinessId()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceFilter> toRequiredProcessInstanceFilter(

@@ -43,6 +43,7 @@ import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.service.ProcessInstanceServices.AssignProcessInstanceBusinessIdRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.authorization.Authorizations;
@@ -54,6 +55,7 @@ import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedTopologyManager;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerAssignProcessInstanceBusinessIdRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
@@ -61,6 +63,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
@@ -668,6 +671,34 @@ public final class ProcessInstanceServiceTest {
             () -> services.deleteProcessInstance(processInstanceKey, null, authentication).join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Process Instance with key '123' not found");
+  }
+
+  @Test
+  void shouldAssignProcessInstanceBusinessId() {
+    // given
+    final long processInstanceKey = 123L;
+    final var businessId = "order-12345";
+
+    final var record =
+        new ProcessInstanceBusinessIdRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setBusinessId(businessId);
+    final var captor = ArgumentCaptor.forClass(BrokerAssignProcessInstanceBusinessIdRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    services
+        .assignProcessInstanceBusinessId(
+            new AssignProcessInstanceBusinessIdRequest(processInstanceKey, businessId),
+            authentication)
+        .join();
+
+    // then
+    final var brokerRequest = captor.getValue();
+    final var enrichedRecord = brokerRequest.getRequestWriter();
+    assertThat(enrichedRecord.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(enrichedRecord.getBusinessId()).isEqualTo(businessId);
   }
 
   @Test
