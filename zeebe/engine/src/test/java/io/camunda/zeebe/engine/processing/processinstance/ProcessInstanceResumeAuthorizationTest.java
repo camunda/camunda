@@ -129,7 +129,7 @@ public class ProcessInstanceResumeAuthorizationTest {
   }
 
   @Test
-  public void shouldEnrichRejectionWithTenantIdWhenUnauthorized() {
+  public void shouldEnrichRejectionWithTenantIdAndRootProcessInstanceKeyWhenUnauthorized() {
     // given
     engine
         .deployment()
@@ -158,6 +158,9 @@ public class ProcessInstanceResumeAuthorizationTest {
     // then
     Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
     Assertions.assertThat(rejection.getValue()).hasTenantId(TENANT);
+    assertThat(rejection.getValue().getRootProcessInstanceKey())
+        .describedAs("a root process instance's own key is also its rootProcessInstanceKey")
+        .isEqualTo(processInstanceKey);
   }
 
   private UserRecordValue createUser() {
