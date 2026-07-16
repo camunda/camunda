@@ -1,0 +1,157 @@
+# description: Posts a deterministic delta summary (merged PRs + direct commits) since the
+#   previous RC tag to Slack, for every RC past RC1. RC1 posts a fixed "no delta" note instead.
+#   No AI/agentic categorization is performed — deterministic core only (issue #40007).
+#   Trigger wiring (BPMN dispatch after a successful RC build) is deferred to a follow-up change;
+#   for now this workflow is invoked manually via workflow_dispatch.
+# type: CI Helper
+# owner: camunda/monorepo-devops-team
+---
+name: RC Delta Slack Summary
+
+on:
+  workflow_dispatch:
+    inputs:
+      rc_version:
+        description: 'RC tag to summarize, e.g. "8.9.0-alpha3-rc2" or "8.9.0-rc2"'
+        required: true
+        type: string
+      slack_channel_id:
+        description: 'Slack channel ID to post the digest to'
+        required: true
+        type: string
+      slack_thread_id:
+        description: 'Slack thread (message ts) to post into. Leave empty to post to the channel root.'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Dry run — compute and log the digest, do not post to Slack'
+        required: false
+        default: true
+        type: boolean
+
+env:
+  TEST_OWNER: '@camunda/monorepo-devops-team'
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  compute-and-post-digest:
+    name: Compute RC delta and post to Slack
+    runs-on: ubuntu-slim
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      TEST_PRODUCT: Release Process
+      TEST_TYPE: CI Helper
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+
+      - name: Verify RC tag exists
+        env:
+          RC_VERSION: ${{ inputs.rc_version }}
+        run: |
+          if ! git rev-parse -q --verify "refs/tags/${RC_VERSION}" >/dev/null; then
+            echo "::error::Tag '${RC_VERSION}' not found. Check the version input, or that the checkout fetched full tag history."
+            exit 1
+          fi
+
+      - name: Identify previous release version
+        id: prev_version
+        uses: camunda/infra-global-github-actions/previous-version@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # previous-version: v1.0.0
+        with:
+          version: ${{ inputs.rc_version }}
+          verbose: 'false'
+
+      - name: Compute RC delta digest
+        id: digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RC_VERSION: ${{ inputs.rc_version }}
+          PREV_VERSION: ${{ steps.prev_version.outputs.previous_version }}
+        run: |
+          payload=$(bash .github/scripts/rc-delta-slack-summary.sh)
+
+          {
+            echo "payload<<PAYLOAD_EOF"
+            echo "$payload"
+            echo "PAYLOAD_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### RC delta digest — ${{ inputs.rc_version }}"
+            echo '```json'
+            echo "$payload" | jq .
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log digest (dry run)
+        if: ${{ inputs.dry_run }}
+        env:
+          SLACK_CHANNEL: ${{ inputs.slack_channel_id }}
+          SLACK_THREAD_TS: ${{ inputs.slack_thread_id }}
+          PAYLOAD: ${{ steps.digest.outputs.payload }}
+        run: |
+          echo "🧪 Dry run — would post the following to Slack channel ${SLACK_CHANNEL} (thread: ${SLACK_THREAD_TS:-channel root}):"
+          printf '%s\n' "$PAYLOAD" | jq .
+
+      - name: Get Slack bot token from Vault
+        if: ${{ !inputs.dry_run }}
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN;
+
+      - name: Post digest to Slack
+        if: ${{ !inputs.dry_run }}
+        env:
+          SLACK_BOT_TOKEN: ${{ steps.secrets.outputs.SLACK_C8_MONOREPO_NOTIFICATIONS_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ inputs.slack_channel_id }}
+          SLACK_THREAD_TS: ${{ inputs.slack_thread_id }}
+          PAYLOAD: ${{ steps.digest.outputs.payload }}
+        run: |
+          body=$(jq -c --arg channel "$SLACK_CHANNEL" --arg thread_ts "$SLACK_THREAD_TS" \
+            '. + {channel: $channel} + (if $thread_ts != "" then {thread_ts: $thread_ts} else {} end)' \
+            <<< "$PAYLOAD")
+
+          response=$(curl -s -X POST "https://slack.com/api/chat.postMessage" \
+            -H "Authorization: Bearer ${SLACK_BOT_TOKEN}" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d "$body")
+
+          ok=$(echo "$response" | jq -r '.ok')
+          if [[ "$ok" != "true" ]]; then
+            echo "::error::Slack chat.postMessage failed: $(echo "$response" | jq -r '.error // "unknown"')"
+            exit 1
+          fi
+          echo "✅ Posted to Slack (ts: $(echo "$response" | jq -r '.ts'))"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
