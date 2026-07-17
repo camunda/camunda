@@ -9,7 +9,7 @@
       <bpmn:incoming>Flow_0rreful</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_0rreful" sourceRef="Activity_1uji9vw" targetRef="Event_11z59hi" />
-    <bpmn:userTask id="Activity_1uji9vw" name="LATEST_VERSION_TASK_NAME">
+    <bpmn:userTask id="Activity_1uji9vw" name="Latest Version Task V1">
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:formDefinition formId="Form_Latest_Version" />

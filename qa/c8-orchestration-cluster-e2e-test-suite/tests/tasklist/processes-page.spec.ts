@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
-import {deploy, deployWithSubstitutions} from 'utils/zeebeClient';
+import {deploy} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -206,12 +206,8 @@ test.describe('process page', () => {
     taskPanelPage,
   }) => {
     await deploy(['./resources/latest_version_process.form']);
-    await deployWithSubstitutions('./resources/latest_version_process.bpmn', {
-      LATEST_VERSION_TASK_NAME: 'Latest Version Task V1',
-    });
-    await deployWithSubstitutions('./resources/latest_version_process.bpmn', {
-      LATEST_VERSION_TASK_NAME: 'Latest Version Task V2',
-    });
+    await deploy(['./resources/latest_version_process_v1.bpmn']);
+    await deploy(['./resources/latest_version_process_v2.bpmn']);
 
     await tasklistHeader.clickProcessesTab();
     await expect(page).toHaveURL('/tasklist/processes');
