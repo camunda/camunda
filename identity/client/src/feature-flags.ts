@@ -8,4 +8,4 @@
 
 export const featureFlags = [];
 
-export const IS_NAV_V2_ENABLED = false;
+export const IS_NAV_V2_ENABLED = true;
