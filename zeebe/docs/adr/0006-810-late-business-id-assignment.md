@@ -42,10 +42,13 @@ isolated.
 **D2. Assignment is single, irreversible, and only to an instance that has none.** The command is
 rejected when the instance already carries a Business ID. There is no unset and no reassignment.
 
-**D3. Re-sending the identical value succeeds idempotently; a different value is rejected.** Assigning
-exactly the Business ID an instance already carries is an accepted no-op (no second event is written);
-assigning a different value to an instance that already has one is rejected. This makes at-least-once
-client retries safe without weakening D2.
+**D3. Any instance that already carries a Business ID is rejected, even for the identical value.**
+Assigning to an instance that already has a Business ID is rejected regardless of whether the value
+matches or differs. An identical re-send is *not* treated as a silent no-op: the engine requires
+every accepted command to produce exactly one follow-up record, so acknowledging a retry without an
+`ASSIGNED` event would leave the command with no follow-up record on the log. Clients therefore treat
+the `INVALID_STATE` rejection of a retry as "already assigned" rather than relying on idempotent
+success.
 
 **D4. Only root process instances are ever eligible; call-activity children are never eligible.** The
 uniqueness index is a root-instance concern, and children have their own Business ID story via
@@ -81,15 +84,14 @@ assignment consistent with the closest existing instance-update command.
 
 **D10. Precondition failures map to a fixed rejection contract.**
 
-|                           Failure                           |          Rejection           |
-|-------------------------------------------------------------|------------------------------|
-| Process instance does not exist / wrong tenant              | `NOT_FOUND`                  |
-| Target is a call-activity child (D4)                        | `INVALID_STATE`              |
-| Business ID uniqueness enabled (D5)                         | `INVALID_STATE`              |
-| Instance already has a different Business ID (D2)           | `INVALID_STATE`              |
-| Instance already has exactly the requested Business ID (D3) | accepted no-op               |
-| Value fails `BusinessIdValidator` (D6)                      | `INVALID_ARGUMENT`           |
-| Caller not authorized (D9)                                  | `UNAUTHORIZED` / `FORBIDDEN` |
+|                               Failure                               |          Rejection           |
+|---------------------------------------------------------------------|------------------------------|
+| Process instance does not exist / wrong tenant                      | `NOT_FOUND`                  |
+| Target is a call-activity child (D4)                                | `INVALID_STATE`              |
+| Business ID uniqueness enabled (D5)                                 | `INVALID_STATE`              |
+| Instance already has a Business ID, same or different value (D2/D3) | `INVALID_STATE`              |
+| Value fails `BusinessIdValidator` (D6)                              | `INVALID_ARGUMENT`           |
+| Caller not authorized (D9)                                          | `UNAUTHORIZED` / `FORBIDDEN` |
 
 **D11. Three API surfaces expose the assignment.** A dedicated
 `POST /process-instances/{processInstanceKey}/business-id-assignment` endpoint (action-noun

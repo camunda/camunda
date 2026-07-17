@@ -87,13 +87,8 @@ public class ProcessInstanceBusinessIdAssignProcessor
         .validate(processInstance, value.getBusinessId())
         .ifRightOrLeft(
             decision -> {
-              assignmentBehavior.enrich(value, decision.processInstanceRecord());
-              // A truly new assignment writes the ASSIGNED event; re-sending the identical value
-              // is an idempotent no-op that still responds success without a second event (ADR
-              // 0006, D3).
-              if (!decision.idempotent()) {
-                assignmentBehavior.appendAssignedEvent(processInstanceKey, value);
-              }
+              assignmentBehavior.enrich(value, processInstanceRecord);
+              assignmentBehavior.appendAssignedEvent(processInstanceKey, value);
               responseWriter.writeEventOnCommand(
                   processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGNED, value, command);
             },

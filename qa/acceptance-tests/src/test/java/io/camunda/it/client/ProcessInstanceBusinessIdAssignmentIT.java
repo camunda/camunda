@@ -10,7 +10,6 @@ package io.camunda.it.client;
 import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
 import static io.camunda.it.util.TestHelper.waitForProcessInstance;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
@@ -41,10 +40,6 @@ class ProcessInstanceBusinessIdAssignmentIT {
 
     // then - the assignment propagates to secondary storage
     awaitBusinessId(processInstanceKey, businessId);
-
-    assertThatNoException()
-        .describedAs("re-sending the identical business id succeeds idempotently")
-        .isThrownBy(() -> assignBusinessId(processInstanceKey, businessId, useRest).send().join());
   }
 
   @ParameterizedTest
@@ -78,16 +73,23 @@ class ProcessInstanceBusinessIdAssignmentIT {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  void shouldRejectReassigningDifferentBusinessId(final boolean useRest) {
+  void shouldRejectReassigningBusinessId(final boolean useRest) {
     // given - a process instance that already has a business id assigned
     final long processInstanceKey = startProcessInstance("business-id-reassign", useRest);
     assignBusinessId(processInstanceKey, "order-original", useRest).send().join();
 
-    // when / then
+    // when / then - reassigning is rejected regardless of whether the id differs or is identical
     assertThatThrownBy(
             () -> assignBusinessId(processInstanceKey, "order-different", useRest).send().join())
         .describedAs(
             "assigning a different business id to an already-assigned instance is rejected")
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining("it already has a business id assigned");
+
+    assertThatThrownBy(
+            () -> assignBusinessId(processInstanceKey, "order-original", useRest).send().join())
+        .describedAs(
+            "re-sending the identical business id to an already-assigned instance is rejected")
         .isInstanceOf(ClientException.class)
         .hasMessageContaining("it already has a business id assigned");
   }

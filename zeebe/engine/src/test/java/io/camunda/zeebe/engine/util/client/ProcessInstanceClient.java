@@ -1243,14 +1243,5 @@ public final class ProcessInstanceClient {
           ? expectation.apply(processInstanceKey)
           : expectation.apply(position);
     }
-
-    /**
-     * Writes the ASSIGN command without awaiting a follow-up event. Used to exercise the idempotent
-     * no-op path, where an identical value produces no {@code ASSIGNED} event (see ADR 0006, D3).
-     */
-    public void assignExpectingNoEvent() {
-      writer.writeCommand(
-          processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGN, record, authorizedTenants);
-    }
   }
 }

@@ -52,13 +52,14 @@ public final class ProcessInstanceBusinessIdAssignmentBehavior {
   /**
    * Validates that the given Business ID may be assigned to an already-resolved, authorized process
    * instance. The instance must be a root instance (D4), active, uniqueness must be disabled (D5),
-   * and the value must pass {@link BusinessIdValidator} (D6). Re-sending the identical value is an
-   * idempotent no-op (D3); a different value on an instance that already has one is rejected (D2).
+   * and the value must pass {@link BusinessIdValidator} (D6). An instance that already carries any
+   * Business ID is rejected (D2/D3), so a successful validation always leads to exactly one {@code
+   * ASSIGNED} event.
    *
-   * @return a decision describing whether the {@code ASSIGNED} event should be written, or a
-   *     rejection if a precondition fails
+   * @return the resolved process-scope record to enrich the assignment with, or a rejection if a
+   *     precondition fails
    */
-  public Either<Rejection, AssignmentDecision> validate(
+  public Either<Rejection, ProcessInstanceRecord> validate(
       final ElementInstance processInstance, final String businessId) {
     final ProcessInstanceRecord processInstanceRecord = processInstance.getValue();
     final long processInstanceKey = processInstanceRecord.getProcessInstanceKey();
@@ -96,15 +97,15 @@ public final class ProcessInstanceBusinessIdAssignmentBehavior {
 
     final String existingBusinessId = processInstanceRecord.getBusinessId();
     if (!existingBusinessId.isEmpty()) {
-      if (existingBusinessId.equals(businessId)) {
-        return Either.right(new AssignmentDecision(processInstanceRecord, true));
-      }
+      // A Business ID is assigned once and never changed or re-assigned (D2). Re-sending even the
+      // identical value is rejected rather than treated as a silent no-op, so that every accepted
+      // command produces exactly one ASSIGNED follow-up record (D3).
       return Either.left(
           new Rejection(
               RejectionType.INVALID_STATE, ERROR_ALREADY_ASSIGNED.formatted(processInstanceKey)));
     }
 
-    return Either.right(new AssignmentDecision(processInstanceRecord, false));
+    return Either.right(processInstanceRecord);
   }
 
   /**
@@ -127,14 +128,4 @@ public final class ProcessInstanceBusinessIdAssignmentBehavior {
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGNED, value);
   }
-
-  /**
-   * The outcome of a successful validation.
-   *
-   * @param processInstanceRecord the resolved process-scope record to enrich the assignment with
-   * @param idempotent whether the instance already carries exactly the requested Business ID, in
-   *     which case no {@code ASSIGNED} event must be written (D3)
-   */
-  public record AssignmentDecision(
-      ProcessInstanceRecord processInstanceRecord, boolean idempotent) {}
 }
