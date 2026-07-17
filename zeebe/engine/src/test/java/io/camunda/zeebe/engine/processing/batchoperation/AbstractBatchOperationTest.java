@@ -148,6 +148,74 @@ abstract class AbstractBatchOperationTest {
         .getBatchOperationKey();
   }
 
+  protected long createNewSuspendProcessInstanceBatchOperation(final Set<Long> itemKeys) {
+    return createNewSuspendProcessInstanceBatchOperation(itemKeys, null);
+  }
+
+  protected long createNewSuspendProcessInstanceBatchOperation(
+      final Set<Long> itemKeys, final Map<String, Object> claims) {
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                itemKeys.stream().map(this::fakeProcessInstanceEntity).collect(Collectors.toList()))
+            .total(itemKeys.size())
+            .build();
+
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(result);
+
+    final var filterBuffer = convertToBuffer(new ProcessInstanceFilter.Builder().build());
+
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
+    }
+
+    return engine
+        .batchOperation()
+        .newCreation(BatchOperationType.SUSPEND_PROCESS_INSTANCE)
+        .withFilter(filterBuffer)
+        .withAuthentication(authenticationBuffer)
+        .create(DEFAULT_USER.getUsername())
+        .getValue()
+        .getBatchOperationKey();
+  }
+
+  protected long createNewResumeProcessInstanceBatchOperation(final Set<Long> itemKeys) {
+    return createNewResumeProcessInstanceBatchOperation(itemKeys, null);
+  }
+
+  protected long createNewResumeProcessInstanceBatchOperation(
+      final Set<Long> itemKeys, final Map<String, Object> claims) {
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                itemKeys.stream().map(this::fakeProcessInstanceEntity).collect(Collectors.toList()))
+            .total(itemKeys.size())
+            .build();
+
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(result);
+
+    final var filterBuffer = convertToBuffer(new ProcessInstanceFilter.Builder().build());
+
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
+    }
+
+    return engine
+        .batchOperation()
+        .newCreation(BatchOperationType.RESUME_PROCESS_INSTANCE)
+        .withFilter(filterBuffer)
+        .withAuthentication(authenticationBuffer)
+        .create(DEFAULT_USER.getUsername())
+        .getValue()
+        .getBatchOperationKey();
+  }
+
   protected long createNewModifyProcessInstanceBatchOperation(
       final Set<Long> itemKeys,
       final String sourceElementId,
