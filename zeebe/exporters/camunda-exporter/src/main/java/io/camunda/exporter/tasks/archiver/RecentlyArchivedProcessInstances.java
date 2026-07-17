@@ -25,7 +25,7 @@ public class RecentlyArchivedProcessInstances {
   }
 
   @VisibleForTesting
-  RecentlyArchivedProcessInstances(final Cache<Long, Boolean> recentlyArchived) {
+  public RecentlyArchivedProcessInstances(final Cache<Long, Boolean> recentlyArchived) {
     this.recentlyArchived = recentlyArchived;
   }
 
