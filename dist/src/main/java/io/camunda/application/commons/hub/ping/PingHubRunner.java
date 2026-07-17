@@ -5,15 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.console.ping;
+package io.camunda.application.commons.hub.ping;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
-import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
-import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
-import io.camunda.application.commons.hub.ping.M2MCredentials;
-import io.camunda.application.commons.hub.ping.M2MTokenProvider;
+import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration;
+import io.camunda.application.commons.hub.ping.PingHubTask.LicensePayload;
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -36,41 +34,27 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-/**
- * Pings the Camunda Console endpoint on a scheduled basis.
- *
- * @deprecated Use {@code camunda.hub.ping} configuration instead. This runner is retained for
- *     backwards compatibility and will be removed in a future release. It is disabled automatically
- *     when {@code camunda.hub.ping.enabled=true}.
- *     <p><b>Important:</b> The ping endpoint now requires authentication regardless of which
- *     configuration path is used. Before upgrading, you must add M2M credentials under {@code
- *     camunda.console.ping.credentials} ({@code token-endpoint}, {@code client-id}, {@code
- *     client-secret}). Missing credentials will cause all pings to fail at startup validation.
- */
-@Deprecated
 @Component
-@EnableConfigurationProperties({ConsolePingConfiguration.class})
-@ConditionalOnExpression(
-    "'${camunda.console.ping.enabled:false}' == 'true' "
-        + "and '${camunda.hub.ping.enabled:false}' != 'true'")
-public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListener {
-  private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleRunner.class);
+@EnableConfigurationProperties({HubPingConfiguration.class})
+@ConditionalOnProperty(prefix = "camunda.hub.ping", name = "enabled", havingValue = "true")
+public class PingHubRunner implements ApplicationRunner, BrokerTopologyListener {
+  private static final Logger LOGGER = LoggerFactory.getLogger(PingHubRunner.class);
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
-  private final ConsolePingConfiguration pingConfiguration;
+  private final HubPingConfiguration pingConfiguration;
   private final ManagementServices managementServices;
   private Either<Exception, String> licensePayload;
   private final BrokerTopologyManager brokerTopologyManager;
   private final ApplicationContext applicationContext;
 
   @Autowired
-  public PingConsoleRunner(
-      final ConsolePingConfiguration pingConfigurationProperties,
+  public PingHubRunner(
+      final HubPingConfiguration pingConfigurationProperties,
       final ManagementServices managementServices,
       final ApplicationContext applicationContext,
       final BrokerTopologyManager brokerTopologyManager) {
@@ -82,8 +66,6 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
 
   @Override
   public void run(final ApplicationArguments args) {
-    LOGGER.warn(
-        "camunda.console.ping is deprecated. Please migrate to camunda.hub.ping configuration.");
     waitForClusterId()
         .thenAccept(this::buildLicensePayload)
         .thenRun(
@@ -99,14 +81,14 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
 
   private void startPingTask() {
     LOGGER.info(
-        "Console ping is enabled for cluster ID of {}, with endpoint: {}, and period of {}.",
+        "Hub ping is enabled for cluster ID of {}, with endpoint: {}, and period of {}.",
         brokerTopologyManager.getClusterConfiguration().clusterId().get(),
         pingConfiguration.endpoint(),
         pingConfiguration.pingPeriod());
     final var tokenProvider = new M2MTokenProvider(pingConfiguration.credentials());
     final var executor = createTaskExecutor();
     executor.scheduleAtFixedRate(
-        new PingConsoleTask(pingConfiguration, tokenProvider, licensePayload.get()),
+        new PingHubTask(pingConfiguration, tokenProvider, licensePayload.get()),
         1000,
         pingConfiguration.pingPeriod().toMillis(),
         TimeUnit.MILLISECONDS);
@@ -177,7 +159,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     }
     if (licensePayload.isLeft()) {
       return Either.left(
-          "Failed to parse license payload for Console ping task: "
+          "Failed to parse license payload for Hub ping task: "
               + licensePayload.getLeft().getMessage());
     }
     return Either.right(null);
@@ -198,7 +180,7 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
   private ScheduledThreadPoolExecutor createTaskExecutor() {
     final var threadFactory =
         Thread.ofPlatform()
-            .name("console-license-ping-", 0)
+            .name("hub-license-ping-", 0)
             .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOGGER))
             .factory();
     final var executor = new ScheduledThreadPoolExecutor(1, threadFactory);
@@ -253,8 +235,8 @@ public class PingConsoleRunner implements ApplicationRunner, BrokerTopologyListe
     return future;
   }
 
-  @ConfigurationProperties("camunda.console.ping")
-  public record ConsolePingConfiguration(
+  @ConfigurationProperties("camunda.hub.ping")
+  public record HubPingConfiguration(
       boolean enabled,
       URI endpoint,
       String clusterName,

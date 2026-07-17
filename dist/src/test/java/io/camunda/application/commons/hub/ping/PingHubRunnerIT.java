@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.console.ping;
+package io.camunda.application.commons.hub.ping;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
@@ -21,8 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
-import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
-import io.camunda.application.commons.hub.ping.M2MCredentials;
+import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -40,7 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 
-public class PingConsoleRunnerIT {
+public class PingHubRunnerIT {
 
   private static final BrokerTopologyManager BROKER_TOPOLOGY_MANAGER =
       mock(BrokerTopologyManager.class);
@@ -108,8 +107,8 @@ public class PingConsoleRunnerIT {
 
     final M2MCredentials credentials =
         new M2MCredentials(URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret");
-    final ConsolePingConfiguration config =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create(baseUrl + "/ping"),
             "test-cluster-name",
@@ -118,23 +117,23 @@ public class PingConsoleRunnerIT {
             null,
             credentials);
 
-    final PingConsoleRunner pingConsoleRunner =
-        new PingConsoleRunner(
-            config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner pingHubRunner =
+        new PingHubRunner(config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
 
     // when
-    pingConsoleRunner.run(null);
+    pingHubRunner.run(null);
 
     // then
     await().atMost(10, TimeUnit.SECONDS).until(() -> pingEventsCount() >= 3);
 
+    // validate the first ping request received by the mock server
     final List<ServeEvent> pingEvents = pingServeEvents();
-    final String actualBody = pingEvents.get(0).getRequest().getBodyAsString();
+    assertThat(pingEvents).isNotEmpty();
 
+    final String actualBody = pingEvents.get(0).getRequest().getBodyAsString();
     final ObjectMapper mapper = new ObjectMapper();
     final JsonNode expected = mapper.readTree(expectedBody);
     final JsonNode actual = mapper.readTree(actualBody);
-
     assertThat(actual).as("JSON payload did not match expected structure").isEqualTo(expected);
   }
 
@@ -142,6 +141,7 @@ public class PingConsoleRunnerIT {
   void shouldSendM2MTokenInAuthorizationHeader() throws Exception {
     // given
     final String baseUrl = "http://localhost:" + wireMockServer.port();
+    final Duration pingPeriod = Duration.ofMillis(200);
 
     applicationContext = mock(ApplicationContext.class);
     final Environment environment = mock(Environment.class);
@@ -154,22 +154,21 @@ public class PingConsoleRunnerIT {
 
     final M2MCredentials credentials =
         new M2MCredentials(URI.create(baseUrl + "/token"), "test-client-id", "test-client-secret");
-    final ConsolePingConfiguration config =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create(baseUrl + "/ping"),
             "test-cluster-name",
-            Duration.ofMillis(200),
+            pingPeriod,
             new RetryConfiguration(),
             null,
             credentials);
 
-    final PingConsoleRunner pingConsoleRunner =
-        new PingConsoleRunner(
-            config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner pingHubRunner =
+        new PingHubRunner(config, managementServices, applicationContext, BROKER_TOPOLOGY_MANAGER);
 
     // when
-    pingConsoleRunner.run(null);
+    pingHubRunner.run(null);
 
     // then
     await().atMost(10, TimeUnit.SECONDS).until(() -> pingEventsCount() >= 1);

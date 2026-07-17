@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.console.ping;
+package io.camunda.application.commons.hub.ping;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -15,9 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
-import io.camunda.application.commons.hub.ping.M2MCredentials;
-import io.camunda.application.commons.hub.ping.M2MTokenProvider;
+import io.camunda.application.commons.hub.ping.PingHubRunner.HubPingConfiguration;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -41,7 +39,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 
 @ExtendWith(MockitoExtension.class)
-class PingConsoleConfigurationTest {
+class PingHubConfigurationTest {
 
   private static final ManagementServices MANAGEMENT_SERVICES = mock(ManagementServices.class);
   private static final Environment ENVIRONMENT = mock(Environment.class);
@@ -54,8 +52,8 @@ class PingConsoleConfigurationTest {
       new M2MCredentials(
           URI.create("http://auth-server.com/token"), "test-client-id", "test-client-secret");
 
-  private final ConsolePingConfiguration pingConfiguration =
-      new ConsolePingConfiguration(
+  private final HubPingConfiguration pingConfiguration =
+      new HubPingConfiguration(
           true,
           URI.create("http://fake-endpoint.com"),
           "clusterName",
@@ -83,8 +81,8 @@ class PingConsoleConfigurationTest {
   @Test
   void endpointShouldNotBeNull() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             null,
             "clusterName",
@@ -93,12 +91,9 @@ class PingConsoleConfigurationTest {
             null,
             VALID_CREDENTIALS);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -111,8 +106,8 @@ class PingConsoleConfigurationTest {
   @Test
   void endpointShouldBeValid() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("123"),
             "clusterName",
@@ -121,12 +116,9 @@ class PingConsoleConfigurationTest {
             null,
             VALID_CREDENTIALS);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -139,8 +131,8 @@ class PingConsoleConfigurationTest {
   @Test
   void clusterNameMustNotBeNullOrEmpty() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "",
@@ -149,12 +141,9 @@ class PingConsoleConfigurationTest {
             null,
             VALID_CREDENTIALS);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -167,8 +156,8 @@ class PingConsoleConfigurationTest {
   @Test
   void pingPeriodMustBePositive() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -177,12 +166,9 @@ class PingConsoleConfigurationTest {
             null,
             VALID_CREDENTIALS);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -198,8 +184,8 @@ class PingConsoleConfigurationTest {
     final RetryConfiguration retryConfiguration = new RetryConfiguration();
     retryConfiguration.setMaxRetries(0);
 
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -208,12 +194,9 @@ class PingConsoleConfigurationTest {
             null,
             VALID_CREDENTIALS);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -229,8 +212,8 @@ class PingConsoleConfigurationTest {
     final RetryConfiguration retryConfiguration = new RetryConfiguration();
     retryConfiguration.setRetryDelayMultiplier(0.0);
 
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -239,12 +222,9 @@ class PingConsoleConfigurationTest {
             null,
             VALID_CREDENTIALS);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -257,8 +237,8 @@ class PingConsoleConfigurationTest {
   @Test
   void retryConfigurationCanBeNull() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -270,11 +250,8 @@ class PingConsoleConfigurationTest {
     // then
     assertThatCode(
             () ->
-                new PingConsoleRunner(
-                    consolePingConfiguration,
-                    MANAGEMENT_SERVICES,
-                    APPLICATION_CONTEXT,
-                    BROKER_TOPOLOGY_MANAGER))
+                new PingHubRunner(
+                    config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER))
         .doesNotThrowAnyException();
   }
 
@@ -284,8 +261,8 @@ class PingConsoleConfigurationTest {
     final RetryConfiguration retryConfiguration = new RetryConfiguration();
     retryConfiguration.setMaxRetryDelay(Duration.ofMillis(0));
 
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -294,12 +271,9 @@ class PingConsoleConfigurationTest {
             null,
             VALID_CREDENTIALS);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -315,8 +289,8 @@ class PingConsoleConfigurationTest {
     final RetryConfiguration retryConfiguration = new RetryConfiguration();
     retryConfiguration.setMinRetryDelay(Duration.ofMillis(0));
 
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -325,12 +299,9 @@ class PingConsoleConfigurationTest {
             null,
             VALID_CREDENTIALS);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -347,8 +318,8 @@ class PingConsoleConfigurationTest {
     retryConfiguration.setMinRetryDelay(Duration.ofMillis(1000));
     retryConfiguration.setMaxRetryDelay(Duration.ofMillis(500));
 
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -357,12 +328,9 @@ class PingConsoleConfigurationTest {
             null,
             VALID_CREDENTIALS);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -376,8 +344,8 @@ class PingConsoleConfigurationTest {
   @Test
   void credentialsMustNotBeNull() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -386,12 +354,9 @@ class PingConsoleConfigurationTest {
             null,
             null);
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -404,8 +369,8 @@ class PingConsoleConfigurationTest {
   @Test
   void tokenEndpointMustNotBeNull() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -414,12 +379,9 @@ class PingConsoleConfigurationTest {
             null,
             new M2MCredentials(null, "clientId", "secret"));
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -432,8 +394,8 @@ class PingConsoleConfigurationTest {
   @Test
   void tokenEndpointMustBeValid() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -442,12 +404,9 @@ class PingConsoleConfigurationTest {
             null,
             new M2MCredentials(URI.create("not-a-valid-uri"), "clientId", "secret"));
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -461,8 +420,8 @@ class PingConsoleConfigurationTest {
   @Test
   void clientIdMustNotBeNullOrEmpty() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -471,12 +430,9 @@ class PingConsoleConfigurationTest {
             null,
             new M2MCredentials(URI.create("http://auth-server.com/token"), "", "secret"));
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -489,8 +445,8 @@ class PingConsoleConfigurationTest {
   @Test
   void clientSecretMustNotBeNullOrEmpty() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -499,12 +455,9 @@ class PingConsoleConfigurationTest {
             null,
             new M2MCredentials(URI.create("http://auth-server.com/token"), "clientId", ""));
 
-    final PingConsoleRunner runner =
-        new PingConsoleRunner(
-            consolePingConfiguration,
-            MANAGEMENT_SERVICES,
-            APPLICATION_CONTEXT,
-            BROKER_TOPOLOGY_MANAGER);
+    final PingHubRunner runner =
+        new PingHubRunner(
+            config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER);
 
     // when
     final var result = runner.validateConfiguration();
@@ -515,10 +468,10 @@ class PingConsoleConfigurationTest {
   }
 
   @Test
-  void shouldSucceedToStartConsolePingForValidConfig() {
+  void shouldSucceedToStartHubPingForValidConfig() {
     // given
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             true,
             URI.create("http://localhost:8080"),
             "clusterName",
@@ -526,22 +479,20 @@ class PingConsoleConfigurationTest {
             new RetryConfiguration(),
             null,
             VALID_CREDENTIALS);
+
     // then
     assertThatCode(
             () ->
-                new PingConsoleRunner(
-                    consolePingConfiguration,
-                    MANAGEMENT_SERVICES,
-                    APPLICATION_CONTEXT,
-                    BROKER_TOPOLOGY_MANAGER))
+                new PingHubRunner(
+                    config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER))
         .doesNotThrowAnyException();
   }
 
   @Test
   void shouldNotThrowIfFeatureDisabled() {
     // given an invalid config
-    final ConsolePingConfiguration consolePingConfiguration =
-        new ConsolePingConfiguration(
+    final HubPingConfiguration config =
+        new HubPingConfiguration(
             false,
             URI.create("123"),
             null,
@@ -553,11 +504,8 @@ class PingConsoleConfigurationTest {
     // then we assert that it is not throwing an exception due to the feature being disabled
     assertThatCode(
             () ->
-                new PingConsoleRunner(
-                    consolePingConfiguration,
-                    MANAGEMENT_SERVICES,
-                    APPLICATION_CONTEXT,
-                    BROKER_TOPOLOGY_MANAGER))
+                new PingHubRunner(
+                    config, MANAGEMENT_SERVICES, APPLICATION_CONTEXT, BROKER_TOPOLOGY_MANAGER))
         .doesNotThrowAnyException();
   }
 
@@ -579,14 +527,15 @@ class PingConsoleConfigurationTest {
           }
         };
 
-    final PingConsoleTask realTask =
-        new PingConsoleTask(pingConfiguration, tokenProvider, mockClient, licensePayload);
-    final PingConsoleTask spyTask = Mockito.spy(realTask);
+    final PingHubTask realTask =
+        new PingHubTask(pingConfiguration, tokenProvider, mockClient, licensePayload);
+    final PingHubTask spyTask = Mockito.spy(realTask);
 
+    // when
     spyTask.run();
 
     // then it only runs once
-    verify(spyTask, times(1)).tryPingConsole(any(HttpRequest.class));
+    verify(spyTask, times(1)).tryPingHub(any(HttpRequest.class));
   }
 
   @Test
@@ -609,14 +558,15 @@ class PingConsoleConfigurationTest {
           }
         };
 
-    final PingConsoleTask realTask =
-        new PingConsoleTask(pingConfiguration, tokenProvider, mockClient, licensePayload);
-    final PingConsoleTask spyTask = Mockito.spy(realTask);
+    final PingHubTask realTask =
+        new PingHubTask(pingConfiguration, tokenProvider, mockClient, licensePayload);
+    final PingHubTask spyTask = Mockito.spy(realTask);
 
+    // when
     spyTask.run();
 
     // then it retries 2 times and runs 3 times in total
-    verify(spyTask, times(3)).tryPingConsole(any(HttpRequest.class));
+    verify(spyTask, times(3)).tryPingHub(any(HttpRequest.class));
   }
 
   @Test
@@ -643,13 +593,14 @@ class PingConsoleConfigurationTest {
           }
         };
 
-    final PingConsoleTask realTask =
-        new PingConsoleTask(pingConfiguration, tokenProvider, mockClient, licensePayload);
-    final PingConsoleTask spyTask = Mockito.spy(realTask);
+    final PingHubTask realTask =
+        new PingHubTask(pingConfiguration, tokenProvider, mockClient, licensePayload);
+    final PingHubTask spyTask = Mockito.spy(realTask);
 
+    // when
     spyTask.run();
 
     // then it retries 2 times and runs 3 times in total
-    verify(spyTask, times(3)).tryPingConsole(any(HttpRequest.class));
+    verify(spyTask, times(3)).tryPingHub(any(HttpRequest.class));
   }
 }
