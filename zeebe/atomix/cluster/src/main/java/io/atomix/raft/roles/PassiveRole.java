@@ -529,17 +529,10 @@ public class PassiveRole extends InactiveRole {
           .withVoted(false)
           .build();
     }
-    // If the requesting candidate is not a known member of the cluster (to this
-    // node) then don't vote for it. Only vote for candidates that we know about.
-    else if (!raft.getCluster().isMember(request.candidate())) {
-      log.debug("Rejected {}: candidate is not known to the local member", request);
-      return VoteResponse.builder()
-          .withStatus(RaftResponse.Status.OK)
-          .withTerm(raft.getTerm())
-          .withVoted(false)
-          .build();
-    }
     // If no vote has been cast, check the log and cast a vote if necessary.
+    // The candidate does not need to be a member of the local configuration: during a
+    // reconfiguration, consensus is reached based on the candidate's configuration, so votes must
+    // be granted based on log up-to-dateness alone (Raft dissertation, section 4.1).
     else if (raft.getLastVotedFor() == null) {
       if (isLogUpToDate(request.lastLogIndex(), request.lastLogTerm(), request)) {
         raft.setLastVotedFor(request.candidate());
