@@ -14,10 +14,13 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.CancelledBootstrapException;
+import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftPartitionConfig;
+import io.atomix.raft.protocol.RaftResponse.Status;
+import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
@@ -569,6 +572,23 @@ final class ReconfigurationTest {
     }
 
     @Test
+    void lastMemberCanLeaveCluster(@TempDir final Path tmp) {
+      // given - a cluster with a single member
+      final var id1 = MemberId.from("1");
+      final var m1 = createServer(tmp, createMembershipService(id1));
+      m1.bootstrap(id1).join();
+
+      // commit an entry to ensure that the leader is ready to accept new configuration
+      assertThat(appendEntry(awaitLeader(m1)).commit()).succeedsWithin(Duration.ofSeconds(1));
+
+      // when - the last member leaves, scaling the partition down to zero members
+      assertThat(m1.leave()).succeedsWithin(Duration.ofSeconds(5));
+
+      // then - the committed configuration is empty
+      assertThat(m1.cluster().getMembers()).isEmpty();
+    }
+
+    @Test
     void cannotLeaveWhenNewConfigurationDoesNotHaveQuorum(@TempDir final Path tmp) {
       // given - a cluster with 2 members
       final var id1 = MemberId.from("1");
@@ -639,6 +659,56 @@ final class ReconfigurationTest {
       // then -- remaining three can elect a leader and commit entries
       final var leader = awaitLeader(m1, m2);
       assertThat(appendEntry(leader).commit()).succeedsWithin(Duration.ofSeconds(1));
+    }
+  }
+
+  @Nested
+  final class Reconfiguring {
+    @Test
+    void shouldRejectConfigurationWithoutActiveMembers(@TempDir final Path tmp) {
+      // given - a cluster with 2 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+
+      // commit an entry to ensure that the leader is ready to accept new configuration
+      assertThat(appendEntry(awaitLeader(m1, m2)).commit()).succeedsWithin(Duration.ofSeconds(1));
+
+      final var leader = getLeaderServer(List.of(m1, m2)).orElseThrow();
+      final var leaderId = leader.cluster().getLocalMember().memberId();
+      final var configuration = leader.getContext().getCluster().getConfiguration();
+
+      // when - requesting a configuration where no member is ACTIVE
+      final var allPassive =
+          List.<RaftMember>of(
+              new DefaultRaftMember(id1, Type.PASSIVE, Instant.now()),
+              new DefaultRaftMember(id2, Type.PASSIVE, Instant.now()));
+      final var response =
+          protocolFactory
+              .newServerProtocol(MemberId.from("test-client"))
+              .reconfigure(
+                  leaderId,
+                  ReconfigureRequest.builder()
+                      .withIndex(configuration.index())
+                      .withTerm(configuration.term())
+                      .withMembers(allPassive)
+                      .from(leaderId.id())
+                      .build());
+
+      // then - the reconfiguration is rejected and the cluster remains functional
+      assertThat(response)
+          .succeedsWithin(Duration.ofSeconds(5))
+          .satisfies(
+              reconfigureResponse -> {
+                assertThat(reconfigureResponse.status()).isEqualTo(Status.ERROR);
+                assertThat(reconfigureResponse.error().type())
+                    .isEqualTo(RaftError.Type.CONFIGURATION_ERROR);
+              });
+      assertThat(appendEntry(awaitLeader(m1, m2)).commit()).succeedsWithin(Duration.ofSeconds(1));
     }
   }
 
