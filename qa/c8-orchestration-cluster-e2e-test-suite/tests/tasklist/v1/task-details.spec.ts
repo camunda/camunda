@@ -312,6 +312,17 @@ test.describe('task details page', () => {
     await expect(taskDetailsPageV1.form).toContainText('EUR 264');
     await expect(taskDetailsPageV1.form).toContainText('Total: EUR 544.5');
 
+    // Guard against form-js reverting a dynamic-list value on a delayed
+    // re-render: re-assert (and re-fill) every item row now that the form is
+    // idle, so no required field is left empty when the task is completed.
+    // Without this, the second row's "Item Name" can reset to empty, fail
+    // form validation, and block completion (observed in the nightly run).
+    await taskDetailsPageV1.verifyDynamicListValues([
+      {label: 'Item Name*', value: 'Laptop'},
+      {label: 'Unit Price*', value: '1'},
+      {label: 'Quantity*', value: '2'},
+    ]);
+
     await taskDetailsPageV1.completeTaskButton.click();
 
     await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible({
