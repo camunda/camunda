@@ -33,6 +33,8 @@ public class RaftPartitionConfig {
   private static final String DEFAULT_ENGINE_NAME = "default";
   private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
   private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = true;
+  // Keep in sync with the default in ExperimentalRaftCfg, which usually overrides this.
+  private static final Duration DEFAULT_CONFIGURATION_CHANGE_TIMEOUT = Duration.ofSeconds(10);
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -46,7 +48,7 @@ public class RaftPartitionConfig {
   private int preferSnapshotReplicationThreshold = DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD;
   private RaftStorageConfig storageConfig;
   private EntryValidator entryValidator;
-  private Duration configurationChangeTimeout;
+  private Duration configurationChangeTimeout = DEFAULT_CONFIGURATION_CHANGE_TIMEOUT;
   private int snapshotChunkSize;
   private String engineName = DEFAULT_ENGINE_NAME;
   private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
