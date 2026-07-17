@@ -36,9 +36,9 @@ const handlers: Handler[] = [];
 const CSRF_TOKEN_HEADER = 'X-CSRF-TOKEN';
 const CSRF_PROTECTED_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
-function csrfRequestHeader(method: string): Record<string, string> {
+function csrfRequestHeader(method: string | undefined): Record<string, string> {
   const token = sessionStorage.getItem(CSRF_TOKEN_HEADER);
-  if (token && CSRF_PROTECTED_METHODS.includes(method.toUpperCase())) {
+  if (token && method && CSRF_PROTECTED_METHODS.includes(method.toUpperCase())) {
     return {[CSRF_TOKEN_HEADER]: token};
   }
   return {};
