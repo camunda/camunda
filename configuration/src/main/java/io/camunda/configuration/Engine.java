@@ -45,6 +45,9 @@ public class Engine {
   /** Configuration properties for the engine's secret resolution scheduler. */
   @NestedConfigurationProperty private EngineSecrets secrets = new EngineSecrets();
 
+  /** Configuration properties for the engine's loop detection. */
+  @NestedConfigurationProperty private LoopDetection loopDetection = new LoopDetection();
+
   /**
    * Configures the maximum depth of nested call activities allowed before an incident is raised, to
    * guard against unbounded process recursion.
@@ -149,5 +152,13 @@ public class Engine {
       final boolean evaluateDuplicateOutputMappingTargetsInOrder) {
     this.evaluateDuplicateOutputMappingTargetsInOrder =
         evaluateDuplicateOutputMappingTargetsInOrder;
+  }
+
+  public LoopDetection getLoopDetection() {
+    return loopDetection;
+  }
+
+  public void setLoopDetection(final LoopDetection loopDetection) {
+    this.loopDetection = loopDetection;
   }
 }
