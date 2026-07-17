@@ -82,38 +82,6 @@ class TasklistProcessesPage {
     await this.processFilterDropdown.click();
     await this.page.getByRole('option', {name: option, exact: true}).click();
   }
-
-  // Open the Processes tab with the start-form filter and/or a name search
-  // applied via the URL. The suite runs against a shared cluster where many
-  // process definitions exist and other tests deploy concurrently, so pinning
-  // to a specific process by name (plus the filter) is the only way to make
-  // presence/absence assertions deterministic and pagination-proof. Combining
-  // both via the search widget and the filter dropdown is unreliable because
-  // they share a single debounced URL updater, so the URL is set directly.
-  async openProcessesFiltered(params: {
-    hasStartForm?: 'yes' | 'no';
-    search?: string;
-  }): Promise<void> {
-    const query = new URLSearchParams();
-    if (params.hasStartForm) {
-      query.set('hasStartForm', params.hasStartForm);
-    }
-    if (params.search) {
-      query.set('search', params.search);
-    }
-    const queryString = query.toString();
-    await this.page.goto(
-      `/tasklist/processes${queryString ? `?${queryString}` : ''}`,
-      {waitUntil: 'load'},
-    );
-    await this.dismissFirstTimeModalIfPresent();
-  }
-
-  async dismissFirstTimeModalIfPresent(): Promise<void> {
-    if (await this.continueButton.isVisible().catch(() => false)) {
-      await this.continueButton.click();
-    }
-  }
 }
 
 export {TasklistProcessesPage};
