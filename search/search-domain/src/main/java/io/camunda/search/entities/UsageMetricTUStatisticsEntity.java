@@ -10,9 +10,10 @@ package io.camunda.search.entities;
 import io.camunda.util.ObjectBuilder;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public record UsageMetricTUStatisticsEntity(
-    long totalTu, Map<String, UsageMetricTUStatisticsEntityTenant> tenants) {
+    long totalTu, @Nullable Map<String, UsageMetricTUStatisticsEntityTenant> tenants) {
 
   public UsageMetricTUStatisticsEntity {
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a

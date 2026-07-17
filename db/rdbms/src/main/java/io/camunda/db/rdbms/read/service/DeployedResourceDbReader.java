@@ -18,6 +18,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,14 +36,14 @@ public class DeployedResourceDbReader extends AbstractEntityReader<DeployedResou
   }
 
   @Override
-  public DeployedResourceEntity getByKey(
+  public @Nullable DeployedResourceEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks) {
     LOG.trace("[RDBMS DB] Get resource with resource key {}", key);
     return deployedResourceMapper.get(key);
   }
 
   @Override
-  public DeployedResourceEntity getByKeyMetadata(
+  public @Nullable DeployedResourceEntity getByKeyMetadata(
       final long key, final ResourceAccessChecks resourceAccessChecks) {
     LOG.trace("[RDBMS DB] Get resource metadata (no content) with resource key {}", key);
     return deployedResourceMapper.getMetadata(key);

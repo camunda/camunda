@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.service;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public class PersistentWebSessionDbReader {
 
@@ -19,7 +20,7 @@ public class PersistentWebSessionDbReader {
     this.persistentWebSessionMapper = persistentWebSessionMapper;
   }
 
-  public PersistentWebSessionEntity findById(final String sessionId) {
+  public @Nullable PersistentWebSessionEntity findById(final String sessionId) {
     return persistentWebSessionMapper.findById(sessionId);
   }
 

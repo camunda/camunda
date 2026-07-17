@@ -23,6 +23,7 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,8 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
   }
 
   @Override
-  public VariableEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+  public @Nullable VariableEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key);
   }
 
@@ -71,7 +73,7 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
         () -> variableMapper.count(dbQuery), () -> variableMapper.search(dbQuery), dbPage, dbSort);
   }
 
-  public VariableEntity findOne(final Long key) {
+  public @Nullable VariableEntity findOne(final Long key) {
     return search(
             new VariableQuery(
                 new Builder().variableKeys(key).build(),

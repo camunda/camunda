@@ -17,6 +17,7 @@ import io.camunda.search.exception.CamundaSearchException.Reason;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.Nullable;
 
 public class Cursor<T> {
   static final JsonMapper MAPPER =
@@ -25,7 +26,7 @@ public class Cursor<T> {
           .disable((SerializationFeature.WRITE_DATES_AS_TIMESTAMPS))
           .build();
 
-  public static <T> String encode(final T entity, final List<SearchColumn<T>> columns) {
+  public static <T> @Nullable String encode(final T entity, final List<SearchColumn<T>> columns) {
     if (columns == null || columns.isEmpty() || entity == null) {
       return null;
     }
@@ -43,7 +44,8 @@ public class Cursor<T> {
     }
   }
 
-  public static <T> Object[] decode(final String cursor, final List<SearchColumn<T>> columns) {
+  public static <T> Object @Nullable [] decode(
+      final String cursor, final List<SearchColumn<T>> columns) {
     if (columns == null || columns.isEmpty() || cursor == null || cursor.isEmpty()) {
       return null;
     }

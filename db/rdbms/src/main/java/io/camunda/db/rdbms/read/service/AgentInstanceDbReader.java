@@ -19,6 +19,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,12 +37,12 @@ public class AgentInstanceDbReader extends AbstractEntityReader<AgentInstanceEnt
   }
 
   @Override
-  public AgentInstanceEntity getByKey(
+  public @Nullable AgentInstanceEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key);
   }
 
-  public AgentInstanceEntity findOne(final long key) {
+  public @Nullable AgentInstanceEntity findOne(final long key) {
     return search(
             AgentInstanceQuery.of(
                 b -> b.filter(f -> f.agentInstanceKeys(key)).page(p -> p.from(0).size(1))))

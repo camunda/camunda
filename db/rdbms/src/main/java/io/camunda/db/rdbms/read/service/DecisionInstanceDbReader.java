@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
   }
 
   @Override
-  public DecisionInstanceEntity getById(
+  public @Nullable DecisionInstanceEntity getById(
       final String id, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(id).orElse(null);
   }

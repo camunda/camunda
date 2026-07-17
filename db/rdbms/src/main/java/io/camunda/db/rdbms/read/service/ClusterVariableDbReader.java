@@ -20,6 +20,7 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.util.ClusterVariableUtil;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,14 +75,14 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
   }
 
   @Override
-  public ClusterVariableEntity getTenantScopedClusterVariable(
+  public @Nullable ClusterVariableEntity getTenantScopedClusterVariable(
       final String name, final String tenant, final ResourceAccessChecks resourceAccessChecks) {
     return clusterVariableMapper.get(
         ClusterVariableUtil.generateID(name, tenant, ClusterVariableScope.TENANT));
   }
 
   @Override
-  public ClusterVariableEntity getGloballyScopedClusterVariable(
+  public @Nullable ClusterVariableEntity getGloballyScopedClusterVariable(
       final String name, final ResourceAccessChecks resourceAccessChecks) {
     return clusterVariableMapper.get(
         ClusterVariableUtil.generateID(name, null, ClusterVariableScope.GLOBAL));
