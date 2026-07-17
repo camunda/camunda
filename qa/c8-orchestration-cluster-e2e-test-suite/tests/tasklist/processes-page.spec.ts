@@ -212,7 +212,6 @@ test.describe('process page', () => {
     await deployWithSubstitutions('./resources/latest_version_process.bpmn', {
       LATEST_VERSION_TASK_NAME: 'Latest Version Task V2',
     });
-    await sleep(2000);
 
     await tasklistHeader.clickProcessesTab();
     await expect(page).toHaveURL('/tasklist/processes');
