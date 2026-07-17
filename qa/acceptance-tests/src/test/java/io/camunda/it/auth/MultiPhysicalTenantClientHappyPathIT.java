@@ -10,6 +10,7 @@ package io.camunda.it.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.qa.util.multidb.MultiDbPhysicalTenants;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -64,24 +66,35 @@ final class MultiPhysicalTenantClientHappyPathIT {
     final CamundaClient tenantB = ptClients.admin(TENANT_B);
     final String processA = Strings.newRandomValidBpmnId();
     final String processB = Strings.newRandomValidBpmnId();
-    final String jobTypeA = "job-" + processA;
-    final String jobTypeB = "job-" + processB;
+    // deliberately the SAME job type in both tenants: each client requests this shared type, so a
+    // routing leak would surface as one client activating the other tenant's job
+    final String jobType = "shared-job-" + Strings.newRandomValidBpmnId();
 
-    // given — each client deploys its own process and creates an instance (commands)
-    deployServiceTaskProcess(tenantA, processA, jobTypeA);
-    deployServiceTaskProcess(tenantB, processB, jobTypeB);
+    // given — each client deploys its own process (same job type) and creates an instance
+    // (commands)
+    deployServiceTaskProcess(tenantA, processA, jobType);
+    deployServiceTaskProcess(tenantB, processB, jobType);
     tenantA.newCreateInstanceCommand().bpmnProcessId(processA).latestVersion().send().join();
     tenantB.newCreateInstanceCommand().bpmnProcessId(processB).latestVersion().send().join();
 
-    // then — each client activates only its own physical tenant's job (jobs)
-    Awaitility.await("tenantA activates its own job")
+    // then — requesting the shared job type, each client activates only its own tenant's job and
+    // never the other tenant's, proving job routing is isolated per physical tenant (jobs)
+    Awaitility.await("tenantA activates only its own tenant's jobs for the shared type")
         .atMost(PROPAGATION_TIMEOUT)
         .ignoreExceptions()
-        .untilAsserted(() -> assertThat(activateJobType(tenantA, jobTypeA)).isEqualTo(1));
-    Awaitility.await("tenantB activates its own job")
+        .untilAsserted(
+            () -> {
+              final List<String> processes = activatedJobProcesses(tenantA, jobType);
+              assertThat(processes).containsExactly(processA);
+            });
+    Awaitility.await("tenantB activates only its own tenant's jobs for the shared type")
         .atMost(PROPAGATION_TIMEOUT)
         .ignoreExceptions()
-        .untilAsserted(() -> assertThat(activateJobType(tenantB, jobTypeB)).isEqualTo(1));
+        .untilAsserted(
+            () -> {
+              final List<String> processes = activatedJobProcesses(tenantB, jobType);
+              assertThat(processes).containsExactly(processB);
+            });
 
     // and — each client sees only its own instance via search (queries)
     Awaitility.await("each client sees only its own process instance")
@@ -116,15 +129,23 @@ final class MultiPhysicalTenantClientHappyPathIT {
     client.newDeployResourceCommand().addProcessModel(model, processId + ".bpmn").send().join();
   }
 
-  private static int activateJobType(final CamundaClient client, final String jobType) {
+  /**
+   * Activates up to a handful of jobs of the given type and returns the BPMN process ids they came
+   * from. A high {@code maxJobsToActivate} ensures a routing leak (the other tenant's job) would be
+   * included rather than silently missed.
+   */
+  private static List<String> activatedJobProcesses(
+      final CamundaClient client, final String jobType) {
     return client
         .newActivateJobsCommand()
         .jobType(jobType)
-        .maxJobsToActivate(1)
+        .maxJobsToActivate(10)
         .send()
         .join()
         .getJobs()
-        .size();
+        .stream()
+        .map(ActivatedJob::getBpmnProcessId)
+        .toList();
   }
 
   private static long activeInstanceCount(final CamundaClient client, final String processId) {
