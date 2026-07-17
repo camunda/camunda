@@ -141,6 +141,7 @@ public final class ProcessingStateMachine {
   private final RecordValues recordValues;
   private final TypedRecordImpl typedCommand;
   private final StreamProcessorListener streamProcessorListener;
+  private final PreviousRecord previousRecord = new PreviousRecord();
   // current iteration
   private LoggedEvent currentRecord;
   private ZeebeDbTransaction zeebeDbTransaction;
@@ -217,11 +218,11 @@ public final class ProcessingStateMachine {
   }
 
   void markProcessingCompleted() {
+    final var position = currentRecord.getPosition();
     currentStateDescription.set(
-        "finished processing",
-        currentRecord.getPosition(),
-        metadata.getIntent(),
-        metadata.getValueType());
+        "finished processing", position, metadata.getIntent(), metadata.getValueType());
+    previousRecord.set(position, isEventOrRejection.applies(currentRecord));
+    currentRecord = null;
     inProcessing = false;
     if (onErrorRetries > 0) {
       onErrorRetries = 0;
@@ -230,33 +231,29 @@ public final class ProcessingStateMachine {
   }
 
   void tryToReadNextRecord() {
-    final boolean hasNext;
-    if (currentRecord != null) {
-      final var previousRecord = currentRecord;
-      final var previousPosition = previousRecord.getPosition();
-      final var isAnEventOrARejection = isEventOrRejection.applies(previousRecord);
+    if (inProcessing) {
+      return;
+    }
 
-      // NOTE: hasNext() may advance the underlying storage reader and can switch/close segment
-      // readers
-      // when crossing a segment boundary. If the previous segment is marked for deletion and has
-      // no remaining readers, it may be unmapped, so avoid dereferencing `previousRecord` after
-      // calling hasNext().
-      hasNext = logStreamReader.hasNext();
+    // NOTE: hasNext() may advance the underlying storage reader and can switch/close segment
+    // readers. When crossing a segment boundary, the previous segment may be unmapped.
+    // currentRecord cannot be dereferenced until `.next()` is called
+    final var hasNext = logStreamReader.hasNext();
 
+    if (previousRecord.present) {
       // All commands cause a follow-up event or rejection, which means the processor
       // reached the end of the log if:
       //  * the last record was an event or rejection
       //  * and there is no next record on the log
       //  * and this was the last record written (records that have been written to the dispatcher
       //    might not be written to the log yet, which means they will appear shortly after this)
-      reachedEnd = isAnEventOrARejection && !hasNext && lastWrittenPosition <= previousPosition;
-    } else {
-      hasNext = logStreamReader.hasNext();
+      reachedEnd =
+          previousRecord.eventOrRejection
+              && !hasNext
+              && lastWrittenPosition <= previousRecord.position;
     }
-    // currentRecord cannot be accessed anymore until we replace with the next one by calling
-    // `next()`
 
-    if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
+    if (shouldProcessNext.getAsBoolean() && hasNext) {
       currentRecord = logStreamReader.next();
 
       if (processingFilter.applies(currentRecord)) {
@@ -842,6 +839,19 @@ public final class ProcessingStateMachine {
 
   private record BatchProcessingStepResult(
       List<TypedRecord<?>> toProcess, List<LogAppendEntry> toWrite) {}
+
+  private static final class PreviousRecord {
+
+    private long position;
+    private boolean eventOrRejection;
+    private boolean present;
+
+    private void set(final long position, final boolean eventOrRejection) {
+      this.position = position;
+      this.eventOrRejection = eventOrRejection;
+      present = true;
+    }
+  }
 
   @FunctionalInterface
   private interface NextProcessingStep {

@@ -68,7 +68,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
@@ -77,6 +79,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
@@ -1577,50 +1581,75 @@ public final class StreamProcessorTest {
    * unmapped buffer and the JVM crashes; with the fix all reads happen before {@code hasNext()} and
    * the processor drains the log normally.
    */
-  @RegressionTest("https://github.com/camunda/camunda/issues/57609")
-  public void shouldNotAccessPreviousRecordAfterHasNext() {
-    // given -- a reader that unmaps the previously returned record when it crosses to the next one
+  @ParameterizedTest(name = "write in separate batches: {0}")
+  @ValueSource(booleans = {false, true})
+  public void shouldNotAccessPreviousRecordAfterHasNext(final boolean writeInSeparateBatches)
+      throws InterruptedException {
+    // given -- a reader that unmaps a returned record when checking for another record
     final var realStream = streamPlatform.getLogStream();
     final var spyStream = spy(realStream);
-    doAnswer(invocation -> new UnmapOnCrossReader((LogStreamReader) invocation.callRealMethod()))
+    final var recordUnmapped = new CountDownLatch(1);
+    doAnswer(
+            invocation ->
+                new UnmapOnCrossReader(
+                    (LogStreamReader) invocation.callRealMethod(), recordUnmapped))
         .when(spyStream)
         .newLogStreamReader();
 
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     streamPlatform.buildStreamProcessor(spyStream, true);
 
-    // when - two commands ensure hasNext() returns true while the first record is still held
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(2)));
+    final var key = new AtomicInteger(1);
+    final var events =
+        Stream.generate(
+                () ->
+                    RecordToWrite.command()
+                        .processInstance(
+                            ACTIVATE_ELEMENT, Records.processInstance(key.getAndIncrement())))
+            .limit(2)
+            .toArray(RecordToWrite[]::new);
+    // when
+    if (writeInSeparateBatches) {
+      streamPlatform.writeBatch(events[0]);
+      assertThat(recordUnmapped.await(10, TimeUnit.SECONDS)).isTrue();
+      streamPlatform.writeBatch(events[1]);
+    } else {
+      streamPlatform.writeBatch(events);
+    }
 
-    // then -- the processor keeps processing across the crossing instead of crashing the JVM
+    // then -- the processor does not access the invalid previous record
     verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
   }
 
   /**
    * Wraps a {@link LogStreamReader}, copying every returned record into its own mmap'd buffer and
-   * unmapping the previously returned record's buffer whenever {@code hasNext()} advances to a new
-   * record. This emulates a journal segment being unmapped as the reader crosses a segment
-   * boundary, see {@link #shouldNotAccessPreviousRecordAfterHasNext()}.
+   * unmapping the previously returned record's buffer whenever {@code hasNext()} checks the
+   * underlying reader. This emulates a journal segment being unmapped when the reader crosses a
+   * segment boundary, including when no next record is available yet.
    */
   private static final class UnmapOnCrossReader implements LogStreamReader {
 
     private final LogStreamReader delegate;
+    private final CountDownLatch unavailableNextRecord;
     private MappedByteBuffer lastMapped;
     private Path tempFile;
 
-    private UnmapOnCrossReader(final LogStreamReader delegate) {
+    private UnmapOnCrossReader(
+        final LogStreamReader delegate, final CountDownLatch unavailableNextRecord) {
       this.delegate = delegate;
+      this.unavailableNextRecord = unavailableNextRecord;
     }
 
     @Override
     public boolean hasNext() {
       final boolean hasNext = delegate.hasNext();
-      // advancing to the next record releases (unmaps) the previously returned record's segment;
-      // only happens when we actually cross to a new record.
-      if (hasNext && lastMapped != null) {
+      // Checking for the next record may release the previously returned record's segment, even
+      // when no next record is available yet.
+      if (lastMapped != null) {
         unmapLast();
+        if (!hasNext) {
+          unavailableNextRecord.countDown();
+        }
       }
       return hasNext;
     }
@@ -1686,12 +1715,14 @@ public final class StreamProcessorTest {
           IoUtil.unmap(lastMapped);
         }
         if (tempFile != null) {
-          Files.delete(tempFile);
+          Files.deleteIfExists(tempFile);
         }
       } catch (final IOException e) {
         // best effort
+      } finally {
+        lastMapped = null;
+        tempFile = null;
       }
-      lastMapped = null;
     }
 
     @Override
