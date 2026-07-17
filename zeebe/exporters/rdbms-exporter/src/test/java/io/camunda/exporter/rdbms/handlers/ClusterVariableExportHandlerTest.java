@@ -74,6 +74,33 @@ class ClusterVariableExportHandlerTest {
   }
 
   @Test
+  void shouldFilterOutMetadataEntriesWithNullValues() {
+    // given
+    final Map<String, Object> metadata = new java.util.HashMap<>();
+    metadata.put("kind", "CREDENTIAL");
+    metadata.put("empty", null);
+    final var recordValue =
+        ImmutableClusterVariableRecordValue.builder()
+            .withName("myVariable")
+            .withValue("myValue")
+            .withScope(ClusterVariableScope.GLOBAL)
+            .withMetadata(metadata)
+            .build();
+    final Record<io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue> record =
+        factory.generateRecord(
+            ValueType.CLUSTER_VARIABLE,
+            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(modelCaptor.capture());
+    assertThat(modelCaptor.getValue().metadata())
+        .containsExactly(new MetadataEntry("kind", "CREDENTIAL", null));
+  }
+
+  @Test
   void shouldMapEmptyMetadataToEmptyList() {
     // given
     final var recordValue =

@@ -82,7 +82,7 @@ public record ClusterVariableDbModel(
   // the METADATA_VALUE column rather than failing the insert.
   private List<MetadataEntry> truncateMetadata(final int sizeLimit, final Integer byteLimit) {
     if (metadata == null || metadata.isEmpty()) {
-      return metadata;
+      return List.of();
     }
     return metadata.stream()
         .map(

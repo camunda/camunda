@@ -69,6 +69,7 @@ public class ClusterVariableExportHandler
       return List.of();
     }
     return metadata.entrySet().stream()
+        .filter(entry -> entry.getValue() != null)
         .map(
             entry -> {
               final var metadataValue = entry.getValue();
