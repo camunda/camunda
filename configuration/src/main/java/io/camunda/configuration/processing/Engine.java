@@ -60,6 +60,9 @@ public class Engine {
   /** Configuration properties applied by the engine on startup. */
   @NestedConfigurationProperty private EngineStartup startup = new EngineStartup();
 
+  /** Configuration properties for the engine's loop detection. */
+  @NestedConfigurationProperty private LoopDetection loopDetection = new LoopDetection();
+
   /**
    * Configures the maximum depth of nested call activities allowed before an incident is raised, to
    * guard against unbounded process recursion.
@@ -157,5 +160,13 @@ public class Engine {
 
   public void setStorageOrdinals(final EngineStorageOrdinals storageOrdinals) {
     this.storageOrdinals = storageOrdinals;
+  }
+
+  public LoopDetection getLoopDetection() {
+    return loopDetection;
+  }
+
+  public void setLoopDetection(final LoopDetection loopDetection) {
+    this.loopDetection = loopDetection;
   }
 }
