@@ -223,14 +223,13 @@ test.describe('Process Instances Filters', () => {
     const orderProcessInstanceKey =
       orderProcessInstance.processInstanceKey.toString();
 
-    await test.step('Filter by Process Instance Keys including completed instances', async () => {
+    await test.step('Filter by Process Instance Keys', async () => {
       await operateFiltersPanelPage.displayOptionalFilter(
         'Process Instance Key(s)',
       );
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         `${orderProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
       );
-      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await sleep(200);
     });
 
@@ -299,6 +298,11 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Check that oneOf filter matches both values', async () => {
+      // The oneOf filter must also match the CallActivity instance
+      // (filtersTest=456), which is COMPLETED. Enable the "Completed" state
+      // filter now — after the last variable-filter modal interaction — so it
+      // is not dropped by the modal navigation before the search runs.
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await expect(page.getByText('2 results')).toBeVisible({timeout: 60000});
       await expect(
         operateProcessesPage.processInstancesTable.getByText(
