@@ -24,8 +24,8 @@ camunda:
     session:
       persistent:
         enabled: false
-    # Keep CSRF disabled for now: Optimize relies on the session cookie's SameSite flag, matching
-    # its current behavior. Enabling CSL's token CSRF needs an optimize/client interceptor that
-    # sends X-CSRF-TOKEN on mutating requests (OC-style) — a follow-up, see SPIKE-NOTES.md.
+    # CSRF enabled for alignment with OC. The optimize/client request wrapper sends the
+    # X-CSRF-TOKEN header on mutating requests (see request.ts). Public /external share endpoints
+    # are CSRF-exempt because they are in unprotectedPaths() (CSL's CSRF allow-list).
     csrf:
-      enabled: false
+      enabled: true

@@ -69,11 +69,11 @@ Single-node in-memory sessions are used unless a `SessionStorePort` bean is adde
    key-by-key mapping is in `CONFIG-COMPAT.md`; the skeleton implements the representative OIDC /
    API / HSTS keys and deprecation warnings, with the remaining rows marked TODO (and the
    `environment-config.yaml`-only path, vs env vars, as a follow-up).
-4. Frontend CSRF integration: the spike keeps `camunda.security.csrf.enabled=false` and relies on
-   the session cookie's `SameSite` flag (Optimize's current model), because CSL's token-based CSRF
-   requires the SPA to send the `X-CSRF-TOKEN` header on state-changing requests. Adopting OC-style
-   token CSRF means adding that interceptor in `optimize/client` (mirroring Operate/Tasklist) and
-   flipping `csrf.enabled=true`. Backend-only enabling would 403 every mutating request.
+4. CSRF: enabled for alignment with OC (`camunda.security.csrf.enabled=true`). The frontend part is
+   done in this spike — `optimize/client/src/modules/request.ts` now reads the `X-CSRF-TOKEN`
+   response header into `sessionStorage` and sends it back on POST/PUT/PATCH/DELETE, mirroring
+   Operate/Tasklist (single central wrapper, ~half a day incl. tests in `request.test.ts`). Public
+   `/external` share endpoints are anonymous GETs and are CSRF-exempt via `unprotectedPaths()`.
 5. Chain-level boot test (see below).
 
 ## Test blind spot to close (important)
