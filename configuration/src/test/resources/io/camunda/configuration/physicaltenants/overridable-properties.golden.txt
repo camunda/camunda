@@ -271,6 +271,9 @@ processing.engine.batch-operations.scheduler-interval
 processing.engine.distribution.max-backoff-duration
 processing.engine.distribution.redistribution-interval
 processing.engine.job.include-variables-in-job-completed-event
+processing.engine.loop-detection.element-activation-retry-cooldown
+processing.engine.loop-detection.max-element-activation-count
+processing.engine.loop-detection.max-element-activation-count-by-type
 processing.flow-control.request.aimd.backoff-ratio
 processing.flow-control.request.aimd.initial-limit
 processing.flow-control.request.aimd.max-limit

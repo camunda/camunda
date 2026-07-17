@@ -15,8 +15,10 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor.TransitionOu
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnLoopDetectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.LoopDetectionFilter;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
@@ -64,6 +66,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final BpmnLoopDetectionBehavior loopDetectionBehavior;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -95,6 +98,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    loopDetectionBehavior = bpmnBehaviors.loopDetectionBehavior();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -168,9 +172,15 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
     switch (intent) {
       case ACTIVATE_ELEMENT:
+        // If the element instance already exists when its ACTIVATE_ELEMENT command is processed,
+        // the command is being re-processed to resolve an incident. Loop detection is then skipped
+        // so the retry can proceed instead of raising the same incident again; the retry cooldown
+        // governs re-raising on later (fresh) activations.
+        final boolean isIncidentResolution = stateBehavior.getElementInstance(context) != null;
         final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
+            .flatMap(ok -> runLoopDetection(activatingContext, isIncidentResolution))
             .flatMap(ok -> beforeActivating(element, processor, activatingContext))
             .ifLeft(failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
@@ -428,6 +438,28 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
                   context.getElementInstanceKey(),
                   eventTrigger.getElementId());
             });
+  }
+
+  /**
+   * Runs the loop-detection activation-threshold check when it applies to this element activation,
+   * otherwise short-circuits to success.
+   */
+  private Either<Failure, ?> runLoopDetection(
+      final BpmnElementContext context, final boolean isIncidentResolution) {
+    if (isIncidentResolution) {
+      // Resolving a loop-detection incident lets the activation proceed instead of raising the same
+      // incident again; the retry cooldown governs re-raising on later fresh activations.
+      return BpmnElementProcessor.SUCCESS;
+    }
+    if (!LoopDetectionFilter.shouldCount(context.getRecordValue())) {
+      return BpmnElementProcessor.SUCCESS;
+    }
+    // Multi-instance children are gated on the body type being enabled and are checked against
+    // their own (inner) element type; all other elements use the plain activation-threshold check.
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+    return LoopDetectionFilter.isMultiInstanceChild(flowScopeInstance)
+        ? loopDetectionBehavior.checkMultiInstanceChildActivationThreshold(context)
+        : loopDetectionBehavior.checkActivationThreshold(context);
   }
 
   private ExecutableFlowElement getElement(

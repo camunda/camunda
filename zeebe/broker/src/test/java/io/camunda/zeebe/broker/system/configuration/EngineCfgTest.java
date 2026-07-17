@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.GlobalListenerConfiguration;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,6 +74,11 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_GROUP_NAME_CACHE_CAPACITY);
     assertThat(configuration.isCandidateGroupNameResolution())
         .isEqualTo(EngineConfiguration.DEFAULT_CANDIDATE_GROUP_NAME_RESOLUTION);
+    assertThat(configuration.getMaxElementActivationCount())
+        .isEqualTo(EngineConfiguration.DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT);
+    assertThat(configuration.getElementActivationRetryCooldown())
+        .isEqualTo(EngineConfiguration.DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN);
+    assertThat(configuration.getMaxElementActivationCountByType()).isEmpty();
   }
 
   @Test
@@ -114,6 +120,11 @@ final class EngineCfgTest {
     assertThat(configuration.isEnableRpaReexportMigration()).isFalse();
     assertThat(configuration.getGroupNameCacheCapacity()).isEqualTo(2000);
     assertThat(configuration.isCandidateGroupNameResolution()).isFalse();
+    assertThat(configuration.getMaxElementActivationCount()).isEqualTo(500);
+    assertThat(configuration.getElementActivationRetryCooldown()).isEqualTo(50);
+    assertThat(configuration.getMaxElementActivationCountByType())
+        .containsEntry(BpmnElementType.SERVICE_TASK, 300)
+        .containsEntry(BpmnElementType.USER_TASK, 0);
   }
 
   void assertListenerCfg(

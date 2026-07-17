@@ -20,6 +20,9 @@ public class Engine {
 
   @NestedConfigurationProperty private EngineJob job = new EngineJob();
 
+  /** Configuration properties for the engine's loop detection. */
+  @NestedConfigurationProperty private LoopDetection loopDetection = new LoopDetection();
+
   public Distribution getDistribution() {
     return distribution;
   }
@@ -42,5 +45,13 @@ public class Engine {
 
   public void setJob(final EngineJob job) {
     this.job = job;
+  }
+
+  public LoopDetection getLoopDetection() {
+    return loopDetection;
+  }
+
+  public void setLoopDetection(final LoopDetection loopDetection) {
+    this.loopDetection = loopDetection;
   }
 }
