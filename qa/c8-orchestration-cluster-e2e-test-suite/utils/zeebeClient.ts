@@ -169,9 +169,13 @@ const waitForLatestProcessVersion = async (
 ) => {
   for (let attempt = 0; attempt < timeoutSeconds; attempt++) {
     const response = await zeebe.searchProcessDefinitions({
-      filter: {processDefinitionId, version: expectedVersion},
+      // isLatestVersion mirrors the query Tasklist's Processes tab issues;
+      // the SDK filter type does not expose the flag yet.
+      filter: {processDefinitionId, isLatestVersion: true} as Parameters<
+        typeof zeebe.searchProcessDefinitions
+      >[0]['filter'] & {isLatestVersion: boolean},
     });
-    if ((response.items ?? []).length > 0) {
+    if (response.items?.[0]?.version === expectedVersion) {
       return;
     }
     await sleep(1000);
