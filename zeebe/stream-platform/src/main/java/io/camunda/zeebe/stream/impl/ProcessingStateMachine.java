@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.retry.AbortableBackOffRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
@@ -118,6 +120,8 @@ public final class ProcessingStateMachine {
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
+  private static final Duration WRITE_RETRY_INITIAL_BACKOFF = Duration.ofMillis(1);
+  private static final Duration WRITE_RETRY_MAX_BACKOFF = Duration.ofMillis(100);
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
   private final RecordMetadataBlock recordTypeDecoder = new RecordMetadataBlock();
@@ -184,7 +188,12 @@ public final class ProcessingStateMachine {
     lastProcessedPositionState = context.getLastProcessedPositionState();
     maxCommandsInBatch = context.getMaxCommandsInBatch();
 
-    writeRetryStrategy = new AbortableRetryStrategy(actor);
+    // Waiting between write attempts is safe: processing of the next record is guarded by
+    // `inProcessing`, and no other job on this actor touches the open transaction or writes to
+    // the log stream, so the actor may serve unrelated jobs while backing off.
+    writeRetryStrategy =
+        new AbortableBackOffRetryStrategy(
+            actor, WRITE_RETRY_INITIAL_BACKOFF, WRITE_RETRY_MAX_BACKOFF);
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
     updateStateRetryStrategy =
         new RecoverableRetryStrategy(actor, context.getMaxRecoverableRetries());
@@ -635,9 +644,16 @@ public final class ProcessingStateMachine {
                 if (writeResult.isRight()) {
                   writtenPosition = writeResult.get();
                   return true;
-                } else {
-                  return false;
                 }
+                final var failure = writeResult.getLeft();
+                if (failure == WriteFailure.INVALID_ARGUMENT) {
+                  // deterministic failure, retrying would never succeed - escalate to onError
+                  // instead so the regular error handling can reject the command
+                  throw new IllegalArgumentException(
+                      "Expected to write %d processing results for record '%s %s', but the writer rejected them as invalid"
+                          .formatted(pendingWrites.size(), currentRecord, metadata));
+                }
+                return false;
               },
               abortCondition);
     }
