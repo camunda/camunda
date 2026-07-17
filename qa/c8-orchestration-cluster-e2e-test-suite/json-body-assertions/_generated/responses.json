@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "c24ac6d3515d2c9e5e0acb66c43ee54b29b92647",
-    "generatedAt": "2026-07-16T12:34:09.045Z",
+    "commit": "d4bdbb11521f0c0f08a559642e4cd7bd634c7657",
+    "generatedAt": "2026-07-17T12:27:50.212Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "b47da7c1636e6676c0fc54a0adc3f53f68c668b98702b939add1ef25cc470b47"
+    "specSha256": "2cea6d2ed57e10d0cef0314cf973064157fb60ac2115f311ec3154ab342edeaf"
   },
   "responses": [
     {
@@ -457,19 +457,23 @@
                 {
                   "name": "metrics",
                   "type": "0",
+                  "nullable": true,
                   "children": {
                     "required": [
                       {
                         "name": "durationMs",
-                        "type": "number"
+                        "type": "number",
+                        "nullable": true
                       },
                       {
                         "name": "inputTokens",
-                        "type": "number"
+                        "type": "number",
+                        "nullable": true
                       },
                       {
                         "name": "outputTokens",
-                        "type": "number"
+                        "type": "number",
+                        "nullable": true
                       }
                     ],
                     "optional": []
@@ -1636,6 +1640,10 @@
       "schema": {
         "required": [
           {
+            "name": "metadata",
+            "type": "object"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -1667,6 +1675,10 @@
       "schema": {
         "required": [
           {
+            "name": "metadata",
+            "type": "object"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -1697,6 +1709,10 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "metadata",
+            "type": "object"
+          },
           {
             "name": "name",
             "type": "string"
@@ -1736,6 +1752,10 @@
                 {
                   "name": "isTruncated",
                   "type": "boolean"
+                },
+                {
+                  "name": "metadata",
+                  "type": "object"
                 },
                 {
                   "name": "name",
@@ -1800,6 +1820,10 @@
       "schema": {
         "required": [
           {
+            "name": "metadata",
+            "type": "object"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -1831,6 +1855,10 @@
       "schema": {
         "required": [
           {
+            "name": "metadata",
+            "type": "object"
+          },
+          {
             "name": "name",
             "type": "string"
           },
@@ -1861,6 +1889,10 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "metadata",
+            "type": "object"
+          },
           {
             "name": "name",
             "type": "string"
