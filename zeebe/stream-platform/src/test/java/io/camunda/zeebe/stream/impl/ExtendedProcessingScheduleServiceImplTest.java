@@ -20,25 +20,8 @@ import org.mockito.Mockito;
 
 final class ExtendedProcessingScheduleServiceImplTest {
   @Test
-  void shouldNotScheduleAsyncIfDisabled() {
+  void shouldAlwaysScheduleAsync() {
     // given
-    final var context = mock(AsyncScheduleServiceContext.class);
-    final var sync = mock(SimpleProcessingScheduleService.class);
-
-    final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, false);
-
-    // when
-    schedulingService.runDelayed(Duration.ZERO, () -> {});
-
-    // then
-    Mockito.verify(sync, Mockito.times(1))
-        .runDelayed(Mockito.eq(Duration.ZERO), Mockito.<Runnable>any());
-  }
-
-  @Test
-  void shouldAlwaysScheduleAsyncIfEnabled() {
-    // given
-    final var sync = mock(SimpleProcessingScheduleService.class);
     final var async = mock(SimpleProcessingScheduleService.class);
     final var asyncControl = mock(AsyncProcessingScheduleServiceActor.class);
     when(asyncControl.createFuture()).thenReturn(new CompletableActorFuture<>());
@@ -55,7 +38,7 @@ final class ExtendedProcessingScheduleServiceImplTest {
     when(context.geAsyncActor(ASYNC_PROCESSING)).thenReturn(asyncControl);
     when(asyncControl.getScheduleService()).thenReturn(async);
 
-    final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context, sync, true);
+    final var schedulingService = new ExtendedProcessingScheduleServiceImpl(context);
 
     // when
     schedulingService.runDelayed(Duration.ZERO, () -> {});

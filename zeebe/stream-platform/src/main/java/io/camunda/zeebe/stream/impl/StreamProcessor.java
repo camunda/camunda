@@ -110,7 +110,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
   private AsyncScheduleServiceContext asyncScheduleServiceContext;
-  private ProcessingScheduleServiceImpl processorActorService;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     super("StreamProcessor", processorBuilder.getProcessingContext().partitionId());
@@ -167,13 +166,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           new AsyncScheduleServiceContext(
               actorSchedulingService, actorServiceFactory, streamProcessorContext.partitionId());
 
-      processorActorService = actorServiceFactory.create();
-
       final var processingScheduleService =
-          new ExtendedProcessingScheduleServiceImpl(
-              asyncScheduleServiceContext,
-              processorActorService,
-              streamProcessorContext.enableAsyncScheduledTasks());
+          new ExtendedProcessingScheduleServiceImpl(asyncScheduleServiceContext);
       streamProcessorContext.scheduleService(processingScheduleService);
 
       initRecordProcessors();
@@ -267,7 +261,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void tearDown() {
-    processorActorService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
     replayStateMachine.close();
@@ -359,9 +352,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
     metrics.setStreamProcessorProcessing();
 
-    processorActorService
-        .open(actor)
-        .andThen(() -> asyncScheduleServiceContext.submitActors(actor), actor)
+    asyncScheduleServiceContext
+        .submitActors(actor)
         .onComplete(
             (ignored, error) -> {
               if (error != null) {

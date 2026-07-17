@@ -32,7 +32,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 public class ProcessingPropertiesTest {
 
   private static final int EXPECTED_MAX_COMMANDS_IN_BATCH = 200;
-  private static final boolean EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS = false;
   private static final Duration EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL = Duration.ofSeconds(10);
   private static final Set<Long> EXPECTED_SKIP_POSITIONS = Set.of(10L, 20L);
   private static final boolean EXPECTED_ENABLE_PRECONDITIONS_CHECK = true;
@@ -52,7 +51,6 @@ public class ProcessingPropertiesTest {
   @TestPropertySource(
       properties = {
         "camunda.processing.max-commands-in-batch=" + EXPECTED_MAX_COMMANDS_IN_BATCH,
-        "camunda.processing.enable-async-scheduled-tasks=" + EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS,
         "camunda.processing.scheduled-tasks-check-interval=10s",
         "camunda.processing.skip-positions=10,20",
         "camunda.processing.enable-preconditions-check=" + EXPECTED_ENABLE_PRECONDITIONS_CHECK,
@@ -80,8 +78,6 @@ public class ProcessingPropertiesTest {
     void shouldSetProcessingProperties() {
       assertThat(brokerBasedProperties.getProcessing())
           .returns(EXPECTED_MAX_COMMANDS_IN_BATCH, ProcessingCfg::getMaxCommandsInBatch)
-          .returns(
-              EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS, ProcessingCfg::isEnableAsyncScheduledTasks)
           .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
           .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions)
@@ -118,8 +114,6 @@ public class ProcessingPropertiesTest {
   @TestPropertySource(
       properties = {
         "zeebe.broker.processingCfg.maxCommandsInBatch=" + EXPECTED_MAX_COMMANDS_IN_BATCH,
-        "zeebe.broker.processingCfg.enableAsyncScheduledTasks="
-            + EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS,
         "zeebe.broker.processingCfg.scheduledTaskCheckInterval=10s",
         "zeebe.broker.processingCfg.skipPositions=10,20",
         "zeebe.broker.experimental.consistencyChecks.enablePreconditions="
@@ -150,8 +144,6 @@ public class ProcessingPropertiesTest {
     void shouldSetProcessingPropertiesFromLegacy() {
       assertThat(brokerBasedProperties.getProcessing())
           .returns(EXPECTED_MAX_COMMANDS_IN_BATCH, ProcessingCfg::getMaxCommandsInBatch)
-          .returns(
-              EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS, ProcessingCfg::isEnableAsyncScheduledTasks)
           .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
           .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions);
@@ -188,7 +180,6 @@ public class ProcessingPropertiesTest {
       properties = {
         // new
         "camunda.processing.max-commands-in-batch=" + EXPECTED_MAX_COMMANDS_IN_BATCH,
-        "camunda.processing.enable-async-scheduled-tasks=" + EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS,
         "camunda.processing.scheduled-tasks-check-interval=10s",
         "camunda.processing.skip-positions=10,20",
         "camunda.processing.enable-preconditions-check=" + EXPECTED_ENABLE_PRECONDITIONS_CHECK,
@@ -207,7 +198,6 @@ public class ProcessingPropertiesTest {
 
         // legacy
         "zeebe.broker.processingCfg.maxCommandsInBatch=1",
-        "zeebe.broker.processingCfg.enableAsyncScheduledTasks=true",
         "zeebe.broker.processingCfg.scheduledTaskCheckInterval=1s",
         "zeebe.broker.processingCfg.skipPositions=30,40",
         "zeebe.broker.experimental.consistencyChecks.enablePreconditions=false",
@@ -231,8 +221,6 @@ public class ProcessingPropertiesTest {
     void shouldSetProcessingPropertiesFromNew() {
       assertThat(brokerBasedProperties.getProcessing())
           .returns(EXPECTED_MAX_COMMANDS_IN_BATCH, ProcessingCfg::getMaxCommandsInBatch)
-          .returns(
-              EXPECTED_ENABLE_ASYNC_SCHEDULED_TASKS, ProcessingCfg::isEnableAsyncScheduledTasks)
           .returns(
               EXPECTED_SCHEDULED_TASKS_CHECK_INTERVAL, ProcessingCfg::getScheduledTaskCheckInterval)
           .returns(EXPECTED_SKIP_POSITIONS, ProcessingCfg::skipPositions)
