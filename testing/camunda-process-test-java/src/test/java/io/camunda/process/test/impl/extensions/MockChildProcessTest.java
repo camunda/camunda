@@ -95,7 +95,7 @@ public class MockChildProcessTest {
   @Test
   void shouldMockChildProcess() {
     // when
-    processTestContext.mockChildProcess(CHILD_PROCESS_ID).thenComplete();
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID);
 
     // then: a simple start → end process is deployed with the child process ID
     verify(camundaClient.newDeployResourceCommand())
@@ -190,9 +190,46 @@ public class MockChildProcessTest {
   }
 
   @Test
+  void shouldMockChildProcessWithVariableSupplierViaBuilder() {
+    // given
+    final Function<Map<String, Object>, Map<String, Object>> variableSupplier =
+        inputVars -> Collections.singletonMap("result", inputVars.getOrDefault("input", "default"));
+
+    // when
+    processTestContext
+        .mockChildProcess()
+        .withProcessId(CHILD_PROCESS_ID)
+        .thenComplete(variableSupplier);
+
+    // then: a process with a service task for the variable supplier is deployed
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
+
+    // the process has a service task used to supply variables
+    assertThat(deployedModel.getModelElementsByType(ServiceTask.class))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            serviceTask ->
+                assertThat(
+                        serviceTask.getSingleExtensionElement(ZeebeTaskDefinition.class).getType())
+                    .isEqualTo("variableSupplier_" + CHILD_PROCESS_ID));
+
+    // and the worker for the variable supplier is opened
+    verify(camundaClient.newWorker().jobType("variableSupplier_" + CHILD_PROCESS_ID).handler(any()))
+        .open();
+  }
+
+  @Test
   void shouldMockChildProcessWithVersionTag() {
     // when
-    processTestContext.mockChildProcess(CHILD_PROCESS_ID).withVersionTag("1.7.1").thenComplete();
+    processTestContext
+        .mockChildProcess()
+        .withProcessId(CHILD_PROCESS_ID)
+        .withVersionTag("1.7.1")
+        .thenComplete();
 
     // then: a process with the version tag is deployed
     verify(camundaClient.newDeployResourceCommand())
@@ -224,7 +261,8 @@ public class MockChildProcessTest {
 
     // when
     processTestContext
-        .mockChildProcess(CHILD_PROCESS_ID)
+        .mockChildProcess()
+        .withProcessId(CHILD_PROCESS_ID)
         .withVersionTag("2.0.0")
         .thenComplete(variables);
 

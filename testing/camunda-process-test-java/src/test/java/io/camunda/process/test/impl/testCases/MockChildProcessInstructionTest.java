@@ -52,7 +52,9 @@ public class MockChildProcessInstructionTest {
   @Test
   void shouldMockChildProcessWithoutVariables() {
     // given
-    when(processTestContext.mockChildProcess(CHILD_PROCESS_ID)).thenReturn(mockChildProcessBuilder);
+    when(processTestContext.mockChildProcess()).thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withProcessId(CHILD_PROCESS_ID))
+        .thenReturn(mockChildProcessBuilder);
 
     final MockChildProcessInstruction instruction =
         ImmutableMockChildProcessInstruction.builder()
@@ -63,7 +65,8 @@ public class MockChildProcessInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).mockChildProcess(CHILD_PROCESS_ID);
+    verify(processTestContext).mockChildProcess();
+    verify(mockChildProcessBuilder).withProcessId(CHILD_PROCESS_ID);
     verify(mockChildProcessBuilder).thenComplete(Collections.emptyMap());
 
     verifyNoMoreInteractions(
@@ -73,7 +76,9 @@ public class MockChildProcessInstructionTest {
   @Test
   void shouldMockChildProcessWithVariables() {
     // given
-    when(processTestContext.mockChildProcess(CHILD_PROCESS_ID)).thenReturn(mockChildProcessBuilder);
+    when(processTestContext.mockChildProcess()).thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withProcessId(CHILD_PROCESS_ID))
+        .thenReturn(mockChildProcessBuilder);
 
     final Map<String, Object> variables = new HashMap<>();
     variables.put("amount", 100.0);
@@ -89,7 +94,8 @@ public class MockChildProcessInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).mockChildProcess(CHILD_PROCESS_ID);
+    verify(processTestContext).mockChildProcess();
+    verify(mockChildProcessBuilder).withProcessId(CHILD_PROCESS_ID);
     verify(mockChildProcessBuilder).thenComplete(variables);
 
     verifyNoMoreInteractions(
@@ -99,7 +105,9 @@ public class MockChildProcessInstructionTest {
   @Test
   void shouldMockChildProcessWithVersionTag() {
     // given
-    when(processTestContext.mockChildProcess(CHILD_PROCESS_ID)).thenReturn(mockChildProcessBuilder);
+    when(processTestContext.mockChildProcess()).thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withProcessId(CHILD_PROCESS_ID))
+        .thenReturn(mockChildProcessBuilder);
     when(mockChildProcessBuilder.withVersionTag("1.7.1")).thenReturn(mockChildProcessBuilder);
 
     final MockChildProcessInstruction instruction =
@@ -112,7 +120,8 @@ public class MockChildProcessInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).mockChildProcess(CHILD_PROCESS_ID);
+    verify(processTestContext).mockChildProcess();
+    verify(mockChildProcessBuilder).withProcessId(CHILD_PROCESS_ID);
     verify(mockChildProcessBuilder).withVersionTag("1.7.1");
     verify(mockChildProcessBuilder).thenComplete(Collections.emptyMap());
 
@@ -123,7 +132,9 @@ public class MockChildProcessInstructionTest {
   @Test
   void shouldMockChildProcessWithVersionTagAndVariables() {
     // given
-    when(processTestContext.mockChildProcess(CHILD_PROCESS_ID)).thenReturn(mockChildProcessBuilder);
+    when(processTestContext.mockChildProcess()).thenReturn(mockChildProcessBuilder);
+    when(mockChildProcessBuilder.withProcessId(CHILD_PROCESS_ID))
+        .thenReturn(mockChildProcessBuilder);
     when(mockChildProcessBuilder.withVersionTag("1.7.1")).thenReturn(mockChildProcessBuilder);
 
     final Map<String, Object> variables = new HashMap<>();
@@ -140,7 +151,8 @@ public class MockChildProcessInstructionTest {
     instructionHandler.execute(instruction, processTestContext, camundaClient, assertionFacade);
 
     // then
-    verify(processTestContext).mockChildProcess(CHILD_PROCESS_ID);
+    verify(processTestContext).mockChildProcess();
+    verify(mockChildProcessBuilder).withProcessId(CHILD_PROCESS_ID);
     verify(mockChildProcessBuilder).withVersionTag("1.7.1");
     verify(mockChildProcessBuilder).thenComplete(variables);
 

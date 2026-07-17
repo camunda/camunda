@@ -33,7 +33,7 @@ public class MockChildProcessInstructionHandler
       final AssertionFacade assertionFacade) {
 
     MockChildProcessBuilder builder =
-        context.mockChildProcess(instruction.getProcessDefinitionId());
+        context.mockChildProcess().withProcessId(instruction.getProcessDefinitionId());
 
     if (instruction.getVersionTag().isPresent()) {
       builder = builder.withVersionTag(instruction.getVersionTag().get());

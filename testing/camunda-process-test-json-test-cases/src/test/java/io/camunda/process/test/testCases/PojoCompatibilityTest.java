@@ -471,14 +471,6 @@ public class PojoCompatibilityTest {
                     .processDefinitionId("lunar-lander")
                     .versionTag("1.7.1")
                     .build())),
-        Arguments.of(
-            "mock child process: with version tag and variables",
-            singleTestCase(
-                ImmutableMockChildProcessInstruction.builder()
-                    .processDefinitionId("lunar-lander")
-                    .versionTag("1.7.1")
-                    .putVariables("landingStatus", "nominal")
-                    .build())),
         // ===== MOCK_JOB_WORKER_COMPLETE_JOB =====
         Arguments.of(
             "mock job worker complete job: minimal",

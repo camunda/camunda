@@ -59,8 +59,6 @@ import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataRe
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.mock.MockChildProcessBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
@@ -212,49 +210,26 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public MockChildProcessBuilder mockChildProcess(final String childProcessId) {
+  public MockChildProcessBuilder mockChildProcess() {
     final CamundaClient client = createClient();
-    return new MockChildProcessBuilderImpl(childProcessId, client);
+    return new MockChildProcessBuilderImpl(client);
+  }
+
+  @Override
+  public void mockChildProcess(final String childProcessId) {
+    mockChildProcess().withProcessId(childProcessId).thenComplete();
   }
 
   @Override
   public void mockChildProcess(final String childProcessId, final Map<String, Object> variables) {
-    mockChildProcess(childProcessId).thenComplete(variables);
+    mockChildProcess().withProcessId(childProcessId).thenComplete(variables);
   }
 
   @Override
   public void mockChildProcess(
       final String childProcessId,
       final Function<Map<String, Object>, Map<String, Object>> variablesSupplier) {
-
-    final String variableSupplierJobType = "variableSupplier_" + childProcessId;
-    final BpmnModelInstance processModel =
-        Bpmn.createExecutableProcess(childProcessId)
-            .startEvent()
-            .serviceTask("variableSupplier", t -> t.zeebeJobType(variableSupplierJobType))
-            .endEvent()
-            .done();
-
-    LOGGER.debug("Mock: Deploy a child process '{}' with variables supplier", childProcessId);
-
-    try (final CamundaClient client = createClient()) {
-      final String resourceName = childProcessId + ".bpmn";
-      client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
-    }
-
-    mockJobWorker(variableSupplierJobType)
-        .withHandler(
-            (jobClient, job) -> {
-              final Map<String, Object> inputVariables = job.getVariablesAsMap();
-              final Map<String, Object> outputVariables = variablesSupplier.apply(inputVariables);
-
-              LOGGER.debug(
-                  "Mock: Complete child process '{}' with variables {}",
-                  childProcessId,
-                  outputVariables);
-
-              jobClient.newCompleteCommand(job.getKey()).variables(outputVariables).send().join();
-            });
+    mockChildProcess().withProcessId(childProcessId).thenComplete(variablesSupplier);
   }
 
   @Override

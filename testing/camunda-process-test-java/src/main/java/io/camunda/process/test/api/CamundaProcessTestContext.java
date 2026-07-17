@@ -109,24 +109,36 @@ public interface CamundaProcessTestContext {
   JobWorkerMockBuilder mockJobWorker(final String jobType);
 
   /**
-   * Creates a mock for the child process with the specified ID. Use the returned builder to
-   * optionally set a version tag and then deploy the stub process via {@code thenComplete()} or
-   * {@code thenComplete(Map)}.
+   * Returns a builder for constructing a mock child process. Use {@link
+   * MockChildProcessBuilder#withProcessId(String)} to set the child process ID, optionally {@link
+   * MockChildProcessBuilder#withVersionTag(String)} for version-tag binding, and one of the {@code
+   * thenComplete} methods to deploy the stub.
    *
    * <p>Example usage:
    *
    * <pre>
    *   // Simple mock without version tag
-   *   processTestContext.mockChildProcess("my-child-process").thenComplete();
+   *   processTestContext.mockChildProcess().withProcessId("my-child-process").thenComplete();
    *
    *   // Mock with a version tag (for call activities using bindingType="versionTag")
-   *   processTestContext.mockChildProcess("my-child-process").withVersionTag("1.7.1").thenComplete();
+   *   processTestContext
+   *       .mockChildProcess()
+   *       .withProcessId("my-child-process")
+   *       .withVersionTag("1.7.1")
+   *       .thenComplete();
    * </pre>
    *
-   * @param childProcessId the ID of the child process to mock
    * @return a builder for configuring and deploying the mock
    */
-  MockChildProcessBuilder mockChildProcess(final String childProcessId);
+  MockChildProcessBuilder mockChildProcess();
+
+  /**
+   * Mocks a child process with the specified ID. Deploys a stub process that completes immediately
+   * without setting any output variables.
+   *
+   * @param childProcessId the ID of the child process to mock
+   */
+  void mockChildProcess(final String childProcessId);
 
   /**
    * Mocks a child process with the specified ID and sets the provided variables.

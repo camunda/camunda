@@ -16,6 +16,7 @@
 package io.camunda.process.test.api.mock;
 
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Use this interface to build mock child processes in your process tests.
@@ -24,19 +25,38 @@ import java.util.Map;
  *
  * <pre>
  *   // Simple mock without version tag
- *   processTestContext.mockChildProcess("my-child-process").thenComplete();
+ *   processTestContext.mockChildProcess().withProcessId("my-child-process").thenComplete();
  *
  *   // Mock with a version tag (for call activities using bindingType="versionTag")
- *   processTestContext.mockChildProcess("my-child-process").withVersionTag("1.7.1").thenComplete();
+ *   processTestContext
+ *       .mockChildProcess()
+ *       .withProcessId("my-child-process")
+ *       .withVersionTag("1.7.1")
+ *       .thenComplete();
  *
  *   // Mock with a version tag and output variables
  *   processTestContext
- *       .mockChildProcess("my-child-process")
+ *       .mockChildProcess()
+ *       .withProcessId("my-child-process")
  *       .withVersionTag("1.7.1")
  *       .thenComplete(Map.of("result", "ok"));
+ *
+ *   // Mock with output variables derived from the parent process variables
+ *   processTestContext
+ *       .mockChildProcess()
+ *       .withProcessId("my-child-process")
+ *       .thenComplete(parentVars -> Map.of("result", parentVars.get("input")));
  * </pre>
  */
 public interface MockChildProcessBuilder {
+
+  /**
+   * Sets the process definition ID of the child process to mock.
+   *
+   * @param processId the ID of the child process to mock
+   * @return this builder
+   */
+  MockChildProcessBuilder withProcessId(String processId);
 
   /**
    * Sets the version tag for the mocked child process. This is required when the call activity uses
@@ -56,4 +76,14 @@ public interface MockChildProcessBuilder {
    * @param variables a map of variables to set for the mocked child process
    */
   void thenComplete(Map<String, Object> variables);
+
+  /**
+   * Deploys the mocked child process and sets the output variables by applying the given function
+   * to the parent process instance variables. This allows dynamically determining the child process
+   * output based on the parent process state at the time the child process is called.
+   *
+   * @param variablesSupplier a function that receives the parent process variables and returns the
+   *     variables to set as output for the mocked child process
+   */
+  void thenComplete(Function<Map<String, Object>, Map<String, Object>> variablesSupplier);
 }
