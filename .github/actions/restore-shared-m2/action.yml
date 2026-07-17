@@ -9,10 +9,21 @@ description: >-
 runs:
   using: composite
   steps:
-    - name: Restore io.camunda SNAPSHOTs from GCS
+    - name: Prepare installed directory
       shell: bash
-      run: |
-        set -euo pipefail
-        mkdir -p "${HOME}/.m2/repository/installed"
-        gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
-        tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"
+      run: mkdir -p "${HOME}/.m2/repository/installed"
+
+    - name: Download m2-installed.tar from GCS
+      uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+      with:
+        max_attempts: 5
+        retry_wait_seconds: 10
+        timeout_minutes: 1
+        shell: bash
+        command: |
+          set -euo pipefail
+          gcloud storage cp "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar" "${RUNNER_TEMP}/m2-installed.tar"
+
+    - name: Extract io.camunda SNAPSHOTs
+      shell: bash
+      run: tar -xf "${RUNNER_TEMP}/m2-installed.tar" -C "${HOME}/.m2/repository/installed"

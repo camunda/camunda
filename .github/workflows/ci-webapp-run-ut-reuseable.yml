@@ -53,7 +53,7 @@ jobs:
   build:
     name: "Unit - Back End - ${{ inputs.suiteName}}"
     runs-on: gcp-perf-core-8-default
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
