@@ -69,7 +69,7 @@ import org.springframework.core.env.Environment;
   CamundaActuatorConfiguration.class,
   MetricsDefaultConfiguration.class
 })
-public class MultiCamundaClientAutoConfiguration {
+public class CamundaAutoConfiguration {
 
   /**
    * Publishes one created/closing lifecycle event per configured client so the annotation

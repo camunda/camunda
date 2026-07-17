@@ -36,7 +36,7 @@ import org.springframework.context.ApplicationContext;
  * the {@code default} client is exercised end-to-end.
  */
 @SpringBootTest(
-    classes = MultiCamundaClientAutoConfiguration.class,
+    classes = CamundaAutoConfiguration.class,
     properties = {
       "camunda.client.rest-address=https://localhost:8080",
       "camunda.client.grpc-address=https://localhost:26500"

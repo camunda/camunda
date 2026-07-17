@@ -61,12 +61,15 @@ multi-client shape.
 
 ## Decision
 
-**D1. Collapse to a single auto-configuration path: multi-client, always.**
-`MultiCamundaClientAutoConfiguration` becomes the only path. A "single-client"
-application is just a multi-client application with exactly one client named
-`default`. `CamundaAutoConfiguration` (single-client) and the two selection
-conditions (`OnSingleClientConfigurationCondition`,
-`OnMultiClientConfigurationCondition`) are removed.
+**D1. Collapse to a single auto-configuration path: multi-client, always.** The
+unified path keeps the historic name `CamundaAutoConfiguration` (the former
+multi-client `MultiCamundaClientAutoConfiguration` is repurposed into it, so
+dependent modules that referenced `CamundaAutoConfiguration` need no rename). A
+"single-client" application is just a multi-client application with exactly one
+client named `default`. The former single-client auto-configuration's internals
+(`CamundaClientProdAutoConfiguration`) and the two selection conditions
+(`OnSingleClientConfigurationCondition`, `OnMultiClientConfigurationCondition`)
+are removed.
 
 **D2. Remap `camunda.client.*` → `camunda.clients.default.*` in the
 `EnvironmentPostProcessor`.** `CamundaClientPropertiesPostProcessor` gains a step

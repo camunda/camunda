@@ -47,10 +47,10 @@ import org.springframework.beans.factory.ObjectProvider;
  * {@link JobExceptionHandlerSupplier} are applied (falling back to self-contained defaults when
  * absent), so overrides such as {@code VirtualThreadsAutoConfiguration}'s executor take effect.
  *
- * <p>Note: the executor and job-exception-handler beans are shared across all clients. For a single
- * (default) client this matches the former single-client path; when several named clients are
- * configured they share one executor bean, so per-client {@code execution-threads} is not applied
- * and the shared pool's lifecycle is managed by Spring rather than owned per client.
+ * <p>Executor sizing follows the client count: the sole (default) client reuses the shared context
+ * executor bean (so overrides like {@code VirtualThreadsAutoConfiguration} apply and it matches the
+ * former single-client path); with several named clients, each gets its own owned executor sized by
+ * its {@code execution-threads}, so one client's shutdown cannot stop another's.
  */
 public class CamundaClientFactory {
 
@@ -78,24 +78,34 @@ public class CamundaClientFactory {
     this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
   }
 
-  public CamundaClient createClient(final String name, final CamundaClientProperties properties) {
+  public CamundaClient createClient(
+      final String name,
+      final CamundaClientProperties properties,
+      final boolean useSharedExecutor) {
     LOG.debug("Creating CamundaClient '{}'", name);
     final CredentialsProvider credentialsProvider =
         credentialsProviderConfiguration.camundaClientCredentialsProvider(properties);
 
     // Reuse the single-client adapter for the full property mapping, wired with the context
-    // collaborators. The json mapper falls back to the client default when no bean is defined.
-    // Prefer the context's executor and job-exception-handler beans (so overrides such as
-    // VirtualThreadsAutoConfiguration's executor take effect), falling back to self-contained
-    // defaults when none are defined.
+    // collaborators. The json mapper falls back to the client default when no bean is defined; the
+    // job-exception-handler prefers the context bean (so user overrides take effect), else default.
+    //
+    // Executor: for the sole (default) client, use the shared context executor bean so overrides
+    // such as VirtualThreadsAutoConfiguration's executor take effect. When several named clients
+    // are configured, each gets its own owned executor sized by its execution-threads, so one
+    // client's shutdown cannot stop another's and per-client sizing is honored.
+    final CamundaClientExecutorService executor =
+        useSharedExecutor
+            ? executorService.getIfAvailable(
+                () -> CamundaClientExecutorService.createDefault(properties.getExecutionThreads()))
+            : CamundaClientExecutorService.createDefault(properties.getExecutionThreads());
     final CamundaClientConfiguration configuration =
         new SpringCamundaClientConfiguration(
             properties,
             jsonMapper.getIfAvailable(),
             interceptors,
             chainHandlers,
-            executorService.getIfAvailable(
-                () -> CamundaClientExecutorService.createDefault(properties.getExecutionThreads())),
+            executor,
             credentialsProvider,
             jobExceptionHandlerSupplier.getIfAvailable(
                 () -> context -> JobExceptionHandler.createDefault()));

@@ -27,16 +27,16 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 /**
- * Integration tests wiring {@link MultiCamundaClientAutoConfiguration} through the real
- * auto-configuration machinery so that its conditions ({@code camunda.client.enabled} gating and
- * single- vs multi-client selection), the resolved {@link MultiCamundaClientProperties} bean, and
+ * Integration tests wiring {@link CamundaAutoConfiguration} through the real auto-configuration
+ * machinery so that its conditions ({@code camunda.client.enabled} gating and single- vs
+ * multi-client selection), the resolved {@link MultiCamundaClientProperties} bean, and
  * physical-tenant-id validation are exercised end-to-end against a live Spring context.
  */
-class MultiCamundaClientAutoConfigurationTest {
+class CamundaAutoConfigurationTest {
 
   private final ApplicationContextRunner contextRunner =
       new ApplicationContextRunner()
-          .withConfiguration(AutoConfigurations.of(MultiCamundaClientAutoConfiguration.class));
+          .withConfiguration(AutoConfigurations.of(CamundaAutoConfiguration.class));
 
   @Test
   void shouldExposeResolvedMultiClientPropertiesWhenClientsConfigured() {

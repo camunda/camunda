@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Primary;
 @SpringBootTest(
     classes = {
       ProcessTestSupportClientRegistrationTest.TestSupportConfig.class,
-      MultiCamundaClientAutoConfiguration.class
+      CamundaAutoConfiguration.class
     },
     properties = {"camunda.client.rest-address=https://localhost:8080"})
 public class ProcessTestSupportClientRegistrationTest {

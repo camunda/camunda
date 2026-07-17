@@ -57,15 +57,15 @@
       "differences": [
         {
           "ignore": true,
-          "code": "java.class.removed",
-          "old": "class io.camunda.client.spring.configuration.CamundaAutoConfiguration",
-          "justification": "Unification onto the single multi-client config path (#57344): the single-client auto-configuration is replaced by MultiCamundaClientAutoConfiguration. These are internal auto-configuration wiring classes; compatibility impact accepted for this release."
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.event.CamundaLifecycleEventProducer io.camunda.client.spring.configuration.CamundaAutoConfiguration::camundaLifecycleEventProducer(io.camunda.client.CamundaClient, org.springframework.context.ApplicationEventPublisher)",
+          "justification": "Unification onto the single multi-client config path (#57344): CamundaAutoConfiguration is now the unified auto-configuration; the single-client lifecycle producer bean is replaced by the multi-client MultiCamundaLifecycleEventProducer. Internal auto-configuration wiring; compatibility impact accepted for this release."
         },
         {
           "ignore": true,
           "code": "java.class.removed",
           "old": "class io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration",
-          "justification": "Unification onto the single multi-client config path (#57344): the single-client auto-configuration is replaced by MultiCamundaClientAutoConfiguration. These are internal auto-configuration wiring classes; compatibility impact accepted for this release."
+          "justification": "Unification onto the single multi-client config path (#57344): the single-client auto-configuration is replaced by the unified CamundaAutoConfiguration. Internal auto-configuration wiring class; compatibility impact accepted for this release."
         },
         {
           "ignore": true,

@@ -18,7 +18,7 @@ package io.camunda.client.virtualthreads;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
-import io.camunda.client.spring.configuration.MultiCamundaClientAutoConfiguration;
+import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
-    classes = {VirtualThreadsAutoConfiguration.class, MultiCamundaClientAutoConfiguration.class},
+    classes = {VirtualThreadsAutoConfiguration.class, CamundaAutoConfiguration.class},
     properties = {"camunda.client.mode=selfManaged", "camunda.client.enabled=false"})
 class VirtualThreadsAutoConfigurationIT {
 

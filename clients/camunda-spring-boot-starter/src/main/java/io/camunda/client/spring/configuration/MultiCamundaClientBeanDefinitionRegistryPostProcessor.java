@@ -45,8 +45,8 @@ import org.springframework.core.env.Environment;
  * MultiCamundaClientProperties#getPrimaryClientName()}) is marked {@code @Primary} so a plain
  * {@code @Autowired CamundaClient} resolves to it.
  *
- * <p>Registered as a {@code static} bean by {@link MultiCamundaClientAutoConfiguration} so it runs
- * before regular beans are instantiated.
+ * <p>Registered as a {@code static} bean by {@link CamundaAutoConfiguration} so it runs before
+ * regular beans are instantiated.
  */
 public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
     implements BeanDefinitionRegistryPostProcessor, EnvironmentAware, BeanFactoryAware {
@@ -92,13 +92,20 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
     LOG.debug("Registering CamundaClient beans for clients {}", properties.getClients().keySet());
 
     final String primaryClientName = properties.getPrimaryClientName().orElse(null);
+    // the sole (default) client reuses the shared context executor bean (so a VirtualThreads
+    // override applies); with several clients each gets its own owned executor (see the factory)
+    final boolean singleClient = properties.getClients().size() == 1;
 
     properties
         .getClients()
         .forEach(
             (name, clientProperties) ->
                 registerClientBean(
-                    registry, name, clientProperties, name.equals(primaryClientName)));
+                    registry,
+                    name,
+                    clientProperties,
+                    name.equals(primaryClientName),
+                    singleClient));
   }
 
   @Override
@@ -120,14 +127,17 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
       final BeanDefinitionRegistry registry,
       final String name,
       final CamundaClientProperties properties,
-      final boolean primary) {
+      final boolean primary,
+      final boolean useSharedExecutor) {
     // resolve the CamundaClientFactory bean lazily, at client instantiation time (the factory bean
     // does not exist yet while bean definitions are being registered)
     final BeanDefinitionBuilder builder =
         BeanDefinitionBuilder.genericBeanDefinition(
                 CamundaClient.class,
                 () ->
-                    beanFactory.getBean(CamundaClientFactory.class).createClient(name, properties))
+                    beanFactory
+                        .getBean(CamundaClientFactory.class)
+                        .createClient(name, properties, useSharedExecutor))
             .setDestroyMethodName("close");
     final AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();
     beanDefinition.setPrimary(primary);

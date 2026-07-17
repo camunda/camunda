@@ -30,7 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest(
-    classes = MultiCamundaClientAutoConfiguration.class,
+    classes = CamundaAutoConfiguration.class,
     properties = {
       "camunda.client.mode=saas",
       "camunda.client.cloud.cluster-id=12345",

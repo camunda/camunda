@@ -27,7 +27,7 @@ public class CamundaClientEnabledTest {
 
   @Nested
   @SpringBootTest(
-      classes = MultiCamundaClientAutoConfiguration.class,
+      classes = CamundaAutoConfiguration.class,
       properties = {"camunda.client.enabled=false"})
   class CurrentConfiguration {
     @Autowired(required = false)
@@ -41,7 +41,7 @@ public class CamundaClientEnabledTest {
 
   @Nested
   @SpringBootTest(
-      classes = MultiCamundaClientAutoConfiguration.class,
+      classes = CamundaAutoConfiguration.class,
       properties = {"camunda.client.zeebe.enabled=false"})
   class ZeebeClientConfiguration {
     @Autowired(required = false)
@@ -55,7 +55,7 @@ public class CamundaClientEnabledTest {
 
   @Nested
   @SpringBootTest(
-      classes = MultiCamundaClientAutoConfiguration.class,
+      classes = CamundaAutoConfiguration.class,
       properties = {"zeebe.client.enabled=false"})
   class LegacyConfiguration {
     @Autowired(required = false)
@@ -68,7 +68,7 @@ public class CamundaClientEnabledTest {
   }
 
   @Nested
-  @SpringBootTest(classes = MultiCamundaClientAutoConfiguration.class)
+  @SpringBootTest(classes = CamundaAutoConfiguration.class)
   class DefaultTest {
     @Autowired(required = false)
     CamundaClient camundaClient;

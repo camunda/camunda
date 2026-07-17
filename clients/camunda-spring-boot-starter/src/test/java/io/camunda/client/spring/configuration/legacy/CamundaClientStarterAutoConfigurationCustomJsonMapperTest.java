@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.client.spring.configuration.MultiCamundaClientAutoConfiguration;
+import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.time.Duration;
 import java.util.Map;
@@ -60,7 +60,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @ContextConfiguration(
     classes = {
       CamundaClientStarterAutoConfigurationCustomJsonMapperTest.TestConfig.class,
-      MultiCamundaClientAutoConfiguration.class
+      CamundaAutoConfiguration.class
     })
 public class CamundaClientStarterAutoConfigurationCustomJsonMapperTest {
   @MockitoBean CamundaClient camundaClient;

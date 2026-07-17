@@ -25,8 +25,8 @@ import org.springframework.context.SmartLifecycle;
  * in the {@link CamundaClientRegistry}, each carrying the client's configured name. This lets
  * lifecycle-aware components (e.g. the job-worker registration) run once per client.
  *
- * <p>Wired by {@code MultiCamundaClientAutoConfiguration} on the unified path (skipped in
- * process-test support, where the test framework drives the lifecycle).
+ * <p>Wired by {@code CamundaAutoConfiguration} on the unified path (skipped in process-test
+ * support, where the test framework drives the lifecycle).
  */
 public class MultiCamundaLifecycleEventProducer implements SmartLifecycle {
 

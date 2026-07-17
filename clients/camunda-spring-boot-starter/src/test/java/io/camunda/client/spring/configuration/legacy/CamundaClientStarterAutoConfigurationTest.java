@@ -22,8 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
 import io.camunda.client.spring.configuration.JsonMapperConfiguration;
-import io.camunda.client.spring.configuration.MultiCamundaClientAutoConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.time.Duration;
 import java.util.Map;
@@ -58,7 +58,7 @@ import org.springframework.test.util.ReflectionTestUtils;
     })
 @ContextConfiguration(
     classes = {
-      MultiCamundaClientAutoConfiguration.class,
+      CamundaAutoConfiguration.class,
       CamundaClientStarterAutoConfigurationTest.TestConfig.class,
       JsonMapperConfiguration.class
     })

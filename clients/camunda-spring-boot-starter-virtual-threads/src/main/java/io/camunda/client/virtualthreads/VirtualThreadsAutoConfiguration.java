@@ -17,7 +17,7 @@ package io.camunda.client.virtualthreads;
 
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.metrics.MeteredCamundaClientExecutorService;
-import io.camunda.client.spring.configuration.MultiCamundaClientAutoConfiguration;
+import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,13 +37,13 @@ import org.springframework.context.annotation.Lazy;
  *
  * <p>This configuration provides a {@link CamundaClientExecutorService} that uses Java 21 virtual
  * threads for job execution and a single platform thread for scheduling. This configuration runs
- * before {@link MultiCamundaClientAutoConfiguration} to override the default executor service.
+ * before {@link CamundaAutoConfiguration} to override the default executor service.
  *
  * <p>Virtual threads are lightweight threads that allow for highly concurrent job processing
  * without the overhead of traditional platform threads.
  */
 @AutoConfiguration
-@AutoConfigureBefore(MultiCamundaClientAutoConfiguration.class)
+@AutoConfigureBefore(CamundaAutoConfiguration.class)
 public class VirtualThreadsAutoConfiguration {
 
   /**
