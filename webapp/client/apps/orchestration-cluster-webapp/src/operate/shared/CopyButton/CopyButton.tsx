@@ -23,6 +23,7 @@ const CopyButton: React.FC<Props> = ({value, hasIconOnly, tooltipAlignment}) => 
 	const {t} = useTranslation();
 	const [isCopied, setIsCopied] = useState(false);
 	const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const latestValueRef = useRef(value);
 
 	function resetTimeout() {
 		if (copyTimeoutRef.current !== null) {
@@ -38,6 +39,7 @@ const CopyButton: React.FC<Props> = ({value, hasIconOnly, tooltipAlignment}) => 
 	}, []);
 
 	useEffect(() => {
+		latestValueRef.current = value;
 		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setIsCopied(false);
 		resetTimeout();
@@ -48,9 +50,15 @@ const CopyButton: React.FC<Props> = ({value, hasIconOnly, tooltipAlignment}) => 
 			return;
 		}
 
+		const copiedValue = value;
+
 		navigator.clipboard
-			.writeText(value)
+			.writeText(copiedValue)
 			.then(() => {
+				if (latestValueRef.current !== copiedValue) {
+					return;
+				}
+
 				setIsCopied(true);
 				if (copyTimeoutRef.current !== null) {
 					clearTimeout(copyTimeoutRef.current);
