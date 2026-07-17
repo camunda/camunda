@@ -9,11 +9,14 @@ package io.camunda.optimize.service.importing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ShardStatistics;
+import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
@@ -27,9 +30,14 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -266,6 +274,138 @@ public class ZeebeRecordFetcherTest {
 
       // then the number of empty pages has been reset to zero
       assertThat(underTest.getConsecutiveEmptyPages()).isZero();
+    }
+  }
+
+  /**
+   * Values that bracket the {@code double} precision boundary. Beyond 2^53 not every {@code long}
+   * has an exact {@code double} representation, and the gap between representable values doubles
+   * every power of two (2 between 2^53-2^54, 4 up to 2^55, 16 in the ~2^56 band, ...). Zeebe
+   * sequences/positions are generated as {@code partitionId << 51 | counter}, so on clusters with
+   * more than 3 partitions they exceed 2^53 and a lossy {@code double} conversion rounds them off.
+   *
+   * <p>Each argument carries whether the value genuinely loses precision as a {@code double}, so
+   * the tests can self-check that the "large" values actually exercise the rounding (see #58064).
+   */
+  private static Stream<Arguments> boundaryLongValues() {
+    return Stream.of(
+        arguments(123L, false), // below 2^53, exactly representable — control case
+        arguments((1L << 53) + 1, true), // just above 2^53, gap 2 — rounds
+        arguments(75309396599875985L, true), // ~2^56 band (gap 16) — rounds DOWN (-1)
+        arguments(
+            75309396599875993L, true)); // ~2^56 band (gap 16) — rounds UP (+7): real skip case
+  }
+
+  @ParameterizedTest(name = "sequence={0}")
+  @MethodSource("boundaryLongValues")
+  public void shouldBuildSequenceQueryWithExactLongBounds(
+      final long lastImportedSequence, final boolean losesPrecisionAsDouble) {
+    // given
+    final int batchSize = 400;
+    when(configurationService.getConfiguredZeebe().getMaxImportPageSize()).thenReturn(batchSize);
+    // keep consecutiveEmptyPages (0) < max so getRecordQuery builds the sequence query, not the
+    // position-query fallback
+    when(configurationService.getConfiguredZeebe().getImportConfig().getMaxEmptyPagesToImport())
+        .thenReturn(1);
+    initalizeClassUnderTest();
+
+    final PositionBasedImportPage positionBasedImportPage = new PositionBasedImportPage();
+    positionBasedImportPage.setHasSeenSequenceField(true);
+    positionBasedImportPage.setSequence(lastImportedSequence);
+
+    try (final MockedStatic<ElasticsearchReaderUtil> mockEsReaderUtil =
+        mockEmptyReaderAndShards()) {
+      final ArgumentCaptor<SearchRequest> requestCaptor =
+          ArgumentCaptor.forClass(SearchRequest.class);
+      captureSearchRequest(requestCaptor);
+
+      // when
+      underTest.getZeebeRecordsForPrefixAndPartitionFrom(positionBasedImportPage);
+
+      // then the exact long bounds must reach Elasticsearch. Building the range via
+      // Double#doubleValue() (as the ES fetcher did before this fix) rounds any value beyond 2^53
+      // and can jump the lower bound past not-yet-imported records, skipping them forever.
+      final var sequenceRange =
+          requestCaptor.getValue().query().bool().must().stream()
+              .filter(Query::isRange)
+              .map(q -> q.range().longNumber())
+              .findFirst()
+              .orElseThrow();
+      assertThat(sequenceRange.gt().longValue()).isEqualTo(lastImportedSequence);
+      assertThat(sequenceRange.lte().longValue()).isEqualTo(lastImportedSequence + batchSize);
+
+      assertValueGenuinelyExercisesRounding(lastImportedSequence, losesPrecisionAsDouble);
+    }
+  }
+
+  @ParameterizedTest(name = "position={0}")
+  @MethodSource("boundaryLongValues")
+  public void shouldBuildPositionQueryWithExactLongBounds(
+      final long lastImportedPosition, final boolean losesPrecisionAsDouble) {
+    // given
+    when(configurationService.getConfiguredZeebe().getMaxImportPageSize()).thenReturn(400);
+    initalizeClassUnderTest();
+
+    final PositionBasedImportPage positionBasedImportPage = new PositionBasedImportPage();
+    // hasSeenSequenceField=false routes getRecordQuery through buildPositionQuery
+    positionBasedImportPage.setPosition(lastImportedPosition);
+
+    try (final MockedStatic<ElasticsearchReaderUtil> mockEsReaderUtil =
+        mockEmptyReaderAndShards()) {
+      final ArgumentCaptor<SearchRequest> requestCaptor =
+          ArgumentCaptor.forClass(SearchRequest.class);
+      captureSearchRequest(requestCaptor);
+
+      // when
+      underTest.getZeebeRecordsForPrefixAndPartitionFrom(positionBasedImportPage);
+
+      // then the exact long position bound must reach Elasticsearch (see the sequence-query test
+      // for why a lossy double bound silently skips records).
+      final var positionRange =
+          requestCaptor.getValue().query().bool().must().stream()
+              .filter(Query::isRange)
+              .map(q -> q.range().longNumber())
+              .findFirst()
+              .orElseThrow();
+      assertThat(positionRange.gt().longValue()).isEqualTo(lastImportedPosition);
+
+      assertValueGenuinelyExercisesRounding(lastImportedPosition, losesPrecisionAsDouble);
+    }
+  }
+
+  // Guards the boundaryLongValues source against silently rotting: if a "large" value were ever
+  // swapped for one that is exactly representable as a double, the bound assertions above would
+  // pass even against the lossy implementation and stop protecting against the regression.
+  private static void assertValueGenuinelyExercisesRounding(
+      final long value, final boolean losesPrecisionAsDouble) {
+    if (losesPrecisionAsDouble) {
+      assertThat((long) (double) value).isNotEqualTo(value);
+    } else {
+      assertThat((long) (double) value).isEqualTo(value);
+    }
+  }
+
+  private MockedStatic<ElasticsearchReaderUtil> mockEmptyReaderAndShards() {
+    final MockedStatic<ElasticsearchReaderUtil> mockEsReaderUtil =
+        Mockito.mockStatic(ElasticsearchReaderUtil.class);
+    mockEsReaderUtil
+        .when(() -> ElasticsearchReaderUtil.mapHits(any(), any(), any()))
+        .thenReturn(List.of());
+    final ShardStatistics mockedShardStatistics = mock(ShardStatistics.class);
+    when(mockedShardStatistics.failures()).thenReturn(List.of());
+    when(mockedShardStatistics.total()).thenReturn(0);
+    when(mockedShardStatistics.failed()).thenReturn(0);
+    when(mockedShardStatistics.successful()).thenReturn(0);
+    when(searchResponse.shards()).thenReturn(mockedShardStatistics);
+    return mockEsReaderUtil;
+  }
+
+  private void captureSearchRequest(final ArgumentCaptor<SearchRequest> requestCaptor) {
+    try {
+      when(optimizeElasticsearchClient.searchWithoutPrefixing(requestCaptor.capture(), any()))
+          .thenReturn(searchResponse);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException(e);
     }
   }
 
