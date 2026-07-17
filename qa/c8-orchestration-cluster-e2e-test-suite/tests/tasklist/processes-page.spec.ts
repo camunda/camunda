@@ -197,4 +197,58 @@ test.describe('process page', () => {
       timeout: 60000,
     });
   });
+
+  // Regression test for https://github.com/camunda/camunda/issues/40045
+  test('show only the latest version of a process definition', async ({
+    page,
+    tasklistHeader,
+    tasklistProcessesPage,
+    taskPanelPage,
+  }) => {
+    await deploy(['./resources/latest_version_process.form']);
+    await deploy(['./resources/latest_version_process_v1.bpmn']);
+    await deploy(['./resources/latest_version_process_v2.bpmn']);
+
+    await tasklistHeader.clickProcessesTab();
+    await expect(page).toHaveURL('/tasklist/processes');
+    await tasklistProcessesPage.continueButton.click();
+
+    await tasklistProcessesPage.searchForProcess('Latest_Version_Process');
+
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(tasklistProcessesPage.processTile).toHaveCount(1);
+        await expect(tasklistProcessesPage.processTile).toContainText(
+          'Latest Version Process',
+        );
+      },
+      onFailure: async () => {
+        await page.reload();
+        if (await tasklistProcessesPage.continueButton.isVisible()) {
+          await tasklistProcessesPage.continueButton.click();
+        }
+        await tasklistProcessesPage.searchForProcess('Latest_Version_Process');
+      },
+    });
+
+    await tasklistProcessesPage.startProcessButton.click();
+    await expect(page.getByText('Process has started')).toBeVisible();
+
+    await tasklistHeader.clickTasksTab();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(
+          taskPanelPage.availableTasks
+            .getByText('Latest Version Task V2')
+            .first(),
+        ).toBeVisible();
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
+    await expect(
+      taskPanelPage.availableTasks.getByText('Latest Version Task V1'),
+    ).toBeHidden();
+  });
 });
