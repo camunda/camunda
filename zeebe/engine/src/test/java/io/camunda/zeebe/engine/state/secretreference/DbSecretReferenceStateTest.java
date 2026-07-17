@@ -266,7 +266,7 @@ public final class DbSecretReferenceStateTest {
     state.addPendingSecretReference("store-b", "ref-3");
 
     // when
-    final var collected = new java.util.ArrayList<String>();
+    final var collected = new ArrayList<String>();
     state.visitPendingSecretReferences(
         (storeId, secretRef) -> collected.add(storeId + ":" + secretRef));
 
@@ -283,7 +283,7 @@ public final class DbSecretReferenceStateTest {
     state.removePendingSecretReference("store-a", "ref-1");
 
     // when
-    final var collected = new java.util.ArrayList<String>();
+    final var collected = new ArrayList<String>();
     state.visitPendingSecretReferences(
         (storeId, secretRef) -> collected.add(storeId + ":" + secretRef));
 
