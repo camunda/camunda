@@ -93,6 +93,10 @@ public class RestGatewayPaths {
   private static final String URL_PROCESS_INSTANCES = REST_API_PATH + "/process-instances";
   private static final String URL_PROCESS_INSTANCES_CANCELLATION =
       REST_API_PATH + "/process-instances/cancellation";
+  private static final String URL_PROCESS_INSTANCES_SUSPENSION =
+      REST_API_PATH + "/process-instances/suspension";
+  private static final String URL_PROCESS_INSTANCES_RESUMPTION =
+      REST_API_PATH + "/process-instances/resumption";
   private static final String URL_PROCESS_INSTANCES_DELETION =
       REST_API_PATH + "/process-instances/deletion";
   private static final String URL_PROCESS_INSTANCES_INCIDENT_RESOLUTION =
@@ -337,6 +341,14 @@ public class RestGatewayPaths {
 
   public static String getProcessInstancesCancelUrl() {
     return URL_PROCESS_INSTANCES_CANCELLATION;
+  }
+
+  public static String getProcessInstancesSuspendUrl() {
+    return URL_PROCESS_INSTANCES_SUSPENSION;
+  }
+
+  public static String getProcessInstancesResumeUrl() {
+    return URL_PROCESS_INSTANCES_RESUMPTION;
   }
 
   public static String getProcessInstancesDeletionUrl() {
