@@ -10,20 +10,19 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
+    <artifactId>camunda-secret-store</artifactId>
     <version>8.10.0-SNAPSHOT</version>
-    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-secret-store</artifactId>
-  <packaging>pom</packaging>
+  <artifactId>camunda-secret-store-aws</artifactId>
 
-  <name>Camunda Secret Store</name>
+  <name>Camunda Secret Store AWS Secrets Manager Implementation</name>
 
-  <modules>
-    <module>secret-store-api</module>
-    <module>secret-store-file</module>
-    <module>secret-store-aws</module>
-  </modules>
+  <dependencies>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+  </dependencies>
 
 </project>
