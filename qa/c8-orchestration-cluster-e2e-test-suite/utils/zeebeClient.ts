@@ -10,6 +10,7 @@ import {readFileSync} from 'node:fs';
 import {basename} from 'node:path';
 import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {sleep} from './sleep';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -173,7 +174,7 @@ const waitForLatestProcessVersion = async (
     if ((response.items ?? []).length > 0) {
       return;
     }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await sleep(1000);
   }
   throw new Error(
     `Process definition ${processDefinitionId} version ${expectedVersion} was not indexed as latest within ${timeoutSeconds}s`,
