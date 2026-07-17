@@ -973,7 +973,11 @@ public final class SearchQueryResponseMapper {
         .startDate(requireNonNullElse(formatDateOrNull(p.startDate()), EPOCH_DATE_SENTINEL))
         .endDate(formatDateOrNull(p.endDate()))
         .state(toProtocolState(requireNonNullElse(p.state(), ProcessInstanceState.ACTIVE)))
-        .suspended(Boolean.TRUE.equals(p.suspended()))
+        // derived from state, not the persisted flag directly: process instances already in
+        // SUSPENDED state before this field was introduced have no backfilled suspended value.
+        .suspended(
+            requireNonNullElse(p.state(), ProcessInstanceState.ACTIVE)
+                == ProcessInstanceState.SUSPENDED)
         .suspendedDate(formatDateOrNull(p.suspendedDate()))
         .hasIncident(Boolean.TRUE.equals(p.hasIncident()))
         .tenantId(p.tenantId())

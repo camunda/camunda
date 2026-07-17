@@ -74,9 +74,9 @@ import io.camunda.search.entities.WaitStateStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.model.user.CamundaUserDTO;
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -219,7 +219,7 @@ class SearchQueryResponseMapperTest {
             false, // hasIncident
             "tenant", // tenantId
             null, // treePath
-            Set.of(), // tags
+            new HashSet<>(), // tags
             null, // businessId
             true, // suspended
             suspendedDate); // suspendedDate
@@ -252,7 +252,7 @@ class SearchQueryResponseMapperTest {
             false, // hasIncident
             "tenant", // tenantId
             null, // treePath
-            Set.of(), // tags
+            new HashSet<>(), // tags
             null, // businessId
             false, // suspended
             null); // suspendedDate
@@ -262,6 +262,40 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getSuspended()).isFalse();
+    assertThat(response.getSuspendedDate()).isNull();
+  }
+
+  @Test
+  void shouldDeriveSuspendedFromStateWhenPersistedFlagIsStale() {
+    // given: a process instance suspended before the `suspended` flag existed, so the
+    // persisted flag was never backfilled even though state already reads SUSPENDED
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.SUSPENDED, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            new HashSet<>(), // tags
+            null, // businessId
+            false, // suspended (stale/unbackfilled)
+            null); // suspendedDate (unknown for legacy data)
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getSuspended()).isTrue();
     assertThat(response.getSuspendedDate()).isNull();
   }
 
