@@ -37,6 +37,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
   private StartupCfg startup = new StartupCfg();
   private StorageOrdinalsCfg storageOrdinals = new StorageOrdinalsCfg();
+  private LoopDetectionCfg loopDetection = new LoopDetectionCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -54,6 +55,7 @@ public final class EngineCfg implements ConfigurationEntry {
     processInstanceCreation.init(globalConfig, brokerBase);
     startup.init(globalConfig, brokerBase);
     storageOrdinals.init(globalConfig, brokerBase);
+    loopDetection.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -208,6 +210,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.storageOrdinals = storageOrdinals;
   }
 
+  public LoopDetectionCfg getLoopDetection() {
+    return loopDetection;
+  }
+
+  public void setLoopDetection(final LoopDetectionCfg loopDetection) {
+    this.loopDetection = loopDetection;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -249,6 +259,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + outputMappingMode
         + ", outputComparisonMode="
         + outputComparisonMode
+        + ", loopDetection="
+        + loopDetection
         + '}';
   }
 
@@ -317,6 +329,9 @@ public final class EngineCfg implements ConfigurationEntry {
         .setInputMappingMode(inputMappingMode)
         .setInputComparisonMode(inputComparisonMode)
         .setOutputMappingMode(outputMappingMode)
-        .setOutputComparisonMode(outputComparisonMode);
+        .setOutputComparisonMode(outputComparisonMode)
+        .setMaxElementActivationCount(loopDetection.getMaxElementActivationCount())
+        .setElementActivationRetryCooldown(loopDetection.getElementActivationRetryCooldown())
+        .setMaxElementActivationCountByType(loopDetection.getMaxElementActivationCountByType());
   }
 }
