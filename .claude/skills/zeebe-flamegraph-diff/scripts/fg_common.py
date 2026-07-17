@@ -39,7 +39,8 @@ def load_frames(path):
         if fn == "f":
             key = a[0]
             lvl = a[1]
-            width = a[2] if len(a) > 2 and a[2] != 0 else width0
+            # f(key, level, left, width): a[2] is `left`, a[3] is width.
+            width = a[3] if len(a) > 3 and a[3] != 0 else width0
         elif fn == "u":
             lvl += 1
             key = a[0]
