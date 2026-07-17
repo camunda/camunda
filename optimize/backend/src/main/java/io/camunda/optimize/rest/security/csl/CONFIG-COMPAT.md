@@ -2,8 +2,12 @@
 
 How Optimize's existing auth/security config maps to CSL `camunda.security.*`, so operators are not
 forced to migrate. Implemented by `OptimizeSecurityConfigCompatibilityPostProcessor`
-(EnvironmentPostProcessor, low precedence — explicit `camunda.security.*` always wins), active only
+(EnvironmentPostProcessor, low precedence, explicit `camunda.security.*` always wins), active only
 when `optimize.security.csl.enabled=true`.
+
+Every recognized legacy key logs a deprecation warning on use that names its `camunda.security.*`
+replacement (or says it has no effect, for obsolete keys). The legacy keys stay supported until
+**8.11** and are removed afterwards.
 
 Legend: MAP = direct/semantic map applied by the bridge; OBSOLETE = no meaning under server-side
 sessions/CSL, ignored with a deprecation warning; SAAS/NO-ANALOG = platform-managed, no CSL target;

@@ -92,6 +92,9 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
       } else {
         derived.put("camunda.security.http-headers.hsts.max-age-in-seconds", hstsMaxAge.trim());
       }
+      warnDeprecated(
+          "CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE",
+          "camunda.security.http-headers.hsts.max-age-in-seconds");
     }
     // TODO(spike): Content-Security-Policy, X-Content-Type-Options (inverted -> content-type-options.disabled),
     // token.lifeMin -> session timeout, redirectRootUrl -> oidc.redirect-uri, issuerBackendUrl -> back-channel
@@ -120,14 +123,30 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     final String value = env.getProperty(legacyKey);
     if (value != null && !value.isBlank()) {
       derived.putIfAbsent(cslKey, value);
+      warnDeprecated(legacyKey, cslKey);
     }
   }
 
+  // Deprecation warning for a legacy key that still maps to a CSL property.
+  private void warnDeprecated(final String legacyKey, final String replacement) {
+    log.warn(
+        "Optimize config '"
+            + legacyKey
+            + "' is deprecated; migrate to '"
+            + replacement
+            + "'. Support for the legacy key will be removed in 8.11.");
+  }
+
+  // Deprecation warning for a legacy key that no longer has any effect under CSL.
   private void warnObsolete(
       final ConfigurableEnvironment env, final String legacyKey, final String why) {
     if (env.getProperty(legacyKey) != null) {
       log.warn(
-          "Optimize config '" + legacyKey + "' is deprecated under CSL and has no effect: " + why);
+          "Optimize config '"
+              + legacyKey
+              + "' is deprecated and has no effect under CSL ("
+              + why
+              + "). It will be removed in 8.11.");
     }
   }
 }
