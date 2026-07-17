@@ -54,6 +54,8 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   private boolean multiTenancyEnabled = false;
   private boolean clockResetEnabled = true;
+
+  /** Cleanup mode after each test. Property: {@code camunda.process-test.data-deletion-mode}. */
   private DataDeletionMode dataDeletionMode = DataDeletionMode.CLUSTER_PURGE;
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
@@ -249,6 +251,13 @@ public class CamundaProcessTestRuntimeConfiguration {
     return dataDeletionMode;
   }
 
+  /**
+   * Sets the data deletion mode for cleanup between tests.
+   *
+   * <p>Property: {@code camunda.process-test.data-deletion-mode}
+   *
+   * @param dataDeletionMode the cleanup mode to apply after each test
+   */
   public void setDataDeletionMode(final DataDeletionMode dataDeletionMode) {
     this.dataDeletionMode = dataDeletionMode;
   }

@@ -22,9 +22,9 @@ import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
-import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
 import io.camunda.process.test.impl.cleanup.CleanupStrategyResolver;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
@@ -99,7 +99,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CoverageCollector coverageCollector;
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
-  private CamundaProcessTestContext camundaProcessTestContext;
+  private CamundaProcessTestContextImpl camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = true;
@@ -198,6 +198,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // wait until the cluster is ready to accept new operations, retrying until success or timeout
     runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
+    testDeploymentService.consumeTrackedDeploymentKeys();
+    camundaProcessTestContext.consumeTrackedDeploymentKeys();
+
     // deploy resources
     testDeploymentService.deployTestResources(
         testContext.getTestMethod(), testContext.getTestClass(), client);
@@ -250,19 +253,14 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     testContext.getApplicationContext().getBean(TestCaseRunnerProxy.class).removeDelegate();
 
     // final steps: reset the time and delete data
-    // It's important that the runtime clock is reset before the purge is started, as doing it
+    // It's important that the runtime clock is reset before the cleanup is started, as doing it
     // the other way around leads to race conditions and inconsistencies in the tests
     if (clockResetEnabled) {
       resetRuntimeClock();
     } else {
       LOG.info("Runtime clock reset is disabled. Skipping.");
     }
-
-    if (dataDeletionMode != DataDeletionMode.NONE) {
-      deleteRuntimeData();
-    } else {
-      LOG.info("Runtime data deletion mode is NONE. Skipping.");
-    }
+    deleteRuntimeData();
   }
 
   @Override
@@ -328,17 +326,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   private void deleteRuntimeData() {
     try {
-      LOG.debug("Deleting the runtime data");
-      final Instant startTime = Instant.now();
-
       final CleanupStrategy cleanupStrategy = CleanupStrategyResolver.resolve(dataDeletionMode);
       cleanupStrategy.cleanup(
           camundaManagementClient,
           () -> runtime.getCamundaClientBuilderFactory().get().build(),
-          testCaseStartTime);
-      final Instant endTime = Instant.now();
-      final Duration duration = Duration.between(startTime, endTime);
-      LOG.debug("Runtime data deleted in {}", duration);
+          testCaseStartTime,
+          collectTrackedDeploymentKeys());
 
     } catch (final Throwable t) {
       LOG.warn(
@@ -346,6 +339,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
     }
+  }
+
+  private java.util.Set<Long> collectTrackedDeploymentKeys() {
+    final java.util.LinkedHashSet<Long> deploymentKeys = new java.util.LinkedHashSet<>();
+    deploymentKeys.addAll(testDeploymentService.consumeTrackedDeploymentKeys());
+    deploymentKeys.addAll(camundaProcessTestContext.consumeTrackedDeploymentKeys());
+    return deploymentKeys;
   }
 
   private void resetRuntimeClock() {

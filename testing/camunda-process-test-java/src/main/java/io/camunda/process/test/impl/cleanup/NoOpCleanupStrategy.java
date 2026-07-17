@@ -17,16 +17,15 @@ package io.camunda.process.test.impl.cleanup;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class ClusterPurgeCleanupStrategy implements CleanupStrategy {
+public final class NoOpCleanupStrategy implements CleanupStrategy {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ClusterPurgeCleanupStrategy.class);
+  private static final Logger LOG = LoggerFactory.getLogger(NoOpCleanupStrategy.class);
 
   @Override
   public void cleanup(
@@ -34,10 +33,6 @@ public final class ClusterPurgeCleanupStrategy implements CleanupStrategy {
       final Supplier<CamundaClient> clientSupplier,
       final Instant testCaseStartTime,
       final Set<Long> deploymentKeys) {
-    LOG.debug("Purging cluster runtime data");
-    final Instant startTime = Instant.now();
-    managementClient.purgeCluster();
-    final Duration duration = Duration.between(startTime, Instant.now());
-    LOG.debug("Cluster runtime data purged in {}", duration);
+    LOG.debug("Runtime data deletion mode is NONE. Skipping.");
   }
 }

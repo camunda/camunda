@@ -28,8 +28,9 @@ public final class CleanupStrategyResolver {
       case RESOURCE_AND_HISTORY_DELETION:
         return new ResourceAndHistoryDeletionStrategy();
       case NONE:
+        return new NoOpCleanupStrategy();
       default:
-        throw new IllegalArgumentException("NONE has no cleanup strategy");
+        return new NoOpCleanupStrategy();
     }
   }
 }

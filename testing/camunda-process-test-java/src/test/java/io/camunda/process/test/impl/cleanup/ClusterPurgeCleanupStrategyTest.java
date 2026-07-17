@@ -15,17 +15,30 @@
  */
 package io.camunda.process.test.impl.cleanup;
 
-import io.camunda.client.CamundaClient;
+import static org.mockito.Mockito.verify;
+
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Instant;
-import java.util.Set;
-import java.util.function.Supplier;
+import java.util.Collections;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-public interface CleanupStrategy {
+@ExtendWith(MockitoExtension.class)
+class ClusterPurgeCleanupStrategyTest {
 
-  void cleanup(
-      CamundaManagementClient managementClient,
-      Supplier<CamundaClient> clientSupplier,
-      Instant testCaseStartTime,
-      Set<Long> deploymentKeys);
+  @Mock private CamundaManagementClient managementClient;
+
+  @Test
+  void shouldPurgeCluster() {
+    // given
+    final ClusterPurgeCleanupStrategy strategy = new ClusterPurgeCleanupStrategy();
+
+    // when
+    strategy.cleanup(managementClient, () -> null, Instant.now(), Collections.emptySet());
+
+    // then
+    verify(managementClient).purgeCluster();
+  }
 }
