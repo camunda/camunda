@@ -259,7 +259,9 @@ public class SchemaStartupIT extends AbstractSchemaIT {
   void shouldStoreSchemaVersionWhenSchemaVersionMetadataIsMissing() throws MigrationException {
     // given
     schemaHelper.createIndex(
-        metadataIndex, metadataIndex.getIndexName(), metadataIndex.getSchemaClasspathFilename());
+        metadataIndex,
+        metadataIndex.getFullQualifiedName(),
+        metadataIndex.getSchemaClasspathFilename());
     assertThat(metadataStore.getSchemaVersion()).isNull();
 
     // when
@@ -276,7 +278,9 @@ public class SchemaStartupIT extends AbstractSchemaIT {
       final String schemaVersion, final boolean shouldUpdate) throws MigrationException {
     // given
     schemaHelper.createIndex(
-        metadataIndex, metadataIndex.getIndexName(), metadataIndex.getSchemaClasspathFilename());
+        metadataIndex,
+        metadataIndex.getFullQualifiedName(),
+        metadataIndex.getSchemaClasspathFilename());
     clientTestHelper.createDocument(
         metadataIndex.getFullQualifiedName(),
         SCHEMA_VERSION_METADATA_ID,
