@@ -93,6 +93,7 @@
 /zeebe/broker-client @camunda/zeebe-distributed-platform
 /zeebe/docker @camunda/zeebe-distributed-platform
 /zeebe/dynamic-config @camunda/zeebe-distributed-platform
+/zeebe/dynamic-config-api @camunda/zeebe-distributed-platform
 /zeebe/journal @camunda/zeebe-distributed-platform
 /zeebe/logstreams @camunda/zeebe-distributed-platform
 /zeebe/restore @camunda/zeebe-distributed-platform
