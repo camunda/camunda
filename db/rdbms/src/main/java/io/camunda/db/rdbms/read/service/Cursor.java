@@ -26,7 +26,8 @@ public class Cursor<T> {
           .disable((SerializationFeature.WRITE_DATES_AS_TIMESTAMPS))
           .build();
 
-  public static <T> @Nullable String encode(final T entity, final List<SearchColumn<T>> columns) {
+  public static <T> @Nullable String encode(
+      final @Nullable T entity, final @Nullable List<SearchColumn<T>> columns) {
     if (columns == null || columns.isEmpty() || entity == null) {
       return null;
     }
@@ -45,7 +46,7 @@ public class Cursor<T> {
   }
 
   public static <T> Object @Nullable [] decode(
-      final String cursor, final List<SearchColumn<T>> columns) {
+      final @Nullable String cursor, final @Nullable List<SearchColumn<T>> columns) {
     if (columns == null || columns.isEmpty() || cursor == null || cursor.isEmpty()) {
       return null;
     }
