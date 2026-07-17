@@ -81,6 +81,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final AgentInstanceBehavior agentInstanceBehavior;
   private final AgentDefinitionBehavior agentDefinitionBehavior;
   private final StorageOrdinalProvider storageOrdinalProvider;
+  private final BpmnLoopDetectionBehavior loopDetectionBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -316,6 +317,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     agentInstanceBehavior = new AgentInstanceBehavior(writers, processingState);
 
+    loopDetectionBehavior =
+        new BpmnLoopDetectionBehavior(
+            processingState.getElementInstanceState(),
+            config.getMaxElementActivationCount(),
+            config.getMaxElementActivationCountByType(),
+            config.getElementActivationRetryCooldown());
+
     processDeletionBehavior =
         new BpmnProcessDeletionBehavior(
             processingState.getProcessState(),
@@ -502,6 +510,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public StorageOrdinalProvider storageOrdinalProvider() {
     return storageOrdinalProvider;
+  }
+
+  @Override
+  public BpmnLoopDetectionBehavior loopDetectionBehavior() {
+    return loopDetectionBehavior;
   }
 
   public ExpressionBehavior expressionBehavior() {
