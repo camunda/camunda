@@ -139,9 +139,10 @@ runs:
         file: ${{ inputs.dockerfile }}
         tags: ${{ steps.get-image.outputs.tags }}
         load: ${{ inputs.push != 'true' }}
-        push: ${{ inputs.push }}
+        push: false
         platforms: ${{ inputs.platforms }}
         provenance: false
+        outputs: ${{ inputs.push == 'true' && 'type=image,oci-mediatypes=false,push=true' || '' }}
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
