@@ -19,10 +19,13 @@ camunda:
     # this spike: BaseSecurityConfiguration deny chain made suppressible).
     unhandled-paths-chain:
       enabled: false
-    # Server-side sessions on Optimize's existing Elasticsearch (replaces the split cookie).
+    # Single-node manual testing: in-memory HttpSession, no SessionStorePort bean needed.
+    # Set true (and register the Elasticsearch SessionStorePort adapter) for multi-instance.
     session:
       persistent:
-        enabled: true
-    # CSRF is handled by CSL defaults now (was disabled + SameSite-only in the legacy setup).
+        enabled: false
+    # Keep CSRF disabled for now: Optimize relies on the session cookie's SameSite flag, matching
+    # its current behavior. Enabling CSL's token CSRF needs an optimize/client interceptor that
+    # sends X-CSRF-TOKEN on mutating requests (OC-style) — a follow-up, see SPIKE-NOTES.md.
     csrf:
-      enabled: true
+      enabled: false
