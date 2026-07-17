@@ -26,10 +26,11 @@ import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.api.response.ActivatedJob;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -72,21 +73,39 @@ class MultiClientJobWorkerFanOutTest {
         .run(
             context ->
                 // then both clients poll their own physical-tenant-scoped activation endpoint
-                Awaitility.await()
-                    .atMost(Duration.ofSeconds(15))
-                    .untilAsserted(
-                        () -> {
-                          final Set<String> activationPaths =
-                              WM.getAllServeEvents().stream()
-                                  .map(event -> event.getRequest().getUrl())
-                                  .filter(Objects::nonNull)
-                                  .filter(url -> url.endsWith("/jobs/activation"))
-                                  .collect(Collectors.toSet());
-                          assertThat(activationPaths)
-                              .contains(
-                                  "/physical-tenants/finance/v2/jobs/activation",
-                                  "/physical-tenants/risk/v2/jobs/activation");
-                        }));
+                assertThat(
+                        awaitActivationPaths(
+                            List.of(
+                                "/physical-tenants/finance/v2/jobs/activation",
+                                "/physical-tenants/risk/v2/jobs/activation"),
+                            Duration.ofSeconds(15)))
+                    .contains(
+                        "/physical-tenants/finance/v2/jobs/activation",
+                        "/physical-tenants/risk/v2/jobs/activation"));
+  }
+
+  /**
+   * Polls WireMock's request journal until every expected job-activation path has been seen or the
+   * timeout elapses, returning the paths seen. Uses a plain deadline loop (no {@code Thread.sleep})
+   * so no extra test dependency is required.
+   */
+  private static Set<String> awaitActivationPaths(
+      final List<String> expected, final Duration timeout) {
+    final long deadline = System.nanoTime() + timeout.toNanos();
+    Set<String> activationPaths = Set.of();
+    while (System.nanoTime() < deadline) {
+      activationPaths =
+          WM.getAllServeEvents().stream()
+              .map(event -> event.getRequest().getUrl())
+              .filter(Objects::nonNull)
+              .filter(url -> url.endsWith("/jobs/activation"))
+              .collect(Collectors.toSet());
+      if (activationPaths.containsAll(expected)) {
+        break;
+      }
+      LockSupport.parkNanos(Duration.ofMillis(100).toNanos());
+    }
+    return activationPaths;
   }
 
   @Configuration
