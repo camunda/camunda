@@ -33,6 +33,8 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOpe
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceResumeRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceSuspendRequest;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.registry.ServiceRegistry;
@@ -104,6 +106,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Captor ArgumentCaptor<ProcessInstanceMigrateRequest> migrateRequestCaptor;
   @Captor ArgumentCaptor<AssignProcessInstanceBusinessIdRequest> assignBusinessIdRequestCaptor;
   @Captor ArgumentCaptor<ProcessInstanceModifyRequest> modifyRequestCaptor;
+  @Captor ArgumentCaptor<ProcessInstanceSuspendRequest> suspendRequestCaptor;
+  @Captor ArgumentCaptor<ProcessInstanceResumeRequest> resumeRequestCaptor;
   @MockitoBean ProcessInstanceServices processInstanceServices;
   @MockitoBean ServiceRegistry serviceRegistry;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
@@ -1103,15 +1107,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnNotImplementedForSuspendProcessInstance() {
+  void shouldSuspendProcessInstance() {
     // given
+    when(processInstanceServices.suspendProcessInstance(
+            any(ProcessInstanceSuspendRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
     final var request =
         """
             {
               "operationReference": 123
             }""";
 
-    // when/then — 501: the engine processor for SUSPEND doesn't exist yet (TODO #57518)
+    // when/then
     webClient
         .post()
         .uri(SUSPEND_PROCESS_URL.formatted("1"))
@@ -1120,14 +1128,23 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.NOT_IMPLEMENTED);
+        .isNoContent();
 
-    Mockito.verifyNoInteractions(processInstanceServices);
+    Mockito.verify(processInstanceServices)
+        .suspendProcessInstance(suspendRequestCaptor.capture(), any());
+    final var capturedRequest = suspendRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
   }
 
   @Test
-  void shouldReturnNotImplementedForSuspendProcessInstanceWithNoBody() {
-    // when/then — 501: the engine processor for SUSPEND doesn't exist yet (TODO #57518)
+  void shouldSuspendProcessInstanceWithNoBody() {
+    // given
+    when(processInstanceServices.suspendProcessInstance(
+            any(ProcessInstanceSuspendRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
+    // when/then
     webClient
         .post()
         .uri(SUSPEND_PROCESS_URL.formatted("1"))
@@ -1135,9 +1152,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.NOT_IMPLEMENTED);
+        .isNoContent();
 
-    Mockito.verifyNoInteractions(processInstanceServices);
+    Mockito.verify(processInstanceServices)
+        .suspendProcessInstance(suspendRequestCaptor.capture(), any());
+    final var capturedRequest = suspendRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isNull();
   }
 
   @Test
@@ -1176,15 +1197,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnNotImplementedForResumeProcessInstance() {
+  void shouldResumeProcessInstance() {
     // given
+    when(processInstanceServices.resumeProcessInstance(
+            any(ProcessInstanceResumeRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
     final var request =
         """
             {
               "operationReference": 123
             }""";
 
-    // when/then — 501: the engine processor for RESUME doesn't exist yet (TODO #57518)
+    // when/then
     webClient
         .post()
         .uri(RESUME_PROCESS_URL.formatted("1"))
@@ -1193,14 +1218,23 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.NOT_IMPLEMENTED);
+        .isNoContent();
 
-    Mockito.verifyNoInteractions(processInstanceServices);
+    Mockito.verify(processInstanceServices)
+        .resumeProcessInstance(resumeRequestCaptor.capture(), any());
+    final var capturedRequest = resumeRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isEqualTo(123L);
   }
 
   @Test
-  void shouldReturnNotImplementedForResumeProcessInstanceWithNoBody() {
-    // when/then — 501: the engine processor for RESUME doesn't exist yet (TODO #57518)
+  void shouldResumeProcessInstanceWithNoBody() {
+    // given
+    when(processInstanceServices.resumeProcessInstance(
+            any(ProcessInstanceResumeRequest.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(new ProcessInstanceRecord()));
+
+    // when/then
     webClient
         .post()
         .uri(RESUME_PROCESS_URL.formatted("1"))
@@ -1208,9 +1242,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.NOT_IMPLEMENTED);
+        .isNoContent();
 
-    Mockito.verifyNoInteractions(processInstanceServices);
+    Mockito.verify(processInstanceServices)
+        .resumeProcessInstance(resumeRequestCaptor.capture(), any());
+    final var capturedRequest = resumeRequestCaptor.getValue();
+    assertThat(capturedRequest.processInstanceKey()).isEqualTo(1);
+    assertThat(capturedRequest.operationReference()).isNull();
   }
 
   @Test
