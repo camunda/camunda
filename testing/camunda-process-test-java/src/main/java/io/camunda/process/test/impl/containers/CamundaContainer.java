@@ -58,9 +58,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   private static final String ACTIVE_SPRING_PROFILES = "broker,consolidated-auth,security";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
 
-  private static final String CAMUNDA_EXPORTER_CLASSNAME = "io.camunda.exporter.CamundaExporter";
-  private static final String CAMUNDA_EXPORTER_BULK_SIZE = "1";
-
   public CamundaContainer(final DockerImageName dockerImageName) {
     super(dockerImageName);
     applyDefaultConfiguration();
@@ -156,24 +153,6 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .withEnv(CAMUNDA_ENV_LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS, LOGGING_LEVEL_IO_CAMUNDA_DB_RDBMS)
         .withEnv(CAMUNDA_ENV_LOGGING_LEVEL_ORG_MYBATIS, LOGGING_LEVEL_ORG_MYBATIS);
 
-    return this;
-  }
-
-  public CamundaContainer withElasticsearchUrl(final String url) {
-    withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_CLASSNAME, CAMUNDA_EXPORTER_CLASSNAME);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_ARGS_CONNECT_URL, url);
-    withEnv(
-        ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_EXPORTER_ARGS_BULK_SIZE,
-        CAMUNDA_EXPORTER_BULK_SIZE);
-
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ELASTICSEARCH_URL, url);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBEELASTICSEARCH_URL, url);
-
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ELASTICSEARCH_URL, url);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBEELASTICSEARCH_URL, url);
-
-    withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, url);
     return this;
   }
 
