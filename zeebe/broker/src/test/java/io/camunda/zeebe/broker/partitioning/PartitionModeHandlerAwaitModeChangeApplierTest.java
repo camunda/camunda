@@ -122,12 +122,6 @@ final class PartitionModeHandlerAwaitModeChangeApplierTest {
     scheduler.workUntilDone();
   }
 
-  private static final class ControlActor extends Actor {
-    ActorControl getActorControl() {
-      return actor;
-    }
-  }
-
   @Test
   void shouldWriteRecoveringOnlyForHealthyPartitionsAcrossBothCollaborators() {
     // given - partition 1 recovers healthily, partition 2 reaches INACTIVE but is DEAD
@@ -177,5 +171,11 @@ final class PartitionModeHandlerAwaitModeChangeApplierTest {
     // then - the applier propagates the failure so the cluster change is retried, rather than
     // writing any partition state prematurely
     assertThat(result.isCompletedExceptionally()).isTrue();
+  }
+
+  private static final class ControlActor extends Actor {
+    ActorControl getActorControl() {
+      return actor;
+    }
   }
 }
