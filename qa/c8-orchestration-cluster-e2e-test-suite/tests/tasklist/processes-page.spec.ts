@@ -31,13 +31,16 @@ const waitForLatestProcessVersion = async (
 ) => {
   const baseUrl =
     process.env.ZEEBE_REST_ADDRESS ?? process.env.CORE_APPLICATION_URL;
-  const authorization = `Basic ${Buffer.from(
+  const authorization = `${process.env.CAMUNDA_AUTH_STRATEGY} ${Buffer.from(
     `${process.env.CAMUNDA_BASIC_AUTH_USERNAME}:${process.env.CAMUNDA_BASIC_AUTH_PASSWORD}`,
   ).toString('base64')}`;
   for (let attempt = 0; attempt < 30; attempt++) {
     const response = await fetch(`${baseUrl}/v2/process-definitions/search`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json', authorization},
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authorization,
+      },
       body: JSON.stringify({
         filter: {processDefinitionId, isLatestVersion: true},
       }),
