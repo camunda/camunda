@@ -1741,42 +1741,42 @@ jobs:
         id: zeebe-matrix-read
         shell: bash
         run: |
-          result="$(find . -name zeebe-unit-tests -maxdepth 2 -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
+          result="$(find . -maxdepth 2 -name zeebe-unit-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
           echo "result=${result}" >> "$GITHUB_OUTPUT"
       - name: Read Integration tests matrix outputs
         if: steps.bypass.outputs.present != 'true'
         id: integration-matrix-read
         shell: bash
         run: |
-          result="$(find . -name integration-tests -maxdepth 2 -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
+          result="$(find . -maxdepth 2 -name integration-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
           echo "result=${result}" >> "$GITHUB_OUTPUT"
       - name: Read Physical-tenant acceptance tests matrix outputs
         if: steps.bypass.outputs.present != 'true'
         id: physical-tenant-acceptance-matrix-read
         shell: bash
         run: |
-          result="$(find . -name physical-tenant-acceptance-tests -maxdepth 2 -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
+          result="$(find . -maxdepth 2 -name physical-tenant-acceptance-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
           echo "result=${result}" >> "$GITHUB_OUTPUT"
       - name: Read Database integration tests matrix outputs
         if: steps.bypass.outputs.present != 'true'
         id: database-integration-matrix-read
         shell: bash
         run: |
-          result="$(find . -name database-integration-tests -maxdepth 2 -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
+          result="$(find . -maxdepth 2 -name database-integration-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
           echo "result=${result}" >> "$GITHUB_OUTPUT"
       - name: Read history tests matrix outputs
         if: steps.bypass.outputs.present != 'true'
         id: history-matrix-read
         shell: bash
         run: |
-          result="$(find . -name history-tests -maxdepth 2 -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
+          result="$(find . -maxdepth 2 -name history-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
           echo "result=${result}" >> "$GITHUB_OUTPUT"
       - name: Read identity tests matrix outputs
         if: steps.bypass.outputs.present != 'true'
         id: identity-matrix-read
         shell: bash
         run: |
-          result="$(find . -name identity-tests -maxdepth 2 -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
+          result="$(find . -maxdepth 2 -name identity-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
           echo "result=${result}" >> "$GITHUB_OUTPUT"
 
       - name: Collect flaky test results
