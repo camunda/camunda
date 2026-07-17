@@ -168,9 +168,9 @@ const waitForLatestProcessVersion = async (
 ) => {
   for (let attempt = 0; attempt < timeoutSeconds; attempt++) {
     const response = await zeebe.searchProcessDefinitions({
-      filter: {processDefinitionId, isLatestVersion: true},
+      filter: {processDefinitionId, version: expectedVersion},
     });
-    if (response.items?.[0]?.version === expectedVersion) {
+    if ((response.items ?? []).length > 0) {
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 1000));
