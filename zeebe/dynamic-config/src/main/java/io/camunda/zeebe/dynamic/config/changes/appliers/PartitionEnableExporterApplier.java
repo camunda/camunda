@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
@@ -70,7 +72,8 @@ public final class PartitionEnableExporterApplier
                   .formatted(memberId, partitionId)));
     }
 
-    final var exportersInPartition = localPartition.config().exporting().exporters();
+    final var exportersInPartition =
+        requireNonNull(localPartition.config().exporting()).exporters();
 
     if (initializeFrom.isPresent()) {
       final String otherExporterId = initializeFrom.orElseThrow();
@@ -81,7 +84,7 @@ public final class PartitionEnableExporterApplier
                 "Expected to enable exporter and initialize from exporter '%s', but the partition '%s' does not have exporter '%s'"
                     .formatted(otherExporterId, partitionId, otherExporterId)));
       } else {
-        final var otherExporter = exportersInPartition.get(otherExporterId);
+        final var otherExporter = requireNonNull(exportersInPartition.get(otherExporterId));
         if (otherExporter.state() == State.DISABLED) {
           return Either.left(
               new IllegalStateException(
@@ -93,7 +96,8 @@ public final class PartitionEnableExporterApplier
 
     final var partitionHasExporter = exportersInPartition.containsKey(exporterId);
 
-    if (partitionHasExporter && exportersInPartition.get(exporterId).state() == State.ENABLED) {
+    if (partitionHasExporter
+        && requireNonNull(exportersInPartition.get(exporterId)).state() == State.ENABLED) {
       return Either.left(
           new IllegalStateException(
               "Expected to enable exporter, but the exporter '%s' is already enabled"
@@ -105,7 +109,8 @@ public final class PartitionEnableExporterApplier
       // whether the runtime state has the latest state. This is useful when the operation is
       // retried or if there was restart without a snapshot after a sequence of disable, enable
       // operations.
-      metadataVersionToUpdate = exportersInPartition.get(exporterId).metadataVersion() + 1;
+      metadataVersionToUpdate =
+          requireNonNull(exportersInPartition.get(exporterId)).metadataVersion() + 1;
     } else {
       metadataVersionToUpdate = 1;
     }
@@ -145,7 +150,8 @@ public final class PartitionEnableExporterApplier
             initializeFrom
                 .map(
                     otherExporterId ->
-                        c.enableExporter(exporterId, otherExporterId, metadataVersionToUpdate))
-                .orElse(c.enableExporter(exporterId, metadataVersionToUpdate)));
+                        requireNonNull(c)
+                            .enableExporter(exporterId, otherExporterId, metadataVersionToUpdate))
+                .orElse(requireNonNull(c).enableExporter(exporterId, metadataVersionToUpdate)));
   }
 }

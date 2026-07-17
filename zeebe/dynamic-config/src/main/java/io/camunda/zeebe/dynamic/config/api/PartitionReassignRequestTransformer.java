@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
@@ -134,8 +136,8 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
             .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
 
     for (final PartitionId partition : oldPartitions) {
-      final var newMetadata = newDistribution.get(partition);
-      final var oldMetadata = oldDistribution.get(partition);
+      final var newMetadata = requireNonNull(newDistribution.get(partition));
+      final var oldMetadata = requireNonNull(oldDistribution.get(partition));
       operations.addAll(movePartition(oldMetadata, newMetadata));
     }
     final var hasNewPartitions = !newPartitions.isEmpty();
@@ -143,7 +145,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     if (hasNewPartitions) {
       operations.add(new StartPartitionScaleUp(coordinatorNodeId, newPartitionCount.get()));
       for (final PartitionId partition : newPartitions) {
-        final var newMetadata = newDistribution.get(partition);
+        final var newMetadata = requireNonNull(newDistribution.get(partition));
         operations.addAll(addPartition(newMetadata));
       }
       operations.addAll(

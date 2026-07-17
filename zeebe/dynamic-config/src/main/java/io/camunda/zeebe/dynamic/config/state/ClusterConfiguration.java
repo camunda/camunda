@@ -28,6 +28,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents the cluster configuration which describes the current active, joining or leaving
@@ -187,7 +188,7 @@ public record ClusterConfiguration(
    * @return the updated ClusterConfiguration
    */
   public ClusterConfiguration updateMember(
-      final MemberId memberId, final UnaryOperator<MemberState> memberStateUpdater) {
+      final MemberId memberId, final UnaryOperator<@Nullable MemberState> memberStateUpdater) {
     final MemberState currentState = members.get(memberId);
     final var updateMemberState = memberStateUpdater.apply(currentState);
 
@@ -424,7 +425,7 @@ public record ClusterConfiguration(
     return members().containsKey(memberId);
   }
 
-  public MemberState getMember(final MemberId memberId) {
+  public @Nullable MemberState getMember(final MemberId memberId) {
     return members().get(memberId);
   }
 
@@ -490,8 +491,8 @@ public record ClusterConfiguration(
         .max(
             (e1, e2) ->
                 Integer.compare(
-                    e1.getValue().getPartition(partitionId).priority(),
-                    e2.getValue().getPartition(partitionId).priority()))
+                    requireNonNull(e1.getValue().getPartition(partitionId)).priority(),
+                    requireNonNull(e2.getValue().getPartition(partitionId)).priority()))
         .map(Entry::getKey);
   }
 

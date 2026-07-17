@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
@@ -23,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 /**
  * New-model applier for {@code
@@ -46,8 +49,8 @@ public final class PartitionJoinApplier implements PartitionGroupConfigurationCh
   private final int priority;
   private final PartitionChangeExecutor partitionChangeExecutor;
 
-  private Map<MemberId, Integer> partitionMembersWithPriority;
-  private DynamicPartitionConfig partitionConfig;
+  private @Nullable Map<MemberId, Integer> partitionMembersWithPriority;
+  private @Nullable DynamicPartitionConfig partitionConfig;
 
   public PartitionJoinApplier(
       final MemberId memberId,
@@ -67,7 +70,8 @@ public final class PartitionJoinApplier implements PartitionGroupConfigurationCh
 
     final boolean localMemberIsActiveInCluster =
         currentGlobalConfiguration.hasMember(memberId)
-            && currentGlobalConfiguration.getMember(memberId).state() == BrokerState.State.ACTIVE;
+            && requireNonNull(currentGlobalConfiguration.getMember(memberId)).state()
+                == BrokerState.State.ACTIVE;
     if (!localMemberIsActiveInCluster) {
       return Either.left(
           new IllegalStateException(
@@ -126,7 +130,10 @@ public final class PartitionJoinApplier implements PartitionGroupConfigurationCh
         new CompletableActorFuture<>();
 
     partitionChangeExecutor
-        .join(partitionId, partitionMembersWithPriority, partitionConfig)
+        .join(
+            partitionId,
+            requireNonNull(partitionMembersWithPriority),
+            requireNonNull(partitionConfig))
         .onComplete(
             (ignored, error) -> {
               if (error == null) {

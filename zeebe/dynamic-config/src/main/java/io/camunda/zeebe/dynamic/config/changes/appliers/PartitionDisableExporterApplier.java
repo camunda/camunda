@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
@@ -64,7 +66,7 @@ public final class PartitionDisableExporterApplier
     }
 
     final var partitionHasExporter =
-        localPartition.config().exporting().exporters().containsKey(exporterId);
+        requireNonNull(localPartition.config().exporting()).exporters().containsKey(exporterId);
     if (!partitionHasExporter) {
       return Either.left(
           new IllegalStateException(
@@ -102,6 +104,7 @@ public final class PartitionDisableExporterApplier
   }
 
   private DynamicPartitionConfig disableExporter(final DynamicPartitionConfig config) {
-    return config.updateExporting(exporting -> exporting.disableExporter(exporterId));
+    return config.updateExporting(
+        exporting -> requireNonNull(exporting).disableExporter(exporterId));
   }
 }

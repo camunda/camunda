@@ -17,6 +17,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 /**
  * New-model applier for {@code PartitionGroupOperation.UpdateRoutingState}, operating on a single
@@ -43,10 +44,14 @@ public final class UpdateRoutingStateApplier implements PartitionGroupConfigurat
 
   @Override
   public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
-    final var routingState =
-        updateRoutingState.routingState().isPresent()
-            ? CompletableActorFuture.completed(updateRoutingState.routingState().get())
-            : executor.getRoutingState();
+    final ActorFuture<@Nullable RoutingState> routingState;
+    if (updateRoutingState.routingState().isPresent()) {
+      routingState =
+          CompletableActorFuture.<@Nullable RoutingState>completed(
+              updateRoutingState.routingState().get());
+    } else {
+      routingState = executor.getRoutingState();
+    }
 
     return routingState.thenApply(
         state -> {

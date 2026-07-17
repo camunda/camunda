@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -46,14 +48,16 @@ public class PartitionReconfigurePriorityApplier implements MemberOperationAppli
       final ClusterConfiguration currentClusterConfiguration) {
     final boolean localMemberIsActive =
         currentClusterConfiguration.hasMember(localMemberId)
-            && currentClusterConfiguration.getMember(localMemberId).state() == State.ACTIVE;
+            && requireNonNull(currentClusterConfiguration.getMember(localMemberId)).state()
+                == State.ACTIVE;
     if (!localMemberIsActive) {
       return Either.left(
           new IllegalStateException(
               "Expected to change priority of a partition, but the local member is not active"));
     }
 
-    final MemberState localMemberState = currentClusterConfiguration.getMember(localMemberId);
+    final MemberState localMemberState =
+        requireNonNull(currentClusterConfiguration.getMember(localMemberId));
     final boolean partitionExistsInLocalMember = localMemberState.hasPartition(partitionId);
     if (!partitionExistsInLocalMember) {
       return Either.left(
@@ -62,7 +66,8 @@ public class PartitionReconfigurePriorityApplier implements MemberOperationAppli
                   "Expected to change priority of partition %d, but the local member does not have the partition",
                   partitionId)));
     }
-    final PartitionState.State partitionState = localMemberState.getPartition(partitionId).state();
+    final PartitionState.State partitionState =
+        requireNonNull(localMemberState.getPartition(partitionId)).state();
     if (partitionState != PartitionState.State.ACTIVE) {
       return Either.left(
           new IllegalStateException(
@@ -87,11 +92,14 @@ public class PartitionReconfigurePriorityApplier implements MemberOperationAppli
               if (error == null) {
                 result.complete(
                     memberState ->
-                        memberState.updatePartition(
-                            partitionId,
-                            partitionState ->
-                                new PartitionState(
-                                    partitionState.state(), newPriority, partitionState.config())));
+                        requireNonNull(memberState)
+                            .updatePartition(
+                                partitionId,
+                                partitionState ->
+                                    new PartitionState(
+                                        partitionState.state(),
+                                        newPriority,
+                                        partitionState.config())));
               } else {
                 result.completeExceptionally(error);
               }

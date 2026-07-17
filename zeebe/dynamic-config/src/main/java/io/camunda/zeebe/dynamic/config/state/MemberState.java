@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import java.time.Instant;
@@ -15,6 +17,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents the state of a member in the cluster.
@@ -180,7 +183,10 @@ public record MemberState(
                 entry -> {
                   final Integer partitionId = entry.getKey();
                   final PartitionState partitionState = entry.getValue();
-                  final var otherPartitionState = other.partitions().get(partitionId);
+                  final var otherPartitionState =
+                      requireNonNull(
+                          other.partitions().get(partitionId),
+                          "Expected both member states to contain the same partition");
                   if (!partitionState.config().isInitialized()) {
                     return Map.entry(
                         partitionId, partitionState.updateConfig(otherPartitionState.config()));
@@ -236,7 +242,7 @@ public record MemberState(
     return partitions().containsKey(partitionId);
   }
 
-  public PartitionState getPartition(final int partitionId) {
+  public @Nullable PartitionState getPartition(final int partitionId) {
     return partitions.get(partitionId);
   }
 

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -22,6 +24,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 public class PartitionBootstrapApplier implements MemberOperationApplier {
 
@@ -31,7 +34,7 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final Optional<DynamicPartitionConfig> config;
   private final boolean initializeFromSnapshot;
-  private DynamicPartitionConfig partitionConfig;
+  private @Nullable DynamicPartitionConfig partitionConfig;
 
   public PartitionBootstrapApplier(
       final PartitionBootstrapOperation operation,
@@ -100,18 +103,24 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
                   .formatted(partitionId)));
     }
 
-    partitionConfig = initPartitionConfig(currentClusterConfiguration);
+    final var dynamicPartitionConfig = initPartitionConfig(currentClusterConfiguration);
+    partitionConfig = dynamicPartitionConfig;
 
     return Either.right(
         memberState ->
-            memberState.addPartition(
-                partitionId, PartitionState.bootstrapping(priority, partitionConfig)));
+            requireNonNull(memberState)
+                .addPartition(
+                    partitionId, PartitionState.bootstrapping(priority, dynamicPartitionConfig)));
   }
 
   @Override
   public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
     final CompletableActorFuture<UnaryOperator<MemberState>> result =
         new CompletableActorFuture<>();
+    if (partitionConfig == null) {
+      return CompletableActorFuture.completedExceptionally(
+          new RuntimeException("partitionConfig is null"));
+    }
     partitionChangeExecutor
         .bootstrap(partitionId, priority, partitionConfig, initializeFromSnapshot)
         .onComplete(
@@ -150,7 +159,7 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
 
   private boolean isLocalMemberIsActive(final ClusterConfiguration currentClusterConfiguration) {
     return currentClusterConfiguration.hasMember(memberId)
-        && currentClusterConfiguration.getMember(memberId).state() == State.ACTIVE;
+        && requireNonNull(currentClusterConfiguration.getMember(memberId)).state() == State.ACTIVE;
   }
 
   // For now, we only allow adding new partitions with continuous IDs. In theory, it should not
@@ -167,9 +176,10 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
 
   private boolean isPartitionAlreadyBootstrapping(
       final ClusterConfiguration currentClusterConfiguration) {
-    final MemberState member = currentClusterConfiguration.getMember(memberId);
+    final MemberState member = requireNonNull(currentClusterConfiguration.getMember(memberId));
     return member.hasPartition(partitionId)
-        && member.getPartition(partitionId).state() == PartitionState.State.BOOTSTRAPPING;
+        && requireNonNull(member.getPartition(partitionId)).state()
+            == PartitionState.State.BOOTSTRAPPING;
   }
 
   private boolean partitionExists(final ClusterConfiguration currentClusterConfiguration) {

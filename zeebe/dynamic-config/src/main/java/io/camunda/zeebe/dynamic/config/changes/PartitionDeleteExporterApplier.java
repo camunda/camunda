@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import static io.camunda.zeebe.dynamic.config.state.ExporterState.State.CONFIG_NOT_FOUND;
+import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
@@ -55,7 +56,7 @@ final class PartitionDeleteExporterApplier implements MemberOperationApplier {
                   memberId)));
     }
 
-    final MemberState member = currentClusterConfiguration.getMember(memberId);
+    final MemberState member = requireNonNull(currentClusterConfiguration.getMember(memberId));
     final var partitionExistsInLocalMember = member.hasPartition(partitionId);
 
     if (!partitionExistsInLocalMember) {
@@ -67,7 +68,8 @@ final class PartitionDeleteExporterApplier implements MemberOperationApplier {
     }
 
     final Map<String, ExporterState> exporters =
-        member.getPartition(partitionId).config().exporting().exporters();
+        requireNonNull(requireNonNull(member.getPartition(partitionId)).config().exporting())
+            .exporters();
 
     final var partitionHasExporter = exporters.containsKey(exporterId);
 
@@ -79,7 +81,7 @@ final class PartitionDeleteExporterApplier implements MemberOperationApplier {
                   partitionId, exporterId)));
     }
 
-    final var exporterState = exporters.get(exporterId).state();
+    final var exporterState = requireNonNull(exporters.get(exporterId)).state();
     final boolean isConfigNotFound = exporterState.equals(CONFIG_NOT_FOUND);
 
     if (!isConfigNotFound) {
@@ -101,15 +103,17 @@ final class PartitionDeleteExporterApplier implements MemberOperationApplier {
         .thenApply(
             (nothing) -> {
               return memberState ->
-                  memberState.updatePartition(
-                      partitionId,
-                      partition ->
-                          partition.updateConfig(config -> deleteExporter(config, exporterId)));
+                  requireNonNull(memberState)
+                      .updatePartition(
+                          partitionId,
+                          partition ->
+                              partition.updateConfig(config -> deleteExporter(config, exporterId)));
             });
   }
 
   private DynamicPartitionConfig deleteExporter(
       final DynamicPartitionConfig config, final String exporterId) {
-    return config.updateExporting(exporting -> exporting.deleteExporter(exporterId));
+    return config.updateExporting(
+        exporting -> requireNonNull(exporting).deleteExporter(exporterId));
   }
 }

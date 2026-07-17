@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -42,7 +44,7 @@ public class EnterRecoveryApplier implements MemberOperationApplier {
           new IllegalStateException(String.format(TRANSITION_ERROR_MESSAGE, memberId)));
     }
 
-    final var memberState = currentClusterConfiguration.getMember(memberId).state();
+    final var memberState = requireNonNull(currentClusterConfiguration.getMember(memberId)).state();
 
     if (State.RECOVERING.equals(memberState)) {
       return Either.right(UnaryOperator.identity());

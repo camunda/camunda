@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -31,6 +33,17 @@ final class MemberJoinApplier implements MemberOperationApplier {
   }
 
   @Override
+  public Either<Exception, UnaryOperator<ClusterConfiguration>> init(
+      final ClusterConfiguration currentClusterConfiguration) {
+    if (!currentClusterConfiguration.hasMember(memberId)) {
+      return Either.right(
+          configuration ->
+              configuration.addMember(memberId, MemberState.uninitialized().toJoining()));
+    }
+    return MemberOperationApplier.super.init(currentClusterConfiguration);
+  }
+
+  @Override
   public MemberId memberId() {
     return memberId;
   }
@@ -39,7 +52,9 @@ final class MemberJoinApplier implements MemberOperationApplier {
   public Either<Exception, UnaryOperator<MemberState>> initMemberState(
       final ClusterConfiguration currentClusterConfiguration) {
     if (currentClusterConfiguration.hasMember(memberId)
-        && !currentClusterConfiguration.getMember(memberId).state().equals(State.JOINING)) {
+        && !requireNonNull(currentClusterConfiguration.getMember(memberId))
+            .state()
+            .equals(State.JOINING)) {
       return Either.left(
           new IllegalStateException(
               String.format(
@@ -48,7 +63,9 @@ final class MemberJoinApplier implements MemberOperationApplier {
     }
 
     if (currentClusterConfiguration.hasMember(memberId)
-        && currentClusterConfiguration.getMember(memberId).state().equals(State.JOINING)) {
+        && requireNonNull(currentClusterConfiguration.getMember(memberId))
+            .state()
+            .equals(State.JOINING)) {
       // If member is already joining, then we don't need to set it again. This can happen if the
       // node restarted while applying the join operation. To ensure that the topology change can
       // make progress, we do not treat this as an error.

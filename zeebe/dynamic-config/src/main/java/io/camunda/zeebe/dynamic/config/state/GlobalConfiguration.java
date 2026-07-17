@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.function.UnaryOperator;
@@ -61,8 +60,7 @@ public record GlobalConfiguration(
   public GlobalConfiguration {
     requireNonNull(clusterId, "clusterId must not be null");
     requireNonNull(members, "members must not be null");
-    requireNonNull(
-        partitionDistributorConfig, "partitionDistributorConfig must not be null");
+    requireNonNull(partitionDistributorConfig, "partitionDistributorConfig must not be null");
     requireNonNull(pendingChanges, "pendingChanges must not be null");
     requireNonNull(lastChange, "lastChange must not be null");
     members = ImmutableSortedMap.copyOf(members);

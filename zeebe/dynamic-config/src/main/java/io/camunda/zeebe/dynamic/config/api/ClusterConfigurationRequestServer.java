@@ -281,6 +281,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
           Either.left(
               new ErrorResponse(
                   ErrorCode.CONCURRENT_MODIFICATION, concurrentModificationException.getMessage()));
+      case null -> Either.left(new ErrorResponse(ErrorCode.INTERNAL_ERROR, throwable.getMessage()));
       default -> Either.left(new ErrorResponse(ErrorCode.INTERNAL_ERROR, throwable.getMessage()));
     };
   }

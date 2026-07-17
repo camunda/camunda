@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -52,7 +54,7 @@ final class PartitionDisableExporterApplier implements MemberOperationApplier {
                   memberId)));
     }
 
-    final MemberState member = currentClusterConfiguration.getMember(memberId);
+    final MemberState member = requireNonNull(currentClusterConfiguration.getMember(memberId));
     final var partitionExistsInLocalMember = member.hasPartition(partitionId);
 
     if (!partitionExistsInLocalMember) {
@@ -64,7 +66,9 @@ final class PartitionDisableExporterApplier implements MemberOperationApplier {
     }
 
     final var partitionHasExporter =
-        member.getPartition(partitionId).config().exporting().exporters().containsKey(exporterId);
+        requireNonNull(requireNonNull(member.getPartition(partitionId)).config().exporting())
+            .exporters()
+            .containsKey(exporterId);
 
     if (!partitionHasExporter) {
       return Either.left(
@@ -89,11 +93,12 @@ final class PartitionDisableExporterApplier implements MemberOperationApplier {
               if (error == null) {
                 result.complete(
                     memberState ->
-                        memberState.updatePartition(
-                            partitionId,
-                            partition ->
-                                partition.updateConfig(
-                                    config -> disableExporter(config, exporterId))));
+                        requireNonNull(memberState)
+                            .updatePartition(
+                                partitionId,
+                                partition ->
+                                    partition.updateConfig(
+                                        config -> disableExporter(config, exporterId))));
               } else {
                 result.completeExceptionally(error);
               }
@@ -104,6 +109,7 @@ final class PartitionDisableExporterApplier implements MemberOperationApplier {
 
   private DynamicPartitionConfig disableExporter(
       final DynamicPartitionConfig config, final String exporterId) {
-    return config.updateExporting(exporting -> exporting.disableExporter(exporterId));
+    return config.updateExporting(
+        exporting -> requireNonNull(exporting).disableExporter(exporterId));
   }
 }

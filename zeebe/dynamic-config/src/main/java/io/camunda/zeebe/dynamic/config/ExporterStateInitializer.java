@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import static java.util.Objects.requireNonNull;
 import static org.slf4j.LoggerFactory.*;
 
 import io.atomix.cluster.MemberId;
@@ -65,7 +66,9 @@ public class ExporterStateInitializer implements ClusterConfigurationModifier {
         result.complete(configuration);
       }
     } else {
-      result.complete(configuration.updateMember(localMemberId, this::updateExporterState));
+      result.complete(
+          configuration.updateMember(
+              localMemberId, member -> updateExporterState(requireNonNull(member))));
     }
     return result;
   }
@@ -74,7 +77,8 @@ public class ExporterStateInitializer implements ClusterConfigurationModifier {
       final ClusterConfiguration configuration) {
     ClusterConfiguration updated = configuration;
     for (final var memberId : configuration.members().keySet()) {
-      updated = updated.updateMember(memberId, this::updateExporterState);
+      updated =
+          updated.updateMember(memberId, member -> updateExporterState(requireNonNull(member)));
     }
     return updated;
   }
@@ -101,7 +105,8 @@ public class ExporterStateInitializer implements ClusterConfigurationModifier {
             ? partitionState
             : new PartitionState(
                 partitionState.state(), partitionState.priority(), DynamicPartitionConfig.init());
-    final var exportersInConfig = initializedPartitionState.config().exporting().exporters();
+    final var exportersInConfig =
+        requireNonNull(initializedPartitionState.config().exporting()).exporters();
 
     final var newlyAddedExporters =
         configuredExporters.stream().filter(id -> !exportersInConfig.containsKey(id)).toList();
@@ -127,9 +132,16 @@ public class ExporterStateInitializer implements ClusterConfigurationModifier {
             .toList();
 
     return initializedPartitionState
-        .updateConfig(c -> c.updateExporting(e -> e.withConfigNotFoundFor(configRemovedExporters)))
-        .updateConfig(c -> c.updateExporting(e -> reEnableExporters(e, configReaddedExporters)))
-        .updateConfig(c -> c.updateExporting(e -> e.addExporters(newlyAddedExporters)));
+        .updateConfig(
+            c ->
+                c.updateExporting(
+                    e -> requireNonNull(e).withConfigNotFoundFor(configRemovedExporters)))
+        .updateConfig(
+            c ->
+                c.updateExporting(
+                    e -> reEnableExporters(requireNonNull(e), configReaddedExporters)))
+        .updateConfig(
+            c -> c.updateExporting(e -> requireNonNull(e).addExporters(newlyAddedExporters)));
   }
 
   private ExportingConfig reEnableExporters(
@@ -138,8 +150,9 @@ public class ExporterStateInitializer implements ClusterConfigurationModifier {
 
     ExportingConfig updating = exportingConfig;
     for (final var entry : configReaddedExporters) {
-      final var exporterName = entry.getKey();
-      final var exporterState = entry.getValue();
+      final var nonNullEntry = requireNonNull(entry);
+      final var exporterName = nonNullEntry.getKey();
+      final var exporterState = requireNonNull(nonNullEntry.getValue());
       // reuse the metadata version and initializedFrom from the existing exporter state
       updating =
           updating.enableExporter(

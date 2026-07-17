@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.ClusterOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -59,7 +61,8 @@ final class PartitionForceReconfigureApplier implements ClusterOperationApplier 
     for (final MemberId member : members) {
       final boolean memberIsActive =
           currentClusterConfiguration.hasMember(member)
-              && currentClusterConfiguration.getMember(member).state() == State.ACTIVE;
+              && requireNonNull(currentClusterConfiguration.getMember(member)).state()
+                  == State.ACTIVE;
       if (!memberIsActive) {
         return Either.left(
             new IllegalStateException(
@@ -68,7 +71,7 @@ final class PartitionForceReconfigureApplier implements ClusterOperationApplier 
                     partitionId, members, memberId)));
       }
 
-      final var memberState = currentClusterConfiguration.getMember(member);
+      final var memberState = requireNonNull(currentClusterConfiguration.getMember(member));
       if (!memberState.hasPartition(partitionId)) {
         return Either.left(
             new IllegalStateException(
@@ -104,8 +107,10 @@ final class PartitionForceReconfigureApplier implements ClusterOperationApplier 
     ClusterConfiguration updatedTopology = clusterConfiguration;
     for (final var member : clusterConfiguration.members().keySet()) {
       if (!members.contains(member)
-          && clusterConfiguration.getMember(member).hasPartition(partitionId)) {
-        updatedTopology = updatedTopology.updateMember(member, m -> m.removePartition(partitionId));
+          && requireNonNull(clusterConfiguration.getMember(member)).hasPartition(partitionId)) {
+        updatedTopology =
+            updatedTopology.updateMember(
+                member, m -> requireNonNull(m).removePartition(partitionId));
       }
     }
     return updatedTopology;

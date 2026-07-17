@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
-import io.atomix.cluster.MemberId;
 import static java.util.Objects.requireNonNull;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.ClusterOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
@@ -74,7 +74,7 @@ public class AwaitModeChangeApplier implements ClusterOperationApplier {
         clusterConfiguration.updateMember(
             memberId,
             memberState -> {
-              var updatedState = memberState;
+              var updatedState = requireNonNull(memberState);
               for (final var partitionId : confirmedPartitions) {
                 updatedState = updatedState.updatePartition(partitionId, partitionStateUpdater);
               }

@@ -14,9 +14,9 @@ import com.google.common.collect.ImmutableSortedMap;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents configuration or state of exporting in a partition that can be updated during runtime.
@@ -49,12 +49,11 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
   }
 
   public ExportingConfig disableExporter(final String exporterName) {
+    final var exporter = requireNonNull(exporters.get(exporterName));
     return updateExporter(
         exporterName,
         new ExporterState(
-            exporters.get(exporterName).metadataVersion(),
-            ExporterState.State.DISABLED,
-            Optional.empty()));
+            exporter.metadataVersion(), ExporterState.State.DISABLED, Optional.empty()));
   }
 
   public ExportingConfig deleteExporter(final String exporterName) {
@@ -69,13 +68,13 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
     final var builder = ImmutableMap.<String, ExporterState>builder().putAll(exporters);
 
     exporterNames.forEach(
-        exporterName ->
-            builder.put(
-                exporterName,
-                new ExporterState(
-                    exporters.get(exporterName).metadataVersion(),
-                    ExporterState.State.DISABLED,
-                    Optional.empty())));
+        exporterName -> {
+          final var exporter = requireNonNull(exporters.get(exporterName));
+          builder.put(
+              exporterName,
+              new ExporterState(
+                  exporter.metadataVersion(), ExporterState.State.DISABLED, Optional.empty()));
+        });
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys
@@ -87,7 +86,9 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
   }
 
   public ExportingConfig enableExporter(
-      final String exporterName, final String initializeFrom, final long metadataVersion) {
+      final String exporterName,
+      final @Nullable String initializeFrom,
+      final long metadataVersion) {
     return updateExporter(
         exporterName,
         new ExporterState(metadataVersion, State.ENABLED, Optional.ofNullable(initializeFrom)));
@@ -123,13 +124,15 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
     final var builder = ImmutableMap.<String, ExporterState>builder().putAll(exporters);
 
     exporterNames.forEach(
-        exporterName ->
-            builder.put(
-                exporterName,
-                new ExporterState(
-                    exporters.get(exporterName).metadataVersion(),
-                    ExporterState.State.CONFIG_NOT_FOUND,
-                    exporters.get(exporterName).initializedFrom())));
+        exporterName -> {
+          final var exporter = requireNonNull(exporters.get(exporterName));
+          builder.put(
+              exporterName,
+              new ExporterState(
+                  exporter.metadataVersion(),
+                  ExporterState.State.CONFIG_NOT_FOUND,
+                  exporter.initializedFrom()));
+        });
 
     final var newExporters =
         builder.buildKeepingLast(); // choose last one if there are duplicate keys

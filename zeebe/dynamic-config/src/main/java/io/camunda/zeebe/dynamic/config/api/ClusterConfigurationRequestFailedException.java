@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import org.jspecify.annotations.Nullable;
+
 public sealed interface ClusterConfigurationRequestFailedException {
 
   final class InvalidRequest extends RuntimeException
       implements ClusterConfigurationRequestFailedException {
-    public InvalidRequest(final String message) {
+    public InvalidRequest(final @Nullable String message) {
       super(message);
     }
 
@@ -22,14 +24,14 @@ public sealed interface ClusterConfigurationRequestFailedException {
 
   final class OperationNotAllowed extends RuntimeException
       implements ClusterConfigurationRequestFailedException {
-    public OperationNotAllowed(final String message) {
+    public OperationNotAllowed(final @Nullable String message) {
       super(message);
     }
   }
 
   final class ConcurrentModificationException extends RuntimeException
       implements ClusterConfigurationRequestFailedException {
-    public ConcurrentModificationException(final String message) {
+    public ConcurrentModificationException(final @Nullable String message) {
       super(message);
     }
   }
@@ -40,7 +42,7 @@ public sealed interface ClusterConfigurationRequestFailedException {
       super(cause);
     }
 
-    public InternalError(final String message) {
+    public InternalError(final @Nullable String message) {
       super(message);
     }
   }

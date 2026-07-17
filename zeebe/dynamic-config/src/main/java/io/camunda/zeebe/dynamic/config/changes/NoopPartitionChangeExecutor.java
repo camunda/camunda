@@ -13,14 +13,15 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public final class NoopPartitionChangeExecutor implements PartitionChangeExecutor {
 
   @Override
   public ActorFuture<Void> join(
       final int partitionId,
-      final Map<MemberId, Integer> membersWithPriority,
-      final DynamicPartitionConfig config) {
+      final @Nullable Map<MemberId, Integer> membersWithPriority,
+      final @Nullable DynamicPartitionConfig config) {
     return CompletableActorFuture.completed();
   }
 
@@ -33,7 +34,7 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
   public ActorFuture<Void> bootstrap(
       final int partitionId,
       final int priority,
-      final DynamicPartitionConfig partitionConfig,
+      final @Nullable DynamicPartitionConfig partitionConfig,
       final boolean initializeFromSnapshot) {
     return CompletableActorFuture.completed();
   }
@@ -64,7 +65,7 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final int partitionId,
       final String exporterId,
       final long metadataVersionToUpdate,
-      final String initializeFrom) {
+      final @Nullable String initializeFrom) {
     return CompletableActorFuture.completed();
   }
 }

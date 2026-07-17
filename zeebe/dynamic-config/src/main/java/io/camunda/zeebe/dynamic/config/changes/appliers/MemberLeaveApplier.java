@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeApplier;
@@ -55,7 +57,7 @@ public final class MemberLeaveApplier implements GlobalConfigurationChangeApplie
                   .formatted(memberId)));
     }
 
-    if (globalConfiguration.getMember(memberId).state() == State.LEFT) {
+    if (requireNonNull(globalConfiguration.getMember(memberId)).state() == State.LEFT) {
       return Either.left(
           new IllegalStateException(
               "Expected to remove member %s, but the member is already in state LEFT"

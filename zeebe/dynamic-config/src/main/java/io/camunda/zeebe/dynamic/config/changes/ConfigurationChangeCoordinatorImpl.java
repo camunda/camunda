@@ -334,7 +334,9 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
   private boolean isCoordinator(final ClusterConfiguration clusterConfiguration) {
     // coordinator is usually the broker with the lowest member id
     // return false if there are currently no known members, which means it will be uninitialized.
-    return localMemberId.equals(
-        clusterConfiguration.members().keySet().stream().min(MemberId::compareTo).orElse(null));
+    return clusterConfiguration.members().keySet().stream()
+        .min(MemberId::compareTo)
+        .map(localMemberId::equals)
+        .orElse(false);
   }
 }

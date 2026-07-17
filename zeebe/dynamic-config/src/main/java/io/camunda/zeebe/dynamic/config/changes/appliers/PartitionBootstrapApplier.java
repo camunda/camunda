@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
@@ -25,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 /**
  * New-model applier for {@code
@@ -47,7 +50,7 @@ public final class PartitionBootstrapApplier implements PartitionGroupConfigurat
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final Optional<DynamicPartitionConfig> config;
   private final boolean initializeFromSnapshot;
-  private DynamicPartitionConfig partitionConfig;
+  private @Nullable DynamicPartitionConfig partitionConfig;
 
   public PartitionBootstrapApplier(
       final PartitionBootstrapOperation operation,
@@ -74,7 +77,8 @@ public final class PartitionBootstrapApplier implements PartitionGroupConfigurat
 
     final boolean localMemberIsActiveInCluster =
         currentGlobalConfiguration.hasMember(memberId)
-            && currentGlobalConfiguration.getMember(memberId).state() == BrokerState.State.ACTIVE;
+            && requireNonNull(currentGlobalConfiguration.getMember(memberId)).state()
+                == BrokerState.State.ACTIVE;
     if (!localMemberIsActiveInCluster) {
       return Either.left(
           new IllegalStateException(
@@ -119,7 +123,7 @@ public final class PartitionBootstrapApplier implements PartitionGroupConfigurat
     final CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>> result =
         new CompletableActorFuture<>();
     partitionChangeExecutor
-        .bootstrap(partitionId, priority, partitionConfig, initializeFromSnapshot)
+        .bootstrap(partitionId, priority, requireNonNull(partitionConfig), initializeFromSnapshot)
         .onComplete(
             (ignore, error) -> {
               if (error == null) {
@@ -171,7 +175,8 @@ public final class PartitionBootstrapApplier implements PartitionGroupConfigurat
     final var member = currentPartitionGroupConfiguration.getMember(memberId);
     return member != null
         && member.hasPartition(partitionId)
-        && member.getPartition(partitionId).state() == PartitionState.State.BOOTSTRAPPING;
+        && requireNonNull(member.getPartition(partitionId)).state()
+            == PartitionState.State.BOOTSTRAPPING;
   }
 
   private boolean partitionExists(

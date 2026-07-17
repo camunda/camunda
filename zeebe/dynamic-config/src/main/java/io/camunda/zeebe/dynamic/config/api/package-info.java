@@ -5,16 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+@NullMarked
 package io.camunda.zeebe.dynamic.config.api;
 
-import org.jspecify.annotations.Nullable;
-
-public record ErrorResponse(ErrorCode code, @Nullable String message) {
-
-  public enum ErrorCode {
-    INVALID_REQUEST,
-    OPERATION_NOT_ALLOWED,
-    CONCURRENT_MODIFICATION,
-    INTERNAL_ERROR;
-  }
-}
+import org.jspecify.annotations.NullMarked;
