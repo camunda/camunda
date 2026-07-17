@@ -10,6 +10,11 @@ For multi-app journeys that span Modeler, Optimize, Connectors, or Console (SaaS
 use the sibling [`c8-cross-component-e2e-tests`](https://github.com/camunda/c8-cross-component-e2e-tests)
 repository instead.
 
+> **Exception — infrastructure smoke checks:** basic startup/accessibility checks for a
+> component bundled in this suite's Docker Compose stack (e.g. verifying Optimize starts and
+> is reachable) are in scope here, even though they exercise only that component. Deeper
+> Optimize/Connectors/Modeler _feature_ coverage still belongs in `c8-cross-component-e2e-tests`.
+
 ## Tech Stack
 
 - **Framework**: `@playwright/test` ^1.51.0
@@ -262,7 +267,9 @@ Each supported version lives on its own branch in `camunda/camunda`:
 ## Contributing
 
 - Follow the Page Object Model: page interactions belong in `pages/`, not in spec files.
-- Every test must involve at least one core component (Operate, Tasklist, Identity, Zeebe).
+- Every test must involve at least one core component (Operate, Tasklist, Identity, Zeebe),
+  except infrastructure smoke checks that verify a component bundled in the suite's Docker
+  Compose stack starts and is accessible (e.g. the Optimize startup check).
 - Reviewers must include someone from the Test Automation Team and a product team developer.
 - **Run the on-demand workflow against your branch before requesting review.** PRs without a completed run will be returned. If failures exist, document them in the PR description and confirm they are pre-existing.
 - Link the [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description if any test or page file is modified.

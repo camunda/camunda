@@ -180,7 +180,13 @@ const normalProjects = [
       ...devices['Desktop Chrome'],
     },
   },
-
+  {
+    name: 'optimize-startup',
+    testMatch: ['tests/api/v2/optimize/optimize-startup.spec.ts'],
+    use: {
+      ...devices['Desktop Chrome'],
+    },
+  },
 ];
 
 const v2StatelessProjects = [

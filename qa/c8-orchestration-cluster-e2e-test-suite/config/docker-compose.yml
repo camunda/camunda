@@ -144,3 +144,44 @@ services:
       - zeebe_network
     env_file:
       - envs/.env.database.${DATABASE}
+
+  # Optimize is not part of the consolidated `camunda` container; it is a
+  # separate application that reads the exported data from Elasticsearch. It is
+  # only started explicitly (e.g. `docker compose up -d optimize`) so that the
+  # default orchestration-cluster stack stays lightweight. The OIDC settings
+  # point at the `camunda-platform` Keycloak realm for when Identity-based login
+  # is provisioned; startup and readiness do not depend on the realm existing.
+  optimize:
+    container_name: optimize
+    image: ${OPTIMIZE_DOCKER_IMAGE:-camunda/optimize:SNAPSHOT}
+    depends_on:
+      - elasticsearch
+    ports:
+      - 8083:8090
+      - 8092:8092
+    environment:
+      - SPRING_PROFILES_ACTIVE=ccsm
+      - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
+      - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=9200
+      - CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
+      - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=2
+      - CAMUNDA_OPTIMIZE_ENTERPRISE=false
+      - CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
+      - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g -XX:+IgnoreUnrecognizedVMOptions -XX:UseSVE=0'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -q --spider http://localhost:8092/actuator/health || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - zeebe_network

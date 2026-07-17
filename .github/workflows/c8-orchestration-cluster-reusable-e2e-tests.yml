@@ -34,14 +34,16 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
 
-      - name: Set CAMUNDA_DOCKER_IMAGE
+      - name: Set CAMUNDA_DOCKER_IMAGE and OPTIMIZE_DOCKER_IMAGE
         run: |
           branch="${{ inputs.branch }}"
           if [[ "$branch" == "main" ]]; then
             echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:SNAPSHOT" >> "$GITHUB_ENV"
+            echo "OPTIMIZE_DOCKER_IMAGE=camunda/optimize:SNAPSHOT" >> "$GITHUB_ENV"
           elif [[ "$branch" == stable/* ]]; then
             minor="${branch#stable/}"
             echo "CAMUNDA_DOCKER_IMAGE=camunda/camunda:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
+            echo "OPTIMIZE_DOCKER_IMAGE=camunda/optimize:${minor}-SNAPSHOT" >> "$GITHUB_ENV"
           fi
 
       - name: Start Camunda
@@ -80,6 +82,37 @@ jobs:
           done
 
           echo "Failed to start Camunda after ${attempts} attempts."
+          exit 1
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Start Optimize
+        # Optimize is a separate application that only exists in the compose file
+        # on branches where it has been added. Gate on its presence so this step
+        # is a no-op on branches that do not (yet) define the service.
+        run: |
+          if ! DATABASE=elasticsearch docker compose config --services | grep -qx optimize; then
+            echo "optimize service not defined in this branch's compose; skipping."
+            exit 0
+          fi
+
+          start_optimize() {
+            DATABASE=elasticsearch docker compose up -d optimize
+          }
+
+          attempts=3
+          for attempt in $(seq 1 "$attempts"); do
+            if start_optimize; then
+              echo "Optimize started on attempt ${attempt}."
+              exit 0
+            fi
+            echo "Attempt ${attempt}/${attempts} to start Optimize failed."
+            if [[ "$attempt" -lt "$attempts" ]]; then
+              echo "Retrying in 15s..."
+              sleep 15
+            fi
+          done
+
+          echo "Failed to start Optimize after ${attempts} attempts."
           exit 1
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
@@ -131,6 +164,34 @@ jobs:
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
+      - name: Wait for Optimize to be ready
+        # Only runs when Optimize was started (service present in this branch).
+        run: |
+          if ! docker ps --format '{{.Names}}' | grep -qx optimize; then
+            echo "Optimize container not running; skipping wait."
+            exit 0
+          fi
+
+          # An unauthenticated request to Optimize's root always redirects to the
+          # OIDC login (HTTP 302); that is the expected ready state. A 200 would
+          # mean auth is not wired as expected, so it is not treated as ready.
+          echo "Waiting for Optimize to be reachable on http://localhost:8083 ..."
+          for i in {1..60}; do
+            status="$(curl -s -o /dev/null -w '%{http_code}' -m 5 http://localhost:8083/ || true)"
+            status="${status:-000}"
+            if [[ "$status" == "302" ]]; then
+              echo "Optimize is ready (HTTP $status)."
+              exit 0
+            fi
+            echo "Waiting for Optimize... ($i/60) HTTP $status"
+            sleep 10
+          done
+
+          echo "Optimize failed to become ready in time."
+          docker logs optimize --tail 100 || true
+          exit 1
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
       - name: Print Docker logs before failing
         if: failure()
         # DATABASE must be set: docker-compose.yml interpolates it into the
@@ -143,6 +204,9 @@ jobs:
             DATABASE=elasticsearch docker compose logs operate
           else
             DATABASE=elasticsearch docker compose logs camunda
+          fi
+          if docker ps -a --format '{{.Names}}' | grep -qx optimize; then
+            DATABASE=elasticsearch docker compose logs optimize
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
@@ -196,6 +260,7 @@ jobs:
           SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
           VERSION: ${{ inputs.branch }}
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ inputs.tasklist_mode == 'v2' && 'true' || 'false' }}
+          OPTIMIZE_BASE_URL: "http://localhost:8083"
         run: |
           if [[ "${{ inputs.branch }}" == "stable/8.7" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -206,16 +271,27 @@ jobs:
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
 
+          # Include the Optimize startup check in the same Playwright run (so it
+          # shares one JUnit/JSON/HTML report) only when the Optimize container is
+          # running — i.e. on branches whose compose defines the service.
+          OPTIMIZE_ARGS=""
+          if docker ps --format '{{.Names}}' | grep -qx optimize; then
+            echo "Optimize container detected; including the optimize-startup project."
+            OPTIMIZE_ARGS="--project=optimize-startup"
+          else
+            echo "Optimize container not running; optimize-startup project will be skipped."
+          fi
+
           if [[ "${{ inputs.tasklist_mode }}" == "v2" ]]; then
             if [[ "${{ inputs.branch }}" == "main" ]]; then
               echo "Running all tests in V2 mode on main"
-              npm run test -- --project=chromium
+              npm run test -- --project=chromium $OPTIMIZE_ARGS
             elif [[ "${{ inputs.branch }}" == "stable/8.9" ]]; then
               echo "Running all tests in V2 mode on ${{ inputs.branch }}, excluding V1-specific tests"
-              npm run test -- --project=chromium --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
+              npm run test -- --project=chromium $OPTIMIZE_ARGS --grep-invert "tests/(common-flows/v1|tasklist/v1)/"
             else
               echo "Running all tests in V2 mode: excluding @v1-only tests"
-              npm run test -- --project=chromium --grep-invert "@v1-only"
+              npm run test -- --project=chromium $OPTIMIZE_ARGS --grep-invert "@v1-only"
             fi
           else
             if [[ "${{ inputs.branch }}" == "stable/8.9" ]]; then
@@ -226,7 +302,7 @@ jobs:
               npm run test -- --project=chromium tests/tasklist/ tests/common-flows/
             else
               echo "Running all tests in V1 mode"
-              npm run test -- --project=chromium
+              npm run test -- --project=chromium $OPTIMIZE_ARGS
             fi
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
