@@ -68,7 +68,7 @@ const CopyButton: React.FC<Props> = ({value, hasIconOnly, tooltipAlignment}) => 
 				}, COPY_FEEDBACK_TIMEOUT_MS);
 			})
 			.catch(() => {
-				// Clipboard write blocked (insecure context, missing permission) — silently ignore
+				// Clipboard write blocked (insecure context, missing permission), silently ignore
 			});
 	}, [value]);
 
