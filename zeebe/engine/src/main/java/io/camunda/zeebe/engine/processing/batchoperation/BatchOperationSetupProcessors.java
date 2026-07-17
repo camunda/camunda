@@ -17,6 +17,8 @@ import io.camunda.zeebe.engine.processing.batchoperation.handlers.DeleteProcessI
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResolveIncidentBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.ResumeProcessInstanceBatchOperationExecutor;
+import io.camunda.zeebe.engine.processing.batchoperation.handlers.SuspendProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.UpdateJobBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationChunkAppender;
@@ -82,6 +84,12 @@ public final class BatchOperationSetupProcessors {
                 writers.command(), brokerRequestAuthorizationConverter),
             BatchOperationType.UPDATE_JOB,
             new UpdateJobBatchOperationExecutor(
+                writers.command(), brokerRequestAuthorizationConverter),
+            BatchOperationType.SUSPEND_PROCESS_INSTANCE,
+            new SuspendProcessInstanceBatchOperationExecutor(
+                writers.command(), brokerRequestAuthorizationConverter),
+            BatchOperationType.RESUME_PROCESS_INSTANCE,
+            new ResumeProcessInstanceBatchOperationExecutor(
                 writers.command(), brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =
