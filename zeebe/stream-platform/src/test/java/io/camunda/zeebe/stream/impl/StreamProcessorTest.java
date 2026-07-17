@@ -1714,7 +1714,7 @@ public final class StreamProcessorTest {
           Files.deleteIfExists(tempFile);
         }
       } catch (final IOException e) {
-        // best effort
+        throw new RuntimeException(e);
       } finally {
         lastMapped = null;
         tempFile = null;
