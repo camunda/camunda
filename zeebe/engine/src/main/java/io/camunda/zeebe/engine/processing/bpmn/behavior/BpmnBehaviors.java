@@ -71,4 +71,6 @@ public interface BpmnBehaviors {
   BpmnProcessDeletionBehavior processDeletionBehavior();
 
   StorageOrdinalProvider storageOrdinalProvider();
+
+  BpmnLoopDetectionBehavior loopDetectionBehavior();
 }
