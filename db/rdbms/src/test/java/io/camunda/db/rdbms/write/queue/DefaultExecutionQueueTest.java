@@ -54,7 +54,7 @@ class DefaultExecutionQueueTest {
 
   @Test
   public void whenElementIsAddedNoFlushHappensBelowLimit() {
-    executionQueue.executeInQueue(mock(QueueItem.class));
+    executionQueue.executeInQueue(mockQueueItem());
 
     Mockito.verifyNoInteractions(sqlSessionFactory);
   }
@@ -63,9 +63,15 @@ class DefaultExecutionQueueTest {
   public void whenElementIsAddedNoFlushHappens() {
     executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 0, 0, metrics);
 
-    executionQueue.executeInQueue(mock(QueueItem.class));
+    executionQueue.executeInQueue(mockQueueItem());
 
     Mockito.verifyNoInteractions(sqlSessionFactory);
+  }
+
+  private static QueueItem mockQueueItem() {
+    final var item = mock(QueueItem.class);
+    when(item.statementId()).thenReturn("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert");
+    return item;
   }
 
   @Test
@@ -76,7 +82,7 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     executionQueue.executeInQueue(item1);
 
@@ -96,7 +102,7 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     executionQueue.executeInQueue(item1);
 
@@ -116,21 +122,21 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     final var item2 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement2",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
             "parameter2");
     final var item3 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement3",
+            "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
             "parameter3");
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);
@@ -143,8 +149,8 @@ class DefaultExecutionQueueTest {
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
-    verify(session).update("statement1", "parameter1");
-    verify(session).update("statement2", "parameter2");
+    verify(session).update("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert", "parameter1");
+    verify(session).update("io.camunda.db.rdbms.sql.AgentInstanceMapper.update", "parameter2");
     verify(session).flushStatements();
     verify(session).commit();
   }
@@ -156,7 +162,7 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     executionQueue.executeInQueue(item1);
 
@@ -165,7 +171,7 @@ class DefaultExecutionQueueTest {
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
-    verify(session).update("statement1", "parameter1");
+    verify(session).update("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert", "parameter1");
     verify(session).flushStatements();
     verify(session).commit();
     verify(session).close();
@@ -204,7 +210,7 @@ class DefaultExecutionQueueTest {
             ContextType.EXPORTER_POSITION,
             WriteStatementType.UPDATE,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     final var preFlushListener = mock(PreFlushListener.class);
     final var postFlushListener = mock(PostFlushListener.class);
@@ -236,7 +242,7 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     executionQueue.executeInQueue(item);
     final var inTransactionHook = mock(InTransactionHook.class);
@@ -248,7 +254,9 @@ class DefaultExecutionQueueTest {
     // then - hook is called with the session before queue items are executed
     final var inOrder = Mockito.inOrder(inTransactionHook, session);
     inOrder.verify(inTransactionHook).onTransactionStart(session);
-    inOrder.verify(session).update("statement1", "parameter1");
+    inOrder
+        .verify(session)
+        .update("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert", "parameter1");
     inOrder.verify(session).commit();
   }
 
@@ -260,7 +268,7 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     executionQueue.executeInQueue(item);
 
@@ -268,7 +276,7 @@ class DefaultExecutionQueueTest {
     executionQueue.flush();
 
     // then - no exception, normal commit
-    verify(session).update("statement1", "parameter1");
+    verify(session).update("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert", "parameter1");
     verify(session).commit();
   }
 
@@ -280,7 +288,7 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     executionQueue.executeInQueue(item);
     final var postFlushListener = mock(PostFlushListener.class);
@@ -321,7 +329,7 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     executionQueue.executeInQueue(item1);
 
@@ -345,14 +353,14 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     final var preFlushItem =
         new QueueItem(
             ContextType.EXPORTER_POSITION,
             WriteStatementType.UPDATE,
             1L,
-            "statement2",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
             "parameter2");
     executionQueue.executeInQueue(item1);
 
@@ -381,7 +389,7 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     executionQueue.executeInQueue(item1);
 
@@ -410,14 +418,14 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     final var item2 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             2L,
-            "statement2",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
             "parameter2");
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);
@@ -436,7 +444,7 @@ class DefaultExecutionQueueTest {
                     originalItem.contextType(),
                     WriteStatementType.INSERT,
                     1L,
-                    "statement1",
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
                     "parameter1+");
               }
             });
@@ -455,14 +463,14 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     final var item2 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             2L,
-            "statement2",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
             "parameter2");
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);
@@ -481,7 +489,7 @@ class DefaultExecutionQueueTest {
                     originalItem.contextType(),
                     WriteStatementType.INSERT,
                     1L,
-                    "statement1",
+                    "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
                     "parameter1+");
               }
             });
@@ -499,50 +507,71 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.UPDATE,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1"));
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement2",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
             "parameter2"));
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.DELETE,
             1L,
-            "statement3",
+            "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
             "parameter3"));
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.FLOW_NODE, WriteStatementType.UPDATE, 1L, "statement4", "parameter4"));
+            ContextType.FLOW_NODE,
+            WriteStatementType.UPDATE,
+            1L,
+            "io.camunda.db.rdbms.sql.AuthorizationMapper.insert",
+            "parameter4"));
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.FLOW_NODE, WriteStatementType.INSERT, 1L, "statement5", "parameter5"));
+            ContextType.FLOW_NODE,
+            WriteStatementType.INSERT,
+            1L,
+            "io.camunda.db.rdbms.sql.AuthorizationMapper.delete",
+            "parameter5"));
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.USER_TASK, WriteStatementType.DELETE, 1L, "statement6", "parameter6"));
+            ContextType.USER_TASK,
+            WriteStatementType.DELETE,
+            1L,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.insertItems",
+            "parameter6"));
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.USER_TASK, WriteStatementType.INSERT, 1L, "statement7", "parameter7"));
+            ContextType.USER_TASK,
+            WriteStatementType.INSERT,
+            1L,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.insertErrors",
+            "parameter7"));
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.USER_TASK, WriteStatementType.DELETE, 1L, "statement8", "parameter8"));
+            ContextType.USER_TASK,
+            WriteStatementType.DELETE,
+            1L,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.updateCompleted",
+            "parameter8"));
 
     // when
     executionQueue.flush();
 
     // then
-    verify(session).update(eq("statement5"), any());
-    verify(session).update(eq("statement2"), any());
-    verify(session).update(eq("statement6"), any());
-    verify(session).update(eq("statement7"), any());
-    verify(session).update(eq("statement8"), any());
-    verify(session).update(eq("statement4"), any());
-    verify(session).update(eq("statement1"), any());
-    verify(session).update(eq("statement3"), any());
+    verify(session).update(eq("io.camunda.db.rdbms.sql.AuthorizationMapper.delete"), any());
+    verify(session).update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.update"), any());
+    verify(session).update(eq("io.camunda.db.rdbms.sql.BatchOperationMapper.insertItems"), any());
+    verify(session).update(eq("io.camunda.db.rdbms.sql.BatchOperationMapper.insertErrors"), any());
+    verify(session)
+        .update(eq("io.camunda.db.rdbms.sql.BatchOperationMapper.updateCompleted"), any());
+    verify(session).update(eq("io.camunda.db.rdbms.sql.AuthorizationMapper.insert"), any());
+    verify(session).update(eq("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert"), any());
+    verify(session).update(eq("io.camunda.db.rdbms.sql.AuditLogMapper.insert"), any());
   }
 
   @ParameterizedTest
@@ -561,6 +590,36 @@ class DefaultExecutionQueueTest {
   }
 
   @Test
+  public void shouldRejectStatementIdReferencingUnknownClass() {
+    final var item =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "io.camunda.db.rdbms.sql.NotARealMapper.insert",
+            "parameter1");
+
+    assertThatThrownBy(() -> executionQueue.executeInQueue(item))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("NotARealMapper");
+  }
+
+  @Test
+  public void shouldRejectStatementIdReferencingUnknownMethod() {
+    final var item =
+        new QueueItem(
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.notARealMethod",
+            "parameter1");
+
+    assertThatThrownBy(() -> executionQueue.executeInQueue(item))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("notARealMethod");
+  }
+
+  @Test
   public void whenMemoryLimitIsReachedFlushShouldHappen() {
     // Set a small memory limit (1 MB)
     executionQueue = new DefaultExecutionQueue(sqlSessionFactory, 1, 1000, 1, metrics);
@@ -570,10 +629,18 @@ class DefaultExecutionQueueTest {
     final var largeParam = "x".repeat(600_000); // ~600 KB each
     final var item1 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", largeParam);
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
+            largeParam);
     final var item2 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", largeParam);
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            2L,
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
+            largeParam);
 
     executionQueue.executeInQueue(item1);
     verifyNoInteractions(sqlSessionFactory);
@@ -587,8 +654,8 @@ class DefaultExecutionQueueTest {
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_COMMITTED);
-    verify(session).update("statement1", largeParam);
-    verify(session).update("statement2", largeParam);
+    verify(session).update("io.camunda.db.rdbms.sql.AgentInstanceMapper.insert", largeParam);
+    verify(session).update("io.camunda.db.rdbms.sql.AgentInstanceMapper.update", largeParam);
     verify(session).flushStatements();
     verify(session).commit();
   }
@@ -603,7 +670,7 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
 
     executionQueue.executeInQueue(item1);
@@ -625,21 +692,21 @@ class DefaultExecutionQueueTest {
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             1L,
-            "statement1",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
             "parameter1");
     final var item2 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             2L,
-            "statement2",
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
             "parameter2");
     final var item3 =
         new QueueItem(
             ContextType.PROCESS_INSTANCE,
             WriteStatementType.INSERT,
             3L,
-            "statement3",
+            "io.camunda.db.rdbms.sql.AuditLogMapper.insert",
             "parameter3");
 
     executionQueue.executeInQueue(item1);
@@ -666,10 +733,18 @@ class DefaultExecutionQueueTest {
     final var largeParam = "x".repeat(600_000); // ~600 KB each
     final var item1 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 1L, "statement1", largeParam);
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            1L,
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.insert",
+            largeParam);
     final var item2 =
         new QueueItem(
-            ContextType.PROCESS_INSTANCE, WriteStatementType.INSERT, 2L, "statement2", largeParam);
+            ContextType.PROCESS_INSTANCE,
+            WriteStatementType.INSERT,
+            2L,
+            "io.camunda.db.rdbms.sql.AgentInstanceMapper.update",
+            largeParam);
 
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);

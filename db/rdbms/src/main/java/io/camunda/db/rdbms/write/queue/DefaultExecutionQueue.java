@@ -21,6 +21,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ibatis.executor.BatchResult;
@@ -42,6 +43,10 @@ public class DefaultExecutionQueue implements ExecutionQueue {
           Pattern.compile(".*update.*HistoryCleanupDate$"),
           Pattern.compile(".*\\.createIfNotExists$"),
           Pattern.compile("io.camunda.db.rdbms.sql.BatchOperationMapper.activate"));
+
+  // Statement IDs that already passed validation, so repeated enqueues of the same
+  // <Mapper>.<method> combination skip the reflection lookup.
+  private static final Set<String> VALIDATED_STATEMENT_IDS = ConcurrentHashMap.newKeySet();
 
   private final SqlSessionFactory sessionFactory;
   private final List<PreFlushListener> preFlushListeners = new ArrayList<>();
@@ -75,6 +80,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
 
   @Override
   public void executeInQueue(final QueueItem entry) {
+    assertKnownStatement(entry.statementId());
     LOG.trace("[RDBMS ExecutionQueue, Partition {}] Added entry to queue: {}", partitionId, entry);
     synchronized (queue) {
       if (queue.isEmpty()) {
@@ -374,6 +380,61 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       throw new IllegalStateException(
           "Failed to verify autoCommit mode of the RDBMS connection before flushing", e);
     }
+  }
+
+  /**
+   * Verifies that {@code statementId} references a real {@code <MapperInterface>.<method>}
+   * combination.
+   *
+   * <p>{@link QueueItem#statementId()} is a hand-typed string used later for dynamic dispatch via
+   * {@link SqlSession#update(String, Object)} during {@link #doFlush()}, which runs asynchronously
+   * and much later than the writer call that built the item. A typo there would otherwise surface
+   * as a MyBatis {@code BindingException} deep in a batched flush, far from its cause, and only for
+   * whichever code path happens to hit it. Validating eagerly at enqueue time — on the same thread
+   * as the writer call — turns that into an immediate, diagnosable error.
+   */
+  private static void assertKnownStatement(final String statementId) {
+    if (VALIDATED_STATEMENT_IDS.contains(statementId)) {
+      return;
+    }
+
+    final int lastDot = statementId.lastIndexOf('.');
+    if (lastDot < 0) {
+      throw new IllegalArgumentException(
+          "QueueItem statementId '"
+              + statementId
+              + "' is not a valid <MapperInterface>.<method> reference");
+    }
+
+    final var mapperClassName = statementId.substring(0, lastDot);
+    final var methodName = statementId.substring(lastDot + 1);
+    final Class<?> mapperClass;
+    try {
+      mapperClass = Class.forName(mapperClassName);
+    } catch (final ClassNotFoundException e) {
+      throw new IllegalArgumentException(
+          "QueueItem statementId '"
+              + statementId
+              + "' references unknown class '"
+              + mapperClassName
+              + "'",
+          e);
+    }
+
+    final boolean methodExists =
+        Arrays.stream(mapperClass.getDeclaredMethods())
+            .anyMatch(method -> method.getName().equals(methodName));
+    if (!methodExists) {
+      throw new IllegalArgumentException(
+          "QueueItem statementId '"
+              + statementId
+              + "' does not match any method named '"
+              + methodName
+              + "' on "
+              + mapperClassName);
+    }
+
+    VALIDATED_STATEMENT_IDS.add(statementId);
   }
 
   LinkedList<QueueItem> getQueue() {
