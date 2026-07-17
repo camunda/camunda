@@ -557,11 +557,8 @@ public class PassiveRole extends InactiveRole {
       }
     }
     // If we already voted for the requesting server, respond successfully.
-    else if (raft.getLastVotedFor() == request.candidate()) {
-      log.debug(
-          "Accepted {}: already voted for {}",
-          request,
-          raft.getCluster().getMember(raft.getLastVotedFor()).memberId());
+    else if (raft.getLastVotedFor().equals(request.candidate())) {
+      log.debug("Accepted {}: already voted for {}", request, raft.getLastVotedFor());
       return VoteResponse.builder()
           .withStatus(RaftResponse.Status.OK)
           .withTerm(raft.getTerm())
@@ -570,10 +567,7 @@ public class PassiveRole extends InactiveRole {
     }
     // In this case, we've already voted for someone else.
     else {
-      log.debug(
-          "Rejected {}: already voted for {}",
-          request,
-          raft.getCluster().getMember(raft.getLastVotedFor()).memberId());
+      log.debug("Rejected {}: already voted for {}", request, raft.getLastVotedFor());
       return VoteResponse.builder()
           .withStatus(RaftResponse.Status.OK)
           .withTerm(raft.getTerm())
