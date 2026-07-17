@@ -237,72 +237,66 @@ test.describe('Decision Navigation', () => {
         .filter({hasText: 'Assign Approver Group Navigation'})
         .getByRole('link', {name: /View decision instance/})
         .first();
-      // Wait for the freshly created decision instance to be indexed and
-      // rendered. beforeAll creates two instances back-to-back (failed, then
-      // successful); under load the second can still be unindexed when this
-      // step runs even though this spec's own data no longer competes with
-      // decisionFilters.spec.ts's. A single wait with no reload/retry can't
-      // recover if indexing is still catching up when it expires.
-      //
-      // page.reload() drops the "Assign Approver Group Navigation" name
-      // filter applied in the previous step — it's client-side React state,
-      // not a URL parameter (confirmed: the Name filter combobox is empty
-      // after reload in a failure snapshot). Without it, decisionInstanceLink
-      // is searching whatever the default (unfiltered) decisions view
-      // happens to render, not the scoped one this test set up. Re-apply the
-      // filter after each reload instead of assuming it survives.
+      // The full round trip (find row -> click -> land on the detail page)
+      // is retried as one unit, not as separate steps each retried in
+      // isolation. Confirmed in CI: clicking can pass the URL check
+      // (navigates to /operate/decisions/<id>) and then Operate redirects
+      // back to the decisions list — presumably because that specific
+      // decision instance isn't queryable yet — which a URL-only check
+      // doesn't catch, and which reloading *that* page can't fix since
+      // reload just reloads the list you already bounced back to. Redoing
+      // the whole thing from a freshly-filtered list is what actually
+      // recovers.
       await waitForAssertion({
         assertion: async () => {
           await expect(decisionInstanceLink).toBeVisible({timeout: 10_000});
+          await decisionInstanceLink.click();
+          await expect(page).toHaveURL(/\/operate\/decisions\/[^/?]+/, {
+            timeout: 10_000,
+          });
+          // The URL check alone isn't proof we're still there: Operate can
+          // redirect back to the list right after this if the decision
+          // instance isn't ready yet.
+          await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
+            timeout: 10_000,
+          });
         },
         onFailure: async () => {
+          // A failed attempt can leave us on either page: the decisions list
+          // (if the row/click itself failed) or a decision instance detail
+          // page (if decisionPanel was just the slow part, or Operate
+          // redirected there before bouncing back). selectDecisionName()
+          // needs the list's Name combobox, which the detail page doesn't
+          // have — clickDecisionsTab() first guarantees we land on the list
+          // regardless of which page we're actually on, via the persistent
+          // nav bar rather than assuming reload's target. Then reload, since
+          // the name filter is client-side React state, not a URL parameter
+          // (confirmed via a failure snapshot showing the empty Name
+          // combobox after a reload that didn't navigate first), so it needs
+          // re-applying every time regardless.
+          await operateHomePage.clickDecisionsTab();
           await page.reload();
           await operateDecisionsPage.selectDecisionName(
             'Assign Approver Group Navigation',
           );
         },
-        maxRetries: 6,
-      });
-      // The decision instances list live-polls and re-renders, which can drop a
-      // click before it navigates. Retry the click until the decision instance
-      // page is actually opened.
-      await waitForAssertion({
-        assertion: async () => {
-          await decisionInstanceLink.click();
-          await expect(page).toHaveURL(/\/operate\/decisions\/[^/?]+/, {
-            timeout: 10_000,
-          });
-        },
-        onFailure: async () => {},
+        maxRetries: 8,
       });
     });
 
     await test.step('Verify we are on the Assign Approver Group Navigation decision instance', async () => {
-      // This was a wrong assertion, not import lag: the DMN's input *label*
-      // "Invoice Classification" (rendered as this decision's own input
-      // column header) was deliberately left unrenamed when
-      // invoiceBusinessDecisionsNavigation.dmn was created — only decision
+      // decisionPanel visibility is already confirmed by the previous step's
+      // retry loop; this just checks the panel content. Input column header
+      // for Assign Approver Group Navigation is "Invoice Classification" —
+      // the DMN's input *label* was deliberately left unrenamed when
+      // invoiceBusinessDecisionsNavigation.dmn was created (only decision
       // ids/names were suffixed "Navigation" for cross-spec isolation, since
-      // labels don't cause naming collisions the way decision names do. A
-      // blanket find-and-replace across this file for "Invoice
-      // Classification" incorrectly renamed this specific expectation too.
-      await waitForAssertion({
-        assertion: async () => {
-          await expect(operateDecisionInstancePage.decisionPanel).toBeVisible({
-            timeout: 10_000,
-          });
-          // Input column header for Assign Approver Group Navigation is "Invoice Classification"
-          await expect(
-            operateDecisionInstancePage.decisionPanel.getByText(
-              'Invoice Classification',
-            ),
-          ).toBeVisible();
-        },
-        onFailure: async () => {
-          await page.reload();
-        },
-        maxRetries: 6,
-      });
+      // labels don't cause naming collisions).
+      await expect(
+        operateDecisionInstancePage.decisionPanel.getByText(
+          'Invoice Classification',
+        ),
+      ).toBeVisible();
     });
 
     await test.step('Verify the DRD panel is open', async () => {
