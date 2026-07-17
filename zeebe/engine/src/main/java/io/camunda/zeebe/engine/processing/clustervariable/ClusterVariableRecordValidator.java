@@ -75,27 +75,18 @@ public class ClusterVariableRecordValidator {
 
   public Either<Rejection, ClusterVariableRecord> validateExistence(
       final ClusterVariableRecord record) {
-    final boolean exists;
-    if (record.isGloballyScoped()) {
-      exists = clusterVariableState.existsAtGlobalScope(record.getNameBuffer());
-    } else if (record.isTenantScoped()) {
-      exists =
-          clusterVariableState.existsAtTenantScope(record.getNameBuffer(), record.getTenantId());
-    } else {
-      exists = false;
+    if (globallyScopedVariableExists(record) || tenantScopedVariableExists(record)) {
+      return Either.right(record);
     }
-    if (!exists) {
-      return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND,
-              "Invalid cluster variable name: '%s'. The variable does not exist in the scope '%s'"
-                  .formatted(
-                      record.getName(),
-                      record.getTenantId().isBlank()
-                          ? "GLOBAL"
-                          : "tenant: '%s'".formatted(record.getTenantId()))));
-    }
-    return Either.right(record);
+    return Either.left(
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            "Invalid cluster variable name: '%s'. The variable does not exist in the scope '%s'"
+                .formatted(
+                    record.getName(),
+                    record.getTenantId().isBlank()
+                        ? "GLOBAL"
+                        : "tenant: '%s'".formatted(record.getTenantId()))));
   }
 
   public Either<Rejection, ClusterVariableRecord> loadExisting(
