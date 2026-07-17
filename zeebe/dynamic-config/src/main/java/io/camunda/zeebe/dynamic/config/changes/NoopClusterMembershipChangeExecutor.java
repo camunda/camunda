@@ -15,11 +15,11 @@ public class NoopClusterMembershipChangeExecutor implements ClusterMembershipCha
 
   @Override
   public ActorFuture<Void> addBroker(final MemberId memberId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> removeBroker(final MemberId memberId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 }

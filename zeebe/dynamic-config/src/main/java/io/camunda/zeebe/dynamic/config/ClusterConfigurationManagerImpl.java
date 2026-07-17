@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
@@ -179,7 +181,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private void setStarted() {
     if (!startFuture.isDone()) {
       initialized = true;
-      startFuture.complete(null);
+      startFuture.complete(unit());
     }
   }
 

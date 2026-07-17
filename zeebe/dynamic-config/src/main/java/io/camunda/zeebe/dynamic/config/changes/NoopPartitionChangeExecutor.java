@@ -21,12 +21,12 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final int partitionId,
       final Map<MemberId, Integer> membersWithPriority,
       final DynamicPartitionConfig config) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> leave(final int partitionId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
@@ -35,28 +35,28 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final int priority,
       final DynamicPartitionConfig partitionConfig,
       final boolean initializeFromSnapshot) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> reconfigurePriority(final int partitionId, final int newPriority) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> forceReconfigure(
       final int partitionId, final Collection<MemberId> members) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> disableExporter(final int partitionId, final String exporterId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> deleteExporter(final int partitionId, final String exporterId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
@@ -65,6 +65,6 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final String exporterId,
       final long metadataVersionToUpdate,
       final String initializeFrom) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 }

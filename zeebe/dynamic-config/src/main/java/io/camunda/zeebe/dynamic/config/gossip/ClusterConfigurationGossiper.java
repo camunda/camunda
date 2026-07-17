@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.gossip;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -78,7 +80,7 @@ public final class ClusterConfigurationGossiper
     executor.run(
         () -> {
           internalStart();
-          startedFuture.complete(null);
+          startedFuture.complete(unit());
         });
     return startedFuture;
   }

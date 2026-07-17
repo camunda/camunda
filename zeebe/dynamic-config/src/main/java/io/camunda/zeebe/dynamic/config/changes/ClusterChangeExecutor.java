@@ -53,18 +53,18 @@ public interface ClusterChangeExecutor {
   final class NoopClusterChangeExecutor implements ClusterChangeExecutor {
     @Override
     public ActorFuture<Void> deleteHistory() {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed();
     }
 
     @Override
     public ActorFuture<Void> preScaling(
         final int currentClusterSize, final Set<MemberId> clusterMembers) {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed();
     }
 
     @Override
     public ActorFuture<Void> postScaling(final Set<MemberId> clusterMembers) {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed();
     }
   }
 }

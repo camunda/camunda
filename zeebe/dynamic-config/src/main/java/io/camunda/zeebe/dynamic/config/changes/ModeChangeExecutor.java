@@ -54,12 +54,12 @@ public interface ModeChangeExecutor {
   final class NoopModeChangeExecutor implements ModeChangeExecutor {
     @Override
     public ActorFuture<Void> enterRecovery() {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed();
     }
 
     @Override
     public ActorFuture<Void> exitRecovery() {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed();
     }
 
     @Override
