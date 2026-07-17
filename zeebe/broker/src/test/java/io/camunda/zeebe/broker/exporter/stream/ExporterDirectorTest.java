@@ -41,6 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -203,6 +204,29 @@ public final class ExporterDirectorTest {
     Awaitility.await("exporter open has been retried")
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> verify(exporter, times(2)).open(any()));
+
+    rule.closeExporterDirector();
+  }
+
+  @Test
+  public void shouldNotRetryOpenCallOnUnrecoverableException() throws Exception {
+    // given, when
+    final ControlledTestExporter exporter = spy(new ControlledTestExporter());
+    doThrow(new UnrecoverableException("permanent misconfiguration")).when(exporter).open(any());
+    final ExporterDescriptor descriptor =
+        spy(
+            new ExporterDescriptor(
+                "exporter-unrecoverable", exporter.getClass(), Collections.singletonMap("x", 1)));
+    doAnswer(c -> exporter).when(descriptor).newInstance();
+    startExporterDirector(List.of(descriptor));
+
+    // then
+    Awaitility.await("director reports the exporter failure as unrecoverable")
+        .untilAsserted(
+            () ->
+                assertThat(rule.getDirector().getHealthReport().status())
+                    .isEqualTo(HealthStatus.DEAD));
+    verify(exporter, times(1)).open(any());
 
     rule.closeExporterDirector();
   }

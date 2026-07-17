@@ -24,6 +24,8 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -207,6 +209,30 @@ public class ExporterEnableTest {
     Awaitility.await("exporter open has been retried")
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> verify(exporter, times(2)).open(any()));
+  }
+
+  @Test
+  public void shouldNotRetryExporterEnableOnUnrecoverableException() {
+    // given
+    rule.startExporterDirector(exporterDescriptors);
+    rule.getDirector().removeExporter(EXPORTER_ID_2).join();
+
+    final var descriptor = createExporter(EXPORTER_ID_2, Collections.singletonMap("x", 1));
+    final var exporter = exporters.get(EXPORTER_ID_2);
+    doThrow(new UnrecoverableException("permanent misconfiguration")).when(exporter).open(any());
+
+    // when
+    rule.getDirector()
+        .enableExporterWithRetry(EXPORTER_ID_2, new ExporterInitializationInfo(1, null), descriptor)
+        .join();
+
+    // then
+    Awaitility.await("director reports the exporter failure as unrecoverable")
+        .untilAsserted(
+            () ->
+                assertThat(rule.getDirector().getHealthReport().status())
+                    .isEqualTo(HealthStatus.DEAD));
+    verify(exporter, times(1)).open(any());
   }
 
   private void waitUntilExportersHaveSeenTheExpectedRecords() {
