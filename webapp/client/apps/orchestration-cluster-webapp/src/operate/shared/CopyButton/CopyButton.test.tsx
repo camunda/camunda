@@ -93,4 +93,28 @@ describe('<CopyButton />', () => {
 		await vi.advanceTimersByTimeAsync(5000);
 		await expect.element(screen.getByText('Copy')).toBeVisible();
 	});
+
+	it('should stay in the copy state when the clipboard write is rejected', async () => {
+		mockWriteText.mockRejectedValue(new Error('permission denied'));
+
+		const screen = await render(<CopyButton value="hello world" />);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Copy'}).element());
+
+		await expect.element(screen.getByText('Copy')).toBeVisible();
+	});
+
+	it('should not throw when the clipboard API is unavailable', async () => {
+		Object.defineProperty(navigator, 'clipboard', {
+			value: undefined,
+			configurable: true,
+			writable: true,
+		});
+
+		const screen = await render(<CopyButton value="hello world" />);
+
+		await userEvent.click(screen.getByRole('button', {name: 'Copy'}).element());
+
+		await expect.element(screen.getByText('Copy')).toBeVisible();
+	});
 });

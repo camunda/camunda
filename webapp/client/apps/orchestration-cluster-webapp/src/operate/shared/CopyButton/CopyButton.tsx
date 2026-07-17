@@ -44,15 +44,24 @@ const CopyButton: React.FC<Props> = ({value, hasIconOnly, tooltipAlignment}) => 
 	}, [value]);
 
 	const handleCopy = useCallback(() => {
-		navigator.clipboard.writeText(value).then(() => {
-			setIsCopied(true);
-			if (copyTimeoutRef.current !== null) {
-				clearTimeout(copyTimeoutRef.current);
-			}
-			copyTimeoutRef.current = setTimeout(() => {
-				setIsCopied(false);
-			}, COPY_FEEDBACK_TIMEOUT_MS);
-		});
+		if (navigator.clipboard === undefined) {
+			return;
+		}
+
+		navigator.clipboard
+			.writeText(value)
+			.then(() => {
+				setIsCopied(true);
+				if (copyTimeoutRef.current !== null) {
+					clearTimeout(copyTimeoutRef.current);
+				}
+				copyTimeoutRef.current = setTimeout(() => {
+					setIsCopied(false);
+				}, COPY_FEEDBACK_TIMEOUT_MS);
+			})
+			.catch(() => {
+				// Clipboard write blocked (insecure context, missing permission) — silently ignore
+			});
 	}, [value]);
 
 	return (

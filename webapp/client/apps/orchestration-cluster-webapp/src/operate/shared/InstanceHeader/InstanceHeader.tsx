@@ -29,7 +29,7 @@ type Column = {
 	hidden?: boolean;
 };
 
-type Props = {
+type InstanceHeaderProps = {
 	state: React.ComponentProps<typeof StateIcon>['state'];
 	instanceName: string;
 	incidentsCount?: number;
@@ -40,7 +40,7 @@ type Props = {
 	hideBottomBorder?: boolean;
 };
 
-const InstanceHeader: React.FC<Props> = ({
+const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 	state,
 	headerColumns,
 	bodyColumns,
@@ -103,4 +103,4 @@ const InstanceHeader: React.FC<Props> = ({
 };
 
 export {InstanceHeader};
-export type {Column, Props};
+export type {Column, InstanceHeaderProps};
