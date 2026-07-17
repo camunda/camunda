@@ -1715,6 +1715,31 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      # HeroDevs NES artifacts (e.g. spring-boot-dependencies on stable) are private and served from
+      # Nexus, so the snapshot resolution needs authenticated access via the nexus.camunda.cloud mirror.
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Configure Maven credentials
+        uses: s4u/maven-settings-action@894661b3ddae382f1ae8edbeab60987e08cf0788 # v4.0.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Submit Maven dependency snapshot
         id: submit
         uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
