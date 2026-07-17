@@ -57,6 +57,44 @@ final class RetryStrategyTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff"})
+  void shouldExposeRetryCount(final TestCase<?> test) {
+    // given
+    final var count = new AtomicInteger(0);
+    schedulerRule.submitActor(test.actor);
+
+    // when
+    test.actor.run(
+        () -> resultFuture = test.strategy.runWithRetry(() -> count.incrementAndGet() == 4));
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(count.get()).isEqualTo(4);
+    assertThat(resultFuture).succeedsWithin(Duration.ZERO).isEqualTo(true);
+    assertThat(test.strategy.getRetryCount()).isEqualTo(3);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff"})
+  void shouldResetExposedRetryCountOnNewRunWithRetry(final TestCase<?> test) {
+    // given
+    final var count = new AtomicInteger(0);
+    schedulerRule.submitActor(test.actor);
+    test.actor.run(
+        () -> resultFuture = test.strategy.runWithRetry(() -> count.incrementAndGet() == 4));
+    schedulerRule.workUntilDone();
+    assertThat(test.strategy.getRetryCount()).isEqualTo(3);
+
+    // when
+    test.actor.run(() -> resultFuture = test.strategy.runWithRetry(() -> true));
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(resultFuture).succeedsWithin(Duration.ZERO).isEqualTo(true);
+    assertThat(test.strategy.getRetryCount()).isZero();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"endless", "recoverable", "abortable", "backoff"})
   void shouldStopWhenAbortConditionReturnsTrue(final TestCase<?> test) {
     // given
     final AtomicInteger count = new AtomicInteger(0);
