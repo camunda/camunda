@@ -455,8 +455,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       return BpmnElementProcessor.SUCCESS;
     }
     // Multi-instance children are gated on the body type being enabled and are checked against
-    // their
-    // own (inner) element type; all other elements use the plain activation-threshold check.
+    // their own (inner) element type; all other elements use the plain activation-threshold check.
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     return LoopDetectionFilter.isMultiInstanceChild(flowScopeInstance)
         ? loopDetectionBehavior.checkMultiInstanceChildActivationThreshold(context)

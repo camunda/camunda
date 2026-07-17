@@ -330,9 +330,10 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // or job key + lease
   AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL),
 
-  AGENT_INSTANCES_BY_PROCESS_INSTANCE_KEY(152, PARTITION_LOCAL),
   // secondary index: (processInstanceKey, agentInstanceKey) → ∅; supports prefix iteration by
   // process instance key to find every agent instance still associated with it
+  AGENT_INSTANCES_BY_PROCESS_INSTANCE_KEY(152, PARTITION_LOCAL),
+  // tracks per-scope activation counters used for loop detection
   ELEMENT_ACTIVATION_COUNTERS(153, PARTITION_LOCAL);
 
   private final int value;
