@@ -791,6 +791,10 @@ class AgentInstanceControllerTest extends RestControllerTest {
                   assertThat(record.getContent()).hasSize(1);
                   assertThat(record.getContent().get(0).getText())
                       .isEqualTo("I will process the invoice.");
+                  // no metrics in the request — protocol record carries the -1 sentinel
+                  assertThat(record.getMetrics().getInputTokens()).isEqualTo(-1L);
+                  assertThat(record.getMetrics().getOutputTokens()).isEqualTo(-1L);
+                  assertThat(record.getMetrics().getDurationMs()).isEqualTo(-1L);
                 }),
             any());
   }

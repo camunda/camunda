@@ -602,6 +602,34 @@ final class AgentHistoryHandlerTest {
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
   }
 
+  @Test
+  void shouldMapUnsetMetricsToNull() {
+    // given — -1L is the protocol sentinel for "not provided"
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildMinimalRecordValue(1L, 1))
+            .withMetrics(
+                ImmutableAgentHistoryMetricsValue.builder()
+                    .withInputTokens(-1L)
+                    .withOutputTokens(-1L)
+                    .withDurationMs(-1L)
+                    .build())
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withValue(recordValue));
+    final var entity = new AgentHistoryEntity().setId("1");
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getInputTokens()).isNull();
+    assertThat(entity.getOutputTokens()).isNull();
+    assertThat(entity.getDurationMs()).isNull();
+  }
+
   // --- helpers ---
 
   private Record<AgentHistoryRecordValue> generateRecord(final AgentHistoryIntent intent) {

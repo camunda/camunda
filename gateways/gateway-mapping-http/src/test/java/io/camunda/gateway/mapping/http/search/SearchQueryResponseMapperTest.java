@@ -1299,7 +1299,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(new ContentItem(ContentType.TEXT, "Hello", null, null)),
               List.of(),
-              new Metrics(10, 20, 30),
+              new Metrics(10L, 20L, 30L),
               AgentInstanceHistoryCommitStatus.COMMITTED,
               producedAt);
 
@@ -1343,7 +1343,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(new ContentItem(ContentType.DOCUMENT, null, docRef, null)),
               List.of(),
-              new Metrics(0, 0, 0),
+              new Metrics(0L, 0L, 0L),
               AgentInstanceHistoryCommitStatus.PENDING,
               OffsetDateTime.now());
 
@@ -1375,7 +1375,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.TOOL_RESULT,
               null,
               null,
-              new Metrics(0, 0, 0),
+              new Metrics(0L, 0L, 0L),
               AgentInstanceHistoryCommitStatus.DISCARDED,
               OffsetDateTime.now());
 
@@ -1406,7 +1406,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.ASSISTANT,
               List.of(),
               List.of(toolCall),
-              new Metrics(5, 10, 100),
+              new Metrics(5L, 10L, 100L),
               AgentInstanceHistoryCommitStatus.COMMITTED,
               OffsetDateTime.now());
 
@@ -1438,7 +1438,7 @@ class SearchQueryResponseMapperTest {
               AgentInstanceHistoryRole.USER,
               List.of(),
               List.of(),
-              new Metrics(0, 0, 0),
+              new Metrics(0L, 0L, 0L),
               AgentInstanceHistoryCommitStatus.COMMITTED,
               OffsetDateTime.now());
       final var queryResult = new SearchQueryResult<>(1L, false, List.of(entity), null, null);
@@ -1449,6 +1449,67 @@ class SearchQueryResponseMapperTest {
       // then
       assertThat(response.getItems()).hasSize(1);
       assertThat(response.getItems().get(0).getHistoryItemKey()).isEqualTo("42");
+    }
+
+    @Test
+    void shouldReturnNullMetricsWhenEntityMetricsIsNull() {
+      // given — metrics null means they were never provided at creation time
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              null,
+              AgentInstanceHistoryRole.USER,
+              List.of(),
+              List.of(),
+              null,
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getMetrics()).isNull();
+    }
+
+    @Test
+    void shouldMapPartialMetricsWithNullDurationMs() {
+      // given — inputTokens and outputTokens set, durationMs absent
+      final var entity =
+          new AgentInstanceHistoryEntity(
+              1L,
+              2L,
+              3L,
+              4L,
+              5L,
+              "",
+              "<default>",
+              6L,
+              "",
+              null,
+              AgentInstanceHistoryRole.ASSISTANT,
+              List.of(),
+              List.of(),
+              new Metrics(100L, 200L, null),
+              AgentInstanceHistoryCommitStatus.COMMITTED,
+              OffsetDateTime.now());
+
+      // when
+      final var result = SearchQueryResponseMapper.toAgentHistoryItemResult(entity);
+
+      // then
+      assertThat(result.getMetrics()).isNotNull();
+      assertThat(result.getMetrics().getInputTokens()).isEqualTo(100L);
+      assertThat(result.getMetrics().getOutputTokens()).isEqualTo(200L);
+      assertThat(result.getMetrics().getDurationMs()).isNull();
     }
   }
 }

@@ -42,7 +42,7 @@ public class AgentHistoryEntityTransformer
         toRole(source.getRole()),
         toContent(source.getContent()),
         toToolCalls(source.getToolCalls()),
-        new Metrics(source.getInputTokens(), source.getOutputTokens(), source.getDurationMs()),
+        toMetrics(source.getInputTokens(), source.getOutputTokens(), source.getDurationMs()),
         toCommitStatus(source.getCommitStatus()),
         source.getProducedAt());
   }
@@ -109,5 +109,18 @@ public class AgentHistoryEntityTransformer
     return toolCalls.stream()
         .map(t -> new ToolCall(t.toolCallId(), t.toolName(), t.elementId(), t.arguments()))
         .toList();
+  }
+
+  /**
+   * Returns null when all three metric fields are null (metrics were never provided). When only
+   * some fields are null (partial absence), constructs a {@link Metrics} preserving the available
+   * values rather than losing them.
+   */
+  private static Metrics toMetrics(
+      final Long inputTokens, final Long outputTokens, final Long durationMs) {
+    if (inputTokens == null && outputTokens == null && durationMs == null) {
+      return null;
+    }
+    return new Metrics(inputTokens, outputTokens, durationMs);
   }
 }

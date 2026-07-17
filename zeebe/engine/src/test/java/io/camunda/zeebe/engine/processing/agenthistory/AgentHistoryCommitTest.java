@@ -82,9 +82,9 @@ public class AgentHistoryCommitTest {
     // insert — the emitted COMMITTED event must carry none of them.
     assertThat(committed.getValue().getContent()).isEmpty();
     assertThat(committed.getValue().getToolCalls()).isEmpty();
-    assertThat(committed.getValue().getMetrics().getInputTokens()).isZero();
-    assertThat(committed.getValue().getMetrics().getOutputTokens()).isZero();
-    assertThat(committed.getValue().getMetrics().getDurationMs()).isZero();
+    assertThat(committed.getValue().getMetrics().getInputTokens()).isEqualTo(-1L);
+    assertThat(committed.getValue().getMetrics().getOutputTokens()).isEqualTo(-1L);
+    assertThat(committed.getValue().getMetrics().getDurationMs()).isEqualTo(-1L);
   }
 
   @Test

@@ -144,9 +144,9 @@ public class AgentHistoryDiscardTest {
     // insert — the emitted DISCARDED event must carry none of them.
     assertThat(discarded.getValue().getContent()).isEmpty();
     assertThat(discarded.getValue().getToolCalls()).isEmpty();
-    assertThat(discarded.getValue().getMetrics().getInputTokens()).isZero();
-    assertThat(discarded.getValue().getMetrics().getOutputTokens()).isZero();
-    assertThat(discarded.getValue().getMetrics().getDurationMs()).isZero();
+    assertThat(discarded.getValue().getMetrics().getInputTokens()).isEqualTo(-1L);
+    assertThat(discarded.getValue().getMetrics().getOutputTokens()).isEqualTo(-1L);
+    assertThat(discarded.getValue().getMetrics().getDurationMs()).isEqualTo(-1L);
   }
 
   @Test

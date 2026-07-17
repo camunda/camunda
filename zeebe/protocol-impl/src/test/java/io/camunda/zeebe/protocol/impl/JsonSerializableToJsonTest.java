@@ -5244,7 +5244,7 @@ final class JsonSerializableToJsonTest {
             }
           ],
           "toolCalls": [],
-          "metrics": { "inputTokens": 0, "outputTokens": 0, "durationMs": 0 },
+          "metrics": { "inputTokens": -1, "outputTokens": -1, "durationMs": -1 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
@@ -5268,7 +5268,7 @@ final class JsonSerializableToJsonTest {
           "producedAt": -1,
           "content": [],
           "toolCalls": [],
-          "metrics": { "inputTokens": 0, "outputTokens": 0, "durationMs": 0 },
+          "metrics": { "inputTokens": -1, "outputTokens": -1, "durationMs": -1 },
           "tenantId": "<default>",
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,

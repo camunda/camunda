@@ -34,8 +34,21 @@ public class AgentHistoryEntityMapper {
         dbModel.role(),
         dbModel.contentItems() != null ? dbModel.contentItems() : List.of(),
         dbModel.toolCallValues() != null ? dbModel.toolCallValues() : List.of(),
-        new Metrics(dbModel.inputTokens(), dbModel.outputTokens(), dbModel.durationMs()),
+        toMetrics(dbModel.inputTokens(), dbModel.outputTokens(), dbModel.durationMs()),
         dbModel.commitStatus(),
         dbModel.producedAt());
+  }
+
+  /**
+   * Returns null when all three metric fields are null (metrics were never provided). When only
+   * some fields are null (partial absence), constructs a {@link Metrics} preserving the available
+   * values rather than losing them.
+   */
+  private static Metrics toMetrics(
+      final Long inputTokens, final Long outputTokens, final Long durationMs) {
+    if (inputTokens == null && outputTokens == null && durationMs == null) {
+      return null;
+    }
+    return new Metrics(inputTokens, outputTokens, durationMs);
   }
 }

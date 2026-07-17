@@ -542,6 +542,35 @@ class AgentHistoryExportHandlerTest {
     assertThat(mappedItem.object()).isEqualTo(arrayValue);
   }
 
+  @Test
+  void shouldMapUnsetMetricsToNull() {
+    // given — -1L is the protocol sentinel meaning "metrics not provided"
+    final var recordValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildRecordValue())
+            .withMetrics(
+                ImmutableAgentHistoryMetricsValue.builder()
+                    .withInputTokens(-1L)
+                    .withOutputTokens(-1L)
+                    .withDurationMs(-1L)
+                    .build())
+            .build();
+    final Record<AgentHistoryRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r -> r.withIntent(AgentHistoryIntent.CREATED).withKey(63L).withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).create(modelCaptor.capture());
+    final var model = modelCaptor.getValue();
+    assertThat(model.inputTokens()).isNull();
+    assertThat(model.outputTokens()).isNull();
+    assertThat(model.durationMs()).isNull();
+  }
+
   /**
    * Builds a fully-populated record value that will not throw during export. In particular: - role
    * is non-UNSPECIFIED - metrics is populated - content has a TEXT item (no UNSPECIFIED content
