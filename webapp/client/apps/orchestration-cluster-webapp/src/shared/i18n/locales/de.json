@@ -514,6 +514,16 @@
 					"operatorExistsPlaceholder": "true oder false",
 					"operatorTypeLabel": "{{label}} Filtertyp",
 					"selectOperator": "Operator auswählen"
+				},
+				"instanceHeader": {
+					"incidentsCount_one": "{{count}} Vorfall",
+					"incidentsCount_other": "{{count}} Vorfälle"
+				},
+				"copyButton": {
+					"copy": "Kopieren",
+					"copied": "Kopiert",
+					"copyToClipboard": "In die Zwischenablage kopieren",
+					"copiedToClipboard": "In die Zwischenablage kopiert"
 				}
 			}
 		}

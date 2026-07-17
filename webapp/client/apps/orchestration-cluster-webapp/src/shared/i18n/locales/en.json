@@ -528,6 +528,16 @@
 					"operatorExistsPlaceholder": "true or false",
 					"operatorTypeLabel": "{{label}} filter type",
 					"selectOperator": "Select operator"
+				},
+				"instanceHeader": {
+					"incidentsCount_one": "{{count}} incident",
+					"incidentsCount_other": "{{count}} incidents"
+				},
+				"copyButton": {
+					"copy": "Copy",
+					"copied": "Copied",
+					"copyToClipboard": "Copy to clipboard",
+					"copiedToClipboard": "Copied to clipboard"
 				}
 			}
 		}
