@@ -22,7 +22,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
 
   @Override
   public MockChildProcessBuilder withProcessId(final String processId) {
-    this.childProcessId = processId;
+    childProcessId = processId;
     return this;
   }
 
@@ -65,22 +67,16 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
       processBuilder.versionTag(versionTag);
     }
 
+    final Map<String, String> jsonVariables = toJsonVariables(variables);
+
     final BpmnModelInstance processModel =
         processBuilder
             .startEvent()
             .endEvent(
                 "child-end",
-                e ->
-                    variables.forEach(
-                        (k, v) -> {
-                          try {
-                            e.zeebeOutput(
-                                "=" + client.getConfiguration().getJsonMapper().toJson(v), k);
-                          } catch (final Exception ex) {
-                            throw new RuntimeException(
-                                "Failed to build the mock process for the given variables", ex);
-                          }
-                        }))
+                eventBuilder ->
+                    jsonVariables.forEach(
+                        (key, value) -> eventBuilder.zeebeOutputExpression(value, key)))
             .done();
 
     LOGGER.debug(
@@ -125,6 +121,17 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
               jobClient.newCompleteCommand(job.getKey()).variables(outputVariables).send().join();
             })
         .open();
+  }
+
+  private Map<String, String> toJsonVariables(final Map<String, Object> variables) {
+    final Function<Entry<String, Object>, String> transformToJson =
+        entry -> client.getConfiguration().getJsonMapper().toJson(entry.getValue());
+    try {
+      return variables.entrySet().stream()
+          .collect(Collectors.toMap(Entry::getKey, transformToJson));
+    } catch (final Exception ex) {
+      throw new RuntimeException("Failed to build the mock process for the given variables", ex);
+    }
   }
 
   private void validateProcessId() {
