@@ -15,7 +15,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ public class RestoreValidator {
     if (configuration.getCluster().getNodeId() == 0) {
       final var topologyFile =
           Path.of(configuration.getData().getDirectory())
-              .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+              .resolve(PersistedClusterConfigurationFile.TOPOLOGY_FILE_NAME);
       return topologyFile.toFile().exists() && topologyFile.toFile().isFile();
     }
     return true;

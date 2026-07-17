@@ -213,7 +213,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-config</artifactId>
+      <artifactId>zeebe-cluster-config-api</artifactId>
     </dependency>
 
     <dependency>
@@ -374,10 +374,6 @@
           <ignoredDependencies>
             <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
           </ignoredDependencies>
-          <ignoredNonTestScopedDependencies>
-            <!-- indirectly required via the broker-client module -->
-            <dependency>io.camunda:zeebe-cluster-topology</dependency>
-          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
       <plugin>

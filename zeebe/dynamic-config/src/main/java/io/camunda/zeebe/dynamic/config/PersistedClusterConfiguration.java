@@ -7,28 +7,27 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
-import static io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.Header.HEADER_LENGTH;
+import static io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile.Header.HEADER_LENGTH;
 
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile.ChecksumMismatch;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile.Header;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile.MissingHeader;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile.UnexpectedVersion;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.zip.CRC32C;
 
 /**
- * Manages reading and updating ClusterConfiguration in a local persisted file. The file consists of
- * a fixed-size header containing a version and a checksum, followed by the serialized
- * configuration.
+ * Manages reading and updating ClusterConfiguration in a local persisted file. The file format
+ * itself (header, checksum, versioning) is defined in {@link PersistedClusterConfigurationFile};
+ * this class owns encoding/decoding the {@link ClusterConfiguration} body through the given {@link
+ * ClusterConfigurationSerializer}.
  */
 public final class PersistedClusterConfiguration {
-  // Header is a single byte for the version, followed by a long for the checksum.
-  // Constant version, to be incremented if the format changes.
-  private static final byte VERSION = 1;
   private final Path topologyFile;
   private final ClusterConfigurationSerializer serializer;
   private ClusterConfiguration clusterConfiguration;
@@ -90,9 +89,11 @@ public final class PersistedClusterConfiguration {
     final var content = Files.readAllBytes(topologyFile);
     final var header = Header.parseFrom(content, topologyFile);
 
-    final var actualChecksum = checksum(content, HEADER_LENGTH, content.length - HEADER_LENGTH);
-    if (header.checksum != actualChecksum) {
-      throw new ChecksumMismatch(topologyFile, header.checksum, actualChecksum);
+    final var actualChecksum =
+        PersistedClusterConfigurationFile.checksum(
+            content, HEADER_LENGTH, content.length - HEADER_LENGTH);
+    if (header.checksum() != actualChecksum) {
+      throw new ChecksumMismatch(topologyFile, header.checksum(), actualChecksum);
     }
     // deserialize the topology
     return serializer.decodeClusterTopology(content, HEADER_LENGTH, content.length - HEADER_LENGTH);
@@ -100,80 +101,6 @@ public final class PersistedClusterConfiguration {
 
   private void writeToFile(final ClusterConfiguration clusterConfiguration) throws IOException {
     final var body = serializer.encode(clusterConfiguration);
-    writeToFile(body, topologyFile);
-  }
-
-  /**
-   * Writes the serialized ClusterConfiguration into path.
-   *
-   * @param body the serialized ClusterConfiguration
-   * @param path the path where to save the file
-   */
-  public static void writeToFile(final byte[] body, final Path path) throws IOException {
-    final var checksum = checksum(body, 0, body.length);
-    final var buffer =
-        ByteBuffer.allocate(HEADER_LENGTH + body.length)
-            .order(ByteOrder.LITTLE_ENDIAN)
-            .put(VERSION)
-            .putLong(checksum)
-            .put(body);
-    Files.write(
-        path,
-        buffer.array(),
-        StandardOpenOption.CREATE,
-        StandardOpenOption.WRITE,
-        StandardOpenOption.TRUNCATE_EXISTING,
-        StandardOpenOption.DSYNC);
-  }
-
-  private static long checksum(final byte[] bytes, final int offset, final int length) {
-    final var checksum = new CRC32C();
-    checksum.update(bytes, offset, length);
-    return checksum.getValue();
-  }
-
-  public static final class UnexpectedVersion extends RuntimeException {
-    private UnexpectedVersion(final Path topologyFile, final byte version) {
-      super(
-          "Topology file %s had version '%s', but expected version '%s'"
-              .formatted(topologyFile, version, VERSION));
-    }
-  }
-
-  public static final class MissingHeader extends RuntimeException {
-    private MissingHeader(final Path topologyFile, final Object fileSize) {
-      super(
-          "Topology file %s is too small to contain the expected header: %s bytes"
-              .formatted(topologyFile, fileSize));
-    }
-  }
-
-  public static final class ChecksumMismatch extends RuntimeException {
-    private ChecksumMismatch(
-        final Path topologyFile, final long expectedChecksum, final long actualChecksum) {
-      super(
-          "Corrupted topology file: %s. Expected checksum: '%d', actual checksum: '%d'"
-              .formatted(topologyFile, expectedChecksum, actualChecksum));
-    }
-  }
-
-  public record Header(byte version, long checksum) {
-
-    public static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
-
-    public static Header parseFrom(final byte[] content, final Path topologyFile) {
-      if (content.length < HEADER_LENGTH) {
-        throw new MissingHeader(topologyFile, content.length);
-      }
-      final var header = ByteBuffer.wrap(content, 0, HEADER_LENGTH).order(ByteOrder.LITTLE_ENDIAN);
-      final var version = header.get();
-      final var expectedChecksum = header.getLong();
-
-      if (version != VERSION) {
-        throw new UnexpectedVersion(topologyFile, version);
-      }
-
-      return new Header(version, expectedChecksum);
-    }
+    PersistedClusterConfigurationFile.writeToFile(body, topologyFile);
   }
 }

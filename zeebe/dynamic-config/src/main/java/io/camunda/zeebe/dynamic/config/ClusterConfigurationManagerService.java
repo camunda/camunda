@@ -19,9 +19,11 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentC
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestsHandler;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestServer;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationUpdateNotifier;
+import io.camunda.zeebe.dynamic.config.api.ConfigurationChangeCoordinator;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
-import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
@@ -48,7 +50,6 @@ import java.util.Optional;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
-  public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
@@ -82,7 +83,8 @@ public final class ClusterConfigurationManagerService
     }
 
     localMemberId = memberShipService.getLocalMember().id();
-    configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
+    configurationFile =
+        dataRootDirectory.resolve(PersistedClusterConfigurationFile.TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
         PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
     gossipActor = Actor.newActor().name("ClusterConfigGossip").build();

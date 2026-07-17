@@ -20,6 +20,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-cluster-config</artifactId>
       <exclusions>
         <exclusion>

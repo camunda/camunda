@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationUpdateNotifier;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;

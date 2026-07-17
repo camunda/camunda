@@ -13,7 +13,7 @@ import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,7 +83,7 @@ class RestoreValidatorTest {
     Files.writeString(partitionDir.resolve("segment-1.log"), "data");
 
     final Path topologyFile =
-        dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+        dataDirectory.resolve(PersistedClusterConfigurationFile.TOPOLOGY_FILE_NAME);
     Files.writeString(topologyFile, "topology");
 
     // when
@@ -101,7 +101,7 @@ class RestoreValidatorTest {
     Files.writeString(partitionDir.resolve("segment-1.log"), "data");
 
     final Path topologyDir =
-        dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+        dataDirectory.resolve(PersistedClusterConfigurationFile.TOPOLOGY_FILE_NAME);
     Files.createDirectories(topologyDir);
 
     // when
@@ -123,7 +123,7 @@ class RestoreValidatorTest {
     }
 
     final Path topologyFile =
-        dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+        dataDirectory.resolve(PersistedClusterConfigurationFile.TOPOLOGY_FILE_NAME);
     Files.writeString(topologyFile, "topology");
 
     // when
@@ -147,7 +147,7 @@ class RestoreValidatorTest {
     }
 
     final Path topologyFile =
-        dataDirectory.resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+        dataDirectory.resolve(PersistedClusterConfigurationFile.TOPOLOGY_FILE_NAME);
     Files.writeString(topologyFile, "topology");
 
     // when

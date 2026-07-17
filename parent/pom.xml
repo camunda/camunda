@@ -661,6 +661,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-cluster-config-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-cluster-config</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -2878,6 +2884,7 @@
                   <dep>org.apache.logging.log4j:log4j-core</dep>
                   <dep>io.camunda:zeebe-build-tools</dep>
                   <dep>io.camunda:zeebe-cluster-config</dep>
+                  <dep>io.camunda:zeebe-cluster-config-api</dep>
                   <dep>io.camunda:zeebe-gateway-protocol</dep>
                   <dep>org.ow2.asm:asm</dep>
                   <dep>org.bouncycastle:bcpkix-jdk18on</dep>
@@ -2905,6 +2912,7 @@
                 </ignoredUnusedDeclaredDependencies>
                 <ignoredNonTestScopedDependencies>
                   <dep>io.camunda:zeebe-cluster-config</dep>
+                  <dep>io.camunda:zeebe-cluster-config-api</dep>
                   <dep>io.camunda:zeebe-scheduler</dep>
                   <dep>org.springframework:spring-core</dep>
                   <dep>org.springframework:spring-beans</dep>

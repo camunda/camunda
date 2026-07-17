@@ -8,9 +8,10 @@
 package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.ChecksumMismatch;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.MissingHeader;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.UnexpectedVersion;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile.ChecksumMismatch;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile.MissingHeader;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile.UnexpectedVersion;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -150,7 +151,7 @@ final class PersistedClusterConfigurationTest {
         newBody,
         0,
         fileContent,
-        PersistedClusterConfiguration.Header.HEADER_LENGTH,
+        PersistedClusterConfigurationFile.Header.HEADER_LENGTH,
         newBody.length);
     Files.write(topologyFile, fileContent, StandardOpenOption.WRITE);
 

@@ -9,8 +9,8 @@ package io.camunda.debug.cli;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.Header;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile.Header;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -101,12 +101,12 @@ public class TopologyMetaCommand extends CommonOptions implements Callable<Integ
     final var protobuf = parseTopology(json);
 
     final var bytes = protobuf.toByteArray();
-    PersistedClusterConfiguration.writeToFile(bytes, file);
+    PersistedClusterConfigurationFile.writeToFile(bytes, file);
   }
 
   private void printFile(final Path path) throws IOException {
     final var content = Files.readAllBytes(path);
-    final var header = PersistedClusterConfiguration.Header.parseFrom(content, path);
+    final var header = Header.parseFrom(content, path);
     spec.commandLine().getErr().println("Header: " + header);
     final var buffer =
         ByteBuffer.wrap(content, Header.HEADER_LENGTH, content.length - Header.HEADER_LENGTH);
@@ -164,7 +164,7 @@ public class TopologyMetaCommand extends CommonOptions implements Callable<Integ
     if (file != null) {
       return file;
     } else if (root != null) {
-      return root.resolve(".topology.meta");
+      return root.resolve(PersistedClusterConfigurationFile.TOPOLOGY_FILE_NAME);
     }
 
     throw new IllegalArgumentException("Missing path, provide a path with either --root or --file");

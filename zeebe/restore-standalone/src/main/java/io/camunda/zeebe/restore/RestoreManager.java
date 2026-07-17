@@ -20,8 +20,8 @@ import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerato
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.api.PersistedClusterConfigurationFile;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -269,7 +269,7 @@ public class RestoreManager implements CloseableSilently {
     LOG.info("Restoring topology file");
     final var file =
         Path.of(configuration.getData().getDirectory())
-            .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+            .resolve(PersistedClusterConfigurationFile.TOPOLOGY_FILE_NAME);
     final var staticConfiguration =
         StaticConfigurationGenerator.getStaticConfiguration(configuration, coordinatorId);
     final var initializer = new StaticInitializer(staticConfiguration);

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import io.camunda.zeebe.dynamic.config.api.PartitionDistributor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;

@@ -9,7 +9,8 @@ package io.camunda.zeebe.dynamic.config;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationUpdateNotifier;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;

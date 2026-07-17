@@ -14,7 +14,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationUpdateNotifier;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
