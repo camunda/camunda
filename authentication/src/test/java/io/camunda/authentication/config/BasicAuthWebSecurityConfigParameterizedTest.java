@@ -159,6 +159,27 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
      */
     @Bean(name = "requestContextBasedAuthenticationHolder")
     public CamundaAuthenticationHolder requestContextBasedAuthenticationHolder() {
+      return noOpAuthenticationHolder();
+    }
+
+    /**
+     * Same rationale as {@link #requestContextBasedAuthenticationHolder()} above: CSL's default
+     * {@code httpSessionBasedAuthenticationHolder} also injects {@link
+     * jakarta.servlet.http.HttpServletRequest}, unavailable in this {@link
+     * org.springframework.boot.WebApplicationType#NONE} context. A no-op override satisfies
+     * {@code @ConditionalOnMissingBean} so the CSL default is skipped, without resorting to
+     * {@code @RequestScope} on the bean itself — that would defer construction enough to dodge this
+     * context's missing {@code HttpServletRequest}, but at the cost of giving every concurrent
+     * request its own independent holder instance (and thus its own empty refresh-dedup cache),
+     * defeating the JVM-local guard {@code HttpSessionBasedAuthenticationHolder} relies on (see its
+     * class Javadoc and camunda-security-library#510).
+     */
+    @Bean(name = "httpSessionBasedAuthenticationHolder")
+    public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder() {
+      return noOpAuthenticationHolder();
+    }
+
+    private static CamundaAuthenticationHolder noOpAuthenticationHolder() {
       return new CamundaAuthenticationHolder() {
         @Override
         public boolean supports() {
