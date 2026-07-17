@@ -19,11 +19,13 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.MultiCamundaClientProperties;
 import io.camunda.client.spring.properties.MultiCamundaClientPropertiesResolver;
+import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
@@ -43,13 +45,15 @@ import org.springframework.core.env.Environment;
  * MultiCamundaClientProperties#getPrimaryClientName()}) is marked {@code @Primary} so a plain
  * {@code @Autowired CamundaClient} resolves to it.
  *
- * <p>Registered as a {@code static} bean by {@link MultiCamundaClientAutoConfiguration} so it runs
- * before regular beans are instantiated.
+ * <p>Registered as a {@code static} bean by {@link CamundaAutoConfiguration} so it runs before
+ * regular beans are instantiated.
  */
 public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
     implements BeanDefinitionRegistryPostProcessor, EnvironmentAware, BeanFactoryAware {
 
   private static final String BEAN_NAME_SUFFIX = "CamundaClient";
+  // historical single-client bean name, preserved as an alias for the primary client
+  private static final String LEGACY_CLIENT_BEAN_NAME = "camundaClient";
 
   private static final Logger LOG =
       LoggerFactory.getLogger(MultiCamundaClientBeanDefinitionRegistryPostProcessor.class);
@@ -70,6 +74,16 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
   @Override
   public void postProcessBeanDefinitionRegistry(final BeanDefinitionRegistry registry)
       throws BeansException {
+    if (isProcessTestSupportPresent(registry)) {
+      // In process-test-support mode the test framework provides its own (primary, proxied)
+      // CamundaClient; registering per-client beans here would create a second @Primary
+      // CamundaClient and break the context. Mirrors the single-client path, whose client bean was
+      // @ConditionalOnMissingBean(CamundaSpringProcessTestContext.class).
+      LOG.debug(
+          "CamundaSpringProcessTestContext present; skipping multi-client CamundaClient bean "
+              + "registration (the test framework provides the client)");
+      return;
+    }
     final MultiCamundaClientProperties properties =
         MultiCamundaClientPropertiesResolver.resolve(environment);
     if (properties.getClients().isEmpty()) {
@@ -78,13 +92,20 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
     LOG.debug("Registering CamundaClient beans for clients {}", properties.getClients().keySet());
 
     final String primaryClientName = properties.getPrimaryClientName().orElse(null);
+    // the sole (default) client reuses the shared context executor bean (so a VirtualThreads
+    // override applies); with several clients each gets its own owned executor (see the factory)
+    final boolean singleClient = properties.getClients().size() == 1;
 
     properties
         .getClients()
         .forEach(
             (name, clientProperties) ->
                 registerClientBean(
-                    registry, name, clientProperties, name.equals(primaryClientName)));
+                    registry,
+                    name,
+                    clientProperties,
+                    name.equals(primaryClientName),
+                    singleClient));
   }
 
   @Override
@@ -93,18 +114,30 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
     // no-op: only bean definitions are registered
   }
 
+  private static boolean isProcessTestSupportPresent(final BeanDefinitionRegistry registry) {
+    // the process-test-support auto-configuration registers a CamundaSpringProcessTestContext bean
+    // before this post-processor runs; detect it by type without instantiating any bean
+    return registry instanceof final ListableBeanFactory beanFactory
+        && beanFactory.getBeanNamesForType(CamundaSpringProcessTestContext.class, false, false)
+                .length
+            > 0;
+  }
+
   private void registerClientBean(
       final BeanDefinitionRegistry registry,
       final String name,
       final CamundaClientProperties properties,
-      final boolean primary) {
+      final boolean primary,
+      final boolean useSharedExecutor) {
     // resolve the CamundaClientFactory bean lazily, at client instantiation time (the factory bean
     // does not exist yet while bean definitions are being registered)
     final BeanDefinitionBuilder builder =
         BeanDefinitionBuilder.genericBeanDefinition(
                 CamundaClient.class,
                 () ->
-                    beanFactory.getBean(CamundaClientFactory.class).createClient(name, properties))
+                    beanFactory
+                        .getBean(CamundaClientFactory.class)
+                        .createClient(name, properties, useSharedExecutor))
             .setDestroyMethodName("close");
     final AbstractBeanDefinition beanDefinition = builder.getBeanDefinition();
     beanDefinition.setPrimary(primary);
@@ -113,6 +146,13 @@ public class MultiCamundaClientBeanDefinitionRegistryPostProcessor
 
     final String beanName = beanNameFor(name);
     registry.registerBeanDefinition(beanName, beanDefinition);
+    // preserve the historical public bean name: the primary client is also reachable as
+    // 'camundaClient', so @Qualifier("camundaClient") / getBean("camundaClient") keep working
+    if (primary
+        && !LEGACY_CLIENT_BEAN_NAME.equals(beanName)
+        && !registry.isBeanNameInUse(LEGACY_CLIENT_BEAN_NAME)) {
+      registry.registerAlias(beanName, LEGACY_CLIENT_BEAN_NAME);
+    }
     LOG.debug("Registered CamundaClient bean '{}' (primary={})", beanName, primary);
   }
 

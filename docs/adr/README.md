@@ -34,4 +34,9 @@ ADR for that domain is written.
   authoritative inventory of management endpoints in 8.10: per-tenant and
   cluster-wide surfaces, actuator query-parameter selection, cluster-wide
   backup contract, backwards compatibility.
+- `clients/0001-unify-spring-starter-on-multi-client-config-path.md` — collapse
+  the `camunda-spring-boot-starter` onto a single (multi-client) auto-config
+  path, remapping `camunda.client.*` to `camunda.clients.default.*`, with a
+  `defaultCamundaClient` `@Primary` bean plus a `camundaClient` alias for
+  backward compatibility (camunda/camunda#57344).
 

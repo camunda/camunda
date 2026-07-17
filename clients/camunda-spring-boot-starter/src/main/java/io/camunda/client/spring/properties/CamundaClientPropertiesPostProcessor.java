@@ -69,6 +69,9 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
     mapLegacyOverrides(environment);
     processClientMode(environment);
     processAuthMethod(environment);
+    // Note: a single-client application (only camunda.client.*) is projected onto one 'default'
+    // client by MultiCamundaClientPropertiesResolver, which resolves through the Binder so relaxed
+    // and environment-variable configuration is handled correctly.
   }
 
   private void mapLegacyOverrides(final ConfigurableEnvironment environment) {

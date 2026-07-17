@@ -23,7 +23,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.configuration.CamundaAutoConfiguration;
-import io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration;
 import io.camunda.client.spring.configuration.JsonMapperConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.time.Duration;
@@ -66,13 +65,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 public class CamundaClientStarterAutoConfigurationTest {
   @MockitoBean CamundaClient camundaClient;
   @Autowired private JsonMapper jsonMapper;
-  @Autowired private CamundaClientProdAutoConfiguration autoConfiguration;
   @Autowired private ApplicationContext applicationContext;
 
   @Test
   void getJsonMapper() {
     assertThat(jsonMapper).isNotNull();
-    assertThat(autoConfiguration).isNotNull();
 
     final Map<String, JsonMapper> jsonMapperBeans =
         applicationContext.getBeansOfType(JsonMapper.class);

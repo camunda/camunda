@@ -107,11 +107,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-gateway-protocol-impl</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-actuator</artifactId>
     </dependency>
@@ -176,6 +171,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- provides EndpointAutoConfiguration so the actuator @ConditionalOnClass activates in
+           tests, letting us assert the health-check surface is preserved on the unified path -->
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
@@ -208,6 +210,11 @@
             <dependency>commons-logging:commons-logging</dependency>
             <dependency>org.springframework:spring-jcl</dependency>
           </ignoredUsedUndeclaredDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <!-- test-only: present so the actuator @ConditionalOnClass matches in tests; it has no
+                 compile-time reference, so dependency-analyze cannot see it is used -->
+            <dependency>org.springframework.boot:spring-boot-actuator-autoconfigure</dependency>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
 

@@ -116,7 +116,7 @@ class PerClientCredentialsIsolationTest {
     WM.stubFor(WireMock.any(anyUrl()).willReturn(ok()));
 
     new ApplicationContextRunner()
-        .withConfiguration(AutoConfigurations.of(MultiCamundaClientAutoConfiguration.class))
+        .withConfiguration(AutoConfigurations.of(CamundaAutoConfiguration.class))
         .withPropertyValues(
             "camunda.client.auth.method=basic",
             "camunda.client.rest-address=http://localhost:" + WM.getPort(),

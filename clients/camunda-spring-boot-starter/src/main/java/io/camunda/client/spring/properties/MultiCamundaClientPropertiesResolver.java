@@ -61,6 +61,9 @@ import org.springframework.core.env.Environment;
 public final class MultiCamundaClientPropertiesResolver {
 
   static final int MAX_PHYSICAL_TENANT_ID_LENGTH = 64;
+  // logical name of the sole client for a single-client application; mirrors
+  // CamundaClientCreatedEvent.DEFAULT_CLIENT_NAME and the REST API's always-present default tenant
+  private static final String DEFAULT_CLIENT_NAME = "default";
   private static final String CLIENT_PREFIX = "camunda.client";
   private static final String CLIENTS_PREFIX = "camunda.clients";
   // Mirrors PhysicalTenantResolver.VALID_TENANT_ID — keep in sync.
@@ -74,11 +77,19 @@ public final class MultiCamundaClientPropertiesResolver {
    */
   public static MultiCamundaClientProperties resolve(final Environment environment) {
     final Binder binder = Binder.get(environment);
-    final Set<String> names =
+    Set<String> names =
         binder
             .bind(CLIENTS_PREFIX, Bindable.mapOf(String.class, Object.class))
             .map(Map::keySet)
             .orElseGet(Collections::emptySet);
+
+    if (names.isEmpty()) {
+      // No explicit camunda.clients.<name>.* entries: this is a single-client (or unconfigured)
+      // application. Project it onto exactly one client named 'default', seeded from the
+      // camunda.client.* base below. Discovery and seeding both go through the Binder, so relaxed
+      // and environment-variable configuration (e.g. CAMUNDA_CLIENT_REST_ADDRESS) is handled too.
+      names = Set.of(DEFAULT_CLIENT_NAME);
+    }
 
     final Map<String, CamundaClientProperties> resolved = new LinkedHashMap<>();
     for (final String name : names) {
