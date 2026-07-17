@@ -94,6 +94,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
+import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
@@ -103,6 +104,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
+import io.camunda.zeebe.engine.state.secretreference.DbSecretReferenceState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.tenant.DbTenantState;
 import io.camunda.zeebe.engine.state.user.DbUserState;
@@ -162,6 +164,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableConditionalSubscriptionState conditionalSubscriptionState;
   private final MutableGlobalListenersState globalListenersState;
   private final MutableJobMetricsState jobMetricsState;
+  private final MutableSecretReferenceState secretReferenceState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -237,6 +240,7 @@ public class ProcessingDbState implements MutableProcessingState {
     conditionalSubscriptionState = new DbConditionalSubscriptionState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     globalListenersState = new DbGlobalListenersState(zeebeDb, transactionContext);
+    secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
     if (config.isJobMetricsExportEnabled()) {
       jobMetricsState = new DbJobMetricsState(zeebeDb, transactionContext, clock, config);
     } else {
@@ -466,6 +470,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableJobMetricsState getJobMetricsState() {
     return jobMetricsState;
+  }
+
+  @Override
+  public MutableSecretReferenceState getSecretReferenceState() {
+    return secretReferenceState;
   }
 
   @Override

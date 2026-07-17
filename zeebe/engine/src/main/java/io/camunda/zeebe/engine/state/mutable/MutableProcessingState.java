@@ -142,5 +142,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableJobMetricsState getJobMetricsState();
 
+  @Override
+  MutableSecretReferenceState getSecretReferenceState();
+
   KeyGenerator getKeyGenerator();
 }

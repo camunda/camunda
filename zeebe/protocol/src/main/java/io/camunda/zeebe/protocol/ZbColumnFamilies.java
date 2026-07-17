@@ -331,7 +331,14 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   AGENT_HISTORY_BY_JOB_KEY(151, PARTITION_LOCAL),
   // secondary index: (processInstanceKey, agentInstanceKey) → ∅; supports prefix iteration by
   // process instance key to find every agent instance still associated with it
-  AGENT_INSTANCES_BY_PROCESS_INSTANCE_KEY(152, PARTITION_LOCAL);
+  AGENT_INSTANCES_BY_PROCESS_INSTANCE_KEY(152, PARTITION_LOCAL),
+  // pending secret references: (storeId, secretReference) → ∅
+  PENDING_SECRET_REFERENCES(153, PARTITION_LOCAL),
+  // secondary index: (jobKey, storeId, secretReference) → ∅; supports prefix iteration by job key
+  SECRET_REFERENCES_BY_JOB(154, PARTITION_LOCAL),
+  // secondary index: (storeId, secretReference, jobKey) → ∅; supports prefix iteration by (storeId,
+  // secretReference)
+  JOBS_BY_SECRET_REFERENCE(155, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

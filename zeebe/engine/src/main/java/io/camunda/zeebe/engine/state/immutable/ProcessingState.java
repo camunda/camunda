@@ -109,4 +109,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   GlobalListenersState getGlobalListenersState();
 
   JobMetricsState getJobMetricsState();
+
+  SecretReferenceState getSecretReferenceState();
 }
