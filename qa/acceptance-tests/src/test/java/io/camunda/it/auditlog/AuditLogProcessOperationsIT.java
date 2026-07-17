@@ -424,6 +424,72 @@ public class AuditLogProcessOperationsIT {
         SERVICE_TASKS_PROCESS_ID);
   }
 
+  @Test
+  void shouldTrackProcessInstanceSuspension(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - start a process instance
+    final var processInstance = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
+
+    // when - suspend the process instance
+    client.newSuspendProcessInstanceCommand(processInstanceKey).send().join();
+
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+            AuditLogOperationTypeEnum.SUSPEND,
+            String.valueOf(processInstanceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
+    assertProcessInstanceAuditLog(
+        auditLog,
+        AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+        AuditLogOperationTypeEnum.SUSPEND,
+        processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
+        SERVICE_TASKS_PROCESS_ID);
+  }
+
+  @Test
+  void shouldTrackProcessInstanceResumption(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - start and suspend a process instance
+    final var processInstance = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
+
+    client.newSuspendProcessInstanceCommand(processInstanceKey).send().join();
+
+    // when - resume the process instance
+    client.newResumeProcessInstanceCommand(processInstanceKey).send().join();
+
+    // then - wait for audit log entry and verify
+    final var auditLogItems =
+        awaitAuditLogEntry(
+            client,
+            AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+            AuditLogOperationTypeEnum.RESUME,
+            String.valueOf(processInstanceKey));
+
+    assertThat(auditLogItems).isNotEmpty();
+    final var auditLog = auditLogItems.stream().findFirst().orElseThrow();
+    assertProcessInstanceAuditLog(
+        auditLog,
+        AuditLogEntityTypeEnum.PROCESS_INSTANCE,
+        AuditLogOperationTypeEnum.RESUME,
+        processInstanceKey,
+        processInstance.getProcessDefinitionKey(),
+        SERVICE_TASKS_PROCESS_ID);
+  }
+
   // ========================================================================================
   // Variable Tests
   // ========================================================================================
