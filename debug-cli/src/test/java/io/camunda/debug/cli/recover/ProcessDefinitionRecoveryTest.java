@@ -21,7 +21,6 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
-import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -36,8 +35,7 @@ final class ProcessDefinitionRecoveryTest {
   private static final String FORM_INDEX = "form";
 
   private final ProcessHandler processHandler =
-      new ProcessHandler(
-          PROCESS_INDEX, new NoopProcessCache(), new ExtensionPropertyConfiguration());
+      new ProcessHandler(PROCESS_INDEX, new NoopProcessCache());
   private final EmbeddedFormHandler embeddedFormHandler = new EmbeddedFormHandler(FORM_INDEX);
 
   @Test

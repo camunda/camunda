@@ -15,7 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
-import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
@@ -74,8 +73,7 @@ final class RecoveredProcessRecordTest {
             "simple.bpmn",
             resource,
             PersistedProcessState.ACTIVE);
-    final var handler =
-        new ProcessHandler("process", new NoopProcessCache(), new ExtensionPropertyConfiguration());
+    final var handler = new ProcessHandler("process", new NoopProcessCache());
     final var record = RecoveredProcessRecord.from(persisted);
 
     // when
