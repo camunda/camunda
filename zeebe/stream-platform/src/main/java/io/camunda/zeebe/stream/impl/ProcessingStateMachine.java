@@ -26,7 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.scheduler.retry.AbortableBackOffRetryStrategy;
+import io.camunda.zeebe.scheduler.retry.AbortableDelayedRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
@@ -46,6 +46,7 @@ import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.stream.impl.records.UnwrittenRecord;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
@@ -120,8 +121,6 @@ public final class ProcessingStateMachine {
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
-  private static final Duration WRITE_RETRY_INITIAL_BACKOFF = Duration.ofMillis(1);
-  private static final Duration WRITE_RETRY_MAX_BACKOFF = Duration.ofMillis(100);
   private static final String ERROR_MESSAGE_HANDLING_PROCESSING_ERROR_FAILED =
       "Expected to process command '{} {}' successfully on stream processor, but caught unexpected exception. Failed to handle the exception gracefully.";
   private final RecordMetadataBlock recordTypeDecoder = new RecordMetadataBlock();
@@ -192,8 +191,8 @@ public final class ProcessingStateMachine {
     // `inProcessing`, and no other job on this actor touches the open transaction or writes to
     // the log stream, so the actor may serve unrelated jobs while backing off.
     writeRetryStrategy =
-        new AbortableBackOffRetryStrategy(
-            actor, WRITE_RETRY_INITIAL_BACKOFF, WRITE_RETRY_MAX_BACKOFF);
+        new AbortableDelayedRetryStrategy(
+            actor, new ExponentialBackoffRetryDelay(Duration.ofMillis(50), Duration.ofMillis(1)));
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
     updateStateRetryStrategy =
         new RecoverableRetryStrategy(actor, context.getMaxRecoverableRetries());

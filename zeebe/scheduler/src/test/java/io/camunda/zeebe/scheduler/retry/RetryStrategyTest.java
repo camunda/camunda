@@ -13,6 +13,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
+import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -334,7 +335,9 @@ final class RetryStrategyTest {
         case "backoff" -> TestCase.of(actor -> new BackOffRetryStrategy(actor, Duration.ZERO));
         case "abortable-backoff" ->
             TestCase.of(
-                actor -> new AbortableBackOffRetryStrategy(actor, Duration.ZERO, Duration.ZERO));
+                actor ->
+                    new AbortableDelayedRetryStrategy(
+                        actor, new ExponentialBackoffRetryDelay(Duration.ZERO, Duration.ZERO)));
         default ->
             throw new IllegalArgumentException(
                 "Expected one of ['endless', 'recoverable', 'abortable', 'backoff', or "
