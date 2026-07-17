@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.engine;
 
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.time.Duration;
+import java.util.Map;
 
 public final class EngineConfiguration {
 
@@ -99,6 +101,14 @@ public final class EngineConfiguration {
 
   public static final boolean DEFAULT_ENABLE_RPA_REEXPORT_MIGRATION = true;
 
+  /**
+   * Maximum number of times a single BPMN element may be activated within one process instance
+   * before a loop-detected incident is raised. Defaults to 1000.
+   */
+  public static final int DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT = 1000;
+
+  public static final int DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN = 100;
+
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
@@ -169,6 +179,16 @@ public final class EngineConfiguration {
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_MAX_BACKOFF;
   private int messageStartLockReleasePollBatchLimit =
       DEFAULT_MESSAGE_START_LOCK_RELEASE_POLL_BATCH_LIMIT;
+  private int maxElementActivationCount = DEFAULT_MAX_ELEMENT_ACTIVATION_COUNT;
+  private int elementActivationRetryCooldown = DEFAULT_ELEMENT_ACTIVATION_RETRY_COOLDOWN;
+
+  /**
+   * Per-{@link BpmnElementType} overrides for the maximum element activation count used by loop
+   * detection. An element type present in this map uses the mapped value instead of {@link
+   * #maxElementActivationCount}. A value of {@code 0} disables loop detection for that element
+   * type.
+   */
+  private Map<BpmnElementType, Integer> maxElementActivationCountByType = Map.of();
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -640,6 +660,43 @@ public final class EngineConfiguration {
   public EngineConfiguration setEnableRpaReexportMigration(
       final boolean enableRpaReexportMigration) {
     this.enableRpaReexportMigration = enableRpaReexportMigration;
+    return this;
+  }
+
+  public int getMaxElementActivationCount() {
+    return maxElementActivationCount;
+  }
+
+  public EngineConfiguration setMaxElementActivationCount(final int maxElementActivationCount) {
+    this.maxElementActivationCount = maxElementActivationCount;
+    return this;
+  }
+
+  public int getElementActivationRetryCooldown() {
+    return elementActivationRetryCooldown;
+  }
+
+  /**
+   * Once the activation threshold is first exceeded, the loop-detection incident is re-raised every
+   * {@code elementActivationRetryCooldown} further activations. A value of {@code 1} (or less)
+   * disables throttling, so the incident is re-raised on every activation beyond the threshold.
+   */
+  public EngineConfiguration setElementActivationRetryCooldown(
+      final int elementActivationRetryCooldown) {
+    this.elementActivationRetryCooldown = elementActivationRetryCooldown;
+    return this;
+  }
+
+  public Map<BpmnElementType, Integer> getMaxElementActivationCountByType() {
+    return maxElementActivationCountByType;
+  }
+
+  public EngineConfiguration setMaxElementActivationCountByType(
+      final Map<BpmnElementType, Integer> maxElementActivationCountByType) {
+    this.maxElementActivationCountByType =
+        maxElementActivationCountByType == null
+            ? Map.of()
+            : Map.copyOf(maxElementActivationCountByType);
     return this;
   }
 }
