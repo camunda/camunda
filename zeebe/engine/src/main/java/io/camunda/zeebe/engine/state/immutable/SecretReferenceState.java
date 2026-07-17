@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import java.util.function.BiConsumer;
-import java.util.function.LongConsumer;
+import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 
 public interface SecretReferenceState {
 
@@ -17,13 +17,14 @@ public interface SecretReferenceState {
 
   /**
    * Visits all job keys waiting for the given (storeId, secretReference) pair. The visitor receives
-   * each jobKey.
+   * each jobKey and returns {@code true} to continue iteration or {@code false} to stop early.
    */
-  void visitJobsBySecretReference(String storeId, String secretReference, LongConsumer visitor);
+  void visitJobsBySecretReference(String storeId, String secretReference, LongPredicate visitor);
 
   /**
    * Visits all (storeId, secretReference) pairs that the given job is waiting for. The visitor
-   * receives (storeId, secretReference).
+   * receives (storeId, secretReference) and returns {@code true} to continue iteration or {@code
+   * false} to stop early.
    */
-  void visitSecretReferencesByJob(long jobKey, BiConsumer<String, String> visitor);
+  void visitSecretReferencesByJob(long jobKey, BiPredicate<String, String> visitor);
 }

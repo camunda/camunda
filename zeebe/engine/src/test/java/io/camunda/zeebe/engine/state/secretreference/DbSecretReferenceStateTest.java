@@ -11,23 +11,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
-import io.camunda.zeebe.engine.util.ProcessingStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ProcessingStateExtension.class)
 public final class DbSecretReferenceStateTest {
 
-  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
+  private MutableProcessingState processingState;
 
   private MutableSecretReferenceState state;
 
-  @Before
+  @BeforeEach
   public void setUp() {
-    state = stateRule.getProcessingState().getSecretReferenceState();
+    state = processingState.getSecretReferenceState();
   }
 
   @Test
@@ -76,7 +78,13 @@ public final class DbSecretReferenceStateTest {
 
     // then
     final List<Long> visitedJobs = new ArrayList<>();
-    state.visitJobsBySecretReference(storeId, secretRef, visitedJobs::add);
+    state.visitJobsBySecretReference(
+        storeId,
+        secretRef,
+        key -> {
+          visitedJobs.add(key);
+          return true;
+        });
     assertThat(visitedJobs).containsExactly(jobKey);
   }
 
@@ -99,6 +107,7 @@ public final class DbSecretReferenceStateTest {
         (sid, sref) -> {
           visitedStoreIds.add(sid);
           visitedSecretRefs.add(sref);
+          return true;
         });
     assertThat(visitedStoreIds).containsExactly(storeId);
     assertThat(visitedSecretRefs).containsExactly(secretRef);
@@ -118,11 +127,22 @@ public final class DbSecretReferenceStateTest {
 
     // then
     final List<Long> visitedBySecret = new ArrayList<>();
-    state.visitJobsBySecretReference(storeId, secretRef, visitedBySecret::add);
+    state.visitJobsBySecretReference(
+        storeId,
+        secretRef,
+        key -> {
+          visitedBySecret.add(key);
+          return true;
+        });
     assertThat(visitedBySecret).isEmpty();
 
     final List<String> visitedByJob = new ArrayList<>();
-    state.visitSecretReferencesByJob(jobKey, (sid, sref) -> visitedByJob.add(sid));
+    state.visitSecretReferencesByJob(
+        jobKey,
+        (sid, sref) -> {
+          visitedByJob.add(sid);
+          return true;
+        });
     assertThat(visitedByJob).isEmpty();
   }
 
@@ -152,9 +172,125 @@ public final class DbSecretReferenceStateTest {
 
     // when visiting only secretRef1
     final List<Long> visitedJobs = new ArrayList<>();
-    state.visitJobsBySecretReference(storeId, secretRef1, visitedJobs::add);
+    state.visitJobsBySecretReference(
+        storeId,
+        secretRef1,
+        key -> {
+          visitedJobs.add(key);
+          return true;
+        });
 
     // then only jobKey1 is returned, not jobKey2
     assertThat(visitedJobs).containsExactly(jobKey1);
+  }
+
+  @Test
+  public void shouldVisitMultipleJobsWaitingOnSameSecretReference() {
+    // given
+    final String storeId = "storeA";
+    final String secretRef = "secret1";
+    final long jobKey1 = 10L;
+    final long jobKey2 = 20L;
+    state.addPendingSecretReference(storeId, secretRef);
+    state.addWaitingJob(storeId, secretRef, jobKey1);
+    state.addWaitingJob(storeId, secretRef, jobKey2);
+
+    // when
+    final List<Long> visitedJobs = new ArrayList<>();
+    state.visitJobsBySecretReference(
+        storeId,
+        secretRef,
+        key -> {
+          visitedJobs.add(key);
+          return true;
+        });
+
+    // then both jobs are returned
+    assertThat(visitedJobs).containsExactlyInAnyOrder(jobKey1, jobKey2);
+  }
+
+  @Test
+  public void shouldVisitMultipleSecretReferencesForSameJob() {
+    // given
+    final String storeId = "storeA";
+    final String secretRef1 = "secret1";
+    final String secretRef2 = "secret2";
+    final long jobKey = 42L;
+    state.addPendingSecretReference(storeId, secretRef1);
+    state.addPendingSecretReference(storeId, secretRef2);
+    state.addWaitingJob(storeId, secretRef1, jobKey);
+    state.addWaitingJob(storeId, secretRef2, jobKey);
+
+    // when
+    final List<String> visitedSecretRefs = new ArrayList<>();
+    state.visitSecretReferencesByJob(
+        jobKey,
+        (sid, sref) -> {
+          visitedSecretRefs.add(sref);
+          return true;
+        });
+
+    // then both secret references are returned
+    assertThat(visitedSecretRefs).containsExactlyInAnyOrder(secretRef1, secretRef2);
+  }
+
+  @Test
+  public void shouldNotVisitSecretReferencesForOtherJob() {
+    // given
+    final String storeId = "storeA";
+    final String secretRef = "secret1";
+    final long jobKey1 = 10L;
+    final long jobKey2 = 20L;
+    state.addPendingSecretReference(storeId, secretRef);
+    state.addWaitingJob(storeId, secretRef, jobKey1);
+    state.addWaitingJob(storeId, secretRef, jobKey2);
+
+    // when visiting secret references for jobKey1 only
+    final List<String> visitedSecretRefs = new ArrayList<>();
+    state.visitSecretReferencesByJob(
+        jobKey1,
+        (sid, sref) -> {
+          visitedSecretRefs.add(sref);
+          return true;
+        });
+
+    // then only the secret reference for jobKey1 is returned, not jobKey2
+    assertThat(visitedSecretRefs).containsExactly(secretRef);
+  }
+
+  @Test
+  public void shouldPreserveRemainingEntryWhenOneWaitingJobIsRemoved() {
+    // given — two jobs waiting on the same secret; remove one, the other must remain
+    final String storeId = "storeA";
+    final String secretRef = "secret1";
+    final long jobKey1 = 10L;
+    final long jobKey2 = 20L;
+    state.addPendingSecretReference(storeId, secretRef);
+    state.addWaitingJob(storeId, secretRef, jobKey1);
+    state.addWaitingJob(storeId, secretRef, jobKey2);
+
+    // when
+    state.removeWaitingJob(storeId, secretRef, jobKey1);
+
+    // then jobKey2 is still indexed under the secret reference
+    final List<Long> visitedBySecret = new ArrayList<>();
+    state.visitJobsBySecretReference(
+        storeId,
+        secretRef,
+        key -> {
+          visitedBySecret.add(key);
+          return true;
+        });
+    assertThat(visitedBySecret).containsExactly(jobKey2);
+
+    // and jobKey1 no longer appears in the by-job index
+    final List<String> visitedByJob1 = new ArrayList<>();
+    state.visitSecretReferencesByJob(
+        jobKey1,
+        (sid, sref) -> {
+          visitedByJob1.add(sref);
+          return true;
+        });
+    assertThat(visitedByJob1).isEmpty();
   }
 }

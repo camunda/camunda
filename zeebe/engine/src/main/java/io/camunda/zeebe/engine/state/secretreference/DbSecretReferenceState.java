@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.secretreference;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
@@ -17,8 +18,8 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import java.util.function.BiConsumer;
-import java.util.function.LongConsumer;
+import java.util.function.BiPredicate;
+import java.util.function.LongPredicate;
 
 public final class DbSecretReferenceState implements MutableSecretReferenceState {
 
@@ -91,26 +92,27 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
 
   @Override
   public void visitJobsBySecretReference(
-      final String storeId, final String secretReference, final LongConsumer visitor) {
+      final String storeId, final String secretReference, final LongPredicate visitor) {
     this.storeId.wrapString(storeId);
     this.secretReference.wrapString(secretReference);
-    waitingJobsBySecretRefColumnFamily.whileEqualPrefix(
-        fkStoreIdAndSecretReference,
-        (key, value) -> {
-          visitor.accept(key.second().getValue());
-        });
+    final KeyValuePairVisitor<
+            DbCompositeKey<DbForeignKey<DbCompositeKey<DbString, DbString>>, DbLong>, DbNil>
+        kvVisitor = (key, value) -> visitor.test(key.second().getValue());
+    waitingJobsBySecretRefColumnFamily.whileEqualPrefix(fkStoreIdAndSecretReference, kvVisitor);
   }
 
   @Override
   public void visitSecretReferencesByJob(
-      final long jobKey, final BiConsumer<String, String> visitor) {
+      final long jobKey, final BiPredicate<String, String> visitor) {
     this.jobKey.wrapLong(jobKey);
-    waitingJobsByJobKeyColumnFamily.whileEqualPrefix(
-        this.jobKey,
-        (key, value) -> {
-          visitor.accept(
-              key.second().inner().first().toString(), key.second().inner().second().toString());
-        });
+    final KeyValuePairVisitor<
+            DbCompositeKey<DbLong, DbForeignKey<DbCompositeKey<DbString, DbString>>>, DbNil>
+        kvVisitor =
+            (key, value) ->
+                visitor.test(
+                    key.second().inner().first().toString(),
+                    key.second().inner().second().toString());
+    waitingJobsByJobKeyColumnFamily.whileEqualPrefix(this.jobKey, kvVisitor);
   }
 
   @Override
