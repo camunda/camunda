@@ -57,6 +57,8 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
 
   @Override
   public void thenComplete(final Map<String, Object> variables) {
+    validateProcessId();
+
     final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(childProcessId);
 
     if (versionTag != null) {
@@ -70,9 +72,15 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
                 "child-end",
                 e ->
                     variables.forEach(
-                        (k, v) ->
+                        (k, v) -> {
+                          try {
                             e.zeebeOutput(
-                                "=" + client.getConfiguration().getJsonMapper().toJson(v), k)))
+                                "=" + client.getConfiguration().getJsonMapper().toJson(v), k);
+                          } catch (final Exception ex) {
+                            throw new RuntimeException(
+                                "Failed to build the mock process for the given variables", ex);
+                          }
+                        }))
             .done();
 
     LOGGER.debug(
@@ -87,6 +95,8 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
   @Override
   public void thenComplete(
       final Function<Map<String, Object>, Map<String, Object>> variablesSupplier) {
+    validateProcessId();
+
     final String variableSupplierJobType = "variableSupplier_" + childProcessId;
     final BpmnModelInstance processModel =
         Bpmn.createExecutableProcess(childProcessId)
@@ -117,17 +127,15 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
         .open();
   }
 
-  private void deploy(final BpmnModelInstance processModel) {
-    try {
-      final String resourceName = childProcessId + ".bpmn";
-      client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
-    } catch (final Exception e) {
-      throw new RuntimeException(
-          "Failed to deploy mock child process '"
-              + childProcessId
-              + "'. Ensure the process ID is valid and the engine is reachable. Cause: "
-              + e.getMessage(),
-          e);
+  private void validateProcessId() {
+    if (childProcessId == null || childProcessId.trim().isEmpty()) {
+      throw new IllegalStateException(
+          "No process ID set. Use withProcessId(String) to set a process ID before calling thenComplete().");
     }
+  }
+
+  private void deploy(final BpmnModelInstance processModel) {
+    final String resourceName = childProcessId + ".bpmn";
+    client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
   }
 }
