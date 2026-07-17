@@ -7,7 +7,5 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import org.jspecify.annotations.Nullable;
-
 public record ClusterVariableMetadataDbModel(
-    String clusterVariableId, String key, @Nullable String value, @Nullable Double valueNumber) {}
+    String clusterVariableId, String key, String value, Double valueNumber) {}

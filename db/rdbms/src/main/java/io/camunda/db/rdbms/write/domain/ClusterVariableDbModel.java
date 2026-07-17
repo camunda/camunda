@@ -75,7 +75,25 @@ public record ClusterVariableDbModel(
         isPreview,
         tenantId,
         scope,
-        metadata);
+        truncateMetadata(sizeLimit, byteLimit));
+  }
+
+  // Metadata values have no full-value fallback column, so oversized values are truncated to fit
+  // the METADATA_VALUE column rather than failing the insert.
+  private List<MetadataEntry> truncateMetadata(final int sizeLimit, final Integer byteLimit) {
+    if (metadata == null || metadata.isEmpty()) {
+      return metadata;
+    }
+    return metadata.stream()
+        .map(
+            entry ->
+                entry.value() == null
+                    ? entry
+                    : new MetadataEntry(
+                        entry.key(),
+                        TruncateUtil.truncateValue(entry.value(), sizeLimit, byteLimit),
+                        entry.valueNumber()))
+        .toList();
   }
 
   public static class ClusterVariableDbModelBuilder

@@ -618,11 +618,14 @@
     </preConditions>
     <createTable tableName="${prefix}CLUSTER_VARIABLE_METADATA">
       <column name="CLUSTER_VARIABLE_ID" type="NVARCHAR(${userCharColumnSize})">
-        <constraints foreignKeyName="${prefix}FK_CLUSTER_VARIABLE_METADATA_CLUSTER_VARIABLE"
+        <constraints primaryKey="true"
+          foreignKeyName="${prefix}FK_CLUSTER_VARIABLE_METADATA_CLUSTER_VARIABLE"
           referencedTableName="${prefix}CLUSTER_VARIABLE" referencedColumnNames="CLUSTER_VARIABLE_ID"
           deleteCascade="true"/>
       </column>
-      <column name="METADATA_KEY" type="NVARCHAR(${userCharColumnSize})"/>
+      <column name="METADATA_KEY" type="NVARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true"/>
+      </column>
       <column name="METADATA_VALUE" type="VARCHAR(8192)"/>
       <column name="METADATA_VALUE_NUMBER" type="DOUBLE"/>
     </createTable>

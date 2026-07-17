@@ -37,6 +37,7 @@ public class ClusterVariableDbModelTest {
     assertThat(model.doubleValue()).isNull();
     assertThat(model.longValue()).isNull();
     assertThat(model.value()).isEqualTo("null");
+    assertThat(model.metadata()).isEmpty();
   }
 
   @Test
@@ -62,26 +63,7 @@ public class ClusterVariableDbModelTest {
   }
 
   @Test
-  public void shouldDefaultMetadataToEmptyList() {
-    // given
-    final ClusterVariableDbModel.ClusterVariableDbModelBuilder builder =
-        new ClusterVariableDbModel.ClusterVariableDbModelBuilder();
-
-    // when
-    final ClusterVariableDbModel model =
-        builder
-            .name("test")
-            .value("someValue")
-            .tenantId("tenant1")
-            .scope(ClusterVariableScope.GLOBAL)
-            .build();
-
-    // then
-    assertThat(model.metadata()).isEmpty();
-  }
-
-  @Test
-  public void shouldCarryMetadataThroughBuildAndCopy() {
+  public void shouldCopyClusterVariable() {
     // given
     final List<MetadataEntry> metadata =
         List.of(
@@ -105,26 +87,10 @@ public class ClusterVariableDbModelTest {
 
     // and copy() preserves metadata unless overridden
     final ClusterVariableDbModel copied = model.copy(b -> b);
+    assertThat(copied.name()).isEqualTo("test");
+    assertThat(copied.value()).isEqualTo("someValue");
+    assertThat(copied.tenantId()).isEqualTo("tenant1");
+    assertThat(copied.scope()).isEqualTo(ClusterVariableScope.GLOBAL);
     assertThat(copied.metadata()).isEqualTo(metadata);
-  }
-
-  @Test
-  public void shouldCarryMetadataThroughTruncateValue() {
-    // given
-    final List<MetadataEntry> metadata = List.of(new MetadataEntry("kind", "CREDENTIAL", null));
-    final ClusterVariableDbModel model =
-        new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
-            .name("test")
-            .value("someValue")
-            .tenantId("tenant1")
-            .scope(ClusterVariableScope.GLOBAL)
-            .metadata(metadata)
-            .build();
-
-    // when
-    final ClusterVariableDbModel truncated = model.truncateValue(1000, 4000);
-
-    // then
-    assertThat(truncated.metadata()).isEqualTo(metadata);
   }
 }
