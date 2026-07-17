@@ -11,7 +11,6 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.LockUtil;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -113,9 +112,9 @@ public class TestConcurrencyControl implements ConcurrencyControl {
   }
 
   @Override
-  public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+  public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
     if (asyncSchedule) {
-      final var task = new ScheduledTask(System.currentTimeMillis() + delay.toMillis(), runnable);
+      final var task = new ScheduledTask(System.currentTimeMillis() + delayMs, runnable);
       tasks.add(task);
       return () -> tasks.removeIf(t -> t == task);
     }
