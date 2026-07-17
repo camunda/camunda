@@ -131,7 +131,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
 
   public JobRecord() {
-    super(24);
+    super(25);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
