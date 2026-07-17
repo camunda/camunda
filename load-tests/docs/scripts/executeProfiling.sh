@@ -1,16 +1,17 @@
 #!/bin/bash -xeu
 # Usage:
-#  ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]
-#  PROFILING_DURATION=200 ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]
+#  ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS] [TEST-TYPE]
+#  PROFILING_DURATION=200 ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS] [TEST-TYPE]
 #
 # EVENT-TYPE can be:
 #   cpu   - CPU profiling (default)
 #   wall  - Wall clock time profiling
 #   alloc - Memory allocation profiling
-# DATABASE can be:
-#   elasticsearch (default), opensearch, postgresql, oracle, mysql, mssql, mariadb, none
 # ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" to profile threads separately)
 # See https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md for potential options
+# TEST-TYPE: Short label identifying the calling test/database variant (e.g. "grpc", "rest",
+#            "elasticsearch", "opensearch"), included in the output filename to disambiguate
+#            runs. Leave empty to omit it.
 #
 # Environment variables:
 #   PROFILING_DURATION - profiling duration in seconds (default: 100)
@@ -18,30 +19,14 @@ set -oxe pipefail
 
 if [ -z "$1" ]; then
   echo "Error: Missing required argument <POD-NAME>."
-  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [DATABASE] [ADDITIONAL-OPTIONS]"
+  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS] [TEST-TYPE]"
   exit 1
 fi
 node=$1
 
-valid_databases=("elasticsearch" "opensearch" "postgresql" "oracle" "mysql" "mssql" "mariadb" "none")
-is_database() { [[ -n "${1:-}" ]] && [[ " ${valid_databases[*]} " =~ " ${1} " ]]; }
-
-if is_database "${2:-}"; then
-  # EVENT-TYPE omitted — $2 is DATABASE
-  profiler_event="cpu"
-  database="${2}"
-  additional_options="${3:-}"
-else
-  profiler_event="${2:-cpu}"
-  if is_database "${3:-}"; then
-    database="${3}"
-    additional_options="${4:-}"
-  else
-    # $3 is not a known database — treat it as additional options
-    database=""
-    additional_options="${3:-} ${4:-}"
-  fi
-fi
+profiler_event="${2:-cpu}"
+additional_options="${3:-}"
+test_type="${4:-}"
 
 if [[ $profiler_event == "wall" ]]; then
   # Add -t flag for wall profiling to split threads (recommended for wall-clock profiling)
@@ -73,11 +58,13 @@ then
 fi
 
 # Run profiling
-if [ -n "$database" ]; then
-  filename=flamegraph-$database-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
-else
-  filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
+# Build the filename incrementally so an empty test_type doesn't leave behind
+# stray/doubled separators, e.g. flamegraph--cpu-20260710.html.
+filename="flamegraph"
+if [ -n "$test_type" ]; then
+  filename="$filename-$test_type"
 fi
+filename="$filename-$profiler_event-$(date +%Y%m%d).html"
 # Extracting the PID:
 #
 #  $ k exec camunda-0 -it -- ps -ax

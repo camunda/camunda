@@ -141,7 +141,7 @@ jobs:
     with:
       name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       pod: ''
-      database: ${{ needs.sanitize-branch-name.outputs.storage-type }}
+      test-type: ${{ needs.sanitize-branch-name.outputs.storage-type }}
 
   resolve-daily-namespace:
     name: Resolve last completed daily-on-main run

@@ -1,7 +1,13 @@
 # description: Profiles a running load test cluster using async-profiler.
-#              When no pod is specified, profiles all 3 pods in parallel (cpu, wall, alloc events).
+#              When no pod is specified, profiles all 3 pods in parallel (3 parallel jobs,
+#              one per pod). Each pod's job runs all 3 profile types (cpu, wall, alloc
+#              events) *sequentially*, since async-profiler only supports one active
+#              profiling session per JVM and the profiling script writes to fixed
+#              intermediate paths on the pod -- profiling the same pod with two events at
+#              once would collide.
 #              When a specific pod is given, profiles that pod with cpu event only.
-#              Uploads flamegraph artifacts named flamegraph-{database}-{event}-{pod}.
+#              Uploads flamegraph artifacts named
+#              flamegraph-{test-type}-{event}-{pod}-{date}.
 # called-by: camunda-pr-load-test.yml, camunda-daily-load-tests.yml
 # type: CI
 # owner: @camunda/zeebe-distributed-platform
@@ -20,8 +26,8 @@ on:
         description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
         default: ''
         required: false
-      database:
-        description: 'Database variant'
+      test-type:
+        description: 'Short label identifying the calling test/database variant (e.g. "grpc", "rest", "elasticsearch", "opensearch"), used to disambiguate artifact/file names when multiple variants run in the same workflow.'
         required: true
         type: string
       duration-seconds:
@@ -44,8 +50,8 @@ on:
         default: ''
         required: false
         type: string
-      database:
-        description: 'Database variant'
+      test-type:
+        description: 'Short label identifying the calling test/database variant (e.g. "grpc", "rest", "elasticsearch", "opensearch"), used to disambiguate artifact/file names when multiple variants run in the same workflow.'
         required: true
         type: string
       duration-seconds:
@@ -64,24 +70,26 @@ env:
   CLUSTER: camunda-benchmark-prod
   TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
-  DATABASE: ${{ inputs.database }}
   NAME: ${{ inputs.name }}
   POD: ${{ inputs.pod }}
   PROFILER_OPTIONS: ${{ inputs.profiler_options }}
   PROFILING_DURATION: ${{ inputs.duration-seconds }}
+  TEST_TYPE: ${{ inputs.test-type }}
 
 jobs:
   profile-all-pods:
-    name: Profile ${{ matrix.event }} on ${{ matrix.pod }}
+    name: Profile all events on ${{ matrix.pod }}
     runs-on: ubuntu-latest
-    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds (plus a buffer for the
-    # checkout/teleport-auth/kubectl-context/upload-artifact/summary steps), otherwise the
-    # job may time out mid-profile. GitHub Actions does not support arithmetic in
-    # `timeout-minutes` expressions (no +/-/*// operators), so this can't be computed from
-    # `inputs.duration-seconds` automatically -- bump it manually if a caller raises
-    # duration-seconds. Largest known caller today: camunda-daily-load-tests.yml's
-    # profile-grpc/profile-rest jobs pass duration-seconds: '1800' (30 min).
-    timeout-minutes: 60
+    # INVARIANT: timeout-minutes * 60 must stay > duration-seconds * 3, since this job now
+    # profiles cpu, wall and alloc *sequentially* against its pod (see the matrix comment
+    # below for why the events can't run in parallel against the same pod), plus a buffer
+    # for the checkout/teleport-auth/kubectl-context/upload-artifact/summary steps.
+    # GitHub Actions does not support arithmetic in `timeout-minutes` expressions (no
+    # +/-/*// operators), so this can't be computed from `inputs.duration-seconds`
+    # automatically -- bump it manually if a caller raises duration-seconds. Largest known
+    # caller today: camunda-daily-load-tests.yml's profile-grpc/profile-rest jobs pass
+    # duration-seconds: '1800' (30 min), i.e. up to 90 minutes of profiling alone per pod.
+    timeout-minutes: 120
     if: ${{ inputs.pod == '' }}
     permissions:
       contents: 'read'
@@ -89,13 +97,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - pod: camunda-0
-            event: cpu
-          - pod: camunda-1
-            event: wall
-          - pod: camunda-2
-            event: alloc
+        # One parallel job per pod. Events (cpu/wall/alloc) are intentionally NOT a
+        # matrix dimension: async-profiler only supports one active profiling session
+        # per JVM, and executeProfiling.sh copies/removes a fixed-path asprof binary
+        # and libasyncProfiler.so on the pod. Two events profiling the *same* pod at
+        # the same time would collide (attach failures and/or one event's cleanup
+        # deleting files the other event is still using). Events are instead run
+        # sequentially within each pod's job below, via a shell loop.
+        pod: [camunda-0, camunda-1, camunda-2]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -116,32 +125,43 @@ jobs:
       - name: Set right namespace
         run: |
           kubectl config set-context --current --namespace="${NAME}"
-      - name: Execute profiling
+      - name: Compute run date
+        id: run-date
+        run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+      - name: Execute profiling (cpu, wall, alloc sequentially)
         env:
           POD: ${{ matrix.pod }}
-          EVENT: ${{ matrix.event }}
-        run: >
-          ./load-tests/docs/scripts/executeProfiling.sh "${POD}" "${EVENT}" "${DATABASE}" "${PROFILER_OPTIONS}"
+        run: |
+          for event in cpu wall alloc; do
+            ./load-tests/docs/scripts/executeProfiling.sh "${POD}" "${event}" "${PROFILER_OPTIONS}" "${TEST_TYPE}"
+          done
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: flamegraph-${{ inputs.database }}-${{ matrix.event }}-${{ matrix.pod }}
-          path: ${{ matrix.pod }}*
+          name: flamegraph-${{ inputs.test-type }}-cpu-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
+          path: ${{ matrix.pod }}-flamegraph*-cpu-*.html
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: flamegraph-${{ inputs.test-type }}-wall-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
+          path: ${{ matrix.pod }}-flamegraph*-wall-*.html
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: flamegraph-${{ inputs.test-type }}-alloc-${{ matrix.pod }}-${{ steps.run-date.outputs.date }}
+          path: ${{ matrix.pod }}-flamegraph*-alloc-*.html
       - name: Summarize profiling
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Profiling \`${NAME}\` - ${EVENT} on ${POD}
-            Async profiling (${EVENT}) has been executed on ${NAME}-${POD}. Please download the artifact.
+            ## Profiling \`${NAME}\` on ${POD}
+            Async profiling (cpu, wall, alloc) has been executed sequentially on ${NAME}-${POD}. Please download the artifacts.
           EOF
         env:
           POD: ${{ matrix.pod }}
-          EVENT: ${{ matrix.event }}
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "Profile ${{ matrix.event }} on ${{ matrix.pod }}"
+          job_name: "Profile all events on ${{ matrix.pod }}"
           build_status: ${{ job.status }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -181,12 +201,15 @@ jobs:
       - name: Set right namespace
         run: |
           kubectl config set-context --current --namespace="${NAME}"
+      - name: Compute run date
+        id: run-date
+        run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
       - name: Execute profiling
         run: >
-          ./load-tests/docs/scripts/executeProfiling.sh "${POD}" cpu "${DATABASE}" "${PROFILER_OPTIONS}"
+          ./load-tests/docs/scripts/executeProfiling.sh "${POD}" cpu "${PROFILER_OPTIONS}" "${TEST_TYPE}"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: flamegraph-${{ inputs.database }}-cpu-${{ inputs.pod }}
+          name: flamegraph-${{ inputs.test-type }}-cpu-${{ inputs.pod }}-${{ steps.run-date.outputs.date }}
           path: ${{ inputs.pod }}*
       - name: Summarize profiling
         if: success()
