@@ -28,8 +28,8 @@ import org.objectweb.asm.Type;
 
 /**
  * Verifies, for every concrete class directly extending {@link UnifiedRecordValue} under {@code
- * io.camunda.zeebe.protocol.impl.record.value} (and its subpackages), that the {@code int}
- * literal passed to {@code super(N)} in each constructor matches exactly the number of {@code
+ * io.camunda.zeebe.protocol.impl.record.value} (and its subpackages), that the {@code int} literal
+ * passed to {@code super(N)} in each constructor matches exactly the number of {@code
  * declareProperty(...)} calls made in that same constructor.
  *
  * <p>{@link UnifiedRecordValue#UnifiedRecordValue(int)} takes the expected number of declared
@@ -112,9 +112,9 @@ final class DeclaredPropertiesCountArchTest {
 
   /**
    * Only concrete classes whose <b>direct</b> superclass is {@link UnifiedRecordValue} are
-   * candidates: abstract classes and interfaces are excluded since they typically don't declare
-   * the property set themselves, and none of the current record value classes have an
-   * intermediate UnifiedRecordValue subclass in between.
+   * candidates: abstract classes and interfaces are excluded since they typically don't declare the
+   * property set themselves, and none of the current record value classes have an intermediate
+   * UnifiedRecordValue subclass in between.
    */
   private boolean isConcreteDirectUnifiedRecordValueSubclass(final JavaClass javaClass) {
     if (javaClass.isInterface() || javaClass.getModifiers().contains(JavaModifier.ABSTRACT)) {
