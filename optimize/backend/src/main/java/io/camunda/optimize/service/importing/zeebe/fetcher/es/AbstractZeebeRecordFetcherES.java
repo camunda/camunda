@@ -157,13 +157,10 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                             u ->
                                 u.range(
                                     r ->
-                                        r.number(
+                                        r.longNumber(
                                             nf ->
                                                 nf.field(ZeebeRecordDto.Fields.position)
-                                                    .gt(
-                                                        positionBasedImportPage
-                                                            .getPosition()
-                                                            .doubleValue()))))
+                                                    .gt(positionBasedImportPage.getPosition()))))
                         .must(
                             u ->
                                 u.term(
@@ -185,17 +182,12 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                         u ->
                             u.range(
                                 r ->
-                                    r.number(
+                                    r.longNumber(
                                         nf ->
                                             nf.field(ZeebeRecordDto.Fields.sequence)
-                                                .gt(
-                                                    positionBasedImportPage
-                                                        .getSequence()
-                                                        .doubleValue())
+                                                .gt(positionBasedImportPage.getSequence())
                                                 .lte(
-                                                    (positionBasedImportPage
-                                                            .getSequence()
-                                                            .doubleValue()
-                                                        + getDynamicBatchSize())))))));
+                                                    positionBasedImportPage.getSequence()
+                                                        + getDynamicBatchSize()))))));
   }
 }
