@@ -38,6 +38,9 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
   @SinceVersion(value = "8.10.0", requireDefault = false)
   private List<MetadataEntry> metadata;
 
+  @SinceVersion("8.10.0")
+  private ClusterVariableKind kind = ClusterVariableKind.JSON;
+
   public boolean getIsPreview() {
     return isPreview;
   }
@@ -112,9 +115,18 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
     return this;
   }
 
+  public ClusterVariableKind getKind() {
+    return kind;
+  }
+
+  public ClusterVariableEntity setKind(final ClusterVariableKind kind) {
+    this.kind = kind;
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, value, fullValue, isPreview, scope, tenantId, metadata);
+    return Objects.hash(id, name, value, fullValue, isPreview, scope, tenantId, metadata, kind);
   }
 
   @Override
@@ -130,7 +142,8 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
         && Objects.equals(fullValue, that.fullValue)
         && scope == that.scope
         && Objects.equals(tenantId, that.tenantId)
-        && Objects.equals(metadata, that.metadata);
+        && Objects.equals(metadata, that.metadata)
+        && kind == that.kind;
   }
 
   @Override
@@ -157,6 +170,8 @@ public class ClusterVariableEntity implements ExporterEntity<ClusterVariableEnti
         + '\''
         + ", metadata="
         + metadata
+        + ", kind="
+        + kind
         + '}';
   }
 
