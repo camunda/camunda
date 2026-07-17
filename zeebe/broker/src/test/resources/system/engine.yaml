@@ -52,3 +52,9 @@ zeebe:
         storageOrdinals:
           enableArchiverless: true
           fixedStorageOrdinal: 1001
+        loopDetection:
+          maxElementActivationCount: 500
+          elementActivationRetryCooldown: 50
+          maxElementActivationCountByType:
+            SERVICE_TASK: 300
+            USER_TASK: 0
