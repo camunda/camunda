@@ -33,13 +33,6 @@ public interface BrokerAdminService {
   void takeSnapshot();
 
   /**
-   * Prepares for upgrade by pausing stream processors and triggering snapshots. It is not normally
-   * required to call this before every upgrade. However, this is useful as an upgrade procedure to
-   * mitigate the effects of some known bugs.
-   */
-  void prepareForUpgrade();
-
-  /**
    * Returns {@link PartitionStatus} of all partitions running on this broker.
    *
    * @return a map of partition id and partition status

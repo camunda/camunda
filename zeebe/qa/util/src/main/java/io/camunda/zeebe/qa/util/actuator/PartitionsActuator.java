@@ -112,10 +112,6 @@ public interface PartitionsActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> takeSnapshot();
 
-  @RequestLine("POST /prepareUpgrade")
-  @Headers({"Content-Type: application/json", "Accept: application/json"})
-  Map<Integer, PartitionStatus> prepareUpgrade();
-
   @JsonIgnoreProperties(ignoreUnknown = true)
   record PartitionStatus(
       String role,
