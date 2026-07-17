@@ -710,6 +710,127 @@ final class ReconfigurationTest {
               });
       assertThat(appendEntry(awaitLeader(m1, m2)).commit()).succeedsWithin(Duration.ofSeconds(1));
     }
+
+    @Test
+    void canElectLeaderWithPassiveMemberWhenOneActiveMemberIsDown(@TempDir final Path tmp) {
+      // given - a cluster [1A, 2A, 3A] extended with an unreachable PASSIVE member 4
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+      final var id3 = MemberId.from("3");
+      final var id4 = MemberId.from("4");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2, id3));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1, id3));
+      final var m3 = createServer(tmp, createMembershipService(id3, id1, id2));
+
+      CompletableFuture.allOf(
+              m1.bootstrap(id1, id2, id3), m2.bootstrap(id1, id2, id3), m3.bootstrap(id1, id2, id3))
+          .join();
+
+      // commit an entry to ensure that the leader is ready to accept new configuration
+      assertThat(appendEntry(awaitLeader(m1, m2, m3)).commit())
+          .succeedsWithin(Duration.ofSeconds(1));
+
+      final var leader = getLeaderServer(List.of(m1, m2, m3)).orElseThrow();
+      final var leaderId = leader.cluster().getLocalMember().memberId();
+      final var configuration = leader.getContext().getCluster().getConfiguration();
+      final var withPassiveMember =
+          List.<RaftMember>of(
+              new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id3, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id4, Type.PASSIVE, Instant.now()));
+      final var response =
+          protocolFactory
+              .newServerProtocol(MemberId.from("test-client"))
+              .reconfigure(
+                  leaderId,
+                  ReconfigureRequest.builder()
+                      .withIndex(configuration.index())
+                      .withTerm(configuration.term())
+                      .withMembers(withPassiveMember)
+                      .from(leaderId.id())
+                      .build());
+      assertThat(response)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .satisfies(
+              reconfigureResponse -> assertThat(reconfigureResponse.status()).isEqualTo(Status.OK));
+
+      // when - one ACTIVE follower is down and the leader steps down
+      final var follower = Stream.of(m1, m2, m3).filter(s -> !s.isLeader()).findAny().orElseThrow();
+      final var remaining = Stream.of(m1, m2, m3).filter(s -> s != follower).toList();
+      follower.shutdown().join();
+      getLeaderServer(remaining).orElseThrow().stepDown().join();
+
+      // then - the two remaining ACTIVE members can elect a leader and commit entries: the
+      // PASSIVE member must not count towards the vote or commit quorum
+      final var newLeader = awaitLeader(remaining.toArray(RaftServer[]::new));
+      assertThat(appendEntry(newLeader).commit()).succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    @Test
+    void doesNotCommitConfigurationWhileVotingMemberIsUnreachable(@TempDir final Path tmp) {
+      // given - a single member cluster [1A] with an unreachable PASSIVE member 2
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      m1.bootstrap(id1).join();
+
+      // commit an entry to ensure that the leader is ready to accept new configuration
+      assertThat(appendEntry(awaitLeader(m1)).commit()).succeedsWithin(Duration.ofSeconds(1));
+
+      final var client = protocolFactory.newServerProtocol(MemberId.from("test-client"));
+      final var configuration = m1.getContext().getCluster().getConfiguration();
+      final var withPassiveMember =
+          List.<RaftMember>of(
+              new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id2, Type.PASSIVE, Instant.now()));
+      assertThat(
+              client.reconfigure(
+                  id1,
+                  ReconfigureRequest.builder()
+                      .withIndex(configuration.index())
+                      .withTerm(configuration.term())
+                      .withMembers(withPassiveMember)
+                      .from(id1.id())
+                      .build()))
+          .describedAs("Adding a PASSIVE member commits without its ack")
+          .succeedsWithin(Duration.ofSeconds(10))
+          .satisfies(
+              reconfigureResponse -> assertThat(reconfigureResponse.status()).isEqualTo(Status.OK));
+
+      // when - promoting the unreachable member to ACTIVE, making it a voting member of the new
+      // configuration
+      final var commitIndexBeforePromotion = m1.getContext().getCommitIndex();
+      final var committedConfiguration = m1.getContext().getCluster().getConfiguration();
+      final var promoted =
+          List.<RaftMember>of(
+              new DefaultRaftMember(id1, Type.ACTIVE, Instant.now()),
+              new DefaultRaftMember(id2, Type.ACTIVE, Instant.now()));
+      final var response =
+          client.reconfigure(
+              id1,
+              ReconfigureRequest.builder()
+                  .withIndex(committedConfiguration.index())
+                  .withTerm(committedConfiguration.term())
+                  .withMembers(promoted)
+                  .from(id1.id())
+                  .build());
+
+      // then - the configuration does not commit without the new voting member's ack: the leader
+      // eventually steps down instead of committing governed solely by the old configuration
+      Awaitility.await("Leader steps down because the new configuration cannot commit")
+          .atMost(Duration.ofSeconds(30))
+          .until(() -> !m1.isLeader());
+      assertThat(m1.getContext().getCommitIndex()).isEqualTo(commitIndexBeforePromotion);
+      Awaitility.await("Reconfigure request completes")
+          .atMost(Duration.ofSeconds(30))
+          .until(response::isDone);
+      assertThat(response.isCompletedExceptionally() || response.join().status() == Status.ERROR)
+          .describedAs("Reconfigure request must not succeed")
+          .isTrue();
+    }
   }
 
   @Nested
