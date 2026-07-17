@@ -2590,6 +2590,92 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldSuspendProcessInstancesBatchOperation() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(123L);
+    record.setBatchOperationType(BatchOperationType.SUSPEND_PROCESS_INSTANCE);
+
+    when(processInstanceServices.suspendProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter":
+               {
+                  "processDefinitionId": "test-process-definition-id"
+                }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"123","batchOperationType":"SUSPEND_PROCESS_INSTANCE"}
+        """,
+            JsonCompareMode.STRICT);
+
+    verify(processInstanceServices)
+        .suspendProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
+  void shouldResumeProcessInstancesBatchOperation() {
+    // given
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(456L);
+    record.setBatchOperationType(BatchOperationType.RESUME_PROCESS_INSTANCE);
+
+    when(processInstanceServices.resumeProcessInstanceBatchOperationWithResult(
+            any(ProcessInstanceFilter.class), any()))
+        .thenReturn(CompletableFuture.completedFuture(record));
+
+    final var request =
+        """
+            {
+              "filter":
+               {
+                  "processDefinitionId": "test-process-definition-id"
+                }
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {"batchOperationKey":"456","batchOperationType":"RESUME_PROCESS_INSTANCE"}
+        """,
+            JsonCompareMode.STRICT);
+
+    verify(processInstanceServices)
+        .resumeProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class), any());
+  }
+
+  @Test
   void shouldModifyProcessInstanceBatchOperation() {
     // given
     final var record = new BatchOperationCreationRecord();
@@ -3031,6 +3117,194 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri("/v2/process-instances/cancellation")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectSuspendProcessInstancesBatchOperationWithNoRequestBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"Bad Request",
+                "status":400,
+                "detail":"Required request body is missing",
+                "instance":"/v2/process-instances/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectSuspendProcessInstancesBatchOperationWithEmptyRequestBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/process-instances/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectSuspendProcessInstancesBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {}
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/suspension"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/suspension")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectResumeProcessInstancesBatchOperationWithNoRequestBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"Bad Request",
+                "status":400,
+                "detail":"Required request body is missing",
+                "instance":"/v2/process-instances/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectResumeProcessInstancesBatchOperationWithEmptyRequestBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"No filter provided.",
+                "instance":"/v2/process-instances/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectResumeProcessInstancesBatchOperationWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        {
+          "filter": {}
+        }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"At least one of filter criteria is required.",
+                "instance":"/v2/process-instances/resumption"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/process-instances/resumption")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
