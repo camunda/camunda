@@ -66,6 +66,15 @@ public final class OptimizeMetrics {
         .register(Metrics.globalRegistry);
   }
 
+  public static Counter getCounter(
+      final MetricEnum metric, final String recordType, final Integer partitionId) {
+    return Counter.builder(metric.getName())
+        .description(metric.getDescription())
+        .tag(RECORD_TYPE_TAG, recordType)
+        .tag(PARTITION_ID_TAG, String.valueOf(partitionId))
+        .register(Metrics.globalRegistry);
+  }
+
   /**
    * Registers a timer with the given metric definition and tags. Timers are used to track the
    * duration and frequency of events.
