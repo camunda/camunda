@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useRef} from 'react';
 import {Field, useField, useForm} from 'react-final-form';
 import {Calendar} from '@carbon/react/icons';
 import {tracking} from '#/shared/tracking';
@@ -42,7 +41,6 @@ const DateRangeField: React.FC<Props> = ({
 	onModalClose,
 	onClick,
 }) => {
-	const textFieldRef = useRef<HTMLDivElement>(null);
 	const form = useForm();
 	const fromDateTime = useField<string>(fromDateTimeKey).input.value;
 	const toDateTime = useField<string>(toDateTimeKey).input.value;
@@ -69,7 +67,7 @@ const DateRangeField: React.FC<Props> = ({
 
 	return (
 		<>
-			<div ref={textFieldRef}>
+			<div>
 				<IconTextInput
 					Icon={Calendar}
 					id={`optional-filter-${filterName}`}
