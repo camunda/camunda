@@ -28,7 +28,6 @@
            pi.VERSION AS PROCESS_DEFINITION_VERSION,
            pi.TREE_PATH,
            pi.BUSINESS_ID,
-           pi.SUSPENDED,
            pi.SUSPENDED_DATE,
            pd.NAME        AS PROCESS_DEFINITION_NAME,
            pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG,
@@ -70,7 +69,6 @@
     pif.PROCESS_DEFINITION_VERSION,
     pif.TREE_PATH,
     pif.BUSINESS_ID,
-    pif.SUSPENDED,
     pif.SUSPENDED_DATE,
     pif.PROCESS_DEFINITION_NAME,
     pif.PROCESS_DEFINITION_VERSION_TAG,
@@ -95,7 +93,6 @@
     pi.VERSION PROCESS_DEFINITION_VERSION,
     pi.TREE_PATH,
     pi.BUSINESS_ID,
-    pi.SUSPENDED,
     pi.SUSPENDED_DATE,
     pd.NAME AS PROCESS_DEFINITION_NAME,
     pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
@@ -203,9 +200,6 @@
       <if test="filter.hasIncident == false">
         AND pi.NUM_INCIDENTS = 0
       </if>
-    </if>
-    <if test="filter.suspended != null">
-      AND pi.SUSPENDED = #{filter.suspended}
     </if>
     <if test="filter.hasRetriesLeft != null">
       AND EXISTS (
@@ -407,7 +401,6 @@
         typeHandler="io.camunda.db.rdbms.sql.typehandler.NullToEmptyStringTypeHandler"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
       <arg column="BUSINESS_ID" javaType="java.lang.String"/>
-      <arg column="SUSPENDED" javaType="java.lang.Boolean"/>
       <arg column="SUSPENDED_DATE" javaType="java.time.OffsetDateTime"/>
     </constructor>
     <collection property="tags" ofType="java.lang.String" javaType="java.util.Set">

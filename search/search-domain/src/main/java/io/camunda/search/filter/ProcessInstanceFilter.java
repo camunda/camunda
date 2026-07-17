@@ -33,7 +33,6 @@ public record ProcessInstanceFilter(
     List<Operation<String>> stateOperations,
     Boolean hasIncident,
     List<Operation<OffsetDateTime>> suspendedDateOperations,
-    Boolean suspended,
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
     List<Operation<String>> errorMessageOperations,
@@ -64,7 +63,6 @@ public record ProcessInstanceFilter(
         .stateOperations(stateOperations)
         .hasIncident(hasIncident)
         .suspendedDateOperations(suspendedDateOperations)
-        .suspended(suspended)
         .tenantIdOperations(tenantIdOperations)
         .variables(variableFilters)
         .errorMessageOperations(errorMessageOperations)
@@ -95,7 +93,6 @@ public record ProcessInstanceFilter(
     private List<Operation<String>> stateOperations;
     private Boolean hasIncident;
     private List<Operation<OffsetDateTime>> suspendedDateOperations;
-    private Boolean suspended;
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
     private List<Operation<String>> errorMessageOperations;
@@ -294,11 +291,6 @@ public record ProcessInstanceFilter(
       return suspendedDateOperations(collectValues(operation, operations));
     }
 
-    public Builder suspended(final Boolean value) {
-      suspended = value;
-      return this;
-    }
-
     public Builder tenantIdOperations(final List<Operation<String>> operations) {
       tenantIdOperations = addValuesToList(tenantIdOperations, operations);
       return this;
@@ -461,7 +453,6 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           hasIncident,
           Objects.requireNonNullElse(suspendedDateOperations, Collections.emptyList()),
-          suspended,
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),

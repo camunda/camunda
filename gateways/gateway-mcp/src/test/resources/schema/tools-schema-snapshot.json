@@ -528,9 +528,24 @@
                 "enum": [
                   "ACTIVE",
                   "COMPLETED",
+                  "SUSPENDED",
                   "TERMINATED"
                 ],
                 "description": "The process instance state."
+              },
+              "suspendedDate": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Filter from this time (inclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Filter up to this time (exclusive). RFC 3339 format (e.g., '2024-12-17T10:30:00Z' or '2024-12-17T10:30:00+01:00')."
+                  }
+                },
+                "description": "The time this process instance most recently entered the SUSPENDED state. This is cleared (null) again once the process instance is resumed. "
               },
               "tags": {
                 "description": "List of tags. Tags need to start with a letter; then alphanumerics, `_`, `-`, `:`, or `.`; length ≤ 100.",
@@ -606,6 +621,7 @@
                     "parentElementInstanceKey",
                     "startDate",
                     "endDate",
+                    "suspendedDate",
                     "state",
                     "hasIncident",
                     "tenantId",

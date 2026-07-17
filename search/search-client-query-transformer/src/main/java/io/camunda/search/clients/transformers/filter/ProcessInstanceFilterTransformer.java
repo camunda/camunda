@@ -31,7 +31,6 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.SUSPENDED;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.SUSPENDED_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.TAGS;
 import static java.util.Optional.ofNullable;
@@ -76,7 +75,6 @@ public final class ProcessInstanceFilterTransformer
     queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
     queries.addAll(stringOperations(STATE, filter.stateOperations()));
     Optional.ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
-    Optional.ofNullable(getSuspendedQuery(filter.suspended())).ifPresent(queries::add);
     queries.addAll(dateTimeOperations(SUSPENDED_DATE, filter.suspendedDateOperations()));
     queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
 
@@ -165,13 +163,6 @@ public final class ProcessInstanceFilterTransformer
   private SearchQuery getIncidentQuery(final Boolean hasIncident) {
     if (hasIncident != null) {
       return term(INCIDENT, hasIncident);
-    }
-    return null;
-  }
-
-  private SearchQuery getSuspendedQuery(final Boolean suspended) {
-    if (suspended != null) {
-      return term(SUSPENDED, suspended);
     }
     return null;
   }

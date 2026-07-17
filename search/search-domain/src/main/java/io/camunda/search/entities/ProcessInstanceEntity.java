@@ -113,7 +113,6 @@ public record ProcessInstanceEntity(
       final String tenantId,
       final String treePath,
       final String businessId,
-      final Boolean suspended,
       final OffsetDateTime suspendedDate) {
 
     this(
@@ -134,7 +133,6 @@ public record ProcessInstanceEntity(
         treePath,
         new HashSet<>(),
         businessId,
-        suspended,
         suspendedDate);
   }
 

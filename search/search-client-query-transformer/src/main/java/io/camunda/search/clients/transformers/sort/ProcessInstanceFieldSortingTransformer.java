@@ -21,7 +21,6 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_VERSION_TAG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.START_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.SUSPENDED;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.SUSPENDED_DATE;
 
 public class ProcessInstanceFieldSortingTransformer implements FieldSortingTransformer {
@@ -41,7 +40,6 @@ public class ProcessInstanceFieldSortingTransformer implements FieldSortingTrans
       case "endDate" -> END_DATE;
       case "state" -> STATE;
       case "hasIncident" -> INCIDENT;
-      case "suspended" -> SUSPENDED;
       case "suspendedDate" -> SUSPENDED_DATE;
       case "tenantId" -> TENANT_ID;
       case "businessId" -> BUSINESS_ID;

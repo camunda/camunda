@@ -331,27 +331,6 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
-  public void shouldQueryBySuspended() {
-    // given
-    final var processInstanceFilter = FilterBuilders.processInstance(f -> f.suspended(true));
-
-    // when
-    final var searchRequest = transformQuery(processInstanceFilter);
-
-    // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
-    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
-
-    assertIsSearchTermQuery(
-        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
-        "joinRelation",
-        "processInstance");
-    assertIsSearchTermQuery(
-        ((SearchBoolQuery) queryVariant).must().get(1).queryOption(), "suspended", true);
-  }
-
-  @Test
   public void shouldQueryBySuspendedDate() {
     // given
     final var dateAfter = OffsetDateTime.of(2024, 3, 12, 10, 30, 15, 0, ZoneOffset.UTC);
