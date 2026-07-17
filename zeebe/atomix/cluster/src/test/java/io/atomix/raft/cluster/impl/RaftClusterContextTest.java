@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 final class RaftClusterContextTest {
 
@@ -230,6 +232,100 @@ final class RaftClusterContextTest {
     verifyNoInteractions(callback);
 
     quorum.succeed(new MemberId("2"));
+    verify(callback).accept(true);
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = Type.class, names = "ACTIVE", mode = EnumSource.Mode.EXCLUDE)
+  void shouldIgnoreVoteFromNonActiveMember(final Type nonActiveMemberType) {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var activeMember = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var nonActiveMember =
+        new DefaultRaftMember(new MemberId("3"), nonActiveMemberType, Instant.now());
+    final var configuration =
+        new Configuration(
+            1,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(localMember, activeMember, nonActiveMember));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    final Consumer<Boolean> callback = mock();
+    final var quorum = context.getVoteQuorum(callback);
+    quorum.succeed(nonActiveMember.memberId());
+
+    // then
+    verifyNoInteractions(callback);
+
+    quorum.succeed(activeMember.memberId());
+    verify(callback).accept(true);
+  }
+
+  @Test
+  void shouldNotCountVoteFromNonActiveLocalMember() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.PASSIVE, Instant.now());
+    final var activeMember1 = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var activeMember2 = new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now());
+    final var configuration =
+        new Configuration(
+            1, 1, Instant.now().toEpochMilli(), List.of(localMember, activeMember1, activeMember2));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    final Consumer<Boolean> callback = mock();
+    final var quorum = context.getVoteQuorum(callback);
+    quorum.succeed(activeMember1.memberId());
+
+    // then
+    verifyNoInteractions(callback);
+
+    quorum.succeed(activeMember2.memberId());
+    verify(callback).accept(true);
+  }
+
+  @Test
+  void shouldIgnoreVotesFromNonActiveMembersInJointConsensus() {
+    // given
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var oldActiveMember =
+        new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
+    final var oldPassiveMember =
+        new DefaultRaftMember(new MemberId("3"), Type.PASSIVE, Instant.now());
+    final var newActiveMember =
+        new DefaultRaftMember(new MemberId("4"), Type.ACTIVE, Instant.now());
+    final var newPromotableMember =
+        new DefaultRaftMember(new MemberId("5"), Type.PROMOTABLE, Instant.now());
+    final var configuration =
+        new Configuration(
+            1,
+            1,
+            Instant.now().toEpochMilli(),
+            List.of(localMember, newActiveMember, newPromotableMember),
+            List.of(localMember, oldActiveMember, oldPassiveMember));
+    final var raft = raftWithStoredConfiguration(configuration);
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when
+    final Consumer<Boolean> callback = mock();
+    final var quorum = context.getVoteQuorum(callback);
+    quorum.succeed(oldPassiveMember.memberId());
+    quorum.succeed(newPromotableMember.memberId());
+
+    // then
+    verifyNoInteractions(callback);
+
+    quorum.succeed(oldActiveMember.memberId());
+    verifyNoInteractions(callback);
+
+    quorum.succeed(newActiveMember.memberId());
     verify(callback).accept(true);
   }
 

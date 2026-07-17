@@ -263,9 +263,11 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
           new JointConsensusVoteQuorum(
               callback,
               configuration.oldMembers().stream()
+                  .filter(member -> member.getType() == Type.ACTIVE)
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()),
               configuration.newMembers().stream()
+                  .filter(member -> member.getType() == Type.ACTIVE)
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()));
     } else {
@@ -273,6 +275,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
           new SimpleVoteQuorum(
               callback,
               configuration.newMembers().stream()
+                  .filter(member -> member.getType() == Type.ACTIVE)
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()));
     }
