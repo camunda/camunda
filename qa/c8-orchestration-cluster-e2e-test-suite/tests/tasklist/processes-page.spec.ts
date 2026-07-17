@@ -133,6 +133,90 @@ test.describe('process page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
   });
 
+  test('filter processes by "Requires form input to start"', async ({
+    page,
+    tasklistHeader,
+    tasklistProcessesPage,
+  }) => {
+    await tasklistHeader.clickProcessesTab();
+    await expect(page).toHaveURL('/tasklist/processes');
+    await tasklistProcessesPage.continueButton.click();
+
+    // The filter control applies the "hasStartForm=yes" query parameter.
+    await tasklistProcessesPage.filterByStartForm(
+      'Requires form input to start',
+    );
+    await expect(page).toHaveURL(/hasStartForm=yes/);
+
+    // A process with a linked start form is shown under this filter, tagged
+    // "Requires form input". Searching by name keeps the assertion stable on a
+    // shared cluster (many processes, concurrent deployments, pagination).
+    await tasklistProcessesPage.openProcessesFiltered({
+      hasStartForm: 'yes',
+      search: 'processWithStartNodeFormDeployed',
+    });
+    await expect(tasklistProcessesPage.processTile).toHaveCount(1, {
+      timeout: 30000,
+    });
+    await expect(
+      tasklistProcessesPage.requiresFormInputTagFor(
+        'processWithStartNodeFormDeployed',
+      ),
+    ).toHaveText('Requires form input');
+
+    // A process without a start form is excluded by the filter.
+    await tasklistProcessesPage.openProcessesFiltered({
+      hasStartForm: 'yes',
+      search: 'User_Process',
+    });
+    await expect(
+      page.getByText('We could not find any process with that name'),
+    ).toBeVisible();
+    await expect(tasklistProcessesPage.processTile).toHaveCount(0);
+  });
+
+  test('filter processes by "Does not require form input to start"', async ({
+    page,
+    tasklistHeader,
+    tasklistProcessesPage,
+  }) => {
+    await tasklistHeader.clickProcessesTab();
+    await expect(page).toHaveURL('/tasklist/processes');
+    await tasklistProcessesPage.continueButton.click();
+
+    // The filter control applies the "hasStartForm=no" query parameter.
+    await tasklistProcessesPage.filterByStartForm(
+      'Does not require form input to start',
+    );
+    await expect(page).toHaveURL(/hasStartForm=no/);
+
+    // A process without a start form is shown under this filter and is not
+    // tagged. Searching by name keeps the assertion stable on a shared cluster.
+    await tasklistProcessesPage.openProcessesFiltered({
+      hasStartForm: 'no',
+      search: 'User_Process',
+    });
+    await expect(tasklistProcessesPage.processTile).toHaveCount(1, {
+      timeout: 30000,
+    });
+    await expect(tasklistProcessesPage.processTile).toContainText(
+      'User_Process',
+    );
+    await expect(
+      tasklistProcessesPage.requiresFormInputTagFor('User_Process'),
+    ).toBeHidden();
+
+    // A process with a linked start form is excluded by the filter.
+    await tasklistProcessesPage.openProcessesFiltered({
+      hasStartForm: 'no',
+      search: 'processWithStartNodeFormDeployed',
+    });
+    await expect(
+      page.getByText('We could not find any process with that name'),
+    ).toBeVisible();
+    await expect(tasklistProcessesPage.processTile).toHaveCount(0);
+  });
+
   test('complete process with start node having deployed form', async ({
     page,
     tasklistHeader,
