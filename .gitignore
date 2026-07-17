@@ -99,3 +99,7 @@ docs/superpowers/
 
 # Load test
 load-tests/setup/c8-*
+
+
+# python caches from scripts in skills
+**/__pycache__/**
