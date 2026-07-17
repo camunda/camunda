@@ -23,6 +23,40 @@ test.beforeAll(async () => {
   await sleep(2000);
 });
 
+// Polls the process definition search API until the given version is indexed
+// as the latest, so the Processes tab is guaranteed to reflect it.
+const waitForLatestProcessVersion = async (
+  processDefinitionId: string,
+  expectedVersion: number,
+) => {
+  const baseUrl =
+    process.env.ZEEBE_REST_ADDRESS ?? process.env.CORE_APPLICATION_URL;
+  const authorization = `Basic ${Buffer.from(
+    `${process.env.CAMUNDA_BASIC_AUTH_USERNAME}:${process.env.CAMUNDA_BASIC_AUTH_PASSWORD}`,
+  ).toString('base64')}`;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const response = await fetch(`${baseUrl}/v2/process-definitions/search`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', authorization},
+      body: JSON.stringify({
+        filter: {processDefinitionId, isLatestVersion: true},
+      }),
+    });
+    if (response.ok) {
+      const body = (await response.json()) as {
+        items?: Array<{version: number}>;
+      };
+      if (body.items?.[0]?.version === expectedVersion) {
+        return;
+      }
+    }
+    await sleep(1000);
+  }
+  throw new Error(
+    `Process definition ${processDefinitionId} version ${expectedVersion} was not indexed as latest in time`,
+  );
+};
+
 test.describe('process page', () => {
   test.beforeEach(async ({page, loginPage, taskPanelPage}) => {
     await navigateToApp(page, 'tasklist');
@@ -274,7 +308,13 @@ test.describe('process page', () => {
   }) => {
     await deploy(['./resources/latest_version_process.form']);
     await deploy(['./resources/latest_version_process_v1.bpmn']);
-    await deploy(['./resources/latest_version_process_v2.bpmn']);
+    const deployment = await deploy([
+      './resources/latest_version_process_v2.bpmn',
+    ]);
+    await waitForLatestProcessVersion(
+      'Latest_Version_Process',
+      deployment.processes[0].processDefinitionVersion,
+    );
 
     await tasklistHeader.clickProcessesTab();
     await expect(page).toHaveURL('/tasklist/processes');
