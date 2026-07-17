@@ -49,6 +49,7 @@ camunda:
         # registered OAuth client id, but `client_id` is purpose-specific. When a client id is
         # resolved, engine authorization checks the CLIENT entity and does not fall back to the username.
         client-id-claim: client_id
+        groups-claim: groups
         client-id: camunda-pt-default-client
         client-secret: default-secret
         issuer-uri: http://localhost:8081/realms/default
