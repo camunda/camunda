@@ -129,7 +129,12 @@ final class DeclaredPropertiesCountArchTest {
 
   private List<ConstructorInfo> analyzeConstructors(final JavaClass javaClass) throws IOException {
     final String resourceName = javaClass.getFullName().replace('.', '/') + ".class";
-    final ClassLoader classLoader = javaClass.reflect().getClassLoader();
+
+    // Reading the .class resource via this test's own classloader is enough, since every
+    // candidate class already lives on the test classpath (see the zeebe-protocol-impl test
+    // dependency in this module's pom.xml). Using javaClass.reflect() instead would load
+    // (and statically initialize) each candidate class just to read its bytecode.
+    final ClassLoader classLoader = DeclaredPropertiesCountArchTest.class.getClassLoader();
 
     try (InputStream classFileStream = classLoader.getResourceAsStream(resourceName)) {
       if (classFileStream == null) {
