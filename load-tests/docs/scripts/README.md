@@ -28,6 +28,8 @@ You can pass additional flags to async-profiler as the third parameter. Common o
 
 See [async-profiler documentation](https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md) for potential options.
 
+In the examples below, only the `$ ./executeProfiling.sh ...` line is something you run. Everything else, including the `+`-prefixed `kubectl cp` calls, is the script's own `bash -x` trace of what it does automatically (see the copy-results loop near the end of `executeProfiling.sh`) — you don't need to copy anything yourself.
+
 Example with the default events (cpu, wall, alloc captured together, converted into 3 flamegraphs):
 
 ```
