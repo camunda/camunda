@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -54,6 +55,7 @@ class TestDeploymentServiceTest {
     when(step1.addResourceFromClasspath(anyString())).thenReturn(step2);
     when(step2.send()).thenReturn(future);
     when(future.join()).thenReturn(deploymentEvent);
+    lenient().when(deploymentEvent.getKey()).thenReturn(123L);
   }
 
   @Test
@@ -196,6 +198,22 @@ class TestDeploymentServiceTest {
     verify(step2, times(2)).addResourceFromClasspath(resources.capture());
     assertThat(resources.getAllValues())
         .containsExactly("coverage/process.bpmn", "decisions/decision.dmn", "forms/form.form");
+  }
+
+  @Test
+  void shouldTrackDeploymentKeys() throws Exception {
+    // given
+    stubSuccessfulChain();
+    final Method method =
+        TestClassWithMethodAnnotation.class.getDeclaredMethod("testMethodWithDeployment");
+
+    // when
+    service.deployTestResources(method, TestClassWithMethodAnnotation.class, client);
+    final java.util.Set<Long> deploymentKeys = service.consumeTrackedDeploymentKeys();
+
+    // then
+    assertThat(deploymentKeys).containsExactly(123L);
+    assertThat(service.consumeTrackedDeploymentKeys()).isEmpty();
   }
 
   // Helper test classes

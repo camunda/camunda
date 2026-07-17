@@ -15,18 +15,15 @@
  */
 package io.camunda.process.test.api;
 
-/**
- * Controls how CPT deletes runtime data after each test.
- *
- * <ul>
- *   <li>{@link #CLUSTER_PURGE} (default): purge the full cluster state.
- *   <li>{@link #RESOURCE_AND_HISTORY_DELETION}: use public APIs to delete test-scoped
- *       process/decision history and resources.
- *   <li>{@link #NONE}: skip runtime data deletion.
- * </ul>
- */
 public enum DataDeletionMode {
+  /** Purges the full cluster state after each test (default). */
   CLUSTER_PURGE,
+
+  /**
+   * Uses public APIs to delete test-scoped process/decision instance data and deployed resources.
+   */
   RESOURCE_AND_HISTORY_DELETION,
+
+  /** Skips runtime data deletion after each test. */
   NONE
 }

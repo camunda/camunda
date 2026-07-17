@@ -20,6 +20,8 @@ import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCo
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.api.TestDeployment;
 import java.lang.reflect.Method;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -32,6 +34,7 @@ import org.slf4j.LoggerFactory;
 public class TestDeploymentService {
 
   private static final Logger LOG = LoggerFactory.getLogger(TestDeploymentService.class);
+  private final Set<Long> trackedDeploymentKeys = new LinkedHashSet<>();
 
   /**
    * Deploys resources defined by @TestDeployment annotation on method or class.
@@ -79,11 +82,22 @@ public class TestDeploymentService {
         deployCommand = deployCommand.addResourceFromClasspath(resources[i]);
       }
       final DeploymentEvent deploymentEvent = deployCommand.send().join();
+      trackedDeploymentKeys.add(deploymentEvent.getKey());
 
       LOG.info("Deployed resources from @TestDeployment: {}", collectDefinitions(deploymentEvent));
     } catch (final Exception e) {
       throw new RuntimeException("Failed to deploy resources from @TestDeployment", e);
     }
+  }
+
+  public void registerDeploymentKey(final long deploymentKey) {
+    trackedDeploymentKeys.add(deploymentKey);
+  }
+
+  public Set<Long> consumeTrackedDeploymentKeys() {
+    final Set<Long> deploymentKeys = new LinkedHashSet<>(trackedDeploymentKeys);
+    trackedDeploymentKeys.clear();
+    return deploymentKeys;
   }
 
   private static String collectDefinitions(final DeploymentEvent deploymentEvent) {

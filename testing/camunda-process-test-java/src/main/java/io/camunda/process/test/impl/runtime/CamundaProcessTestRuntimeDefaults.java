@@ -16,8 +16,8 @@
 package io.camunda.process.test.impl.runtime;
 
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
-import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.JudgeProperties;
 import io.camunda.process.test.impl.runtime.properties.SemanticSimilarityProperties;

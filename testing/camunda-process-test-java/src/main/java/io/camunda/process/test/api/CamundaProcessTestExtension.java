@@ -24,9 +24,9 @@ import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
-import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
 import io.camunda.process.test.impl.cleanup.CleanupStrategyResolver;
+import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
@@ -133,7 +133,7 @@ public class CamundaProcessTestExtension
   private DataDeletionMode dataDeletionMode = CamundaProcessTestRuntimeDefaults.DATA_DELETION_MODE;
   private Instant testCaseStartTime;
 
-  private CamundaProcessTestContext camundaProcessTestContext;
+  private CamundaProcessTestContextImpl camundaProcessTestContext;
   private final ConditionalBehaviorEngine conditionalBehaviorEngine =
       new ConditionalBehaviorEngine();
 
@@ -330,6 +330,9 @@ public class CamundaProcessTestExtension
     // wait until the cluster is ready to accept new operations, retrying until success or timeout
     runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
+    testDeploymentService.consumeTrackedDeploymentKeys();
+    camundaProcessTestContext.consumeTrackedDeploymentKeys();
+
     // deploy resources if present
     testDeploymentService.deployTestResources(
         context.getRequiredTestMethod(),
@@ -401,19 +404,14 @@ public class CamundaProcessTestExtension
     CamundaAssert.reset();
     closeCreatedClients();
     // final steps: reset the time and delete data
-    // It's important that the runtime clock is reset before the purge is started, as doing it
+    // It's important that the runtime clock is reset before the cleanup is started, as doing it
     // the other way around leads to race conditions and inconsistencies in the tests
     if (clockResetEnabled) {
       resetRuntimeClock();
     } else {
       LOG.info("Runtime clock reset is disabled. Skipping.");
     }
-
-    if (dataDeletionMode != DataDeletionMode.NONE) {
-      deleteRuntimeData();
-    } else {
-      LOG.info("Runtime data deletion mode is NONE. Skipping.");
-    }
+    deleteRuntimeData();
   }
 
   private String getCoverageTestName(final ExtensionContext context) {
@@ -450,17 +448,12 @@ public class CamundaProcessTestExtension
 
   private void deleteRuntimeData() {
     try {
-      LOG.debug("Deleting the runtime data");
-      final Instant startTime = Instant.now();
-
       final CleanupStrategy cleanupStrategy = CleanupStrategyResolver.resolve(dataDeletionMode);
       cleanupStrategy.cleanup(
           camundaManagementClient,
           () -> runtime.getCamundaClientBuilderFactory().get().build(),
-          testCaseStartTime);
-      final Instant endTime = Instant.now();
-      final Duration duration = Duration.between(startTime, endTime);
-      LOG.debug("Runtime data deleted in {}", duration);
+          testCaseStartTime,
+          collectTrackedDeploymentKeys());
 
     } catch (final Throwable t) {
       LOG.warn(
@@ -468,6 +461,13 @@ public class CamundaProcessTestExtension
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
     }
+  }
+
+  private java.util.Set<Long> collectTrackedDeploymentKeys() {
+    final java.util.LinkedHashSet<Long> deploymentKeys = new java.util.LinkedHashSet<>();
+    deploymentKeys.addAll(testDeploymentService.consumeTrackedDeploymentKeys());
+    deploymentKeys.addAll(camundaProcessTestContext.consumeTrackedDeploymentKeys());
+    return deploymentKeys;
   }
 
   private void resetRuntimeClock() {

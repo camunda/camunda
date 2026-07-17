@@ -15,29 +15,33 @@
  */
 package io.camunda.process.test.impl.cleanup;
 
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Set;
+import java.util.Collections;
 import java.util.function.Supplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-public final class ClusterPurgeCleanupStrategy implements CleanupStrategy {
+@ExtendWith(MockitoExtension.class)
+class ResourceAndHistoryDeletionStrategyTest {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ClusterPurgeCleanupStrategy.class);
+  @Mock private CamundaManagementClient managementClient;
+  @Mock private Supplier<CamundaClient> clientSupplier;
 
-  @Override
-  public void cleanup(
-      final CamundaManagementClient managementClient,
-      final Supplier<CamundaClient> clientSupplier,
-      final Instant testCaseStartTime,
-      final Set<Long> deploymentKeys) {
-    LOG.debug("Purging cluster runtime data");
-    final Instant startTime = Instant.now();
-    managementClient.purgeCluster();
-    final Duration duration = Duration.between(startTime, Instant.now());
-    LOG.debug("Cluster runtime data purged in {}", duration);
+  @Test
+  void shouldSkipCleanupWhenTestCaseStartTimeIsMissing() {
+    // given
+    final ResourceAndHistoryDeletionStrategy strategy = new ResourceAndHistoryDeletionStrategy();
+
+    // when
+    strategy.cleanup(managementClient, clientSupplier, null, Collections.emptySet());
+
+    // then
+    verify(clientSupplier, never()).get();
   }
 }

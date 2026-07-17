@@ -23,6 +23,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.JobKind;
@@ -70,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -125,6 +127,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final ConditionalBehaviorEngine conditionalBehaviorEngine;
 
   private final Supplier<CamundaDataSource> dataSourceSupplier;
+  private final Set<Long> trackedDeploymentKeys = new java.util.LinkedHashSet<>();
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
@@ -233,7 +236,9 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         "Mock: Deploy a child process '{}' with result variables {}", childProcessId, variables);
 
     final String resourceName = childProcessId + ".bpmn";
-    client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+    final DeploymentEvent deploymentEvent =
+        client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+    trackedDeploymentKeys.add(deploymentEvent.getKey());
   }
 
   @Override
@@ -253,7 +258,13 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     try (final CamundaClient client = createClient()) {
       final String resourceName = childProcessId + ".bpmn";
-      client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+      final DeploymentEvent deploymentEvent =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(processModel, resourceName)
+              .send()
+              .join();
+      trackedDeploymentKeys.add(deploymentEvent.getKey());
     }
 
     mockJobWorker(variableSupplierJobType)
@@ -539,12 +550,21 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         decisionOutput);
 
     final String resourceName = decisionId + ".dmn";
-    client
-        .newDeployResourceCommand()
-        .addResourceStream(
-            new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()), resourceName)
-        .send()
-        .join();
+    final DeploymentEvent deploymentEvent =
+        client
+            .newDeployResourceCommand()
+            .addResourceStream(
+                new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()),
+                resourceName)
+            .send()
+            .join();
+    trackedDeploymentKeys.add(deploymentEvent.getKey());
+  }
+
+  public Set<Long> consumeTrackedDeploymentKeys() {
+    final Set<Long> deploymentKeys = new java.util.LinkedHashSet<>(trackedDeploymentKeys);
+    trackedDeploymentKeys.clear();
+    return deploymentKeys;
   }
 
   @Override
