@@ -10,6 +10,8 @@ package io.camunda.exporter.handlers;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PARTITION_ID;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.RESUMED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.SUSPENDED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -71,7 +73,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         "ELEMENT_COMPLETED",
         "ELEMENT_TERMINATED",
         "ELEMENT_MIGRATED",
-        "ANCESTOR_MIGRATED"
+        "ANCESTOR_MIGRATED",
+        "SUSPENDED",
+        "RESUMED"
       },
       mode = Mode.INCLUDE)
   public void shouldHandleRecord(final ProcessInstanceIntent intent) {
@@ -90,7 +94,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         "ELEMENT_COMPLETED",
         "ELEMENT_TERMINATED",
         "ELEMENT_MIGRATED",
-        "ANCESTOR_MIGRATED"
+        "ANCESTOR_MIGRATED",
+        "SUSPENDED",
+        "RESUMED"
       },
       mode = Mode.EXCLUDE)
   public void shouldNotHandleRecord(final ProcessInstanceIntent intent) {
@@ -184,6 +190,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
     expectedUpdateFields.put(ListViewTemplate.TAGS, inputEntity.getTags());
     expectedUpdateFields.put(ListViewTemplate.BUSINESS_ID, "my-business-id");
+    expectedUpdateFields.put(ListViewTemplate.SUSPENDED_DATE, null);
     expectedUpdateFields.put(PARTITION_ID, 12);
     expectedUpdateFields.put(POSITION, 123L);
 
@@ -215,6 +222,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
     expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
     expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
+    expectedUpdateFields.put(ListViewTemplate.SUSPENDED_DATE, null);
     expectedUpdateFields.put(PARTITION_ID, 12);
     expectedUpdateFields.put(POSITION, 123L);
 
@@ -449,6 +457,48 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     assertThat(processInstanceForListViewEntity.getStartDate()).isNull();
     assertThat(processInstanceForListViewEntity.getState())
         .isEqualTo(ProcessInstanceState.COMPLETED);
+  }
+
+  @Test
+  void shouldSetSuspendedOnSuspendedRecord() {
+    // given
+    final long timestamp = new Date().getTime();
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(SUSPENDED)
+                    .withTimestamp(timestamp)
+                    .withValue(processInstanceRecordValue));
+    final ProcessInstanceForListViewEntity piEntity = new ProcessInstanceForListViewEntity();
+
+    // when
+    underTest.updateEntity(processInstanceRecord, piEntity);
+
+    // then
+    assertThat(piEntity.getState()).isEqualTo(ProcessInstanceState.SUSPENDED);
+    assertThat(piEntity.getSuspendedDate())
+        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
+  }
+
+  @Test
+  void shouldClearSuspendedOnResumedRecord() {
+    // given
+    final Record<ProcessInstanceRecordValue> processInstanceRecord = createRecord(RESUMED);
+    final ProcessInstanceForListViewEntity piEntity =
+        new ProcessInstanceForListViewEntity().setSuspendedDate(OffsetDateTime.now());
+
+    // when
+    underTest.updateEntity(processInstanceRecord, piEntity);
+
+    // then
+    assertThat(piEntity.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
+    assertThat(piEntity.getSuspendedDate()).isNull();
   }
 
   @Test

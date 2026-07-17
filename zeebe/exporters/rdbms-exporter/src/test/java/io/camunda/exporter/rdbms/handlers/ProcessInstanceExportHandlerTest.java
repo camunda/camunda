@@ -133,6 +133,26 @@ class ProcessInstanceExportHandlerTest {
   }
 
   @Test
+  void shouldSuspendOnSuspendedRecord() {
+    // given
+    final var record = TestRecordFactory.rootProcess(ProcessInstanceIntent.SUSPENDED);
+    // when
+    handler.export(record);
+    // then
+    verify(processInstanceWriter).suspend(eq(ROOT_PROCESS_INSTANCE_KEY), any());
+  }
+
+  @Test
+  void shouldResumeOnResumedRecord() {
+    // given
+    final var record = TestRecordFactory.rootProcess(ProcessInstanceIntent.RESUMED);
+    // when
+    handler.export(record);
+    // then
+    verify(processInstanceWriter).resume(eq(ROOT_PROCESS_INSTANCE_KEY));
+  }
+
+  @Test
   void shouldNotScheduleHistoryCleanupForCompletedNonRootProcessInstance() {
     // given
     final var record = TestRecordFactory.subProcess(ProcessInstanceIntent.ELEMENT_COMPLETED);

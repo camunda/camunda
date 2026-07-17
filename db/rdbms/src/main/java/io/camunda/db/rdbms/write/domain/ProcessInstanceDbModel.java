@@ -30,7 +30,8 @@ public record ProcessInstanceDbModel(
     String treePath,
     OffsetDateTime historyCleanupDate,
     Set<String> tags,
-    String businessId)
+    String businessId,
+    OffsetDateTime suspendedDate)
     implements DbModel<ProcessInstanceDbModel> {
 
   @Override
@@ -56,7 +57,8 @@ public record ProcessInstanceDbModel(
                 .treePath(treePath)
                 .historyCleanupDate(historyCleanupDate)
                 .tags(tags)
-                .businessId(businessId))
+                .businessId(businessId)
+                .suspendedDate(suspendedDate))
         .build();
   }
 
@@ -80,6 +82,7 @@ public record ProcessInstanceDbModel(
     private OffsetDateTime historyCleanupDate;
     private Set<String> tags;
     private String businessId;
+    private OffsetDateTime suspendedDate;
 
     // Public constructor to initialize the builder
     public ProcessInstanceDbModelBuilder() {}
@@ -176,6 +179,11 @@ public record ProcessInstanceDbModel(
       return this;
     }
 
+    public ProcessInstanceDbModelBuilder suspendedDate(final OffsetDateTime suspendedDate) {
+      this.suspendedDate = suspendedDate;
+      return this;
+    }
+
     @Override
     public ProcessInstanceDbModel build() {
       return new ProcessInstanceDbModel(
@@ -195,7 +203,8 @@ public record ProcessInstanceDbModel(
           treePath,
           historyCleanupDate,
           tags,
-          businessId);
+          businessId,
+          suspendedDate);
     }
   }
 }
