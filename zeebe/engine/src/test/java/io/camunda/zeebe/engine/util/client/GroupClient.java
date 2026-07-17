@@ -79,6 +79,11 @@ public class GroupClient {
       return expectation.apply(position);
     }
 
+    public Record<GroupRecordValue> create(final String username) {
+      final long position = writer.writeCommand(GroupIntent.CREATE, username, groupRecord);
+      return expectation.apply(position);
+    }
+
     public GroupCreateClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
@@ -168,6 +173,11 @@ public class GroupClient {
 
     public Record<GroupRecordValue> add() {
       final long position = writer.writeCommand(GroupIntent.ADD_ENTITY, groupRecord);
+      return expectation.apply(position);
+    }
+
+    public Record<GroupRecordValue> add(final String username) {
+      final long position = writer.writeCommand(GroupIntent.ADD_ENTITY, username, groupRecord);
       return expectation.apply(position);
     }
 

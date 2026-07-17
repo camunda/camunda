@@ -69,6 +69,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
             .command(command)
             .resourceType(AuthorizationResourceType.GROUP)
             .permissionType(PermissionType.UPDATE)
+            .addResourceId(record.getGroupId())
             .build();
     final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
     if (isAuthorized.isLeft()) {
