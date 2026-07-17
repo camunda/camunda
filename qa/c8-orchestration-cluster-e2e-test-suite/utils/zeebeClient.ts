@@ -156,9 +156,34 @@ async function checkUpdateOnVersion(
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 
+/**
+ * Waits until the given process definition version is indexed as the latest,
+ * so UI pages relying on the search API (e.g. Tasklist's Processes tab) are
+ * guaranteed to reflect it.
+ */
+const waitForLatestProcessVersion = async (
+  processDefinitionId: string,
+  expectedVersion: number,
+  timeoutSeconds: number = 30,
+) => {
+  for (let attempt = 0; attempt < timeoutSeconds; attempt++) {
+    const response = await zeebe.searchProcessDefinitions({
+      filter: {processDefinitionId, isLatestVersion: true},
+    });
+    if (response.items?.[0]?.version === expectedVersion) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error(
+    `Process definition ${processDefinitionId} version ${expectedVersion} was not indexed as latest within ${timeoutSeconds}s`,
+  );
+};
+
 export {
   deploy,
   deployWithSubstitutions,
+  waitForLatestProcessVersion,
   createInstances,
   generateManyVariables,
   checkUpdateOnVersion,

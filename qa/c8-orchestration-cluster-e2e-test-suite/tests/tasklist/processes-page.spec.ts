@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
-import {deploy} from 'utils/zeebeClient';
+import {deploy, waitForLatestProcessVersion} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -22,43 +22,6 @@ test.beforeAll(async () => {
   ]);
   await sleep(2000);
 });
-
-// Polls the process definition search API until the given version is indexed
-// as the latest, so the Processes tab is guaranteed to reflect it.
-const waitForLatestProcessVersion = async (
-  processDefinitionId: string,
-  expectedVersion: number,
-) => {
-  const baseUrl =
-    process.env.ZEEBE_REST_ADDRESS ?? process.env.CORE_APPLICATION_URL;
-  const authorization = `${process.env.CAMUNDA_AUTH_STRATEGY} ${Buffer.from(
-    `${process.env.CAMUNDA_BASIC_AUTH_USERNAME}:${process.env.CAMUNDA_BASIC_AUTH_PASSWORD}`,
-  ).toString('base64')}`;
-  for (let attempt = 0; attempt < 30; attempt++) {
-    const response = await fetch(`${baseUrl}/v2/process-definitions/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: authorization,
-      },
-      body: JSON.stringify({
-        filter: {processDefinitionId, isLatestVersion: true},
-      }),
-    });
-    if (response.ok) {
-      const body = (await response.json()) as {
-        items?: Array<{version: number}>;
-      };
-      if (body.items?.[0]?.version === expectedVersion) {
-        return;
-      }
-    }
-    await sleep(1000);
-  }
-  throw new Error(
-    `Process definition ${processDefinitionId} version ${expectedVersion} was not indexed as latest in time`,
-  );
-};
 
 test.describe('process page', () => {
   test.beforeEach(async ({page, loginPage, taskPanelPage}) => {
