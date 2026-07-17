@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.immutable.SecretReferenceState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingMessageStartProcessInstanceAskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
+import io.camunda.zeebe.engine.state.secretreference.DbSecretReferenceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.time.InstantSource;
 
@@ -53,6 +55,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final UserTaskState userTaskState;
   private final BatchOperationState batchOperationState;
   private final DbRoutingState routingState;
+  private final SecretReferenceState secretReferenceState;
 
   public ScheduledTaskDbState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -80,6 +83,12 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
+    secretReferenceState = new DbSecretReferenceState(zeebeDb, transactionContext);
+  }
+
+  @Override
+  public SecretReferenceState getSecretReferenceState() {
+    return secretReferenceState;
   }
 
   @Override

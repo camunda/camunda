@@ -58,6 +58,12 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY =
       Duration.ofSeconds(60);
   public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
+  public static final Duration DEFAULT_SECRET_RESOLUTION_INTERVAL = Duration.ofSeconds(5);
+  public static final int DEFAULT_SECRET_RESOLUTION_RETRY_MAX_ATTEMPTS = 3;
+  public static final Duration DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY =
+      Duration.ofSeconds(1);
+  public static final Duration DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY = Duration.ofSeconds(30);
+  public static final int DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR = 2;
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
@@ -133,6 +139,12 @@ public final class EngineConfiguration {
   private Duration batchOperationQueryRetryMaxDelay = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY;
   private int batchOperationQueryRetryBackoffFactor =
       DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
+  private Duration secretResolutionInterval = DEFAULT_SECRET_RESOLUTION_INTERVAL;
+  private int secretResolutionRetryMaxAttempts = DEFAULT_SECRET_RESOLUTION_RETRY_MAX_ATTEMPTS;
+  private Duration secretResolutionRetryInitialDelay =
+      DEFAULT_SECRET_RESOLUTION_RETRY_INITIAL_DELAY;
+  private Duration secretResolutionRetryMaxDelay = DEFAULT_SECRET_RESOLUTION_RETRY_MAX_DELAY;
+  private int secretResolutionRetryBackoffFactor = DEFAULT_SECRET_RESOLUTION_RETRY_BACKOFF_FACTOR;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
@@ -384,6 +396,55 @@ public final class EngineConfiguration {
   public EngineConfiguration setBatchOperationQueryRetryBackoffFactor(
       final int batchOperationQueryRetryBackoffFactor) {
     this.batchOperationQueryRetryBackoffFactor = batchOperationQueryRetryBackoffFactor;
+    return this;
+  }
+
+  public Duration getSecretResolutionInterval() {
+    return secretResolutionInterval;
+  }
+
+  public EngineConfiguration setSecretResolutionInterval(final Duration secretResolutionInterval) {
+    this.secretResolutionInterval = secretResolutionInterval;
+    return this;
+  }
+
+  public int getSecretResolutionRetryMaxAttempts() {
+    return secretResolutionRetryMaxAttempts;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryMaxAttempts(
+      final int secretResolutionRetryMaxAttempts) {
+    this.secretResolutionRetryMaxAttempts = secretResolutionRetryMaxAttempts;
+    return this;
+  }
+
+  public Duration getSecretResolutionRetryInitialDelay() {
+    return secretResolutionRetryInitialDelay;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryInitialDelay(
+      final Duration secretResolutionRetryInitialDelay) {
+    this.secretResolutionRetryInitialDelay = secretResolutionRetryInitialDelay;
+    return this;
+  }
+
+  public Duration getSecretResolutionRetryMaxDelay() {
+    return secretResolutionRetryMaxDelay;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryMaxDelay(
+      final Duration secretResolutionRetryMaxDelay) {
+    this.secretResolutionRetryMaxDelay = secretResolutionRetryMaxDelay;
+    return this;
+  }
+
+  public int getSecretResolutionRetryBackoffFactor() {
+    return secretResolutionRetryBackoffFactor;
+  }
+
+  public EngineConfiguration setSecretResolutionRetryBackoffFactor(
+      final int secretResolutionRetryBackoffFactor) {
+    this.secretResolutionRetryBackoffFactor = secretResolutionRetryBackoffFactor;
     return this;
   }
 
