@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
-import {deploy} from 'utils/zeebeClient';
+import {deploy, deployWithSubstitutions} from 'utils/zeebeClient';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -196,5 +196,64 @@ test.describe('process page', () => {
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
       timeout: 60000,
     });
+  });
+
+  // Regression test for https://github.com/camunda/camunda/issues/40045
+  test('show only the latest version of a process definition', async ({
+    page,
+    tasklistHeader,
+    tasklistProcessesPage,
+    taskPanelPage,
+  }) => {
+    await deploy(['./resources/latest_version_process.form']);
+    await deployWithSubstitutions('./resources/latest_version_process.bpmn', {
+      LATEST_VERSION_TASK_NAME: 'Latest Version Task V1',
+    });
+    await deployWithSubstitutions('./resources/latest_version_process.bpmn', {
+      LATEST_VERSION_TASK_NAME: 'Latest Version Task V2',
+    });
+    await sleep(2000);
+
+    await tasklistHeader.clickProcessesTab();
+    await expect(page).toHaveURL('/tasklist/processes');
+    await tasklistProcessesPage.continueButton.click();
+
+    await tasklistProcessesPage.searchForProcess('Latest_Version_Process');
+
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(tasklistProcessesPage.processTile).toHaveCount(1);
+        await expect(tasklistProcessesPage.processTile).toContainText(
+          'Latest Version Process',
+        );
+      },
+      onFailure: async () => {
+        await page.reload();
+        if (await tasklistProcessesPage.continueButton.isVisible()) {
+          await tasklistProcessesPage.continueButton.click();
+        }
+        await tasklistProcessesPage.searchForProcess('Latest_Version_Process');
+      },
+    });
+
+    await tasklistProcessesPage.startProcessButton.click();
+    await expect(page.getByText('Process has started')).toBeVisible();
+
+    await tasklistHeader.clickTasksTab();
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(
+          taskPanelPage.availableTasks
+            .getByText('Latest Version Task V2')
+            .first(),
+        ).toBeVisible();
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
+    await expect(
+      taskPanelPage.availableTasks.getByText('Latest Version Task V1'),
+    ).toBeHidden();
   });
 });

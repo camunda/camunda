@@ -1,0 +1,1 @@
+{"executionPlatform":"Camunda Cloud","executionPlatformVersion":"8.8.0","exporter":{"name":"Camunda Web Modeler","version":"b4df028"},"schemaVersion":19,"id":"Form_Latest_Version","components":[{"label":"Comment","type":"textfield","id":"Textfield_Comment","key":"comment","layout":{"row":"Row_0","columns":null}}],"type":"default"}
