@@ -40,6 +40,8 @@ public class TenantMemberFilterTransformer extends IndexFilterTransformer<Tenant
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return stringTerms(TENANT_ID, authorization.resourceIds());
+    return hasParentQuery(
+        IdentityJoinRelationshipType.TENANT.getType(),
+        stringTerms(TENANT_ID, authorization.resourceIds()));
   }
 }

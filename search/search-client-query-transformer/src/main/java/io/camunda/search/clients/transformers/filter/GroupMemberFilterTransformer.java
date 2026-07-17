@@ -43,6 +43,8 @@ public class GroupMemberFilterTransformer extends IndexFilterTransformer<GroupMe
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return stringTerms(GROUP_ID, authorization.resourceIds());
+    return hasParentQuery(
+        IdentityJoinRelationshipType.GROUP.getType(),
+        stringTerms(GROUP_ID, authorization.resourceIds()));
   }
 }
