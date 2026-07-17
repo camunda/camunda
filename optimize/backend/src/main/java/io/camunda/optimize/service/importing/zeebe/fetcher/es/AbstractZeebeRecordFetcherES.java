@@ -15,6 +15,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -157,13 +158,13 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                             u ->
                                 u.range(
                                     r ->
-                                        r.number(
+                                        r.untyped(
                                             nf ->
                                                 nf.field(ZeebeRecordDto.Fields.position)
                                                     .gt(
-                                                        positionBasedImportPage
-                                                            .getPosition()
-                                                            .doubleValue()))))
+                                                        JsonData.of(
+                                                            positionBasedImportPage
+                                                                .getPosition())))))
                         .must(
                             u ->
                                 u.term(
@@ -185,17 +186,15 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                         u ->
                             u.range(
                                 r ->
-                                    r.number(
+                                    r.untyped(
                                         nf ->
                                             nf.field(ZeebeRecordDto.Fields.sequence)
                                                 .gt(
-                                                    positionBasedImportPage
-                                                        .getSequence()
-                                                        .doubleValue())
+                                                    JsonData.of(
+                                                        positionBasedImportPage.getSequence()))
                                                 .lte(
-                                                    (positionBasedImportPage
-                                                            .getSequence()
-                                                            .doubleValue()
-                                                        + getDynamicBatchSize())))))));
+                                                    JsonData.of(
+                                                        positionBasedImportPage.getSequence()
+                                                            + getDynamicBatchSize())))))));
   }
 }
