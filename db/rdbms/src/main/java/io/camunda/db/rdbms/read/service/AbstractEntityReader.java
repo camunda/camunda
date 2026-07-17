@@ -14,6 +14,8 @@ import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPagination;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.SearchQueryResult;
@@ -123,7 +125,11 @@ abstract class AbstractEntityReader<T> {
       final DbQuerySorting<T> sort, final SearchQueryPage page) {
     final boolean isSearchAfter = page.after() != null;
     final var cursorValue = isSearchAfter ? page.after() : page.before();
-    final Object[] sortValues = Objects.requireNonNull(Cursor.decode(cursorValue, sort.columns()));
+    final var sortValues = Cursor.decode(cursorValue, sort.columns());
+    if (sortValues == null) {
+      throw new CamundaSearchException(
+          "Cannot paginate with an empty or malformed cursor", Reason.INVALID_ARGUMENT);
+    }
     final List<KeySetPagination> keySetPagination = new ArrayList<>();
 
     for (int i = 0; i < sort.orderings().size(); i++) {

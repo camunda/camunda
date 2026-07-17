@@ -13,16 +13,20 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public record UsageMetricStatisticsEntity(
-    long totalRpi,
-    long totalEdi,
-    long at,
-    @Nullable Map<String, UsageMetricStatisticsEntityTenant> tenants) {
+    long totalRpi, long totalEdi, long at, Map<String, UsageMetricStatisticsEntityTenant> tenants) {
 
-  public UsageMetricStatisticsEntity {
+  public UsageMetricStatisticsEntity(
+      final long totalRpi,
+      final long totalEdi,
+      final long at,
+      final @Nullable Map<String, UsageMetricStatisticsEntityTenant> tenants) {
+    this.totalRpi = totalRpi;
+    this.totalEdi = totalEdi;
+    this.at = at;
     // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
-    tenants = tenants != null ? tenants : new HashMap<>();
+    this.tenants = tenants != null ? tenants : new HashMap<>();
   }
 
   public record UsageMetricStatisticsEntityTenant(long rpi, long edi) {
