@@ -7,11 +7,15 @@
  */
 package io.camunda.db.rdbms.exception;
 
+import io.camunda.zeebe.util.exception.UnrecoverableException;
+
 /**
  * Thrown when this cluster's ID does not match the one previously recorded in the RDBMS schema.
  * Only enforced when auto-DDL is enabled; {@code NoopSchemaManager} skips the check entirely.
+ *
+ * <p>Extends {@link UnrecoverableException} since a mismatch won't resolve itself on retry.
  */
-public class RdbmsClusterIdIncompatibleException extends RuntimeException {
+public class RdbmsClusterIdIncompatibleException extends UnrecoverableException {
 
   public RdbmsClusterIdIncompatibleException(
       final String previousClusterId, final String clusterId) {
