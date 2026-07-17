@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.ClusterOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRedistributionCompletion;
@@ -16,7 +18,6 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPar
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
-import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 public class AwaitRedistributionCompletionApplier implements ClusterOperationApplier {
@@ -27,8 +28,8 @@ public class AwaitRedistributionCompletionApplier implements ClusterOperationApp
   public AwaitRedistributionCompletionApplier(
       final PartitionScalingChangeExecutor executor,
       final AwaitRedistributionCompletion operation) {
-    this.executor = Objects.requireNonNull(executor);
-    this.operation = Objects.requireNonNull(operation);
+    this.executor = requireNonNull(executor);
+    this.operation = requireNonNull(operation);
   }
 
   @Override

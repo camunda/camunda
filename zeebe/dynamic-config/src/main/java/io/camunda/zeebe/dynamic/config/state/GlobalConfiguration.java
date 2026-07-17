@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
 import java.util.HashMap;
@@ -57,12 +59,12 @@ public record GlobalConfiguration(
   public static final long INITIAL_VERSION = 1;
 
   public GlobalConfiguration {
-    Objects.requireNonNull(clusterId, "clusterId must not be null");
-    Objects.requireNonNull(members, "members must not be null");
-    Objects.requireNonNull(
+    requireNonNull(clusterId, "clusterId must not be null");
+    requireNonNull(members, "members must not be null");
+    requireNonNull(
         partitionDistributorConfig, "partitionDistributorConfig must not be null");
-    Objects.requireNonNull(pendingChanges, "pendingChanges must not be null");
-    Objects.requireNonNull(lastChange, "lastChange must not be null");
+    requireNonNull(pendingChanges, "pendingChanges must not be null");
+    requireNonNull(lastChange, "lastChange must not be null");
     members = ImmutableSortedMap.copyOf(members);
   }
 

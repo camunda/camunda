@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
@@ -80,12 +82,12 @@ public record ClusterConfiguration(
           String.format("Version must be >= %d", UNINITIALIZED_VERSION));
     }
 
-    Objects.requireNonNull(members);
-    Objects.requireNonNull(lastChange);
-    Objects.requireNonNull(pendingChanges);
-    Objects.requireNonNull(routingState);
-    Objects.requireNonNull(clusterId);
-    Objects.requireNonNull(partitionDistributorConfig);
+    requireNonNull(members);
+    requireNonNull(lastChange);
+    requireNonNull(pendingChanges);
+    requireNonNull(routingState);
+    requireNonNull(clusterId);
+    requireNonNull(partitionDistributorConfig);
     if (incarnationNumber < 0) {
       throw new IllegalArgumentException("Incarnation number must be >= 0");
     }

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
@@ -250,7 +252,7 @@ public final class ClusterConfigurationManagerService
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     managerActor.run(
         () -> {
-          Objects.requireNonNull(
+          requireNonNull(
               modeChangeExecutor,
               "ModeChangeExecutor not set before registering topology appliers.");
           clusterConfigurationManager.registerTopologyChangeAppliers(
