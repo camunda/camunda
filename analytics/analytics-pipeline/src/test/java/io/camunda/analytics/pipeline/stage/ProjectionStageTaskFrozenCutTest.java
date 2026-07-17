@@ -35,6 +35,7 @@ import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelope;
 import io.camunda.eventbridge.streaming.shuffle.ShuffleEnvelopeCodec;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
+import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
@@ -57,6 +58,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.h2.jdbcx.JdbcDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,6 +77,7 @@ final class ProjectionStageTaskFrozenCutTest {
 
   private static final long PI_KEY = 123L;
   private static final int ZEEBE_PARTITION = 3;
+  private static final int OTHER_ZEEBE_PARTITION = 4;
   private static final int EB_PARTITION = 1;
 
   @TempDir Path stateDir;
@@ -140,11 +144,11 @@ final class ProjectionStageTaskFrozenCutTest {
 
     // then the persisted watermark is the freeze-time one — a replay from the cut's offset must
     // re-fold position 20, whose fold is not part of the cut
-    assertThat(durableAppliedPosition()).hasValue(10L);
+    assertThat(durableAppliedPosition(ZEEBE_PARTITION)).hasValue(10L);
 
     // and the next commit advances it together with that fold
     Cuts.commit(task, 101L);
-    assertThat(durableAppliedPosition()).hasValue(20L);
+    assertThat(durableAppliedPosition(ZEEBE_PARTITION)).hasValue(20L);
     assertThat(openSegmentTotal()).isEqualTo(2L);
   }
 
@@ -163,13 +167,82 @@ final class ProjectionStageTaskFrozenCutTest {
     // then nothing is durable yet
     assertThat(openSegmentTotal()).isZero();
     assertThat(durableOffset()).isEmpty();
-    assertThat(durableAppliedPosition()).isEmpty();
+    assertThat(durableAppliedPosition(ZEEBE_PARTITION)).isEmpty();
 
     // and the next commit covers all three folds exactly once
     Cuts.commit(task, 102L);
     assertThat(openSegmentTotal()).isEqualTo(3L);
     assertThat(durableOffset()).hasValue(102L);
-    assertThat(durableAppliedPosition()).hasValue(12L);
+    assertThat(durableAppliedPosition(ZEEBE_PARTITION)).hasValue(12L);
+  }
+
+  @Test
+  void shouldPersistOnlyTheMovedWatermarkAndLeaveAnUnmovedOneUntouched() {
+    // given a first cut that moves and durably persists partition A's watermark only
+    openTask(1_000, mock(EventBridgeClient.class));
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, ZEEBE_PARTITION, 10L, 100L));
+    Cuts.commit(task, 100L);
+    assertThat(durableAppliedPosition(ZEEBE_PARTITION)).hasValue(10L);
+    assertThat(durableAppliedPosition(OTHER_ZEEBE_PARTITION)).isEmpty();
+
+    // when a second cut folds only partition B — partition A does not move
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1500L, OTHER_ZEEBE_PARTITION, 5L, 101L));
+    Cuts.commit(task, 101L);
+
+    // then B's freshly-moved watermark is durable, and A's watermark from the first cut is still
+    // exactly correct even though the second cut never re-wrote it (RESTORE correctness: an
+    // unmoved partition's row from an earlier cut is never invalidated)
+    assertThat(durableAppliedPosition(OTHER_ZEEBE_PARTITION)).hasValue(5L);
+    assertThat(durableAppliedPosition(ZEEBE_PARTITION)).hasValue(10L);
+  }
+
+  @Test
+  void shouldWriteEachWatermarkRowOnlyInTheCutThatMovedIt() {
+    // given a task whose applied-positions store records every put, and a first cut that moves
+    // and persists partition A's watermark
+    final RecordingKeyValueStore recordingAppliedPositions = openTaskRecordingAppliedPositions();
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, ZEEBE_PARTITION, 10L, 100L));
+    Cuts.commit(task, 100L);
+    assertThat(recordingAppliedPositions.putPartitions()).containsExactly(ZEEBE_PARTITION);
+    recordingAppliedPositions.clearRecorded();
+
+    // when a second cut folds only partition B — partition A does not move
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1500L, OTHER_ZEEBE_PARTITION, 5L, 101L));
+    Cuts.commit(task, 101L);
+
+    // then the store received a put for the moved partition only — never a redundant re-put of
+    // the unmoved partition's already-correct row
+    assertThat(recordingAppliedPositions.putPartitions()).containsExactly(OTHER_ZEEBE_PARTITION);
+  }
+
+  @Test
+  void shouldRecarryAMovedWatermarkAcrossAFailedCut() {
+    // given a first, successful cut that moves and persists partition A's watermark
+    openTask(1_000, mock(EventBridgeClient.class));
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, ZEEBE_PARTITION, 10L, 100L));
+    Cuts.commit(task, 100L);
+
+    // when a second cut moves partition B's watermark and then fails (before persist())
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1500L, OTHER_ZEEBE_PARTITION, 5L, 101L));
+    final CommitCut cut = task.freezeCut(101L);
+    cut.complete(false);
+
+    // then B's watermark is not yet durable — the failed cut merged the moved partition back
+    assertThat(durableAppliedPosition(OTHER_ZEEBE_PARTITION)).isEmpty();
+
+    // when the next cut succeeds, with no further folds
+    Cuts.commit(task, 101L);
+
+    // then B's watermark is durable — the moved set was re-carried despite the failed cut — and
+    // A's watermark, untouched since the first cut, is still correct
+    assertThat(durableAppliedPosition(OTHER_ZEEBE_PARTITION)).hasValue(5L);
+    assertThat(durableAppliedPosition(ZEEBE_PARTITION)).hasValue(10L);
   }
 
   @Test
@@ -235,6 +308,121 @@ final class ProjectionStageTaskFrozenCutTest {
 
   private void openTask(final int segmentStride, final EventBridgeClient client) {
     openTask(segmentStride, client, false);
+  }
+
+  /**
+   * As {@link #openTask(int, EventBridgeClient)} with a segment stride of 1000 and a mock client,
+   * but the {@code ZEEBE_APPLIED_POSITION} store is wrapped in the returned recorder — the only way
+   * to tell a delta persist (writes the moved partition's row only) apart from a full re-persist
+   * (writes every known partition's row every cut) when both settle on the same final durable
+   * value.
+   */
+  private RecordingKeyValueStore openTaskRecordingAppliedPositions() {
+    catalog = new DatasetCatalog(metadataStore);
+    final JdbcDataSource dataSource = new JdbcDataSource();
+    dataSource.setURL("jdbc:h2:mem:frozencut-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
+    dataSource.setUser("sa");
+    provider =
+        RocksDbStateStoreProvider.open(
+            new File(stateDir.toFile(), "stage1"), new SimpleMeterRegistry());
+    final KeyValueStore<DbBytes, DbBytes> openSegments =
+        provider.keyValueStore(AnalyticsColumnFamilies.OPEN_SEGMENT, new DbBytes(), new DbBytes());
+    final KeyValueStore<DbInt, DbLong> offsets =
+        provider.keyValueStore(
+            AnalyticsColumnFamilies.CONSUMED_POSITION, new DbInt(), new DbLong());
+    final RecordingKeyValueStore recordingAppliedPositions =
+        new RecordingKeyValueStore(
+            provider.keyValueStore(
+                AnalyticsColumnFamilies.ZEEBE_APPLIED_POSITION, new DbInt(), new DbLong()));
+    final RdbmsDatasetStore datasetStore = new RdbmsDatasetStore(dataSource);
+    task =
+        new ProjectionStageTask(
+            EB_PARTITION,
+            () -> 1L,
+            mock(EventBridgeClient.class),
+            "facts",
+            1,
+            1_000,
+            1,
+            datasetStore,
+            datasetStore.writer(),
+            provider,
+            openSegments,
+            offsets,
+            recordingAppliedPositions,
+            catalog,
+            Long.MAX_VALUE, // no reload in these tests
+            false,
+            ProjectionMetrics.NOOP,
+            FlowMetrics.NOOP,
+            StoreMetrics.NOOP,
+            0L);
+    task.init();
+    return recordingAppliedPositions;
+  }
+
+  /**
+   * A {@link KeyValueStore} wrapper recording every {@link #put}'s Zeebe-partition key — the
+   * observable of which watermark rows a cut actually wrote, not just the store's final contents
+   * (see {@link #shouldWriteEachWatermarkRowOnlyInTheCutThatMovedIt}).
+   */
+  private static final class RecordingKeyValueStore implements KeyValueStore<DbInt, DbLong> {
+
+    private final KeyValueStore<DbInt, DbLong> delegate;
+    private final List<Integer> putPartitions = new ArrayList<>();
+
+    RecordingKeyValueStore(final KeyValueStore<DbInt, DbLong> delegate) {
+      this.delegate = delegate;
+    }
+
+    /**
+     * Every recorded put's Zeebe-partition key, in write order, since the last {@link
+     * #clearRecorded()}.
+     */
+    List<Integer> putPartitions() {
+      return List.copyOf(putPartitions);
+    }
+
+    /** Forgets everything recorded so far, so a test can scope assertions to one cut. */
+    void clearRecorded() {
+      putPartitions.clear();
+    }
+
+    @Override
+    public void put(final DbInt key, final DbLong value) {
+      putPartitions.add(key.getValue());
+      delegate.put(key, value);
+    }
+
+    @Override
+    public void delete(final DbInt key) {
+      delegate.delete(key);
+    }
+
+    @Override
+    public Optional<DbLong> get(final DbInt key) {
+      return delegate.get(key);
+    }
+
+    @Override
+    public boolean exists(final DbInt key) {
+      return delegate.exists(key);
+    }
+
+    @Override
+    public void prefixScan(final DbKey prefix, final BiConsumer<DbInt, DbLong> visitor) {
+      delegate.prefixScan(prefix, visitor);
+    }
+
+    @Override
+    public void prefixScanKeys(final DbKey prefix, final Consumer<DbInt> visitor) {
+      delegate.prefixScanKeys(prefix, visitor);
+    }
+
+    @Override
+    public void forEach(final BiConsumer<DbInt, DbLong> visitor) {
+      delegate.forEach(visitor);
+    }
   }
 
   private void openTask(
@@ -353,6 +541,19 @@ final class ProjectionStageTaskFrozenCutTest {
       final long timestamp,
       final long zeebePosition,
       final long ebOffset) {
+    return process(intent, timestamp, ZEEBE_PARTITION, zeebePosition, ebOffset);
+  }
+
+  /**
+   * As {@link #process(ProcessInstanceIntent, long, long, long)}, with an explicit real Zeebe
+   * partition — for exercising the pre-fold dedup watermark of more than one Zeebe partition.
+   */
+  private static SourceRecord process(
+      final ProcessInstanceIntent intent,
+      final long timestamp,
+      final int zeebePartition,
+      final long zeebePosition,
+      final long ebOffset) {
     final ProcessInstanceRecord value =
         new ProcessInstanceRecord()
             .setProcessInstanceKey(PI_KEY)
@@ -369,7 +570,7 @@ final class ProjectionStageTaskFrozenCutTest {
             .valueType(ValueType.PROCESS_INSTANCE)
             .intent(intent);
     final Record<?> record =
-        new CopiedRecord<>(value, metadata, PI_KEY, ZEEBE_PARTITION, zeebePosition, -1L, timestamp);
+        new CopiedRecord<>(value, metadata, PI_KEY, zeebePartition, zeebePosition, -1L, timestamp);
     return new SourceRecord(EB_PARTITION, ebOffset, record);
   }
 
@@ -383,13 +584,13 @@ final class ProjectionStageTaskFrozenCutTest {
     return offsets.get(key).map(DbLong::getValue);
   }
 
-  /** The durably persisted pre-fold dedup watermark of {@link #ZEEBE_PARTITION}, if any. */
-  private Optional<Long> durableAppliedPosition() {
+  /** The durably persisted pre-fold dedup watermark of the given Zeebe partition, if any. */
+  private Optional<Long> durableAppliedPosition(final int zeebePartition) {
     final KeyValueStore<DbInt, DbLong> appliedPositions =
         provider.keyValueStore(
             AnalyticsColumnFamilies.ZEEBE_APPLIED_POSITION, new DbInt(), new DbLong());
     final DbInt key = new DbInt();
-    key.wrapInt(ZEEBE_PARTITION);
+    key.wrapInt(zeebePartition);
     return appliedPositions.get(key).map(DbLong::getValue);
   }
 

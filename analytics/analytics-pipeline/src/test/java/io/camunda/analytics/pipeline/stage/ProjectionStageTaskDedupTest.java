@@ -64,6 +64,7 @@ final class ProjectionStageTaskDedupTest {
 
   private static final long PI_KEY = 123L;
   private static final int ZEEBE_PARTITION = 3;
+  private static final int OTHER_ZEEBE_PARTITION = 4;
   private static final int EB_PARTITION = 1;
 
   @TempDir Path stateDir;
@@ -156,6 +157,36 @@ final class ProjectionStageTaskDedupTest {
     // then the replayed completion folded (its fold was not part of the cut) — exactly once — on
     // top of the recovered activation fold
     assertThat(openSegmentTotal()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldRestoreEveryPartitionsWatermarkAcrossMultipleCuts() {
+    // given a first cut that moves and persists partition A's watermark, and a second cut that
+    // moves and persists only partition B's — A's watermark row is never rewritten by the second
+    // cut (the delta-only persist), yet it must still be exactly correct after a restart
+    openTask();
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, ZEEBE_PARTITION, 10L, 100L));
+    Cuts.commit(task, 100L);
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1500L, OTHER_ZEEBE_PARTITION, 5L, 101L));
+    Cuts.commit(task, 101L);
+    task.close();
+    task = null;
+
+    // when the task restarts over the same state (recovery loads every ZEEBE_APPLIED_POSITION row,
+    // not only the rows the most recent cut happened to (re-)write)
+    openTask();
+    assertThat(task.restore()).isEqualTo(101L);
+
+    // then a producer duplicate of partition A's ALREADY-durable position — never touched by the
+    // second cut — is still recognized and skipped, proving its watermark survived recovery
+    // intact
+    task.process(
+        process(ProcessInstanceIntent.ELEMENT_ACTIVATED, 1000L, ZEEBE_PARTITION, 10L, 102L));
+    Cuts.commit(task, 102L);
+    assertThat(counterValue("analytics.projection.duplicate.skipped")).isEqualTo(1.0);
+    assertThat(openSegmentTotal()).isEqualTo(2L); // only the two original, distinct facts
   }
 
   @Test
@@ -264,6 +295,19 @@ final class ProjectionStageTaskDedupTest {
       final long timestamp,
       final long zeebePosition,
       final long ebOffset) {
+    return process(intent, timestamp, ZEEBE_PARTITION, zeebePosition, ebOffset);
+  }
+
+  /**
+   * As {@link #process(ProcessInstanceIntent, long, long, long)}, with an explicit real Zeebe
+   * partition — for exercising the pre-fold dedup watermark of more than one Zeebe partition.
+   */
+  private static SourceRecord process(
+      final ProcessInstanceIntent intent,
+      final long timestamp,
+      final int zeebePartition,
+      final long zeebePosition,
+      final long ebOffset) {
     final ProcessInstanceRecord value =
         new ProcessInstanceRecord()
             .setProcessInstanceKey(PI_KEY)
@@ -280,7 +324,7 @@ final class ProjectionStageTaskDedupTest {
             .valueType(ValueType.PROCESS_INSTANCE)
             .intent(intent);
     final Record<?> record =
-        new CopiedRecord<>(value, metadata, PI_KEY, ZEEBE_PARTITION, zeebePosition, -1L, timestamp);
+        new CopiedRecord<>(value, metadata, PI_KEY, zeebePartition, zeebePosition, -1L, timestamp);
     return new SourceRecord(EB_PARTITION, ebOffset, record);
   }
 
