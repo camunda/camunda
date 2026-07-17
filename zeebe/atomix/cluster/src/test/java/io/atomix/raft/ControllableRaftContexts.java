@@ -102,6 +102,8 @@ public final class ControllableRaftContexts {
 
   // Used only for verification. Map[term -> leader]
   private final NavigableMap<Long, MemberId> leadersAtTerms = new TreeMap<>();
+  // Used only for verification. Map[voter -> Map[term -> candidate voted for]]
+  private final Map<MemberId, NavigableMap<Long, MemberId>> votesAtTerms = new HashMap<>();
   private final AppendListener appendListener = mock(AppendListener.class);
   private final DataLossChecker dataLossChecker = new DataLossChecker(appendListener);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -156,6 +158,7 @@ public final class ControllableRaftContexts {
     deterministicExecutors.clear();
     messageQueue.clear();
     leadersAtTerms.clear();
+    votesAtTerms.clear();
     directory = null;
     MicrometerUtil.close(meterRegistry);
   }
@@ -453,6 +456,9 @@ public final class ControllableRaftContexts {
     deterministicExecutors.remove(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));
     final var nodeBeforeRestart = raftServers.remove(memberId);
+    // Losing the metastore forfeits the vote promise: the restarted member may legitimately vote
+    // for a different candidate in a term it already voted in.
+    votesAtTerms.remove(memberId);
 
     // Wait until the other two members become a quorum and elect a leader. Otherwise, the restarted
     // node and the follower without the latest log can become a quorum and result in data loss.
@@ -559,6 +565,27 @@ public final class ControllableRaftContexts {
 
   public void assertAtMostOneLeader() {
     raftServers.values().forEach(this::updateAndVerifyLeaderTerm);
+  }
+
+  public void assertAtMostOneVotePerMemberAndTerm() {
+    raftServers.forEach(this::updateAndVerifyVotedFor);
+  }
+
+  private void updateAndVerifyVotedFor(final MemberId memberId, final RaftContext s) {
+    final long term = s.getTerm();
+    final var votedFor = s.getLastVotedFor();
+    if (votedFor == null) {
+      return;
+    }
+    final var previousVote = votesAtTerms.computeIfAbsent(memberId, unused -> new TreeMap<>());
+    final var knownVote = previousVote.putIfAbsent(term, votedFor);
+    if (knownVote != null) {
+      assertThat(knownVote)
+          .withFailMessage(
+              "Member %s granted two votes, for %s and %s, at term %s",
+              memberId, knownVote, votedFor, term)
+          .isEqualTo(votedFor);
+    }
   }
 
   private void updateAndVerifyLeaderTerm(final RaftContext s) {
