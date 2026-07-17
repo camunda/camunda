@@ -405,17 +405,20 @@ public class PassiveRole extends InactiveRole {
     return handleAppend(request);
   }
 
+  // Polls and votes are answered regardless of the local role and configuration: during a
+  // reconfiguration, consensus is reached based on the candidate's configuration (Raft
+  // dissertation, section 4.1). A passive member's answer can be required to elect a leader,
+  // for example when a joint configuration was appended to a joining member before the leader
+  // failed. Unlike ActiveRole, no role transition happens on a term bump: a passive member may
+  // not have received a configuration yet, and it will be transitioned by the next
+  // ConfigureRequest when its type changes.
+
   @Override
   public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
     raft.checkThread();
     logRequest(request);
-
-    return CompletableFuture.completedFuture(
-        logResponse(
-            PollResponse.builder()
-                .withStatus(RaftResponse.Status.ERROR)
-                .withError(RaftError.Type.ILLEGAL_MEMBER_STATE, "Cannot poll RESERVE member")
-                .build()));
+    updateTermAndLeader(request.term(), null);
+    return CompletableFuture.completedFuture(logResponse(handlePoll(request)));
   }
 
   @Override
@@ -423,14 +426,7 @@ public class PassiveRole extends InactiveRole {
     raft.checkThread();
     logRequest(request);
     updateTermAndLeader(request.term(), null);
-
-    return CompletableFuture.completedFuture(
-        logResponse(
-            VoteResponse.builder()
-                .withStatus(RaftResponse.Status.ERROR)
-                .withError(
-                    RaftError.Type.ILLEGAL_MEMBER_STATE, "Cannot request vote from RESERVE member")
-                .build()));
+    return CompletableFuture.completedFuture(logResponse(handleVote(request)));
   }
 
   /** Handles a poll request. */
