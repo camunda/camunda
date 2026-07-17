@@ -575,6 +575,16 @@ jobs:
                 echo "Starting with default Tasklist V2 mode"
                 DATABASE=elasticsearch docker compose up -d camunda
               fi
+
+              # Optimize is a separate application (reads exported data from
+              # Elasticsearch). Start it too, but only on branches whose compose
+              # defines the service, so this is a no-op elsewhere.
+              if DATABASE=elasticsearch docker compose config --services | grep -qx optimize; then
+                echo "Starting Optimize"
+                DATABASE=elasticsearch docker compose up -d optimize
+              else
+                echo "optimize service not defined in this branch's compose; skipping"
+              fi
             fi
           }
 
@@ -696,6 +706,7 @@ jobs:
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
           MATRIX_TASKLIST_MODE: ${{ matrix.tasklist_mode }}
           BASE_BRANCH: ${{ needs.validate-branch.outputs.base }}
+          OPTIMIZE_BASE_URL: "http://localhost:8083"
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
@@ -730,6 +741,26 @@ jobs:
               fi
             fi
           fi
+          # Include the Optimize startup check in the same Playwright run when
+          # the Optimize container is up (branches whose compose defines it).
+          if docker ps --format '{{.Names}}' | grep -qx optimize; then
+            echo "Optimize container detected; waiting for readiness before adding the optimize-startup project"
+            # Optimize redirects an unauthenticated root request to the OIDC login
+            # (HTTP 302); that is the expected ready state (a 200 would signal auth
+            # is not wired as expected).
+            for i in {1..60}; do
+              optimize_status="$(curl -s -o /dev/null -w '%{http_code}' -m 5 http://localhost:8083/ || true)"
+              optimize_status="${optimize_status:-000}"
+              if [[ "$optimize_status" == "302" ]]; then
+                echo "Optimize is ready (HTTP $optimize_status)."
+                break
+              fi
+              echo "Waiting for Optimize... ($i/60) HTTP $optimize_status"
+              sleep 10
+            done
+            TEST_ARGS+=(--project=optimize-startup)
+          fi
+
           echo "Running tests with args: ${TEST_ARGS[*]}"
           npm run test -- "${TEST_ARGS[@]}"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
