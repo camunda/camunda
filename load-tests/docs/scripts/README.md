@@ -5,18 +5,20 @@ This folder contains several scripts we wrote to test or debug things.
 ## Profile.sh
 
 **Usage:**
-Run executeProfiling.sh with a pod name, optional event type, and optional profiler options. It will download the async profiler package, run in your current namespace, copy necessary binaries to the pod, run the async profiler, and copy the resulting flamegraph back to your local disk.
+Run executeProfiling.sh with a pod name, an optional comma-separated list of events, and optional profiler options. It will download the async-profiler package, run in your current namespace, copy `asprof`/`jfrconv`/`libasyncProfiler.so` to the pod, capture all requested events in a single async-profiler attach into one combined JFR recording, convert that recording into one HTML flamegraph per event with `jfrconv` (still on the pod, which already has a JRE), and copy the resulting flamegraphs back to your local disk.
 
 **Syntax:**
 
 ```
-./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
+./executeProfiling.sh <POD-NAME> [EVENTS] [ADDITIONAL-OPTIONS]
 ```
 
-**Event Types:**
-- `cpu` - CPU profiling (default)
-- `wall` - Wall clock time profiling (includes waiting/blocking time). Automatically uses `-t` flag to split by thread for better analysis.
+**Events (default: `cpu,wall,alloc`):**
+- `cpu` - CPU profiling
+- `wall` - Wall clock time profiling (includes waiting/blocking time). Its flamegraph is converted with `-t` to split by thread for better analysis.
 - `alloc` - Memory allocation profiling
+
+All requested events are captured together in one async-profiler session (async-profiler only supports one active profiling session per JVM, but a single session can sample multiple event types at once).
 
 **Additional Options:**
 You can pass additional flags to async-profiler as the third parameter. Common options include:
@@ -26,34 +28,32 @@ You can pass additional flags to async-profiler as the third parameter. Common o
 
 See [async-profiler documentation](https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md) for potential options.
 
-Example with CPU profiling (default):
+Example with the default events (cpu, wall, alloc captured together, converted into 3 flamegraphs):
 
 ```
  $ ./executeProfiling.sh release-8-8-0-alpha6-zeebe-2
 ...
-Profiling for 100 seconds
-Done
-+ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-cpu-2025-07-11_19-02-52.html release-8-8-0-alpha6-zeebe-2-flamegraph-cpu-2025-07-11_19-02-52.html
++ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-cpu-20260710.html release-8-8-0-alpha6-zeebe-2-flamegraph-cpu-20260710.html
++ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-wall-20260710.html release-8-8-0-alpha6-zeebe-2-flamegraph-wall-20260710.html
++ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-alloc-20260710.html release-8-8-0-alpha6-zeebe-2-flamegraph-alloc-20260710.html
 tar: Removing leading `/' from member names
 
 ```
 
-Example with wall clock profiling:
+Example with a single event only:
 
 ```
- $ ./executeProfiling.sh release-8-8-0-alpha6-zeebe-2 wall
+ $ ./executeProfiling.sh release-8-8-0-alpha6-zeebe-2 cpu
 ...
-Profiling for 100 seconds
-Done
-+ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-wall-2025-07-11_19-05-23.html release-8-8-0-alpha6-zeebe-2-flamegraph-wall-2025-07-11_19-05-23.html
++ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-cpu-20260710.html release-8-8-0-alpha6-zeebe-2-flamegraph-cpu-20260710.html
 ```
 
-Example with additional profiler options:
+Example with additional profiler options (applied to the whole capture session):
 
 ```
  $ ./executeProfiling.sh release-8-8-0-alpha6-zeebe-2 cpu "-t"
 ...
-Profiling for 100 seconds with flamegraph format
+Profiling for 100 seconds
 Done
 ```
 
