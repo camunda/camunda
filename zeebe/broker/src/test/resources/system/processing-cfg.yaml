@@ -3,5 +3,4 @@ zeebe:
     processing:
       maxCommandsInBatch: 125
       maxRecoverableRetries: 200
-      enableAsyncScheduledTasks: false
       skipPositions: 1, 2, 3

@@ -253,7 +253,6 @@ process-instance-creation.message-start-lock-release-poll-batch-limit
 process-instance-creation.message-start-lock-release-poll-interval
 process-instance-creation.message-start-lock-release-poll-max-backoff
 processing.enable-async-message-ttl-checker
-processing.enable-async-scheduled-tasks
 processing.enable-async-timer-duedate-checker
 processing.enable-foreign-key-checks
 processing.enable-message-body-on-expired

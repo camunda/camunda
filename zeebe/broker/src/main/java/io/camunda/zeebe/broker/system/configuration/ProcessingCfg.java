@@ -16,7 +16,6 @@ public final class ProcessingCfg implements ConfigurationEntry {
   private static final int DEFAULT_MAX_RECOVERABLE_RETRIES = 1000;
   private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
-  private boolean enableAsyncScheduledTasks = true;
   private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
   private Set<Long> skipPositions;
 
@@ -53,14 +52,6 @@ public final class ProcessingCfg implements ConfigurationEntry {
     this.maxRecoverableRetries = maxRecoverableRetries;
   }
 
-  public boolean isEnableAsyncScheduledTasks() {
-    return enableAsyncScheduledTasks;
-  }
-
-  public void setEnableAsyncScheduledTasks(final boolean enableAsyncScheduledTasks) {
-    this.enableAsyncScheduledTasks = enableAsyncScheduledTasks;
-  }
-
   public Set<Long> skipPositions() {
     return skipPositions != null ? skipPositions : Set.of();
   }
@@ -76,8 +67,6 @@ public final class ProcessingCfg implements ConfigurationEntry {
         + maxCommandsInBatch
         + ", maxRecoverableRetries="
         + maxRecoverableRetries
-        + ", enableAsyncScheduledTasks="
-        + enableAsyncScheduledTasks
         + ", scheduledTaskCheckInterval="
         + scheduledTaskCheckInterval
         + '}';

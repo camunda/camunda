@@ -160,11 +160,6 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder setEnableAsyncScheduledTasks(final boolean enabled) {
-    streamProcessorContext.setEnableAsyncScheduledTasks(enabled);
-    return this;
-  }
-
   public StreamProcessorBuilder processingFilter(final EventFilter processingFilter) {
     streamProcessorContext.processingFilter(processingFilter);
     return this;

@@ -1037,16 +1037,6 @@ camunda: # Type: io.camunda.configuration.Camunda
     # improve throughput and process latency in use cases that publish many messages with a non-zero TTL.
     # We recommend testing this feature in a non-production environment before enabling it in production.
     enable-async-message-ttl-checker: false # Type: Boolean, Env: CAMUNDA_PROCESSING_ENABLEASYNCMESSAGETTLCHECKER
-    # Allows scheduled processing tasks such as checking for timed-out jobs to run concurrently to regular
-    # processing. This is a performance optimization to ensure that processing is not interrupted by
-    # higher than usual workload for any of the scheduled tasks. This should only be disabled in case of
-    # bugs, for example if one of the scheduled tasks is not safe to run concurrently to regular
-    # processing.
-    # This replaces the deprecated experimental settings that enable async scheduling for specific tasks
-    # only, for example `enableMessageTTLCheckerAsync`. When `enableAsyncScheduledTasks` is enabled (which
-    # it is by default), the deprecated settings take no effect. When `enableAsyncScheduledTasks` is
-    # disabled, scheduled tasks are only run async if explicitly enabled by the deprecated setting.
-    enable-async-scheduled-tasks: true # Type: Boolean, Env: CAMUNDA_PROCESSING_ENABLEASYNCSCHEDULEDTASKS
     # While disabled, checking for due timers blocks all other executions that occur on the stream
     # processor, including process execution and job activation/completion. When enabled, the Due Date
     # Checker will run asynchronous to the Engine's stream processor. This helps improve throughput and

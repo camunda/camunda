@@ -16,7 +16,6 @@ import org.springframework.core.ResolvableType;
 public class Processing {
   private static final String PREFIX = "camunda.processing";
   private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
-  private static final boolean DEFAULT_ENABLE_ASYNC_SCHEDULED_TASKS = true;
   private static final Duration DEFAULT_SCHEDULED_TASKS_CHECK_INTERVAL = Duration.ofSeconds(1);
 
   private static final boolean DEFAULT_ENABLE_PRECONDITIONS_CHECK = false;
@@ -32,8 +31,6 @@ public class Processing {
 
   private static final Set<String> LEGACY_MAX_COMMANDS_IN_BATCH_PROPERTIES =
       Set.of("zeebe.broker.processingCfg.maxCommandsInBatch");
-  private static final Set<String> LEGACY_ENABLE_ASYNC_SCHEDULED_TASKS_PROPERTIES =
-      Set.of("zeebe.broker.processingCfg.enableAsyncScheduledTasks");
   private static final Set<String> LEGACY_SCHEDULED_TASKS_CHECK_INTERVAL_PROPERTIES =
       Set.of("zeebe.broker.processingCfg.scheduledTaskCheckInterval");
   private static final Set<String> LEGACY_SKIP_POSITIONS_PROPERTIES =
@@ -76,21 +73,6 @@ public class Processing {
    * retry.
    */
   private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
-
-  /**
-   * Allows scheduled processing tasks such as checking for timed-out jobs to run concurrently to
-   * regular processing. This is a performance optimization to ensure that processing is not
-   * interrupted by higher than usual workload for any of the scheduled tasks. This should only be
-   * disabled in case of bugs, for example if one of the scheduled tasks is not safe to run
-   * concurrently to regular processing.
-   *
-   * <p>This replaces the deprecated experimental settings that enable async scheduling for specific
-   * tasks only, for example `enableMessageTTLCheckerAsync`. When `enableAsyncScheduledTasks` is
-   * enabled (which it is by default), the deprecated settings take no effect. When
-   * `enableAsyncScheduledTasks` is disabled, scheduled tasks are only run async if explicitly
-   * enabled by the deprecated setting.
-   */
-  private boolean enableAsyncScheduledTasks = DEFAULT_ENABLE_ASYNC_SCHEDULED_TASKS;
 
   /**
    * Configures the rate at which a partition leader checks for expired scheduled tasks such as the
@@ -187,19 +169,6 @@ public class Processing {
 
   public void setMaxCommandsInBatch(final Integer maxCommandsInBatch) {
     this.maxCommandsInBatch = maxCommandsInBatch;
-  }
-
-  public boolean isEnableAsyncScheduledTasks() {
-    return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
-        PREFIX + ".enable-async-scheduled-tasks",
-        enableAsyncScheduledTasks,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENABLE_ASYNC_SCHEDULED_TASKS_PROPERTIES);
-  }
-
-  public void setEnableAsyncScheduledTasks(final boolean enableAsyncScheduledTasks) {
-    this.enableAsyncScheduledTasks = enableAsyncScheduledTasks;
   }
 
   public Duration getScheduledTasksCheckInterval() {

@@ -223,17 +223,12 @@ public class ActorControl implements ConcurrencyControl {
   /**
    * The runnable is executed while the actor is in the following actor lifecycle phases: {@link
    * ActorLifecyclePhase#STARTED}
-   *
-   * @param delay
-   * @param runnable
-   * @return
    */
   @Override
-  public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+  public ScheduledTimer schedule(final long delayMs, final Runnable runnable) {
     ensureCalledFromWithinActor("runDelayed(...)");
     return scheduleTimerSubscription(
-        runnable,
-        job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, false));
+        runnable, job -> new DelayedTimerSubscription(job, delayMs, TimeUnit.MILLISECONDS, false));
   }
 
   /**

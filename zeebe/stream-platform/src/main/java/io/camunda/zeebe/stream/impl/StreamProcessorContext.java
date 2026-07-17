@@ -57,7 +57,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
-  private boolean enableAsyncScheduledTasks = true;
   private EventFilter processingFilter = e -> true;
   private ControllableStreamClock clock;
   private MeterRegistry meterRegistry;
@@ -97,11 +96,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext partitionId(final PartitionId partitionId) {
     this.partitionId = partitionId;
     return this;
-  }
-
-  @Override
-  public boolean enableAsyncScheduledTasks() {
-    return enableAsyncScheduledTasks;
   }
 
   @Override
@@ -251,11 +245,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public int getMaxRecoverableRetries() {
     return maxRecoverableRetries;
-  }
-
-  public StreamProcessorContext setEnableAsyncScheduledTasks(final boolean enabled) {
-    enableAsyncScheduledTasks = enabled;
-    return this;
   }
 
   public EventFilter processingFilter() {
