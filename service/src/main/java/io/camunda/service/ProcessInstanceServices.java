@@ -426,6 +426,30 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest, authentication);
   }
 
+  public CompletableFuture<BatchOperationCreationRecord>
+      suspendProcessInstanceBatchOperationWithResult(
+          final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.SUSPEND_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
+  public CompletableFuture<BatchOperationCreationRecord>
+      resumeProcessInstanceBatchOperationWithResult(
+          final ProcessInstanceFilter filter, final CamundaAuthentication authentication) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.RESUME_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest, authentication);
+  }
+
   public CompletableFuture<BatchOperationCreationRecord> resolveProcessInstanceIncidents(
       final long processInstanceKey, final CamundaAuthentication authentication) {
     // internal read, no user permissions needed
