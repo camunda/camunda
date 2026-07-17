@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -28,6 +29,13 @@ public class TestApiController {
   public static final String DUMMY_WEBAPP_ENDPOINT = "/operate/decisions";
   public static final String DUMMY_UNPROTECTED_ENDPOINT = "/favicon.ico";
   public static final String DUMMY_UNHANDLED_ENDPOINT = "/non-existent-endpoint";
+
+  /**
+   * Cluster-admin dummy endpoint at the real {@code /cluster/v2/topology} path, so the
+   * cluster-admin chain is exercised here (its real controller is in another module, off this
+   * slice's classpath).
+   */
+  public static final String DUMMY_CLUSTER_ADMIN_ENDPOINT = "/cluster/v2/topology";
 
   /**
    * Isolated, additive endpoint used only by {@code SessionAuthenticationRefreshTest} to force a
@@ -122,6 +130,11 @@ public class TestApiController {
 
   @PostMapping(DUMMY_V2_API_ENDPOINT)
   public @ResponseBody String dummyV2ApiPostEndpoint() {
+    return DEFAULT_RESPONSE;
+  }
+
+  @GetMapping(DUMMY_CLUSTER_ADMIN_ENDPOINT)
+  public @ResponseBody String dummyClusterAdminEndpoint() {
     return DEFAULT_RESPONSE;
   }
 }
