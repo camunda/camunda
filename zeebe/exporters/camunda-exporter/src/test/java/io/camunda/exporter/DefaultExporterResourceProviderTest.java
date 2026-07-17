@@ -14,8 +14,9 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
-import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogCleanupHandler;
+import io.camunda.exporter.handlers.auditlog.AuditLogHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateAddHandler;
 import io.camunda.exporter.handlers.waitstate.WaitStateRemoveHandler;
@@ -153,6 +154,7 @@ public class DefaultExporterResourceProviderTest {
     final var handlersExcludingMultiInstance =
         provider.getExportHandlers().stream()
             .filter(handler -> !(handler instanceof AuditLogHandler))
+            .filter(handler -> !(handler instanceof AuditLogCleanupHandler))
             .filter(handler -> !(handler instanceof WaitStateAddHandler))
             .filter(handler -> !(handler instanceof WaitStateUpdateHandler))
             .filter(handler -> !(handler instanceof WaitStateRemoveHandler))
@@ -381,6 +383,10 @@ public class DefaultExporterResourceProviderTest {
     // itself uses generic RecordValue
     if (handler instanceof final AuditLogHandler<?> auditLogHandler) {
       return findRecordValueTypeParameterFromClass(auditLogHandler.getTransformer().getClass());
+    }
+    if (handler instanceof final AuditLogCleanupHandler<?> auditLogCleanupHandler) {
+      return findRecordValueTypeParameterFromClass(
+          auditLogCleanupHandler.getTransformer().getClass());
     }
 
     // For WaitState handlers, extract RecordValue from the transformer instance for the same reason
