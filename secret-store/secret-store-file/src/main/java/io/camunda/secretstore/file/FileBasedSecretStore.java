@@ -35,6 +35,12 @@ import org.slf4j.LoggerFactory;
  * updates) and non-regular files are treated as non-secrets in both {@link #list()} and {@link
  * #resolve(Set)}. Symlinks are followed when reading a value. Files are read on every call, so
  * rotated values are picked up without a restart.
+ *
+ * <p>Symlinks are followed only within the directory: a secret's resolved (symlink-followed) real
+ * path must stay inside the configured directory, so an entry that resolves outside it (e.g. a
+ * symlink to an arbitrary file) is ignored rather than read. The directory itself is trusted and
+ * must be a restrictively-permissioned, single-tenant location — as a Kubernetes Secret {@code
+ * tmpfs} mount is — so that only authorized processes can place entries in it.
  */
 public final class FileBasedSecretStore implements SecretStore<FileBasedSecretReference> {
 
@@ -65,11 +71,14 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
         Files.newDirectoryStream(directory, FileBasedSecretStore::isVisibleRegularFile)) {
       for (final Path entry : entries) {
         final var name = entry.getFileName().toString();
-        if (FileBasedSecretReference.isValid(name)) {
-          refs.add(new FileBasedSecretReference(name));
-        } else {
+        if (!FileBasedSecretReference.isValid(name)) {
           LOG.warn("Skipping file with invalid secret name '{}' in '{}'", name, directory);
+          continue;
         }
+        if (!isWithinDirectory(entry)) {
+          continue;
+        }
+        refs.add(new FileBasedSecretReference(name));
       }
     } catch (final IOException | SecurityException e) {
       throw new SecretStoreUnavailableException(
@@ -84,7 +93,7 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
     // name is validated to a single path segment, so this is always a direct child.
     final var file = directory.resolve(name);
     try {
-      if (isHidden(name) || !Files.isRegularFile(file)) {
+      if (isHidden(name) || !Files.isRegularFile(file) || !isWithinDirectory(file)) {
         return notFound(name);
       }
       return new SecretResolutionResult.Resolved(readValue(file));
@@ -113,6 +122,22 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
 
   private static SecretResolutionResult notFound(final String name) {
     return new SecretResolutionResult.Failed(NOT_FOUND, "Secret not found: " + name, null);
+  }
+
+  /**
+   * Returns whether {@code file}'s real (symlink-resolved) path stays inside the configured
+   * directory. Name validation only guards the reference name, not where a symlink resolves to, so
+   * this is the guard against an in-directory symlink pointing at an arbitrary file outside it.
+   */
+  private boolean isWithinDirectory(final Path file) throws IOException {
+    final var withinDirectory = file.toRealPath().startsWith(directory.toRealPath());
+    if (!withinDirectory) {
+      LOG.warn(
+          "Ignoring secret '{}' in '{}': it resolves to a path outside the secrets directory",
+          file.getFileName(),
+          directory);
+    }
+    return withinDirectory;
   }
 
   private static boolean isVisibleRegularFile(final Path path) {

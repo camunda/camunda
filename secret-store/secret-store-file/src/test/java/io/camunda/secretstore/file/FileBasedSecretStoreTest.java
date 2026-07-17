@@ -29,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir;
 class FileBasedSecretStoreTest {
 
   @TempDir Path secretsDir;
+  @TempDir Path outsideDir;
 
   private static String resolvedValue(
       final Map<FileBasedSecretReference, SecretResolutionResult> result, final String name) {
@@ -168,6 +169,39 @@ class FileBasedSecretStoreTest {
     // then — the symlink is followed for the value, and ..data is not listed
     assertThat(resolvedValue(result, "db-password")).isEqualTo("s3cr3t");
     assertThat(list).containsExactly(new FileBasedSecretReference("db-password"));
+  }
+
+  @Test
+  void shouldReturnNotFoundForSymlinkResolvingOutsideDirectory() throws IOException {
+    // given — a symlink inside the store pointing at a file outside it (arbitrary-file-read
+    // attempt)
+    final var target = outsideDir.resolve("shadow");
+    Files.writeString(target, "root:x:0:0", StandardCharsets.UTF_8);
+    Files.createSymbolicLink(secretsDir.resolve("evil"), target);
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // when
+    final var entry =
+        store
+            .resolve(Set.of(new FileBasedSecretReference("evil")))
+            .get(new FileBasedSecretReference("evil"));
+
+    // then — the escaping symlink is refused, not read
+    assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
+    assertThat(((SecretResolutionResult.Failed) entry).code()).isEqualTo(SecretErrorCode.NOT_FOUND);
+  }
+
+  @Test
+  void shouldSkipSymlinkResolvingOutsideDirectoryInList() throws IOException {
+    // given — a legitimate secret plus an escaping symlink
+    writeSecret("valid", "1");
+    final var target = outsideDir.resolve("shadow");
+    Files.writeString(target, "root:x:0:0", StandardCharsets.UTF_8);
+    Files.createSymbolicLink(secretsDir.resolve("evil"), target);
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // when / then — the escaping symlink is not advertised as a secret
+    assertThat(store.list()).containsExactly(new FileBasedSecretReference("valid"));
   }
 
   @Test
