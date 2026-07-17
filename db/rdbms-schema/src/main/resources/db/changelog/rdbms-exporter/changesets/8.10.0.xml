@@ -603,31 +603,5 @@
     </addColumn>
   </changeSet>
 
-  <changeSet id="create_cluster_variable_kind_index" author="camunda" runInTransaction="false">
-    <preConditions onFail="MARK_RAN">
-      <not>
-        <indexExists indexName="${prefix}IDX_CLUSTER_VARIABLE_KIND"
-          tableName="${prefix}CLUSTER_VARIABLE"/>
-      </not>
-    </preConditions>
-    <!-- Use async index creation to avoid locking the table during rolling upgrade -->
-    <sql dbms="postgresql">
-      CREATE INDEX CONCURRENTLY ${prefix}IDX_CLUSTER_VARIABLE_KIND
-      ON ${prefix}CLUSTER_VARIABLE (KIND)
-    </sql>
-    <sql dbms="mysql,h2,oracle">
-      CREATE INDEX ${prefix}IDX_CLUSTER_VARIABLE_KIND
-      ON ${prefix}CLUSTER_VARIABLE (KIND)
-    </sql>
-    <sql dbms="mariadb">
-      CREATE INDEX ONLINE ${prefix}IDX_CLUSTER_VARIABLE_KIND
-      ON ${prefix}CLUSTER_VARIABLE (KIND)
-    </sql>
-    <sql dbms="mssql">
-      CREATE INDEX ${prefix}IDX_CLUSTER_VARIABLE_KIND
-      ON ${prefix}CLUSTER_VARIABLE (KIND)
-      WITH (ONLINE = ON)
-    </sql>
-  </changeSet>
 
 </databaseChangeLog>

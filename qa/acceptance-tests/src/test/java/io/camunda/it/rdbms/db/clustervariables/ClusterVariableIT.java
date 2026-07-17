@@ -471,6 +471,51 @@ public class ClusterVariableIT {
         .isEqualTo(io.camunda.search.entities.ClusterVariableKind.SECRET_REFERENCE);
   }
 
+  @TestTemplate
+  public void shouldFilterClusterVariablesByKind(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
+
+    // given — one SECRET_REFERENCE variable, one JSON variable
+    final var secretVar =
+        new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
+            .name(generateRandomString(10))
+            .value("\"secret\"")
+            .scope(ClusterVariableScope.GLOBAL)
+            .tenantId(null)
+            .kind(io.camunda.search.entities.ClusterVariableKind.SECRET_REFERENCE)
+            .build();
+    final var jsonVar =
+        new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
+            .name(generateRandomString(10))
+            .value("\"plain\"")
+            .scope(ClusterVariableScope.GLOBAL)
+            .tenantId(null)
+            .kind(io.camunda.search.entities.ClusterVariableKind.JSON)
+            .build();
+    createAndSaveVariables(rdbmsService, secretVar);
+    createAndSaveVariables(rdbmsService, jsonVar);
+
+    // when — filter by SECRET_REFERENCE kind
+    final var result =
+        clusterVariableReader.search(
+            new ClusterVariableQuery(
+                new ClusterVariableFilter.Builder()
+                    .names(secretVar.name())
+                    .kinds("SECRET_REFERENCE")
+                    .build(),
+                ClusterVariableSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    // then — only the SECRET_REFERENCE variable is returned
+    assertThat(result.total()).isEqualTo(1);
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().kind())
+        .isEqualTo(io.camunda.search.entities.ClusterVariableKind.SECRET_REFERENCE);
+    assertThat(result.items().getFirst().name()).isEqualTo(secretVar.name());
+  }
+
   private void assertVariableDbModelEqualToEntity(
       final ClusterVariableDbModel dbModel, final ClusterVariableEntity entity) {
     // metadata is not yet persisted in ClusterVariableDbModel, so it has no equivalent to compare
