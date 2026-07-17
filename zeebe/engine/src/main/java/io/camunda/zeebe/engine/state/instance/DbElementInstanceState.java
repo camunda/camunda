@@ -90,6 +90,14 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final DbLong activeProcessInstanceCounterValue;
   private final ColumnFamily<DbLong, DbLong> activeProcessInstanceCounterColumnFamily;
 
+  // element activation counters: [processInstanceKey | elementId] => count
+  private final DbLong activationCounterProcessInstanceKey = new DbLong();
+  private final DbString activationCounterElementId = new DbString();
+  private final DbCompositeKey<DbLong, DbString> elementActivationCounterKey;
+  private final DbLong elementActivationCount = new DbLong();
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbLong>
+      elementActivationCountersColumnFamily;
+
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
@@ -179,7 +187,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             activeProcessInstanceCounterKey,
             activeProcessInstanceCounterValue);
+
     initializeActiveProcessInstanceCounterIfNeeded();
+    elementActivationCounterKey =
+        new DbCompositeKey<>(activationCounterProcessInstanceKey, activationCounterElementId);
+    elementActivationCountersColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.ELEMENT_ACTIVATION_COUNTERS,
+            transactionContext,
+            elementActivationCounterKey,
+            elementActivationCount);
   }
 
   @Override
@@ -228,6 +245,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       processInstanceKeyByProcessDefinitionKeyColumnFamily.deleteExisting(
           processInstanceKeyByProcessDefinitionKey);
       decrementActiveProcessInstanceCount();
+      deleteAllElementActivationCounters(key);
     }
 
     if (parent > 0) {
@@ -648,6 +666,35 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     final var counter =
         activeProcessInstanceCounterColumnFamily.get(activeProcessInstanceCounterKey);
     return counter != null ? counter.getValue() : 0L;
+  }
+
+  @Override
+  public void incrementElementActivationCounter(
+      final long processInstanceKey, final DirectBuffer elementId) {
+    activationCounterProcessInstanceKey.wrapLong(processInstanceKey);
+    activationCounterElementId.wrapBuffer(elementId);
+
+    final var existing = elementActivationCountersColumnFamily.get(elementActivationCounterKey);
+    final long newCount = (existing != null ? existing.getValue() : 0L) + 1L;
+    elementActivationCount.wrapLong(newCount);
+    elementActivationCountersColumnFamily.upsert(
+        elementActivationCounterKey, elementActivationCount);
+  }
+
+  @Override
+  public long getElementActivationCounter(
+      final long processInstanceKey, final DirectBuffer elementId) {
+    activationCounterProcessInstanceKey.wrapLong(processInstanceKey);
+    activationCounterElementId.wrapBuffer(elementId);
+    final var existing = elementActivationCountersColumnFamily.get(elementActivationCounterKey);
+    return existing != null ? existing.getValue() : 0L;
+  }
+
+  @Override
+  public void deleteAllElementActivationCounters(final long processInstanceKey) {
+    activationCounterProcessInstanceKey.wrapLong(processInstanceKey);
+    elementActivationCountersColumnFamily.whileEqualPrefix(
+        activationCounterProcessInstanceKey, elementActivationCountersColumnFamily::deleteExisting);
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
