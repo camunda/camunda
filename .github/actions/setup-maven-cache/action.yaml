@@ -47,9 +47,23 @@ runs:
         -D maven.artifact.threads=32
         -D aether.dependencyCollector.impl=bf
         EOF
+    - name: Compute dependency fingerprint
+      # Hashing raw bytes of every pom (`hashFiles('**/pom.xml')`) rotated the
+      # cache key on ANY pom edit — even a leaf module's <name> or comment that
+      # changes zero resolved dependencies — forcing a cold Maven run on
+      # build-distball (INC-5949). Instead hash only the dependency-relevant XML
+      # (dependencies / dependencyManagement / properties / build>plugins) of
+      # every pom, so the key stays stable unless dependencies actually change.
+      # A curated static file subset would be wrong here: many leaf poms declare
+      # versions directly, and actions/cache never re-saves on an exact key hit,
+      # so an undetected leaf bump would download-but-never-persist forever. See
+      # https://github.com/camunda/camunda/issues/56950.
+      id: dep-fp
+      shell: bash
+      run: echo "hash=$(python3 .github/scripts/dep-fingerprint.py)" >> "$GITHUB_OUTPUT"
     - name: Get cache path and keys
       env:
-        HASH_FILES: ${{ hashFiles('**/pom.xml') }}
+        HASH_FILES: ${{ steps.dep-fp.outputs.hash }}
         # it matters for caching as absolute paths on self-hosted and GitHub runners differ
         # self-hosted: `/runner/` vs gh-hosted: `/home/runner`
         KEY_PREFIX: ${{ runner.environment }}-${{ runner.os }}-mvn-${{ inputs.maven-cache-key-modifier }}
