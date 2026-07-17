@@ -38,16 +38,12 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionOutcome;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.SpringBootCondition;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ConditionContext;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
-import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
  * The single auto-configuration path for the starter. Every application is a multi-client
@@ -187,29 +183,5 @@ public class MultiCamundaClientAutoConfiguration {
         beanNamesByClientName,
         beanName -> beanFactory.getBean(beanName, CamundaClient.class),
         properties.getPrimaryClientName().orElse(null));
-  }
-
-  /** Matches when a primary (default) client is resolvable from the multi-client configuration. */
-  static final class OnResolvablePrimaryClientCondition extends SpringBootCondition {
-    @Override
-    public ConditionOutcome getMatchOutcome(
-        final ConditionContext context, final AnnotatedTypeMetadata metadata) {
-      final boolean hasPrimary;
-      try {
-        hasPrimary =
-            MultiCamundaClientPropertiesResolver.resolve(context.getEnvironment())
-                .getPrimaryClientName()
-                .isPresent();
-      } catch (final RuntimeException e) {
-        // invalid configuration: do not register the bean and let the real validation error
-        // surface from the MultiCamundaClientProperties bean creation instead of from here
-        return ConditionOutcome.noMatch("multi-client configuration could not be resolved");
-      }
-      return new ConditionOutcome(
-          hasPrimary,
-          hasPrimary
-              ? "a primary client is resolvable"
-              : "no primary client is resolvable (multiple clients without a designated primary)");
-    }
   }
 }

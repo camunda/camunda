@@ -27,12 +27,11 @@ import io.camunda.client.spring.actuator.JobWorkerController;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Lazy;
 
 @AutoConfigureBefore(MetricsDefaultConfiguration.class)
@@ -63,9 +62,13 @@ public class CamundaActuatorConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  // only when a single client can be resolved (one client, or several with a designated primary);
-  // on the multi-client path with no primary there is no unambiguous client to health-check
-  @ConditionalOnSingleCandidate(CamundaClient.class)
+  // Register whenever a primary client is resolvable (one client, or several with a designated
+  // primary) and health-check the @Primary client. Resolves from the configuration properties, so
+  // it is evaluated correctly before the per-client CamundaClient beans are contributed by the
+  // bean-definition post-processor (a plain @ConditionalOnSingleCandidate would see zero candidates
+  // at that point and never register). With no primary (multiple clients, none designated) there is
+  // no unambiguous client to health-check.
+  @Conditional(OnResolvablePrimaryClientCondition.class)
   public HealthCheck camundaHealthCheck(final CamundaClient client) {
     return new HealthCheck(client);
   }
@@ -76,7 +79,7 @@ public class CamundaActuatorConfiguration {
       name = "enabled",
       matchIfMissing = true)
   @ConditionalOnClass(name = "org.springframework.boot.health.contributor.HealthIndicator")
-  @ConditionalOnBean(HealthCheck.class)
+  @Conditional(OnResolvablePrimaryClientCondition.class)
   @ConditionalOnMissingBean(name = "camundaClientHealthIndicator")
   public CamundaClientHealthIndicator camundaClientHealthIndicator(final HealthCheck healthCheck) {
     return new CamundaClientHealthIndicator(healthCheck);

@@ -19,7 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.health.HealthCheck;
+import io.camunda.client.jobhandling.JobWorkerManager;
+import io.camunda.client.spring.actuator.CamundaClientHealthIndicator;
 import io.camunda.client.spring.bean.CamundaClientRegistry;
+import io.camunda.client.spring.event.MultiCamundaLifecycleEventProducer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -65,5 +69,24 @@ public class SingleClientBackwardCompatibilityTest {
   void shouldExposeCamundaClientConfigurationBean() {
     // @Autowired CamundaClientConfiguration keeps working as on the single-client path
     assertThat(applicationContext.getBean(CamundaClientConfiguration.class)).isNotNull();
+  }
+
+  @Test
+  void shouldPreserveActuatorHealthSurfaceOnSingleClientPath() {
+    // the actuator health check and indicator must still be registered for a single-client app
+    // (the per-client CamundaClient beans are contributed by a bean-definition post-processor, so
+    // the health check must gate on the resolvable primary rather than a live candidate count)
+    assertThat(applicationContext.getBeanNamesForType(HealthCheck.class)).isNotEmpty();
+    assertThat(applicationContext.getBeanNamesForType(CamundaClientHealthIndicator.class))
+        .isNotEmpty();
+  }
+
+  @Test
+  void shouldWireWorkerRegistrationAndLifecycleOnSingleClientPath() {
+    // job-worker registration infrastructure and the per-client lifecycle producer are present, so
+    // @JobWorker methods are registered and the client lifecycle is driven as before
+    assertThat(applicationContext.getBeanNamesForType(JobWorkerManager.class)).isNotEmpty();
+    assertThat(applicationContext.getBeanNamesForType(MultiCamundaLifecycleEventProducer.class))
+        .isNotEmpty();
   }
 }

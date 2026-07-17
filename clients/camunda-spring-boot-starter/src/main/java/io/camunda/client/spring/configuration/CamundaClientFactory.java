@@ -40,13 +40,17 @@ import org.springframework.beans.factory.ObjectProvider;
  * the {@code physical-tenant-id} / {@code prefix-physical-tenant-path} scope) maps through one
  * authoritative place and cannot drift as new client properties are added.
  *
- * <p>Collaborators that exist as beans in the multi-client context are reused: the per-client
- * {@link CredentialsProvider} is derived from the entry's {@code auth.*} via {@link
+ * <p>Collaborators that exist as beans in the context are reused: the per-client {@link
+ * CredentialsProvider} is derived from the entry's {@code auth.*} via {@link
  * CredentialsProviderConfiguration}, and any user-defined {@link JsonMapper}, {@link
- * ClientInterceptor}s and {@link AsyncExecChainHandler}s are applied. The single-client executor
- * and exception-handler beans are not available in multi-client mode, so each client gets its own
- * executor (owned -&gt; closed with the client) and the default exception handling; unifying those
- * is tracked in the single-client/multi-client consolidation.
+ * ClientInterceptor}s, {@link AsyncExecChainHandler}s, {@link CamundaClientExecutorService} and
+ * {@link JobExceptionHandlerSupplier} are applied (falling back to self-contained defaults when
+ * absent), so overrides such as {@code VirtualThreadsAutoConfiguration}'s executor take effect.
+ *
+ * <p>Note: the executor and job-exception-handler beans are shared across all clients. For a single
+ * (default) client this matches the former single-client path; when several named clients are
+ * configured they share one executor bean, so per-client {@code execution-threads} is not applied
+ * and the shared pool's lifecycle is managed by Spring rather than owned per client.
  */
 public class CamundaClientFactory {
 
