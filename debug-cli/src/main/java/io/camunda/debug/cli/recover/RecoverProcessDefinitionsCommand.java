@@ -20,11 +20,8 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
-import io.camunda.zeebe.exporter.common.extensionproperty.ExtensionPropertyConfiguration;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.util.FileUtil;
@@ -250,9 +247,7 @@ public class RecoverProcessDefinitionsCommand implements Callable<Integer> {
         return 1;
       }
 
-      final var processHandler =
-          new ProcessHandler(
-              processIndexName, new NoopProcessCache(), new ExtensionPropertyConfiguration());
+      final var processHandler = new ProcessHandler(processIndexName, new NoopProcessCache());
       final var embeddedFormHandler = new EmbeddedFormHandler(formIndexName);
 
       final var recovery =
@@ -337,12 +332,8 @@ public class RecoverProcessDefinitionsCommand implements Callable<Integer> {
   }
 
   private static DbProcessState openProcessState(final ZeebeDb<ZbColumnFamilies> db) {
-    final var stateTransformer =
-        BpmnFactory.createTransformer(
-            InstantSource.fixed(Instant.EPOCH),
-            ExpressionLanguageMetrics.noop(),
-            Integer.MAX_VALUE);
-    return new DbProcessState(db, db.createContext(), new EngineConfiguration(), stateTransformer);
+    return new DbProcessState(
+        db, db.createContext(), new EngineConfiguration(), InstantSource.fixed(Instant.EPOCH));
   }
 
   private void printSummary(final PrintWriter err, final PrintWriter out, final Summary summary) {

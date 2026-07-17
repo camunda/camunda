@@ -10,8 +10,6 @@ package io.camunda.debug.cli.recover;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
-import io.camunda.zeebe.protocol.record.Agent;
-import io.camunda.zeebe.protocol.record.ChannelType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -129,24 +127,6 @@ final class RecoveredProcessRecord implements Record<Process> {
   public Map<String, Object> getAuthorizations() {
     throw new UnsupportedOperationException(
         "getAuthorizations() is not supported for RecoveredProcessRecord");
-  }
-
-  @Override
-  public Agent getAgent() {
-    throw new UnsupportedOperationException(
-        "getAgent() is not supported for RecoveredProcessRecord");
-  }
-
-  @Override
-  public ChannelType getRequestChannelType() {
-    throw new UnsupportedOperationException(
-        "getRequestChannelType() is not supported for RecoveredProcessRecord");
-  }
-
-  @Override
-  public String getRequestToolName() {
-    throw new UnsupportedOperationException(
-        "getRequestToolName() is not supported for RecoveredProcessRecord");
   }
 
   @Override
