@@ -92,7 +92,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           "tenant",
           "PI_123",
           Set.of("tag1", "tag2"),
-          "biz-id");
+          "biz-id",
+          null);
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
             {
@@ -767,6 +768,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             false,
             "tenant",
             "PI_456",
+            null,
             null,
             null);
     when(processInstanceServices.getByKey(eq(processInstanceKey), any(CamundaAuthentication.class)))

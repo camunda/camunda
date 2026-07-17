@@ -148,6 +148,10 @@
       },
       "businessId": {
         "type": "keyword"
+      },
+      "suspendedDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
       }
 		}
 	}

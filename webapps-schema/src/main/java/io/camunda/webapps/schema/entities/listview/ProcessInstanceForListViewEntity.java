@@ -69,6 +69,11 @@ public class ProcessInstanceForListViewEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private String businessId;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.10.0. */
+  @SinceVersion(value = "8.10.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private OffsetDateTime suspendedDate;
+
   @JsonIgnore private Object[] sortValues;
 
   @Override
@@ -296,6 +301,15 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public OffsetDateTime getSuspendedDate() {
+    return suspendedDate;
+  }
+
+  public ProcessInstanceForListViewEntity setSuspendedDate(final OffsetDateTime suspendedDate) {
+    this.suspendedDate = suspendedDate;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -320,7 +334,8 @@ public class ProcessInstanceForListViewEntity
         position,
         tags,
         rootProcessInstanceKey,
-        businessId);
+        businessId,
+        suspendedDate);
   }
 
   @Override
@@ -353,6 +368,7 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(joinRelation, that.joinRelation)
         && Objects.equals(position, that.position)
         && Objects.equals(tags, that.tags)
-        && Objects.equals(businessId, that.businessId);
+        && Objects.equals(businessId, that.businessId)
+        && Objects.equals(suspendedDate, that.suspendedDate);
   }
 }
