@@ -331,6 +331,11 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementActivatingV3Applier(
             elementInstanceState, processState, eventScopeInstanceState));
     register(
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        4,
+        new ProcessInstanceElementActivatingV4Applier(
+            elementInstanceState, processState, eventScopeInstanceState));
+    register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
         new ProcessInstanceElementActivatedApplier(elementInstanceState));
     register(

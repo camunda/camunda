@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstruc
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnLoopDetectionBehavior;
 import io.camunda.zeebe.engine.processing.conditional.ConditionalSubscriptionTriggerProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -140,7 +141,8 @@ public final class BpmnProcessors {
         keyGenerator);
     addProcessInstanceBusinessIdStreamProcessors(
         typedRecordProcessors, processingState, writers, authCheckBehavior, config);
-    addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
+    addProcessInstanceBatchStreamProcessors(
+        typedRecordProcessors, processingState, writers, bpmnBehaviors.loopDetectionBehavior());
     addAdHocSubProcessActivityStreamProcessors(
         typedRecordProcessors, processingState, writers, authCheckBehavior, bpmnBehaviors);
 
@@ -364,7 +366,8 @@ public final class BpmnProcessors {
   private static void addProcessInstanceBatchStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
-      final Writers writers) {
+      final Writers writers,
+      final BpmnLoopDetectionBehavior loopDetectionBehavior) {
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_INSTANCE_BATCH,
@@ -380,7 +383,8 @@ public final class BpmnProcessors {
                 writers,
                 processingState.getKeyGenerator(),
                 processingState.getElementInstanceState(),
-                processingState.getProcessState()));
+                processingState.getProcessState(),
+                loopDetectionBehavior));
   }
 
   private static void addAdHocSubProcessActivityStreamProcessors(
