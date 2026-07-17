@@ -20,8 +20,6 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
-import io.atomix.raft.protocol.PollRequest;
-import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import java.util.concurrent.CompletableFuture;
@@ -56,14 +54,6 @@ public abstract class ActiveRole extends PassiveRole {
       raft.transition(RaftServer.Role.FOLLOWER);
     }
     return future;
-  }
-
-  @Override
-  public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
-    raft.checkThread();
-    logRequest(request);
-    updateTermAndLeader(request.term(), null);
-    return CompletableFuture.completedFuture(logResponse(handlePoll(request)));
   }
 
   @Override
