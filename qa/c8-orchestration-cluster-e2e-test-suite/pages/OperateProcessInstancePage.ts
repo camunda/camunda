@@ -39,6 +39,7 @@ class OperateProcessInstancePage {
   readonly executionCountToggleOff: Locator;
   readonly listenersTabButton: Locator;
   readonly detailsTabButton: Locator;
+  readonly jobPriorityValue: Locator;
   readonly variablesTabButton: Locator;
   readonly operationsLogTabButton: Locator;
   readonly operationsLogTable: Locator;
@@ -180,6 +181,7 @@ class OperateProcessInstancePage {
     this.detailsTabButton = page
       .getByLabel('Process Instance Bottom Panel Tabs')
       .getByRole('link', {name: /^Details$/i});
+    this.jobPriorityValue = page.getByTestId('job-priority');
     this.variablesTabButton = page
       .getByLabel('Process Instance Bottom Panel Tabs')
       .getByRole('link', {name: /^Variables$/i});

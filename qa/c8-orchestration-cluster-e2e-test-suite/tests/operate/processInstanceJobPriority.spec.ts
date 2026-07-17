@@ -48,7 +48,6 @@ test.describe('Process Instance Job Priority', () => {
   });
 
   test('Job Priority row shows the value defined in the process model', async ({
-    page,
     operateProcessInstancePage,
   }) => {
     await operateProcessInstancePage.gotoProcessInstancePage({
@@ -58,11 +57,10 @@ test.describe('Process Instance Job Priority', () => {
     await operateProcessInstancePage.clickTreeItem(/priority task/i);
     await operateProcessInstancePage.clickDetailsTab();
 
-    await expect(page.getByTestId('job-priority')).toHaveText('42');
+    await expect(operateProcessInstancePage.jobPriorityValue).toHaveText('42');
   });
 
   test('Job Priority row shows the default priority when none is defined', async ({
-    page,
     operateProcessInstancePage,
   }) => {
     await operateProcessInstancePage.gotoProcessInstancePage({
@@ -72,6 +70,6 @@ test.describe('Process Instance Job Priority', () => {
     await operateProcessInstancePage.clickTreeItem('task', true);
     await operateProcessInstancePage.clickDetailsTab();
 
-    await expect(page.getByTestId('job-priority')).toHaveText('0');
+    await expect(operateProcessInstancePage.jobPriorityValue).toHaveText('0');
   });
 });
