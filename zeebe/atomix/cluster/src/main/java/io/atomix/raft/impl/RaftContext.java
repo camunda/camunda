@@ -929,6 +929,15 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
+   * Returns the configuration change timeout.
+   *
+   * @return The configuration change timeout.
+   */
+  public Duration getConfigurationChangeTimeout() {
+    return partitionConfig.getConfigurationChangeTimeout();
+  }
+
+  /**
    * Returns the first commit index.
    *
    * @return The first commit index.
