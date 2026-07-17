@@ -665,7 +665,7 @@ paths:
       x-required-permissions:
         - anyOf:
             - { resourceType: BATCH, permissionType: CREATE }
-            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_RESUME_PROCESS_INSTANCE }
+            - { resourceType: BATCH, permissionType: CREATE_BATCH_OPERATION_SUSPEND_PROCESS_INSTANCE }
       security:
         - bearerAuth: []
         - basicAuth: []
