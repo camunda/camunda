@@ -510,7 +510,13 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     SecretReferenceProcessors.addSecretReferenceProcessors(
-        typedRecordProcessors, writers, keyGenerator, processingState);
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        processingState,
+        scheduledTaskStateFactory,
+        secretStoreRegistry,
+        config);
 
     return typedRecordProcessors;
   }
