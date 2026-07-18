@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretCache;
+import io.camunda.secretstore.SecretStore;
 import io.camunda.security.api.context.PropertyAuthorizationEvaluator;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -109,6 +111,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public final class EngineProcessors {
@@ -123,7 +126,9 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final Map<String, SecretStore> secretStores,
+      final Map<String, SecretCache> secretCaches) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -507,7 +512,14 @@ public final class EngineProcessors {
         keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     SecretReferenceProcessors.addSecretReferenceProcessors(
-        typedRecordProcessors, writers, keyGenerator, processingState);
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        processingState,
+        scheduledTaskStateFactory,
+        secretStores,
+        secretCaches,
+        config);
 
     return typedRecordProcessors;
   }

@@ -44,6 +44,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -235,7 +236,9 @@ class PartitionManagerStepTest {
               conv,
               flagsA,
               testBrokerStartupContext.getBrokerConfiguration(),
-              new ExporterRepository()));
+              new ExporterRepository(),
+              Map.of(),
+              Map.of()));
       testBrokerStartupContext.setPhysicalTenantContext(
           secondTenantId,
           new PhysicalTenantContext(
@@ -243,7 +246,9 @@ class PartitionManagerStepTest {
               conv,
               flagsB,
               testBrokerStartupContext.getBrokerConfiguration(),
-              new ExporterRepository()));
+              new ExporterRepository(),
+              Map.of(),
+              Map.of()));
 
       final var secondFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
       final var secondStep = new PartitionManagerStep(secondTenantId);
@@ -306,7 +311,9 @@ class PartitionManagerStepTest {
               conv,
               FeatureFlags.createDefaultForTests(),
               testBrokerStartupContext.getBrokerConfiguration(),
-              new ExporterRepository()));
+              new ExporterRepository(),
+              Map.of(),
+              Map.of()));
       testBrokerStartupContext.addJobStreamService(PHYSICAL_TENANT_ID, jobStreamService);
 
       // when

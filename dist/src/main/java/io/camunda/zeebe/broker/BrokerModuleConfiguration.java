@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.secrets.SecretStoreRegistry;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
@@ -31,6 +32,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
@@ -77,6 +79,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final @Nullable IntFunction<Long> rdbmsExportedPositionSupplier;
   private final NodeIdProvider nodeIdProvider;
   private final WorkingDirectory workingDirectory;
+  private final Map<String, SecretStoreRegistry> secretStoreRegistries;
 
   private Broker broker;
 
@@ -100,7 +103,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
       @Autowired(required = false) final RdbmsMapperBundle rdbmsMapperBundle,
       final NodeIdProvider nodeIdProvider,
-      final WorkingDirectory workingDirectory) {
+      final WorkingDirectory workingDirectory,
+      @Autowired(required = false) final Map<String, SecretStoreRegistry> secretStoreRegistries) {
     this.configuration = configuration;
     this.springBrokerBridge = springBrokerBridge;
     this.actorScheduler = actorScheduler;
@@ -118,6 +122,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     rdbmsExportedPositionSupplier = exportedPositionSupplier(rdbmsMapperBundle);
     this.nodeIdProvider = nodeIdProvider;
     this.workingDirectory = workingDirectory;
+    this.secretStoreRegistries =
+        secretStoreRegistries != null ? secretStoreRegistries : Collections.emptyMap();
   }
 
   @Bean(destroyMethod = "close")
@@ -149,6 +155,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withWorkingDirectory(workingDirectory.path())
             .withExporterDescriptors(exporterDescriptors)
             .withExportedPositionSupplier(rdbmsExportedPositionSupplier)
+            .withSecretStoreRegistries(secretStoreRegistries)
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
