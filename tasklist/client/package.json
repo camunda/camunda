@@ -5,8 +5,8 @@
   "type": "module",
   "dependencies": {
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
-    "@bpmn-io/form-js-carbon-styles": "1.23.1",
-    "@bpmn-io/form-js-viewer": "1.23.1",
+    "@bpmn-io/form-js-carbon-styles": "1.24.0",
+    "@bpmn-io/form-js-viewer": "1.24.0",
     "@camunda/camunda-api-zod-schemas": "0.0.82",
     "@camunda/camunda-composite-components": "0.25.2",
     "@carbon/react": "1.112.0",
