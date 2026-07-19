@@ -24,7 +24,7 @@
 		"@carbon/grid": "11.57.0",
 		"@carbon/layout": "11.54.0",
 		"@carbon/react": "1.111.1",
-		"@carbon/type": "11.62.0",
+		"@carbon/type": "11.63.0",
 		"@devbookhq/splitter": "1.4.2",
 		"@tanstack/react-query": "5.101.2",
 		"@tanstack/react-query-devtools": "5.101.2",
