@@ -1,0 +1,20 @@
+---
+# Source: camunda-platform/templates/common/configmap-warnings.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: c8-golden-stable-89-none-camunda-platform-warnings
+  labels:
+    app: camunda-platform
+    app.kubernetes.io/name: camunda-platform
+    app.kubernetes.io/instance: c8-golden-stable-89-none
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: camunda-platform
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+
+  annotations:
+    {}
+data:
+  warnings: |-
+    [camunda][warning] DEPRECATION: The following Bitnami-based subcharts are deprecated and will be removed in Camunda 8.10: [identityKeycloak]. Please migrate to externally managed services before upgrading to 8.10. For more details: https://docs.camunda.io/docs/8.9/self-managed/deployment/helm/operational-tasks/migration-from-bitnami/
