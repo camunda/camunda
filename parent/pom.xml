@@ -163,7 +163,7 @@
     <version.swagger-annotations>2.2.52</version.swagger-annotations>
     <version.swagger-parser>2.1.45</version.swagger-parser>
     <version.checker-qual>4.2.1</version.checker-qual>
-    <version.java-jwt>4.5.2</version.java-jwt>
+    <version.java-jwt>4.6.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.13</version.postgresql>
     <version.h2>2.4.240</version.h2>
