@@ -22,7 +22,7 @@
 		"@camunda/camunda-api-zod-schemas": "0.0.82",
 		"@camunda/camunda-composite-components": "0.25.4",
 		"@carbon/grid": "11.57.0",
-		"@carbon/layout": "11.54.0",
+		"@carbon/layout": "11.55.0",
 		"@carbon/react": "1.111.1",
 		"@carbon/type": "11.62.0",
 		"@devbookhq/splitter": "1.4.2",
