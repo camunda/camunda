@@ -20,7 +20,7 @@
   "dependencies": {
     "@camunda/camunda-api-zod-schemas": "0.0.82",
     "@camunda/camunda-composite-components": "0.25.2",
-    "@carbon/elements": "11.92.0",
+    "@carbon/elements": "11.93.0",
     "@carbon/react": "1.111.0",
     "@monaco-editor/react": "4.7.0",
     "@tanstack/react-query": "^5.100.14",
