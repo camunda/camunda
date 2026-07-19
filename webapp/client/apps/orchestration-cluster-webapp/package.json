@@ -21,7 +21,7 @@
 		"@bpmn-io/element-template-icon-renderer": "1.0.0",
 		"@camunda/camunda-api-zod-schemas": "0.0.82",
 		"@camunda/camunda-composite-components": "0.25.4",
-		"@carbon/grid": "11.57.0",
+		"@carbon/grid": "11.58.0",
 		"@carbon/layout": "11.55.0",
 		"@carbon/react": "1.111.1",
 		"@carbon/type": "11.63.0",
