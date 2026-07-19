@@ -33,7 +33,7 @@ jobs:
       run:
         working-directory: identity/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - name: Print metadata
@@ -77,7 +77,7 @@ jobs:
       run:
         working-directory: operate/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - name: Print metadata
@@ -122,7 +122,7 @@ jobs:
       run:
         working-directory: tasklist/client
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - name: Print metadata
@@ -167,7 +167,7 @@ jobs:
       TEST_TYPE: Tool
       TEST_PRODUCT: Optimize
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1

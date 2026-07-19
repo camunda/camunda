@@ -57,7 +57,7 @@ jobs:
             runner: "aws-arm-core-4-longrunning"
             arch: arm64
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -134,7 +134,7 @@ jobs:
     env:
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -193,7 +193,7 @@ jobs:
       TEST_OWNER: '@camunda/core-features'
       TEST_TYPE: Performance
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -262,7 +262,7 @@ jobs:
     env:
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -331,7 +331,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
       TEST_TYPE: Build
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -443,7 +443,7 @@ jobs:
       IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
       IMAGE_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag != '' && needs.utils-get-snapshot-docker-tag.outputs.snapshot_tag || needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-build
         with:
@@ -505,7 +505,7 @@ jobs:
     env:
       TEST_OWNER: '@camunda/engineering-operations'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
       - name: Generate GitHub token
         id: github-token
         uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
