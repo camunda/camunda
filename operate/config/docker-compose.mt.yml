@@ -101,7 +101,7 @@ services:
       start_period: 30s
   camunda:
     container_name: camunda
-    image: camunda/camunda:8.9.12
+    image: camunda/camunda:8.9.13
     environment:
       - SPRING_PROFILES_ACTIVE=broker,operate,tasklist,dev-data
       - JAVA_TOOL_OPTIONS=-Xms512m -Xmx2g
