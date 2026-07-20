@@ -6,7 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Page, Locator} from '@playwright/test';
+import {expect, type Page, type Locator} from '@playwright/test';
+
+const START_FORM_FILTER_URL_PARAM = {
+  'All Processes': null,
+  'Requires form input to start': 'yes',
+  'Does not require form input to start': 'no',
+} as const;
 
 class TasklistProcessesPage {
   private page: Page;
@@ -34,7 +40,7 @@ class TasklistProcessesPage {
   }
 
   processTileByName(name: string): Locator {
-    return this.processTile.filter({hasText: name});
+    return this.processTile.filter({hasText: name}).first();
   }
 
   requiresFormInputTagFor(name: string): Locator {
@@ -74,13 +80,21 @@ class TasklistProcessesPage {
   }
 
   async filterByStartForm(
-    option:
-      | 'All Processes'
-      | 'Requires form input to start'
-      | 'Does not require form input to start',
+    option: keyof typeof START_FORM_FILTER_URL_PARAM,
   ): Promise<void> {
     await this.processFilterDropdown.click();
     await this.page.getByRole('option', {name: option, exact: true}).click();
+
+    // The search box and this dropdown share one debounced URL updater, so
+    // wait for the filter's URL update to commit before a caller searches.
+    const paramValue = START_FORM_FILTER_URL_PARAM[option];
+    if (paramValue === null) {
+      await expect(this.page).not.toHaveURL(/hasStartForm=/);
+    } else {
+      await expect(this.page).toHaveURL(
+        new RegExp(`hasStartForm=${paramValue}`),
+      );
+    }
   }
 }
 
