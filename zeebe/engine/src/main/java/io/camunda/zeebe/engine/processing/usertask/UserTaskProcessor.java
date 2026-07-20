@@ -264,7 +264,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
             request -> {
               switch (request.valueType()) {
                 case USER_TASK ->
-                    responseWriter.writeRejection(
+                    responseWriter.writeRejectedResponse(
                         command.getKey(),
                         mapDeniedIntentToResponseIntent(intentToWrite),
                         command.getValue(),
@@ -292,7 +292,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
                               final var deniedReason =
                                   USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(
                                       userTaskInstanceKey, command.getValue().getDeniedReason());
-                              responseWriter.writeRejection(
+                              responseWriter.writeRejectedResponse(
                                   variableDocumentKey,
                                   VariableDocumentIntent.UPDATE,
                                   variableDocumentRecord,
