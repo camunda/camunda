@@ -137,6 +137,7 @@ message PartitionGroupChangeOperation {
     UpdateIncarnationNumberOperation updateIncarnationNumber = 15;
     ModeChangeOperation modeChange = 16;
     AwaitModeChangeOperation awaitModeChange = 17;
+    ExporterStateChangeOperation exporterStateChange = 18;
   }
 }
 
@@ -246,6 +247,7 @@ message TopologyChangeOperation {
     UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
     ModeChangeOperation modeChange = 24;
     AwaitModeChangeOperation awaitModeChange = 25;
+    ExporterStateChangeOperation exporterStateChange = 26;
   }
 }
 
@@ -355,6 +357,10 @@ message MemberRemoveOperation { string memberToRemove = 1; }
 
 message ModeChangeOperation {
   Mode mode = 1;
+}
+
+message ExporterStateChangeOperation {
+  ExportingStateEnum state = 1;
 }
 
 message AwaitModeChangeOperation {

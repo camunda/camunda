@@ -67,6 +67,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExporterStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
@@ -574,6 +575,11 @@ public class ProtoBufSerializer
               Topology.AwaitModeChangeOperation.newBuilder()
                   .setMode(toProtoTopologyMode(awaitModeChangeOperation.mode()))
                   .build());
+      case final ExporterStateChangeOperation exporterStateChangeOperation ->
+          builder.setExporterStateChange(
+              Topology.ExporterStateChangeOperation.newBuilder()
+                  .setState(encodeExportingState(exporterStateChangeOperation.state()))
+                  .build());
     }
     return builder.build();
   }
@@ -903,6 +909,10 @@ public class ProtoBufSerializer
       final var awaitModeChangeProto = topologyChangeOperation.getAwaitModeChange();
       return new AwaitModeChangeOperation(
           memberId, fromProtoTopologyMode(awaitModeChangeProto.getMode()));
+    } else if (topologyChangeOperation.hasExporterStateChange()) {
+      final var exporterStateChangeProto = topologyChangeOperation.getExporterStateChange();
+      return new ExporterStateChangeOperation(
+          memberId, decodeExportingState(exporterStateChangeProto.getState()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -1445,6 +1455,7 @@ public class ProtoBufSerializer
       throw new DecodingFailed(e);
     }
   }
+
 
   @Override
   public byte[] encodeRestoreRequest(final RestoreRequest request) {
