@@ -14,6 +14,19 @@ import {cancelProcessInstance} from '../zeebeClient';
 import {validateResponse} from 'json-body-assertions';
 import {expectBatchState} from './batch-operation-requestHelpers';
 
+export async function startInstanceWithBusinessId(
+  request: APIRequestContext,
+  processDefinitionId: string,
+  businessId: string,
+): Promise<string> {
+  const res = await request.post(buildUrl('/process-instances'), {
+    headers: jsonHeaders(),
+    data: {processDefinitionId, businessId},
+  });
+  await assertStatusCode(res, 200);
+  return (await res.json()).processInstanceKey as string;
+}
+
 export async function getProcessDefinitionKey(
   request: APIRequestContext,
   processDefinitionId: string,
