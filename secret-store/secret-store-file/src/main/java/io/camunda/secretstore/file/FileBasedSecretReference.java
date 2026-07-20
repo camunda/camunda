@@ -23,27 +23,27 @@ import org.jspecify.annotations.Nullable;
 public record FileBasedSecretReference(String name) implements SecretReference {
   public FileBasedSecretReference {
     Objects.requireNonNull(name, "name must not be null");
-    final var error = validationError(name);
-    if (error != null) {
-      throw new IllegalArgumentException(error);
+    if (name.isBlank()) {
+      throw new IllegalArgumentException("name must not be blank");
+    }
+    if (name.indexOf('/') >= 0 || name.indexOf('\\') >= 0) {
+      throw new IllegalArgumentException("name must not contain a path separator: " + name);
+    }
+    if (".".equals(name) || "..".equals(name)) {
+      throw new IllegalArgumentException("name must not be a directory traversal token: " + name);
     }
   }
 
   /** Returns whether {@code name} is a legal, single-segment secret name. */
   static boolean isValid(final @Nullable String name) {
-    return name != null && validationError(name) == null;
-  }
-
-  private static @Nullable String validationError(final String name) {
-    if (name.isBlank()) {
-      return "name must not be blank";
+    if (name == null) {
+      return false;
     }
-    if (name.indexOf('/') >= 0 || name.indexOf('\\') >= 0) {
-      return "name must not contain a path separator: " + name;
+    try {
+      new FileBasedSecretReference(name);
+      return true;
+    } catch (final IllegalArgumentException e) {
+      return false;
     }
-    if (".".equals(name) || "..".equals(name)) {
-      return "name must not be a directory traversal token: " + name;
-    }
-    return null;
   }
 }
