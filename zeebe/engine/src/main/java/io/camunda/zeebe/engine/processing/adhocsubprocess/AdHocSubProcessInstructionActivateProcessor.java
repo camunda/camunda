@@ -182,7 +182,7 @@ public class AdHocSubProcessInstructionActivateProcessor
       final RejectionType rejectionType,
       final String errorMessage) {
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, errorMessage);
   }
 
   private Either<Rejection, Void> authorize(

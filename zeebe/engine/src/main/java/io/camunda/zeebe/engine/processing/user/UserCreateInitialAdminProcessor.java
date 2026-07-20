@@ -97,7 +97,8 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
             message -> {
               // For this command we always want to reject with FORBIDDEN
               rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-              responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, RejectionType.FORBIDDEN, message);
             });
   }
 

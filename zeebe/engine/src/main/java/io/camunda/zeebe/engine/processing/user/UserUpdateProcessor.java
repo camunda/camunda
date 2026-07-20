@@ -63,7 +63,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
               .formatted(username);
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.NOT_FOUND, rejectionMessage);
       return;
     }
 
@@ -80,7 +81,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

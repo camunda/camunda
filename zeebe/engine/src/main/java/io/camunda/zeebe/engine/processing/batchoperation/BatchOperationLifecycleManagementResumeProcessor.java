@@ -98,7 +98,7 @@ public final class BatchOperationLifecycleManagementResumeProcessor
     if (authorizationResult.isLeft()) {
       final Rejection rejection = authorizationResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -192,7 +192,7 @@ public final class BatchOperationLifecycleManagementResumeProcessor
         RejectionType.INVALID_STATE,
         String.format(
             BATCH_OPERATION_INVALID_STATE_MESSAGE, batchOperationKey, batchOperationStatus));
-    responseWriter.writeRejectionOnCommand(
+    responseWriter.writeRejectedResponseOnCommand(
         command,
         RejectionType.INVALID_STATE,
         String.format(
@@ -211,7 +211,7 @@ public final class BatchOperationLifecycleManagementResumeProcessor
         command,
         RejectionType.NOT_FOUND,
         String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
-    responseWriter.writeRejectionOnCommand(
+    responseWriter.writeRejectedResponseOnCommand(
         command,
         RejectionType.NOT_FOUND,
         String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));

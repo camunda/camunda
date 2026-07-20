@@ -93,7 +93,8 @@ public class ConditionalEvaluationEvaluateProcessor
       final var failureMessage =
           USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId());
       rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, failureMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, failureMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.FORBIDDEN, failureMessage);
       return;
     }
 
@@ -104,7 +105,8 @@ public class ConditionalEvaluationEvaluateProcessor
       final var failureMessage =
           NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(processDefinitionKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, failureMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, failureMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.NOT_FOUND, failureMessage);
       return;
     }
 
@@ -139,7 +141,7 @@ public class ConditionalEvaluationEvaluateProcessor
     if (error instanceof final ForbiddenException exception) {
       rejectionWriter.appendRejection(
           command, exception.getRejectionType(), exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, exception.getRejectionType(), exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
