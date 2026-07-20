@@ -18,9 +18,11 @@ import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.ProcessDistributedByInterpreterFacadeES;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.util.AgenticProcessDefinitionNameResolver;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
@@ -51,11 +53,15 @@ public class AgenticProcessDefinitionKeyGroupByInterpreterES
   private static final String PROCESS_DEFINITION_KEY_COUNT_AGGREGATION =
       "processDefinitionKeyCountAgg";
 
+  private final DefinitionService definitionService;
+
   public AgenticProcessDefinitionKeyGroupByInterpreterES(
       final ConfigurationService configurationService,
       final ProcessDistributedByInterpreterFacadeES distributedByInterpreter,
-      final ProcessViewInterpreterFacadeES viewInterpreter) {
+      final ProcessViewInterpreterFacadeES viewInterpreter,
+      final DefinitionService definitionService) {
     super(configurationService, distributedByInterpreter, viewInterpreter);
+    this.definitionService = definitionService;
   }
 
   @Override
@@ -104,6 +110,9 @@ public class AgenticProcessDefinitionKeyGroupByInterpreterES
       final ResponseBody<?> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
     super.addQueryResult(compositeCommandResult, response, context);
+    // Label each bar with the definition's latest-version name instead of the raw BPMN process id.
+    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(
+        compositeCommandResult, definitionService);
     topNPagination(context)
         .ifPresent(
             pagination -> {
