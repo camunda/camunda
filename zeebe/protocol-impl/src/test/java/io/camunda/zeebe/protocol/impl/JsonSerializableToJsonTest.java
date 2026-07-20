@@ -77,6 +77,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -108,6 +109,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryContentType;
 import io.camunda.zeebe.protocol.record.value.AgentHistoryRole;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
@@ -2839,6 +2841,84 @@ final class JsonSerializableToJsonTest {
                   "intent": "UNKNOWN",
                   "commandValue": null,
                   "authInfo":{"format":"UNKNOWN","claims":{},"authData":""}
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// ProcessInstanceBufferedCommandRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ProcessInstanceBufferedCommandRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var commandValue =
+                  new ProcessInstanceRecord()
+                      .setProcessInstanceKey(1234)
+                      .setElementId("activity")
+                      .setBpmnElementType(BpmnElementType.SERVICE_TASK);
+
+              return new ProcessInstanceBufferedCommandRecord()
+                  .setProcessInstanceKey(1234)
+                  .setProcessDefinitionKey(13)
+                  .setTenantId("tenant-1")
+                  .setElementInstanceKey(5678)
+                  .setValueType(ValueType.PROCESS_INSTANCE)
+                  .setIntent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+                  .setCommandValue(commandValue);
+            },
+        """
+                {
+                  "processInstanceKey": 1234,
+                  "processDefinitionKey": 13,
+                  "tenantId": "tenant-1",
+                  "elementInstanceKey": 5678,
+                  "valueType": "PROCESS_INSTANCE",
+                  "intent": "ACTIVATE_ELEMENT",
+                  "commandValue": {
+                    "bpmnProcessId": "",
+                    "version": -1,
+                    "processDefinitionKey": -1,
+                    "processInstanceKey": 1234,
+                    "elementId": "activity",
+                    "flowScopeKey": -1,
+                    "bpmnElementType": "SERVICE_TASK",
+                    "parentProcessInstanceKey": -1,
+                    "parentElementInstanceKey": -1,
+                    "bpmnEventType": "UNSPECIFIED",
+                    "tenantId": "<default>",
+                    "elementInstancePath":[],
+                    "processDefinitionPath": [],
+                    "callingElementPath": [],
+                    "tags": [],
+                    "rootProcessInstanceKey": -1,
+                    "businessId": "",
+                    "elementInstanceKey": -1
+                  }
+                }
+                """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// Empty ProcessInstanceBufferedCommandRecord
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      // ////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty ProcessInstanceBufferedCommandRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> new ProcessInstanceBufferedCommandRecord().setProcessInstanceKey(1234),
+        """
+                {
+                  "processInstanceKey": 1234,
+                  "processDefinitionKey": -1,
+                  "tenantId": "<default>",
+                  "elementInstanceKey": -1,
+                  "valueType": "NULL_VAL",
+                  "intent": "UNKNOWN",
+                  "commandValue": null
                 }
                 """
       },

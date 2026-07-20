@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ImmutableAsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableNestedRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceBufferedCommandRecordValue;
 
 /**
  * A Jackson module which enables your {@link ObjectMapper} to serialize and deserialize Zeebe
@@ -40,6 +41,8 @@ public final class ZeebeProtocolModule extends SimpleModule {
     setMixInAnnotation(ImmutableCommandDistributionRecordValue.Builder.class, RecordMixin.class);
     setMixInAnnotation(ImmutableAsyncRequestRecordValue.Builder.class, RecordMixin.class);
     setMixInAnnotation(ImmutableNestedRecordValue.Builder.class, RecordMixin.class);
+    setMixInAnnotation(
+        ImmutableProcessInstanceBufferedCommandRecordValue.Builder.class, RecordMixin.class);
   }
 
   @Override

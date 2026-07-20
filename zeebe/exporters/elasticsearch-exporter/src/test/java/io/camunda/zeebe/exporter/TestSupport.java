@@ -148,7 +148,8 @@ final class TestSupport {
             ValueType.EXPRESSION,
             ValueType.JOB_METRICS_BATCH,
             ValueType.RESOURCE_REEXPORT,
-            ValueType.SECRET_REFERENCE);
+            ValueType.SECRET_REFERENCE,
+            ValueType.PROCESS_INSTANCE_BUFFERED_COMMAND);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 
