@@ -19,7 +19,11 @@ public enum ProcessIntent implements Intent {
   CREATED((short) 0),
   DELETING((short) 1),
   DELETED((short) 2),
-  DRAINING((short) 3);
+  DRAINING((short) 3),
+
+  DELETE_COMPLETE((short) 4),
+  DELETE_COMPLETED((short) 5),
+  FULLY_DELETED((short) 6);
 
   private final short value;
 
@@ -41,6 +45,12 @@ public enum ProcessIntent implements Intent {
         return DELETED;
       case 3:
         return DRAINING;
+      case 4:
+        return DELETE_COMPLETE;
+      case 5:
+        return DELETE_COMPLETED;
+      case 6:
+        return FULLY_DELETED;
       default:
         return UNKNOWN;
     }
@@ -53,6 +63,6 @@ public enum ProcessIntent implements Intent {
 
   @Override
   public boolean isEvent() {
-    return true;
+    return this != DELETE_COMPLETE;
   }
 }
