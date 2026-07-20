@@ -8,11 +8,11 @@
 
 import { ComboBox, TextInputSkeleton } from "@carbon/react";
 import { useQuery } from "@tanstack/react-query";
-import { SearchResponse } from "src/utility/api";
+import type { SearchResponse } from "src/utility/api";
 import { ApiDefinition, unwrap } from "src/utility/api/request";
 import { getApiBaseUrl } from "src/configuration/urlConfig";
 import useTranslate from "src/utility/localization";
-import { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
+import type { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type OwnerSelectionProps<T> = {
   id: string;
