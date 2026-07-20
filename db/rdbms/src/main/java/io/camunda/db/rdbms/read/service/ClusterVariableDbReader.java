@@ -108,18 +108,21 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
             .collect(Collectors.groupingBy(ClusterVariableMetadataDbModel::clusterVariableId));
 
     entities.forEach(
-        entity ->
-            entity
-                .metadata()
-                .addAll(
-                    metadataByClusterVariableId.getOrDefault(entity.id(), List.of()).stream()
-                        .map(m -> new MetadataEntry(m.key(), m.value(), m.valueNumber()))
-                        .toList()));
+        entity -> {
+          final var metadata = entity.metadata();
+          if (metadata != null) {
+            metadata.addAll(
+                metadataByClusterVariableId.getOrDefault(entity.id(), List.of()).stream()
+                    .map(m -> new MetadataEntry(m.key(), m.value(), m.valueNumber()))
+                    .toList());
+          }
+        });
 
     return entities;
   }
 
-  private ClusterVariableEntity hydrateMetadata(final ClusterVariableEntity entity) {
+  private @Nullable ClusterVariableEntity hydrateMetadata(
+      final @Nullable ClusterVariableEntity entity) {
     if (entity == null) {
       return null;
     }

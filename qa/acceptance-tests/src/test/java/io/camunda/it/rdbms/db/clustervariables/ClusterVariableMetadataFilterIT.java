@@ -37,7 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class ClusterVariableMetadataFilterIT {
 
   @TestTemplate
-  public void shouldFindClusterVariableWithMetadataEqFilter(
+  public void shouldFindClusterVariableWithMetadataStringEqFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final String tenantId = nextStringId();
@@ -51,6 +51,25 @@ public class ClusterVariableMetadataFilterIT {
         new MetadataValueFilter.Builder()
             .key("kind")
             .valueOperation(UntypedOperation.of(Operation.eq("CREDENTIAL")));
+
+    searchAndAssertMetadataFilter(rdbmsService, varName, tenantId, metadataFilter);
+  }
+
+  @TestTemplate
+  public void shouldFindClusterVariableWithMetadataNumberEqFilter(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final String tenantId = nextStringId();
+    final String varName = "var-name-" + nextStringId();
+    final ClusterVariableDbModel clusterVariable =
+        givenClusterVariableWithMetadata(
+            varName, tenantId, new MetadataEntry("kind", "10.0", 10.0));
+    createAndSaveVariables(rdbmsService, clusterVariable);
+
+    final var metadataFilter =
+        new MetadataValueFilter.Builder()
+            .key("kind")
+            .valueOperation(UntypedOperation.of(Operation.eq(10L)));
 
     searchAndAssertMetadataFilter(rdbmsService, varName, tenantId, metadataFilter);
   }
