@@ -555,6 +555,64 @@ final class BulkIndexRequestTest {
     }
 
     @Test
+    void shouldIndexJobRecordWithoutSecretReferencesOnPreviousVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                      .withValue(
+                          new JobRecord().addSecretReference("store", "secret", "/customHeaders")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .describedAs(
+              "Expect that job records are NOT serialized with secretReferences on previous version")
+          .allSatisfy(
+              value ->
+                  assertThat((Map<String, Object>) value).doesNotContainKey("secretReferences"));
+    }
+
+    @Test
+    void shouldIndexJobRecordWithSecretReferencesOnCurrentVersion() {
+      // given
+      final var record =
+          recordFactory.generateRecord(
+              ValueType.JOB,
+              r ->
+                  r.withBrokerVersion(VersionUtil.getVersion())
+                      .withValue(
+                          new JobRecord().addSecretReference("store", "secret", "/customHeaders")));
+
+      final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
+
+      // when
+      request.index(actions.getFirst(), record, new RecordSequence(PARTITION_ID, 10));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("value"))
+          .extracting(source -> ((Map<String, Object>) source).get("secretReferences"))
+          .describedAs(
+              "Expect that job records are serialized with secretReferences on current version")
+          .containsExactly(
+              List.of(
+                  Map.of(
+                      "storeId", "store", "secretReference", "secret", "path", "/customHeaders")));
+    }
+
+    @Test
     void shouldIndexJobBatchRecordWithoutWithLeaseOnPreviousVersion() {
       // given
       final var record =
