@@ -22,44 +22,53 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 
-public class SyncLogStream implements SynchronousLogStream {
+/**
+ * Wrapper of {@link LogStream} with some helpful blocking methods for testing purposes.
+ *
+ * <p>Delegates all {@link LogStream} method to the underlying {@link LogStream}
+ */
+public class TestLogStream implements LogStream {
 
   private final LogStream logStream;
   private long lastWrittenPosition = -1;
 
-  public SyncLogStream(final LogStream logStream) {
+  public TestLogStream(final LogStream logStream) {
     this.logStream = logStream;
   }
 
-  public static SyncLogStreamBuilder builder() {
-    return new SyncLogStreamBuilder();
+  public static TestLogStreamBuilder builder() {
+    return new TestLogStreamBuilder();
   }
 
-  public static SyncLogStreamBuilder builder(final LogStreamBuilder builder) {
-    return new SyncLogStreamBuilder(builder);
+  public static TestLogStreamBuilder builder(final LogStreamBuilder builder) {
+    return new TestLogStreamBuilder(builder);
   }
 
-  @Override
-  public LogStream getAsyncLogStream() {
-    return logStream;
-  }
-
-  @Override
+  /**
+   * @return the current commit position, or a negative value if no entry is committed.
+   */
   public long getLastWrittenPosition() {
     return lastWrittenPosition;
   }
 
-  @Override
+  /** sets the new commit position * */
   public void setLastWrittenPosition(final long position) {
     lastWrittenPosition = position;
   }
 
-  @Override
-  public SynchronousLogStreamWriter newSyncLogStreamWriter() {
-    return new Writer(newLogStreamWriter());
+  /**
+   * @return a wrapped {@link #newLogStreamWriter()} which ensures that every write returns only
+   *     when the entry has been added to the underlying storage.
+   */
+  public BlockingLogStreamWriter newBlockingLogStreamWriter() {
+    return new BlockingLogStreamWriter(newLogStreamWriter());
   }
 
-  @Override
+  /**
+   * Force waiting until the given position has been persisted in the underlying storage.
+   *
+   * @param position the written position to wait for
+   */
   public void awaitPositionWritten(final long position) {
     Awaitility.await("until position " + position + " is written")
         .atMost(Duration.ofSeconds(5))
@@ -96,17 +105,17 @@ public class SyncLogStream implements SynchronousLogStream {
 
   @Override
   public FlowControl getFlowControl() {
-    throw new UnsupportedOperationException();
+    return logStream.getFlowControl();
   }
 
   @Override
   public void registerRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
-    throw new UnsupportedOperationException();
+    logStream.registerRecordAvailableListener(recordAwaiter);
   }
 
   @Override
   public void removeRecordAvailableListener(final LogRecordAwaiter recordAwaiter) {
-    throw new UnsupportedOperationException();
+    logStream.removeRecordAvailableListener(recordAwaiter);
   }
 
   private Either<WriteFailure, Long> syncTryWrite(
@@ -127,10 +136,14 @@ public class SyncLogStream implements SynchronousLogStream {
     return written;
   }
 
-  private final class Writer implements SynchronousLogStreamWriter {
+  /**
+   * A {@link LogStreamWriter} implementation which only returns when the entry has been written to
+   * the underlying storage.
+   */
+  public final class BlockingLogStreamWriter implements LogStreamWriter {
     private final LogStreamWriter delegate;
 
-    private Writer(final LogStreamWriter delegate) {
+    private BlockingLogStreamWriter(final LogStreamWriter delegate) {
       this.delegate = delegate;
     }
 

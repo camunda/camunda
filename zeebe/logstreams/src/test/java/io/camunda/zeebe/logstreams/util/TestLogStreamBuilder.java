@@ -16,80 +16,80 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 
-public final class SyncLogStreamBuilder implements LogStreamBuilder {
+public final class TestLogStreamBuilder implements LogStreamBuilder {
   private final LogStreamBuilder delegate;
 
-  SyncLogStreamBuilder() {
+  TestLogStreamBuilder() {
     this(LogStream.builder());
   }
 
-  SyncLogStreamBuilder(final LogStreamBuilder delegate) {
+  TestLogStreamBuilder(final LogStreamBuilder delegate) {
     this.delegate = delegate;
   }
 
   @Override
-  public SyncLogStreamBuilder withActorSchedulingService(
+  public TestLogStreamBuilder withActorSchedulingService(
       final ActorSchedulingService actorSchedulingService) {
     delegate.withActorSchedulingService(actorSchedulingService);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withMaxFragmentSize(final int maxFragmentSize) {
+  public TestLogStreamBuilder withMaxFragmentSize(final int maxFragmentSize) {
     delegate.withMaxFragmentSize(maxFragmentSize);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withLogStorage(final LogStorage logStorage) {
+  public TestLogStreamBuilder withLogStorage(final LogStorage logStorage) {
     delegate.withLogStorage(logStorage);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withPartitionId(final int partitionId) {
+  public TestLogStreamBuilder withPartitionId(final int partitionId) {
     delegate.withPartitionId(partitionId);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withClock(final InstantSource clock) {
+  public TestLogStreamBuilder withLogName(final String logName) {
+    delegate.withLogName(logName);
+    return this;
+  }
+
+  @Override
+  public TestLogStreamBuilder withClock(final InstantSource clock) {
     delegate.withClock(clock);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withRequestLimit(final Limit requestLimit) {
+  public TestLogStreamBuilder withRequestLimit(final Limit requestLimit) {
     delegate.withRequestLimit(requestLimit);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
+  public TestLogStreamBuilder withWriteRateLimit(final RateLimit writeRateLimiter) {
     delegate.withWriteRateLimit(writeRateLimiter);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withInFlightCapacity(final int capacity) {
+  public TestLogStreamBuilder withInFlightCapacity(final int capacity) {
     delegate.withInFlightCapacity(capacity);
     return this;
   }
 
   @Override
-  public SyncLogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
+  public TestLogStreamBuilder withMeterRegistry(final MeterRegistry meterRegistry) {
     delegate.withMeterRegistry(meterRegistry);
     return this;
   }
 
   @Override
-  public SyncLogStream build() {
-    return new SyncLogStream(delegate.build());
-  }
-
-  @Override
-  public SyncLogStreamBuilder withLogName(final String logName) {
-    delegate.withLogName(logName);
-    return this;
+  public TestLogStream build() {
+    return new TestLogStream(delegate.build());
   }
 }

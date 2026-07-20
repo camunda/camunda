@@ -26,7 +26,7 @@ public final class LogStreamReaderRule extends ExternalResource {
 
   @Override
   protected void before() {
-    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    final TestLogStream logStream = logStreamRule.getLogStream();
     logStreamReader = logStream.newLogStreamReader();
   }
 

@@ -24,7 +24,7 @@ public final class LogStreamRule extends ExternalResource {
   private final boolean shouldStartByDefault;
 
   private final Consumer<LogStreamBuilder> streamBuilder;
-  private SynchronousLogStream logStream;
+  private TestLogStream logStream;
   private LogStreamReader logStreamReader;
   private LogStreamWriter logStreamWriter;
   private LogStreamBuilder builder;
@@ -94,7 +94,7 @@ public final class LogStreamRule extends ExternalResource {
 
   private void openLogStream() {
     logStream =
-        SyncLogStream.builder(builder).withActorSchedulingService(actorSchedulerRule.get()).build();
+        TestLogStream.builder(builder).withActorSchedulingService(actorSchedulerRule.get()).build();
     listLogStorage.setPositionListener(logStream::setLastWrittenPosition);
   }
 
@@ -126,7 +126,7 @@ public final class LogStreamRule extends ExternalResource {
     return logStreamWriter;
   }
 
-  public SynchronousLogStream getLogStream() {
+  public TestLogStream getLogStream() {
     return logStream;
   }
 
