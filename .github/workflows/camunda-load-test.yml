@@ -712,8 +712,6 @@ jobs:
 
           make "${INSTALL_TARGET}" \
             scenario="${SCENARIO}" \
-            secondary_storage="${SECONDARY_STORAGE_TYPE}" \
-            enable_optimize="${ENABLE_OPTIMIZE}" \
             chaos="${ENABLE_CHAOS}" \
             physical_tenants="${PHYSICAL_TENANTS}" \
             additional_platform_configuration="$additional_platform_config" \
