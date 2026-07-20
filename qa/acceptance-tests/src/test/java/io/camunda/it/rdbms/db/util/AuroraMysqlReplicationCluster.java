@@ -16,9 +16,9 @@ package io.camunda.it.rdbms.db.util;
  * <p>Aurora MySQL exposes Global Database instance status as the {@code
  * information_schema.aurora_global_db_instance_status} table rather than the {@code
  * aurora_global_db_instance_status()} table function used by Aurora PostgreSQL (see {@link
- * AuroraReplicationCluster}). Column name case differs (upper-case on MySQL) but JDBC {@code
- * ResultSet} column-label lookups are case-insensitive, so the shared parsing logic in {@link
- * AbstractAuroraReplicationCluster} works unchanged.
+ * AuroraPostgresReplicationCluster}). Column name case differs (upper-case on MySQL) but JDBC
+ * {@code ResultSet} column-label lookups are case-insensitive, so the shared parsing logic in
+ * {@link AbstractAuroraReplicationCluster} works unchanged.
  */
 public final class AuroraMysqlReplicationCluster extends AbstractAuroraReplicationCluster {
 
