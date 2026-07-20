@@ -57,11 +57,9 @@ public class GroupAddEntityAuthorizationTest {
   public void shouldBeAuthorizedToAddEntityToGroupWithScopedPermission() {
     // given
     final var allowedGroupId = Strings.newRandomValidIdentityId();
-    final var deniedGroupId = Strings.newRandomValidIdentityId();
     final var user = createUser();
     final var member = createUser();
     engine.group().newGroup(allowedGroupId).withName("allowed").create(DEFAULT_USER.getUsername());
-    engine.group().newGroup(deniedGroupId).withName("denied").create(DEFAULT_USER.getUsername());
     engine
         .authorization()
         .newAuthorization()
