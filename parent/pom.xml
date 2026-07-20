@@ -150,7 +150,7 @@
     <version.jnr-posix>3.2.1</version.jnr-posix>
     <version.jnr-constants>0.11.0</version.jnr-constants>
     <version.feign>13.13</version.feign>
-    <version.google-sdk>26.85.0</version.google-sdk>
+    <version.google-sdk>26.85.1</version.google-sdk>
     <version.azure-sdk>1.3.7</version.azure-sdk>
     <version.awssdk>2.48.2</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
