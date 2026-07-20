@@ -89,7 +89,6 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
-import io.camunda.util.ValueTypeUtil;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
@@ -425,21 +424,11 @@ public class SearchQueryFilterMapper {
 
   /**
    * Builds an {@link UntypedOperation} preserving the JSON scalar type from the value's Java
-   * runtime type (as deserialized by Jackson), rather than re-inferring it from string content.
-   * This keeps the query side consistent with the write side, which types metadata by {@code
-   * instanceof Number}: a value sent as a JSON string stays a string even when it looks numeric
-   * (e.g. "007").
+   * runtime type (as deserialized by Jackson).
    */
   private static UntypedOperation toMetadataValueOperation(final Operation<Object> operation) {
     final ValueTypeEnum type = metadataValueType(operation.value());
-    // exists operations carry no values (null), mirror that instead of dereferencing it
-    final List<Object> values =
-        operation.values() == null
-            ? null
-            : operation.values().stream()
-                .map(value -> ValueTypeUtil.mapValueType(value, type))
-                .toList();
-    return new UntypedOperation(operation.operator(), values, type);
+    return new UntypedOperation(operation.operator(), operation.values(), type);
   }
 
   /**
@@ -459,7 +448,6 @@ public class SearchQueryFilterMapper {
     }
   }
 
-  /** Derives the metadata value type from the Java runtime type, not from string content. */
   private static ValueTypeEnum metadataValueType(final @Nullable Object value) {
     if (value == null) {
       return ValueTypeEnum.NULL;
