@@ -119,6 +119,13 @@ public class ProtoBufSerializer
       builder.setClusterTopology(clusterTopology);
     }
 
+    final CurrentClusterConfiguration currentToEncode =
+        gossipState.getCurrentClusterConfiguration();
+    if (currentToEncode != null) {
+      builder.setCurrentClusterConfiguration(
+          encodeCurrentClusterConfigurationProto(currentToEncode));
+    }
+
     final var message = builder.build();
     return message.toByteArray();
   }
@@ -142,6 +149,17 @@ public class ProtoBufSerializer
       } catch (final Exception e) {
         throw new DecodingFailed(
             "Cluster topology could not be deserialized from gossiped state: %s"
+                .formatted(gossipState),
+            e);
+      }
+    }
+    if (gossipState.hasCurrentClusterConfiguration()) {
+      try {
+        clusterConfigurationGossipState.setCurrentClusterConfiguration(
+            decodeCurrentClusterConfiguration(gossipState.getCurrentClusterConfiguration()));
+      } catch (final Exception e) {
+        throw new DecodingFailed(
+            "Current cluster configuration could not be deserialized from gossiped state: %s"
                 .formatted(gossipState),
             e);
       }
