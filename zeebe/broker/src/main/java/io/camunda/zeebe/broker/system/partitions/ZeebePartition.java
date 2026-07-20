@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -754,6 +755,13 @@ public final class ZeebePartition extends Actor
             partitionConfigurationManager
                 .enableExporter(exporterId, metadataVersion, initializeFrom)
                 .onComplete(future));
+    return future;
+  }
+
+  public ActorFuture<Void> setExporterState(final ExportingState exportingState) {
+    final var future = new CompletableActorFuture<Void>();
+    actor.run(
+        () -> partitionConfigurationManager.setExporterState(exportingState).onComplete(future));
     return future;
   }
 }
