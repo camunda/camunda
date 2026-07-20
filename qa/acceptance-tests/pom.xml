@@ -746,7 +746,7 @@
           <systemPropertyVariables>
             <identity.docker.image.version>${version.identity}</identity.docker.image.version>
           </systemPropertyVariables>
-          <excludedGroups>rdbms, rdbms-aurora, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
+          <excludedGroups>rdbms, rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, dl-nightly</excludedGroups>
         </configuration>
         <dependencies>
           <dependency>
@@ -810,7 +810,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms</groups>
-              <excludedGroups>rdbms-aurora, multi-db-test, compatibility-test, history</excludedGroups>
+              <excludedGroups>rdbms-aurora, rdbms-aurora-mysql, multi-db-test, compatibility-test, history</excludedGroups>
             </configuration>
           </plugin>
         </plugins>
@@ -830,6 +830,26 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <groups>rdbms-aurora</groups>
+              <excludedGroups>multi-db-test, compatibility-test, history</excludedGroups>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!--
+    This profile runs the Aurora MySQL async replication IT against a pre-provisioned AWS Aurora
+    MySQL Global Database. Requires TEST_AURORA_* environment variables to be set.
+    -->
+    <profile>
+      <id>rdbms-aurora-mysql</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <groups>rdbms-aurora-mysql</groups>
               <excludedGroups>multi-db-test, compatibility-test, history</excludedGroups>
             </configuration>
           </plugin>
