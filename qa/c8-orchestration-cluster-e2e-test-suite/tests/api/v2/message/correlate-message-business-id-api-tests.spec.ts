@@ -9,6 +9,7 @@
 import {APIRequestContext, expect, test} from '@playwright/test';
 import {
   assertBadRequest,
+  assertNotFoundRequest,
   assertRequiredFields,
   assertStatusCode,
   buildUrl,
@@ -60,7 +61,8 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
     await deploy(['./resources/message_start_business_id_process.bpmn']);
   });
 
-  test('Correlate message to a message start event carries the Business ID to the created instance', async ({
+  // Skipped due to bug #58207: https://github.com/camunda/camunda/issues/58207
+  test.skip('Correlate message to a message start event carries the Business ID to the created instance', async ({
     request,
   }) => {
     const businessId = uniqueBusinessId('correlate-start');
@@ -92,7 +94,8 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
     await cancelProcessInstance(localState['processInstanceKey']);
   });
 
-  test('Duplicate Business ID correlation does not start a second instance while the first is active', async ({
+  // Skipped due to bug #58207: https://github.com/camunda/camunda/issues/58207
+  test.skip('Duplicate Business ID correlation does not start a second instance while the first is active', async ({
     request,
   }) => {
     const businessId = uniqueBusinessId('correlate-duplicate');
@@ -113,8 +116,10 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
 
     await test.step('Correlate second message with the same Business ID', async () => {
       const res = await correlateStartMessage(request, businessId);
-      // The correlation itself is accepted; instance creation is suppressed by uniqueness.
-      await assertStatusCode(res, 200);
+      // Only one active instance per Business ID is allowed for message start events, so the
+      // second correlate is blocked by the active holder and rejected NOT_FOUND. Unlike a buffered
+      // publish, a synchronous correlate has nothing to correlate to and does not retain the message.
+      await assertNotFoundRequest(res, 'already active');
     });
 
     await test.step('Still exactly one instance exists for the Business ID', async () => {
@@ -130,7 +135,8 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
     await cancelProcessInstance(localState['processInstanceKey']);
   });
 
-  test('Business ID can be reused for correlation after the holding instance is cancelled', async ({
+  // Skipped due to bug #58207: https://github.com/camunda/camunda/issues/58207
+  test.skip('Business ID can be reused for correlation after the holding instance is cancelled', async ({
     request,
   }) => {
     const businessId = uniqueBusinessId('correlate-reuse');
