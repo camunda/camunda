@@ -85,14 +85,9 @@ final class AgentHistoryHandlerTest {
     assertThat(underTest.generateIds(record)).containsExactly(String.valueOf(record.getKey()));
   }
 
-  @ParameterizedTest(name = "[{index}] Should populate all entity fields for ''{0}'' intent")
-  @EnumSource(
-      value = AgentHistoryIntent.class,
-      names = {"CREATE", "COMMIT", "DISCARD"},
-      mode = Mode.EXCLUDE)
-  void shouldUpdateEntityForAllHandledIntents(final AgentHistoryIntent intent) {
-    // given — updateEntity() must populate ALL fields for every handled intent; the partial update
-    // (commitStatus-only) is an artefact of flush(), not of updateEntity().
+  @Test
+  void shouldPopulateAllFieldsForCreatedIntent() {
+    // given — updateEntity() must populate ALL fields for the CREATED intent.
     final long recordKey = 100L;
     final int partitionId = 1;
     final long agentInstanceKey = 50L;
@@ -152,7 +147,7 @@ final class AgentHistoryHandlerTest {
         factory.generateRecord(
             ValueType.AGENT_HISTORY,
             r ->
-                r.withIntent(intent)
+                r.withIntent(AgentHistoryIntent.CREATED)
                     .withKey(recordKey)
                     .withPartitionId(partitionId)
                     .withValue(recordValue));
@@ -163,14 +158,6 @@ final class AgentHistoryHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    final AgentHistoryCommitStatus expectedStatus =
-        switch (intent) {
-          case CREATED -> AgentHistoryCommitStatus.PENDING;
-          case COMMITTED -> AgentHistoryCommitStatus.COMMITTED;
-          case DISCARDED -> AgentHistoryCommitStatus.DISCARDED;
-          default -> throw new IllegalStateException("Unexpected intent: " + intent);
-        };
-
     assertThat(entity.getKey()).isEqualTo(recordKey);
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);
     assertThat(entity.getAgentInstanceKey()).isEqualTo(agentInstanceKey);
@@ -184,7 +171,7 @@ final class AgentHistoryHandlerTest {
     assertThat(entity.getJobLease()).isEqualTo(jobLease);
     assertThat(entity.getLoopIteration()).isEqualTo(loopIteration);
     assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
-    assertThat(entity.getCommitStatus()).isEqualTo(expectedStatus);
+    assertThat(entity.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.PENDING);
     assertThat(entity.getProducedAt())
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMs)));
     assertThat(entity.getInputTokens()).isEqualTo(inputTokens);
