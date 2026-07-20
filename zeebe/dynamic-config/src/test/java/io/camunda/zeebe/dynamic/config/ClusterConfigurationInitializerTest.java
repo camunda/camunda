@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.GossipIni
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.InitializerError.PersistedConfigurationIsBroken;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.SyncInitializer;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationUpdateNotifier;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;

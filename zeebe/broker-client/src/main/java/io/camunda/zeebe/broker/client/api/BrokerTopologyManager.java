@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.client.api;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import org.jspecify.annotations.NonNull;
 
