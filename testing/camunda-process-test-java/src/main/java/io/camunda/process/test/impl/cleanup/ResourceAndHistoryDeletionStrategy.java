@@ -20,6 +20,7 @@ import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Duration;
@@ -40,8 +41,7 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
   private static final Logger LOG =
       LoggerFactory.getLogger(ResourceAndHistoryDeletionStrategy.class);
   private static final Duration BATCH_OPERATION_TIMEOUT = Duration.ofSeconds(30);
-  private static final Consumer<io.camunda.client.api.search.page.AnyPage> DEFAULT_PAGE_REQUEST =
-      page -> page.limit(100);
+  private static final Consumer<AnyPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
 
   @Override
   public void cleanup(

@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+/** Defines how Camunda Process Test cleans up runtime and deployment data after each test. */
 public enum DataDeletionMode {
   /** Purges the full cluster state after each test (default). */
   CLUSTER_PURGE,

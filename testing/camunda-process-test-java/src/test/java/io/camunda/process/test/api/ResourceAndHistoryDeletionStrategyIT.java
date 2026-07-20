@@ -103,12 +103,24 @@ public class ResourceAndHistoryDeletionStrategyIT {
                   .isEmpty();
             });
 
-    assertThat(client.newProcessInstanceSearchRequest().send().join().items())
+    assertThat(
+            client
+                .newProcessInstanceSearchRequest()
+                .filter(filter -> filter.processDefinitionId(preexistingProcessId))
+                .send()
+                .join()
+                .items())
         .extracting(ProcessInstance::getProcessInstanceKey)
         .describedAs("Expected preexisting process instances to remain")
         .containsExactly(preexistingProcessInstance.getProcessInstanceKey());
 
-    assertThat(client.newProcessDefinitionSearchRequest().send().join().items())
+    assertThat(
+            client
+                .newProcessDefinitionSearchRequest()
+                .filter(filter -> filter.processDefinitionId(preexistingProcessId))
+                .send()
+                .join()
+                .items())
         .extracting(ProcessDefinition::getProcessDefinitionId)
         .describedAs("Expected preexisting process definitions to remain")
         .containsExactly(preexistingProcessId);
