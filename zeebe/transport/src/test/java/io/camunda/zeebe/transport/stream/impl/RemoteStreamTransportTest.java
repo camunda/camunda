@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
 import org.agrona.CloseHelper;
@@ -115,7 +116,8 @@ final class RemoteStreamTransportTest {
 
   @Test
   void shouldRetryOnError() throws Exception {
-    // given
+    // given - the primary and legacy channels both retry independently against the stopped
+    // receiver, so backoff entries from both interleave; we only assert that retries happened
     receiver.stop().join();
 
     // when
@@ -127,32 +129,49 @@ final class RemoteStreamTransportTest {
             () -> assertThat(senderBackoffSupplier.recorded).hasSizeGreaterThanOrEqualTo(2));
     try (final var newReceiver = createClusterNode(nodes.get(1), nodes)) {
       newReceiver.start().join();
-      newReceiver
-          .getCommunicationService()
-          .replyTo(
-              StreamTopics.RESTART_STREAMS.topic(DEFAULT_PHYSICAL_TENANT_ID),
-              Function.identity(),
-              (id, ignored) -> ArrayUtil.EMPTY_BYTE_ARRAY,
-              Function.identity(),
-              Runnable::run);
+      final var newCommunicationService = newReceiver.getCommunicationService();
+      newCommunicationService.replyTo(
+          StreamTopics.RESTART_STREAMS.topic(DEFAULT_PHYSICAL_TENANT_ID),
+          Function.identity(),
+          (id, ignored) -> ArrayUtil.EMPTY_BYTE_ARRAY,
+          Function.identity(),
+          Runnable::run);
+      newCommunicationService.replyTo(
+          StreamTopics.RESTART_STREAMS.legacyTopic(),
+          Function.identity(),
+          (id, ignored) -> ArrayUtil.EMPTY_BYTE_ARRAY,
+          Function.identity(),
+          Runnable::run);
 
       // then
       assertThat(completed).succeedsWithin(Duration.ofSeconds(5));
-      assertThat(senderBackoffSupplier.recorded).startsWith(100L, 200L);
+      assertThat(senderBackoffSupplier.recorded).hasSizeGreaterThanOrEqualTo(2).contains(100L);
     }
   }
 
   @Test
   void shouldNotRetryOnRemoteHandlerFailure() {
-    // given
+    // given - both the primary and legacy topics must fail the same way, otherwise the legacy
+    // channel would get NoRemoteHandler (no handler registered) and race completed with a false
+    // success
+    final BiFunction<MemberId, byte[], byte[]> throwingHandler =
+        (id, ignored) -> {
+          throw new RuntimeException("I have become error, destroyer of worlds");
+        };
     receiver
         .getCommunicationService()
         .replyTo(
             StreamTopics.RESTART_STREAMS.topic(DEFAULT_PHYSICAL_TENANT_ID),
             Function.identity(),
-            (id, ignored) -> {
-              throw new RuntimeException("I have become error, destroyer of worlds");
-            },
+            throwingHandler,
+            Function.identity(),
+            Runnable::run);
+    receiver
+        .getCommunicationService()
+        .replyTo(
+            StreamTopics.RESTART_STREAMS.legacyTopic(),
+            Function.identity(),
+            throwingHandler,
             Function.identity(),
             Runnable::run);
 

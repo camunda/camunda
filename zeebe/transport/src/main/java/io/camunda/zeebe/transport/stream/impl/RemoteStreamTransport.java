@@ -23,6 +23,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.LongUnaryOperator;
 import org.agrona.collections.ArrayUtil;
 import org.jspecify.annotations.Nullable;
@@ -115,9 +116,13 @@ public final class RemoteStreamTransport<M> extends Actor {
 
   public CompletableFuture<Void> restartStreams(final MemberId receiver) {
     final var completed = new CompletableFuture<Void>();
+    final var legacyCompleted = new CompletableFuture<Void>();
+
     sendRestartStreamsRequest(receiver, completed, INITIAL_RETRY_DELAY_MS);
-    sendLegacyRestartStreamsRequest(receiver);
-    return completed;
+    sendLegacyRestartStreamsRequestIfDefaultTenant(
+        receiver, legacyCompleted, INITIAL_RETRY_DELAY_MS);
+
+    return CompletableFuture.allOf(completed, legacyCompleted);
   }
 
   private void registerTopicHandlers(
@@ -145,34 +150,18 @@ public final class RemoteStreamTransport<M> extends Actor {
     transport.unsubscribe(removeAllTopic);
   }
 
-  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
-  private void sendLegacyRestartStreamsRequest(final MemberId receiver) {
-    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-      return;
-    }
-
-    transport
-        .send(
-            StreamTopics.RESTART_STREAMS.legacyTopic(),
-            ArrayUtil.EMPTY_BYTE_ARRAY,
-            Function.identity(),
-            Function.identity(),
-            receiver,
-            REQUEST_TIMEOUT)
-        .exceptionallyAsync(
-            error -> {
-              LOG.trace("Failed to restart streams for legacy topic member '{}'", receiver, error);
-              return null;
-            },
-            actor);
-  }
-
   private void sendRestartStreamsRequest(
       final MemberId receiver, final CompletableFuture<Void> completed, final long retryDelayMs) {
     try {
       sendRestartStreamsRequest(receiver)
           .whenCompleteAsync(
-              (ok, error) -> onRestartStreamsResponse(receiver, error, completed, retryDelayMs),
+              (ok, error) ->
+                  onRestartStreamsResponse(
+                      receiver,
+                      error,
+                      completed,
+                      retryDelayMs,
+                      nextDelay -> sendRestartStreamsRequest(receiver, completed, nextDelay)),
               actor);
     } catch (final Exception e) {
       LOG.warn("Failed to restart streams for member '{}'", receiver, e);
@@ -191,11 +180,53 @@ public final class RemoteStreamTransport<M> extends Actor {
         .thenApplyAsync(ok -> null, actor);
   }
 
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void sendLegacyRestartStreamsRequestIfDefaultTenant(
+      final MemberId receiver, final CompletableFuture<Void> completed, final long retryDelayMs) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      completed.complete(null);
+      return;
+    }
+
+    sendLegacyRestartStreamsRequest(receiver, completed, retryDelayMs);
+  }
+
+  private void sendLegacyRestartStreamsRequest(
+      final MemberId receiver, final CompletableFuture<Void> completed, final long retryDelayMs) {
+    try {
+      sendLegacyRestartStreamsRequest(receiver)
+          .whenCompleteAsync(
+              (ok, error) ->
+                  onRestartStreamsResponse(
+                      receiver,
+                      error,
+                      completed,
+                      retryDelayMs,
+                      nextDelay -> sendLegacyRestartStreamsRequest(receiver, completed, nextDelay)),
+              actor);
+    } catch (final Exception e) {
+      LOG.warn("Failed to restart legacy streams for member '{}'", receiver, e);
+    }
+  }
+
+  private CompletableFuture<Void> sendLegacyRestartStreamsRequest(final MemberId receiver) {
+    return transport
+        .send(
+            StreamTopics.RESTART_STREAMS.legacyTopic(),
+            ArrayUtil.EMPTY_BYTE_ARRAY,
+            Function.identity(),
+            Function.identity(),
+            receiver,
+            REQUEST_TIMEOUT)
+        .thenApplyAsync(ok -> null, actor);
+  }
+
   private void onRestartStreamsResponse(
       final MemberId receiver,
       final @Nullable Throwable error,
       final CompletableFuture<Void> completed,
-      final long retryDelayMs) {
+      final long retryDelayMs,
+      final LongConsumer retry) {
     if (error == null) {
       LOG.debug("Requested streams from client service member '{}'", receiver);
       completed.complete(null);
@@ -244,9 +275,7 @@ public final class RemoteStreamTransport<M> extends Actor {
             retryDelayMs,
             error);
         final var nextRetryDelay = retryDelaySupplier.applyAsLong(retryDelayMs);
-        actor.schedule(
-            Duration.ofMillis(nextRetryDelay),
-            () -> sendRestartStreamsRequest(receiver, completed, nextRetryDelay));
+        actor.schedule(Duration.ofMillis(nextRetryDelay), () -> retry.accept(nextRetryDelay));
       }
     }
   }
