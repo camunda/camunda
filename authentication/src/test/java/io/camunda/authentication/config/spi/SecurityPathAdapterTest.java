@@ -90,6 +90,8 @@ class SecurityPathAdapterTest {
             "/operate/client-config.js",
             "/operate/custom.css",
             "/operate/favicon.ico",
+            "/admin/assets/**",
+            "/admin/favicon.ico",
             "/webapp/assets/**",
             "/webapp/custom.css",
             "/webapp/favicon.ico",
