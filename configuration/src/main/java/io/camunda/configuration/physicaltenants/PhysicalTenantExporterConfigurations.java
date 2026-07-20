@@ -49,7 +49,9 @@ import org.springframework.core.env.Environment;
  * exporters ({@value BrokerBasedPropertiesOverride#CAMUNDA_EXPORTER_NAME} and {@value
  * BrokerBasedPropertiesOverride#RDBMS_EXPORTER_NAME}) sit outside the catalog: their configuration
  * is derived downstream from the tenant's secondary-storage properties, and args-tuning declared
- * for them is taken as-is.
+ * for them is taken as-is. A root-declared entry for one of these ids is therefore <em>not</em>
+ * inherited by the tenant: its args pin the root connection, which would override the tenant's
+ * derivation and silently route the tenant's exports into root's storage.
  *
  * <p><b>Deliberately not implemented yet (ADR-0008 §6 step 2, gated on <a
  * href="https://github.com/camunda/camunda/issues/56652">#56652</a>):</b> the {@code
@@ -88,8 +90,21 @@ final class PhysicalTenantExporterConfigurations {
       final String tenantId,
       final Environment environment) {
     final Map<String, Exporter> tenantDeclared = bindTenantDeclared(environment, tenantId);
+    // Root-declared entries for the autoconfigured ids must not reach the tenant: their
+    // configuration is derived downstream from the tenant's own secondary-storage properties
+    // (ADR-0008 §1), and an inherited root entry — whose args pin the root connection — would
+    // otherwise override that derivation and route the tenant's exports into root's storage.
+    // Tenant-declared args-tuning for these ids is still taken as-is.
+    physicalTenant
+        .getData()
+        .getExporters()
+        .keySet()
+        .removeIf(
+            exporterId ->
+                AUTOCONFIGURED_EXPORTER_IDS.contains(exporterId)
+                    && !tenantDeclared.containsKey(exporterId));
     if (tenantDeclared.isEmpty()) {
-      // the two-bind left every root entry untouched on this tenant — nothing to recompute
+      // the two-bind left every other root entry untouched on this tenant — nothing to recompute
       return;
     }
 

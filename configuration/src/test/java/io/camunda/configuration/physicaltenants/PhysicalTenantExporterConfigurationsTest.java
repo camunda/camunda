@@ -200,6 +200,24 @@ class PhysicalTenantExporterConfigurationsTest {
   }
 
   @Test
+  void shouldNotInheritRootDeclaredAutoconfiguredExporter() {
+    // given — a root-declared explicit camundaexporter pinning the root connection, and a tenant
+    // that does not declare the id at all
+    properties.put(
+        "camunda.data.exporters.camundaexporter.class-name", "io.camunda.exporter.CamundaExporter");
+    properties.put("camunda.data.exporters.camundaexporter.args.connect.url", "http://root:9200");
+    properties.put("camunda.data.exporters.camundaexporter.args.index.prefix", "root");
+
+    // when
+    final Exporter resolved = resolveTenantA().getData().getExporters().get("camundaexporter");
+
+    // then — the root entry is not inherited: the tenant's camundaexporter is derived downstream
+    // from the tenant's own secondary-storage properties, and the inherited root args would
+    // override that derivation and route the tenant's exports into root's storage
+    assertThat(resolved).isNull();
+  }
+
+  @Test
   void shouldWrapMergeFailureWithExporterAndTenantId() {
     // given — a catalog entry whose merger throws
     properties.put(
