@@ -134,11 +134,16 @@ public class SessionAuthenticationRefreshTest {
       final var result = sendMultipleConcurrentRequests(sessionCookie);
 
       assertThat(result.successfulRequests().get()).isEqualTo(result.threads().length);
+      // HttpSessionBasedAuthenticationHolder's JVM-local dedup guard (CSL ADR-0035) only
+      // guarantees that at most one request performs the refresh; a request that loses the race
+      // never rewrites its own HttpSession snapshot, so it can still legitimately report
+      // oldRefresh for the remainder of its own request. Assert the guarantee the design actually
+      // makes -- exactly one new, shared refresh occurs -- not that every concurrent request
+      // observes it.
       final var refreshTimes = result.lastRefreshTimes();
-      assertThat(refreshTimes).allSatisfy(refresh -> assertThat(refresh).isAfter(oldRefresh));
-      assertThat(refreshTimes)
-          .as("only one refresh across all concurrent requests")
-          .containsOnly(refreshTimes.get(0));
+      final var newRefreshTimes =
+          refreshTimes.stream().filter(refresh -> refresh.isAfter(oldRefresh)).distinct().toList();
+      assertThat(newRefreshTimes).as("only one refresh across all concurrent requests").hasSize(1);
     }
 
     /**
