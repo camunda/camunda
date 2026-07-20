@@ -10,8 +10,8 @@ global:
     app: monorepo
     camunda.cloud/managed-by: Helm
     camunda.cloud/source: argocd
-    team: monorepo-devops
-  
+    team: engineering-operations
+
   image:
     pullSecrets:
     - name: dockerhub-registry
