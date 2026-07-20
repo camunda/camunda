@@ -1,26 +1,20 @@
 /*
- * Copyright © 2017 camunda services GmbH (info@camunda.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.journal.JournalReader;
+import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -34,6 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -172,6 +167,26 @@ class SegmentedJournalReaderTest {
     assertThat(journal.getJournalIndex().lookup(journal.getLastIndex()))
         .describedAs("Index must be built during seek")
         .isNotNull();
+  }
+
+  @Test
+  @Disabled(
+      "The test is crashing the JVM w/ SIGSEV as the record is referencing a pointer that has been unmapped.")
+  void shouldResetBufferWhenClosing() {
+    // given
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT + 1; i++) {
+      assertThat(journal.append(i, recordDataWriter).index()).isEqualTo(i);
+    }
+    final JournalRecord record;
+    record = reader.next();
+    assertThat(record).isNotNull().returns("test", r -> BufferUtil.bufferAsString(r.data()));
+    journal.getFirstSegment().delete();
+
+    // when - reader is closed
+    reader.close();
+
+    // then
+    assertThat(BufferUtil.bufferAsString(record.data())).isEqualTo("");
   }
 
   private int getSerializedSize(final DirectBuffer data) {
