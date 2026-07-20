@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-89-elasticsearch
       namespace: c8-golden-stable-89-elasticsearch
-      version: 14.6.1
+      version: 14.7.0
       tags:
       - dev
       custom-properties: []
@@ -36,7 +36,7 @@ data:
         metrics: http://identity.c8-golden-stable-89-elasticsearch:82/actuator/prometheus
       - name: Optimize
         id: optimize
-        version: 8.9.12
+        version: 8.9.13
         url: http://localhost:8083
         readiness: http://optimize.c8-golden-stable-89-elasticsearch:80/api/readyz
         metrics: http://optimize.c8-golden-stable-89-elasticsearch:8092/actuator/prometheus

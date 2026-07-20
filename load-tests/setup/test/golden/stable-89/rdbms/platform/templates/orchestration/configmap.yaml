@@ -243,8 +243,6 @@ data:
         # zeebe.broker.cluster
         cluster:
           clusterName: c8-golden-stable-89-rdbms-zeebe
-        # zeebe.broker.exporters
-        exporters: {}
     
   log4j2.xml: |
   application.yml: |
