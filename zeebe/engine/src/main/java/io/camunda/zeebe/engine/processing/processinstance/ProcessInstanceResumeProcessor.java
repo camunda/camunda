@@ -77,7 +77,7 @@ public final class ProcessInstanceResumeProcessor
           command,
           RejectionType.NOT_FOUND,
           String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command,
           RejectionType.NOT_FOUND,
           String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
@@ -104,7 +104,7 @@ public final class ProcessInstanceResumeProcessor
               : rejection.reason();
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
       return false;
     }
 

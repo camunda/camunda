@@ -160,7 +160,7 @@ public class ProcessInstanceMigrationMigrateProcessor
               : rejection.reason();
       enrichRejectionCommand(command, processInstanceRecord);
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
       return;
     }
 
@@ -212,14 +212,14 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (error instanceof final ProcessInstanceMigrationPreconditionFailedException e) {
       enrichRejectionCommand(command);
       rejectionWriter.appendRejection(command, e.getRejectionType(), e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, e.getRejectionType(), e.getMessage());
+      responseWriter.writeRejectedResponseOnCommand(command, e.getRejectionType(), e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final SafetyCheckFailedException e) {
       LOG.error(e.getMessage(), e);
       enrichRejectionCommand(command);
       rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, e.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.PROCESSING_ERROR, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }

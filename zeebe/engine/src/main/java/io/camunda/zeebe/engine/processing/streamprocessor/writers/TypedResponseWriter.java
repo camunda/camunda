@@ -16,7 +16,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public interface TypedResponseWriter {
 
-  void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
+  void writeRejectedResponseOnCommand(TypedRecord<?> command, RejectionType type, String reason);
 
   void writeRejection(
       final TypedRecord<?> command,

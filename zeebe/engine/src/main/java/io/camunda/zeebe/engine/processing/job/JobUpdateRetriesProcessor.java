@@ -47,7 +47,7 @@ public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<Job
                         errorMessage -> {
                           rejectionWriter.appendRejection(
                               command, RejectionType.INVALID_ARGUMENT, errorMessage);
-                          responseWriter.writeRejectionOnCommand(
+                          responseWriter.writeRejectedResponseOnCommand(
                               command, RejectionType.INVALID_ARGUMENT, errorMessage);
                         },
                         () ->
@@ -55,7 +55,8 @@ public final class JobUpdateRetriesProcessor implements TypedRecordProcessor<Job
                                 jobKey, JobIntent.RETRIES_UPDATED, job, command)),
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 }

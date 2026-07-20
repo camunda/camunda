@@ -228,7 +228,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private void handleCommandRejection(
       final TypedRecord<UserTaskRecord> command, final Rejection rejection) {
     rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-    responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 
   private Optional<TaskListener> findNextTaskListener(

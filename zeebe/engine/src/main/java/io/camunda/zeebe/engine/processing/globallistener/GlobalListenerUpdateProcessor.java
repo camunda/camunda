@@ -56,7 +56,9 @@ public final class GlobalListenerUpdateProcessor
     if (validRecord.isLeft()) {
       final var rejection = validRecord.getLeft();
       writers.rejection().appendRejection(command, rejection.type(), rejection.reason());
-      writers.response().writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

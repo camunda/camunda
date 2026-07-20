@@ -141,6 +141,6 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
       final RejectionType type,
       final String errorMessage) {
     rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, type, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
   }
 }

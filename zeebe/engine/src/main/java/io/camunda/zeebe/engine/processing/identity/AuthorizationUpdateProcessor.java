@@ -93,7 +93,8 @@ public class AuthorizationUpdateProcessor
             (rejection) -> {
               LOG.debug("Rejecting UPDATE authorization command: {}", rejection.reason());
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 

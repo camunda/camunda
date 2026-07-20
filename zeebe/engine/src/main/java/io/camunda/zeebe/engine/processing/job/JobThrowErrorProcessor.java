@@ -140,7 +140,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
             job -> throwError(record, job),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  record, rejection.type(), rejection.reason());
             });
   }
 
@@ -159,7 +160,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
       final var errorMessage =
           ERROR_REJECTION_MESSAGE.formatted(jobKind, jobKey, job.getType(), processInstanceKey);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_STATE, errorMessage);
       return;
     }
 
@@ -185,7 +187,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
       final var errorMessage =
           "Expected to find active element instance, but was %s".formatted(elementInstance);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_STATE, errorMessage);
     } else if (!eventScopeInstanceState.canTriggerEvent(
         foundCatchEvent.get().getElementInstance().getKey(),
         foundCatchEvent.get().getCatchEvent().getId())) {
@@ -194,7 +197,8 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
           "Expected to find event scope that is accepting events, but was %s"
               .formatted(catchEventInstance);
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_STATE, errorMessage);
     } else {
       writeThrowErrorEvent(jobKey, job, command);
       eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());

@@ -46,7 +46,9 @@ public class ScaleStatusProcessor implements TypedRecordProcessor<ScaleRecord> {
       final var reason =
           "Scaling has not started for the desired partition count " + desiredPartitionCount;
       writers.rejection().appendRejection(command, RejectionType.INVALID_STATE, reason);
-      writers.response().writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
     }
     response.statusResponse(
         desiredPartitions.size(),

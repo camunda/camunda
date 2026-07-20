@@ -74,7 +74,8 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
             validRecord -> writeHistoryDeletionEvent(recordValue, command),
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
@@ -95,7 +96,8 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
             validRecord -> writeHistoryDeletionEvent(recordValue, command),
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 

@@ -57,7 +57,7 @@ public class ScaleScaleUpProcessor implements DistributedTypedRecordProcessor<Sc
     if (optionalRejection.isPresent()) {
       final var rejection = optionalRejection.get();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
     final var scalingKey = keyGenerator.nextKey();

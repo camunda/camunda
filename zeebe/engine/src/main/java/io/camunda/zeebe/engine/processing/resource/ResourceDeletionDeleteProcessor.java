@@ -147,12 +147,12 @@ public class ResourceDeletionDeleteProcessor
     if (error instanceof final ForbiddenException exception) {
       rejectionWriter.appendRejection(
           command, exception.getRejectionType(), exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, exception.getRejectionType(), exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     } else if (error instanceof final NoSuchResourceException exception) {
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
 
       if (command.isCommandDistributed()) {
@@ -164,7 +164,7 @@ public class ResourceDeletionDeleteProcessor
       return ProcessingError.EXPECTED_ERROR;
     } else if (error instanceof final ActiveProcessInstancesException exception) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_STATE, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }

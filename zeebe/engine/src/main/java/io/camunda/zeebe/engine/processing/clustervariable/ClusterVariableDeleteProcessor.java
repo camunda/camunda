@@ -75,7 +75,7 @@ public class ClusterVariableDeleteProcessor
               writers.rejection().appendRejection(command, rejection.type(), rejection.reason());
               writers
                   .response()
-                  .writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+                  .writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
             });
   }
 

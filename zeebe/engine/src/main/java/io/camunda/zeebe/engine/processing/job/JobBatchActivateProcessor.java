@@ -183,7 +183,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   private void rejectCommand(final TypedRecord<JobBatchRecord> record, final Rejection rejection) {
     rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
-    responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(record, rejection.type(), rejection.reason());
   }
 
   private void activateJobBatch(

@@ -94,7 +94,8 @@ public class AuthorizationDeleteProcessor
             (rejection) -> {
               LOG.debug("Rejecting DELETE authorization command: {}", rejection.reason());
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 

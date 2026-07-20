@@ -97,7 +97,7 @@ public final class ProcessInstanceCancelProcessor
           command,
           RejectionType.NOT_FOUND,
           String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command,
           RejectionType.NOT_FOUND,
           String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
@@ -124,7 +124,7 @@ public final class ProcessInstanceCancelProcessor
               : rejection.reason();
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
       return false;
     }
 
@@ -138,7 +138,7 @@ public final class ProcessInstanceCancelProcessor
           command,
           RejectionType.INVALID_STATE,
           String.format(PROCESS_NOT_ROOT_MESSAGE, command.getKey(), rootProcessInstanceKey));
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command,
           RejectionType.INVALID_STATE,
           String.format(PROCESS_NOT_ROOT_MESSAGE, command.getKey(), rootProcessInstanceKey));
@@ -152,7 +152,7 @@ public final class ProcessInstanceCancelProcessor
       final String reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
       return false;
     }
 

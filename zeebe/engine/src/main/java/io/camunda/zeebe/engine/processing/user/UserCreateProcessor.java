@@ -68,7 +68,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     if (authResult.isLeft()) {
       final var rejection = authResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -78,7 +78,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     if (user.isPresent()) {
       final var message = USER_ALREADY_EXISTS_ERROR_MESSAGE.formatted(user.get().getUsername());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, message);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, message);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.ALREADY_EXISTS, message);
       return;
     }
 

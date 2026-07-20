@@ -76,7 +76,7 @@ public final class ProcessInstanceSuspendProcessor
     if (elementInstance == null || elementInstance.isTerminating()) {
       final var reason = String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
       return false;
     }
 
@@ -100,7 +100,7 @@ public final class ProcessInstanceSuspendProcessor
               : rejection.reason();
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
       return false;
     }
 
@@ -111,7 +111,7 @@ public final class ProcessInstanceSuspendProcessor
       final var reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
       return false;
     }
 

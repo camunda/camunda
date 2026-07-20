@@ -67,7 +67,7 @@ public final class ClockPinProcessor implements DistributedTypedRecordProcessor<
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -78,7 +78,7 @@ public final class ClockPinProcessor implements DistributedTypedRecordProcessor<
           "Expected pin time to be not negative but it was %d".formatted(clockRecord.getTime());
 
       rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, rejectionMessage);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_ARGUMENT, rejectionMessage);
       return;
     }

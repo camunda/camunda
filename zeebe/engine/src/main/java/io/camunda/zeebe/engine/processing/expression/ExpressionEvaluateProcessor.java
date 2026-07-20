@@ -138,7 +138,7 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
   private void rejectCommand(
       final TypedRecord<ExpressionRecord> command, final Rejection rejection) {
     rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-    responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 
   private void acceptCommand(

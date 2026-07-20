@@ -66,7 +66,7 @@ public class MappingRuleCreateProcessor
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -86,7 +86,7 @@ public class MappingRuleCreateProcessor
               record.getName(),
               record.getMappingRuleId());
       rejectionWriter.appendRejection(command, RejectionType.NULL_VAL, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NULL_VAL, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NULL_VAL, errorMessage);
       return;
     }
 
@@ -97,7 +97,8 @@ public class MappingRuleCreateProcessor
           MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
               record.getClaimName(), record.getClaimValue());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 
@@ -106,7 +107,8 @@ public class MappingRuleCreateProcessor
       final var errorMessage =
           MAPPING_RULE_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getMappingRuleId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 

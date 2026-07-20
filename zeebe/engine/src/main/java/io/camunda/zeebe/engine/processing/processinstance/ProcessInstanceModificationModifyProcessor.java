@@ -237,7 +237,7 @@ public final class ProcessInstanceModificationModifyProcessor
 
     if (processInstance == null) {
       final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
     }
@@ -261,7 +261,7 @@ public final class ProcessInstanceModificationModifyProcessor
                   "such process instance")
               : rejection.reason();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
       return;
     }
@@ -280,7 +280,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (commandValidationResult.isLeft()) {
       final var rejection = commandValidationResult.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -302,7 +302,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (moveByKeyValidationResult.isLeft()) {
       final var rejection = moveByKeyValidationResult.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -331,7 +331,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (instructionsValidationResult.isLeft()) {
       final var rejection = instructionsValidationResult.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -404,7 +404,7 @@ public final class ProcessInstanceModificationModifyProcessor
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
@@ -415,7 +415,7 @@ public final class ProcessInstanceModificationModifyProcessor
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
       return ProcessingError.EXPECTED_ERROR;
 
@@ -424,14 +424,15 @@ public final class ProcessInstanceModificationModifyProcessor
           ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey());
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
-      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectedResponseOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final TerminatedChildProcessException exception) {
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
@@ -441,7 +442,8 @@ public final class ProcessInstanceModificationModifyProcessor
               exception.getBpmnProcessId(), exception.getMultiInstanceId());
       enrichRejectionCommand(typedCommand);
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
-      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectedResponseOnCommand(
+          typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
     }
 
