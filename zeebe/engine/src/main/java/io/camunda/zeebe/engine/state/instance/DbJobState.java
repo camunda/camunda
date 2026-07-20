@@ -141,6 +141,14 @@ public final class DbJobState implements JobState, MutableJobState {
             ZbColumnFamilies.JOB_BACKOFF, transactionContext, backoffJobKey, DbNil.INSTANCE);
   }
 
+  /**
+   * @deprecated carries the pre-8.10 orchestration that inserts into the legacy {@code
+   *     JOB_ACTIVATABLE} column family. Reachable only from the released, unversioned/V1/V2 job
+   *     appliers so that replaying their events reproduces the original state mutation. New
+   *     appliers must call {@link #insertJobRecordActivatable(long, JobRecord)} and {@link
+   *     #makeJobActivatableByPriority(DirectBuffer, long, String, int)} directly instead.
+   */
+  @Deprecated
   @Override
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
@@ -157,19 +165,27 @@ public final class DbJobState implements JobState, MutableJobState {
 
     updateJobRecord(key, record);
 
-    updateJobState(State.ACTIVATED);
+    updateJobState(key, State.ACTIVATED);
 
-    makeJobNotActivatable(record);
+    makeJobNotActivatable(key, record);
 
     addJobDeadline(key, deadline);
   }
 
+  /**
+   * @deprecated see {@link #create(long, JobRecord)}.
+   */
+  @Deprecated
   @Override
   public void recurAfterBackoff(final long key, final JobRecord record) {
     updateJob(key, record, State.ACTIVATABLE);
     removeJobBackoff(key, record.getRecurringTime());
   }
 
+  /**
+   * @deprecated see {@link #create(long, JobRecord)}.
+   */
+  @Deprecated
   @Override
   public void timeout(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
@@ -194,13 +210,13 @@ public final class DbJobState implements JobState, MutableJobState {
   @Override
   public void disable(final long key, final JobRecord record) {
     updateJob(key, record, State.FAILED);
-    makeJobNotActivatable(record);
+    makeJobNotActivatable(key, record);
   }
 
   @Override
   public void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
-    makeJobNotActivatable(updatedValue);
+    makeJobNotActivatable(key, updatedValue);
   }
 
   @Override
@@ -210,33 +226,45 @@ public final class DbJobState implements JobState, MutableJobState {
 
     statesJobColumnFamily.deleteExisting(fkJob);
 
-    makeJobNotActivatable(record);
+    makeJobNotActivatable(key, record);
 
     removeJobDeadline(key, record.getDeadline());
     removeJobBackoff(key, record.getRecurringTime());
   }
 
+  /**
+   * @deprecated see {@link #create(long, JobRecord)}.
+   */
+  @Deprecated
   @Override
   public void fail(final long key, final JobRecord updatedValue) {
     if (updatedValue.getRetries() > 0) {
       if (updatedValue.getRetryBackoff() > 0) {
         addJobBackoff(key, updatedValue.getRecurringTime());
         updateJob(key, updatedValue, State.FAILED);
-        makeJobNotActivatable(updatedValue);
+        makeJobNotActivatable(key, updatedValue);
       } else {
         updateJob(key, updatedValue, State.ACTIVATABLE);
       }
     } else {
       updateJob(key, updatedValue, State.FAILED);
-      makeJobNotActivatable(updatedValue);
+      makeJobNotActivatable(key, updatedValue);
     }
   }
 
+  /**
+   * @deprecated see {@link #create(long, JobRecord)}.
+   */
+  @Deprecated
   @Override
   public void yield(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ACTIVATABLE);
   }
 
+  /**
+   * @deprecated see {@link #create(long, JobRecord)}.
+   */
+  @Deprecated
   @Override
   public void resolve(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ACTIVATABLE);
@@ -312,7 +340,7 @@ public final class DbJobState implements JobState, MutableJobState {
     if (getState(jobKey) == State.ACTIVATABLE) {
       makeJobNotActivatable(job.getTypeBuffer(), job.getTenantId(), oldPriority);
       updateJobRecord(jobKey, job);
-      makeJobActivatable(job.getTypeBuffer(), jobKey, job.getTenantId(), newPriority);
+      makeJobActivatableByPriority(job.getTypeBuffer(), jobKey, job.getTenantId(), newPriority);
     } else {
       updateJobRecord(jobKey, job);
     }
@@ -356,10 +384,80 @@ public final class DbJobState implements JobState, MutableJobState {
         });
   }
 
+  @Override
+  public void insertJobRecordActivatable(final long key, final JobRecord record) {
+    createJobRecord(key, record);
+    initializeJobState();
+  }
+
+  /** Updates the job record without updating variables */
+  @Override
+  public void updateJobRecord(final long key, final JobRecord updatedValue) {
+    jobKey.wrapLong(key);
+    // do not persist variables in job state
+    jobRecordToWrite.setRecordWithoutVariables(updatedValue);
+    jobsColumnFamily.update(jobKey, jobRecordToWrite);
+  }
+
+  @Override
+  public void updateJobState(final long key, final State newState) {
+    jobKey.wrapLong(key);
+    jobState.setState(newState);
+    statesJobColumnFamily.update(fkJob, jobState);
+  }
+
+  @Override
+  public void removeJobDeadline(final long job, final long deadline) {
+    if (deadline > 0) {
+      jobKey.wrapLong(job);
+      deadlineKey.wrapLong(deadline);
+      deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
+    }
+  }
+
+  @Override
+  public void makeJobActivatableByPriority(
+      final DirectBuffer type, final long key, final String tenantId, final int priority) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
+    EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
+
+    jobTypeKey.wrapBuffer(type);
+    jobKey.wrapLong(key);
+    tenantIdKey.wrapString(tenantId);
+    // overflow for negative priorities is intentional (see invertedPriorityKey field comment above)
+    invertedPriorityKey.wrapInt(Integer.MAX_VALUE - priority);
+    // upsert because a failed job with retries can be made activatable multiple times
+    priorityActivatableColumnFamily.upsert(tenantAwarePriorityKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void makeJobNotActivatable(final long key, final JobRecord record) {
+    jobKey.wrapLong(key);
+    makeJobNotActivatable(record.getTypeBuffer(), record.getTenantId(), record.getPriority());
+  }
+
+  @Override
+  public void addJobBackoff(final long job, final long backoff) {
+    if (backoff > 0) {
+      jobKey.wrapLong(job);
+      backoffKey.wrapLong(backoff);
+      backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
+    }
+  }
+
+  @Override
+  public void removeJobBackoff(final long job, final long backoff) {
+    if (backoff > 0) {
+      jobKey.wrapLong(job);
+      backoffKey.wrapLong(backoff);
+      backoffColumnFamily.deleteIfExists(backoffJobKey);
+    }
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
-    makeJobActivatable(type, key, record.getTenantId(), record.getPriority());
+    makeJobActivatable(type, key, record.getTenantId());
   }
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
@@ -369,10 +467,10 @@ public final class DbJobState implements JobState, MutableJobState {
 
     updateJobRecord(key, updatedValue);
 
-    updateJobState(newState);
+    updateJobState(key, newState);
 
     if (newState == State.ACTIVATABLE) {
-      makeJobActivatable(type, key, updatedValue.getTenantId(), updatedValue.getPriority());
+      makeJobActivatable(type, key, updatedValue.getTenantId());
     }
 
     if (newState != State.ACTIVATED) {
@@ -628,48 +726,35 @@ public final class DbJobState implements JobState, MutableJobState {
     jobsColumnFamily.insert(jobKey, jobRecordToWrite);
   }
 
-  /** Updates the job record without updating variables */
-  private void updateJobRecord(final long key, final JobRecord updatedValue) {
-    jobKey.wrapLong(key);
-    // do not persist variables in job state
-    jobRecordToWrite.setRecordWithoutVariables(updatedValue);
-    jobsColumnFamily.update(jobKey, jobRecordToWrite);
-  }
-
   private void initializeJobState() {
     jobState.setState(State.ACTIVATABLE);
     statesJobColumnFamily.insert(fkJob, jobState);
   }
 
-  private void updateJobState(final State newState) {
-    jobState.setState(newState);
-    statesJobColumnFamily.update(fkJob, jobState);
-  }
-
-  private void makeJobActivatable(
-      final DirectBuffer type, final long key, final String tenantId, final int priority) {
+  /**
+   * @deprecated restored pre-8.10 insert semantics: writes only the legacy {@code JOB_ACTIVATABLE}
+   *     column family, with no notion of priority. Reachable only from the deprecated,
+   *     released-before-8.10 orchestration methods ({@link #create(long, JobRecord)}, {@link
+   *     #fail(long, JobRecord)}, etc.) so that replaying their events reproduces the original state
+   *     mutation. New appliers must call {@link #makeJobActivatableByPriority(DirectBuffer, long,
+   *     String, int)} instead.
+   */
+  @Deprecated
+  private void makeJobActivatable(final DirectBuffer type, final long key, final String tenantId) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
     jobTypeKey.wrapBuffer(type);
     jobKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
-    // overflow for negative priorities is intentional (see invertedPriorityKey field comment above)
-    invertedPriorityKey.wrapInt(Integer.MAX_VALUE - priority);
     // upsert because a failed job with retries can be made activatable multiple times
-    priorityActivatableColumnFamily.upsert(tenantAwarePriorityKey, DbNil.INSTANCE);
-  }
-
-  // makeJobNotActivatable does NOT set jobKey. Callers are responsible for setting it
-  // (via jobKey.wrapLong or via updateJobRecord) before calling it.
-  private void makeJobNotActivatable(final JobRecord record) {
-    makeJobNotActivatable(record.getTypeBuffer(), record.getTenantId(), record.getPriority());
+    activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
   }
 
   private void makeJobNotActivatable(
       final DirectBuffer type, final String tenantId, final int priority) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
-    EnsureUtil.ensureNotNullOrEmpty("tenantid", tenantId);
+    EnsureUtil.ensureNotNullOrEmpty("tenantId", tenantId);
 
     jobTypeKey.wrapBuffer(type);
     tenantIdKey.wrapString(tenantId);
@@ -688,30 +773,6 @@ public final class DbJobState implements JobState, MutableJobState {
       jobKey.wrapLong(job);
       deadlineKey.wrapLong(deadline);
       deadlinesColumnFamily.insert(deadlineJobKey, DbNil.INSTANCE);
-    }
-  }
-
-  private void removeJobDeadline(final long job, final long deadline) {
-    if (deadline > 0) {
-      jobKey.wrapLong(job);
-      deadlineKey.wrapLong(deadline);
-      deadlinesColumnFamily.deleteIfExists(deadlineJobKey);
-    }
-  }
-
-  private void addJobBackoff(final long job, final long backoff) {
-    if (backoff > 0) {
-      jobKey.wrapLong(job);
-      backoffKey.wrapLong(backoff);
-      backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
-    }
-  }
-
-  private void removeJobBackoff(final long job, final long backoff) {
-    if (backoff > 0) {
-      jobKey.wrapLong(job);
-      backoffKey.wrapLong(backoff);
-      backoffColumnFamily.deleteIfExists(backoffJobKey);
     }
   }
 }
