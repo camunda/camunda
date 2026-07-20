@@ -7,14 +7,6 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.FULL_VALUE;
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.IS_PREVIEW;
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.METADATA;
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.SCOPE;
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex.VALUE;
-
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.util.ClusterVariableUtil;
@@ -27,7 +19,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,11 +77,7 @@ public class ClusterVariableCreatedUpdatedHandler
         .setScope(ClusterVariableScope.fromProtocol(recordValue.getScope()))
         .setName(recordValue.getName());
 
-    // kind is immutable after creation — the UPDATED engine record carries the EnumProperty
-    // default (JSON) and does NOT reflect the stored kind. Only set it on CREATED.
-    if (record.getIntent() == ClusterVariableIntent.CREATED) {
-      entity.setKind(ClusterVariableKind.fromProtocol(recordValue.getKind()));
-    }
+    entity.setKind(ClusterVariableKind.fromProtocol(recordValue.getKind()));
 
     if (ClusterVariableScope.TENANT.equals(entity.getScope())) {
       entity.setTenantId(recordValue.getTenantId());
@@ -122,18 +109,7 @@ public class ClusterVariableCreatedUpdatedHandler
   @Override
   public void flush(final ClusterVariableEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    // Use upsert with only mutable fields as updateFields, so UPDATED records never overwrite the
-    // immutable kind field in an existing ES/OS document. On CREATED (document absent) the full
-    // entity is indexed. This is consistent with how the RDBMS exporter excludes KIND from UPDATE.
-    final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(NAME, entity.getName());
-    updateFields.put(VALUE, entity.getValue());
-    updateFields.put(FULL_VALUE, entity.getFullValue());
-    updateFields.put(IS_PREVIEW, entity.getIsPreview());
-    updateFields.put(SCOPE, entity.getScope());
-    updateFields.put(TENANT_ID, entity.getTenantId());
-    updateFields.put(METADATA, entity.getMetadata());
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.add(indexName, entity);
   }
 
   @Override

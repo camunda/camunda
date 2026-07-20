@@ -62,13 +62,11 @@ public class ClusterVariableExportHandler
     } else {
       builder.scope(ClusterVariableScope.TENANT).tenantId(value.getTenantId());
     }
-    if (record.getIntent() == ClusterVariableIntent.CREATED) {
-      builder.kind(
-          switch (value.getKind()) {
-            case SECRET_REFERENCE -> ClusterVariableKind.SECRET_REFERENCE;
-            case JSON -> ClusterVariableKind.JSON;
-          });
-    }
+    builder.kind(
+        switch (value.getKind()) {
+          case SECRET_REFERENCE -> ClusterVariableKind.SECRET_REFERENCE;
+          case JSON -> ClusterVariableKind.JSON;
+        });
     return builder.build();
   }
 
