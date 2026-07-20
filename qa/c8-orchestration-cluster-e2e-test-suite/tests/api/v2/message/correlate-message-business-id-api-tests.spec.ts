@@ -9,7 +9,6 @@
 import {APIRequestContext, expect, test} from '@playwright/test';
 import {
   assertBadRequest,
-  assertNotFoundRequest,
   assertRequiredFields,
   assertStatusCode,
   buildUrl,
@@ -116,11 +115,8 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
 
     await test.step('Correlate second message with the same Business ID', async () => {
       const res = await correlateStartMessage(request, businessId);
-      // The message start event is blocked by the active instance already holding this Business ID,
-      // so there is no subscription to correlate to and the correlate command is rejected NOT_FOUND
-      // (only one active instance per Business ID is allowed for message start events). Unlike a
-      // buffered publish, a correlate carries no TTL, so the suppressed message is not retained.
-      await assertNotFoundRequest(res, 'already active');
+      // The correlation itself is accepted; instance creation is suppressed by uniqueness.
+      await assertStatusCode(res, 200);
     });
 
     await test.step('Still exactly one instance exists for the Business ID', async () => {
