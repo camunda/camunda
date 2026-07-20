@@ -24,6 +24,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableBoolean;
 
 /**
  * Correlates published messages to message start-event subscriptions and to intermediate message
@@ -121,10 +122,24 @@ public final class MessageCorrelateBehavior {
     correlateToMessageStartEvents(messageData, correlatingSubscriptions, null);
   }
 
-  public void correlateToMessageStartEvents(
+  /**
+   * Correlates the message to every matching message-start-event subscription on this partition.
+   *
+   * @return {@code true} when at least one start event was delegated to {@code P_B} via the
+   *     cross-partition ask ({@code P_B != P_K}). A delegated start produces no local {@code
+   *     correlatingSubscriptions} entry — its terminal outcome is decided asynchronously by {@code
+   *     P_B} and applied by the reply processors on {@code P_K} — so a caller that must distinguish
+   *     "nothing correlated" from "correlation delegated cross-partition" (e.g. the synchronous
+   *     correlate command, to avoid reporting a spurious {@code NOT_FOUND}) relies on this flag. A
+   *     local start that {@link #triggerOrDelegateStartEvent} could not create (definition draining
+   *     or removed) also returns {@code -1} but is <em>not</em> reported as delegated — it must
+   *     fall through to the {@code NOT_FOUND} rejection.
+   */
+  public boolean correlateToMessageStartEvents(
       final MessageData messageData,
       final Subscriptions correlatingSubscriptions,
       final Collection<String> blockedProcessIds) {
+    final var delegatedCrossPartition = new MutableBoolean(false);
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageData.tenantId(),
         messageData.messageName(),
@@ -146,11 +161,19 @@ public final class MessageCorrelateBehavior {
               // activation, so it must not be added here.
               subscriptionRecord.setProcessInstanceKey(processInstanceKey);
               correlatingSubscriptions.add(subscriptionRecord);
+            } else if (shouldDelegateToBusinessIdPartition(messageData)) {
+              // triggerOrDelegateStartEvent returned -1: distinguish a genuine cross-partition
+              // delegation (the terminal outcome comes later from P_B via the reply processors)
+              // from a local start that simply could not be created (definition draining or
+              // removed). Only the former defers the synchronous response; the latter must fall
+              // through to the NOT_FOUND rejection so the correlate does not hang.
+              delegatedCrossPartition.set(true);
             }
           } else if (blockedProcessIds != null) {
             blockedProcessIds.add(subscriptionRecord.getBpmnProcessId());
           }
         });
+    return delegatedCrossPartition.get();
   }
 
   /**
