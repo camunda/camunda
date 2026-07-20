@@ -11,19 +11,18 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
-import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.springframework.util.unit.DataSize;
 
 /**
  * Reproduces the production bug where the list-view flow-node document for a service task ends up
@@ -117,14 +116,13 @@ public class UnhandledBpmnErrorActivityIdIT {
 
   @BeforeAll
   static void setUp() {
-    final var camundaExporter = CamundaExporter.class.getSimpleName().toLowerCase();
     STANDALONE_CAMUNDA.withUnifiedConfig(
         c -> {
-          final var newArgs =
-              new HashMap<>(c.getData().getExporters().get(camundaExporter).getArgs());
           // See class javadoc for why these specific values reproduce the bug.
-          newArgs.put("bulk", Map.of("size", 5000, "delay", 5, "memoryLimit", 1));
-          c.getData().getExporters().get(camundaExporter).setArgs(newArgs);
+          final var bulk = c.getData().getSecondaryStorage().getDocumentBasedDatabase().getBulk();
+          bulk.setSize(5000);
+          bulk.setDelay(Duration.ofSeconds(5));
+          bulk.setMemoryLimit(DataSize.ofMegabytes(1));
         });
 
     STANDALONE_CAMUNDA.start();
