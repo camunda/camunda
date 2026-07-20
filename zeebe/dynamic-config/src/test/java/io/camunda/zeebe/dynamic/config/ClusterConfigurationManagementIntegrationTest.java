@@ -398,7 +398,8 @@ class ClusterConfigurationManagementIntegrationTest {
                   List.of(),
                   3,
                   DynamicPartitionConfig.init(),
-                  "clusterId"));
+                  "clusterId"),
+              Map.of());
       startFuture.onComplete(
           (ignore, error) -> {
             if (error == null) {

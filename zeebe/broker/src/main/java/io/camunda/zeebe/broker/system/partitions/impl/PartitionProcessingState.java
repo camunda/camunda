@@ -13,12 +13,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 public class PartitionProcessingState {
 
+  public static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
-  private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
   private boolean isProcessingPaused;
   private ExporterPhase exporterPhase;
   private final RaftPartition raftPartition;
@@ -141,25 +142,32 @@ public class PartitionProcessingState {
         StandardOpenOption.TRUNCATE_EXISTING);
   }
 
-  private void initExportingState() {
+  /**
+   * Reads the exporter phase persisted for a partition, without instantiating the surrounding
+   * state. Callers that only have the partition directory - for example the startup code migrating
+   * the legacy phase into the dynamic cluster configuration, which runs before any partition exists
+   * - use this instead of constructing a {@link PartitionProcessingState}.
+   */
+  public static ExporterPhase readPersistedExporterPhase(final Path partitionDirectory) {
+    final var persistedState = partitionDirectory.resolve(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
     try {
-      if (!getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).exists()) {
-        setPersistedExporterPhase(ExporterPhase.EXPORTING);
-        exporterPhase = ExporterPhase.EXPORTING;
-      } else {
-        final var state =
-            Files.readString(
-                getPersistedPauseState(PERSISTED_EXPORTER_PAUSE_STATE_FILENAME).toPath());
-        if (state.isBlank()) {
-          // Backwards compatibility. If the file exists, it is paused.
-          exporterPhase = ExporterPhase.PAUSED;
-          return;
-        }
-        exporterPhase = ExporterPhase.valueOf(state);
+      if (!Files.exists(persistedState)) {
+        // exporting is the default state, so the file is absent while exporting
+        return ExporterPhase.EXPORTING;
       }
+      final var state = Files.readString(persistedState, StandardCharsets.UTF_8).trim();
+      if (state.isBlank()) {
+        // Backwards compatibility. If the file exists, it is paused.
+        return ExporterPhase.PAUSED;
+      }
+      return ExporterPhase.valueOf(state);
     } catch (final IOException e) {
       // exporting is the default state
-      exporterPhase = ExporterPhase.EXPORTING;
+      return ExporterPhase.EXPORTING;
     }
+  }
+
+  private void initExportingState() {
+    exporterPhase = readPersistedExporterPhase(raftPartition.dataDirectory().toPath());
   }
 }

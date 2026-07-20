@@ -41,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.Actor;
@@ -201,7 +202,8 @@ public final class ClusterConfigurationManagerService
   }
 
   private ClusterConfigurationInitializer<ClusterConfiguration> getNonCoordinatorInitializer(
-      final StaticConfiguration staticConfiguration) {
+      final StaticConfiguration staticConfiguration,
+      final Map<Integer, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.legacyFileInitializer(configurationFile, new ProtoBufSerializer())
         // Recover via sync to ensure that we don't gossip an uninitialized configuration.
@@ -233,6 +235,9 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 false))
+        .andThen(
+            new ExportingStateInitializer(
+                legacyExportingStates, staticConfiguration.localMemberId(), managerActor))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
         // Must be initialized by the coordinator only. However, we still define it here because
         // the
@@ -247,7 +252,8 @@ public final class ClusterConfigurationManagerService
   }
 
   private ClusterConfigurationInitializer<ClusterConfiguration> getCoordinatorInitializer(
-      final StaticConfiguration staticConfiguration) {
+      final StaticConfiguration staticConfiguration,
+      final Map<Integer, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.legacyFileInitializer(configurationFile, new ProtoBufSerializer())
         .orThen(
@@ -266,6 +272,9 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 true))
+        .andThen(
+            new ExportingStateInitializer(
+                legacyExportingStates, staticConfiguration.localMemberId(), managerActor))
         .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
         // Must be initialized by the coordinator only
         .andThen(
@@ -283,7 +292,8 @@ public final class ClusterConfigurationManagerService
    */
   private ClusterConfigurationInitializer<CurrentClusterConfiguration>
       getCurrentClusterConfigurationNonCoordinatorInitializer(
-          final StaticConfiguration staticConfiguration) {
+          final StaticConfiguration staticConfiguration,
+          final Map<Integer, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
         .recover(
@@ -309,7 +319,10 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId()))
         .andThen(
             PartitionDistributorInitializer
-                .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration));
+                .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
+        .andThen(
+            new PartitionGroupExportingStateInitializer(
+                legacyExportingStates, staticConfiguration.localMemberId()));
   }
 
   /**
@@ -319,7 +332,8 @@ public final class ClusterConfigurationManagerService
    */
   private ClusterConfigurationInitializer<CurrentClusterConfiguration>
       getCurrentClusterConfigurationCoordinatorInitializer(
-          final StaticConfiguration staticConfiguration) {
+          final StaticConfiguration staticConfiguration,
+          final Map<Integer, ExportingState> legacyExportingStates) {
     final Supplier<List<MemberId>> otherKnownMembers = initializationMembers(staticConfiguration);
     return FileInitializer.fromPersistedConfiguration(configurationFile, new ProtoBufSerializer())
         .orThen(
@@ -338,7 +352,10 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId()))
         .andThen(
             PartitionDistributorInitializer
-                .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration));
+                .currentClusterConfigurationPartitionDistributorInitializer(staticConfiguration))
+        .andThen(
+            new PartitionGroupExportingStateInitializer(
+                legacyExportingStates, staticConfiguration.localMemberId()));
   }
 
   private Supplier<List<MemberId>> initializationMembers(
@@ -355,10 +372,13 @@ public final class ClusterConfigurationManagerService
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
   public ActorFuture<Void> start(
       final ActorSchedulingService actorSchedulingService,
-      final StaticConfiguration staticConfiguration) {
+      final StaticConfiguration staticConfiguration,
+      final Map<Integer, ExportingState> legacyExportingStates) {
     return startGossiper(actorSchedulingService)
         .andThen(
-            () -> startClusterTopologyServices(actorSchedulingService, staticConfiguration),
+            () ->
+                startClusterTopologyServices(
+                    actorSchedulingService, staticConfiguration, legacyExportingStates),
             Runnable::run);
   }
 
@@ -370,7 +390,8 @@ public final class ClusterConfigurationManagerService
 
   private CompletableActorFuture<Void> startClusterTopologyServices(
       final ActorSchedulingService actorSchedulingService,
-      final StaticConfiguration staticConfiguration) {
+      final StaticConfiguration staticConfiguration,
+      final Map<Integer, ExportingState> legacyExportingStates) {
     final var result = new CompletableActorFuture<Void>();
 
     knownGroups =
@@ -403,9 +424,9 @@ public final class ClusterConfigurationManagerService
                     currentClusterConfigurationInitializer =
                         isCoordinator
                             ? getCurrentClusterConfigurationCoordinatorInitializer(
-                                staticConfiguration)
+                                staticConfiguration, legacyExportingStates)
                             : getCurrentClusterConfigurationNonCoordinatorInitializer(
-                                staticConfiguration);
+                                staticConfiguration, legacyExportingStates);
                 clusterConfigurationManager
                     .start(currentClusterConfigurationInitializer)
                     .onComplete(result);
@@ -418,8 +439,9 @@ public final class ClusterConfigurationManagerService
                 final ClusterConfigurationInitializer<ClusterConfiguration>
                     clusterConfigurationInitializer =
                         isCoordinator
-                            ? getCoordinatorInitializer(staticConfiguration)
-                            : getNonCoordinatorInitializer(staticConfiguration);
+                            ? getCoordinatorInitializer(staticConfiguration, legacyExportingStates)
+                            : getNonCoordinatorInitializer(
+                                staticConfiguration, legacyExportingStates);
                 clusterConfigurationManager
                     .start(clusterConfigurationInitializer)
                     .onComplete(result);
