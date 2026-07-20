@@ -25,10 +25,13 @@ import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -180,6 +183,62 @@ public class UnpackedObjectTest {
               """
           {"arrayProp":[1],"binaryProp":"Zm9v","booleanProp":true,"documentProp":"gaNmb28C","enumProp":"BAR",\
           "intProp":42,"longProp":4242,"objectProp":{"foo":243},"packedProp":[packed value (length=12)],"stringProp":"string-value"}""");
+    }
+  }
+
+  @Nested
+  class MetricsTest {
+    private final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    @AfterEach
+    void clearGlobalRegistry() {
+      MicrometerUtil.setGlobalRegistry(null);
+    }
+
+    @Test
+    void shouldMeasureSerializationAndDeserializationByClass() {
+      // given
+      final var property = new StringProperty("property", "value");
+      final var object = new UnpackedObject(1);
+      object.declareProperty(property);
+      final var buffer = new UnsafeBuffer(ByteBuffer.allocate(100));
+      MicrometerUtil.setGlobalRegistry(registry);
+
+      // when
+      final int length = object.write(buffer, 0);
+      object.wrap(buffer, 0, length);
+
+      // then
+      final var serializationTimer =
+          registry
+              .find("zeebe.msgpack.serialization.duration")
+              .tag("recordType", "UnpackedObject")
+              .timer();
+      final var deserializationTimer =
+          registry
+              .find("zeebe.msgpack.deserialization.duration")
+              .tag("recordType", "UnpackedObject")
+              .timer();
+      assertThat(serializationTimer).isNotNull();
+      assertThat(serializationTimer.count()).isEqualTo(1);
+      assertThat(deserializationTimer).isNotNull();
+      assertThat(deserializationTimer.count()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldSkipMetricsWhenGlobalRegistryIsUnset() {
+      // given
+      final var property = new StringProperty("property", "value");
+      final var object = new UnpackedObject(1);
+      object.declareProperty(property);
+      final var buffer = new UnsafeBuffer(ByteBuffer.allocate(100));
+
+      // when
+      final int length = object.write(buffer, 0);
+      object.wrap(buffer, 0, length);
+
+      // then
+      assertThat(registry.getMeters()).isEmpty();
     }
   }
 

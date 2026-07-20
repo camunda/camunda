@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.metrics;
 
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.netty4.NettyAllocatorMetrics;
@@ -19,6 +20,7 @@ public final class MetricRegistration implements MeterBinder {
   @SuppressWarnings("NullableProblems")
   @Override
   public void bindTo(final MeterRegistry registry) {
+    MicrometerUtil.setGlobalRegistry(registry);
     new NettyAllocatorMetrics(PooledByteBufAllocator.DEFAULT).bindTo(registry);
     new NettyAllocatorMetrics(UnpooledByteBufAllocator.DEFAULT).bindTo(registry);
   }

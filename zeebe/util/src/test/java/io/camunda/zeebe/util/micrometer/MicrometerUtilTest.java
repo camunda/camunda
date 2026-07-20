@@ -12,17 +12,48 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class MicrometerUtilTest {
+  @AfterEach
+  void clearGlobalRegistry() {
+    MicrometerUtil.setGlobalRegistry(null);
+  }
+
   @Test
   public void shouldThrowExceptionWhenBucketsExceedLongMax() {
     final var buckets = MicrometerUtil.exponentialBucketDuration(7, 6, 1023, ChronoUnit.MILLIS);
     assertThat(buckets).hasSizeLessThan(1023).allMatch(d -> d.toMillis() > 0L);
+  }
+
+  @Test
+  void shouldCacheTimersByClass() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    MicrometerUtil.setGlobalRegistry(registry);
+    final var timers =
+        MicrometerUtil.timerByClass(
+            "test.class.timer", "type", Duration.ofMillis(1), Duration.ofMillis(10));
+
+    // when
+    final Timer first = timers.get(String.class);
+    final Timer second = timers.get(String.class);
+
+    // then
+    assertThat(first).isSameAs(second);
+    assertThat(registry.get("test.class.timer").tag("type", "String").timer()).isSameAs(first);
+  }
+
+  @Test
+  void shouldExposeNoGlobalRegistryByDefault() {
+    assertThat(MicrometerUtil.getGlobalRegistry()).isNull();
   }
 
   @Nested

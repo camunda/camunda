@@ -19,12 +19,16 @@ import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 import org.jspecify.annotations.Nullable;
 
 /** Collection of disparate convenience methods for Micrometer. */
 public final class MicrometerUtil {
+  private static volatile @Nullable MeterRegistry globalRegistry;
+
   private static final Duration[] DEFAULT_PROMETHEUS_BUCKETS = {
     Duration.ofMillis(5),
     Duration.ofMillis(10),
@@ -44,6 +48,62 @@ public final class MicrometerUtil {
   };
 
   private MicrometerUtil() {}
+
+  /**
+   * Sets the JVM-global registry used by metrics which cannot receive a registry through dependency
+   * injection. Leaving it unset disables those metrics and lets their callers use an uninstrumented
+   * fast path.
+   *
+   * @param registry the registry to use, or {@code null} to disable global metrics
+   */
+  public static void setGlobalRegistry(final @Nullable MeterRegistry registry) {
+    globalRegistry = registry;
+  }
+
+  /** Returns the JVM-global registry, or {@code null} when global metrics are disabled. */
+  public static @Nullable MeterRegistry getGlobalRegistry() {
+    return globalRegistry;
+  }
+
+  /**
+   * Creates a class-indexed cache. The factory is invoked at most once for each class for the
+   * lifetime of the returned cache, making it suitable for caching meters whose tag set is based on
+   * a concrete class.
+   */
+  public static <T> ClassValue<T> classValue(final Function<Class<?>, T> factory) {
+    Objects.requireNonNull(factory, "factory");
+    return new ClassValue<>() {
+      @Override
+      protected T computeValue(final Class<?> type) {
+        return factory.apply(type);
+      }
+    };
+  }
+
+  /**
+   * Creates a class-indexed timer cache backed by the configured global registry. Timer
+   * registration and class-name computation happen only on the first lookup for each concrete
+   * class.
+   */
+  public static ClassValue<Timer> timerByClass(
+      final String name, final String classTag, final Duration... serviceLevelObjectives) {
+    return classValue(
+        type -> {
+          final var registry =
+              Objects.requireNonNull(
+                  globalRegistry,
+                  "Global meter registry must be configured before using the timer");
+          return Timer.builder(name)
+              .tag(classTag, type.getSimpleName())
+              .serviceLevelObjectives(serviceLevelObjectives)
+              .register(registry);
+        });
+  }
+
+  /** Records elapsed nanoseconds without allocating a {@link Timer.Sample}. */
+  public static void recordTimer(final Timer timer, final long startNanos) {
+    timer.record(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS);
+  }
 
   /**
    * Returns the set of buckets that Prometheus would normally use as default for their histograms.

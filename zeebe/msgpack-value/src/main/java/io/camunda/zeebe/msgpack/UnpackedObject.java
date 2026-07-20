@@ -16,7 +16,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public class UnpackedObject extends ObjectValue implements Recyclable, BufferReader, BufferWriter {
-
   private MsgPackReader reader;
   private MsgPackWriter writer;
 
@@ -36,22 +35,28 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
 
   @Override
   public void wrap(final DirectBuffer buff, final int offset, final int length) {
-    reset();
-    if (reader == null) {
-      reader = new MsgPackReader();
-    }
-    reader.wrap(buff, offset, length);
+    final var timer = UnpackedObjectMetrics.deserializationTimer(getClass());
+    final long startNanos = timer == null ? 0 : System.nanoTime();
     try {
-      read(reader);
-    } catch (final Exception e) {
-      throw new RuntimeException(
-          "Could not deserialize object ["
-              + getClass().getSimpleName()
-              + "]. Deserialization stuck at offset "
-              + reader.getOffset()
-              + " of length "
-              + length,
-          e);
+      reset();
+      if (reader == null) {
+        reader = new MsgPackReader();
+      }
+      reader.wrap(buff, offset, length);
+      try {
+        read(reader);
+      } catch (final Exception e) {
+        throw new RuntimeException(
+            "Could not deserialize object ["
+                + getClass().getSimpleName()
+                + "]. Deserialization stuck at offset "
+                + reader.getOffset()
+                + " of length "
+                + length,
+            e);
+      }
+    } finally {
+      UnpackedObjectMetrics.record(timer, startNanos);
     }
   }
 
@@ -62,10 +67,16 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
 
   @Override
   public int write(final MutableDirectBuffer buffer, final int offset) {
-    if (writer == null) {
-      writer = new MsgPackWriter();
+    final var timer = UnpackedObjectMetrics.serializationTimer(getClass());
+    final long startNanos = timer == null ? 0 : System.nanoTime();
+    try {
+      if (writer == null) {
+        writer = new MsgPackWriter();
+      }
+      writer.wrap(buffer, offset);
+      return write(writer);
+    } finally {
+      UnpackedObjectMetrics.record(timer, startNanos);
     }
-    writer.wrap(buffer, offset);
-    return write(writer);
   }
 }
