@@ -1,0 +1,60 @@
+# description: Compiles production and test sources with Gradle for relevant pull requests
+# test location: /
+# type: CI
+# owner: @camunda/engineering-operations
+---
+name: Gradle PR Parity
+
+on:
+  pull_request: {}
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) && github.sha || github.ref) }}
+
+defaults:
+  run:
+    shell: bash
+
+permissions: { }
+
+env:
+  TEST_OWNER: '@camunda/engineering-operations'
+
+jobs:
+  gradle-test-classes:
+    name: "Gradle / Test Classes"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        timeout-minutes: 1
+      - uses: ./.github/actions/paths-filter
+        id: filter
+      - uses: ./.github/actions/setup-build
+        if: steps.filter.outputs.java-code-changes == 'true'
+        with:
+          skip-maven-cache: "true"
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
+        if: steps.filter.outputs.java-code-changes == 'true'
+        with:
+          cache-read-only: true
+      - name: Compile Gradle test classes
+        if: steps.filter.outputs.java-code-changes == 'true'
+        run: ./gradlew testClasses
+      - name: Observe build status
+        if: always() && steps.filter.outputs.java-code-changes == 'true'
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
