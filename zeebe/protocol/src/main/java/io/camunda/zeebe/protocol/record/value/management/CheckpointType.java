@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record.value.management;
 
+import org.jspecify.annotations.Nullable;
+
 public enum CheckpointType {
   MARKER((short) 0),
   SCHEDULED_BACKUP((short) 1),
@@ -30,7 +32,7 @@ public enum CheckpointType {
     return value;
   }
 
-  public static CheckpointType valueOf(final short value) {
+  public static @Nullable CheckpointType valueOf(final short value) {
     switch (value) {
       case 0:
         {
