@@ -312,10 +312,17 @@ jobs:
           payload=$(printf '%s' "$STALE_DATA" | \
             .ci/scripts/stale-backport-scripts/format-slack-report.sh)
 
+          # Emit the blocks array as COMPACT single-line JSON. slack-github-action
+          # v4 enforces strict YAML 1.2 indentation, so a multi-line `toJSON(...)`
+          # value in the payload fails to parse ("deficient indentation"). A single
+          # compact line is valid YAML flow and parses cleanly.
+          blocks=$(printf '%s' "$payload" | jq -c '.blocks')
+
           {
             echo "payload<<PAYLOAD_EOF"
             echo "$payload"
             echo "PAYLOAD_EOF"
+            echo "blocks=$blocks"
           } >> "$GITHUB_OUTPUT"
 
       - name: Find existing Slack message to update
@@ -381,7 +388,7 @@ jobs:
             channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}"
             ts: "${{ steps.find-message.outputs.message_ts }}"
             text: "Stale backport report"
-            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+            blocks: ${{ steps.format.outputs.blocks }}
 
       - name: Pin existing Slack message if not already pinned
         if: steps.find-message.outputs.found == 'true' && steps.find-message.outputs.is_pinned == 'false'
@@ -441,7 +448,7 @@ jobs:
           payload: |
             channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}"
             text: "Stale backport report"
-            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+            blocks: ${{ steps.format.outputs.blocks }}
 
       - name: Pin new Slack message
         if: steps.find-message.outputs.found != 'true'
