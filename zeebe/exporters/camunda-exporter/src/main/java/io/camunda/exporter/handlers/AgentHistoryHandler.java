@@ -34,10 +34,16 @@ import java.util.Set;
  * CamundaExporter handler for {@code AGENT_HISTORY} records.
  *
  * <ul>
- *   <li>{@code CREATED}: full upsert — all entity fields are populated from the record value.
- *   <li>{@code COMMITTED} / {@code DISCARDED}: {@code updateEntity()} still populates all fields
- *       defensively; {@code flush()} passes only {@code Map.of(COMMIT_STATUS, ...)} as updateFields
- *       so only {@code commitStatus} is written to the existing document.
+ *   <li>{@code CREATED}: full upsert — all entity fields are populated from the record value,
+ *       including {@code content}, {@code toolCalls}, {@code inputTokens}, {@code outputTokens},
+ *       {@code durationMs} and {@code producedAt}.
+ *   <li>{@code COMMITTED} / {@code DISCARDED}: the engine only retains identity fields once an item
+ *       is committed/discarded, so the record value's {@code content}, {@code toolCalls},
+ *       token/duration metrics and {@code producedAt} are trimmed and must not be applied to the
+ *       entity — {@code updateEntity()} leaves those 6 fields untouched, updating only {@code
+ *       commitStatus} and the other identity fields. {@code flush()} additionally passes only
+ *       {@code Map.of(COMMIT_STATUS, ...)} as updateFields so only {@code commitStatus} is written
+ *       to the existing document.
  * </ul>
  */
 public class AgentHistoryHandler
@@ -98,16 +104,22 @@ public class AgentHistoryHandler
         .setJobLease(value.getJobLease())
         .setLoopIteration(ExporterUtil.positiveOrNull(value.getLoopIteration()))
         .setRole(mapRole(value.getRole()))
-        .setCommitStatus(mapCommitStatusFromIntent(intent))
-        .setProducedAt(
-            DateUtil.toOffsetDateTime(
-                Instant.ofEpochMilli(
-                    value.getProducedAt() > 0 ? value.getProducedAt() : record.getTimestamp())))
-        .setInputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getInputTokens()))
-        .setOutputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
-        .setDurationMs(ExporterUtil.nullIfNegative(value.getMetrics().getDurationMs()))
-        .setContent(mapContent(value.getContent()))
-        .setToolCalls(mapToolCalls(value.getToolCalls()));
+        .setCommitStatus(mapCommitStatusFromIntent(intent));
+
+    // Guarded to CREATED only: ExporterBatchWriter shares one mutable entity across a batch, so a
+    // same-batch COMMITTED/DISCARDED call would otherwise clobber these with its trimmed values.
+    if (intent == AgentHistoryIntent.CREATED) {
+      entity
+          .setProducedAt(
+              DateUtil.toOffsetDateTime(
+                  Instant.ofEpochMilli(
+                      value.getProducedAt() > 0 ? value.getProducedAt() : record.getTimestamp())))
+          .setInputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getInputTokens()))
+          .setOutputTokens(ExporterUtil.nullIfNegative(value.getMetrics().getOutputTokens()))
+          .setDurationMs(ExporterUtil.nullIfNegative(value.getMetrics().getDurationMs()))
+          .setContent(mapContent(value.getContent()))
+          .setToolCalls(mapToolCalls(value.getToolCalls()));
+    }
   }
 
   @Override
