@@ -26,11 +26,24 @@ if [ -z "$1" ]; then
 fi
 
 NAMESPACE=$1
-POD_TIMEOUT=${2:-60}
-POD_READY_RETRIES=${3:-40}
-CONNECTIVITY_TIMEOUT=${4:-1800}
+
+# Rough max duration per step, using the defaults below (unless overridden by
+# the caller). The script fails fast if any step's budget is exhausted:
+#   1. Platform pods readiness (wait_for_pods "camunda-platform"):
+#        POD_READY_RETRIES * (POD_TIMEOUT + RETRY_DELAY)
+#        = 30 * (30s + 2s) ~= 16 min
+#   2. Load test client pods readiness (wait_for_pods "zeebe-client"):
+#        same formula/budget as step 1, run independently afterwards ~= 16 min
+#   3. Gateway connectivity check (app_connected metric poll loop):
+#        ~= CONNECTIVITY_TIMEOUT = 900s ~= 15 min
+# Worst case total before the script gives up: ~= 47 minutes.
+POD_TIMEOUT=${2:-30}
+POD_READY_RETRIES=${3:-30}
+CONNECTIVITY_TIMEOUT=${4:-900}
 METRICS_PORT=${5:-9600}
 GITHUB_OUTPUT="${GITHUB_OUTPUT:-/dev/stdout}"
+
+RETRY_DELAY=2
 
 echo "--- Checking namespace: $NAMESPACE ---"
 # Verify namespace exists
@@ -47,7 +60,7 @@ wait_for_pods() {
   local label="$1"
   local description="$2"
   local max_retries="${POD_READY_RETRIES}"
-  local retry_delay=10
+  local retry_delay="${RETRY_DELAY}"
   local wait_output
 
   for attempt in $(seq 1 "$max_retries"); do
@@ -110,8 +123,8 @@ fi
 # Check that the client has successfully connected to the gateway.
 # app_connected >= 1 confirms that the topology was received (i.e. the
 # client authenticated and connected successfully, regardless of REST or gRPC).
-interval=10
-max_attempts=$((CONNECTIVITY_TIMEOUT / interval))
+retry_delay="${RETRY_DELAY}"
+max_attempts=$((CONNECTIVITY_TIMEOUT / RETRY_DELAY))
 attempts=0
 verified=false
 app_connected=""
@@ -146,7 +159,7 @@ while [[ $attempts -lt $max_attempts ]]; do
 
   echo "Namespace $NAMESPACE: waiting for gateway connectivity (attempt $attempts/$max_attempts)"
   echo "::endgroup::"
-  sleep "$interval"
+  sleep "$retry_delay"
 done
 
 if [[ "$verified" != "true" ]]; then
