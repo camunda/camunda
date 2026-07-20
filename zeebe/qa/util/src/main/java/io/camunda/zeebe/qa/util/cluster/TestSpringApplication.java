@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
-import static io.camunda.configuration.beans.LegacySearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.spring.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.application.MainSupport;
@@ -34,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -297,7 +297,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public T withCreateSchema(final boolean createSchema) {
-    return withProperty(CREATE_SCHEMA_PROPERTY, String.valueOf(createSchema));
+    return withUnifiedConfig(
+        cfg ->
+            Stream.of(
+                    cfg.getData().getSecondaryStorage().getElasticsearch(),
+                    cfg.getData().getSecondaryStorage().getOpensearch())
+                .forEach(storage -> storage.setCreateSchema(createSchema)));
   }
 
   /**

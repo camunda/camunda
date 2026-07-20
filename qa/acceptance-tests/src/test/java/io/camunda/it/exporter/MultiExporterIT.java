@@ -226,7 +226,6 @@ public class MultiExporterIT {
           }
           case CAMUNDA -> {
             final Map<String, Object> elasticsearchProperties = new HashMap<>();
-            elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", INDEX_PREFIX);
             elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
             testStandaloneApplication.withAdditionalProperties(elasticsearchProperties);
 

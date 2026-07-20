@@ -17,6 +17,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -39,11 +40,6 @@ public class MultiDbConfiguratorTest {
     multiDbConfigurator.configureElasticsearchSupport(EXPECTED_URL, EXPECTED_PREFIX);
 
     // then
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.tasklist.zeebeElasticsearch.prefix",
-        EXPECTED_ZEEBE_PREFIX);
-
     final SecondaryStorage secondaryStorage =
         testSimpleCamundaApplication.unifiedConfig().getData().getSecondaryStorage();
     assertThat(secondaryStorage.getType()).isEqualTo(SecondaryStorageType.elasticsearch);
@@ -129,11 +125,6 @@ public class MultiDbConfiguratorTest {
         EXPECTED_URL, EXPECTED_PREFIX, EXPECTED_USER, EXPECTED_PW);
 
     // then
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.tasklist.zeebeOpensearch.prefix",
-        EXPECTED_ZEEBE_PREFIX);
-
     final SecondaryStorage secondaryStorage =
         testSimpleCamundaApplication.unifiedConfig().getData().getSecondaryStorage();
     assertThat(secondaryStorage.getType()).isEqualTo(SecondaryStorageType.opensearch);
@@ -221,6 +212,9 @@ public class MultiDbConfiguratorTest {
         .isEqualTo(expectedWaitPeriodBeforeArchiving);
     assertThat(database.getBulk().getSize()).isEqualTo(1);
     assertThat(database.getRefreshInterval()).isEqualTo("100ms");
+    assertThat(database.getHistory().getDelayBetweenRuns()).isEqualTo(Duration.ofMillis(1000));
+    assertThat(database.getHistory().getMaxDelayBetweenRuns()).isEqualTo(Duration.ofMillis(1000));
+    assertThat(database.isCreateSchema()).isTrue();
   }
 
   private static void assertNoExplicitCamundaExporter(
