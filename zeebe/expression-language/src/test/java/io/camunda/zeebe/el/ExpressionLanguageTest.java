@@ -195,6 +195,40 @@ public class ExpressionLanguageTest {
   }
 
   @Test
+  public void shouldEvaluateEmptyList() {
+    final var expression = expressionLanguage.parseExpression("=[]");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertEquality(evaluationResult.toBuffer(), "[]");
+  }
+
+  @Test
+  public void shouldEvaluateEmptyContext() {
+    final var expression = expressionLanguage.parseExpression("={}");
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertEquality(evaluationResult.toBuffer(), "{}");
+  }
+
+  @Test
+  public void shouldEvaluateVeryDeeplyNestedContextWithoutStackOverflow() {
+    // a "for" loop wraps the previous result in a new object on every iteration, building a list
+    // nested `depth` levels deep without a correspondingly deep parse tree or source string
+    final var depth = 3_000;
+    final var expressionString =
+        String.format(
+            "(for i in 1..%s return if i = 1 then {\"a\": 1} else {\"a\": partial[-1]})[-1]",
+            depth);
+    final var expression = expressionLanguage.parseExpression("=" + expressionString);
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertThat(evaluationResult.toBuffer().capacity()).isPositive();
+  }
+
+  @Test
   public void shouldEvaluateExpressionWithMissingVariables() {
     final var expression = expressionLanguage.parseExpression("=x");
     final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
