@@ -677,7 +677,7 @@ jobs:
           if [[ "${ENABLE_OPTIMIZE}" == "true" ]]; then
             if [[ -n "${OPTIMIZE_TAG}" ]]; then
               # Explicit optimize tag provided: use it directly (Docker Hub image)
-              additional_platform_config+="--set optimize.image.tag=${OPTIMIZE_TAG}"
+              additional_platform_config+=" --set optimize.image.tag=${OPTIMIZE_TAG}"
             elif [[ -z "${ORCHESTRATION_TAG}" ]]; then
               # Custom build without explicit optimize tag: use the built image from internal registry
               additional_platform_config+=" \
@@ -689,12 +689,12 @@ jobs:
 
           # Append identity image config if a dedicated tag is provided
           if [[ -n "${IDENTITY_TAG}" ]]; then
-            additional_platform_config+="--set identity.image.tag=${IDENTITY_TAG}"
+            additional_platform_config+=" --set identity.image.tag=${IDENTITY_TAG}"
           fi
 
           # Append connectors image config if a dedicated tag is provided
           if [[ -n "${CONNECTORS_TAG}" ]]; then
-            additional_platform_config+="--set connectors.image.tag=${CONNECTORS_TAG}"
+            additional_platform_config+=" --set connectors.image.tag=${CONNECTORS_TAG}"
           fi
 
           # Append user-provided helm values if present
