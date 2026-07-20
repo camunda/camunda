@@ -34,7 +34,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * deployment runs OIDC ({@code @ConditionalOnAuthenticationMethod(OIDC)}). Bearer tokens are
  * validated against the deployment's default OIDC provider (the shared {@link JwtDecoder}); a token
  * is granted access only if it matches a configured cluster-admin client id, group, or claim (see
- * {@link ClusterAdminJwtAuthenticationConverter}). See camunda/camunda#57708.
+ * {@link ClusterAdminJwtAuthenticationConverter}).
  *
  * <p>This chain and the Basic chain ({@link ClusterAdminSecurityConfiguration}) are mutually
  * exclusive by deployment method — only one is instantiated.
@@ -65,12 +65,24 @@ public class ClusterAdminOidcSecurityConfiguration {
     final ClusterAdminOidcProperties oidcProperties =
         ClusterAdminOidcProperties.loadAndValidate(
             environment, oidc.getClientIdClaim(), oidc.getGroupsClaim());
-    LOG.info(
-        "Loaded {} cluster-admin OIDC matcher(s) for {}",
+    final int matcherCount =
         oidcProperties.clients().size()
             + oidcProperties.groups().size()
-            + oidcProperties.claims().size(),
-        CLUSTER_ADMIN_API_PATTERN);
+            + oidcProperties.claims().size();
+    if (matcherCount == 0) {
+      // The chain is always active under OIDC; with no matchers it denies every token, so make the
+      // resulting lockout visible rather than silently shipping an unreachable cluster-admin API.
+      LOG.warn(
+          "No cluster-admin OIDC matchers configured (camunda.security.cluster-admin.oidc.*): every "
+              + "bearer token will be denied on {}. Configure at least one client, group, or claim "
+              + "to grant cluster-admin access.",
+          CLUSTER_ADMIN_API_PATTERN);
+    } else {
+      LOG.info(
+          "Loaded {} cluster-admin OIDC matcher(s) for {}",
+          matcherCount,
+          CLUSTER_ADMIN_API_PATTERN);
+    }
 
     final var jwtAuthenticationConverter =
         new ClusterAdminJwtAuthenticationConverter(

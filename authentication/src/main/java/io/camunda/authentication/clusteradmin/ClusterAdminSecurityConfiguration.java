@@ -39,8 +39,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  *
  * <p>All paths under {@code /cluster/v2/**} require HTTP Basic authentication against the
  * statically configured cluster-admin users ({@code camunda.security.cluster-admin.basic.users}).
- * Registered only under the basic authentication method (the default); under OIDC this chain is not
- * present and cluster-admin OIDC support follows in #57708.
+ * Registered only under the basic authentication method (the default)
  *
  * <p><strong>Isolation:</strong> keep the cluster-admin user store isolated as a plain in-memory
  * object behind a dedicated, parent-less {@link ProviderManager} for this chain. Do not expose it
