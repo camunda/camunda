@@ -6,7 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Page, Locator} from '@playwright/test';
+import {expect, type Page, type Locator} from '@playwright/test';
+
+const START_FORM_FILTER_URL_PARAM = {
+  'All Processes': null,
+  'Requires form input to start': 'yes',
+  'Does not require form input to start': 'no',
+} as const;
 
 class TasklistProcessesPage {
   private page: Page;
@@ -17,6 +23,7 @@ class TasklistProcessesPage {
   readonly searchProcessesInput: Locator;
   readonly processTile: Locator;
   readonly startProcessSubButton: Locator;
+  readonly processFilterDropdown: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -29,6 +36,17 @@ class TasklistProcessesPage {
     this.docsLink = page.getByRole('link', {name: 'here'});
     this.searchProcessesInput = page.getByPlaceholder('Search processes');
     this.processTile = page.getByTestId('process-tile');
+    this.processFilterDropdown = page.getByTestId('process-filters');
+  }
+
+  processTileByName(name: string): Locator {
+    return this.processTile.filter({hasText: name}).first();
+  }
+
+  requiresFormInputTagFor(name: string): Locator {
+    return this.processTileByName(name).locator('.cds--tag__label', {
+      hasText: 'Requires form input',
+    });
   }
 
   async goto() {
@@ -62,6 +80,24 @@ class TasklistProcessesPage {
     await this.page
       .getByRole('dialog')
       .waitFor({state: 'hidden', timeout: 30000});
+  }
+
+  async filterByStartForm(
+    option: keyof typeof START_FORM_FILTER_URL_PARAM,
+  ): Promise<void> {
+    await this.processFilterDropdown.click();
+    await this.page.getByRole('option', {name: option, exact: true}).click();
+
+    // The search box and this dropdown share one debounced URL updater, so
+    // wait for the filter's URL update to commit before a caller searches.
+    const paramValue = START_FORM_FILTER_URL_PARAM[option];
+    if (paramValue === null) {
+      await expect(this.page).not.toHaveURL(/hasStartForm=/);
+    } else {
+      await expect(this.page).toHaveURL(
+        new RegExp(`hasStartForm=${paramValue}`),
+      );
+    }
   }
 }
 
