@@ -22,6 +22,7 @@ import java.time.InstantSource;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -168,7 +169,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
   }
 
   @Override
-  public void updateRestoreStatus(final RestoreStatus restoreStatus, final String etag) {
+  public void updateRestoreStatus(final RestoreStatus restoreStatus, final @Nullable String etag) {
     final PutObjectRequest.Builder putRequestBuilder =
         PutObjectRequest.builder()
             .bucket(config.bucketName)
@@ -196,7 +197,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
   }
 
   @Override
-  public StoredRestoreStatus getRestoreStatus(final String restoreId) {
+  public @Nullable StoredRestoreStatus getRestoreStatus(final String restoreId) {
     final var request =
         GetObjectRequest.builder()
             .bucket(config.bucketName)
