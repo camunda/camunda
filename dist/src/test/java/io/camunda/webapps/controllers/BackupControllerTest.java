@@ -20,6 +20,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.application.commons.backup.BackupServiceRegistry;
+import io.camunda.application.commons.backup.BackupServiceRegistry.PhysicalTenantBackup;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryBackupTenantInfo;
@@ -38,9 +40,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -102,19 +102,19 @@ public abstract sealed class BackupControllerTest {
   @BeforeEach
   public void setup() {
     backupController =
-        new BackupController(Map.of("default", backupService), Map.of("default", backupProperties));
+        new BackupController(
+            new BackupServiceRegistry(
+                List.of(new PhysicalTenantBackup("default", backupService, backupProperties))));
     lenient().when(backupProperties.repositoryName()).thenReturn("repo-1");
   }
 
   private BackupController twoTenantController(
       final BackupService physicalTenantService, final BackupRepositoryProps physicalTenantProps) {
-    final var services = new LinkedHashMap<String, BackupService>();
-    services.put("default", backupService);
-    services.put("tenant1", physicalTenantService);
-    final var props = new LinkedHashMap<String, BackupRepositoryProps>();
-    props.put("default", backupProperties);
-    props.put("tenant1", physicalTenantProps);
-    return new BackupController(services, props);
+    return new BackupController(
+        new BackupServiceRegistry(
+            List.of(
+                new PhysicalTenantBackup("default", backupService, backupProperties),
+                new PhysicalTenantBackup("tenant1", physicalTenantService, physicalTenantProps))));
   }
 
   private void mockErrorWith(final Exception e) {

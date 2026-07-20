@@ -7,22 +7,22 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.commons.backup.BackupServiceRegistry;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchEngineConfigurations;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
-import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeExceptionMapper;
 import org.springframework.boot.SpringBootConfiguration;
@@ -59,12 +59,10 @@ public class StandaloneBackupManager implements CommandLineRunner {
   private static final String WRONG_ARGUMENTS_ERROR =
       "Expected 1 or 2 arguments: <backupId> [--skip-schema-check], but got %d argument(s): %s";
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneBackupManager.class);
-  private final Map<String, BackupService> backupServicesByPhysicalTenant;
+  private final BackupServiceRegistry backupServiceRegistry;
 
-  public StandaloneBackupManager(
-      @Qualifier("backupServicesByTenant")
-          final Map<String, BackupService> backupServicesByPhysicalTenant) {
-    this.backupServicesByPhysicalTenant = backupServicesByPhysicalTenant;
+  public StandaloneBackupManager(final BackupServiceRegistry backupServiceRegistry) {
+    this.backupServiceRegistry = backupServiceRegistry;
   }
 
   public static void main(final String[] args) throws Exception {
@@ -122,7 +120,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
       skipSchemaCheck = parseSchemaCheckArg(args[1]);
     }
 
-    if (backupServicesByPhysicalTenant.isEmpty()) {
+    if (backupServiceRegistry.isEmpty()) {
       throw new IllegalStateException(
           "Expected at least one physical tenant backup service, but none are configured. "
               + "A backup would silently capture nothing.");
@@ -132,11 +130,11 @@ public class StandaloneBackupManager implements CommandLineRunner {
       final var takeBackupRequestDto = new TakeBackupRequestDto();
       takeBackupRequestDto.setBackupId(backupId);
       takeBackupRequestDto.setSkipSchemaCheck(skipSchemaCheck);
-      for (final var entry : backupServicesByPhysicalTenant.entrySet()) {
-        final var backupResponse = entry.getValue().takeBackup(takeBackupRequestDto);
+      for (final var backup : backupServiceRegistry.physicalTenantBackups()) {
+        final var backupResponse = backup.backupService().takeBackup(takeBackupRequestDto);
         LOG.info(
             "Triggered search engine snapshots for physical tenant '{}': {}",
-            entry.getKey(),
+            backup.physicalTenantId(),
             backupResponse.getScheduledSnapshots());
       }
     } catch (final Exception e) {
@@ -160,10 +158,11 @@ public class StandaloneBackupManager implements CommandLineRunner {
   }
 
   private Map<String, GetBackupStateResponseDto> fetchBackupStates(final long backupId) {
-    return backupServicesByPhysicalTenant.entrySet().stream()
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey, entry -> entry.getValue().getBackupState(backupId)));
+    final var backupStates = new LinkedHashMap<String, GetBackupStateResponseDto>();
+    for (final var backup : backupServiceRegistry.physicalTenantBackups()) {
+      backupStates.put(backup.physicalTenantId(), backup.backupService().getBackupState(backupId));
+    }
+    return backupStates;
   }
 
   private void logBackupStates(final Map<String, GetBackupStateResponseDto> backupStates) {
