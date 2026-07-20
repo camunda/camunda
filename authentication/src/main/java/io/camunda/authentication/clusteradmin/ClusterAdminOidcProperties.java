@@ -8,6 +8,8 @@
 package io.camunda.authentication.clusteradmin;
 
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.Environment;
@@ -18,6 +20,8 @@ import org.springframework.core.env.Environment;
  * full cluster-admin access.
  */
 public final class ClusterAdminOidcProperties {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ClusterAdminOidcProperties.class);
 
   private static final String PREFIX = "camunda.security.cluster-admin.oidc";
   private static final String CLIENTS_PROPERTY = PREFIX + ".clients";
@@ -55,6 +59,21 @@ public final class ClusterAdminOidcProperties {
     final List<ClusterAdminClaim> claims =
         binder.bind(CLAIMS_PROPERTY, Bindable.listOf(ClusterAdminClaim.class)).orElse(List.of());
     validate(clients, groups, claims, clientIdClaim, groupsClaim);
+    // Empty config is legitimate (a deployment may run OIDC without cluster-admin yet), but the
+    // chain is always active under OIDC and denies every token with no matchers — WARN so the
+    // resulting lockout is visible rather than silently shipping an unreachable cluster-admin API.
+    if (clients.isEmpty() && groups.isEmpty() && claims.isEmpty()) {
+      LOG.warn(
+          "No cluster-admin OIDC matchers configured ({}.*): every bearer token will be denied on "
+              + "/cluster/v2/**. Configure at least one client, group, or claim to grant "
+              + "cluster-admin access.",
+          PREFIX);
+    } else {
+      LOG.info(
+          "Loaded {} cluster-admin OIDC matcher(s) from {}.*",
+          clients.size() + groups.size() + claims.size(),
+          PREFIX);
+    }
     return new ClusterAdminOidcProperties(clients, groups, claims);
   }
 

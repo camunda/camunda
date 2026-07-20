@@ -15,8 +15,6 @@ import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.security.spring.handler.AuthFailureHandler;
 import io.camunda.security.spring.security.SecurityFilterChainSupport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -49,9 +47,6 @@ public class ClusterAdminOidcSecurityConfiguration {
 
   private static final String CLUSTER_ADMIN_API_PATTERN = "/cluster/v2/**";
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(ClusterAdminOidcSecurityConfiguration.class);
-
   @Bean
   @Order(ORDER_WEBAPP_API)
   public SecurityFilterChain clusterAdminOidcSecurityFilterChain(
@@ -65,24 +60,6 @@ public class ClusterAdminOidcSecurityConfiguration {
     final ClusterAdminOidcProperties oidcProperties =
         ClusterAdminOidcProperties.loadAndValidate(
             environment, oidc.getClientIdClaim(), oidc.getGroupsClaim());
-    final int matcherCount =
-        oidcProperties.clients().size()
-            + oidcProperties.groups().size()
-            + oidcProperties.claims().size();
-    if (matcherCount == 0) {
-      // The chain is always active under OIDC; with no matchers it denies every token, so make the
-      // resulting lockout visible rather than silently shipping an unreachable cluster-admin API.
-      LOG.warn(
-          "No cluster-admin OIDC matchers configured (camunda.security.cluster-admin.oidc.*): every "
-              + "bearer token will be denied on {}. Configure at least one client, group, or claim "
-              + "to grant cluster-admin access.",
-          CLUSTER_ADMIN_API_PATTERN);
-    } else {
-      LOG.info(
-          "Loaded {} cluster-admin OIDC matcher(s) for {}",
-          matcherCount,
-          CLUSTER_ADMIN_API_PATTERN);
-    }
 
     final var jwtAuthenticationConverter =
         new ClusterAdminJwtAuthenticationConverter(
