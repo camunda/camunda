@@ -94,14 +94,23 @@ public class MockChildProcessBuilderImpl implements MockChildProcessBuilder {
     validateProcessId();
 
     final String variableSupplierJobType = "variableSupplier_" + childProcessId;
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess(childProcessId);
+
+    if (versionTag != null) {
+      processBuilder.versionTag(versionTag);
+    }
+
     final BpmnModelInstance processModel =
-        Bpmn.createExecutableProcess(childProcessId)
+        processBuilder
             .startEvent()
             .serviceTask("variableSupplier", t -> t.zeebeJobType(variableSupplierJobType))
             .endEvent()
             .done();
 
-    LOGGER.debug("Mock: Deploy a child process '{}' with variables supplier", childProcessId);
+    LOGGER.debug(
+        "Mock: Deploy a child process '{}' with version tag '{}' and variables supplier",
+        childProcessId,
+        versionTag);
 
     deploy(processModel);
 

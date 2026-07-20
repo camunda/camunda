@@ -296,4 +296,44 @@ public class MockChildProcessTest {
               assertThat(output.getTarget()).isEqualTo("result");
             });
   }
+
+  @Test
+  void shouldMockChildProcessWithVersionTagAndVariableSupplier() {
+    // given
+    final Function<Map<String, Object>, Map<String, Object>> variableSupplier =
+        inputVars -> Collections.singletonMap("result", inputVars.getOrDefault("input", "default"));
+
+    // when
+    processTestContext
+        .mockChildProcess()
+        .withProcessId(CHILD_PROCESS_ID)
+        .withVersionTag("3.1.4")
+        .thenComplete(variableSupplier);
+
+    // then: a process with a service task for the variable supplier and version tag is deployed
+    verify(camundaClient.newDeployResourceCommand())
+        .addProcessModel(processModelCaptor.capture(), eq(CHILD_PROCESS_ID + ".bpmn"));
+
+    final BpmnModelInstance deployedModel = processModelCaptor.getValue();
+
+    final Process process = deployedModel.getModelElementsByType(Process.class).iterator().next();
+    final ExtensionElements extensionElements =
+        (ExtensionElements) process.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeVersionTag.class))
+        .hasSize(1)
+        .first()
+        .satisfies(vt -> assertThat(vt.getValue()).isEqualTo("3.1.4"));
+
+    assertThat(deployedModel.getModelElementsByType(ServiceTask.class))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            serviceTask ->
+                assertThat(
+                        serviceTask.getSingleExtensionElement(ZeebeTaskDefinition.class).getType())
+                    .isEqualTo("variableSupplier_" + CHILD_PROCESS_ID));
+
+    verify(camundaClient.newWorker().jobType("variableSupplier_" + CHILD_PROCESS_ID).handler(any()))
+        .open();
+  }
 }
