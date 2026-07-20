@@ -26,8 +26,10 @@ import io.camunda.gateway.protocol.model.ProcessInstanceMigrationBatchOperationR
 import io.camunda.gateway.protocol.model.ProcessInstanceMigrationInstruction;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceModificationInstruction;
+import io.camunda.gateway.protocol.model.ProcessInstanceResumptionBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuery;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQueryResult;
+import io.camunda.gateway.protocol.model.ProcessInstanceSuspensionBatchOperationRequest;
 import io.camunda.gateway.protocol.model.ResumeProcessInstanceRequest;
 import io.camunda.gateway.protocol.model.SuspendProcessInstanceRequest;
 import io.camunda.search.query.IncidentQuery;
@@ -305,6 +307,30 @@ public class ProcessInstanceController {
   }
 
   @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/suspension")
+  public CompletableFuture<ResponseEntity<Object>> suspendProcessInstancesBatchOperation(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody final ProcessInstanceSuspensionBatchOperationRequest request) {
+    return processInstanceMapper
+        .toRequiredProcessInstanceFilter(request.getFilter())
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            filter -> batchOperationSuspension(physicalTenantId, filter));
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/resumption")
+  public CompletableFuture<ResponseEntity<Object>> resumeProcessInstancesBatchOperation(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody final ProcessInstanceResumptionBatchOperationRequest request) {
+    return processInstanceMapper
+        .toRequiredProcessInstanceFilter(request.getFilter())
+        .fold(
+            RestErrorMapper::mapProblemToCompletedResponse,
+            filter -> batchOperationResumption(physicalTenantId, filter));
+  }
+
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/incident-resolution")
   public CompletableFuture<ResponseEntity<Object>> resolveIncidentsBatchOperation(
       @PhysicalTenantId final String physicalTenantId,
@@ -396,6 +422,28 @@ public class ProcessInstanceController {
     return RequestExecutor.executeServiceMethod(
         () ->
             processInstanceServices.cancelProcessInstanceBatchOperationWithResult(
+                filter, authenticationProvider.getCamundaAuthentication()),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> batchOperationSuspension(
+      final String physicalTenantId, final io.camunda.search.filter.ProcessInstanceFilter filter) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            processInstanceServices.suspendProcessInstanceBatchOperationWithResult(
+                filter, authenticationProvider.getCamundaAuthentication()),
+        ResponseMapper::toBatchOperationCreatedWithResultResponse,
+        HttpStatus.OK);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> batchOperationResumption(
+      final String physicalTenantId, final io.camunda.search.filter.ProcessInstanceFilter filter) {
+    final var processInstanceServices = serviceRegistry.processInstanceServices(physicalTenantId);
+    return RequestExecutor.executeServiceMethod(
+        () ->
+            processInstanceServices.resumeProcessInstanceBatchOperationWithResult(
                 filter, authenticationProvider.getCamundaAuthentication()),
         ResponseMapper::toBatchOperationCreatedWithResultResponse,
         HttpStatus.OK);

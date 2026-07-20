@@ -114,6 +114,38 @@ class BatchOperationCreatedHandlerTest {
   }
 
   @Test
+  void shouldUpdateEntityWithSuspendAndResumeProcessInstanceTypes() {
+    // given
+    for (final var type :
+        java.util.List.of(
+            io.camunda.zeebe.protocol.record.value.BatchOperationType.SUSPEND_PROCESS_INSTANCE,
+            io.camunda.zeebe.protocol.record.value.BatchOperationType.RESUME_PROCESS_INSTANCE)) {
+      final var recordValue =
+          io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue
+              .builder()
+              .from(factory.generateObject(BatchOperationCreationRecordValue.class))
+              .withBatchOperationType(type)
+              .build();
+      final Record<BatchOperationCreationRecordValue> record =
+          factory.generateRecord(
+              ValueType.BATCH_OPERATION_CREATION,
+              r ->
+                  r.withIntent(BatchOperationIntent.CREATED)
+                      .withValue(recordValue)
+                      .withBrokerVersion("8.8.0")
+                      .withAuthorizations(Map.of()));
+
+      final var entity = new BatchOperationEntity();
+
+      // when
+      underTest.updateEntity(record, entity);
+
+      // then
+      assertThat(entity.getType()).isEqualTo(OperationType.valueOf(type.name()));
+    }
+  }
+
+  @Test
   void shouldUpdateEntityWithActorInfoFromRecordWithUsernameClaim() {
     // given
     final var recordValue = factory.generateObject(BatchOperationCreationRecordValue.class);
