@@ -7,18 +7,35 @@
  */
 package io.camunda.zeebe.restore.validation;
 
+import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
+
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.restore.RestorePointResolver;
+import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
 import io.camunda.zeebe.util.Preconditions;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
+import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
-import org.jspecify.annotations.NullMarked;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.function.IntFunction;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Validates {@link RestoreRequest}s submitted through the cluster-configuration API while a broker
@@ -27,11 +44,19 @@ import org.jspecify.annotations.Nullable;
 @NullMarked
 public final class RestoreValidator
     implements ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest> {
-
+  private static final List<String> RANGE_AVAILABLE_TYPES = List.of("rdbms", "none");
+  private static final Logger LOG = LoggerFactory.getLogger(RestoreValidator.class);
   private final @Nullable BackupStore backupStore;
+  private final @Nullable IntFunction<Long> exportedPositionSupplier;
+  private final int partitionCount;
 
-  public RestoreValidator(final @Nullable BackupStore backupStore) {
+  public RestoreValidator(
+      final int partitionCount,
+      final @Nullable BackupStore backupStore,
+      final @Nullable IntFunction<Long> exportedPositionSupplier) {
     this.backupStore = backupStore;
+    this.exportedPositionSupplier = exportedPositionSupplier;
+    this.partitionCount = partitionCount;
   }
 
   @Override
@@ -49,6 +74,9 @@ public final class RestoreValidator
       validateParameters(request);
     } catch (final IllegalArgumentException e) {
       return Either.left(new InvalidRequest(e.getMessage()));
+    }
+    if (RANGE_AVAILABLE_TYPES.contains(request.databaseType())) {
+      resolveRdbmsBackups(request);
     }
     return Either.right(request);
   }
@@ -84,6 +112,93 @@ public final class RestoreValidator
       default ->
           throw new IllegalArgumentException("Invalid database type: " + request.databaseType());
     }
+  }
+
+  private Map<Integer, long[]> resolveRdbmsBackups(final RestoreRequest request) {
+    final RestorableBackups backups;
+    try {
+      backups = findBackups(request);
+    } catch (final CompletionException e) {
+      if (e.getCause() instanceof final RuntimeException exception) {
+        throw exception;
+      }
+      throw e;
+    }
+
+    return backups.backupsByPartitionId().entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Entry::getKey,
+                e ->
+                    e.getValue().stream()
+                        .mapToLong(BackupMetadata.CheckpointEntry::checkpointId)
+                        .toArray()));
+  }
+
+  private RestorableBackups findBackups(final RestoreRequest request) {
+    final Instant instantTo = parseTimestamp(request.to(), "to");
+    final Instant instantFrom = parseTimestamp(request.from(), "from");
+    if (exportedPositionSupplier == null) {
+      return loadMetadataForAllPartitions(partitionCount)
+          .thenApply(
+              metadataByPartition ->
+                  RestorePointResolver.resolve(metadataByPartition, instantFrom, instantTo, null))
+          .join();
+    }
+    return exportedPositions(exportedPositionSupplier, partitionCount)
+        .thenCombine(
+            loadMetadataForAllPartitions(partitionCount),
+            (exportedPositions, metadataByPartition) -> {
+              LOG.info("Exported positions for all partitions: {}", exportedPositions);
+              return RestorePointResolver.resolve(
+                  metadataByPartition, instantFrom, instantTo, exportedPositions);
+            })
+        .join();
+  }
+
+  private CompletableFuture<Map<Integer, Long>> exportedPositions(
+      final IntFunction<Long> positionSupplier, final int partitionCount) {
+    return FuturesUtil.parTraverse(
+            IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+            partition ->
+                CompletableFuture.supplyAsync(
+                    () -> {
+                      final var position = positionSupplier.apply(partition);
+                      if (position == null) {
+                        throw new IllegalArgumentException(
+                            "No exported position found for partition " + partition + " in RDBMS");
+                      }
+
+                      return Map.entry(partition, position);
+                    }))
+        .thenApply(
+            s -> s.stream().collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue)));
+  }
+
+  private CompletableFuture<List<BackupMetadata>> loadMetadataForAllPartitions(
+      final int partitionCount) {
+    return FuturesUtil.parTraverse(
+        IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+        partition ->
+            backupStore
+                .loadBackupMetadata(partition)
+                .thenApply(
+                    optBytes ->
+                        optBytes.flatMap(
+                            bytes -> {
+                              try {
+                                return Optional.of(MAPPER.readValue(bytes, BackupMetadata.class));
+                              } catch (final IOException e) {
+                                LOG.warn("Failed to parse backup metadata", e);
+                                return Optional.empty();
+                              }
+                            }))
+                .thenApply(
+                    opt ->
+                        opt.orElseThrow(
+                            () ->
+                                new IllegalStateException(
+                                    "No backup metadata found for partition " + partition))));
   }
 
   private static boolean hasTimeRange(@Nullable final Instant from, @Nullable final Instant to) {
