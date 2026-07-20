@@ -20,6 +20,8 @@ public enum ClusterConfigurationRequestTopics {
   DISABLE_EXPORTER("topology-exporter-disable"),
   ENABLE_EXPORTER("topology-exporter-enable"),
   DELETE_EXPORTER("topology-exporter-delete"),
+  CHANGE_EXPORTER_STATE("topology-exporter-state-change"),
+
   SCALE_CLUSTER("topology-cluster-scale"),
   PATCH_CLUSTER("topology-cluster-patch"),
   PURGE("topology-cluster-purge"),
