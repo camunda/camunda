@@ -349,7 +349,11 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // secondary index: (processInstanceKey, bufferedCommandKey) → ∅; supports FIFO prefix iteration
   // of buffered commands for a process instance (bufferedCommandKey is KeyGenerator-issued and
   // therefore monotonically increasing, so key order == FIFO insertion order)
-  BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL);
+  BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL),
+
+  // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
+  // definition being deleted while it has running instances. Lives on the aggregating partition.
+  DRAINING_PROCESS_DELETE(159, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
