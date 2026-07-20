@@ -55,7 +55,7 @@ public class ClusterVariableUpdateProcessor
     clusterVariableRecordValidator
         .ensureValidScope(commandRecord)
         .flatMap(clusterVariableRecordValidator::loadExisting)
-        .flatMap(stored -> applyUpdate(stored, commandRecord))
+        .map(stored -> applyUpdate(stored, commandRecord))
         .flatMap(record -> isAuthorized(record, command))
         .ifRightOrLeft(
             record -> {
@@ -83,7 +83,7 @@ public class ClusterVariableUpdateProcessor
     final var commandRecord = command.getValue();
     clusterVariableRecordValidator
         .loadExisting(commandRecord)
-        .flatMap(stored -> applyUpdate(stored, commandRecord))
+        .map(stored -> applyUpdate(stored, commandRecord))
         .ifRightOrLeft(
             record ->
                 writers
@@ -94,11 +94,11 @@ public class ClusterVariableUpdateProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private Either<Rejection, ClusterVariableRecord> applyUpdate(
+  private ClusterVariableRecord applyUpdate(
       final ClusterVariableRecord stored, final ClusterVariableRecord command) {
     stored.setValue(command.getValueBuffer());
     stored.setMetadata(command.getMetadataBuffer());
-    return Either.right(stored);
+    return stored;
   }
 
   private Either<Rejection, ClusterVariableRecord> isAuthorized(

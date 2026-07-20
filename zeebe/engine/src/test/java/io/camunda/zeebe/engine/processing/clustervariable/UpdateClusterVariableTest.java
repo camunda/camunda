@@ -407,4 +407,60 @@ public final class UpdateClusterVariableTest {
         .hasRecordType(RecordType.EVENT);
     assertThat(record.getValue().getKind()).isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
   }
+
+  @Test
+  public void shouldIgnoreKindOnCommandForGlobalUpdate() {
+    // given — variable created with default JSON kind
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_KIND_IGNORE_GLOBAL")
+        .setGlobalScope()
+        .withValue("\"VALUE\"")
+        .create();
+
+    // when — update command explicitly carries SECRET_REFERENCE kind
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_KIND_IGNORE_GLOBAL")
+            .setGlobalScope()
+            .withValue("\"UPDATED_VALUE\"")
+            .withKind(ClusterVariableKind.SECRET_REFERENCE)
+            .update();
+
+    // then — UPDATED event must carry the stored JSON kind, not the command's kind
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.UPDATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getKind()).isEqualTo(ClusterVariableKind.JSON);
+  }
+
+  @Test
+  public void shouldIgnoreKindOnCommandForTenantUpdate() {
+    // given — variable created with default JSON kind
+    ENGINE_RULE
+        .clusterVariables()
+        .withName("KEY_KIND_IGNORE_TENANT")
+        .setTenantScope()
+        .withTenantId(TENANT)
+        .withValue("\"VALUE\"")
+        .create();
+
+    // when — update command explicitly carries SECRET_REFERENCE kind
+    final var record =
+        ENGINE_RULE
+            .clusterVariables()
+            .withName("KEY_KIND_IGNORE_TENANT")
+            .setTenantScope()
+            .withTenantId(TENANT)
+            .withValue("\"UPDATED_VALUE\"")
+            .withKind(ClusterVariableKind.SECRET_REFERENCE)
+            .update();
+
+    // then — UPDATED event must carry the stored JSON kind, not the command's kind
+    Assertions.assertThat(record)
+        .hasIntent(ClusterVariableIntent.UPDATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getKind()).isEqualTo(ClusterVariableKind.JSON);
+  }
 }
