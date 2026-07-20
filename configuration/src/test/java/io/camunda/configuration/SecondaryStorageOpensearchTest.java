@@ -105,6 +105,9 @@ public class SecondaryStorageOpensearchTest {
   private static final int EXPECTED_BACKUP_INCOMPLETE_CHECK_TIMEOUT = 10;
 
   private static final boolean EXPECTED_AWS_ENABLED = true;
+  private static final String EXPECTED_AWS_ACCESS_KEY = "expected-aws-access-key";
+  private static final String EXPECTED_AWS_SECRET_KEY = "expected-aws-secret-key";
+  private static final String EXPECTED_AWS_REGION = "eu-central-1";
 
   @Nested
   @TestPropertySource(
@@ -112,6 +115,9 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.type=opensearch",
         "camunda.data.secondary-storage.opensearch.url=http://expected-url:4321",
         "camunda.data.secondary-storage.opensearch.aws-enabled=true",
+        "camunda.aws.access-key=" + EXPECTED_AWS_ACCESS_KEY,
+        "camunda.aws.secret-key=" + EXPECTED_AWS_SECRET_KEY,
+        "camunda.aws.region=" + EXPECTED_AWS_REGION,
         "camunda.data.secondary-storage.opensearch.username=" + EXPECTED_USERNAME,
         "camunda.data.secondary-storage.opensearch.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.opensearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
@@ -279,6 +285,12 @@ public class SecondaryStorageOpensearchTest {
       assertThat(exporterConfiguration.getConnect().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
       assertThat(exporterConfiguration.getConnect().isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
+      assertThat(exporterConfiguration.getConnect().getAws().getAccessKey())
+          .isEqualTo(EXPECTED_AWS_ACCESS_KEY);
+      assertThat(exporterConfiguration.getConnect().getAws().getSecretKey())
+          .isEqualTo(EXPECTED_AWS_SECRET_KEY);
+      assertThat(exporterConfiguration.getConnect().getAws().getRegion())
+          .isEqualTo(EXPECTED_AWS_REGION);
 
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
@@ -351,6 +363,11 @@ public class SecondaryStorageOpensearchTest {
       assertThat(searchEngineConnectProperties.getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
       assertThat(searchEngineConnectProperties.isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
+      assertThat(searchEngineConnectProperties.getAws().getAccessKey())
+          .isEqualTo(EXPECTED_AWS_ACCESS_KEY);
+      assertThat(searchEngineConnectProperties.getAws().getSecretKey())
+          .isEqualTo(EXPECTED_AWS_SECRET_KEY);
+      assertThat(searchEngineConnectProperties.getAws().getRegion()).isEqualTo(EXPECTED_AWS_REGION);
     }
 
     @Test

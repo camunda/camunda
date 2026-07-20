@@ -76,6 +76,8 @@ public final class CamundaExporterConfigurationApplier {
 
     if (source instanceof final Opensearch opensearch) {
       target.setAwsEnabled(opensearch.isAwsEnabled());
+      SearchEngineConnectPropertiesOverride.Converter.populateAws(
+          camunda.getAws(), target.getAws());
     }
 
     // Add security configuration mapping
