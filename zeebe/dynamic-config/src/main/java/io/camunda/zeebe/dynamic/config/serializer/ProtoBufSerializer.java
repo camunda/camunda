@@ -915,7 +915,8 @@ public class ProtoBufSerializer
       final Topology.CompletedTopologyChangeOperation operation) {
     return new CompletedOperation(
         decodeOperation(operation.getOperation()),
-        Instant.ofEpochSecond(operation.getCompletedAt().getSeconds()));
+        Instant.ofEpochSecond(
+            operation.getCompletedAt().getSeconds(), operation.getCompletedAt().getNanos()));
   }
 
   @Override
