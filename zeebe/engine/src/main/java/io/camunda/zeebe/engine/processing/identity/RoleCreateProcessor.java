@@ -80,7 +80,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     record.setRoleKey(key);
 
     stateWriter.appendFollowUpEvent(key, RoleIntent.CREATED, record);
-    responseWriter.writeEventOnCommand(key, RoleIntent.CREATED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, RoleIntent.CREATED, record, command);
 
     commandDistributionBehavior
         .withKey(key)

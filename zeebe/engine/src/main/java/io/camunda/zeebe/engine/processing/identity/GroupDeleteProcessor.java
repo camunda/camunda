@@ -99,7 +99,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     deleteAuthorizations(record);
 
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
-    responseWriter.writeEventOnCommand(groupKey, GroupIntent.DELETED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(groupKey, GroupIntent.DELETED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior

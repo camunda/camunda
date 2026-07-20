@@ -182,7 +182,7 @@ public final class MessageCorrelationCorrelateProcessor
 
               stateWriter.appendFollowUpEvent(
                   messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   messageKey,
                   MessageCorrelationIntent.CORRELATED,
                   messageCorrelationRecord,

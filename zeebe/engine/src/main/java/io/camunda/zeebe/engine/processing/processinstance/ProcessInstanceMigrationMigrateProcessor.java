@@ -196,7 +196,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     value.setBpmnProcessId(processInstanceRecord.getBpmnProcessId());
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value, command);
   }
 

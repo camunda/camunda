@@ -83,7 +83,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
     record.setGroupKey(key);
 
     stateWriter.appendFollowUpEvent(key, GroupIntent.CREATED, record);
-    responseWriter.writeEventOnCommand(key, GroupIntent.CREATED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, GroupIntent.CREATED, record, command);
 
     commandDistributionBehavior
         .withKey(key)

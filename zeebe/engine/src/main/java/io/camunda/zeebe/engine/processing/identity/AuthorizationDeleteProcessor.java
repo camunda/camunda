@@ -108,7 +108,7 @@ public class AuthorizationDeleteProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         authorizationKey, AuthorizationIntent.DELETED, command.getValue(), command);
     sideEffectWriter.appendSideEffect(
         () -> {

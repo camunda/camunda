@@ -99,7 +99,7 @@ public final class BatchOperationLifecycleManagementCancelProcessor
     final var batchOperation = batchOperationState.get(batchOperationKey);
     if (batchOperation.isPresent() && batchOperation.get().canCancel()) {
       cancelBatchOperationEvent(cancelKey, recordValue);
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           cancelKey, BatchOperationIntent.CANCELED, command.getValue(), command);
       commandDistributionBehavior
           .withKey(cancelKey)

@@ -87,7 +87,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     final var updatedUser = overlayUser(persistedUser.getUser(), record);
 
     stateWriter.appendFollowUpEvent(persistedUser.getUserKey(), UserIntent.UPDATED, updatedUser);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         persistedUser.getUserKey(), UserIntent.UPDATED, updatedUser, command);
 
     final long distributionKey = keyGenerator.nextKey();

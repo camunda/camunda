@@ -61,7 +61,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
               checkAuthorization(command, resource);
               final var record = asResourceRecord(resource);
               stateWriter.appendFollowUpEvent(resourceKey, ResourceIntent.FETCHED, record);
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   resourceKey, ResourceIntent.FETCHED, record, command);
             },
             () -> {

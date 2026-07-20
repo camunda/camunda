@@ -64,7 +64,7 @@ public class ClusterVariableDeleteProcessor
                   .appendFollowUpEvent(key, ClusterVariableIntent.DELETED, clusterVariableRecord);
               writers
                   .response()
-                  .writeEventOnCommand(
+                  .writeAcceptedResponseOnCommand(
                       key, ClusterVariableIntent.DELETED, clusterVariableRecord, command);
               commandDistributionBehavior
                   .withKey(key)

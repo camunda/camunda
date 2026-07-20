@@ -114,7 +114,7 @@ public class AuthorizationUpdateProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         authorizationRecord.getAuthorizationKey(),
         AuthorizationIntent.UPDATED,
         authorizationRecord,

@@ -118,7 +118,7 @@ public class MappingRuleCreateProcessor
     record.setMappingRuleKey(key);
 
     stateWriter.appendFollowUpEvent(key, MappingRuleIntent.CREATED, record);
-    responseWriter.writeEventOnCommand(key, MappingRuleIntent.CREATED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, MappingRuleIntent.CREATED, record, command);
 
     commandDistributionBehavior
         .withKey(key)

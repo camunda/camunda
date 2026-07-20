@@ -124,7 +124,7 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
 
     stateWriter.appendFollowUpEvent(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord, command);
 
     final long distributionKey = keyGenerator.nextKey();

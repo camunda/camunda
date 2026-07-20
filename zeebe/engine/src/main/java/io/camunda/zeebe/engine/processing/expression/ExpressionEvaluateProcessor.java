@@ -89,6 +89,7 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
       final TypedRecord<ExpressionRecord> command, final ExpressionRecord resolvedValue) {
     final var key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, ExpressionIntent.EVALUATED, resolvedValue);
-    responseWriter.writeEventOnCommand(key, ExpressionIntent.EVALUATED, resolvedValue, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        key, ExpressionIntent.EVALUATED, resolvedValue, command);
   }
 }

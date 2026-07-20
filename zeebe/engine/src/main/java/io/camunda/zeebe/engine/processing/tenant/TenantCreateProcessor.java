@@ -110,7 +110,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
     final long key = keyGenerator.nextKey();
     record.setTenantKey(key);
     stateWriter.appendFollowUpEvent(key, TenantIntent.CREATED, record);
-    responseWriter.writeEventOnCommand(key, TenantIntent.CREATED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, TenantIntent.CREATED, record, command);
   }
 
   private void distributeCommand(

@@ -71,7 +71,7 @@ public final class GlobalListenerCreateProcessor
 
     writers
         .response()
-        .writeEventOnCommand(
+        .writeAcceptedResponseOnCommand(
             record.getGlobalListenerKey(), GlobalListenerIntent.CREATED, record, command);
 
     // Note: the configuration key is used as the command key for distribution, ensuring

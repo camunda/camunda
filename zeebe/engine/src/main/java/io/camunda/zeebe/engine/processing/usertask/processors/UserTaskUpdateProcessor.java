@@ -114,7 +114,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
               + "Please report this as a bug.",
           userTaskKey);
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           userTaskKey, UserTaskIntent.UPDATED, userTaskRecord, command);
       return;
     }

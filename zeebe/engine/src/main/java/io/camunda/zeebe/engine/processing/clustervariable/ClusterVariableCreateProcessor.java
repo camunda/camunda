@@ -65,7 +65,7 @@ public class ClusterVariableCreateProcessor
                   .appendFollowUpEvent(key, ClusterVariableIntent.CREATED, clusterVariableRecord);
               writers
                   .response()
-                  .writeEventOnCommand(
+                  .writeAcceptedResponseOnCommand(
                       key, ClusterVariableIntent.CREATED, clusterVariableRecord, command);
               commandDistributionBehavior
                   .withKey(key)

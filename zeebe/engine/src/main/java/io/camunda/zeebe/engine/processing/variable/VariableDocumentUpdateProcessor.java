@@ -191,7 +191,8 @@ public final class VariableDocumentUpdateProcessor
       writers.state().appendFollowUpEvent(variableDocKey, VariableDocumentIntent.UPDATED, value);
       writers
           .response()
-          .writeEventOnCommand(variableDocKey, VariableDocumentIntent.UPDATED, value, record);
+          .writeAcceptedResponseOnCommand(
+              variableDocKey, VariableDocumentIntent.UPDATED, value, record);
       writers
           .state()
           .appendFollowUpEvent(
@@ -237,7 +238,9 @@ public final class VariableDocumentUpdateProcessor
     final long key = keyGenerator.nextKey();
 
     writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-    writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+    writers
+        .response()
+        .writeAcceptedResponseOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 
   private static boolean hasVariables(final VariableDocumentRecord record) {

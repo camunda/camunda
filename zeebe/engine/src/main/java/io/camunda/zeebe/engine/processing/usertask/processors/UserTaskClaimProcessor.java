@@ -102,7 +102,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
     if (asyncRequest.isEmpty()) {
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
       return;
     }

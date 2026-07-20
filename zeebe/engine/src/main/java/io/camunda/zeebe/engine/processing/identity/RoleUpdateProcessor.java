@@ -81,7 +81,8 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
     final var persistedRole = persistedRecord.get();
     record.setRoleKey(persistedRole.getRoleKey());
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(record.getRoleKey(), RoleIntent.UPDATED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        record.getRoleKey(), RoleIntent.UPDATED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior

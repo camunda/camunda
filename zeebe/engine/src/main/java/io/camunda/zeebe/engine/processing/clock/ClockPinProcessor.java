@@ -87,7 +87,8 @@ public final class ClockPinProcessor implements DistributedTypedRecordProcessor<
     final long eventKey = keyGenerator.nextKey();
     applyClockModification(eventKey, clockRecord);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, ClockIntent.PINNED, clockRecord, command);
+      responseWriter.writeAcceptedResponseOnCommand(
+          eventKey, ClockIntent.PINNED, clockRecord, command);
     }
 
     // Distribute to other partitions

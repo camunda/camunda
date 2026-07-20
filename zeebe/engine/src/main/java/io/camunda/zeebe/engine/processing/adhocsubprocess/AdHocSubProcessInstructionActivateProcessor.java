@@ -173,7 +173,7 @@ public class AdHocSubProcessInstructionActivateProcessor
     stateWriter.appendFollowUpEvent(
         command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue());
 
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue(), command);
   }
 
