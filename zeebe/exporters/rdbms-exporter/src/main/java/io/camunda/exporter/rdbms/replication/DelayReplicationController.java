@@ -63,6 +63,16 @@ public class DelayReplicationController implements ReplicationController {
     }
   }
 
+  @Override
+  public boolean isReplicationInSync() {
+    final DelayedEntry head = pendingEntries.peek();
+    if (head == null) {
+      return true;
+    }
+    // Returns false when the head entry is overdue (checkDue is behind schedule)
+    return clock.millis() <= head.releaseTimeMs();
+  }
+
   void checkDue() {
     final long now = clock.millis();
     long highestExpired = Long.MIN_VALUE;
@@ -84,7 +94,16 @@ public class DelayReplicationController implements ReplicationController {
 
     // if null, controller was closed during check
     if (checkTask != null) {
-      checkTask = controller.scheduleCancellableTask(delay, this::checkDue);
+      // Reschedule based on next due entry to avoid adding an extra full delay
+      final DelayedEntry nextHead = pendingEntries.peek();
+      final Duration nextDelay;
+      if (nextHead == null) {
+        nextDelay = delay;
+      } else {
+        final long remainingMs = nextHead.releaseTimeMs() - clock.millis();
+        nextDelay = Duration.ofMillis(Math.max(1, remainingMs));
+      }
+      checkTask = controller.scheduleCancellableTask(nextDelay, this::checkDue);
     }
   }
 

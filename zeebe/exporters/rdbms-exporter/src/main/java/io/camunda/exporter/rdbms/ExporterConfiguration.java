@@ -618,19 +618,28 @@ public class ExporterConfiguration {
   }
 
   public static class ReplicationConfiguration {
-    public static final ReplicationType DEFAULT_TYPE = ReplicationType.NONE;
+    public static final boolean DEFAULT_ENABLED = false;
+    public static final ReplicationType DEFAULT_TYPE = ReplicationType.LOG_SEQ;
     public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(15);
     public static final Duration DEFAULT_MAX_LAG = Duration.ofMinutes(15);
     public static final int DEFAULT_MIN_SYNC_REPLICAS = 1;
     public static final boolean DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED = false;
-    public static final Duration DEFAULT_DELAY = Duration.ofMinutes(15);
 
+    private boolean enabled = DEFAULT_ENABLED;
     private ReplicationType type = DEFAULT_TYPE;
     private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
     private int minSyncReplicas = DEFAULT_MIN_SYNC_REPLICAS;
     private Duration maxLag = DEFAULT_MAX_LAG;
     private boolean pauseOnMaxLagExceeded = DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
-    private Duration delay = DEFAULT_DELAY;
+    private Duration delay;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
 
     public ReplicationType getType() {
       return type;
@@ -682,7 +691,8 @@ public class ExporterConfiguration {
 
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
-      if (type == ReplicationType.LOG_SEQ
+      if (enabled
+          && type == ReplicationType.LOG_SEQ
           && (pollingInterval.isNegative() || pollingInterval.isZero())) {
         errors.add(
             String.format(
@@ -694,12 +704,14 @@ public class ExporterConfiguration {
             String.format(
                 "asyncReplication.minSyncReplicas must be greater 0 but was %d", minSyncReplicas));
       }
-      if (type == ReplicationType.LOG_SEQ && (maxLag.isNegative() || maxLag.isZero())) {
+      if (enabled && type == ReplicationType.LOG_SEQ && (maxLag.isNegative() || maxLag.isZero())) {
         errors.add(
             String.format(
                 "asyncReplication.maxLag must be a positive duration but was %s", maxLag));
       }
-      if (type == ReplicationType.DELAY && (delay.isNegative() || delay.isZero())) {
+      if (enabled
+          && type == ReplicationType.DELAY
+          && (delay == null || delay.isNegative() || delay.isZero())) {
         errors.add(
             String.format("asyncReplication.delay must be a positive duration but was %s", delay));
       }
@@ -707,7 +719,6 @@ public class ExporterConfiguration {
     }
 
     public enum ReplicationType {
-      NONE,
       LOG_SEQ,
       DELAY
     }

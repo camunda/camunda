@@ -499,6 +499,7 @@ class ExporterConfigurationTest {
     // given
     final ExporterConfiguration configuration = new ExporterConfiguration();
     final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
     replication.setType(ReplicationType.LOG_SEQ);
     replication.setPollingInterval(Duration.ofSeconds(10));
     replication.setMinSyncReplicas(1);
@@ -516,6 +517,7 @@ class ExporterConfigurationTest {
     // given
     final ExporterConfiguration configuration = new ExporterConfiguration();
     final ReplicationConfiguration replication = new ReplicationConfiguration();
+    replication.setEnabled(true);
     replication.setType(ReplicationType.DELAY);
     replication.setDelay(Duration.ofMinutes(10));
     configuration.setAsyncReplication(replication);
@@ -527,11 +529,11 @@ class ExporterConfigurationTest {
   }
 
   @Test
-  public void shouldNotFailWhenReplicationNoneWithCompletelyWrongConfig() {
+  public void shouldNotFailWhenReplicationDisabledWithCompletelyWrongConfig() {
     // given - completely invalid configuration, but replication is disabled
     final ExporterConfiguration configuration = new ExporterConfiguration();
     final ReplicationConfiguration replication = new ReplicationConfiguration();
-    replication.setType(ReplicationType.NONE);
+    replication.setEnabled(false);
     replication.setPollingInterval(Duration.ofMillis(-1000));
     replication.setMaxLag(Duration.ofMillis(-1000));
     configuration.setAsyncReplication(replication);
@@ -539,7 +541,7 @@ class ExporterConfigurationTest {
     // when
     configuration.validate();
 
-    // then - no error, pollingInterval and maxLag are only validated for LOG_SEQ type
+    // then - no error, pollingInterval and maxLag are only validated when enabled
   }
 
   @ParameterizedTest
@@ -561,6 +563,7 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
+                  r.setEnabled(true);
                   r.setType(ReplicationType.LOG_SEQ);
                   r.setPollingInterval(Duration.ofMillis(-1000));
                 },
@@ -568,6 +571,7 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
+                  r.setEnabled(true);
                   r.setType(ReplicationType.LOG_SEQ);
                   r.setPollingInterval(Duration.ZERO);
                 },
@@ -581,6 +585,7 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
+                  r.setEnabled(true);
                   r.setType(ReplicationType.LOG_SEQ);
                   r.setMaxLag(Duration.ofMillis(-1000));
                 },
@@ -588,6 +593,7 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
+                  r.setEnabled(true);
                   r.setType(ReplicationType.LOG_SEQ);
                   r.setMaxLag(Duration.ZERO);
                 },
@@ -595,6 +601,7 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
+                  r.setEnabled(true);
                   r.setType(ReplicationType.DELAY);
                   r.setDelay(Duration.ofMillis(-1000));
                 },
@@ -602,6 +609,7 @@ class ExporterConfigurationTest {
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
                 r -> {
+                  r.setEnabled(true);
                   r.setType(ReplicationType.DELAY);
                   r.setDelay(Duration.ZERO);
                 },

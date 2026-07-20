@@ -118,6 +118,7 @@ public class SecondaryStorageRdbmsTest {
         "camunda.data.secondary-storage.rdbms.exportBatchOperationItemsOnCreation=false",
         "camunda.data.secondary-storage.rdbms.batchOperationItemInsertBlockSize=1234",
         "camunda.data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size=50",
+        "camunda.data.secondary-storage.rdbms.async-replication.enabled=true",
         "camunda.data.secondary-storage.rdbms.async-replication.type=LOG_SEQ",
         "camunda.data.secondary-storage.rdbms.async-replication.polling-interval="
             + ASYNC_REPLICATION_POLLING_INTERVAL,
@@ -206,6 +207,7 @@ public class SecondaryStorageRdbmsTest {
       assertThat(exporterConfiguration.getBatchOperationItemInsertBlockSize()).isEqualTo(1234);
       assertThat(exporterConfiguration.getInsertBatching().getMaxAuditLogInsertBatchSize())
           .isEqualTo(50);
+      assertThat(exporterConfiguration.getAsyncReplication().isEnabled()).isTrue();
       assertThat(exporterConfiguration.getAsyncReplication().getType())
           .isEqualTo(ExporterConfiguration.ReplicationConfiguration.ReplicationType.LOG_SEQ);
       assertThat(exporterConfiguration.getAsyncReplication().getPollingInterval())

@@ -154,26 +154,29 @@ public class RdbmsExporterWrapper implements Exporter {
                 config.getHistoryDeletion().getDependentRowLimit()),
             context.clock());
     builder.historyDeletionService(historyDeletionService);
-    switch (config.getAsyncReplication().getType()) {
-      case LOG_SEQ -> {
-        final ReplicationLogStatusProvider replicationLogStatusProvider =
-            rdbmsService.getReplicationLogStatusProvider();
-        builder.replicationControllerFactory(
-            new LsnReplicationControllerFactory(
-                replicationLogStatusProvider,
-                config.getAsyncReplication(),
-                partitionId,
-                context.clock(),
-                rdbmsWriters.getMetrics()));
-      }
-      case DELAY ->
+    if (!config.getAsyncReplication().isEnabled()) {
+      builder.replicationControllerFactory(ReplicationControllerFactory.noop());
+    } else {
+      switch (config.getAsyncReplication().getType()) {
+        case LOG_SEQ -> {
+          final ReplicationLogStatusProvider replicationLogStatusProvider =
+              rdbmsService.getReplicationLogStatusProvider();
           builder.replicationControllerFactory(
-              new DelayReplicationControllerFactory(
-                  config.getAsyncReplication(), partitionId, context.clock()));
-      case NONE -> builder.replicationControllerFactory(ReplicationControllerFactory.noop());
-      default ->
-          throw new IllegalArgumentException(
-              "Unknown replication type: " + config.getAsyncReplication().getType());
+              new LsnReplicationControllerFactory(
+                  replicationLogStatusProvider,
+                  config.getAsyncReplication(),
+                  partitionId,
+                  context.clock(),
+                  rdbmsWriters.getMetrics()));
+        }
+        case DELAY ->
+            builder.replicationControllerFactory(
+                new DelayReplicationControllerFactory(
+                    config.getAsyncReplication(), partitionId, context.clock()));
+        default ->
+            throw new IllegalArgumentException(
+                "Unknown replication type: " + config.getAsyncReplication().getType());
+      }
     }
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);

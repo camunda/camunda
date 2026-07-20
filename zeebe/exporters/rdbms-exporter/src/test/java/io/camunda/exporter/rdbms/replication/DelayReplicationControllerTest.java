@@ -9,6 +9,7 @@ package io.camunda.exporter.rdbms.replication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -133,7 +134,7 @@ class DelayReplicationControllerTest {
     replicationController.close();
 
     // then - position was never acknowledged (safe: will re-export from last committed position)
-    verify(controller, never()).updateLastExportedRecordPosition(any(Long.class));
+    verify(controller, never()).updateLastExportedRecordPosition(anyLong());
   }
 
   @Test
@@ -161,7 +162,7 @@ class DelayReplicationControllerTest {
   }
 
   @Test
-  void shouldNotRescheduleAfterCloseduringCheck() throws Exception {
+  void shouldNotRescheduleAfterCloseDuringCheck() throws Exception {
     // given - close is called; checkTask is set to null
     final var replicationController = createController();
     replicationController.close(); // sets checkTask to null
@@ -182,10 +183,33 @@ class DelayReplicationControllerTest {
       replicationController.onFlush(i);
     }
 
-    // when - one more flush that should be silently dropped
-    replicationController.onFlush(DelayReplicationController.DEFAULT_QUEUE_CAPACITY + 1L);
+    // when - one more flush that should be silently dropped (first entry that overflows capacity)
+    replicationController.onFlush(DelayReplicationController.DEFAULT_QUEUE_CAPACITY);
 
     // then - no exception, controller is still in sync
+    assertThat(replicationController.isReplicationInSync()).isTrue();
+  }
+
+  @Test
+  void shouldReturnOutOfSyncWhenHeadEntryIsOverdue() {
+    // given - a flush was queued, delay has now passed without checkDue running
+    final var replicationController = createController();
+    when(clock.millis()).thenReturn(0L);
+    replicationController.onFlush(100L);
+
+    // when - delay has elapsed but checkDue has not run yet
+    when(clock.millis()).thenReturn(DELAY.toMillis() + 1);
+
+    // then - head entry is overdue; signal out of sync to pause the exporter
+    assertThat(replicationController.isReplicationInSync()).isFalse();
+  }
+
+  @Test
+  void shouldReturnInSyncWhenQueueIsEmpty() {
+    // given - no pending flushes
+    final var replicationController = createController();
+
+    // then
     assertThat(replicationController.isReplicationInSync()).isTrue();
   }
 }

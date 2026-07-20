@@ -23,6 +23,11 @@ public class NoopReplicationController implements ReplicationController {
   }
 
   @Override
+  public boolean isReplicationInSync() {
+    return true;
+  }
+
+  @Override
   public void close() throws Exception {
     // noop
   }
