@@ -36,6 +36,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -545,6 +546,44 @@ public final class PartitionManagerImpl
     concurrencyControl.run(
         () -> enableExporter(partitionId, exporterId, metadataVersion, initializeFrom, result));
     return result;
+  }
+
+  @Override
+  public ActorFuture<Void> setExporterState(
+      final int partitionId, final ExportingState exportingState) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(() -> setExporterState(partitionId, exportingState, result));
+    return result;
+  }
+
+  private void setExporterState(
+      final int partitionId, final ExportingState exportingState, final ActorFuture<Void> result) {
+    final var partition = partitions.get(partitionId);
+    if (partition == null) {
+      result.completeExceptionally(
+          new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+      return;
+    }
+
+    if (partition.zeebePartition() == null) {
+      result.completeExceptionally(
+          new IllegalArgumentException(
+              "Expected to set exporting state on partition %s, but zeebePartition is not ready"
+                  .formatted(partitionId)));
+      return;
+    }
+    LOGGER.trace("Setting exporting state {} on partition {}", exportingState, partitionId);
+    concurrencyControl.runOnCompletion(
+        partition.zeebePartition().setExporterState(exportingState),
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+            return;
+          }
+
+          LOGGER.info("Set exporting state {} on partition {}", exportingState, partitionId);
+          result.complete(null);
+        });
   }
 
   private void disableExporter(

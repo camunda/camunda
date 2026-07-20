@@ -36,6 +36,11 @@ public record ExportingConfig(ExportingState state, SortedMap<String, ExporterSt
     return new ExportingConfig(ExportingState.UNKNOWN, Map.of());
   }
 
+  /** Returns a copy of this config with the overall exporting state set to {@code newState}. */
+  public ExportingConfig withState(final ExportingState newState) {
+    return new ExportingConfig(newState, exporters);
+  }
+
   private ExportingConfig updateExporter(
       final String exporterName, final ExporterState exporterState) {
     final var newExporters =

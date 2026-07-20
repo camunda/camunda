@@ -122,7 +122,7 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
       case final AwaitModeChangeOperation op ->
           new AwaitModeChangeApplier(op.memberId(), op.mode(), modeChangeExecutor);
       case final ExporterStateChangeOperation exporterStateChangeOperation ->
-          // TODO(#39743): replace with the real ExporterStateChangeApplier in step 2
+          // TODO(#39743): replace with the real ExporterStateChangeApplier
           throw new UnsupportedOperationException(
               "ExporterStateChangeOperation not yet implemented");
     };

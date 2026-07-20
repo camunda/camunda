@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
@@ -65,6 +66,12 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final String exporterId,
       final long metadataVersionToUpdate,
       final String initializeFrom) {
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<Void> setExporterState(
+      final int partitionId, final ExportingState exportingState) {
     return CompletableActorFuture.completed(null);
   }
 }

@@ -23,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
@@ -385,6 +386,13 @@ public final class RecoveryPartitionManager
   public ActorFuture<Void> disableExporter(final int partitionId, final String exporterId) {
     return CompletableActorFuture.completedExceptionally(
         new IllegalStateException("Cannot perform disableExporter on a recovering partition"));
+  }
+
+  @Override
+  public ActorFuture<Void> setExporterState(
+      final int partitionId, final ExportingState exportingState) {
+    return CompletableActorFuture.completedExceptionally(
+        new IllegalStateException("Cannot perform setExporterState on a recovering partition"));
   }
 
   @Override

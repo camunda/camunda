@@ -153,9 +153,10 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               awaitModeChangeOperation.mode(),
               modeChangeExecutor);
       case final ExporterStateChangeOperation exporterStateChangeOperation ->
-          // TODO(#39743): replace with the real ExporterStateChangeApplier in step 2
-          throw new UnsupportedOperationException(
-              "ExporterStateChangeOperation not yet implemented");
+          new ExporterStateChangeApplier(
+              exporterStateChangeOperation.memberId(),
+              exporterStateChangeOperation.state(),
+              partitionChangeExecutor);
     };
   }
 }

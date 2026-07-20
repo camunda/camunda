@@ -463,4 +463,108 @@ final class PartitionConfigurationManagerTest {
       public void export(final Record<?> record) {}
     }
   }
+
+  @Nested
+  final class SetExporterState {
+    private final DynamicPartitionConfig partitionConfig =
+        new DynamicPartitionConfig(
+            new ExportingConfig(
+                ExportingState.EXPORTING,
+                Map.of("exporterA", new ExporterState(0, State.ENABLED, Optional.empty()))));
+
+    @BeforeEach
+    void setup() {
+      partitionTransitionContext = new TestPartitionTransitionContext();
+      partitionTransitionContext.setExporterRepository(new ExporterRepository());
+      partitionConfigurationManager =
+          new PartitionConfigurationManager(
+              LOGGER,
+              partitionTransitionContext,
+              partitionTransitionContext.getExportedDescriptors(),
+              testConcurrencyControl);
+    }
+
+    @Test
+    void shouldPauseExporterDirectorAndUpdateConfigInContext() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.pauseExporting())
+          .thenReturn(testConcurrencyControl.createCompletedFuture());
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when
+      partitionConfigurationManager.setExporterState(ExportingState.PAUSED).join();
+
+      // then
+      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().state())
+          .isEqualTo(ExportingState.PAUSED);
+      verify(mockExporterDirector).pauseExporting();
+    }
+
+    @Test
+    void shouldSoftPauseExporterDirector() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.softPauseExporting())
+          .thenReturn(testConcurrencyControl.createCompletedFuture());
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when
+      partitionConfigurationManager.setExporterState(ExportingState.SOFT_PAUSED).join();
+
+      // then
+      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().state())
+          .isEqualTo(ExportingState.SOFT_PAUSED);
+      verify(mockExporterDirector).softPauseExporting();
+    }
+
+    @Test
+    void shouldResumeExporterDirector() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.resumeExporting())
+          .thenReturn(testConcurrencyControl.createCompletedFuture());
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when
+      partitionConfigurationManager.setExporterState(ExportingState.EXPORTING).join();
+
+      // then
+      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().state())
+          .isEqualTo(ExportingState.EXPORTING);
+      verify(mockExporterDirector).resumeExporting();
+    }
+
+    @Test
+    void shouldUpdateConfigInContextWhenExporterDirectorIsNotAvailable() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+
+      // when
+      partitionConfigurationManager.setExporterState(ExportingState.PAUSED).join();
+
+      // then
+      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().state())
+          .isEqualTo(ExportingState.PAUSED);
+    }
+
+    @Test
+    void shouldFailFutureIfSettingStateFailed() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      when(mockExporterDirector.pauseExporting())
+          .thenReturn(testConcurrencyControl.failedFuture(new RuntimeException("force fail")));
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when - then
+      assertThat(partitionConfigurationManager.setExporterState(ExportingState.PAUSED))
+          .failsWithin(Duration.ofMillis(100))
+          .withThrowableOfType(ExecutionException.class)
+          .withMessageContaining("force fail");
+    }
+  }
 }
