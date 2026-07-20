@@ -119,7 +119,7 @@ public final class AgentInstanceCreateProcessor
           RejectionType.ALREADY_EXISTS,
           ERROR_MSG_AGENT_INSTANCE_ALREADY_EXISTS.formatted(
               elementInstanceKey, existingAgentInstanceKey));
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           existingAgentInstanceKey, AgentInstanceIntent.CREATED, existingRecord, command);
       return;
     }
@@ -175,7 +175,7 @@ public final class AgentInstanceCreateProcessor
         .setMaxToolCalls(commandValue.getLimits().getMaxToolCalls());
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.CREATED, event);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.CREATED, event, command);
   }
 
@@ -184,6 +184,6 @@ public final class AgentInstanceCreateProcessor
       final RejectionType rejectionType,
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
   }
 }

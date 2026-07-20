@@ -62,7 +62,7 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -72,7 +72,7 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
           "Expected to update group with ID '%s', but a group with this ID does not exist."
               .formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
@@ -115,7 +115,7 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
 
     stateWriter.appendFollowUpEvent(
         persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         persistedGroup.getGroupKey(), GroupIntent.UPDATED, updatedRecord, command);
     commandDistributionBehavior.acknowledgeCommand(command);
   }

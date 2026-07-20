@@ -65,14 +65,15 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
     if (roleId != null && DefaultRole.ids().contains(roleId)) {
       final var errorMessage = ROLE_PROTECTED_ERROR_MESSAGE.formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.INVALID_STATE, errorMessage);
       return;
     }
 
@@ -80,14 +81,15 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
     if (persistedRecord.isEmpty()) {
       final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
     final var persistedRole = persistedRecord.get();
     record.setRoleKey(persistedRole.getRoleKey());
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(record.getRoleKey(), RoleIntent.UPDATED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        record.getRoleKey(), RoleIntent.UPDATED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior

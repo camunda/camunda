@@ -61,7 +61,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -71,7 +71,8 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
     if (persistedGroup.isPresent()) {
       final var errorMessage = GROUP_ALREADY_EXISTS_ERROR_MESSAGE.formatted(groupId);
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 
@@ -79,7 +80,7 @@ public class GroupCreateProcessor implements DistributedTypedRecordProcessor<Gro
     record.setGroupKey(key);
 
     stateWriter.appendFollowUpEvent(key, GroupIntent.CREATED, record);
-    responseWriter.writeEventOnCommand(key, GroupIntent.CREATED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, GroupIntent.CREATED, record, command);
 
     commandDistributionBehavior
         .withKey(key)

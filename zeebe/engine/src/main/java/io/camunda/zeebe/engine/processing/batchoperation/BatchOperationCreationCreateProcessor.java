@@ -89,7 +89,7 @@ public final class BatchOperationCreationCreateProcessor
     if (isEmptyOrNullFilter(command)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_GIVEN_FILTER_IS_EMPTY);
       return;
     }
@@ -97,7 +97,7 @@ public final class BatchOperationCreationCreateProcessor
     if (isEmptyJobUpdateChangeset(command)) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_JOB_UPDATE_CHANGESET_IS_EMPTY);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_ARGUMENT, MESSAGE_JOB_UPDATE_CHANGESET_IS_EMPTY);
       return;
     }
@@ -106,7 +106,7 @@ public final class BatchOperationCreationCreateProcessor
     if (authorizationResult.isLeft()) {
       final Rejection rejection = authorizationResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -135,7 +135,8 @@ public final class BatchOperationCreationCreateProcessor
         BatchOperationIntent.CREATED,
         recordWithKey,
         FollowUpEventMetadata.of(b -> b.batchOperationReference(key)));
-    responseWriter.writeEventOnCommand(key, BatchOperationIntent.CREATED, recordWithKey, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        key, BatchOperationIntent.CREATED, recordWithKey, command);
     commandDistributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.BATCH_OPERATION)

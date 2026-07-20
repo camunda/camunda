@@ -121,7 +121,7 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
 
     stateWriter.appendFollowUpEvent(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord, command);
 
     final long distributionKey = keyGenerator.nextKey();
@@ -141,6 +141,6 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
       final RejectionType type,
       final String errorMessage) {
     rejectionWriter.appendRejection(command, type, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, type, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
   }
 }

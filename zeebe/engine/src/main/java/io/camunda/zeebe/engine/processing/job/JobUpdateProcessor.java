@@ -72,17 +72,20 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
               }
 
               stateWriter.appendFollowUpEvent(jobKey, JobIntent.UPDATED, job);
-              responseWriter.writeEventOnCommand(jobKey, JobIntent.UPDATED, job, command);
+              responseWriter.writeAcceptedResponseOnCommand(
+                  jobKey, JobIntent.UPDATED, job, command);
             },
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
   private void handleRejection(final List<String> errors, final TypedRecord<JobRecord> command) {
     final String errorMessage = String.join(", ", errors);
     rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(
+        command, RejectionType.INVALID_ARGUMENT, errorMessage);
   }
 }

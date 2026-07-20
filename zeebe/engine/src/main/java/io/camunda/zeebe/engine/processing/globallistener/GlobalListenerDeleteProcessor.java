@@ -56,7 +56,9 @@ public final class GlobalListenerDeleteProcessor
     if (validRecord.isLeft()) {
       final var rejection = validRecord.getLeft();
       writers.rejection().appendRejection(command, rejection.type(), rejection.reason());
-      writers.response().writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -69,7 +71,7 @@ public final class GlobalListenerDeleteProcessor
 
     writers
         .response()
-        .writeEventOnCommand(
+        .writeAcceptedResponseOnCommand(
             record.getGlobalListenerKey(), GlobalListenerIntent.DELETED, record, command);
 
     // Note: the configuration key is used as the command key for distribution, ensuring

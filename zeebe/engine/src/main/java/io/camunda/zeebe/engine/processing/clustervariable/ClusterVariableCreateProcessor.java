@@ -65,7 +65,7 @@ public class ClusterVariableCreateProcessor
                   .appendFollowUpEvent(key, ClusterVariableIntent.CREATED, clusterVariableRecord);
               writers
                   .response()
-                  .writeEventOnCommand(
+                  .writeAcceptedResponseOnCommand(
                       key, ClusterVariableIntent.CREATED, clusterVariableRecord, command);
               commandDistributionBehavior
                   .withKey(key)
@@ -76,7 +76,7 @@ public class ClusterVariableCreateProcessor
               writers.rejection().appendRejection(command, rejection.type(), rejection.reason());
               writers
                   .response()
-                  .writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+                  .writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
             });
   }
 

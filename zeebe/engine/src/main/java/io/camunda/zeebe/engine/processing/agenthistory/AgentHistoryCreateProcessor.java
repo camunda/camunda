@@ -137,7 +137,8 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
         .setDurationMs(commandValue.getMetrics().getDurationMs());
 
     stateWriter.appendFollowUpEvent(historyKey, AgentHistoryIntent.CREATED, event);
-    responseWriter.writeEventOnCommand(historyKey, AgentHistoryIntent.CREATED, event, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        historyKey, AgentHistoryIntent.CREATED, event, command);
   }
 
   private void writeRejection(
@@ -145,6 +146,6 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
       final RejectionType rejectionType,
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
   }
 }

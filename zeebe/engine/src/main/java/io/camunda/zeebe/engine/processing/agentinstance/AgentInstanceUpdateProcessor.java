@@ -227,7 +227,7 @@ public final class AgentInstanceUpdateProcessor
     current.setChangedAttributes(applyPatch(current, commandValue, changed));
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
   }
 
@@ -345,6 +345,6 @@ public final class AgentInstanceUpdateProcessor
       final RejectionType rejectionType,
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
   }
 }

@@ -77,7 +77,7 @@ public class MappingRuleUpdateProcessor
               record.getName(),
               record.getMappingRuleId());
       rejectionWriter.appendRejection(command, RejectionType.NULL_VAL, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NULL_VAL, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NULL_VAL, errorMessage);
       return;
     }
 
@@ -86,7 +86,7 @@ public class MappingRuleUpdateProcessor
       final var errorMessage =
           MAPPING_RULE_ID_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(mappingRuleId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
@@ -96,7 +96,7 @@ public class MappingRuleUpdateProcessor
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -108,12 +108,13 @@ public class MappingRuleUpdateProcessor
           MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
               record.getClaimName(), record.getClaimValue());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 
     stateWriter.appendFollowUpEvent(record.getMappingRuleKey(), MappingRuleIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         record.getMappingRuleKey(), MappingRuleIntent.UPDATED, record, command);
 
     commandDistributionBehavior

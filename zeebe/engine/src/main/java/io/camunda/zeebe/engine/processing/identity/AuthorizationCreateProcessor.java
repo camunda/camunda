@@ -88,7 +88,8 @@ public class AuthorizationCreateProcessor
             (rejection) -> {
               LOG.debug("Rejecting CREATE authorization command: {}", rejection.reason());
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
@@ -128,7 +129,7 @@ public class AuthorizationCreateProcessor
         authorizationRecord.getResourceType());
     authorizationRecord.setAuthorizationKey(key);
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationRecord);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         key, AuthorizationIntent.CREATED, authorizationRecord, command);
     distributionBehavior
         .withKey(key)

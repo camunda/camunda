@@ -62,7 +62,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
               .formatted(username);
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.NOT_FOUND, rejectionMessage);
       return;
     }
 
@@ -74,14 +75,14 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
     if (authResult.isLeft()) {
       final var rejection = authResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
     final var updatedUser = overlayUser(persistedUser.getUser(), record);
 
     stateWriter.appendFollowUpEvent(persistedUser.getUserKey(), UserIntent.UPDATED, updatedUser);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         persistedUser.getUserKey(), UserIntent.UPDATED, updatedUser, command);
 
     final long distributionKey = keyGenerator.nextKey();
