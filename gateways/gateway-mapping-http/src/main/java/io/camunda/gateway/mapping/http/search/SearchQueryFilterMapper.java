@@ -11,6 +11,7 @@ import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapT
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToKeyOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToOffsetDateTimeOperations;
 import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToStringOperations;
+import static io.camunda.gateway.mapping.http.util.AdvancedSearchFilterUtil.mapToUntypedOperations;
 import static io.camunda.gateway.mapping.http.util.KeyUtil.mapKeyToLong;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
@@ -47,6 +48,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.search.filter.AgentInstanceFilter;
 import io.camunda.search.filter.AgentInstanceHistoryFilter;
 import io.camunda.search.filter.AuditLogFilter;
@@ -72,7 +74,9 @@ import io.camunda.search.filter.JobTypeStatisticsFilter;
 import io.camunda.search.filter.JobWorkerStatisticsFilter;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
+import io.camunda.search.filter.MetadataValueFilter;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionInstanceVersionStatisticsFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -80,15 +84,18 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.util.ValueTypeUtil;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
@@ -371,14 +378,16 @@ public class SearchQueryFilterMapper {
     return Either.right(builder.build());
   }
 
-  static ClusterVariableFilter toClusterVariableFilter(
+  static Either<List<String>, ClusterVariableFilter> toClusterVariableFilter(
       final @Nullable ClusterVariableSearchQueryFilterRequest filter) {
 
+    final var builder = FilterBuilders.clusterVariable();
+
     if (filter == null) {
-      return FilterBuilders.clusterVariable().build();
+      return Either.right(builder.build());
     }
 
-    final var builder = FilterBuilders.clusterVariable();
+    final List<String> validationErrors = new ArrayList<>();
 
     ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     ofNullable(filter.getValue()).map(mapToStringOperations()).ifPresent(builder::valueOperations);
@@ -387,9 +396,84 @@ public class SearchQueryFilterMapper {
         .map(mapToStringOperations())
         .ifPresent(builder::tenantIdOperations);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+    ofNullable(filter.getMetadata())
+        .map(metadata -> toMetadataValueFilters(metadata, validationErrors))
+        .ifPresent(builder::metadataOperations);
     ofNullable(filter.getKind()).map(mapToStringOperations()).ifPresent(builder::kindOperations);
 
-    return builder.build();
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  private static List<MetadataValueFilter> toMetadataValueFilters(
+      final Map<String, io.camunda.gateway.protocol.model.AdvancedMetadataValueFilter> metadata,
+      final List<String> validationErrors) {
+    final List<MetadataValueFilter> filters = new ArrayList<>();
+    for (final var entry : metadata.entrySet()) {
+      final String key = entry.getKey();
+      final List<Operation<Object>> operations = mapToUntypedOperations().apply(entry.getValue());
+      validateMetadataOperations(key, operations, validationErrors);
+      final List<UntypedOperation> valueOperations =
+          operations.stream().map(SearchQueryFilterMapper::toMetadataValueOperation).toList();
+      filters.add(
+          new MetadataValueFilter.Builder().key(key).valueOperations(valueOperations).build());
+    }
+    return filters;
+  }
+
+  /**
+   * Builds an {@link UntypedOperation} preserving the JSON scalar type from the value's Java
+   * runtime type (as deserialized by Jackson), rather than re-inferring it from string content.
+   * This keeps the query side consistent with the write side, which types metadata by {@code
+   * instanceof Number}: a value sent as a JSON string stays a string even when it looks numeric
+   * (e.g. "007").
+   */
+  private static UntypedOperation toMetadataValueOperation(final Operation<Object> operation) {
+    final ValueTypeEnum type = metadataValueType(operation.value());
+    // exists operations carry no values (null), mirror that instead of dereferencing it
+    final List<Object> values =
+        operation.values() == null
+            ? null
+            : operation.values().stream()
+                .map(value -> ValueTypeUtil.mapValueType(value, type))
+                .toList();
+    return new UntypedOperation(operation.operator(), values, type);
+  }
+
+  /**
+   * Rejects a {@code $exists: false} filter combined with other operations on the same key, which
+   * the query transformer cannot represent and would otherwise throw on (surfacing as a 500).
+   */
+  private static void validateMetadataOperations(
+      final String key,
+      final List<Operation<Object>> operations,
+      final List<String> validationErrors) {
+    final boolean hasNotExists =
+        operations.stream().anyMatch(op -> op.operator() == Operator.NOT_EXISTS);
+    if (hasNotExists && operations.size() > 1) {
+      validationErrors.add(
+          "The '$exists: false' filter on metadata key '%s' cannot be combined with other operations."
+              .formatted(key));
+    }
+  }
+
+  /** Derives the metadata value type from the Java runtime type, not from string content. */
+  private static ValueTypeEnum metadataValueType(final @Nullable Object value) {
+    if (value == null) {
+      return ValueTypeEnum.NULL;
+    }
+    if (value instanceof Double || value instanceof Float) {
+      return ValueTypeEnum.DOUBLE;
+    }
+    if (value instanceof Number) {
+      return ValueTypeEnum.LONG;
+    }
+    if (value instanceof Boolean) {
+      return ValueTypeEnum.BOOLEAN;
+    }
+    return ValueTypeEnum.STRING;
   }
 
   static BatchOperationFilter toBatchOperationFilter(

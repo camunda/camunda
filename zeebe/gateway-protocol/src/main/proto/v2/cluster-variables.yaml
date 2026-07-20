@@ -637,6 +637,13 @@ components:
           description: |
             Filter cluster variables by truncation status of their stored values. When true, returns only variables whose stored values are truncated (i.e., the value exceeds the storage size limit and is truncated in storage). When false, returns only variables with non-truncated stored values. This filter is based on the underlying storage characteristic, not the response format.
           type: boolean
+        metadata:
+          description: >-
+            Filter by metadata entries. A map of metadata key to an advanced filter on that key's
+            value. Metadata values are strings or numbers.
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AdvancedMetadataValueFilter'
         kind:
           description: The kind filter for cluster variables.
           allOf:
@@ -644,6 +651,47 @@ components:
       x-properties-added-in-version:
         - propertyName: "kind"
           addedInVersion: "8.10"
+        - propertyName: "metadata"
+          addedInVersion: "8.10"
+    AdvancedMetadataValueFilter:
+      title: Advanced filter
+      description: Advanced filter on a metadata value (string or number).
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          oneOf:
+            - type: string
+            - type: number
+        $neq:
+          description: Checks for inequality with the provided value.
+          oneOf:
+            - type: string
+            - type: number
+        $exists:
+          description: Checks if the metadata key exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: number
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: number
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: number
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: number
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: number
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
     ClusterVariableScopeFilterProperty:
       description: ClusterVariableScopeEnum property with full advanced search capabilities.
       oneOf:
