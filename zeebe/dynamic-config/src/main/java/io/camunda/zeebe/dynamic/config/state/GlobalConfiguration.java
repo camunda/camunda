@@ -54,6 +54,7 @@ public record GlobalConfiguration(
     Optional<ClusterChangePlan> pendingChanges,
     Optional<CompletedChange> lastChange) {
 
+  public static final long UNINITIALIZED_VERSION = 0;
   public static final long INITIAL_VERSION = 1;
 
   public GlobalConfiguration {
@@ -81,6 +82,16 @@ public record GlobalConfiguration(
         partitionDistributorConfig,
         pendingChanges,
         lastChange);
+  }
+
+  public static GlobalConfiguration uninitialized() {
+    return new GlobalConfiguration(
+        UNINITIALIZED_VERSION,
+        Optional.empty(),
+        Map.of(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
   }
 
   /** Creates an empty global configuration at {@link #INITIAL_VERSION} with no members. */
@@ -256,5 +267,9 @@ public record GlobalConfiguration(
   private GlobalConfiguration withMembers(final Map<MemberId, BrokerState> updatedMembers) {
     return new GlobalConfiguration(
         version, clusterId, updatedMembers, partitionDistributorConfig, pendingChanges, lastChange);
+  }
+
+  public boolean isUninitialized() {
+    return version == UNINITIALIZED_VERSION;
   }
 }

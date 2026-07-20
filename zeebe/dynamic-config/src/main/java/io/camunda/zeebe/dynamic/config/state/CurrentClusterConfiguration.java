@@ -57,6 +57,15 @@ public record CurrentClusterConfiguration(
     partitionGroups = Map.copyOf(partitionGroups);
   }
 
+  public static CurrentClusterConfiguration uninitialized() {
+    return new CurrentClusterConfiguration(
+        INITIAL_VERSION, GlobalConfiguration.uninitialized(), Map.of(), PhasedChangeState.empty());
+  }
+
+  public boolean isUninitialized() {
+    return globalConfiguration.isUninitialized();
+  }
+
   /**
    * Creates an empty configuration with an initial global configuration and no partition groups.
    */
