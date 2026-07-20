@@ -236,6 +236,9 @@ public class ConditionalEvaluationEvaluateProcessor
 
   private boolean isAuthorizedForTenant(
       final TypedRecord<ConditionalEvaluationRecord> command, final String tenantId) {
+    if (!cslCheck.isMultiTenancyChecksEnabled()) {
+      return true;
+    }
     return cslCheck
         .resolveAuthorizedTenants(command.getAuthorizations())
         .isAuthorizedForTenantId(tenantId);

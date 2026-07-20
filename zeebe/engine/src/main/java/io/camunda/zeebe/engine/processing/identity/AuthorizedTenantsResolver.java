@@ -18,8 +18,9 @@ import org.jspecify.annotations.NullMarked;
  * Resolves the {@link AuthorizedTenants} for a command from its authorization claims.
  *
  * <p>Centralizes the tenant-resolution logic so the Job and UserTask processor domains cannot
- * diverge. Mirrors the behavior of the pre-CSL-migration {@code TenantResolver}: when multi-tenancy
- * is disabled, any tenant is accessible (no tenant enforcement).
+ * diverge. Mirrors the behavior of the pre-CSL-migration {@code TenantResolver}: multi-tenancy is
+ * the only flag that gates tenant resolution — when it is disabled, the default tenant applies
+ * regardless of whether authorizations are enabled.
  */
 @NullMarked
 public final class AuthorizedTenantsResolver {
@@ -34,7 +35,7 @@ public final class AuthorizedTenantsResolver {
       return AuthorizedTenants.ANONYMOUS;
     }
     if (!securityConfig.isMultiTenancyChecksEnabled()) {
-      return AuthorizedTenants.ANONYMOUS;
+      return AuthorizedTenants.DEFAULT_TENANTS;
     }
     if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
         && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {

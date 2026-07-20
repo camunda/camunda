@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -55,7 +57,6 @@ public class BpmnJobActivationBehavior {
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
   private final InstantSource clock;
-  private final PermissionsBehavior permissionsBehavior;
   private final CslAuthorizationCheck cslCheck;
   private final JobAuthorizationLogger jobAuthorizationLogger;
 
@@ -66,7 +67,6 @@ public class BpmnJobActivationBehavior {
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final InstantSource clock,
-      final PermissionsBehavior permissionsBehavior,
       final CslAuthorizationCheck cslCheck) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
@@ -75,7 +75,6 @@ public class BpmnJobActivationBehavior {
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
-    this.permissionsBehavior = permissionsBehavior;
     this.cslCheck = cslCheck;
     this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
   }
@@ -188,12 +187,22 @@ public class BpmnJobActivationBehavior {
     }
 
     final var claims = jobActivationProperties.claims();
+    final var bpmnProcessId = jobRecord.getBpmnProcessId();
+    final var cslPermType = AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE);
+    final var cslResourceType =
+        AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROCESS_DEFINITION);
     final var authorizationResult =
-        permissionsBehavior.isAuthorized(
+        cslCheck.checkWithClaims(
             claims,
-            AuthorizationResourceType.PROCESS_DEFINITION,
-            PermissionType.UPDATE_PROCESS_INSTANCE,
-            jobRecord.getBpmnProcessId());
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(cslResourceType)
+                        .permissionType(cslPermType)
+                        .resourceId(bpmnProcessId)),
+            bpmnProcessId,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION));
 
     authorizationResult.ifLeft(
         ignored ->

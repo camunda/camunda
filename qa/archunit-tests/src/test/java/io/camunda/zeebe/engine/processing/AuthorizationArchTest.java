@@ -184,6 +184,14 @@ public class AuthorizationArchTest {
                     RequiredAuthorization.class,
                     Object.class,
                     Rejection.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkForDistributedCommand",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class))
             // Or the class should delegate an already-resolved-principal check to
             // CslAuthorizationCheck.checkAuth (used by UserTaskAuthorizationCheck for the
             // per-alternative resource-id and property-scoped grants)

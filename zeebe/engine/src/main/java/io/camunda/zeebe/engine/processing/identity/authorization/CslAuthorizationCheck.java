@@ -117,6 +117,10 @@ public final class CslAuthorizationCheck {
     return AuthorizedTenantsResolver.resolve(authorizations, securityConfig, claimsConverter);
   }
 
+  public boolean isMultiTenancyChecksEnabled() {
+    return securityConfig.isMultiTenancyChecksEnabled();
+  }
+
   /**
    * Direct authentication-based check for multi-check callers that have already resolved the
    * principal via {@link #resolveForCheck}.
@@ -149,22 +153,36 @@ public final class CslAuthorizationCheck {
       final RequiredAuthorization<?> required,
       final T value,
       final Rejection noPrincipalRejection) {
-    final var authorizations = command.getAuthorizations();
-    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+    return checkWithClaims(command.getAuthorizations(), required, value, noPrincipalRejection);
+  }
+
+  /**
+   * Authorization check for contexts where no {@link TypedRecord} is available, only the raw claims
+   * map (e.g. job-stream activation where claims come from {@link
+   * io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties}). Applies the same
+   * skip-logic as {@link #checkForDistributedCommand}: anonymous user, security disabled, no
+   * principal.
+   */
+  public <T> Either<Rejection, T> checkWithClaims(
+      final Map<String, Object> claims,
+      final RequiredAuthorization<?> required,
+      final T value,
+      final Rejection noPrincipalRejection) {
+    if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
       return Either.right(value);
     }
     if (!securityConfig.isAuthorizationsEnabled()
         && !securityConfig.isMultiTenancyChecksEnabled()) {
       return Either.right(value);
     }
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
-        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+    if (claims.get(Authorization.AUTHORIZED_USERNAME) == null
+        && claims.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
       if (!securityConfig.isAuthorizationsEnabled()) {
         return Either.right(value);
       }
       return Either.left(noPrincipalRejection);
     }
-    final var auth = claimsConverter.resolve(authorizations);
+    final var auth = claimsConverter.resolve(claims);
     final var result = authzService.check(auth, required);
     if (result.isLeft()) {
       return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));

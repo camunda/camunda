@@ -27,7 +27,6 @@ import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext
 import io.camunda.zeebe.engine.processing.expression.ProcessInstanceContextEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -221,8 +220,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             clock,
             config.isBusinessIdUniquenessEnabled());
 
-    final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
-
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
             jobStreamer,
@@ -231,7 +228,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             jobMetrics,
             clock,
-            permissionsBehavior,
             cslCheck);
 
     multiInstanceInputCollectionBehavior =
