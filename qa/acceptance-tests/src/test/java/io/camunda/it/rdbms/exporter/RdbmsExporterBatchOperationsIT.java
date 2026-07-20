@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,18 +64,27 @@ class RdbmsExporterBatchOperationsIT {
     rdbmsService =
         rdbmsServiceFactory.createRdbmsService(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, new SimpleMeterRegistry());
-    exporter = new RdbmsExporterWrapper(rdbmsServiceFactory, rdbmsSchemaManagerRegistry);
+    final var exporterConfiguration =
+        new ExporterConfiguration(
+            "foo",
+            Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems));
+    exporter =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                exporterConfiguration.instantiate(
+                    io.camunda.exporter.rdbms.ExporterConfiguration.class)));
     exporter.configure(
         new ExporterContext(
             null,
-            new ExporterConfiguration(
-                "foo",
-                Map.of("queueSize", 0, "exportBatchOperationItemsOnCreation", exportPendingItems)),
+            exporterConfiguration,
             new PartitionId(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, 1),
             "",
             null,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
-            null));
+            InstantSource.system()));
     exporter.open(controller);
   }
 

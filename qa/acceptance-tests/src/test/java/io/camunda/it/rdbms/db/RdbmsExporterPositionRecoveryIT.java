@@ -30,7 +30,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.awaitility.Awaitility;
@@ -96,12 +95,7 @@ class RdbmsExporterPositionRecoveryIT {
             .withProperty("camunda.data.secondary-storage.rdbms.url", postgres.getJdbcUrl())
             .withProperty("camunda.data.secondary-storage.rdbms.username", postgres.getUsername())
             .withProperty("camunda.data.secondary-storage.rdbms.password", postgres.getPassword())
-            .withExporter(
-                "rdbms",
-                cfg -> {
-                  cfg.setClassName("io.camunda.db.rdbms.exporter.RdbmsExporter");
-                  cfg.setArgs(Map.of("flushInterval", "PT0S"));
-                })
+            .withProperty("camunda.data.secondary-storage.rdbms.flush-interval", "PT0S")
             .withBasicAuth();
 
     testInstance.start();

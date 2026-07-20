@@ -22,7 +22,6 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc;
 import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Objects;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
@@ -62,30 +61,36 @@ abstract class AbstractAsyncReplicationIT<R extends ReplicationClusterContainer>
 
     testInstance =
         new TestCamundaApplication()
-            .withSecondaryStorageType(SecondaryStorageType.rdbms)
-            .withProperty("camunda.data.secondary-storage.rdbms.url", cluster.getJdbcUrl())
-            .withProperty("camunda.data.secondary-storage.rdbms.username", cluster.getUsername())
-            .withProperty("camunda.data.secondary-storage.rdbms.password", cluster.getPassword())
-            .withExporter(
-                "rdbms",
+            .withUnifiedConfig(
                 cfg -> {
-                  cfg.setClassName("io.camunda.db.rdbms.exporter.RdbmsExporter");
-                  cfg.setArgs(
-                      Map.of(
-                          // PT0S causes replication checks on each record which is too aggressive
-                          // and causes too much latency
-                          "flushInterval",
-                          "PT0.5S",
-                          "asyncReplication",
-                          Map.of(
-                              "enabled",
-                              true,
-                              "pollingInterval",
-                              "PT1S",
-                              "maxLag",
-                              getMaxLag().toString(),
-                              "pauseOnMaxLagExceeded",
-                              true)));
+                  cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
+                  cfg.getData().getSecondaryStorage().getRdbms().setUrl(cluster.getJdbcUrl());
+                  cfg.getData().getSecondaryStorage().getRdbms().setUsername(cluster.getUsername());
+                  cfg.getData().getSecondaryStorage().getRdbms().setPassword(cluster.getPassword());
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .setFlushInterval(Duration.ofMillis(500));
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setEnabled(true);
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setPollingInterval(Duration.ofSeconds(1));
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setMaxLag(getMaxLag());
+                  cfg.getData()
+                      .getSecondaryStorage()
+                      .getRdbms()
+                      .getAsyncReplication()
+                      .setPauseOnMaxLagExceeded(true);
                 })
             .withBasicAuth();
 

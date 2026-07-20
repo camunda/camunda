@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -279,34 +280,24 @@ public class MultiDbConfigurator {
               rdbms.setUsername(username);
               rdbms.setPassword(password);
               rdbms.setPrefix(tablePrefix);
+              rdbms.setFlushInterval(Duration.ZERO);
+              if (retentionEnabled) {
+                rdbms.getHistory().setDefaultHistoryTTL(Duration.ofSeconds(1));
+                rdbms.getHistory().setMinHistoryCleanupInterval(Duration.ofSeconds(1));
+                rdbms.getHistory().setMaxHistoryCleanupInterval(Duration.ofSeconds(5));
+                rdbms.getHistory().setDefaultBatchOperationHistoryTTL(Duration.ofSeconds(1));
+                rdbms.getHistory().setDecisionInstanceTTL(Duration.ofSeconds(1));
+              } else {
+                rdbms.getHistory().setDefaultHistoryTTL(Duration.ofHours(1));
+                rdbms.getHistory().setMinHistoryCleanupInterval(Duration.ofHours(1));
+                rdbms.getHistory().setMaxHistoryCleanupInterval(Duration.ofHours(2));
+                rdbms.getHistory().setDefaultBatchOperationHistoryTTL(Duration.ofHours(1));
+                rdbms.getHistory().setDecisionInstanceTTL(Duration.ofHours(1));
+              }
             });
 
     testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
-
-    // Since the property override from unified configuration is not applied in this test setup, we
-    // have to build the RDBMS exporter manually
-    testApplication.withExporter(
-        "rdbms",
-        cfg -> {
-          cfg.setClassName("io.camunda.db.rdbms.exporter.RdbmsExporter");
-          cfg.setArgs(
-              Map.of(
-                  "flushInterval",
-                  "PT0S",
-                  "history",
-                  Map.of(
-                      "defaultHistoryTTL",
-                      retentionEnabled ? "PT1S" : "PT1H",
-                      "minHistoryCleanupInterval",
-                      retentionEnabled ? "PT1S" : "PT1H",
-                      "maxHistoryCleanupInterval",
-                      retentionEnabled ? "PT5S" : "PT2H",
-                      "defaultBatchOperationHistoryTTL",
-                      retentionEnabled ? "PT1S" : "PT1H",
-                      "decisionInstanceTTL",
-                      retentionEnabled ? "PT1S" : "PT1H")));
-        });
   }
 
   public String getIndexPrefix() {

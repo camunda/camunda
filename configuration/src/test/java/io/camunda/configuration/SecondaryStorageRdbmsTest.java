@@ -13,7 +13,6 @@ import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
-import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
 import io.camunda.operate.OperatePropertiesOverride;
 import io.camunda.operate.property.OperateProperties;
@@ -25,9 +24,18 @@ import io.camunda.zeebe.broker.system.configuration.engine.ValidatorsCfg;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -223,41 +231,140 @@ public class SecondaryStorageRdbmsTest {
     }
   }
 
+  /**
+   * The {@code rdbms} exporter is reserved and provisioned internally; it must be configured
+   * through {@code camunda.data.secondary-storage.rdbms.*}. Declaring it through the generic
+   * exporter properties — unified or legacy — is ignored (the reserved config wins) and a warning
+   * is logged rather than failing startup (see #57804).
+   */
   @Nested
-  @TestPropertySource(
-      properties = {
-        "camunda.data.secondary-storage.type=rdbms",
-        "zeebe.broker.exporters.rdbms.class-name=io.camunda.exporter.rdbms.RdbmsExporter"
-      })
-  class ExporterTestWithoutArgs {
-    final BrokerBasedProperties brokerBasedProperties;
+  class ReservedExporterIgnored {
+    private static final String RESERVED_WARNING = "'rdbms' exporter is reserved";
 
-    ExporterTestWithoutArgs(@Autowired final BrokerBasedProperties brokerBasedProperties) {
-      this.brokerBasedProperties = brokerBasedProperties;
+    private ApplicationContextRunner runnerWith(final String... properties) {
+      return new ApplicationContextRunner()
+          .withUserConfiguration(
+              UnifiedConfiguration.class,
+              UnifiedConfigurationHelper.class,
+              BrokerBasedPropertiesOverride.class)
+          .withPropertyValues("spring.profiles.active=broker")
+          .withPropertyValues("camunda.data.secondary-storage.type=rdbms")
+          .withPropertyValues(properties);
     }
 
     @Test
-    void testSecondaryStorageExporterWithoutArgsGetDefaults() {
-      final ExporterCfg exporter = brokerBasedProperties.getRdbmsExporter();
+    void shouldIgnoreUnifiedRdbmsExporterConfig() {
+      try (final LogCapturer logs =
+          new LogCapturer(BrokerBasedPropertiesOverride.class.getName())) {
+        runnerWith("camunda.data.exporters.rdbms.args.queue-size=0")
+            .run(
+                context -> {
+                  assertThat(context).hasNotFailed();
+                  final ExporterCfg exporter =
+                      context.getBean(BrokerBasedProperties.class).getRdbmsExporter();
+                  assertThat(exporter).isNotNull();
+                  assertThat(exporter.getClassName())
+                      .isEqualTo("io.camunda.exporter.rdbms.RdbmsExporter");
+                  // the ignored generic queue-size=0 must not apply; the reserved config keeps the
+                  // default queue size
+                  assertThat(
+                          UnifiedConfigurationHelper.argsToRdbmsExporterConfiguration(
+                                  exporter.getArgs())
+                              .getQueueSize())
+                      .isEqualTo(1000);
+                  // the ignored config must be surfaced to the user as a warning, not silently
+                  assertThat(logs.contains(RESERVED_WARNING)).isTrue();
+                });
+      }
+    }
+
+    @Test
+    void shouldIgnoreLegacyRdbmsExporterConfig() {
+      try (final LogCapturer logs =
+          new LogCapturer(BrokerBasedPropertiesOverride.class.getName())) {
+        runnerWith(
+                "zeebe.broker.exporters.rdbms.class-name=io.camunda.exporter.rdbms.RdbmsExporter")
+            .run(
+                context -> {
+                  assertThat(context).hasNotFailed();
+                  final ExporterCfg exporter =
+                      context.getBean(BrokerBasedProperties.class).getRdbmsExporter();
+                  assertThat(exporter).isNotNull();
+                  assertThat(exporter.getClassName())
+                      .isEqualTo("io.camunda.exporter.rdbms.RdbmsExporter");
+                  assertThat(logs.contains(RESERVED_WARNING)).isTrue();
+                });
+      }
+    }
+
+    @Test
+    void shouldIgnoreRdbmsExporterConfiguredPerPhysicalTenant() {
+      // the per-tenant path goes through BrokerBasedPropertiesOverride.convert (invoked per tenant
+      // by SystemContextLoader), which runs the same reserved-exporter handling
+      final MockEnvironment environment = new MockEnvironment();
+      environment.setProperty("camunda.data.secondary-storage.type", "rdbms");
+      environment.setProperty("camunda.data.exporters.rdbms.args.queue-size", "0");
+      final Camunda perTenant = new Camunda();
+      Binder.get(environment).bind(Camunda.PREFIX, Bindable.ofInstance(perTenant));
+
+      final BrokerBasedProperties props;
+      final boolean warned;
+      try (final LogCapturer logs =
+          new LogCapturer(BrokerBasedPropertiesOverride.class.getName())) {
+        props = BrokerBasedPropertiesOverride.convert(perTenant);
+        warned = logs.contains(RESERVED_WARNING);
+      }
+
+      final ExporterCfg exporter = props.getRdbmsExporter();
       assertThat(exporter).isNotNull();
-      final Map<String, Object> args = exporter.getArgs();
-      assertThat(args.get("queueSize")).isEqualTo(1000);
-      assertThat(args.get("queueMemoryLimit")).isEqualTo(20);
-      assertThat(args.get("flushInterval")).isEqualTo(Duration.ofMillis(500));
-      assertThat(args.get("exportBatchOperationItemsOnCreation")).isEqualTo(true);
-      assertThat(args.get("batchOperationItemInsertBlockSize")).isEqualTo(10000);
+      assertThat(exporter.getClassName()).isEqualTo("io.camunda.exporter.rdbms.RdbmsExporter");
+      // the ignored generic queue-size=0 must not apply; the reserved config keeps the default
+      assertThat(
+              UnifiedConfigurationHelper.argsToRdbmsExporterConfiguration(exporter.getArgs())
+                  .getQueueSize())
+          .isEqualTo(1000);
+      // the ignored config must be surfaced to the user as a warning, not silently
+      assertThat(warned).isTrue();
+    }
+  }
+
+  /**
+   * Captures log events emitted for a given logger via a log4j2 {@link ListAppender}, so tests can
+   * assert on messages that are logged instead of thrown (see {@link ReservedExporterIgnored}).
+   */
+  private static final class LogCapturer implements AutoCloseable {
+    private final ListAppender appender;
+    private final String loggerName;
+
+    private LogCapturer(final String loggerName) {
+      this.loggerName = loggerName;
+      appender = new ListAppender("TestAppender");
+      appender.start();
+      // Ensure a dedicated logger config exists at a level that lets WARN through; without a log4j2
+      // config file the default root level is ERROR, which would drop the warning before the
+      // appender sees it.
+      Configurator.setLevel(loggerName, Level.WARN);
+      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+      context
+          .getConfiguration()
+          .getLoggerConfig(loggerName)
+          .addAppender(appender, Level.WARN, null);
+      context.updateLoggers();
     }
 
-    @Test
-    void testEngineValidatorsDefaults() {
-      final ValidatorsCfg validators =
-          brokerBasedProperties.getExperimental().getEngine().getValidators();
-      assertThat(validators.getMaxIdFieldLength())
-          .isEqualTo(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
-      assertThat(validators.getMaxNameFieldLength())
-          .isEqualTo(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
-      assertThat(validators.getMaxWorkerTypeLength())
-          .isEqualTo(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
+    private boolean contains(final String message) {
+      // the appender has no layout, so formatted strings live in getEvents(), not getMessages()
+      return appender.getEvents().stream()
+          .anyMatch(e -> e.getMessage().getFormattedMessage().contains(message));
+    }
+
+    @Override
+    public void close() {
+      final LoggerContext context = (LoggerContext) LogManager.getContext(false);
+      context.getConfiguration().getLoggerConfig(loggerName).removeAppender("TestAppender");
+      context.updateLoggers();
+      appender.stop();
+      appender.clear();
     }
   }
 
