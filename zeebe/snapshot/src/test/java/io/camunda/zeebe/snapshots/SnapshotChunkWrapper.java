@@ -97,4 +97,9 @@ public final class SnapshotChunkWrapper implements SnapshotChunk {
   public long getTotalFileSize() {
     return wrappedChunk.getTotalFileSize();
   }
+
+  @Override
+  public long getContentLength() {
+    return wrappedChunk.getContentLength();
+  }
 }

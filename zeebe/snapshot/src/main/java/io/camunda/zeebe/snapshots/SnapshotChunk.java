@@ -49,5 +49,13 @@ public interface SnapshotChunk {
    */
   long getFileBlockPosition();
 
+  /**
+   * @return the total size of the file which the chunk is part of
+   */
   long getTotalFileSize();
+
+  /**
+   * @return the length of this chunk's content, in bytes
+   */
+  long getContentLength();
 }

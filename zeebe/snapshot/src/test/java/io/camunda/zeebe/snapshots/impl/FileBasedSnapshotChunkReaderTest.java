@@ -57,29 +57,6 @@ public final class FileBasedSnapshotChunkReaderTest {
   }
 
   @Test
-  public void shouldExcludeMetadataChunkFromTrackedSize() throws IOException {
-    // given
-    snapshotDirectory = temporaryFolder.getRoot().toPath();
-    Files.writeString(snapshotDirectory.resolve("file1"), "data");
-    Files.writeString(
-        snapshotDirectory.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME), "meta");
-
-    // when
-    final var trackedSizeByChunkName = new HashMap<String, Long>();
-    try (final var reader = new FileBasedSnapshotChunkReader(snapshotDirectory, Long.MAX_VALUE)) {
-      while (reader.hasNext()) {
-        final var chunk = reader.next();
-        trackedSizeByChunkName.put(chunk.getChunkName(), reader.trackedSizeOf(chunk));
-      }
-    }
-
-    // then
-    assertThat(trackedSizeByChunkName)
-        .containsEntry("file1", 4L)
-        .containsEntry(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME, 0L);
-  }
-
-  @Test
   public void shouldThrowExceptionWhenChunkFileDoesNotExist() throws IOException {
     // given
     final var reader = newReader();

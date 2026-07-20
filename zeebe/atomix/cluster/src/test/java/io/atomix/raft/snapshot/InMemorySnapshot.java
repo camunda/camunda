@@ -34,7 +34,6 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.NavigableMap;
 import java.util.Objects;
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -149,14 +148,6 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
       public void setMaximumChunkSize(final int maximumChunkSize) {}
 
       @Override
-      public long trackedSizeOf(final SnapshotChunk chunk) {
-        // Mirror the real reader: the metadata chunk is excluded from the total size in bytes.
-        return FileBasedSnapshotStoreImpl.METADATA_FILE_NAME.equals(chunk.getChunkName())
-            ? 0
-            : chunk.getContentBuffer().remaining();
-      }
-
-      @Override
       public void close() {
         iterator = null;
       }
@@ -207,12 +198,10 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
   }
 
   @Override
-  public OptionalLong getTotalSizeInBytes() {
-    return OptionalLong.of(
-        chunks.entrySet().stream()
-            .filter(entry -> !FileBasedSnapshotStoreImpl.METADATA_FILE_NAME.equals(entry.getKey()))
-            .mapToLong(entry -> StringUtil.getBytes(entry.getValue()).length)
-            .sum());
+  public long getTotalSizeInBytes() {
+    return chunks.entrySet().stream()
+        .mapToLong(entry -> StringUtil.getBytes(entry.getValue()).length)
+        .sum();
   }
 
   @Override

@@ -21,21 +21,15 @@ import static org.awaitility.Awaitility.await;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
-import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,7 +52,7 @@ public class RaftSnapshotReplicationLagTest {
     // given
     final int numberOfChunks = 10;
     final var snapshot = disconnectFollowerAndTakeSnapshot(numberOfChunks);
-    final long totalSnapshotSize = snapshot.getTotalSizeInBytes().orElseThrow();
+    final long totalSnapshotSize = snapshot.getTotalSizeInBytes();
     final var followerId = MemberId.from(follower.name());
 
     final List<Long> observedLag = new CopyOnWriteArrayList<>();
@@ -95,50 +89,11 @@ public class RaftSnapshotReplicationLagTest {
   }
 
   @Test
-  public void shouldExcludeMetadataChunkFromLag() throws Throwable {
-    // given
-    final int numberOfChunks = 10;
-    final var snapshot = disconnectFollowerAndTakeSnapshot(numberOfChunks);
-    final long totalSnapshotSize = snapshot.getTotalSizeInBytes().orElseThrow();
-
-    final Map<String, Integer> nonMetadataChunkSizes = new ConcurrentHashMap<>();
-    final AtomicBoolean metadataTransferred = new AtomicBoolean();
-    leaderProtocol.interceptRequest(
-        InstallRequest.class,
-        request -> {
-          final var chunk = new SnapshotChunkImpl();
-          if (!chunk.tryWrap(new UnsafeBuffer(request.data()))) {
-            return;
-          }
-          if (FileBasedSnapshotStoreImpl.METADATA_FILE_NAME.equals(chunk.getChunkName())) {
-            metadataTransferred.set(true);
-          } else {
-            nonMetadataChunkSizes.put(
-                chunk.getChunkName() + "__" + chunk.getFileBlockPosition(),
-                chunk.getContent().length);
-          }
-        });
-
-    // when
-    reconnectFollowerAndAwaitSnapshot();
-
-    // then
-    assertThat(metadataTransferred)
-        .describedAs("the metadata chunk is transferred to the follower")
-        .isTrue();
-    final long nonMetadataBytes =
-        nonMetadataChunkSizes.values().stream().mapToLong(Integer::longValue).sum();
-    assertThat(nonMetadataBytes)
-        .describedAs("the seeded lag accounts for every chunk except the metadata chunk")
-        .isEqualTo(totalSnapshotSize);
-  }
-
-  @Test
   public void shouldPublishReplicationLagThroughMeterRegistry() throws Throwable {
     // given
     final int numberOfChunks = 10;
     final var snapshot = disconnectFollowerAndTakeSnapshot(numberOfChunks);
-    final long totalSnapshotSize = snapshot.getTotalSizeInBytes().orElseThrow();
+    final long totalSnapshotSize = snapshot.getTotalSizeInBytes();
     final var followerId = MemberId.from(follower.name());
     final var registry = leader.getContext().getMeterRegistry();
 

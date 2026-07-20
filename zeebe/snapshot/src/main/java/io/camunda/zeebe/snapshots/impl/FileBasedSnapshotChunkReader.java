@@ -92,14 +92,6 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
   }
 
   @Override
-  public long trackedSizeOf(final SnapshotChunk chunk) {
-    // The metadata chunk is excluded from the snapshot's total size in bytes.
-    return FileBasedSnapshotStoreImpl.METADATA_FILE_NAME.equals(chunk.getChunkName())
-        ? 0
-        : chunk.getContentBuffer().remaining();
-  }
-
-  @Override
   public void close() {
     chunks.clear();
     chunksView.clear();

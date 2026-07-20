@@ -384,18 +384,7 @@ final class LeaderAppender {
    */
   private void seedSnapshotReplicationLag(
       final RaftMemberContext member, final PersistedSnapshot persistedSnapshot) {
-    persistedSnapshot
-        .getTotalSizeInBytes()
-        .ifPresentOrElse(
-            member::setSnapshotReplicationLag,
-            () -> {
-              member.setSnapshotReplicationLag(0);
-              LOGGER.error(
-                  "Snapshot {} has no persisted total size; cannot seed snapshot replication lag"
-                      + " for {}.",
-                  persistedSnapshot.getId(),
-                  member.getMember().memberId());
-            });
+    member.setSnapshotReplicationLag(persistedSnapshot.getTotalSizeInBytes());
     observeReplicationLag(member);
   }
 
@@ -455,8 +444,7 @@ final class LeaderAppender {
       final ByteBuffer currentChunkId = reader.nextId();
       final SnapshotChunk chunk = reader.next();
       // Remember the chunk's tracked size so it can be subtracted from the lag once acknowledged.
-      // Chunks excluded from the seeded total size (e.g. metadata) report 0 and must not subtract.
-      member.setSnapshotChunkBytesInFlight(reader.trackedSizeOf(chunk));
+      member.setSnapshotChunkBytesInFlight(chunk.getContentLength());
 
       // Create the install request, indicating whether this is the last chunk of data based on
       // the number of bytes remaining in the buffer.
