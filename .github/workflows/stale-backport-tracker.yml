@@ -316,14 +316,15 @@ jobs:
           # v4 enforces strict YAML 1.2 indentation, so a multi-line `toJSON(...)`
           # value in the payload fails to parse ("deficient indentation"). A single
           # compact line is valid YAML flow and parses cleanly.
-          blocks=$(printf '%s' "$payload" | jq -c '.blocks')
+          # Extract strictly: abort if .blocks is missing or not an array, so a
+          # malformed formatter output fails here (visibly) instead of producing
+          # `blocks: null` and failing inside the continue-on-error Slack step.
+          blocks=$(printf '%s' "$payload" | jq -ce '.blocks | select(type == "array")') || {
+            echo "::error::format-slack-report.sh did not produce a .blocks array — aborting before posting an invalid Slack payload" >&2
+            exit 1
+          }
 
-          {
-            echo "payload<<PAYLOAD_EOF"
-            echo "$payload"
-            echo "PAYLOAD_EOF"
-            echo "blocks=$blocks"
-          } >> "$GITHUB_OUTPUT"
+          echo "blocks=$blocks" >> "$GITHUB_OUTPUT"
 
       - name: Find existing Slack message to update
         id: find-message
