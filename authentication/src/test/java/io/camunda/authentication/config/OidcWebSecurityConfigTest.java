@@ -179,6 +179,11 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
+        // Tasklist
+        "/tasklist/assets/app.css",
+        "/tasklist/client-config.js",
+        "/tasklist/custom.css",
+        "/tasklist/favicon.ico",
         // Operate
         "/operate/assets/app.css",
         "/operate/client-config.js",
@@ -188,11 +193,13 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
         "/admin/assets/app.js",
         "/admin/favicon.ico"
       })
-  public void shouldNotRequireAuthenticationForOperateAndAdminStaticAssets(final String assetPath) {
-    // regression for the SPA crash on session expiry ("Unable to preload CSS" in Operate,
-    // "Failed to fetch dynamically imported module" in Admin): these static assets must be
-    // deliverable to an unauthenticated (e.g. expired-session) browser so the SPA can load and
-    // then redirect to login via its graceful API-401 handling, as Tasklist already does.
+  public void shouldNotRequireAuthenticationForPublicWebappStaticAssets(final String assetPath) {
+    // The webapp SPAs (Tasklist, Operate, Admin) serve their static assets under these paths; they
+    // must be deliverable to an unauthenticated (e.g. expired-session) browser so the SPA can load
+    // and then redirect to login via its graceful API-401 handling. Otherwise a lazily-loaded chunk
+    // fetched after the session expires is redirected/401'd, the module load fails, and the SPA
+    // renders a fatal error boundary ("Unable to preload CSS" / "Failed to fetch dynamically
+    // imported module").
 
     // when
     final MvcTestResult testResult =
