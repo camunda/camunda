@@ -89,7 +89,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
     final var request = asyncRequest.get();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-    responseWriter.writeResponse(
+    responseWriter.writeAcceptedResponse(
         userTaskKey,
         UserTaskIntent.ASSIGNED,
         userTaskRecord,

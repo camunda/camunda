@@ -101,7 +101,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
     final var request = asyncRequest.get();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
-    responseWriter.writeResponse(
+    responseWriter.writeAcceptedResponse(
         userTaskKey,
         UserTaskIntent.COMPLETED,
         userTaskRecord,
