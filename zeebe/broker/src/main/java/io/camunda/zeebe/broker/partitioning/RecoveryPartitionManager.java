@@ -42,6 +42,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +71,7 @@ public final class RecoveryPartitionManager
   private final BrokerCfg brokerCfg;
   private final BrokerInfo brokerInfo;
   private final AtomixServerTransport gatewayBrokerTransport;
+  private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private @Nullable BackupStore backupStore;
 
   public RecoveryPartitionManager(
@@ -82,6 +84,7 @@ public final class RecoveryPartitionManager
       final ActorSchedulingService schedulingService,
       final MeterRegistry meterRegistry,
       final AtomixServerTransport gatewayBrokerTransport,
+      final @Nullable IntFunction<Long> exportedPositionSupplier,
       final TopologyManagerImpl topologyManager) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
@@ -93,6 +96,7 @@ public final class RecoveryPartitionManager
     this.brokerCfg = brokerCfg;
     this.brokerInfo = brokerInfo;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
+    this.exportedPositionSupplier = exportedPositionSupplier;
   }
 
   @Override
@@ -156,8 +160,10 @@ public final class RecoveryPartitionManager
       return;
     }
 
+    final var partitionCount = brokerCfg.getCluster().getPartitionsCount();
     clusterConfigurationService.registerRequestValidator(
-        partitionGroup, new RestoreValidator(backupStore));
+        partitionGroup,
+        new RestoreValidator(partitionCount, backupStore, exportedPositionSupplier));
 
     final var startFutures = new ArrayList<ActorFuture<Void>>();
     for (final var partitionMetadata : localPartitions) {

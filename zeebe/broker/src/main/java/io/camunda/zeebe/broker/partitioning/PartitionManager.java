@@ -125,6 +125,7 @@ public interface PartitionManager {
         brokerStartupContext.getActorSchedulingService(),
         brokerStartupContext.getMeterRegistry(),
         brokerStartupContext.getGatewayBrokerTransport(),
+        brokerStartupContext.getExportedPositionSupplier(),
         topologyManager);
   }
 }

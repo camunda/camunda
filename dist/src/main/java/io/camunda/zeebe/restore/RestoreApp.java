@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.function.IntFunction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -242,7 +243,9 @@ public class RestoreApp implements ApplicationRunner {
             databaseType,
             continuousBackups,
             false);
-    final RestoreValidator validator = new RestoreValidator(backupStore);
+    final var partitionCount = camunda.getCluster().getPartitionCount();
+    final RestoreValidator validator =
+        new RestoreValidator(partitionCount, backupStore, exportedPositionSupplier());
     final var result = validator.validate(restoreRequest);
     if (result.isLeft()) {
       throw (RuntimeException) result.getLeft();
@@ -251,6 +254,16 @@ public class RestoreApp implements ApplicationRunner {
 
   private boolean hasTimeRange() {
     return from != null || to != null;
+  }
+
+  private @Nullable IntFunction<Long> exportedPositionSupplier() {
+    if (exporterPositionMapper == null) {
+      return null;
+    }
+    return partition -> {
+      final var position = exporterPositionMapper.findOne(partition);
+      return position == null ? null : position.lastExportedPosition();
+    };
   }
 
   private boolean hasBackupId() {

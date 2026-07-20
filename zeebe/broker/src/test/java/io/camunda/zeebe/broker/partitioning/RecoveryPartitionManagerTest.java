@@ -111,6 +111,7 @@ final class RecoveryPartitionManagerTest {
         schedulingService,
         new SimpleMeterRegistry(),
         transport,
+        null,
         topologyManager);
   }
 
