@@ -72,6 +72,9 @@ license.key
 security.authentication.method
 security.authentication.unprotected-api
 security.cluster-admin.basic.users
+security.cluster-admin.oidc.claims
+security.cluster-admin.oidc.clients
+security.cluster-admin.oidc.groups
 security.csrf
 security.csrf.cookie-http-only
 security.csrf.enabled

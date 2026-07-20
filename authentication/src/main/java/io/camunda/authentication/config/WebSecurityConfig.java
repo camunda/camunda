@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.config;
 
+import io.camunda.authentication.clusteradmin.ClusterAdminConverterConfiguration;
+import io.camunda.authentication.clusteradmin.ClusterAdminOidcSecurityConfiguration;
 import io.camunda.authentication.clusteradmin.ClusterAdminSecurityConfiguration;
 import io.camunda.authentication.config.spi.AdminUserPresenceAdapter;
 import io.camunda.authentication.config.spi.AuthorizationRepositoryAdapter;
@@ -69,6 +71,8 @@ import org.springframework.security.web.firewall.StrictHttpFirewall;
   SaasCspModeCompatibility.class,
   PhysicalTenantSecurityConfiguration.class,
   ClusterAdminSecurityConfiguration.class,
+  ClusterAdminOidcSecurityConfiguration.class,
+  ClusterAdminConverterConfiguration.class,
 })
 public class WebSecurityConfig {
 
