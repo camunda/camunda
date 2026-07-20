@@ -93,22 +93,25 @@ public class ListLogStorage implements LogStorage {
 
   public void reset() {
     final Integer lastIndex =
-        listLogStorageReaders.stream().map(r -> r.currentIndex).min(Integer::compareTo).orElse(0);
+        listLogStorageReaders.stream()
+            .map(r -> r.currentIndex.get())
+            .min(Integer::compareTo)
+            .orElse(0);
     entries.headMap(lastIndex).clear();
   }
 
   private record Entry(ByteBuffer data) {}
 
   private final class ListLogStorageReader implements LogStorageReader {
-    volatile int currentIndex;
+    AtomicInteger currentIndex;
 
     @Override
     public void seek(final long position) {
-      currentIndex =
+      currentIndex.set(
           Optional.ofNullable(positionIndexMapping.lowerEntry(position))
               .map(Map.Entry::getValue)
               //              .map(index -> index - 1)
-              .orElse(0);
+              .orElse(0));
     }
 
     @Override
@@ -118,8 +121,8 @@ public class ListLogStorage implements LogStorage {
 
     @Override
     public boolean hasNext() {
-      return currentIndex >= 0
-          && !entries.tailMap(currentIndex).isEmpty(); // && currentIndex < entries.size();
+      return currentIndex.get() >= 0
+          && !entries.tailMap(currentIndex.get()).isEmpty(); // && currentIndex < entries.size();
     }
 
     @Override
@@ -128,10 +131,11 @@ public class ListLogStorage implements LogStorage {
         throw new NoSuchElementException();
       }
 
-      final int index = currentIndex;
-      currentIndex++;
+      final int index = currentIndex.get();
 
-      return new UnsafeBuffer(entries.get(index).data);
+      final var buffer = new UnsafeBuffer(entries.get(index).data);
+      currentIndex.incrementAndGet();
+      return buffer;
     }
   }
 }
