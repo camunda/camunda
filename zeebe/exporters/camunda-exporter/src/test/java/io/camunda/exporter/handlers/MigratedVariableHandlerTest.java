@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
@@ -108,10 +109,11 @@ public class MigratedVariableHandlerTest {
             .setBpmnProcessId("procId")
             .setProcessDefinitionKey(123L)
             .setPosition(456L);
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(VariableTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
     updateFields.put(
@@ -119,7 +121,7 @@ public class MigratedVariableHandlerTest {
     updateFields.put(VariableTemplate.POSITION, inputEntity.getPosition());
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, inputEntity.getId(), inputEntity, updateFields);
+    verify(mockRequest, times(1)).upsert(index, inputEntity.getId(), inputEntity, updateFields);
   }
 
   @Test

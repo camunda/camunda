@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.ProcessEntity;
@@ -119,12 +120,13 @@ class ProcessDeletedHandlerTest {
   void shouldFlushPartialUpdateWithIsDeletedTrue() throws Exception {
     // given
     final ProcessEntity entity = new ProcessEntity().setId("789");
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
-    verify(mockRequest).update(indexName, "789", Map.of(ProcessIndex.IS_DELETED, true));
+    verify(mockRequest).update(index, "789", Map.of(ProcessIndex.IS_DELETED, true));
   }
 }

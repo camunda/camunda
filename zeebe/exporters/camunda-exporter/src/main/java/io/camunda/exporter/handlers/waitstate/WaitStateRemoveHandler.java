@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers.waitstate;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
 import io.camunda.zeebe.exporter.common.waitstate.WaitStateTransformer;
@@ -68,9 +69,10 @@ public class WaitStateRemoveHandler<R extends RecordValue & WaitStateRelated>
   }
 
   @Override
-  public void flush(final WaitStateEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final WaitStateEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override

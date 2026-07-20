@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers.waitstate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
@@ -44,7 +45,8 @@ public class WaitStateUpdateHandler<R extends RecordValue & WaitStateRelated>
   }
 
   @Override
-  public void flush(final WaitStateEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final WaitStateEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
     final Map<String, Object> updateFields = new HashMap<>();
     // elementId and bpmnProcessId are null when the transformer called
@@ -57,6 +59,6 @@ public class WaitStateUpdateHandler<R extends RecordValue & WaitStateRelated>
       updateFields.put(WaitStateTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
     }
     updateFields.put(WaitStateTemplate.DETAILS, entity.getDetails());
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 }

@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.resource.DeployedResourceEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -101,13 +102,14 @@ public class ResourceDeletedHandlerTest {
   void shouldDeleteEntityOnFlush() throws PersistenceException {
     // given
     final DeployedResourceEntity entity = new DeployedResourceEntity().setId("42");
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).delete(indexName, "42");
+    verify(mockRequest, times(1)).delete(index, "42");
   }
 
   @Test

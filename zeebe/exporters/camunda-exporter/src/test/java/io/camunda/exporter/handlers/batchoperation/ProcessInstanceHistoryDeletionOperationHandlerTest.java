@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperat
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -198,11 +199,12 @@ class ProcessInstanceHistoryDeletionOperationHandlerTest {
     entity.setProcessInstanceKey(456L);
     entity.setCompletedDate(OffsetDateTime.now());
     entity.setErrorMessage("error message");
+    final TargetIndex index = mock(TargetIndex.class);
     final var mockRequest = mock(BatchRequest.class);
-    handler.flush(entity, mockRequest);
+    handler.flush(index, entity, mockRequest);
     verify(mockRequest, times(1))
         .upsert(
-            indexName,
+            index,
             entity.getId(),
             entity,
             Map.of(

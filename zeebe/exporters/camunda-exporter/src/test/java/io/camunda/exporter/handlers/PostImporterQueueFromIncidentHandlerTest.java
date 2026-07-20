@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.post.PostImporterQueueEntity;
@@ -129,14 +130,14 @@ public class PostImporterQueueFromIncidentHandlerTest {
     final int partitionId = 3;
     final PostImporterQueueEntity inputEntity =
         new PostImporterQueueEntity().setId("111").setPartitionId(partitionId);
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1))
-        .addWithRouting(indexName, inputEntity, String.valueOf(partitionId));
+    verify(mockRequest, times(1)).addWithRouting(index, inputEntity, String.valueOf(partitionId));
   }
 
   @Test

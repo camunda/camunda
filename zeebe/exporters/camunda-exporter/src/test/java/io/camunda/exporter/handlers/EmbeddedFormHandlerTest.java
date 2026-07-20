@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.form.EmbeddedFormBatch;
 import io.camunda.webapps.schema.entities.form.FormEntity;
@@ -99,13 +100,14 @@ public class EmbeddedFormHandlerTest {
     final var batch = new EmbeddedFormBatch().setId("111");
     batch.setForms(Collections.singletonList(inputEntity));
 
+    final TargetIndex index = mock(TargetIndex.class);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(batch, mockRequest);
+    underTest.flush(index, batch, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index, inputEntity);
   }
 
   @Test
@@ -116,14 +118,15 @@ public class EmbeddedFormHandlerTest {
     final var batch = new EmbeddedFormBatch().setId("111");
     batch.setForms(Arrays.asList(firstInputEntity, secondInputEntity));
 
+    final TargetIndex index = mock(TargetIndex.class);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(batch, mockRequest);
+    underTest.flush(index, batch, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, firstInputEntity);
-    verify(mockRequest, times(1)).add(indexName, secondInputEntity);
+    verify(mockRequest, times(1)).add(index, firstInputEntity);
+    verify(mockRequest, times(1)).add(index, secondInputEntity);
   }
 
   @Test
@@ -131,10 +134,11 @@ public class EmbeddedFormHandlerTest {
     // given
     final var inputEntity = new EmbeddedFormBatch().setId("111");
 
+    final TargetIndex index = mock(TargetIndex.class);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     verifyNoInteractions(mockRequest);

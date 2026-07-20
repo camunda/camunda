@@ -16,6 +16,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository.OperationsAggData;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -90,7 +91,8 @@ abstract class BatchOperationUpdateRepositoryIT {
   protected void indexBatchOperation(final BatchOperationEntity batchOperationEntity)
       throws PersistenceException {
     final var batchRequest = clientAdapter.createBatchRequest();
-    batchRequest.add(batchOperationTemplate.getFullQualifiedName(), batchOperationEntity);
+    batchRequest.add(
+        TargetIndex.mainIndex(batchOperationTemplate.getFullQualifiedName()), batchOperationEntity);
     batchRequest.executeWithRefresh();
   }
 
@@ -121,7 +123,9 @@ abstract class BatchOperationUpdateRepositoryIT {
     protected void indexBatchOperation(final BatchOperationEntity batchOperationEntity)
         throws PersistenceException {
       final var batchRequest = clientAdapter.createBatchRequest();
-      batchRequest.add(batchOperationTemplate.getFullQualifiedName(), batchOperationEntity);
+      batchRequest.add(
+          TargetIndex.mainIndex(batchOperationTemplate.getFullQualifiedName()),
+          batchOperationEntity);
       Awaitility.await()
           .ignoreException(PersistenceException.class)
           .timeout(searchDB.dataAvailabilityTimeout())
@@ -267,7 +271,8 @@ abstract class BatchOperationUpdateRepositoryIT {
 
     private void indexOperation(final OperationEntity operationEntity) throws PersistenceException {
       final var batchRequest = clientAdapter.createBatchRequest();
-      batchRequest.add(operationTemplate.getFullQualifiedName(), operationEntity);
+      batchRequest.add(
+          TargetIndex.mainIndex(operationTemplate.getFullQualifiedName()), operationEntity);
       batchRequest.executeWithRefresh();
     }
   }
