@@ -524,6 +524,11 @@
 					"copied": "Copiado",
 					"copyToClipboard": "Copiar al portapapeles",
 					"copiedToClipboard": "Copiado al portapapeles"
+				},
+				"deleteDefinitionModal": {
+					"deleteButton": "Eliminar",
+					"cancelButton": "Cancelar",
+					"confirmationError": "Marque esta casilla si desea continuar."
 				}
 			}
 		}

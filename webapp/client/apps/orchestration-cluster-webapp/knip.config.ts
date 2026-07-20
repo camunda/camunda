@@ -30,6 +30,8 @@ const config: KnipConfig = {
 		'src/operate/shared/PanelHeader/**',
 		'src/operate/shared/DiagramShell/**',
 		'src/operate/shared/FiltersPanel/**',
+		'src/operate/shared/DeleteDefinition/**',
+		'src/operate/shared/StructuredList/**',
 		// TODO(#55642): remove when BatchOperation detail page is migrated
 		'src/operate/shared/PaginatedSortableTable/**',
 		// TODO(#56029, #56026): remove when Process Instance / Decision Instance shells are migrated
