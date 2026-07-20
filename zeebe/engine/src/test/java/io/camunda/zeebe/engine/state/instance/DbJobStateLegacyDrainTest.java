@@ -185,10 +185,13 @@ final class DbJobStateLegacyDrainTest {
     assertThat(activatableKeys(restarted, type)).containsExactly(1L);
   }
 
+  // Mirrors JobCreatedV3Applier: a genuinely new (post-8.10) job goes through the
+  // priority-aware insertion path, not the deprecated, legacy-only create().
   private void createActivatableJob(final long key, final DirectBuffer type, final int priority) {
     final JobRecord record =
         new JobRecord().setType(type).setTenantId(TENANT).setPriority(priority).setRetries(1);
-    jobState.create(key, record);
+    jobState.insertJobRecordActivatable(key, record);
+    jobState.makeJobActivatableByPriority(type, key, TENANT, priority);
   }
 
   private void seedLegacyJob(final long key, final DirectBuffer type, final String tenantId) {
