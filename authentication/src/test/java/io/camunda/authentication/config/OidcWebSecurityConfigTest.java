@@ -193,6 +193,23 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
   }
 
   @Test
+  public void shouldAcceptRequestToAdminStaticAssetsWithoutAuthentication() {
+    // regression for the "Failed to fetch dynamically imported module" crash: the Admin SPA's
+    // static assets must be deliverable to an unauthenticated (e.g. expired-session) browser so the
+    // SPA can load and then handle the API 401 via its graceful session-expiry redirect.
+
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_ADMIN_ASSET_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(testResult).hasStatusOk();
+  }
+
+  @Test
   public void shouldReturnCsrfTokenOnAuthenticatedGetRequest() {
     // when
     final MvcTestResult testResult =
