@@ -40,8 +40,36 @@ const StatusHint = styled.span`
   color: var(--cds-text-secondary);
 `;
 
+const LoopIterationMarker = styled.span`
+  display: inline-flex;
+  gap: var(--cds-spacing-04);
+  justify-content: center;
+  align-items: center;
+  font-size: var(--cds-label-01-font-size);
+  font-weight: var(--cds-label-01-font-weight);
+  line-height: var(--cds-label-01-line-height);
+  letter-spacing: var(--cds-label-01-letter-spacing);
+  color: var(--cds-text-secondary);
+
+  &::before,
+  &::after {
+    content: '';
+    display: inline-block;
+    inline-size: 8ch;
+    height: 1px;
+    background-color: var(--cds-border-subtle-01);
+    border-radius: 1px;
+  }
+`;
+
 const ShowMoreButton = styled(Button)`
   align-self: center;
 `;
 
-export {ConversationContainer, Messages, StatusHint, ShowMoreButton};
+export {
+  ConversationContainer,
+  Messages,
+  StatusHint,
+  LoopIterationMarker,
+  ShowMoreButton,
+};
