@@ -19,23 +19,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.cleanup.ResourceAndHistoryDeletionStrategy;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 
 @CamundaProcessTest
 public class ResourceAndHistoryDeletionStrategyIT {
-
-  @RegisterExtension
-  private static final CamundaProcessTestExtension EXTENSION =
-      new CamundaProcessTestExtension().withDataDeletionMode(DataDeletionMode.NONE);
 
   // to be injected
   private CamundaClient client;
@@ -44,18 +43,24 @@ public class ResourceAndHistoryDeletionStrategyIT {
   @Test
   void shouldDeleteTestCaseDataWithoutTouchingPreviousDeployments() {
     // given
-    final String preexistingProcessId = "preexisting-" + System.nanoTime();
-    deploySimpleProcess(preexistingProcessId);
-    client
-        .newCreateInstanceCommand()
-        .bpmnProcessId(preexistingProcessId)
-        .latestVersion()
-        .send()
-        .join();
+    final String preexistingProcessId = "preexisting-process";
+    deployProcess(preexistingProcessId);
+    final ProcessInstanceEvent preexistingProcessInstance =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(preexistingProcessId)
+            .latestVersion()
+            .send()
+            .join();
+
+    // move time forward to ensure that the test case start time is after the preexisting process
+    // instance creation time
+    processTestContext.increaseTime(Duration.ofMinutes(1));
 
     final Instant testCaseStartTime = processTestContext.getCurrentTime();
-    final String testCaseProcessId = "test-case-" + System.nanoTime();
-    final DeploymentEvent testCaseDeployment = deploySimpleProcess(testCaseProcessId);
+
+    final String testCaseProcessId = "test-case-process";
+    final DeploymentEvent testCaseDeployment = deployProcess(testCaseProcessId);
     client
         .newCreateInstanceCommand()
         .bpmnProcessId(testCaseProcessId)
@@ -76,32 +81,50 @@ public class ResourceAndHistoryDeletionStrategyIT {
     Awaitility.await("Wait until test-case process instances are deleted")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
-            () ->
-                assertThat(
-                        client
-                            .newProcessInstanceSearchRequest()
-                            .filter(filter -> filter.processDefinitionId(testCaseProcessId))
-                            .send()
-                            .join()
-                            .items())
-                    .isEmpty());
+            () -> {
+              assertThat(
+                      client
+                          .newProcessInstanceSearchRequest()
+                          .filter(filter -> filter.processDefinitionId(testCaseProcessId))
+                          .send()
+                          .join()
+                          .items())
+                  .describedAs("Expected test-case process instances to be deleted")
+                  .isEmpty();
 
-    assertThat(
-            client
-                .newCreateInstanceCommand()
-                .bpmnProcessId(preexistingProcessId)
-                .latestVersion()
-                .send()
-                .join())
-        .isNotNull();
+              assertThat(
+                      client
+                          .newProcessDefinitionSearchRequest()
+                          .filter(filter -> filter.processDefinitionId(testCaseProcessId))
+                          .send()
+                          .join()
+                          .items())
+                  .describedAs("Expected test-case process definitions to be deleted")
+                  .isEmpty();
+            });
+
+    assertThat(client.newProcessInstanceSearchRequest().send().join().items())
+        .extracting(ProcessInstance::getProcessInstanceKey)
+        .describedAs("Expected preexisting process instances to remain")
+        .containsExactly(preexistingProcessInstance.getProcessInstanceKey());
+
+    assertThat(client.newProcessDefinitionSearchRequest().send().join().items())
+        .extracting(ProcessDefinition::getProcessDefinitionId)
+        .describedAs("Expected preexisting process definitions to remain")
+        .containsExactly(preexistingProcessId);
   }
 
-  private DeploymentEvent deploySimpleProcess(final String processId) {
+  private DeploymentEvent deployProcess(final String processId) {
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .userTask("user-task")
+            .zeebeUserTask()
+            .endEvent()
+            .done();
     return client
         .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
-            processId + ".bpmn")
+        .addProcessModel(process, processId + ".bpmn")
         .send()
         .join();
   }

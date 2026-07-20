@@ -18,7 +18,6 @@ package io.camunda.process.test.impl.cleanup;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.api.response.Resource;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.BatchOperation;
@@ -29,7 +28,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -136,24 +134,29 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
     }
 
     final Set<Long> resourceKeysToDelete = new LinkedHashSet<>();
-    for (final DeploymentEvent deployment : deployments) {
-      final List<Resource> resourcesForDeployment =
-          client
-              .newResourceSearchRequest()
-              .filter(filter -> filter.deploymentKey(deployment.getKey()))
-              .page(DEFAULT_PAGE_REQUEST)
-              .send()
-              .join()
-              .items();
-      resourcesForDeployment.stream()
-          .map(Resource::getResourceKey)
-          .forEach(resourceKeysToDelete::add);
-    }
+
+    deployments.forEach(
+        deployment -> {
+          deployment
+              .getProcesses()
+              .forEach(process -> resourceKeysToDelete.add(process.getProcessDefinitionKey()));
+
+          deployment
+              .getDecisions()
+              .forEach(decision -> resourceKeysToDelete.add(decision.getDecisionKey()));
+
+          deployment
+              .getDecisionRequirements()
+              .forEach(
+                  decisionRequirements ->
+                      resourceKeysToDelete.add(decisionRequirements.getDecisionRequirementsKey()));
+        });
 
     for (final long resourceKey : resourceKeysToDelete) {
       final CreateBatchOperationResponse batchOperationResponse =
           client
               .newDeleteResourceCommand(resourceKey)
+              .deleteHistory(true)
               .send()
               .join()
               .getCreateBatchOperationResponse();
