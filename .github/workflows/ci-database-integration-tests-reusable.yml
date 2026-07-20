@@ -97,7 +97,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@305de9730455a10c1df97262d42ced69855f2b16 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
       - run: |
           if [ -z "${{ inputs.database-container }}" ]; then
             echo "DATABASE_CONTAINER=${{ inputs.database-type }}" >> "$GITHUB_ENV"
