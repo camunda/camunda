@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JO
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
@@ -134,6 +135,7 @@ public class ListViewFlowNodeFromJobHandlerTest {
             .setJobFailedWithRetriesLeft(true);
     inputEntity.getJoinRelation().setParent(66L);
 
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -141,12 +143,12 @@ public class ListViewFlowNodeFromJobHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.JOB_FAILED_WITH_RETRIES_LEFT, true);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             inputEntity.getId(),
             inputEntity,
             expectedUpdateFields,

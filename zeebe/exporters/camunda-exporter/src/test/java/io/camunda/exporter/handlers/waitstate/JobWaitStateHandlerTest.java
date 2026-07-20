@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
@@ -166,26 +167,28 @@ class JobWaitStateHandlerTest {
   void shouldFlushAddEntityToIndex() throws PersistenceException {
     // given
     final var entity = new WaitStateEntity().setId(String.valueOf(JOB_KEY));
+    final var index = mock(TargetIndex.class);
     final var batchRequest = mock(BatchRequest.class);
 
     // when
-    addHandler.flush(entity, batchRequest);
+    addHandler.flush(index, entity, batchRequest);
 
     // then
-    verify(batchRequest).add(eq(INDEX_NAME), eq(entity));
+    verify(batchRequest).add(eq(index), eq(entity));
   }
 
   @Test
   void shouldFlushRemoveDeleteFromIndexBySameId() throws PersistenceException {
     // given
     final var entity = new WaitStateEntity().setId(String.valueOf(JOB_KEY));
+    final var index = mock(TargetIndex.class);
     final var batchRequest = mock(BatchRequest.class);
 
     // when
-    removeHandler.flush(entity, batchRequest);
+    removeHandler.flush(index, entity, batchRequest);
 
     // then
-    verify(batchRequest).delete(INDEX_NAME, String.valueOf(JOB_KEY));
+    verify(batchRequest).delete(index, String.valueOf(JOB_KEY));
   }
 
   @Test
@@ -281,15 +284,16 @@ class JobWaitStateHandlerTest {
     // given — FAILED/RETRIES_UPDATED: transformer nulls elementId to avoid overwriting stored value
     final var id = String.valueOf(JOB_KEY);
     final var entity = new WaitStateEntity().setId(id).setDetails("{\"retries\":0}");
+    final var index = mock(TargetIndex.class);
     final var batchRequest = mock(BatchRequest.class);
 
     // when
-    updateHandler.flush(entity, batchRequest);
+    updateHandler.flush(index, entity, batchRequest);
 
     // then — only DETAILS in the update map; ELEMENT_ID is skipped
     verify(batchRequest)
         .upsert(
-            eq(INDEX_NAME),
+            eq(index),
             eq(id),
             eq(entity),
             argThat(map -> map.containsKey(WaitStateTemplate.DETAILS) && map.size() == 1));
@@ -306,15 +310,16 @@ class JobWaitStateHandlerTest {
             .setElementId("task-after-migration")
             .setBpmnProcessId("target-process")
             .setDetails("{\"retries\":3}");
+    final var index = mock(TargetIndex.class);
     final var batchRequest = mock(BatchRequest.class);
 
     // when
-    updateHandler.flush(entity, batchRequest);
+    updateHandler.flush(index, entity, batchRequest);
 
     // then — ELEMENT_ID, BPMN_PROCESS_ID and DETAILS are all sent
     verify(batchRequest)
         .upsert(
-            eq(INDEX_NAME),
+            eq(index),
             eq(id),
             eq(entity),
             argThat(

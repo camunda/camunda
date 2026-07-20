@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers.batchoperation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
@@ -271,6 +272,7 @@ class BatchOperationLifecycleManagementHandlerTest {
   @Test
   void shouldFlushEntityWithConditionalScript() throws Exception {
     // given
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest batchRequest = mock(BatchRequest.class);
     final BatchOperationEntity entity =
         new BatchOperationEntity()
@@ -279,13 +281,13 @@ class BatchOperationLifecycleManagementHandlerTest {
             .setEndDate(DateUtil.toOffsetDateTime(Instant.now().toEpochMilli()));
 
     // when
-    handler.flush(entity, batchRequest);
+    handler.flush(index, entity, batchRequest);
 
     // then
     final var paramsCaptor = ArgumentCaptor.forClass(Map.class);
     verify(batchRequest)
         .upsertWithScript(
-            eq(indexName),
+            eq(index),
             eq("12345"),
             eq(entity),
             eq(BatchOperationLifecycleManagementHandler.CONDITIONAL_STATE_UPDATE_SCRIPT),
@@ -299,6 +301,7 @@ class BatchOperationLifecycleManagementHandlerTest {
   @Test
   void shouldFlushEntityWithErrorsInScript() throws Exception {
     // given
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest batchRequest = mock(BatchRequest.class);
     final var errorEntity =
         new io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity()
@@ -313,13 +316,13 @@ class BatchOperationLifecycleManagementHandlerTest {
             .setErrors(List.of(errorEntity));
 
     // when
-    handler.flush(entity, batchRequest);
+    handler.flush(index, entity, batchRequest);
 
     // then - errors should be included in script params when present
     final var paramsCaptor = ArgumentCaptor.forClass(Map.class);
     verify(batchRequest)
         .upsertWithScript(
-            eq(indexName),
+            eq(index),
             eq("12345"),
             eq(entity),
             eq(BatchOperationLifecycleManagementHandler.CONDITIONAL_STATE_UPDATE_SCRIPT),

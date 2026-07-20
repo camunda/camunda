@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -206,6 +207,7 @@ public class UserTaskVariableHandlerTest {
             .setScopeKey(456L);
 
     variableBatch.getVariables().addAll(List.of(processVariableEntity, taskVariableEntity));
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final ArgumentCaptor<String> idCaptor = ArgumentCaptor.forClass(String.class);
@@ -216,13 +218,13 @@ public class UserTaskVariableHandlerTest {
     final ArgumentCaptor<String> routingCaptor = ArgumentCaptor.forClass(String.class);
 
     // when
-    underTest.flush(variableBatch, mockRequest);
+    underTest.flush(index, variableBatch, mockRequest);
 
     // then
     assertThat(variableBatch.getVariables()).hasSize(2);
     verify(mockRequest, times(2))
         .upsertWithRouting(
-            eq(indexName),
+            eq(index),
             idCaptor.capture(),
             entityCaptor.capture(),
             updateFieldsCaptor.capture(),

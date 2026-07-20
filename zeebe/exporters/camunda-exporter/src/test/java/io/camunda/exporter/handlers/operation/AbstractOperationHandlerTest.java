@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
@@ -108,6 +109,7 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
             .setLockOwner(null)
             .setCompletedDate(OffsetDateTime.now());
 
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(OperationTemplate.STATE, entity.getState());
@@ -117,10 +119,10 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
         OperationTemplate.LOCK_EXPIRATION_TIME, entity.getLockExpirationTime());
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
-    verify(mockRequest).update(indexName, entity.getId(), expectedUpdateFields);
+    verify(mockRequest).update(index, entity.getId(), expectedUpdateFields);
   }
 
   protected Record<R> generateRecord(final Intent intent) {

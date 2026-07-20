@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.usage.UsageMetricExportedHandler.UsageMetricsBatch;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
@@ -94,13 +95,14 @@ class UsageMetricExportedHandlerTest
     final var existingMetrics = composeUsageMetrics(now, 11L, 22L);
     final var usageMetricsBatch = new UsageMetricsBatch(EVENT_KEY);
     existingMetrics.forEach(usageMetricsBatch::addMetric);
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(usageMetricsBatch, mockRequest);
+    underTest.flush(index, usageMetricsBatch, mockRequest);
 
     // then
-    usageMetricsBatch.getMetrics().forEach(entity -> verify(mockRequest).add(INDEX_NAME, entity));
+    usageMetricsBatch.getMetrics().forEach(entity -> verify(mockRequest).add(index, entity));
     verifyNoMoreInteractions(mockRequest);
   }
 

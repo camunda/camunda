@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -178,6 +179,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setTreePath("444/356/111")
             .setLevel(1)
             .setPosition(333L);
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new HashMap<>();
@@ -199,10 +201,10 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.POSITION, inputEntity.getPosition());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test
@@ -219,6 +221,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setFlowNodeName(null)
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId");
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new HashMap<>();
@@ -235,10 +238,10 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
         FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
     // then
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test

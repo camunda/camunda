@@ -15,6 +15,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
@@ -246,15 +247,16 @@ class BatchOperationCreatedHandlerTest {
             .setType(OperationType.RESOLVE_INCIDENT)
             .setActorType(AuditLogActorType.USER)
             .setActorId("username");
+    final TargetIndex index = mock(TargetIndex.class);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsert(
-            eq(indexName),
+            eq(index),
             eq("123"),
             eq(entity),
             eq(

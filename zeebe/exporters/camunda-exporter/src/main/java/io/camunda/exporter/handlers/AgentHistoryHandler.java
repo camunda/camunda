@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.AgentHistoryTemplate.COMMIT_STATUS;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.agenthistory.AgentHistoryCommitStatus;
@@ -123,11 +124,12 @@ public class AgentHistoryHandler
   }
 
   @Override
-  public void flush(final AgentHistoryEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final AgentHistoryEntity entity, final BatchRequest batchRequest) {
     // Only commitStatus changes after CREATED. Pass it as the sole update-fields entry so
     // partial updates on COMMITTED/DISCARDED never overwrite other fields in the document.
     batchRequest.upsert(
-        indexName, entity.getId(), entity, Map.of(COMMIT_STATUS, entity.getCommitStatus()));
+        index, entity.getId(), entity, Map.of(COMMIT_STATUS, entity.getCommitStatus()));
   }
 
   @Override

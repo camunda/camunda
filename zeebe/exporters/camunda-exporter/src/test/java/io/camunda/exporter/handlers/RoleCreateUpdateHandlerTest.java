@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
@@ -107,13 +108,14 @@ public class RoleCreateUpdateHandlerTest {
   @Test
   void shouldAddEntityOnFlush() throws PersistenceException {
     // given
+    final TargetIndex index = mock(TargetIndex.class);
     final RoleEntity inputEntity = new RoleEntity().setId("111");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index, inputEntity);
   }
 }

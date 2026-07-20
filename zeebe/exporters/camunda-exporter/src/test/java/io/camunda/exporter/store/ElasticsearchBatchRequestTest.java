@@ -31,6 +31,7 @@ import co.elastic.clients.util.BinaryData;
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import java.io.IOException;
 import java.util.List;
@@ -48,7 +49,10 @@ class ElasticsearchBatchRequestTest {
 
   private static final String ID = "id";
   private static final String INDEX = "index";
+  private static final TargetIndex TARGET_INDEX = TargetIndex.mainIndex(INDEX);
   private static final String INDEX_WITH_HANDLER = "indexWithHandler";
+  private static final TargetIndex TARGET_INDEX_WITH_HANDLER =
+      TargetIndex.mainIndex(INDEX_WITH_HANDLER);
   private ElasticsearchBatchRequest batchRequest;
   private ElasticsearchClient elasticsearchClient;
   private ElasticsearchScriptBuilder scriptBuilder;
@@ -74,7 +78,7 @@ class ElasticsearchBatchRequestTest {
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     // When
-    batchRequest.add(INDEX, entity);
+    batchRequest.add(TARGET_INDEX, entity);
     batchRequest.execute();
 
     // Then
@@ -100,7 +104,7 @@ class ElasticsearchBatchRequestTest {
     final String routing = "routing";
 
     // When
-    batchRequest.addWithRouting(INDEX, entity, routing);
+    batchRequest.addWithRouting(TARGET_INDEX, entity, routing);
 
     batchRequest.execute();
 
@@ -129,7 +133,7 @@ class ElasticsearchBatchRequestTest {
     final Map<String, Object> updateFields = Map.of("id", "id2");
 
     // When
-    batchRequest.upsert(INDEX, ID, entity, updateFields);
+    batchRequest.upsert(TARGET_INDEX, ID, entity, updateFields);
     batchRequest.execute();
 
     // Then
@@ -157,7 +161,7 @@ class ElasticsearchBatchRequestTest {
     final String routing = "routing";
 
     // When
-    batchRequest.upsertWithRouting(INDEX, ID, entity, updateFields, routing);
+    batchRequest.upsertWithRouting(TARGET_INDEX, ID, entity, updateFields, routing);
     batchRequest.execute();
 
     // Then
@@ -189,7 +193,7 @@ class ElasticsearchBatchRequestTest {
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
     // When
-    batchRequest.upsertWithScript(INDEX, ID, entity, script, params);
+    batchRequest.upsertWithScript(TARGET_INDEX, ID, entity, script, params);
     batchRequest.execute();
 
     // Then
@@ -221,7 +225,7 @@ class ElasticsearchBatchRequestTest {
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
     // When
-    batchRequest.upsertWithScriptAndRouting(INDEX, ID, entity, script, params, routing);
+    batchRequest.upsertWithScriptAndRouting(TARGET_INDEX, ID, entity, script, params, routing);
     batchRequest.execute();
 
     // Then
@@ -247,7 +251,7 @@ class ElasticsearchBatchRequestTest {
     final Map<String, Object> updateFields = Map.of("id", "id2");
 
     // When
-    batchRequest.update(INDEX, ID, updateFields);
+    batchRequest.update(TARGET_INDEX, ID, updateFields);
     batchRequest.execute();
 
     // Then
@@ -273,7 +277,7 @@ class ElasticsearchBatchRequestTest {
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     // When
-    batchRequest.update(INDEX, ID, entity);
+    batchRequest.update(TARGET_INDEX, ID, entity);
     batchRequest.execute();
 
     // Then
@@ -303,7 +307,7 @@ class ElasticsearchBatchRequestTest {
     when(scriptBuilder.getScriptWithParameters(script, params)).thenReturn(scriptWithParameters);
 
     // When
-    batchRequest.updateWithScript(INDEX, ID, script, params);
+    batchRequest.updateWithScript(TARGET_INDEX, ID, script, params);
     batchRequest.execute();
 
     // Then
@@ -326,7 +330,7 @@ class ElasticsearchBatchRequestTest {
   @Test
   void shouldDeleteEntity() throws IOException, PersistenceException {
     // When
-    batchRequest.delete(INDEX, ID);
+    batchRequest.delete(TARGET_INDEX, ID);
     batchRequest.execute();
 
     // Then
@@ -351,7 +355,7 @@ class ElasticsearchBatchRequestTest {
     final String routing = "routing";
 
     // when
-    batchRequest.deleteWithRouting(INDEX, ID, routing);
+    batchRequest.deleteWithRouting(TARGET_INDEX, ID, routing);
     batchRequest.execute();
 
     // then
@@ -376,8 +380,8 @@ class ElasticsearchBatchRequestTest {
     // Given
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
     // When
-    batchRequest.add(INDEX, entity);
-    batchRequest.update(INDEX, ID, entity);
+    batchRequest.add(TARGET_INDEX, entity);
+    batchRequest.update(TARGET_INDEX, ID, entity);
     batchRequest.execute();
 
     // Then
@@ -398,9 +402,9 @@ class ElasticsearchBatchRequestTest {
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     // when
-    tinyCapRequest.add(INDEX, entity);
-    tinyCapRequest.add(INDEX, entity);
-    tinyCapRequest.add(INDEX, entity);
+    tinyCapRequest.add(TARGET_INDEX, entity);
+    tinyCapRequest.add(TARGET_INDEX, entity);
+    tinyCapRequest.add(TARGET_INDEX, entity);
     tinyCapRequest.execute();
 
     // then - three separate bulk calls, one operation each
@@ -415,7 +419,7 @@ class ElasticsearchBatchRequestTest {
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     // When
-    batchRequest.add(INDEX, entity);
+    batchRequest.add(TARGET_INDEX, entity);
     batchRequest.executeWithRefresh();
 
     // Then
@@ -433,7 +437,7 @@ class ElasticsearchBatchRequestTest {
     final TestExporterEntity entity = new TestExporterEntity().setId(ID);
 
     // When
-    batchRequest.add(INDEX, entity);
+    batchRequest.add(TARGET_INDEX, entity);
     when(elasticsearchClient.bulk(any(BulkRequest.class))).thenThrow(throwable);
 
     // When
@@ -458,7 +462,7 @@ class ElasticsearchBatchRequestTest {
     when(elasticsearchClient.bulk(any(BulkRequest.class))).thenReturn(bulkResponse);
 
     // When
-    batchRequest.add(INDEX, entity);
+    batchRequest.add(TARGET_INDEX, entity);
     final ThrowingCallable callable = () -> batchRequest.execute();
 
     // Then
@@ -494,7 +498,7 @@ class ElasticsearchBatchRequestTest {
             item.operationType(), item.index(), item.id(), item.error().reason());
 
     // When
-    batchRequest.add(INDEX_WITH_HANDLER, entity);
+    batchRequest.add(TARGET_INDEX_WITH_HANDLER, entity);
     batchRequest.execute(errorHandler);
 
     // Then

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -107,15 +108,16 @@ class BatchOperationInitializedHandlerTest {
             .setId("123")
             .setState(BatchOperationState.ACTIVE)
             .setStartDate(startDate);
+    final var index = mock(TargetIndex.class);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsertWithScript(
-            eq(indexName),
+            eq(index),
             eq(entity.getId()),
             eq(entity),
             eq(BatchOperationInitializedHandler.CONDITIONAL_UPDATE_SCRIPT),

@@ -11,6 +11,7 @@ import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSI
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -187,6 +188,7 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
             .setActivityId("A")
             .setActivityType(FlowNodeType.CALL_ACTIVITY)
             .setActivityState(FlowNodeState.ACTIVE);
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -196,12 +198,12 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.ACTIVITY_STATE, FlowNodeState.ACTIVE);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             inputEntity.getId(),
             inputEntity,
             expectedUpdateFields,

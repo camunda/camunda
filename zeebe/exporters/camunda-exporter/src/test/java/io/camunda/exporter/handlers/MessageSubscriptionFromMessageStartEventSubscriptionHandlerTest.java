@@ -11,9 +11,11 @@ import static io.camunda.webapps.schema.descriptors.template.MessageSubscription
 import static io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.EventSourceType;
@@ -48,7 +50,7 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
 
   @SuppressWarnings("unchecked")
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache =
-      Mockito.mock(ExporterEntityCache.class);
+      mock(ExporterEntityCache.class);
 
   private final MessageSubscriptionFromMessageStartEventSubscriptionHandler underTest =
       new MessageSubscriptionFromMessageStartEventSubscriptionHandler(
@@ -346,13 +348,14 @@ final class MessageSubscriptionFromMessageStartEventSubscriptionHandlerTest {
     expectedUpdateFields.put("inboundConnectorType", null);
     expectedUpdateFields.put("toolProperties", null);
     expectedUpdateFields.put("metadata", metadataMap);
-    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+    final TargetIndex index = mock(TargetIndex.class);
+    final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(expectedIndexName, id, inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, id, inputEntity, expectedUpdateFields);
   }
 
   private Record<MessageStartEventSubscriptionRecordValue> generateRecord(final Intent intent) {
