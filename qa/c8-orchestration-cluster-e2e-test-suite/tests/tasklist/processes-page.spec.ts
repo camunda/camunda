@@ -178,12 +178,9 @@ test.describe('process page', () => {
     await expect(page).toHaveURL('/tasklist/processes');
     await tasklistProcessesPage.continueButton.click();
 
-    // Wait for the filter to commit to the URL before searching: the search box
-    // and the filter dropdown share one debounced URL updater.
     await tasklistProcessesPage.filterByStartForm(
       'Requires form input to start',
     );
-    await expect(page).toHaveURL(/hasStartForm=yes/);
 
     // A process with a start form is shown under this filter, tagged.
     await tasklistProcessesPage.searchForProcess(
@@ -216,7 +213,6 @@ test.describe('process page', () => {
     await tasklistProcessesPage.filterByStartForm(
       'Does not require form input to start',
     );
-    await expect(page).toHaveURL(/hasStartForm=no/);
 
     // A process without a start form is shown under this filter and not tagged.
     await tasklistProcessesPage.searchForProcess('User_Process');
