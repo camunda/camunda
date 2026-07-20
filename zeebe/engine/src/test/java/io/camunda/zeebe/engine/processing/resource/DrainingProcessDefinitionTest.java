@@ -17,9 +17,11 @@ import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -45,6 +47,8 @@ import org.junit.Test;
  * state.
  */
 public class DrainingProcessDefinitionTest {
+
+  private static final String JOB_TYPE = "task";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -446,6 +450,155 @@ public class DrainingProcessDefinitionTest {
             ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
                 processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
     assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldReportDrainedWhenLastDrainingInstanceCompletes() {
+    // given - a draining definition with a single active instance
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(processInstanceKey);
+    drain(metadata);
+
+    // when - the last active instance completes
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - this partition reports it has finished draining the definition. The physical delete is
+    // coordinated by ProcessDrainedProcessor only once every partition has drained (which needs the
+    // aggregation set seeded at delete time, out of this change's scope), so nothing is deleted
+    // here.
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withRecordType(RecordType.COMMAND)
+                .withIntent(ProcessIntent.DELETE_COMPLETE)
+                .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+                .exists())
+        .describedAs("this partition reports drained once its last instance completes")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldReportDrainedWhenLastDrainingInstanceTerminates() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(processInstanceKey);
+    drain(metadata);
+
+    // when - the last active instance is terminated
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withRecordType(RecordType.COMMAND)
+                .withIntent(ProcessIntent.DELETE_COMPLETE)
+                .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+                .exists())
+        .describedAs("this partition reports drained once its last instance terminates")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldKeepDrainingWhileOtherInstancesStillRunning() {
+    // given - a draining definition with two active instances
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long firstInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final long secondInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(firstInstanceKey);
+    awaitJobCreated(secondInstanceKey);
+    drain(metadata);
+
+    // when - only the first instance completes
+    engine.job().ofInstance(firstInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - the definition is still draining, not yet reported drained (a new instance is still
+    // rejected, which proves it has not been reported drained)
+    engine.processInstance().ofBpmnProcessId(processId).expectRejection().create();
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+
+    // when - the last instance completes
+    engine.job().ofInstance(secondInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - this partition reports drained only after the last instance completes
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withRecordType(RecordType.COMMAND)
+                .withIntent(ProcessIntent.DELETE_COMPLETE)
+                .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+                .exists())
+        .describedAs("this partition reports drained only after the last instance completes")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldReportDrainedWhenLastDrainingCallActivityChildCompletes() {
+    // given - a draining child definition kept alive by a running call-activity child instance
+    final var childId = helper.getBpmnProcessId() + "-child";
+    final var parentId = helper.getBpmnProcessId() + "-parent";
+    final var child = deployWithJob(childId);
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parentId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(childId))
+                .endEvent()
+                .done())
+        .deploy();
+    engine.processInstance().ofBpmnProcessId(parentId).create();
+    final long childInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withBpmnProcessId(childId)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+    awaitJobCreated(childInstanceKey);
+    drain(child);
+
+    // when - the child instance completes
+    engine.job().ofInstance(childInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - the draining child definition is reported drained (finalize fires for child processes
+    // too)
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withRecordType(RecordType.COMMAND)
+                .withIntent(ProcessIntent.DELETE_COMPLETE)
+                .withProcessDefinitionKey(child.getProcessDefinitionKey())
+                .exists())
+        .describedAs(
+            "draining child definition is reported drained when its call-activity instance"
+                + " completes")
+        .isTrue();
+  }
+
+  private void awaitJobCreated(final long processInstanceKey) {
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(JOB_TYPE)
+        .await();
+  }
+
+  private ProcessMetadataValue deployWithJob(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0);
   }
 
   private ProcessMetadataValue deploy(final String processId) {
