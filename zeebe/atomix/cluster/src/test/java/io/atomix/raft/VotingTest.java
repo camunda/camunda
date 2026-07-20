@@ -21,6 +21,7 @@ import io.atomix.raft.protocol.PollResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
+import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.roles.LeaderRole;
@@ -35,27 +36,30 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-@Nested
 final class VotingTest {
   private final SingleThreadContext context = new SingleThreadContext("raft-%d");
   private final TestRaftProtocolFactory protocolFactory = new TestRaftProtocolFactory();
   private final List<RaftServer> servers = new LinkedList<>();
+  private final Map<MemberId, TestRaftServerProtocol> protocols = new HashMap<>();
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @AfterEach
@@ -125,6 +129,67 @@ final class VotingTest {
       names = {"PASSIVE", "PROMOTABLE"})
   void nonVotingMemberGrantsPollAndVote(final Type type, @TempDir final Path tmp) {
     // given - a cluster [1A, 2A, 3A] reconfigured so that member 3 is no longer ACTIVE
+    final var id3 = MemberId.from("3");
+    final var m3 = bootstrapWithDemotedMember3(type, tmp).get(2);
+
+    // when - a candidate outside the configuration requests a poll and a vote in a new term
+    final var candidateId = MemberId.from("99");
+    final var candidate = protocolFactory.newServerProtocol(candidateId);
+    final var term = m3.getContext().getTerm() + 1;
+
+    // then - member 3 answers instead of rejecting with ILLEGAL_MEMBER_STATE
+    assertPoll(candidate.poll(id3, pollRequest(candidateId, term)), true);
+    assertVote(candidate.vote(id3, voteRequest(candidateId, term)), true);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Type.class,
+      names = {"PASSIVE", "PROMOTABLE"})
+  void nonVotingMemberIsNotAskedForPollsAndVotes(final Type type, @TempDir final Path tmp) {
+    // given - a cluster [1A, 2A, 3A] reconfigured so that member 3 is no longer ACTIVE
+    final var id1 = MemberId.from("1");
+    final var id2 = MemberId.from("2");
+    final var id3 = MemberId.from("3");
+    final var demoted = bootstrapWithDemotedMember3(type, tmp);
+    final var activeMembers = List.of(demoted.get(0), demoted.get(1));
+
+    // record the receivers of all poll and vote requests sent by the two active members
+    final Set<MemberId> pollReceivers = ConcurrentHashMap.newKeySet();
+    final Set<MemberId> voteReceivers = ConcurrentHashMap.newKeySet();
+    for (final var sender : List.of(id1, id2)) {
+      final var protocol = protocols.get(sender);
+      protocol.interceptRequest(
+          PollRequest.class, (receiver, request) -> pollReceivers.add(receiver));
+      protocol.interceptRequest(
+          VoteRequest.class, (receiver, request) -> voteReceivers.add(receiver));
+    }
+
+    // when - the leader steps down and a new leader is elected
+    final var leader = getLeaderServer(activeMembers).orElseThrow();
+    final var termBefore = leader.getContext().getTerm();
+    leader.stepDown().join();
+    Awaitility.await("A new leader is elected")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                getLeaderServer(activeMembers)
+                    .map(server -> server.getContext().getTerm() > termBefore)
+                    .orElse(false));
+
+    // then - member 3 was not asked for polls or votes because it is not active in the
+    // configuration
+    assertThat(pollReceivers).isNotEmpty().doesNotContain(id3);
+    assertThat(voteReceivers).isNotEmpty().doesNotContain(id3);
+  }
+
+  /**
+   * Bootstraps a cluster of three initially active members and reconfigures it so that member 3 has
+   * the given non-active type.
+   *
+   * @return the three servers, in order of their member ids
+   */
+  private List<RaftServer> bootstrapWithDemotedMember3(final Type type, final Path tmp) {
     final var id1 = MemberId.from("1");
     final var id2 = MemberId.from("2");
     final var id3 = MemberId.from("3");
@@ -171,14 +236,7 @@ final class VotingTest {
     Awaitility.await("Member 3 is " + type)
         .until(() -> m3.getContext().getRaftRole().role() == expectedRole);
 
-    // when - a candidate outside the configuration requests a poll and a vote in a new term
-    final var candidateId = MemberId.from("99");
-    final var candidate = protocolFactory.newServerProtocol(candidateId);
-    final var term = m3.getContext().getTerm() + 1;
-
-    // then - member 3 answers instead of rejecting with ILLEGAL_MEMBER_STATE
-    assertPoll(candidate.poll(id3, pollRequest(candidateId, term)), true);
-    assertVote(candidate.vote(id3, voteRequest(candidateId, term)), true);
+    return List.of(m1, m2, m3);
   }
 
   @Test
@@ -294,6 +352,7 @@ final class VotingTest {
       final Path dir, final ClusterMembershipService membershipService) {
     final var memberId = membershipService.getLocalMember().id();
     final var protocol = protocolFactory.newServerProtocol(memberId);
+    protocols.put(memberId, protocol);
     final var storage =
         RaftStorage.builder(meterRegistry)
             .withDirectory(dir.resolve(memberId.toString()).toFile())
