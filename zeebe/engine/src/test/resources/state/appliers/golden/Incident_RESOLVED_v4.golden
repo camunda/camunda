@@ -83,7 +83,8 @@ final class IncidentResolvedV4Applier implements TypedEventApplier<IncidentInten
   private void resetElementId(final JobRecord job, final String incidentRecordElementId) {
     if (JobThrowErrorProcessor.NO_CATCH_EVENT_FOUND.equals(job.getElementId())) {
 
-      // change the job object here, it will be persisted with the jobState.resolve call
+      // change the job object here, it will be persisted via the jobState.updateJobRecord call in
+      // applyState
       if (JobThrowErrorProcessor.NO_CATCH_EVENT_FOUND.equals(incidentRecordElementId)) {
         final var elementInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
         if (elementInstance != null) {
