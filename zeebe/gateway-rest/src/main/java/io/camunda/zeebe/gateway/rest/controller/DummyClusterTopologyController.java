@@ -20,4 +20,12 @@ public class DummyClusterTopologyController {
     // Placeholder response; the aggregated cluster topology is implemented in a follow-up.
     return ResponseEntity.ok().build();
   }
+
+  @CamundaGetMapping(path = "/status")
+  public ResponseEntity<Void> getClusterStatus() {
+    // Public, unauthenticated cluster-level equivalent of /v2/status. Mirrors StatusController's
+    // contract (204 healthy / 503 unhealthy), body-less. Real health wiring is a follow-up; the
+    // response must stay body-less so it never leaks topology/membership to anonymous callers.
+    return ResponseEntity.noContent().build();
+  }
 }

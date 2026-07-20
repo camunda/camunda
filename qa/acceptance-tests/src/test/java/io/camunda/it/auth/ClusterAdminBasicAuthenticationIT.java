@@ -36,6 +36,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class ClusterAdminBasicAuthenticationIT {
 
   public static final String PATH_CLUSTER_TOPOLOGY = "cluster/v2/topology";
+  public static final String PATH_CLUSTER_STATUS = "cluster/v2/status";
   public static final String PATH_V2_AUTHENTICATION_ME = "v2/authentication/me";
 
   private static final String CLUSTER_ADMIN_USER = "cluster-operator";
@@ -107,6 +108,17 @@ public class ClusterAdminBasicAuthenticationIT {
 
     // then — the cluster-admin chain has its own isolated store; a DB user is not known to it
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  @Test
+  void shouldAllowPublicStatusEndpointWithoutCredentials() throws Exception {
+    // when — the public cluster status endpoint is hit with no credentials
+    final HttpResponse<String> response = send(clusterUri(PATH_CLUSTER_STATUS), null);
+
+    // then — permitAll: reachable unauthenticated, healthy 204 with no body (the cluster
+    // equivalent of /v2/status), so no topology/membership detail is exposed to anonymous callers
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_NO_CONTENT);
+    assertThat(response.body()).isEmpty();
   }
 
   @Test

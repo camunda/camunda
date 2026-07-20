@@ -95,6 +95,32 @@ public class ClusterAdminBasicAuthWebSecurityConfigTest extends AbstractWebSecur
   }
 
   @Test
+  public void shouldAllowPublicStatusEndpointWithoutCredentials() {
+    // when — the carved-out public status endpoint is hit with no credentials
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
+            .exchange();
+
+    // then — permitAll lets it through (dummy returns 200; the real endpoint returns 204)
+    assertThat(result).hasStatus2xxSuccessful();
+  }
+
+  @Test
+  public void shouldRequireCredentialsForSiblingOfPublicStatusEndpoint() {
+    // when — a sibling of the public path (trailing slash) is hit with no credentials
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT + "/")
+            .exchange();
+
+    // then — only the exact path is public; everything else under /cluster/v2/** stays protected
+    assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
   public void shouldReturn404ForUnknownClusterAdminPathWithValidCredentials() {
     // when
     final MvcTestResult result =

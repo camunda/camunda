@@ -68,7 +68,9 @@ public class ClusterAdminOidcSecurityConfiguration {
     http.securityMatcher(CLUSTER_ADMIN_API_PATTERN)
         .authorizeHttpRequests(
             auth ->
-                auth.anyRequest()
+                auth.requestMatchers(ClusterAdminSecurityConfiguration.CLUSTER_ADMIN_STATUS_PATH)
+                    .permitAll()
+                    .anyRequest()
                     .hasAuthority(ClusterAdminSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY))
         .oauth2ResourceServer(
             oauth2 ->

@@ -78,4 +78,30 @@ public class ClusterAdminOidcChainIsolationTest extends AbstractWebSecurityConfi
         .as("a webapp session cookie must not authenticate the OIDC cluster-admin API")
         .hasStatus(HttpStatus.UNAUTHORIZED);
   }
+
+  @Test
+  public void shouldAllowPublicStatusEndpointWithoutToken() {
+    // when — the carved-out public status endpoint is hit with no bearer token
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
+            .exchange();
+
+    // then — permitAll lets it through (dummy returns 200; the real endpoint returns 204)
+    assertThat(result).hasStatus2xxSuccessful();
+  }
+
+  @Test
+  public void shouldRequireTokenForSiblingOfPublicStatusEndpoint() {
+    // when — a sibling of the public path (trailing slash) is hit with no bearer token
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT + "/")
+            .exchange();
+
+    // then — only the exact path is public; everything else under /cluster/v2/** stays protected
+    assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
+  }
 }

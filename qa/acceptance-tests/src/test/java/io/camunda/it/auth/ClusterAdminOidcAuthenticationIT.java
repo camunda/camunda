@@ -43,6 +43,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ClusterAdminOidcAuthenticationIT {
 
   private static final String PATH_CLUSTER_TOPOLOGY = "cluster/v2/topology";
+  private static final String PATH_CLUSTER_STATUS = "cluster/v2/status";
   private static final String REALM = "camunda";
 
   // The provider claims the cluster-admin matcher reads from the token. "azp" is set by Keycloak to
@@ -146,6 +147,17 @@ public class ClusterAdminOidcAuthenticationIT {
     assertThat(response.headers().firstValue("content-type").orElse(""))
         .contains("application/problem+json");
     assertThat(response.body()).contains("\"status\":403");
+  }
+
+  @Test
+  void shouldAllowPublicStatusEndpointWithoutToken() throws Exception {
+    // when — the public cluster status endpoint is hit with no bearer token
+    final HttpResponse<String> response = get(statusUri(), null);
+
+    // then — permitAll: reachable unauthenticated, healthy 204 with no body (the cluster
+    // equivalent of /v2/status), so no topology/membership detail is exposed to anonymous callers
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_NO_CONTENT);
+    assertThat(response.body()).isEmpty();
   }
 
   @Test
@@ -253,5 +265,9 @@ public class ClusterAdminOidcAuthenticationIT {
   // is that root (no physical-tenant prefix), so no stripping is needed here.
   private static URI clusterUri() {
     return BROKER.restAddress().resolve(PATH_CLUSTER_TOPOLOGY);
+  }
+
+  private static URI statusUri() {
+    return BROKER.restAddress().resolve(PATH_CLUSTER_STATUS);
   }
 }
