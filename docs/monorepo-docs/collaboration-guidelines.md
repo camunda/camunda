@@ -32,7 +32,7 @@ Guidelines for collaborating on CI/CD, build automation, release processes, and 
 * Performance-sensitive changes
 * Cross-team dependency workflows
 
-✋ **When in Doubt: Ask early in #ask-monorepo-devops. The Engineering Operations team is here to help! A 5-minute chat can save hours.**
+✋ **When in Doubt: Ask early in #ask-eng-ops. The Engineering Operations team is here to help! A 5-minute chat can save hours.**
 
 ## Heads-Up Pattern (Start Here) 📣
 
@@ -101,7 +101,7 @@ When any of those become true → reach out to the Engineering Operations team f
 
 ### Support Contacts
 
-* Slack: [#ask-monorepo-devops](https://camunda.slack.com/archives/C08NZ7E9ZT2) (Engineering Operations team)
+* Slack: [#ask-eng-ops](https://camunda.slack.com/archives/C08NZ7E9ZT2) (Engineering Operations team)
 * Escalation: Engineering manager – see [Engineering Operations Team page](https://confluence.camunda.com/spaces/HAN/pages/277021448/Monorepo+DevOps+Team) for current EM/DRI details.
 
 ### Key Documentation

@@ -109,7 +109,7 @@ jobs:
           labeled: component/feel-js
 
       # Engineering Operations (#115)
-      - id: add-to-devops
+      - id: add-to-engops
         if: >
           github.event.action != 'labeled'
             || github.event.label.name == 'component/build-pipeline'
