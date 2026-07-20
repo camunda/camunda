@@ -156,13 +156,13 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     if (error instanceof final ProcessInstanceMigrationPreconditionFailedException e) {
       rejectionWriter.appendRejection(command, e.getRejectionType(), e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, e.getRejectionType(), e.getMessage());
+      responseWriter.writeRejectedResponseOnCommand(command, e.getRejectionType(), e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final SafetyCheckFailedException e) {
       LOG.error(e.getMessage(), e);
       rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, e.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.PROCESSING_ERROR, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }

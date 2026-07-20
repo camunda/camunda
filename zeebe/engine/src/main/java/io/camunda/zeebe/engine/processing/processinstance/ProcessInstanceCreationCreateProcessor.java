@@ -71,7 +71,7 @@ public final class ProcessInstanceCreationCreateProcessor
       // This exception is only thrown for ProcessInstanceCreationRecord with start instructions
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }
@@ -84,7 +84,7 @@ public final class ProcessInstanceCreationCreateProcessor
       final String reason) {
     rejectionWriter.appendRejection(command, type, reason);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeRejectionOnCommand(command, type, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, type, reason);
     }
   }
 

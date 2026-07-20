@@ -73,7 +73,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
             ignored -> completeJob(record),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.getLeft(), rejection.getRight());
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   record, rejection.getLeft(), rejection.getRight());
             });
   }
@@ -84,7 +84,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     if (job == null) {
       final String errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 

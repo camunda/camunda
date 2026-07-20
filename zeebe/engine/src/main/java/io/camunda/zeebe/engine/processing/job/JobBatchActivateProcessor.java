@@ -134,7 +134,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     }
 
     rejectionWriter.appendRejection(record, rejectionType, rejectionReason);
-    responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
+    responseWriter.writeRejectedResponseOnCommand(record, rejectionType, rejectionReason);
   }
 
   private void activateJobBatch(

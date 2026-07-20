@@ -81,7 +81,7 @@ public class DecisionEvaluationEvaluteProcessor
             },
             failure -> {
               final String reason = failure.getMessage();
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   command, RejectionType.INVALID_ARGUMENT, reason);
               rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
             });

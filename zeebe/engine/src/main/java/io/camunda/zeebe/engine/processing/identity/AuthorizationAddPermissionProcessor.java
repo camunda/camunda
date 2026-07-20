@@ -77,7 +77,7 @@ public final class AuthorizationAddPermissionProcessor
       final TypedRecord<AuthorizationRecord> command, final Throwable error) {
     if (error instanceof final OwnerNotFoundException exception) {
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }

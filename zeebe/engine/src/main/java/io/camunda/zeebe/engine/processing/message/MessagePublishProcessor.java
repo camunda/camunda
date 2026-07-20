@@ -94,7 +94,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
 
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
       handleNewMessage(command);

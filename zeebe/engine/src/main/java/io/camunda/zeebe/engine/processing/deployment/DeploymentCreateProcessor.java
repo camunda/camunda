@@ -151,13 +151,13 @@ public final class DeploymentCreateProcessor
     if (error instanceof final ResourceTransformationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     } else if (error instanceof final TimerCreationFailedException exception) {
       rejectionWriter.appendRejection(
           command, RejectionType.PROCESSING_ERROR, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.PROCESSING_ERROR, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }

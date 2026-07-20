@@ -66,7 +66,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
               }
             },
             errorMessage -> {
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   command, RejectionType.NOT_FOUND, errorMessage);
             });
   }
@@ -86,6 +86,6 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
   private void handleRejection(final List<String> errors, final TypedRecord<JobRecord> command) {
     final String errorMessage = String.join(", ", errors);
     rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_ARGUMENT, errorMessage);
   }
 }

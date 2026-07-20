@@ -51,7 +51,7 @@ public final class VariableDocumentUpdateProcessor
     if (scope == null || scope.isTerminating() || scope.isInFinalState()) {
       final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
       writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      writers.response().writeRejectedResponseOnCommand(record, RejectionType.NOT_FOUND, reason);
       return;
     }
 
@@ -59,7 +59,7 @@ public final class VariableDocumentUpdateProcessor
         .isAuthorized(scope.getValue().getTenantId())) {
       final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
       writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      writers.response().writeRejectedResponseOnCommand(record, RejectionType.NOT_FOUND, reason);
       return;
     }
 
@@ -91,7 +91,7 @@ public final class VariableDocumentUpdateProcessor
               "Expected document to be valid msgpack, but it could not be read: '%s'",
               e.getMessage());
       writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
+      writers.response().writeRejectedResponseOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 

@@ -46,7 +46,7 @@ public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserT
             persistedRecord -> updateUserTask(command, persistedRecord),
             violation -> {
               rejectionWriter.appendRejection(command, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   command, violation.getLeft(), violation.getRight());
             });
   }

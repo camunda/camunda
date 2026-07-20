@@ -45,7 +45,7 @@ public final class UserTaskAssignProcessor implements TypedRecordProcessor<UserT
             persistedRecord -> assignUserTask(command, persistedRecord),
             violation -> {
               rejectionWriter.appendRejection(command, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   command, violation.getLeft(), violation.getRight());
             });
   }

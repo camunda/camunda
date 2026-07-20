@@ -56,7 +56,7 @@ public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskReco
             persistedRecord -> claimUserTask(command, persistedRecord),
             violation -> {
               rejectionWriter.appendRejection(command, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   command, violation.getLeft(), violation.getRight());
             });
   }

@@ -55,7 +55,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
           RejectionType.ALREADY_EXISTS,
           "Expected to create user with username %s, but a user with this username already exists"
               .formatted(user.getUsername()));
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command,
           RejectionType.ALREADY_EXISTS,
           "Expected to create user with username %s, but a user with this username already exists"

@@ -57,7 +57,7 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
           "Expected pin time to be not negative but it was %d".formatted(clockRecord.getTime());
 
       rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, rejectionMessage);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_ARGUMENT, rejectionMessage);
       return;
     }

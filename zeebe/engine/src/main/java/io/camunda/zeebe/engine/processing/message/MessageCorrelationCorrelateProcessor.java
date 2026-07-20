@@ -122,7 +122,7 @@ public final class MessageCorrelationCorrelateProcessor
                 command.getValue().getName(), command.getValue().getCorrelationKey());
       }
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
     } else {
       correlatingSubscriptions
           .getFirstMessageStartEventSubscription()

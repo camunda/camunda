@@ -187,7 +187,7 @@ public final class ProcessInstanceModificationModifyProcessor
 
     if (processInstance == null) {
       final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
     }
@@ -195,7 +195,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
         .isAuthorized(processInstance.getValue().getTenantId())) {
       final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
     }
@@ -208,7 +208,7 @@ public final class ProcessInstanceModificationModifyProcessor
     final var validationResult = validateCommand(command, process);
     if (validationResult.isLeft()) {
       final var rejection = validationResult.getLeft();
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
@@ -277,7 +277,7 @@ public final class ProcessInstanceModificationModifyProcessor
     if (error instanceof final EventSubscriptionException exception) {
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
@@ -287,7 +287,7 @@ public final class ProcessInstanceModificationModifyProcessor
               exception.getBpmnProcessId(), exception.getFlowScopeId());
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, rejectionReason);
       return ProcessingError.EXPECTED_ERROR;
 
@@ -295,13 +295,13 @@ public final class ProcessInstanceModificationModifyProcessor
       final var message =
           ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey());
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
-      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectedResponseOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final TerminatedChildProcessException exception) {
       rejectionWriter.appendRejection(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
@@ -310,7 +310,7 @@ public final class ProcessInstanceModificationModifyProcessor
           ERROR_MESSAGE_ATTEMPTED_TO_ACTIVATE_MULTI_INSTANCE.formatted(
               exception.getBpmnProcessId(), exception.getMultiInstanceId());
       rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
-      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectedResponseOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
     }
 

@@ -58,7 +58,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
       final TypedRecord<ResourceRecord> command, final Throwable error) {
     if (error instanceof final NoSuchResourceException exception) {
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }

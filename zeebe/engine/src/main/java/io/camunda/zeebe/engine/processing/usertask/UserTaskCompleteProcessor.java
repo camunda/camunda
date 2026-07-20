@@ -58,7 +58,7 @@ public final class UserTaskCompleteProcessor implements TypedRecordProcessor<Use
             violation -> {
               rejectionWriter.appendRejection(
                   userTaskRecord, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   userTaskRecord, violation.getLeft(), violation.getRight());
             });
   }
