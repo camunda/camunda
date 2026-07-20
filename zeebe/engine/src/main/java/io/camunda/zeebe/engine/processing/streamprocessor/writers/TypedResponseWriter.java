@@ -37,7 +37,7 @@ public interface TypedResponseWriter {
 
   void writeAcceptedResponse(TypedRecord<?> event);
 
-  void writeEventOnCommand(
+  void writeAcceptedResponseOnCommand(
       long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
 
   void writeAcceptedResponse(

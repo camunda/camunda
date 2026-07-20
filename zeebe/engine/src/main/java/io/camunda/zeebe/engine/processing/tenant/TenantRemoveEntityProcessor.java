@@ -99,7 +99,8 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
     final var tenantKey = persistedTenant.get().getTenantKey();
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_REMOVED, record);
-    responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
     invalidateMembershipCache();
 
     distributeCommand(command);

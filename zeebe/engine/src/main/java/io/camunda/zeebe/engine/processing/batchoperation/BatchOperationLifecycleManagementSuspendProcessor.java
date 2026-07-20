@@ -114,7 +114,7 @@ public final class BatchOperationLifecycleManagementSuspendProcessor
     }
 
     suspendBatchOperation(suspendKey, recordValue);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         suspendKey, BatchOperationIntent.SUSPENDED, command.getValue(), command);
     commandDistributionBehavior
         .withKey(suspendKey)

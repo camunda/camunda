@@ -110,7 +110,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     }
 
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();

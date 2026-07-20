@@ -105,7 +105,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     deleteAuthorizations(record);
 
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.DELETED, record);
-    responseWriter.writeEventOnCommand(roleKey, RoleIntent.DELETED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(roleKey, RoleIntent.DELETED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior

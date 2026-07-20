@@ -102,7 +102,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
       completeElementInstance(userTaskRecord);
 
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);
       return;
     }

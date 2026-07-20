@@ -87,7 +87,8 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
 
     stateWriter.appendFollowUpEvent(key, UserIntent.CREATED, command.getValue());
     addUserPermissions(key, username);
-    responseWriter.writeEventOnCommand(key, UserIntent.CREATED, command.getValue(), command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        key, UserIntent.CREATED, command.getValue(), command);
 
     distributionBehavior
         .withKey(key)

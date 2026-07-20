@@ -72,7 +72,8 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
               }
 
               stateWriter.appendFollowUpEvent(jobKey, JobIntent.UPDATED, job);
-              responseWriter.writeEventOnCommand(jobKey, JobIntent.UPDATED, job, command);
+              responseWriter.writeAcceptedResponseOnCommand(
+                  jobKey, JobIntent.UPDATED, job, command);
             },
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

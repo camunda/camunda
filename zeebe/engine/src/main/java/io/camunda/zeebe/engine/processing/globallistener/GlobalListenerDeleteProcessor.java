@@ -69,7 +69,7 @@ public final class GlobalListenerDeleteProcessor
 
     writers
         .response()
-        .writeEventOnCommand(
+        .writeAcceptedResponseOnCommand(
             record.getGlobalListenerKey(), GlobalListenerIntent.DELETED, record, command);
 
     // Note: the configuration key is used as the command key for distribution, ensuring

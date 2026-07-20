@@ -134,7 +134,7 @@ public class ConditionalEvaluationEvaluateProcessor
     final long eventKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(eventKey, ConditionalEvaluationIntent.EVALUATED, record);
 
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         eventKey, ConditionalEvaluationIntent.EVALUATED, record, command);
   }
 

@@ -69,7 +69,7 @@ public final class GlobalListenerUpdateProcessor
 
     writers
         .response()
-        .writeEventOnCommand(
+        .writeAcceptedResponseOnCommand(
             record.getGlobalListenerKey(), GlobalListenerIntent.UPDATED, record, command);
 
     // Note: the configuration key is used as the command key for distribution, ensuring

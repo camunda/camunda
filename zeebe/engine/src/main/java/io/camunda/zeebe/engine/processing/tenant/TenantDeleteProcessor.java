@@ -111,7 +111,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     deleteAuthorizations(record);
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, record);
-    responseWriter.writeEventOnCommand(tenantKey, TenantIntent.DELETED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(tenantKey, TenantIntent.DELETED, record, command);
     invalidateAuthorizationCaches();
 
     distributeCommand(command);

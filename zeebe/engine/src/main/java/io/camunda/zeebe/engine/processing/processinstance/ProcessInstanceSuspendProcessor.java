@@ -66,7 +66,7 @@ public final class ProcessInstanceSuspendProcessor
 
     final ProcessInstanceRecord value = elementInstance.getValue();
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.SUSPENDED, value);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.SUSPENDED, value, command);
   }
 

@@ -227,7 +227,7 @@ public final class AgentInstanceUpdateProcessor
     current.setChangedAttributes(applyPatch(current, commandValue, changed));
 
     stateWriter.appendFollowUpEvent(agentInstanceKey, AgentInstanceIntent.UPDATED, current);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         agentInstanceKey, AgentInstanceIntent.UPDATED, current, command);
   }
 

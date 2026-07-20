@@ -146,7 +146,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
       final HistoryDeletionRecord recordValue, final TypedRecord<HistoryDeletionRecord> command) {
     stateWriter.appendFollowUpEvent(
         recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         recordValue.getResourceKey(), HistoryDeletionIntent.DELETED, recordValue, command);
   }
 }

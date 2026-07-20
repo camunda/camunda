@@ -89,7 +89,7 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
                       .setEntityId(record.getUsername())
                       .setEntityType(EntityType.USER));
               stateWriter.appendFollowUpEvent(key, UserIntent.INITIAL_ADMIN_CREATED, record);
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   key, UserIntent.INITIAL_ADMIN_CREATED, record, command);
             },
             message -> {

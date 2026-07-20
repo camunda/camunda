@@ -137,7 +137,7 @@ public final class ProcessInstanceCreationCreateProcessor
     if (command.hasRequestMetadata()) {
       // set variables back to return them in the response
       record.setVariables(variablesBuffer);
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
     }
 

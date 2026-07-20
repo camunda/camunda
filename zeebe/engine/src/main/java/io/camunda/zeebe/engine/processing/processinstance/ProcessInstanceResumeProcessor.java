@@ -65,7 +65,7 @@ public final class ProcessInstanceResumeProcessor
     // TODO(#57792): append a DRAIN command instead of writing RESUMED directly, once chunked
     // draining of buffered commands is implemented.
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.RESUMED, value);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.RESUMED, value, command);
   }
 

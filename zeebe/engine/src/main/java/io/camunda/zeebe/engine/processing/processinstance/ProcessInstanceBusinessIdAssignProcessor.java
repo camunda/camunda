@@ -89,7 +89,7 @@ public class ProcessInstanceBusinessIdAssignProcessor
             decision -> {
               assignmentBehavior.enrich(value, processInstanceRecord);
               assignmentBehavior.appendAssignedEvent(processInstanceKey, value);
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   processInstanceKey, ProcessInstanceBusinessIdIntent.ASSIGNED, value, command);
             },
             rejection -> {

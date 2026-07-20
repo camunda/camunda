@@ -217,7 +217,7 @@ public class JobThrowErrorProcessor implements TypedRecordProcessor<JobRecord> {
   private void writeThrowErrorEvent(
       final long jobKey, final JobRecord job, final TypedRecord<JobRecord> command) {
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.ERROR_THROWN, job);
-    responseWriter.writeEventOnCommand(jobKey, JobIntent.ERROR_THROWN, job, command);
+    responseWriter.writeAcceptedResponseOnCommand(jobKey, JobIntent.ERROR_THROWN, job, command);
     jobMetrics.countJobEvent(JobAction.ERROR_THROWN, job.getJobKind(), job.getType());
   }
 

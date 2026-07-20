@@ -137,7 +137,8 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
         .setDurationMs(commandValue.getMetrics().getDurationMs());
 
     stateWriter.appendFollowUpEvent(historyKey, AgentHistoryIntent.CREATED, event);
-    responseWriter.writeEventOnCommand(historyKey, AgentHistoryIntent.CREATED, event, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        historyKey, AgentHistoryIntent.CREATED, event, command);
   }
 
   private void writeRejection(

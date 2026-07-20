@@ -64,7 +64,7 @@ public class ClusterVariableUpdateProcessor
                   .appendFollowUpEvent(key, ClusterVariableIntent.UPDATED, clusterVariableRecord);
               writers
                   .response()
-                  .writeEventOnCommand(
+                  .writeAcceptedResponseOnCommand(
                       key, ClusterVariableIntent.UPDATED, clusterVariableRecord, command);
               commandDistributionBehavior
                   .withKey(key)

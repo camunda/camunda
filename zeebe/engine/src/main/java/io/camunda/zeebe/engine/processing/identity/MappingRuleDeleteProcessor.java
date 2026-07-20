@@ -105,7 +105,7 @@ public class MappingRuleDeleteProcessor
     }
     final long key = keyGenerator.nextKey();
     deleteMappingRule(persistedMappingRuleOptional.get(), key);
-    responseWriter.writeEventOnCommand(key, MappingRuleIntent.DELETED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, MappingRuleIntent.DELETED, record, command);
 
     commandDistributionBehavior
         .withKey(key)

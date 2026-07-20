@@ -114,7 +114,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     }
 
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_ADDED, record);
-    responseWriter.writeEventOnCommand(groupKey, GroupIntent.ENTITY_ADDED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        groupKey, GroupIntent.ENTITY_ADDED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior

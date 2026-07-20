@@ -127,7 +127,8 @@ public class ResourceDeletionDeleteProcessor
         .withKey(eventKey)
         .inQueue(DistributionQueue.DEPLOYMENT)
         .distribute(command);
-    responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETED, value, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        eventKey, ResourceDeletionIntent.DELETED, value, command);
   }
 
   @Override

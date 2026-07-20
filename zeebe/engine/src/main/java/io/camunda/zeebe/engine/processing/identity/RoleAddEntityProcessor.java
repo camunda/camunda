@@ -116,7 +116,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     }
 
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.ENTITY_ADDED, record);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         record.getRoleKey(), RoleIntent.ENTITY_ADDED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();

@@ -54,6 +54,8 @@ public class ScaleStatusProcessor implements TypedRecordProcessor<ScaleRecord> {
         routingState.messageCorrelation().partitionCount(),
         routingState.scalingStartedAt(desiredPartitionCount));
     writers.state().appendFollowUpEvent(key, ScaleIntent.STATUS_RESPONSE, response);
-    writers.response().writeEventOnCommand(key, ScaleIntent.STATUS_RESPONSE, response, command);
+    writers
+        .response()
+        .writeAcceptedResponseOnCommand(key, ScaleIntent.STATUS_RESPONSE, response, command);
   }
 }

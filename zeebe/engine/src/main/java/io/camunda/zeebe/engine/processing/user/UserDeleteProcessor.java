@@ -106,7 +106,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     }
 
     deleteUser(user);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         user.getUserKey(), UserIntent.DELETED, command.getValue(), command);
 
     final long distributionKey = keyGenerator.nextKey();
