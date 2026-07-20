@@ -8,6 +8,7 @@
 
 import {Camunda8} from '@camunda8/sdk';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {sleep} from './sleep';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -125,8 +126,37 @@ async function checkUpdateOnVersion(
   return !!item && item.processDefinitionVersion == targetVersion;
 }
 
+/**
+ * Waits until the given process definition version is indexed as the latest,
+ * so UI pages relying on the search API (e.g. Tasklist's Processes tab) are
+ * guaranteed to reflect it.
+ */
+const waitForLatestProcessVersion = async (
+  processDefinitionId: string,
+  expectedVersion: number,
+  timeoutSeconds: number = 30,
+) => {
+  for (let attempt = 0; attempt < timeoutSeconds; attempt++) {
+    const response = await zeebe.searchProcessDefinitions({
+      // isLatestVersion mirrors the query Tasklist's Processes tab issues;
+      // the SDK filter type does not expose the flag yet.
+      filter: {processDefinitionId, isLatestVersion: true} as Parameters<
+        typeof zeebe.searchProcessDefinitions
+      >[0]['filter'] & {isLatestVersion: boolean},
+    });
+    if (response.items?.[0]?.version === expectedVersion) {
+      return;
+    }
+    await sleep(1000);
+  }
+  throw new Error(
+    `Process definition ${processDefinitionId} version ${expectedVersion} was not indexed as latest within ${timeoutSeconds}s`,
+  );
+};
+
 export {
   deploy,
+  waitForLatestProcessVersion,
   createInstances,
   generateManyVariables,
   checkUpdateOnVersion,
