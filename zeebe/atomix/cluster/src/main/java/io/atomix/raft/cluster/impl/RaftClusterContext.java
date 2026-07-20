@@ -180,6 +180,9 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   private <T extends Comparable<T>> Optional<T> getQuorumFor(
       final Collection<RaftMember> members,
       final Function<RaftMemberContext, T> calculateMemberValue) {
+    // Under joint consensus, `remoteMemberContexts` is not authoritative, because it contains
+    // entries from old and new configurations. So filter for members that actually are in the
+    // configuration.
     final var activeMembers =
         members.stream().filter(member -> member.getType() == Type.ACTIVE).toList();
     final var includeLocalMemberInQuorum =
