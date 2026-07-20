@@ -3050,6 +3050,13 @@
         <artifactId>flatten-maven-plugin</artifactId>
         <configuration>
           <flattenMode>ossrh</flattenMode>
+          <!--
+            Required for pom-packaging modules: updatePomFile defaults to false for them (unlike
+            jars, and unlike flattenMode=bom which defaults it to true), which would deploy the
+            raw pom.xml with parent inheritance unresolved. Central validates each pom standalone,
+            so inherited metadata and BOM-managed dependency versions must be inlined via flatten.
+            -->
+          <updatePomFile>${flatten.updatePomFile}</updatePomFile>
         </configuration>
       </plugin>
 
