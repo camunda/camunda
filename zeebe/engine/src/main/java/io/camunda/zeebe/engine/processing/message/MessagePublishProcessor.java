@@ -12,8 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -53,7 +52,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private long messageKey;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final RoutingInfo routingInfo;
   private final VariableBehavior variableBehavior;
 
@@ -69,7 +68,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final RoutingInfo routingInfo,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
@@ -81,7 +80,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     this.routingInfo = routingInfo;
     this.variableBehavior = variableBehavior;
     final var eventHandle =
@@ -109,24 +108,17 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
   @Override
   public void processRecord(final TypedRecord<MessageRecord> command) {
-    if (!authCheckBehavior.shouldSkipAllChecks()) {
-      final var authRequest =
-          AuthorizationRequest.builder()
-              .command(command)
-              .resourceType(AuthorizationResourceType.MESSAGE)
-              .permissionType(PermissionType.CREATE)
-              .tenantId(command.getValue().getTenantId())
-              .newResource()
-              .addResourceId(command.getValue().getName())
-              .build();
-      final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-      if (isAuthorized.isLeft()) {
-        final var rejection = isAuthorized.getLeft();
-        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-        responseWriter.writeRejectedResponseOnCommand(
-            command, rejection.type(), rejection.reason());
-        return;
-      }
+    final var isAuthorized =
+        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.MESSAGE,
+            PermissionType.CREATE,
+            command.getValue().getName());
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
     }
 
     messageRecord = command.getValue();

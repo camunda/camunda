@@ -11,8 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -39,7 +38,7 @@ public class DecisionEvaluationEvaluateProcessor
   private final DecisionBehavior decisionBehavior;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
 
@@ -47,14 +46,14 @@ public class DecisionEvaluationEvaluateProcessor
       final DecisionBehavior decisionBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior) {
 
     this.decisionBehavior = decisionBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
   }
 
   @Override
@@ -66,25 +65,16 @@ public class DecisionEvaluationEvaluateProcessor
     if (decisionOrFailure.isRight()) {
       final var decision = decisionOrFailure.get();
       final var decisionId = bufferAsString(decision.getDecisionId());
-      final var authRequest =
-          AuthorizationRequest.builder()
-              .command(command)
-              .resourceType(AuthorizationResourceType.DECISION_DEFINITION)
-              .permissionType(PermissionType.CREATE_DECISION_INSTANCE)
-              .tenantId(record.getTenantId())
-              .addResourceId(decisionId)
-              .build();
-
-      final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+      final var isAuthorized =
+          permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+              command,
+              AuthorizationResourceType.DECISION_DEFINITION,
+              PermissionType.CREATE_DECISION_INSTANCE,
+              decisionId);
       if (isAuthorized.isLeft()) {
         final var rejection = isAuthorized.getLeft();
-        final String errorMessage =
-            RejectionType.NOT_FOUND.equals(rejection.type())
-                ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                    "evaluate a decision", record.getDecisionKey(), "such decision")
-                : rejection.reason();
-        responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
-        rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+        responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
         return;
       }
     }

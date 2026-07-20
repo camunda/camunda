@@ -12,8 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -47,20 +46,20 @@ public class AdHocSubProcessInstructionActivateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final BpmnAdHocSubProcessBehavior bpmnAdHocSubProcessBehavior;
 
   public AdHocSubProcessInstructionActivateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     bpmnAdHocSubProcessBehavior = bpmnBehaviors.adHocSubProcessBehavior();
   }
 
@@ -185,17 +184,13 @@ public class AdHocSubProcessInstructionActivateProcessor
     responseWriter.writeRejectedResponseOnCommand(command, rejectionType, errorMessage);
   }
 
-  private Either<Rejection, Void> authorize(
+  private Either<Rejection, AdHocSubProcessInstructionRecord> authorize(
       final TypedRecord<AdHocSubProcessInstructionRecord> command,
       final ElementInstance adHocSubProcessElementInstance) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(adHocSubProcessElementInstance.getValue().getTenantId())
-            .addResourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    return permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+        command,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.UPDATE_PROCESS_INSTANCE,
+        adHocSubProcessElementInstance.getValue().getBpmnProcessId());
   }
 }

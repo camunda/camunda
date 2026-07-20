@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -48,8 +51,10 @@ public final class MessageEventProcessors {
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior commandDistributionBehavior,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final AuthorizationCheckPort authCheckPort,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageCorrelationState messageCorrelationState =
@@ -65,6 +70,8 @@ public final class MessageEventProcessors {
     final var elementInstanceState = processingState.getElementInstanceState();
     final var bannedInstanceState = processingState.getBannedInstanceState();
     final var businessIdUniquenessEnabled = config.isBusinessIdUniquenessEnabled();
+    final var permissionsBehavior =
+        new PermissionsBehavior(processingState, authCheckPort, claimsConverter, securityConfig);
 
     typedRecordProcessors
         .onCommand(
@@ -82,7 +89,7 @@ public final class MessageEventProcessors {
                 processState,
                 bpmnBehaviors.eventTriggerBehavior(),
                 bpmnBehaviors.stateBehavior(),
-                authCheckBehavior,
+                permissionsBehavior,
                 routingInfo,
                 elementInstanceState,
                 bannedInstanceState,
@@ -154,12 +161,14 @@ public final class MessageEventProcessors {
                 messageState,
                 subscriptionState,
                 subscriptionCommandSender,
-                authCheckBehavior,
+                permissionsBehavior,
                 elementInstanceState,
                 bannedInstanceState,
                 businessIdUniquenessEnabled,
                 routingInfo,
-                partitionId))
+                partitionId,
+                claimsConverter,
+                securityConfig))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,

@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -28,7 +30,9 @@ public final class IncidentEventProcessors {
       final TypedRecordProcessor<UserTaskRecord> userTaskProcessor,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig,
       final IncidentMetrics incidentMetrics) {
     typedRecordProcessors.onCommand(
         ValueType.INCIDENT,
@@ -39,7 +43,9 @@ public final class IncidentEventProcessors {
             userTaskProcessor,
             writers,
             jobActivationBehavior,
-            authCheckBehavior,
+            permissionsBehavior,
+            claimsConverter,
+            securityConfig,
             incidentMetrics));
   }
 }

@@ -7,17 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.exception;
 
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.protocol.record.RejectionType;
 
 /**
  * Signals that an authorization check failed, provides a user-facing error message derived from the
- * given authorization request.
+ * given authorization request or a CSL rejection.
  */
 public class ForbiddenException extends RuntimeException {
 
   public ForbiddenException(final AuthorizationRequest authRequest) {
     super(authRequest.getForbiddenErrorMessage());
+  }
+
+  public ForbiddenException(final Rejection rejection) {
+    super(rejection.reason());
   }
 
   public RejectionType getRejectionType() {

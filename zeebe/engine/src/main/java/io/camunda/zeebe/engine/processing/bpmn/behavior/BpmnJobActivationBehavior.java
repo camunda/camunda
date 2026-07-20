@@ -7,11 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsAdapter;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -30,6 +35,8 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -53,7 +60,9 @@ public class BpmnJobActivationBehavior {
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
   private final InstantSource clock;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
+  private final LazyTokenClaimsConverter claimsConverter;
+  private final EngineSecurityConfig securityConfig;
   private final JobAuthorizationLogger jobAuthorizationLogger;
 
   public BpmnJobActivationBehavior(
@@ -63,7 +72,9 @@ public class BpmnJobActivationBehavior {
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -71,7 +82,9 @@ public class BpmnJobActivationBehavior {
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
-    authorizationCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
+    this.claimsConverter = claimsConverter;
+    this.securityConfig = securityConfig;
     this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
   }
 
@@ -170,7 +183,7 @@ public class BpmnJobActivationBehavior {
         switch (jobActivationProperties.tenantFilter()) {
           case ASSIGNED -> {
             final var authorizedTenants =
-                authorizationCheckBehavior.getAuthorizedTenantIds(jobActivationProperties.claims());
+                determineAuthorizedTenants(jobActivationProperties.claims());
             yield !authorizedTenants.isAnonymous()
                 && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
           }
@@ -184,14 +197,11 @@ public class BpmnJobActivationBehavior {
 
     final var claims = jobActivationProperties.claims();
     final var authorizationResult =
-        authorizationCheckBehavior.isAuthorized(
-            AuthorizationRequest.builder()
-                .authorizationClaims(claims)
-                .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-                .addResourceId(jobRecord.getBpmnProcessId())
-                .tenantId(ownerTenantId)
-                .build());
+        permissionsBehavior.isAuthorized(
+            claims,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.UPDATE_PROCESS_INSTANCE,
+            jobRecord.getBpmnProcessId());
 
     authorizationResult.ifLeft(
         ignored ->
@@ -205,5 +215,19 @@ public class BpmnJobActivationBehavior {
       final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
     return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
         || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
+  }
+
+  private AuthorizedTenants determineAuthorizedTenants(final Map<String, Object> claims) {
+    if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return AuthorizedTenants.ANONYMOUS;
+    }
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
+    if (claims.get(Authorization.AUTHORIZED_USERNAME) == null
+        && claims.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return new AuthenticatedAuthorizedTenants(List.of());
+    }
+    return new AuthorizedTenantsAdapter(claimsConverter.convert(claims));
   }
 }

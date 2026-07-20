@@ -7,11 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsAdapter;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -39,6 +44,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 
 public final class IncidentResolveProcessor implements TypedRecordProcessor<IncidentRecord> {
 
@@ -62,7 +68,9 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final JobState jobState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
+  private final LazyTokenClaimsConverter claimsConverter;
+  private final EngineSecurityConfig securityConfig;
   private final IncidentMetrics incidentMetrics;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
 
@@ -72,7 +80,9 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       final TypedRecordProcessor<UserTaskRecord> userTaskProcessor,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig,
       final IncidentMetrics incidentMetrics) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.userTaskProcessor = userTaskProcessor;
@@ -84,7 +94,9 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     userTaskState = processingState.getUserTaskState();
     this.jobActivationBehavior = jobActivationBehavior;
     jobState = processingState.getJobState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
+    this.claimsConverter = claimsConverter;
+    this.securityConfig = securityConfig;
     this.incidentMetrics = incidentMetrics;
     this.bannedInstanceCheck =
         new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
@@ -93,7 +105,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   @Override
   public void processRecord(final TypedRecord<IncidentRecord> command) {
     final long key = command.getKey();
-    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
+    final var authorizedTenantIds = determineAuthorizedTenants(command);
     final var incident = incidentState.getIncidentRecord(key, authorizedTenantIds);
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
@@ -110,15 +122,12 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       return;
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(incident.getTenantId())
-            .addResourceId(incident.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.UPDATE_PROCESS_INSTANCE,
+            incident.getBpmnProcessId());
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       enrichRejectionCommand(command, incident);
@@ -142,6 +151,21 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
 
     // if it fails, a new incident is raised
     attemptToContinueProcessProcessing(command, incident);
+  }
+
+  private AuthorizedTenants determineAuthorizedTenants(final TypedRecord<IncidentRecord> command) {
+    final var authorizations = command.getAuthorizations();
+    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return AuthorizedTenants.ANONYMOUS;
+    }
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return new AuthenticatedAuthorizedTenants(List.of());
+    }
+    return new AuthorizedTenantsAdapter(claimsConverter.convert(authorizations));
   }
 
   private void rejectResolveCommand(

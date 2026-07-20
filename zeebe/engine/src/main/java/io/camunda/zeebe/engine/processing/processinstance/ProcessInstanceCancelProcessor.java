@@ -8,8 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -52,13 +51,13 @@ public final class ProcessInstanceCancelProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
 
   public ProcessInstanceCancelProcessor(
       final ProcessingState processingState,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior) {
     elementInstanceState = processingState.getElementInstanceState();
     asyncRequestState = processingState.getAsyncRequestState();
     responseWriter = writers.response();
@@ -66,7 +65,7 @@ public final class ProcessInstanceCancelProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
   }
 
   @Override
@@ -104,27 +103,17 @@ public final class ProcessInstanceCancelProcessor
       return false;
     }
 
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.CANCEL_PROCESS_INSTANCE)
-            .tenantId(elementInstance.getValue().getTenantId())
-            .addResourceId(elementInstance.getValue().getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.CANCEL_PROCESS_INSTANCE,
+            elementInstance.getValue().getBpmnProcessId());
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "cancel a process instance",
-                  elementInstance.getValue().getProcessInstanceKey(),
-                  "such process")
-              : rejection.reason();
       enrichRejectionCommand(command, elementInstance.getValue());
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return false;
     }
 

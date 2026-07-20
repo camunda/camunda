@@ -9,11 +9,16 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsAdapter;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -39,6 +44,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,7 +62,9 @@ public final class MessageCorrelationCorrelateProcessor
 
   private final MessageCorrelateBehavior correlateBehavior;
   private final KeyGenerator keyGenerator;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
+  private final LazyTokenClaimsConverter claimsConverter;
+  private final EngineSecurityConfig securityConfig;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -71,17 +79,21 @@ public final class MessageCorrelationCorrelateProcessor
       final MessageState messageState,
       final MessageSubscriptionState messageSubscriptionState,
       final SubscriptionCommandSender commandSender,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
       final boolean businessIdUniquenessEnabled,
       final RoutingInfo routingInfo,
-      final int partitionId) {
+      final int partitionId,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
+    this.claimsConverter = claimsConverter;
+    this.securityConfig = securityConfig;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -111,7 +123,8 @@ public final class MessageCorrelationCorrelateProcessor
 
     // Check tenant authorization if not an internal command
     if (!command.isInternalCommand()) {
-      if (!authCheckBehavior.isAssignedToTenant(command, messageCorrelationRecord.getTenantId())) {
+      final var authorizedTenants = determineAuthorizedTenants(command);
+      if (!authorizedTenants.isAuthorizedForTenantId(messageCorrelationRecord.getTenantId())) {
         final var message =
             "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
                 .formatted(messageCorrelationRecord.getTenantId());
@@ -226,14 +239,26 @@ public final class MessageCorrelationCorrelateProcessor
         0L);
   }
 
+  private AuthorizedTenants determineAuthorizedTenants(
+      final TypedRecord<MessageCorrelationRecord> command) {
+    final var authorizations = command.getAuthorizations();
+    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return AuthorizedTenants.ANONYMOUS;
+    }
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return new AuthenticatedAuthorizedTenants(List.of());
+    }
+    return new AuthorizedTenantsAdapter(claimsConverter.convert(authorizations));
+  }
+
   private Optional<Rejection> isAuthorizedForAllSubscriptions(
       final TypedRecord<MessageCorrelationRecord> command,
       final Subscriptions correlatingSubscriptions,
       final String tenantId) {
-    if (authCheckBehavior.shouldSkipAllChecks()) {
-      return Optional.empty();
-    }
-    final AtomicReference<AuthorizationRequest> request = new AtomicReference<>();
     final AtomicReference<Rejection> rejection = new AtomicReference<>();
 
     final var isAuthorized =
@@ -244,17 +269,12 @@ public final class MessageCorrelationCorrelateProcessor
                       ? PermissionType.CREATE_PROCESS_INSTANCE
                       : PermissionType.UPDATE_PROCESS_INSTANCE;
 
-              request.set(
-                  AuthorizationRequest.builder()
-                      .command(command)
-                      .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                      .permissionType(permissionType)
-                      .tenantId(tenantId)
-                      .addResourceId(bufferAsString(subscription.bpmnProcessId()))
-                      .build());
-
               final var rejectionOrAuthorized =
-                  authCheckBehavior.isAuthorizedOrInternalCommand(request.get());
+                  permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+                      command,
+                      AuthorizationResourceType.PROCESS_DEFINITION,
+                      permissionType,
+                      bufferAsString(subscription.bpmnProcessId()));
               rejectionOrAuthorized.ifLeft(rejection::set);
               return rejectionOrAuthorized.isRight();
             },

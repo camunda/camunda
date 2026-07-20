@@ -19,8 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -76,7 +75,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
   private final MessageState messageState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final ProcessInstanceMigrationCatchEventBehavior migrationCatchEventBehaviour;
   private final ProcessInstanceMigrationJobBehavior migrationJobBehaviour;
   private final ProcessInstanceMigrationSequenceFlowBehavior migrationSequenceFlowBehaviour;
@@ -89,7 +88,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -101,7 +100,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     messageState = processingState.getMessageState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
 
     migrationCatchEventBehaviour =
         new ProcessInstanceMigrationCatchEventBehavior(
@@ -140,27 +139,17 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullProcessInstance(processInstance, processInstanceKey);
     final ProcessInstanceRecord processInstanceRecord = processInstance.getValue();
 
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(processInstanceRecord.getTenantId())
-            .addResourceId(processInstanceRecord.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.UPDATE_PROCESS_INSTANCE,
+            processInstanceRecord.getBpmnProcessId());
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "migrate a process instance",
-                  processInstanceRecord.getProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
       enrichRejectionCommand(command, processInstanceRecord);
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

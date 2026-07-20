@@ -24,8 +24,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSta
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -92,7 +91,7 @@ public final class DeploymentCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final ProcessDefinitionMetrics processDefinitionMetrics;
 
   public DeploymentCreateProcessor(
@@ -104,7 +103,7 @@ public final class DeploymentCreateProcessor
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     deploymentState = processingState.getDeploymentState();
@@ -120,7 +119,7 @@ public final class DeploymentCreateProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionProcessor();
     this.distributionBehavior = distributionBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     this.processDefinitionMetrics = processDefinitionMetrics;
     deploymentTransformer =
         new DeploymentTransformer(
@@ -144,15 +143,9 @@ public final class DeploymentCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.RESOURCE)
-            .permissionType(PermissionType.CREATE)
-            .tenantId(command.getValue().getTenantId())
-            .newResource()
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorized(
+            command, AuthorizationResourceType.RESOURCE, PermissionType.CREATE);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

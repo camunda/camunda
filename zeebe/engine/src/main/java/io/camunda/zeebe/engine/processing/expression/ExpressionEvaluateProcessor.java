@@ -10,8 +10,7 @@ package io.camunda.zeebe.engine.processing.expression;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ResolvedInstance;
 import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ValidatedCommand;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -29,7 +28,7 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
 
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionValidator validator;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -40,13 +39,13 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
       final Writers writers,
       final ExpressionBehavior expressionBehavior,
       final ExpressionValidator validator,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior) {
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.expressionBehavior = expressionBehavior;
     this.validator = validator;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
   }
 
@@ -86,53 +85,31 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
         .map(__ -> validated);
   }
 
-  private Either<Rejection, Void> checkCanEvaluateExpression(
+  private Either<Rejection, ExpressionRecord> checkCanEvaluateExpression(
       final TypedRecord<ExpressionRecord> command, final String tenantId) {
-    return checkAuthorized(
-        withTenantIfPresent(
-                AuthorizationRequest.builder()
-                    .command(command)
-                    .resourceType(AuthorizationResourceType.EXPRESSION)
-                    .permissionType(PermissionType.EVALUATE),
-                tenantId)
-            .build());
+    return permissionsBehavior.isAuthorized(
+        command, AuthorizationResourceType.EXPRESSION, PermissionType.EVALUATE);
   }
 
-  private Either<Rejection, Void> checkCanReadInstanceIfScoped(
+  private Either<Rejection, ExpressionRecord> checkCanReadInstanceIfScoped(
       final TypedRecord<ExpressionRecord> command,
       final ValidatedCommand validated,
       final String tenantId) {
     return validated
         .resolvedInstance()
         .map(instance -> checkCanReadProcessInstance(command, tenantId, instance.bpmnProcessId()))
-        .orElseGet(() -> Either.right(null));
+        .orElseGet(() -> Either.right(command.getValue()));
   }
 
-  private Either<Rejection, Void> checkCanReadProcessInstance(
+  private Either<Rejection, ExpressionRecord> checkCanReadProcessInstance(
       final TypedRecord<ExpressionRecord> command,
       final String tenantId,
       final String bpmnProcessId) {
-    return checkAuthorized(
-        withTenantIfPresent(
-                AuthorizationRequest.builder()
-                    .command(command)
-                    .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                    .permissionType(PermissionType.READ_PROCESS_INSTANCE)
-                    .addResourceId(bpmnProcessId),
-                tenantId)
-            .build());
-  }
-
-  private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
-    return authCheckBehavior.isAuthorizedOrInternalCommand(request).map(__ -> null);
-  }
-
-  private static AuthorizationRequest.Builder withTenantIfPresent(
-      final AuthorizationRequest.Builder builder, final String tenantId) {
-    if (tenantId != null && !tenantId.isEmpty()) {
-      builder.tenantId(tenantId);
-    }
-    return builder;
+    return permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+        command,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.READ_PROCESS_INSTANCE,
+        bpmnProcessId);
   }
 
   private void rejectCommand(

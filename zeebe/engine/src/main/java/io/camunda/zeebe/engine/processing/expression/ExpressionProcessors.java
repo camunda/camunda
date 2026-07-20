@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.expression;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -27,12 +27,12 @@ public final class ExpressionProcessors {
       final ExpressionBehavior expressionBehavior,
       final ExpressionLanguage expressionLanguage,
       final ElementInstanceState elementInstanceState,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior) {
     final var validator = new ExpressionValidator(expressionLanguage, elementInstanceState);
     typedRecordProcessors.onCommand(
         ValueType.EXPRESSION,
         ExpressionIntent.EVALUATE,
         new ExpressionEvaluateProcessor(
-            keyGenerator, writers, expressionBehavior, validator, authCheckBehavior));
+            keyGenerator, writers, expressionBehavior, validator, permissionsBehavior));
   }
 }

@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.engine.processing.conditional;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.expression.InMemoryVariableEvaluationContext;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsAdapter;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -56,7 +61,9 @@ public class ConditionalEvaluationEvaluateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ProcessState processState;
   private final ConditionalSubscriptionState conditionalSubscriptionState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
+  private final LazyTokenClaimsConverter claimsConverter;
+  private final EngineSecurityConfig securityConfig;
   private final ExpressionProcessor expressionProcessor;
 
   public ConditionalEvaluationEvaluateProcessor(
@@ -65,7 +72,9 @@ public class ConditionalEvaluationEvaluateProcessor
       final ProcessingState processingState,
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig,
       final ExpressionProcessor expressionProcessor) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -73,7 +82,9 @@ public class ConditionalEvaluationEvaluateProcessor
     processState = processingState.getProcessState();
     conditionalSubscriptionState = processingState.getConditionalSubscriptionState();
     this.keyGenerator = keyGenerator;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
+    this.claimsConverter = claimsConverter;
+    this.securityConfig = securityConfig;
     this.expressionProcessor = expressionProcessor;
     eventHandle =
         new EventHandle(
@@ -89,7 +100,7 @@ public class ConditionalEvaluationEvaluateProcessor
   public void processRecord(final TypedRecord<ConditionalEvaluationRecord> command) {
     final var record = command.getValue();
 
-    if (!authCheckBehavior.isAssignedToTenant(command, record.getTenantId())) {
+    if (!determineAuthorizedTenants(command).isAuthorizedForTenantId(record.getTenantId())) {
       final var failureMessage =
           USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId());
       rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, failureMessage);
@@ -212,19 +223,31 @@ public class ConditionalEvaluationEvaluateProcessor
 
   private void checkAuthorizationToStartProcessInstance(
       final TypedRecord<ConditionalEvaluationRecord> command, final String bpmnProcessId) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.CREATE_PROCESS_INSTANCE)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(bpmnProcessId)
-            .build();
-
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
-    if (isAuthorized.isLeft()) {
-      throw new ForbiddenException(authRequest);
+    final var authResult =
+        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.CREATE_PROCESS_INSTANCE,
+            bpmnProcessId);
+    if (authResult.isLeft()) {
+      throw new ForbiddenException(authResult.getLeft());
     }
+  }
+
+  private AuthorizedTenants determineAuthorizedTenants(
+      final TypedRecord<ConditionalEvaluationRecord> command) {
+    final var authorizations = command.getAuthorizations();
+    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return AuthorizedTenants.ANONYMOUS;
+    }
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return new AuthenticatedAuthorizedTenants(List.of());
+    }
+    return new AuthorizedTenantsAdapter(claimsConverter.convert(authorizations));
   }
 
   private record MatchedStartEvent(

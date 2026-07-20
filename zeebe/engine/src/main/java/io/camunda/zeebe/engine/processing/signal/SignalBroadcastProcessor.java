@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.engine.processing.signal;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsAdapter;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -52,7 +57,9 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
+  private final LazyTokenClaimsConverter claimsConverter;
+  private final EngineSecurityConfig securityConfig;
   private final VariableBehavior variableBehavior;
 
   public SignalBroadcastProcessor(
@@ -62,7 +69,9 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final BpmnStateBehavior stateBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig,
       final VariableBehavior variableBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -72,7 +81,9 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
     elementInstanceState = processingState.getElementInstanceState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
+    this.claimsConverter = claimsConverter;
+    this.securityConfig = securityConfig;
     this.variableBehavior = variableBehavior;
     eventHandle =
         new EventHandle(
@@ -93,7 +104,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     // Check tenant authorization if not an internal command
     if (isAuthNeeded) {
-      if (!authCheckBehavior.isAssignedToTenant(command, signalRecord.getTenantId())) {
+      final var authorizedTenants = determineAuthorizedTenants(command);
+      if (!authorizedTenants.isAuthorizedForTenantId(signalRecord.getTenantId())) {
         final var message =
             "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
                 .formatted(signalRecord.getTenantId());
@@ -139,6 +151,21 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
+  private AuthorizedTenants determineAuthorizedTenants(final TypedRecord<SignalRecord> command) {
+    final var authorizations = command.getAuthorizations();
+    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return AuthorizedTenants.ANONYMOUS;
+    }
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return new AuthenticatedAuthorizedTenants(List.of());
+    }
+    return new AuthorizedTenantsAdapter(claimsConverter.convert(authorizations));
+  }
+
   private void checkAuthorization(
       final TypedRecord<SignalRecord> command,
       final boolean isStartEvent,
@@ -147,17 +174,14 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         isStartEvent
             ? PermissionType.CREATE_PROCESS_INSTANCE
             : PermissionType.UPDATE_PROCESS_INSTANCE;
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(permissionType)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(subscriptionRecord.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            permissionType,
+            subscriptionRecord.getBpmnProcessId());
     if (isAuthorized.isLeft()) {
-      throw new ForbiddenException(authRequest);
+      throw new ForbiddenException(isAuthorized.getLeft());
     }
   }
 

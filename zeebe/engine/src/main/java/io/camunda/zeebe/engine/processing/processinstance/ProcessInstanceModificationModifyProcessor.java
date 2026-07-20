@@ -25,8 +25,7 @@ import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -201,14 +200,14 @@ public final class ProcessInstanceModificationModifyProcessor
   private final ElementActivationBehavior elementActivationBehavior;
   private final VariableBehavior variableBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
 
   public ProcessInstanceModificationModifyProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
       final BpmnBehaviors bpmnBehaviors,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
@@ -221,7 +220,7 @@ public final class ProcessInstanceModificationModifyProcessor
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
   }
 
   @Override
@@ -242,27 +241,17 @@ public final class ProcessInstanceModificationModifyProcessor
       return;
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.MODIFY_PROCESS_INSTANCE)
-            .tenantId(processInstance.getValue().getTenantId())
-            .addResourceId(processInstance.getValue().getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.MODIFY_PROCESS_INSTANCE,
+            processInstance.getValue().getBpmnProcessId());
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "modify a process instance",
-                  processInstance.getValue().getProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
       enrichRejectionCommand(command, processInstance.getValue());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       return;
     }
 

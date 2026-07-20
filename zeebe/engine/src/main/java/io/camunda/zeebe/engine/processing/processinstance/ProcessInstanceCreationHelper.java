@@ -17,8 +17,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -66,7 +65,7 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
   private static final int MAX_REPORTED_INVALID_ELEMENT_IDS = 5;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
@@ -78,13 +77,13 @@ public class ProcessInstanceCreationHelper {
       final ProcessState processState,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final PermissionsBehavior permissionsBehavior,
       final BpmnBehaviors bpmnBehaviors,
       final boolean businessIdUniquenessEnabled) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
-    this.authCheckBehavior = authCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
@@ -192,35 +191,14 @@ public class ProcessInstanceCreationHelper {
   public Either<Rejection, DeployedProcess> isAuthorized(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final DeployedProcess deployedProcess) {
-    // skip authorization and multi-tenancy checks if all such checks are disabled
-    if (authCheckBehavior.shouldSkipAllChecks()) {
-      return Either.right(deployedProcess);
-    }
-
     final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.CREATE_PROCESS_INSTANCE)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(processId)
-            .build();
-
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
-    if (isAuthorized.isRight()) {
-      return Either.right(deployedProcess);
-    }
-
-    final var rejection = isAuthorized.getLeft();
-    final String errorMessage =
-        RejectionType.NOT_FOUND.equals(rejection.type())
-            ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                "create an instance of process",
-                command.getValue().getProcessDefinitionKey(),
-                "such process")
-            : rejection.reason();
-    return Either.left(new Rejection(rejection.type(), errorMessage));
+    return permissionsBehavior
+        .isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            PermissionType.CREATE_PROCESS_INSTANCE,
+            processId)
+        .map(__ -> deployedProcess);
   }
 
   public Either<Rejection, DeployedProcess> validateCommand(
