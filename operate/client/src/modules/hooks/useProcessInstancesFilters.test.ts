@@ -204,6 +204,103 @@ describe('useProcessInstanceFilters', () => {
     });
   });
 
+  it('should map a single variable value to an equality filter', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      variableName: 'orderId',
+      variableValues: '1',
+    };
+
+    mockedUseFilters.mockReturnValue({
+      getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
+    });
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual({
+      filter: {
+        variables: [{name: 'orderId', value: '1'}],
+      },
+    });
+  });
+
+  it('should map multiple variable values to an $in filter', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      variableName: 'orderId',
+      variableValues: '1,2,3',
+    };
+
+    mockedUseFilters.mockReturnValue({
+      getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
+    });
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual({
+      filter: {
+        variables: [{name: 'orderId', value: {$in: ['1', '2', '3']}}],
+      },
+    });
+  });
+
+  it('should keep commas inside JSON string values', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      variableName: 'orderId',
+      variableValues: '"a,b","c"',
+    };
+
+    mockedUseFilters.mockReturnValue({
+      getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
+    });
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual({
+      filter: {
+        variables: [{name: 'orderId', value: {$in: ['"a,b"', '"c"']}}],
+      },
+    });
+  });
+
+  it('should not add a variables filter when variable values are empty', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      variableName: 'orderId',
+      variableValues: '',
+    };
+
+    mockedUseFilters.mockReturnValue({
+      getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
+    });
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual({filter: {}});
+  });
+
+  it('should not add a variables filter for invalid variable values', () => {
+    const mockFilters: ProcessInstanceFilters = {
+      variableName: 'orderId',
+      variableValues: 'not-json',
+    };
+
+    mockedUseFilters.mockReturnValue({
+      getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
+    });
+
+    const {result} = renderHook(() => useProcessInstanceFilters());
+    expect(result.current).toEqual({filter: {}});
+  });
+
   it('should handle partial filters', () => {
     const mockFilters: ProcessInstanceFilters = {
       startDateAfter: '2023-01-01',
