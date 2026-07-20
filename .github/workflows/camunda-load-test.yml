@@ -129,6 +129,11 @@ on:
         type: string
         default: ""
         required: false
+      metrics-exporter-tag:
+        description: 'Override Metrics Exporter image tag (registry.camunda.cloud/team-reliability-testing/metrics-exporter). Builds and pushes this tag from load-tests/metrics-exporter. Only set this to deliberately test a new metrics-exporter build — it is independent of the Camunda version under test and otherwise defaults to "latest".'
+        type: string
+        default: ""
+        required: false
   workflow_call:
     inputs:
       ref:
@@ -235,6 +240,11 @@ on:
         type: string
         default: ""
         required: false
+      metrics-exporter-tag:
+        description: 'Metrics Exporter Tag: Docker image tag for the load-test Metrics Exporter (registry.camunda.cloud/team-reliability-testing/metrics-exporter). When set, builds and pushes this tag from load-tests/metrics-exporter and deploys it. The metrics-exporter has its own independent versioning from the Camunda version under test, so leave unset to use the Helm chart default ("latest", kept fresh by CI on every merge to main); only set this to deliberately test a new metrics-exporter build.'
+        type: string
+        default: ""
+        required: false
 
 env:
   # Namespaces MUST start with c8 due to access policy
@@ -252,6 +262,7 @@ env:
   IDENTITY_TAG: ${{ inputs.identity-tag }}
   IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
   LOAD_TEST_LOAD: ${{ inputs.load-test-load }}
+  METRICS_EXPORTER_TAG: ${{ inputs.metrics-exporter-tag }}
   NAME: ${{ inputs.name }}
   OPTIMIZE_TAG: ${{ inputs.optimize-tag }}
   ORCHESTRATION_TAG: ${{ inputs.orchestration-tag }}
@@ -307,6 +318,7 @@ jobs:
           | Optimize tag | \`${OPTIMIZE_TAG:-—}\` |
           | Identity tag | \`${IDENTITY_TAG:-—}\` |
           | Connectors tag | \`${CONNECTORS_TAG:-—}\` |
+          | Metrics exporter tag | \`${METRICS_EXPORTER_TAG:-latest}\` |
           EOF
 
   calculate-image-tag:
@@ -513,10 +525,14 @@ jobs:
 
   build-metrics-exporter-image:
     name: Build Metrics Exporter
-    if: ${{ inputs.reuse-tag == '' || inputs.orchestration-tag != '' }}
+    # The metrics-exporter has its own independent versioning from the Camunda version
+    # under test (it is normally kept at "latest" via the dedicated CI on main, see
+    # camunda-load-test-metrics-exporter-ci.yaml). Only build here when a caller
+    # explicitly asks to test a new metrics-exporter build via metrics-exporter-tag —
+    # do not tie this to reuse-tag/orchestration-tag, which are about the Camunda images.
+    if: ${{ inputs.metrics-exporter-tag != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: calculate-image-tag
     permissions:
       contents: read
       id-token: write
@@ -538,7 +554,7 @@ jobs:
         working-directory: ./load-tests/metrics-exporter
         run: make docker "IMAGE=registry.camunda.cloud/team-reliability-testing/metrics-exporter:${IMAGE_TAG}" DOCKER_PUSH=true
         env:
-          IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          IMAGE_TAG: ${{ inputs.metrics-exporter-tag }}
 
       - name: Observe build status
         if: always()
@@ -638,7 +654,6 @@ jobs:
 
       - name: Install latest Camunda Platform
         env:
-          BUILD_METRICS_EXPORTER_RESULT: ${{ needs.build-metrics-exporter-image.result }}
           CALCULATED_IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
           CAMUNDA_REPO: ${{ inputs.orchestration-tag != '' && 'camunda/camunda' || 'team-zeebe/camunda' }}
           IMAGE_REGISTRY: ${{ inputs.orchestration-tag != '' && 'docker.io' || 'registry.camunda.cloud' }}
@@ -702,12 +717,12 @@ jobs:
             additional_platform_config+=" ${PLATFORM_HELM_VALUES}"
           fi
 
-          # Pin the metrics-exporter image to the tag built by build-metrics-exporter-image.
-          # If the image has been skipped, keep using the "latest" tag, which
-          # is assuming to be always published by the dedicated CI running on
-          # the main branch.
-          if [[ "${BUILD_METRICS_EXPORTER_RESULT}" == "success" ]]; then
-            additional_load_test_setup_configuration+="--set metricsExporter.image.tag=${CALCULATED_IMAGE_TAG}"
+          # The metrics-exporter has its own independent versioning, decoupled from the
+          # Camunda version under test (unlike CALCULATED_IMAGE_TAG above). Only override
+          # the Helm chart default ("latest", kept fresh by the dedicated CI on main) when
+          # metrics-exporter-tag was explicitly set to test a new metrics-exporter build.
+          if [[ -n "${METRICS_EXPORTER_TAG}" ]]; then
+            additional_load_test_setup_configuration+="--set metricsExporter.image.tag=${METRICS_EXPORTER_TAG}"
           fi
 
           make "${INSTALL_TARGET}" \
