@@ -1,7 +1,7 @@
 ---
 
 name: engine-expert
-description: Use when implementing new capabilities or fixing bugs in the Zeebe workflow engine in zeebe/engine/ — BPMN process execution, DMN decision evaluation, job lifecycle, user/identity management, batch operations, process variables, deployments, signals, messages, timers, multi-tenancy, or authorization. Use when adding or modifying processors, event appliers, state classes, record value types, intents, or engine tests.
+description: Use when implementing, fixing, or reviewing Zeebe engine code in zeebe/engine/ — BPMN process execution, DMN decision evaluation, job lifecycle, user/identity management, batch operations, variables, deployments, signals, messages, timers, multi-tenancy, or authorization. Also when modifying or reviewing processors, event appliers, state classes, record value types, intents, or engine tests.
 
 ---
 
@@ -22,6 +22,7 @@ These are summaries. The reference files (linked below) are authoritative — th
 - Hot paths log at trace level only. INFO/DEBUG on a hot path is a performance regression at engine throughput.
 - Values returned from `ColumnFamily.get(...)` / state reads are backed by a shared, mutable buffer reused on the next read of the same column family. Never cache them or hold them across another read — `copyFrom(...)` if you need to keep the value, or use `get(key, valueSupplier)` to allocate a fresh instance.
 - Non-transactional side effects (metrics, post-commit hooks) run only after all state and follow-up command writes that could throw. Exceptions roll back state, but already-executed side effects don't roll back — counters drift.
+- No unbounded recursion unless documented why it's safe. Especially for process trees, call activities, and other user-provided input. A `StackOverflowError` would ban the executing instance. Bound recursion or use iteration/trampolining.
 
 ## Where to read next
 
