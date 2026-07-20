@@ -33,9 +33,12 @@ import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import java.lang.reflect.Method;
+import java.util.function.Consumer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,7 +51,15 @@ class TestDeploymentServiceTest {
   @Mock private CamundaFuture<DeploymentEvent> future;
   @Mock private DeploymentEvent deploymentEvent;
 
-  private final TestDeploymentService service = new TestDeploymentService();
+  @Mock private Consumer<DeploymentEvent> deploymentCallback;
+  @Captor private ArgumentCaptor<DeploymentEvent> deploymentCaptor;
+
+  private TestDeploymentService service;
+
+  @BeforeEach
+  public void setup() {
+    service = new TestDeploymentService(deploymentCallback);
+  }
 
   private void stubSuccessfulChain() {
     when(client.newDeployResourceCommand()).thenReturn(step1);
@@ -201,7 +212,7 @@ class TestDeploymentServiceTest {
   }
 
   @Test
-  void shouldTrackDeploymentKeys() throws Exception {
+  void shouldInvokeDeploymentCallback() throws Exception {
     // given
     stubSuccessfulChain();
     final Method method =
@@ -209,11 +220,10 @@ class TestDeploymentServiceTest {
 
     // when
     service.deployTestResources(method, TestClassWithMethodAnnotation.class, client);
-    final java.util.Set<Long> deploymentKeys = service.consumeTrackedDeploymentKeys();
 
     // then
-    assertThat(deploymentKeys).containsExactly(123L);
-    assertThat(service.consumeTrackedDeploymentKeys()).isEmpty();
+    verify(deploymentCallback).accept(deploymentCaptor.capture());
+    assertThat(deploymentCaptor.getValue()).isEqualTo(deploymentEvent);
   }
 
   // Helper test classes

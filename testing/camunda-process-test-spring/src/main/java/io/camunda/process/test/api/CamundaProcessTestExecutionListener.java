@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
@@ -93,8 +94,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
   private final CoverageCollectorBuilder coverageCollectorBuilder;
-  private final TestDeploymentService testDeploymentService;
   private final List<AutoCloseable> createdClients = new ArrayList<>();
+  private final List<DeploymentEvent> deployments = new ArrayList<>();
+
+  private final TestDeploymentService testDeploymentService =
+      new TestDeploymentService(deployments::add);
 
   private CoverageCollector coverageCollector;
   private CamundaProcessTestRuntime runtime;
@@ -122,7 +126,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     this.containerRuntimeBuilder = containerRuntimeBuilder;
     this.coverageCollectorBuilder = coverageCollectorBuilder.printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
-    testDeploymentService = new TestDeploymentService();
   }
 
   @Override
@@ -144,6 +147,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         new CamundaProcessTestContextImpl(
             runtime,
             createdClients::add,
+            deployments::add,
             camundaManagementClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
@@ -197,9 +201,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // wait until the cluster is ready to accept new operations, retrying until success or timeout
     runtime.waitUntilClusterReady(Duration.ofSeconds(10));
-
-    testDeploymentService.consumeTrackedDeploymentKeys();
-    camundaProcessTestContext.consumeTrackedDeploymentKeys();
 
     // deploy resources
     testDeploymentService.deployTestResources(
@@ -261,6 +262,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       LOG.info("Runtime clock reset is disabled. Skipping.");
     }
     deleteRuntimeData();
+
+    deployments.clear();
   }
 
   @Override
@@ -331,7 +334,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
           camundaManagementClient,
           () -> runtime.getCamundaClientBuilderFactory().get().build(),
           testCaseStartTime,
-          collectTrackedDeploymentKeys());
+          deployments);
 
     } catch (final Throwable t) {
       LOG.warn(
@@ -339,13 +342,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
     }
-  }
-
-  private java.util.Set<Long> collectTrackedDeploymentKeys() {
-    final java.util.LinkedHashSet<Long> deploymentKeys = new java.util.LinkedHashSet<>();
-    deploymentKeys.addAll(testDeploymentService.consumeTrackedDeploymentKeys());
-    deploymentKeys.addAll(camundaProcessTestContext.consumeTrackedDeploymentKeys());
-    return deploymentKeys;
   }
 
   private void resetRuntimeClock() {

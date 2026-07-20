@@ -25,6 +25,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -56,6 +57,7 @@ public class MockJobWorkerTest {
 
   @Mock private CamundaProcessTestRuntime camundaProcessTestRuntime;
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
+  @Mock private Consumer<DeploymentEvent> deploymentCallback;
   @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
@@ -81,6 +83,7 @@ public class MockJobWorkerTest {
         new CamundaProcessTestContextImpl(
             camundaProcessTestRuntime,
             clientCreationCallback,
+            deploymentCallback,
             clockClient,
             DevAwaitBehavior::expectSuccess,
             jsonMapper,

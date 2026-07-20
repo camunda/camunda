@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
@@ -113,7 +114,10 @@ public class CamundaProcessTestExtension
   private static final CamundaAssertAwaitBehavior INSTANT_PROBE = new InstantProbeAwaitBehavior();
 
   private final List<AutoCloseable> createdClients = new ArrayList<>();
-  private final TestDeploymentService testDeploymentService = new TestDeploymentService();
+  private final List<DeploymentEvent> deployments = new ArrayList<>();
+
+  private final TestDeploymentService testDeploymentService =
+      new TestDeploymentService(deployments::add);
 
   private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
@@ -190,6 +194,7 @@ public class CamundaProcessTestExtension
         new CamundaProcessTestContextImpl(
             runtime,
             createdClients::add,
+            deployments::add,
             camundaManagementClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
@@ -330,9 +335,6 @@ public class CamundaProcessTestExtension
     // wait until the cluster is ready to accept new operations, retrying until success or timeout
     runtime.waitUntilClusterReady(Duration.ofSeconds(10));
 
-    testDeploymentService.consumeTrackedDeploymentKeys();
-    camundaProcessTestContext.consumeTrackedDeploymentKeys();
-
     // deploy resources if present
     testDeploymentService.deployTestResources(
         context.getRequiredTestMethod(),
@@ -412,6 +414,8 @@ public class CamundaProcessTestExtension
       LOG.info("Runtime clock reset is disabled. Skipping.");
     }
     deleteRuntimeData();
+
+    deployments.clear();
   }
 
   private String getCoverageTestName(final ExtensionContext context) {
@@ -453,7 +457,7 @@ public class CamundaProcessTestExtension
           camundaManagementClient,
           () -> runtime.getCamundaClientBuilderFactory().get().build(),
           testCaseStartTime,
-          collectTrackedDeploymentKeys());
+          deployments);
 
     } catch (final Throwable t) {
       LOG.warn(
@@ -461,13 +465,6 @@ public class CamundaProcessTestExtension
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
     }
-  }
-
-  private java.util.Set<Long> collectTrackedDeploymentKeys() {
-    final java.util.LinkedHashSet<Long> deploymentKeys = new java.util.LinkedHashSet<>();
-    deploymentKeys.addAll(testDeploymentService.consumeTrackedDeploymentKeys());
-    deploymentKeys.addAll(camundaProcessTestContext.consumeTrackedDeploymentKeys());
-    return deploymentKeys;
   }
 
   private void resetRuntimeClock() {
