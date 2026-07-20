@@ -48,7 +48,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -71,6 +73,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
   private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
+  private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
 
@@ -106,6 +109,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
+      final @Nullable IntFunction<Long> exportedPositionSupplier,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
 
@@ -124,6 +128,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.jwtDecoderFactory = jwtDecoderFactory;
     this.oidcClaimsProviderFactory = oidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
+    this.exportedPositionSupplier = exportedPositionSupplier;
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
@@ -171,6 +176,11 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  @Override
+  public @Nullable IntFunction<Long> getExportedPositionSupplier() {
+    return exportedPositionSupplier;
   }
 
   @Override

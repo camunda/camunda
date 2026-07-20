@@ -130,6 +130,7 @@ public final class SystemContextTestFactory {
         authConfig -> jwtDecoder,
         authConfig -> oidcClaimsProvider,
         searchClientsProxy,
+        null,
         nodeIdProvider,
         physicalTenantIds);
   }

@@ -41,7 +41,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import org.agrona.concurrent.SnowflakeIdGenerator;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -72,6 +74,8 @@ public interface BrokerStartupContext {
   BrokerHealthCheckService getHealthCheckService();
 
   SearchClientsProxy getSearchClientsProxy();
+
+  @Nullable IntFunction<Long> getExportedPositionSupplier();
 
   void addPartitionListener(PartitionListener partitionListener);
 
