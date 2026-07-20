@@ -61,8 +61,7 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
     await deploy(['./resources/message_start_business_id_process.bpmn']);
   });
 
-  // Skipped due to bug #58207: https://github.com/camunda/camunda/issues/58207
-  test.skip('Correlate message to a message start event carries the Business ID to the created instance', async ({
+  test('Correlate message to a message start event carries the Business ID to the created instance', async ({
     request,
   }) => {
     const businessId = uniqueBusinessId('correlate-start');
@@ -94,8 +93,7 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
     await cancelProcessInstance(localState['processInstanceKey']);
   });
 
-  // Skipped due to bug #58207: https://github.com/camunda/camunda/issues/58207
-  test.skip('Duplicate Business ID correlation does not start a second instance while the first is active', async ({
+  test('Duplicate Business ID correlation does not start a second instance while the first is active', async ({
     request,
   }) => {
     const businessId = uniqueBusinessId('correlate-duplicate');
@@ -135,8 +133,7 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
     await cancelProcessInstance(localState['processInstanceKey']);
   });
 
-  // Skipped due to bug #58207: https://github.com/camunda/camunda/issues/58207
-  test.skip('Business ID can be reused for correlation after the holding instance is cancelled', async ({
+  test('Business ID can be reused for correlation after the holding instance is cancelled', async ({
     request,
   }) => {
     const businessId = uniqueBusinessId('correlate-reuse');
