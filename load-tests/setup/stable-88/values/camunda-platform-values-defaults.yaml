@@ -79,7 +79,10 @@ optimize:
   configuration: |
     zeebe:
       enabled: true
-      partitionCount: 3
+      # Repro for camunda/camunda#58064: must match the cluster partitionCount (4)
+      # so Optimize imports partition 4, whose Zeebe sequences (partitionId<<51 | counter)
+      # start at exactly 2^53 and trigger the long->double precision-loss skip in the ES fetcher.
+      partitionCount: 4
       name: "zeebe-record"
     es:
       connection:
@@ -248,9 +251,10 @@ orchestration:
   ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
   ## @param core.partitionCount defines how many partitions are set up in the cluster
-  partitionCount: "3"
+  # Repro for camunda/camunda#58064: 4 partitions so partition 4 sequences reach >= 2^53.
+  partitionCount: "4"
   ## @param core.replicationFactor defines how each partition is replicated, the value defines the number of nodes
-  replicationFactor: "3"
+  replicationFactor: "2"
   ## @param core.cpuThreadCount defines how many threads can be used for the processing on each broker pod
   cpuThreadCount: "3"
   ## @param core.ioThreadCount defines how many threads can be used for the exporting on each broker pod
