@@ -271,9 +271,9 @@ test.describe('Decision Navigation', () => {
           // with the `name` param dropped, and reloading *that* URL rebuilds a
           // broken filter state (empty Name combobox, disabled Version), so
           // the retry keeps racing the same unfiltered list. Do a clean hard
-          // navigation to the unfiltered decisions list instead — this resets
-          // both the URL params and the client-side React filter state
-          // deterministically, regardless of which page we bounced to. Then
+          // navigation back to the decisions list with only evaluated/failed
+          // filters (no name/version) — this resets both the URL params and the
+          // client-side React filter state deterministically. Then
           // give the importer time to make the instance queryable before
           // re-applying the name filter from scratch.
           await operateDecisionsPage.gotoDecisionsPage({
