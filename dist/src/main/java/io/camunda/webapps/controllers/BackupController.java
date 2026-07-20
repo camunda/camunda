@@ -10,6 +10,8 @@ package io.camunda.webapps.controllers;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
+import io.camunda.application.commons.backup.BackupServiceRegistry;
+import io.camunda.application.commons.backup.BackupServiceRegistry.PhysicalTenantBackup;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
@@ -19,25 +21,20 @@ import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.*;
-import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
-import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -61,17 +58,10 @@ public class BackupController {
           BackupStateDto.IN_PROGRESS,
           BackupStateDto.COMPLETED);
 
-  private final Map<String, BackupService> backupServicesByPhysicalTenant;
-  private final Map<String, BackupRepositoryProps> backupRepositoryPropsByPhysicalTenant;
+  private final BackupServiceRegistry backupServiceRegistry;
 
-  @Autowired
-  public BackupController(
-      @Qualifier("backupServicesByTenant")
-          final Map<String, BackupService> backupServicesByPhysicalTenant,
-      @Qualifier("backupRepositoryPropsByTenant")
-          final Map<String, BackupRepositoryProps> backupRepositoryPropsByPhysicalTenant) {
-    this.backupServicesByPhysicalTenant = backupServicesByPhysicalTenant;
-    this.backupRepositoryPropsByPhysicalTenant = backupRepositoryPropsByPhysicalTenant;
+  public BackupController(final BackupServiceRegistry backupServiceRegistry) {
+    this.backupServiceRegistry = backupServiceRegistry;
   }
 
   @WriteOperation
@@ -80,9 +70,10 @@ public class BackupController {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();
       final var scheduledSnapshots = new ArrayList<String>();
-      for (final BackupService backupService : backupServicesByPhysicalTenant.values()) {
+      for (final PhysicalTenantBackup backup : backupServiceRegistry.physicalTenantBackups()) {
         scheduledSnapshots.addAll(
-            backupService
+            backup
+                .backupService()
                 .takeBackup(new TakeBackupRequestDto().setBackupId(backupId))
                 .getScheduledSnapshots());
       }
@@ -100,11 +91,12 @@ public class BackupController {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();
       final var perPhysicalTenantStates =
-          backupServicesByPhysicalTenant.entrySet().stream()
+          backupServiceRegistry.physicalTenantBackups().stream()
               .map(
-                  entry ->
+                  backup ->
                       new TenantBackupState(
-                          entry.getKey(), entry.getValue().getBackupState(backupId)))
+                          backup.physicalTenantId(),
+                          backup.backupService().getBackupState(backupId)))
               .toList();
       final var resp = mapTo(aggregate(perPhysicalTenantStates));
       return new WebEndpointResponse<>(resp);
@@ -122,11 +114,11 @@ public class BackupController {
       final String patternValue = pattern != null ? pattern : "*";
       validateRepositoryNameIsConfigured();
       final var byBackupId =
-          backupServicesByPhysicalTenant.entrySet().stream()
+          backupServiceRegistry.physicalTenantBackups().stream()
               .flatMap(
-                  entry ->
-                      entry.getValue().getBackups(verboseValue, patternValue).stream()
-                          .map(dto -> new TenantBackupState(entry.getKey(), dto)))
+                  backup ->
+                      backup.backupService().getBackups(verboseValue, patternValue).stream()
+                          .map(dto -> new TenantBackupState(backup.physicalTenantId(), dto)))
               .collect(
                   Collectors.groupingBy(
                       state -> state.dto().getBackupId(), LinkedHashMap::new, Collectors.toList()));
@@ -143,7 +135,9 @@ public class BackupController {
     try {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();
-      backupServicesByPhysicalTenant.values().forEach(service -> service.deleteBackup(backupId));
+      backupServiceRegistry
+          .physicalTenantBackups()
+          .forEach(backup -> backup.backupService().deleteBackup(backupId));
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final Exception e) {
       LOG.warn("Error when trying to delete a backup", e);
@@ -152,16 +146,16 @@ public class BackupController {
   }
 
   private void validateRepositoryNameIsConfigured() {
-    if (backupRepositoryPropsByPhysicalTenant.isEmpty()) {
+    if (backupServiceRegistry.isEmpty()) {
       throw new InvalidRequestException("No backup repository configured.");
     }
     final var tenantsMissingRepository =
-        backupRepositoryPropsByPhysicalTenant.entrySet().stream()
+        backupServiceRegistry.physicalTenantBackups().stream()
             .filter(
-                entry ->
-                    entry.getValue().repositoryName() == null
-                        || entry.getValue().repositoryName().isEmpty())
-            .map(Map.Entry::getKey)
+                backup ->
+                    backup.repositoryProps().repositoryName() == null
+                        || backup.repositoryProps().repositoryName().isEmpty())
+            .map(PhysicalTenantBackup::physicalTenantId)
             .toList();
     if (!tenantsMissingRepository.isEmpty()) {
       throw new InvalidRequestException(
