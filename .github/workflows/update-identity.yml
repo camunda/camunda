@@ -42,7 +42,7 @@ jobs:
           git config --global user.name "github-actions[update-identity]@users.noreply.github.com"
       - name: Get current identity version from `./parent/pom.xml`
         id: get-current-identity-version
-        uses: mavrosxristoforos/get-xml-info@cc0a00b30a53c3adf0ea2cbfd8314cea394fbbad # 2.1.0
+        uses: mavrosxristoforos/get-xml-info@d4791bc1e5928088858438ef383383f431983475 # 2.2.0
         with:
           xml-file: './parent/pom.xml'
           xpath: '//*[local-name()="version.identity"]'
