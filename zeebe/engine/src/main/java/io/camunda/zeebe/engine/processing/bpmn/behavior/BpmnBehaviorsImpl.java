@@ -65,6 +65,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final JobUpdateBehaviour jobUpdateBehaviour;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
+  private final BpmnProcessDeletionBehavior processDeletionBehavior;
   private final BpmnConditionalBehavior conditionalBehavior;
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionLanguage expressionLanguage;
@@ -298,6 +299,15 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState);
 
     agentInstanceBehavior = new AgentInstanceBehavior(processingState, writers);
+
+    processDeletionBehavior =
+        new BpmnProcessDeletionBehavior(
+            processingState.getProcessState(),
+            processingState.getElementInstanceState(),
+            processingState.getBannedInstanceState(),
+            writers.command(),
+            writers.state(),
+            processingState.getKeyGenerator());
   }
 
   @Override
@@ -418,6 +428,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public AgentInstanceBehavior agentInstanceBehavior() {
     return agentInstanceBehavior;
+  }
+
+  @Override
+  public BpmnProcessDeletionBehavior processDeletionBehavior() {
+    return processDeletionBehavior;
   }
 
   public ExpressionBehavior expressionBehavior() {
