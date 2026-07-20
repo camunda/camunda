@@ -265,17 +265,21 @@ test.describe('Decision Navigation', () => {
           // A failed attempt can leave us on either page: the decisions list
           // (if the row/click itself failed) or a decision instance detail
           // page (if decisionPanel was just the slow part, or Operate
-          // redirected there before bouncing back). selectDecisionName()
-          // needs the list's Name combobox, which the detail page doesn't
-          // have — clickDecisionsTab() first guarantees we land on the list
-          // regardless of which page we're actually on, via the persistent
-          // nav bar rather than assuming reload's target. Then reload, since
-          // the name filter is client-side React state, not a URL parameter
-          // (confirmed via a failure snapshot showing the empty Name
-          // combobox after a reload that didn't navigate first), so it needs
-          // re-applying every time regardless.
-          await operateHomePage.clickDecisionsTab();
-          await page.reload();
+          // redirected there before bouncing back). Recovering with reload is
+          // unsafe here: when Operate redirects off a not-yet-queryable
+          // decision instance it lands on `/operate/decisions?...&version=1`
+          // with the `name` param dropped, and reloading *that* URL rebuilds a
+          // broken filter state (empty Name combobox, disabled Version), so
+          // the retry keeps racing the same unfiltered list. Do a clean hard
+          // navigation to the unfiltered decisions list instead — this resets
+          // both the URL params and the client-side React filter state
+          // deterministically, regardless of which page we bounced to. Then
+          // give the importer time to make the instance queryable before
+          // re-applying the name filter from scratch.
+          await operateDecisionsPage.gotoDecisionsPage({
+            searchParams: {evaluated: 'true', failed: 'true'},
+          });
+          await sleep(3000);
           await operateDecisionsPage.selectDecisionName(
             'Assign Approver Group Navigation',
           );
