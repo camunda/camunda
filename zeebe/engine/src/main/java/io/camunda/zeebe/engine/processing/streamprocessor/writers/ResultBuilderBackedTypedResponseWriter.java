@@ -52,7 +52,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
 
   @Override
   public void writeAcceptedResponse(final TypedRecord<?> event) {
-    writeResponse(
+    writeAcceptedResponse(
         event.getKey(),
         event.getIntent(),
         event.getValue(),
@@ -67,7 +67,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
       final Intent eventState,
       final UnpackedObject eventValue,
       final TypedRecord<?> command) {
-    writeResponse(
+    writeAcceptedResponse(
         eventKey,
         eventState,
         eventValue,
@@ -77,7 +77,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeResponse(
+  public void writeAcceptedResponse(
       final long eventKey,
       final Intent eventState,
       final UnpackedObject eventValue,
