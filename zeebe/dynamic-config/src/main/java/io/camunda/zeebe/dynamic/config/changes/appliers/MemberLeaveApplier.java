@@ -46,10 +46,19 @@ public final class MemberLeaveApplier implements GlobalConfigurationChangeApplie
   @Override
   public Either<Exception, UnaryOperator<GlobalConfiguration>> init(
       final CurrentClusterConfiguration currentClusterConfiguration) {
-    if (!currentClusterConfiguration.globalConfiguration().hasMember(memberId)) {
+    final GlobalConfiguration globalConfiguration =
+        currentClusterConfiguration.globalConfiguration();
+    if (!globalConfiguration.hasMember(memberId)) {
       return Either.left(
           new IllegalStateException(
               "Expected to remove member %s, but the member is not part of the cluster"
+                  .formatted(memberId)));
+    }
+
+    if (globalConfiguration.getMember(memberId).state() == State.LEFT) {
+      return Either.left(
+          new IllegalStateException(
+              "Expected to remove member %s, but the member is already in state LEFT"
                   .formatted(memberId)));
     }
 

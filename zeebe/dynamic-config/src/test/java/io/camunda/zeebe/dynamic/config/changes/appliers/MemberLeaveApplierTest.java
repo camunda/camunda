@@ -81,6 +81,24 @@ final class MemberLeaveApplierTest {
   }
 
   @Test
+  void shouldRejectLeaveIfMemberIsAlreadyLeft() {
+    // given
+    final var initialConfig =
+        globalConfigurationWith(
+            Map.of(memberId, BrokerState.initializeAsActive().setState(State.LEFT)));
+    final var applier = new MemberLeaveApplier(memberId, clusterMembershipChangeExecutor);
+
+    // when
+    final var result = applier.init(currentClusterConfigurationWith(initialConfig, Map.of()));
+
+    // then
+    assertThat(result).isLeft();
+    Assertions.assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("already in state LEFT");
+  }
+
+  @Test
   void shouldRejectLeaveIfMemberStillHasPartitions() {
     // given
     final var initialConfig =
