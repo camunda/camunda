@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -110,12 +111,13 @@ public class UserCreatedUpdatedHandlerTest {
   void shouldAddEntityOnFlush() throws PersistenceException {
     // given
     final UserEntity inputEntity = new UserEntity().setId("111");
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index, inputEntity);
   }
 }

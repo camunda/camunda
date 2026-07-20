@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -97,16 +98,17 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
     // given
     final ProcessInstanceForListViewEntity inputEntity =
         new ProcessInstanceForListViewEntity().setId("111").setBusinessId("my-business-id");
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(ListViewTemplate.BUSINESS_ID, "my-business-id");
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).update(indexName, "111", expectedUpdateFields);
+    verify(mockRequest, times(1)).update(index, "111", expectedUpdateFields);
   }
 
   @Test
@@ -114,16 +116,17 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
     // given
     final ProcessInstanceForListViewEntity inputEntity =
         new ProcessInstanceForListViewEntity().setId("111").setBusinessId("");
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(ListViewTemplate.BUSINESS_ID, null);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).update(indexName, "111", expectedUpdateFields);
+    verify(mockRequest, times(1)).update(index, "111", expectedUpdateFields);
   }
 
   @Test

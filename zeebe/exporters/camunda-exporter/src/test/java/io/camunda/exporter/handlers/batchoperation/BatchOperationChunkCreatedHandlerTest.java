@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -121,10 +122,11 @@ class BatchOperationChunkCreatedHandlerTest {
     final var entity = new BatchOperationEntity().setId("123:chunk").setEndDate(null);
     final Record<BatchOperationChunkRecordValue> record = createRecord(1L, 11L);
     underTest.updateEntity(record, entity);
+    final var index = mock(TargetIndex.class);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     final Map<String, Object> expectedParams = new HashMap<>();
     expectedParams.put(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, 1);
@@ -132,7 +134,7 @@ class BatchOperationChunkCreatedHandlerTest {
     // then - the ES document ID is just the batchKey extracted from the composite ID
     final var scriptCaptor = ArgumentCaptor.forClass(String.class);
     verify(mockRequest, times(1))
-        .updateWithScript(eq(indexName), eq("123"), scriptCaptor.capture(), eq(expectedParams));
+        .updateWithScript(eq(index), eq("123"), scriptCaptor.capture(), eq(expectedParams));
 
     final var script = scriptCaptor.getValue();
 

@@ -9,6 +9,7 @@ package io.camunda.debug.cli.recover;
 
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -38,7 +39,7 @@ final class FakeBatchRequest implements BatchRequest {
   }
 
   List<Added> addedTo(final String index) {
-    return added.stream().filter(a -> a.index().equals(index)).toList();
+    return added.stream().filter(a -> a.index().name().equals(index)).toList();
   }
 
   @Override
@@ -52,7 +53,7 @@ final class FakeBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest add(final String index, final ExporterEntity entity) {
+  public BatchRequest add(final TargetIndex index, final ExporterEntity entity) {
     added.add(new Added(index, entity));
     return this;
   }
@@ -60,19 +61,20 @@ final class FakeBatchRequest implements BatchRequest {
   // --- Unused operations ---------------------------------------------------
 
   @Override
-  public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity) {
+  public BatchRequest addWithId(
+      final TargetIndex index, final String id, final ExporterEntity entity) {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public BatchRequest addWithRouting(
-      final String index, final ExporterEntity entity, final String routing) {
+      final TargetIndex index, final ExporterEntity entity, final String routing) {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public BatchRequest upsert(
-      final String index,
+      final TargetIndex index,
       final String id,
       final ExporterEntity entity,
       final Map<String, Object> updateFields) {
@@ -81,7 +83,7 @@ final class FakeBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsertWithRouting(
-      final String index,
+      final TargetIndex index,
       final String id,
       final ExporterEntity entity,
       final Map<String, Object> updateFields,
@@ -91,7 +93,7 @@ final class FakeBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsertWithScript(
-      final String index,
+      final TargetIndex index,
       final String id,
       final ExporterEntity entity,
       final String script,
@@ -101,7 +103,7 @@ final class FakeBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsertWithScriptAndRouting(
-      final String index,
+      final TargetIndex index,
       final String id,
       final ExporterEntity entity,
       final String script,
@@ -112,18 +114,19 @@ final class FakeBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest update(
-      final String index, final String id, final Map<String, Object> updateFields) {
+      final TargetIndex index, final String id, final Map<String, Object> updateFields) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public BatchRequest update(final String index, final String id, final ExporterEntity entity) {
+  public BatchRequest update(
+      final TargetIndex index, final String id, final ExporterEntity entity) {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public BatchRequest updateWithScript(
-      final String index,
+      final TargetIndex index,
       final String id,
       final String script,
       final Map<String, Object> parameters) {
@@ -131,12 +134,13 @@ final class FakeBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest delete(final String index, final String id) {
+  public BatchRequest delete(final TargetIndex index, final String id) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public BatchRequest deleteWithRouting(final String index, final String id, final String routing) {
+  public BatchRequest deleteWithRouting(
+      final TargetIndex index, final String id, final String routing) {
     throw new UnsupportedOperationException();
   }
 
@@ -154,5 +158,5 @@ final class FakeBatchRequest implements BatchRequest {
     execute();
   }
 
-  record Added(String index, ExporterEntity entity) {}
+  record Added(TargetIndex index, ExporterEntity entity) {}
 }

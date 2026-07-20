@@ -11,6 +11,7 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT_POSITION;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -99,7 +100,9 @@ public class ListViewFlowNodeFromIncidentHandler
 
   @Override
   public void flush(
-      final FlowNodeInstanceForListViewEntity entity, final BatchRequest batchRequest) {
+      final TargetIndex index,
+      final FlowNodeInstanceForListViewEntity entity,
+      final BatchRequest batchRequest) {
 
     LOGGER.debug("Flow node instance for list view: id {}", entity.getId());
     final Map<String, Object> updateFields = new LinkedHashMap<>();
@@ -109,7 +112,7 @@ public class ListViewFlowNodeFromIncidentHandler
     final Long processInstanceKey = entity.getProcessInstanceKey();
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
+        index, entity.getId(), entity, updateFields, String.valueOf(processInstanceKey));
   }
 
   @Override

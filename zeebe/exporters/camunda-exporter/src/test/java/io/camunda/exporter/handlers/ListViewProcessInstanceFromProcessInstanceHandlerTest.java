@@ -18,6 +18,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -176,6 +177,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setTreePath("PI_111")
             .setTags(Set.of("businessKey:123", "priority:high"))
             .setBusinessId("my-business-id");
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -195,10 +197,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, "111", inputEntity, expectedUpdateFields);
   }
 
   @Test
@@ -214,6 +216,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setPartitionId(12)
             .setPosition(123L)
             .setState(ProcessInstanceState.ACTIVE);
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -227,10 +230,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, "111", inputEntity, expectedUpdateFields);
   }
 
   @Test

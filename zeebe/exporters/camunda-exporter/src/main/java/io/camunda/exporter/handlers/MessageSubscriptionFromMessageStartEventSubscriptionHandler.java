@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
 import io.camunda.webapps.schema.entities.messagesubscription.MessageSubscriptionEntity;
@@ -88,8 +89,12 @@ public class MessageSubscriptionFromMessageStartEventSubscriptionHandler
   }
 
   @Override
-  public void flush(final MessageSubscriptionEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index,
+      final MessageSubscriptionEntity entity,
+      final BatchRequest batchRequest) {
     persistEvent(
+        index,
         entity,
         MessageSubscriptionTemplate.POSITION_MESSAGE,
         entity.getPositionProcessMessageSubscription(),

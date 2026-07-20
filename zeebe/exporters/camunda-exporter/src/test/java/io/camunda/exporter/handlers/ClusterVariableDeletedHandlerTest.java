@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -112,8 +113,9 @@ public class ClusterVariableDeletedHandlerTest {
             .setTenantId("tenantId")
             .setScope(
                 io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.TENANT);
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
-    underTest.flush(inputEntity, mockRequest);
-    verify(mockRequest, times(1)).delete(indexName, inputEntity.getId());
+    underTest.flush(index, inputEntity, mockRequest);
+    verify(mockRequest, times(1)).delete(index, inputEntity.getId());
   }
 }

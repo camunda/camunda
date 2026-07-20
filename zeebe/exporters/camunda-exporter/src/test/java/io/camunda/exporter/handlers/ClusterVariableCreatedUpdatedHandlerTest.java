@@ -8,15 +8,12 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.MetadataEntry;
@@ -157,14 +154,16 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
             .setScope(
                 io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.TENANT)
             .setKind(ClusterVariableKind.SECRET_REFERENCE);
+
+    final TargetIndex index = mock(TargetIndex.class);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(eq(indexName), eq(inputEntity));
-    verify(mockRequest, never()).upsert(anyString(), anyString(), any(), anyMap());
+    verify(mockRequest).add(eq(index), eq(inputEntity));
+    verifyNoMoreInteractions(mockRequest);
   }
 
   @ParameterizedTest
