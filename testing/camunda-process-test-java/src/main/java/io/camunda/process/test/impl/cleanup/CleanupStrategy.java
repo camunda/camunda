@@ -22,8 +22,17 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+/** Internal strategy contract for test cleanup behavior based on the configured deletion mode. */
 public interface CleanupStrategy {
 
+  /**
+   * Executes test cleanup for data created since the provided test case start time.
+   *
+   * @param managementClient management API client
+   * @param clientSupplier supplier to create a Camunda API client
+   * @param testCaseStartTime start time of the current test case
+   * @param deployments deployments recorded during the current test case
+   */
   void cleanup(
       CamundaManagementClient managementClient,
       Supplier<CamundaClient> clientSupplier,
