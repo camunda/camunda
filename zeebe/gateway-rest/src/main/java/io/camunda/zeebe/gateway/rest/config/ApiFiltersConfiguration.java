@@ -20,9 +20,14 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.web.util.pattern.PathPattern;
 import org.springframework.web.util.pattern.PathPatternParser;
 
@@ -69,7 +74,7 @@ public class ApiFiltersConfiguration {
     return registration;
   }
 
-  @ConditionalOnExpression("'${camunda.security.authentication.oidc.groupsClaim:}' != ''")
+  @Conditional(GroupsClaimConfiguredCondition.class)
   @Bean
   public FilterRegistrationBean<EndpointAccessErrorFilter> disableGroupApiFilter(
       final ObjectMapper objectMapper) {
@@ -115,5 +120,26 @@ public class ApiFiltersConfiguration {
     registration.addUrlPatterns("/*");
     registration.setOrder(1);
     return registration;
+  }
+
+  /**
+   * Matches when the OIDC groups-claim property is configured, meaning groups are managed
+   * externally via the identity provider. {@code GROUPS_CLAIM_PROPERTY} is camelCase ({@code
+   * groupsClaim}); querying the {@link ConditionContext#getEnvironment()} with that exact string
+   * only matches a camelCase-configured property. Canonicalizing it first makes the lookup match a
+   * kebab-case ({@code groups-claim}) YAML key too, relying on Spring Boot's relaxed property
+   * binding.
+   */
+  static final class GroupsClaimConfiguredCondition implements Condition {
+
+    private static final String CANONICAL_GROUPS_CLAIM_PROPERTY =
+        ConfigurationPropertyName.adapt(GROUPS_CLAIM_PROPERTY, '.').toString();
+
+    @Override
+    public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
+      final String groupsClaim =
+          context.getEnvironment().getProperty(CANONICAL_GROUPS_CLAIM_PROPERTY);
+      return groupsClaim != null && !groupsClaim.isEmpty();
+    }
   }
 }
