@@ -77,6 +77,10 @@ public final class JournalRecordReaderUtil {
               expectedIndex, record.index()));
     }
     buffer.position(startPosition + metadataLength + recordLength);
+
+    // NOTE: the UnsafeBuffer wraps the ByteBuffer via its memory address (unsafe)
+    //       if the underlying buffer is unmapped, any access to serializedRecord will crash the JVM
+    //       link: https://github.com/camunda/camunda/issues/57609
     return new PersistedJournalRecord(
         metadata, record, new UnsafeBuffer(buffer, startPosition + metadataLength, recordLength));
   }
