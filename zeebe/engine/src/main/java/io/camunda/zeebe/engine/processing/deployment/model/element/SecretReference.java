@@ -52,7 +52,9 @@ public record SecretReference(String storeId, String name) {
 
   /**
    * Creates a reference with no store id. The {@code camunda.secrets.<name>} syntax carries no
-   * store dimension, so the store is left empty until store selection is wired to the engine.
+   * store dimension, so the store is left empty until store selection is wired to the engine
+   * (tracked under the Secret Resolution epic, <a
+   * href="https://github.com/camunda/camunda/issues/56563">#56563</a>).
    */
   public SecretReference(final String name) {
     this("", name);

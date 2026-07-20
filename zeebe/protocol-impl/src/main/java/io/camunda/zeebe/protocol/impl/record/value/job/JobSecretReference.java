@@ -17,7 +17,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 @JsonIgnoreProperties({
-  /* These fields are inherited from ObjectValue; they have no purpose in exported JSON records*/
+  /* Inherited from ObjectValue. They have no purpose in exported JSON records. */
   "encodedLength",
   "empty"
 })
@@ -30,6 +30,8 @@ public final class JobSecretReference extends ObjectValue implements JobSecretRe
 
   private final StringProperty storeIdProp = new StringProperty(STORE_ID_KEY, "");
   private final StringProperty secretReferenceProp = new StringProperty(SECRET_REFERENCE_KEY, "");
+  // RFC 6901 JSON pointer where the resolved secret is injected into the job variables on
+  // activation
   private final StringProperty pathProp = new StringProperty(PATH_KEY, "");
 
   public JobSecretReference() {

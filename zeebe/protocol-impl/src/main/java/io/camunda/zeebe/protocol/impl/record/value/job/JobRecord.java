@@ -421,7 +421,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .toList();
   }
 
-  public JobRecord setSecretReferences(final List<JobSecretReferenceValue> secretReferences) {
+  public JobRecord setSecretReferences(
+      final List<? extends JobSecretReferenceValue> secretReferences) {
     secretReferencesProp.reset();
     if (secretReferences != null) {
       secretReferences.forEach(
