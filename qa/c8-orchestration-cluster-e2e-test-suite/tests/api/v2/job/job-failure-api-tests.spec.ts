@@ -39,16 +39,20 @@ test.describe('Job Fail API Tests', () => {
       'jobApiTaskType',
     );
 
-    // Now fail the job
-    const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-      headers: jsonHeaders(),
-      data: {
-        retries: 0,
-        errorMessage: 'Simulated failure',
-      },
-    });
+    // Now fail the job.
+    // Retry on 404: the engine may not yet recognize the freshly
+    // activated jobKey on a loaded cluster, returning "no such job".
+    await expect(async () => {
+      const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
+        headers: jsonHeaders(),
+        data: {
+          retries: 0,
+          errorMessage: 'Simulated failure',
+        },
+      });
 
-    await assertStatusCode(failRes, 204);
+      await assertStatusCode(failRes, 204);
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Fail Job - Job not found', async ({request}) => {
