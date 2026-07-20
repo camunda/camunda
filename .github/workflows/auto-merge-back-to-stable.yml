@@ -163,7 +163,7 @@ jobs:
           fi      
       - name: Wait for required checks
         id: wait_checks
-        uses: camunda/infra-global-github-actions/wait-for-required-checks@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+        uses: camunda/infra-global-github-actions/wait-for-required-checks@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
         with:
           repository_owner: ${{ github.event.repository.owner.login }}
           repository_name: ${{ github.event.repository.name }}
@@ -213,7 +213,7 @@ jobs:
       - name: Monitor merge queue status
         id: monitor_merge
         if: steps.wait_checks.outcome != 'failure'
-        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@f074308b33bf66e4a50d6a4a22a4a4ce9557f19e # main
+        uses: camunda/infra-global-github-actions/ensure-pr-passes-merge-queue@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
         with:
           pr-number: ${{ github.event.pull_request.number }}
           timeout-minutes: ${{ env.MERGE_QUEUE_TIMEOUT_MINUTES }}
