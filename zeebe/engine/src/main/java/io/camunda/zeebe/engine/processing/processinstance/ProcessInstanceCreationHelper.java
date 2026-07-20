@@ -44,6 +44,8 @@ import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class ProcessInstanceCreationHelper {
+  public static final String ERROR_MESSAGE_PROCESS_IS_DRAINING =
+      "Expected to create instance of process with ID '%s' and version %d (key %d), but it is being deleted";
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected at least a bpmnProcessId or a key greater than -1, but none given";
   private static final String ERROR_MESSAGE_NOT_FOUND_BY_PROCESS =
@@ -92,18 +94,38 @@ public class ProcessInstanceCreationHelper {
       final ProcessInstanceCreationRecord record) {
     final DirectBuffer bpmnProcessId = record.getBpmnProcessIdBuffer();
 
+    final Either<Rejection, DeployedProcess> process;
     if (bpmnProcessId.capacity() > 0) {
       if (record.getVersion() >= 0) {
-        return getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
+        process = getProcess(bpmnProcessId, record.getVersion(), record.getTenantId());
       } else {
-        return getProcess(bpmnProcessId, record.getTenantId());
+        process = getProcess(bpmnProcessId, record.getTenantId());
       }
     } else if (record.getProcessDefinitionKey() >= 0) {
-      return getProcess(record.getProcessDefinitionKey(), record.getTenantId());
+      process = getProcess(record.getProcessDefinitionKey(), record.getTenantId());
     } else {
       return Either.left(
           new Rejection(RejectionType.INVALID_ARGUMENT, ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
+    return process.flatMap(this::rejectIfDraining);
+  }
+
+  /**
+   * A process definition that is being deleted is kept in state so its already-running instances
+   * can finish, but no new instances may be created for it.
+   */
+  private Either<Rejection, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+    if (process.isDraining()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_STATE,
+              String.format(
+                  ERROR_MESSAGE_PROCESS_IS_DRAINING,
+                  bufferAsString(process.getBpmnProcessId()),
+                  process.getVersion(),
+                  process.getKey())));
+    }
+    return Either.right(process);
   }
 
   public ProcessInstanceRecord initProcessInstanceRecord(

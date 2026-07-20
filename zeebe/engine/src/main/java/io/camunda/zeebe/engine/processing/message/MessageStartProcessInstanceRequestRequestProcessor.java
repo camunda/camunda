@@ -173,13 +173,20 @@ public final class MessageStartProcessInstanceRequestRequestProcessor
     // applier dereferences the buffered message in local MessageState — but on P_B the message
     // has never been published locally. The CORRELATED event against the originating
     // subscription is written on P_K when it applies the STARTED reply.
-    eventHandle.activateProcessInstanceForStartEvent(
-        request.getProcessDefinitionKey(),
-        processInstanceKey,
-        request.getStartEventIdBuffer(),
-        request.getVariablesBuffer(),
-        request.getTenantId(),
-        request.getBusinessIdBuffer());
+    final var activated =
+        eventHandle.activateProcessInstanceForStartEvent(
+            request.getProcessDefinitionKey(),
+            processInstanceKey,
+            request.getStartEventIdBuffer(),
+            request.getVariablesBuffer(),
+            request.getTenantId(),
+            request.getBusinessIdBuffer());
+
+    if (!activated) {
+      // Activation failed because the definition is draining/deleted on this partition.
+      commandSender.sendStartProcessInstanceNoSubscriptionRejected(request);
+      return;
+    }
 
     // Write a local STARTED follow-up event so the dedup applier records
     // (processDefinitionKey, messageKey) → processInstanceKey. The cross-partition reply

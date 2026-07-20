@@ -93,6 +93,7 @@ public final class CallActivityProcessor
             processId ->
                 getCalledProcess(
                     processId, element.getBindingType(), element.getVersionTag(), context))
+        .flatMap(this::rejectIfDraining)
         .flatMap(this::checkProcessHasNoneStartEvent)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
         .flatMap(
@@ -433,6 +434,20 @@ public final class CallActivityProcessor
                             """,
                             BufferUtil.bufferAsString(processId), versionTag),
                         ErrorType.CALLED_ELEMENT_ERROR)));
+  }
+
+  private Either<Failure, DeployedProcess> rejectIfDraining(final DeployedProcess process) {
+    if (process.isDraining()) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Expected to call process with BPMN process id '%s' and version %d (key %d), but it is being deleted.",
+                  BufferUtil.bufferAsString(process.getBpmnProcessId()),
+                  process.getVersion(),
+                  process.getKey()),
+              ErrorType.CALLED_ELEMENT_ERROR));
+    }
+    return Either.right(process);
   }
 
   private Either<Failure, DeployedProcess> checkProcessHasNoneStartEvent(
