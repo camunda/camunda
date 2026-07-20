@@ -461,10 +461,11 @@ public final class RaftMemberContext {
    * Sets the remaining snapshot bytes this follower still needs when a snapshot install begins.
    * Decremented per acknowledged chunk and zeroed on completion.
    *
-   * @param bytes the snapshot's total size in bytes
+   * @param snapshotReplicationLag the snapshot's total size in bytes
    */
-  public void setSnapshotReplicationLag(final long bytes) {
-    snapshotReplicationLag = bytes;
+  public void setSnapshotReplicationLag(final long snapshotReplicationLag) {
+    checkArgument(snapshotReplicationLag >= 0, "snapshotReplicationLag must be positive");
+    this.snapshotReplicationLag = snapshotReplicationLag;
   }
 
   public long getSnapshotChunkBytesInFlight() {
@@ -472,24 +473,25 @@ public final class RaftMemberContext {
   }
 
   /**
-   * Remembers the raw content size of the snapshot chunk currently being sent, so it can be
-   * subtracted from the snapshot replication lag when the chunk is acknowledged.
+   * Sets the raw content size of the snapshot chunk currently being sent, so it can be subtracted
+   * from the snapshot replication lag when the chunk is acknowledged.
    *
-   * @param bytes the raw content size of the in-flight chunk
+   * @param snapshotChunkBytesInFlight the raw content size of the in-flight chunk
    */
-  public void setSnapshotChunkBytesInFlight(final long bytes) {
-    snapshotChunkBytesInFlight = bytes;
+  public void setSnapshotChunkBytesInFlight(final long snapshotChunkBytesInFlight) {
+    this.snapshotChunkBytesInFlight = snapshotChunkBytesInFlight;
   }
 
   /**
-   * The total per-follower replication lag in bytes reported to the {@code
-   * zeebe.raft.replication.lag.bytes} gauge, floored at 0. Currently this is the remaining
-   * snapshot-install bytes; log replication lag will be added to this total in future.
+   * The total per-follower replication lag in bytes.
+   *
+   * <p>Currently this is the remaining snapshot-install bytes; log replication lag will be added to
+   * this total in future.
    *
    * @return the replication lag in bytes, never negative
    */
   public long getReplicationLagBytes() {
-    return Math.max(0, snapshotReplicationLag);
+    return snapshotReplicationLag;
   }
 
   public boolean hasNextEntry() {
