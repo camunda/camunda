@@ -147,7 +147,9 @@ const waitForLatestProcessVersion = async (
     if (response.items?.[0]?.version === expectedVersion) {
       return;
     }
-    await sleep(1000);
+    if (attempt < timeoutSeconds - 1) {
+      await sleep(1000);
+    }
   }
   throw new Error(
     `Process definition ${processDefinitionId} version ${expectedVersion} was not indexed as latest within ${timeoutSeconds}s`,
