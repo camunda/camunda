@@ -11,11 +11,13 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateBusinessId;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.JobActivationRequest;
 import io.camunda.gateway.protocol.model.JobBatchUpdateRequest;
 import io.camunda.gateway.protocol.model.JobChangeset;
+import io.camunda.gateway.protocol.model.JobCompletionRequest;
 import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
 import java.util.List;
@@ -55,6 +57,25 @@ public final class JobRequestValidator {
           // errorCode can't be null or empty
           if (errorRequest.getErrorCode() == null || errorRequest.getErrorCode().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("errorCode"));
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateJobCompletionRequest(
+      final JobCompletionRequest completionRequest) {
+    return validate(
+        violations -> {
+          if (completionRequest == null) {
+            return;
+          }
+          final String businessId = completionRequest.getBusinessId();
+          if (businessId == null) {
+            return;
+          }
+          if (businessId.isBlank()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("businessId"));
+          } else {
+            validateBusinessId(businessId, violations);
           }
         });
   }

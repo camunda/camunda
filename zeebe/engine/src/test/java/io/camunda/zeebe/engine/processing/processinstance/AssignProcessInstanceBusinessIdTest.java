@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -266,7 +265,7 @@ public final class AssignProcessInstanceBusinessIdTest {
   }
 
   @Test
-  public void shouldAcceptIdenticalAssignmentAsNoOpWithoutSecondEvent() {
+  public void shouldRejectIdenticalReassignment() {
     // given
     engine.deployment().withXmlResource(USER_TASK_PROCESS).deploy();
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
@@ -278,30 +277,23 @@ public final class AssignProcessInstanceBusinessIdTest {
         .withBusinessId("biz-1")
         .assign();
 
-    // when: an identical assignment (no-op) followed by a different one used as a barrier
-    engine
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .businessIdAssignment()
-        .withBusinessId("biz-1")
-        .assignExpectingNoEvent();
-    engine
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .businessIdAssignment()
-        .withBusinessId("biz-2")
-        .expectRejection()
-        .assign();
+    // when: the identical value is re-sent
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .businessIdAssignment()
+            .withBusinessId("biz-1")
+            .expectRejection()
+            .assign();
 
-    // then: only the first assignment produced an ASSIGNED event
-    final var records =
-        RecordingExporter.processInstanceBusinessIdRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limit(r -> r.getRecordType() == RecordType.COMMAND_REJECTION)
-            .asList();
-    assertThat(records)
-        .filteredOn(r -> r.getIntent() == ProcessInstanceBusinessIdIntent.ASSIGNED)
-        .hasSize(1);
+    // then: a Business ID is assigned once and never re-assigned, so even an identical re-send is
+    // rejected rather than accepted as a silent no-op (ADR 0006, D3)
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            "Expected to assign a business id to process instance with key '%d', but it already has a business id assigned"
+                .formatted(processInstanceKey));
   }
 
   @Test

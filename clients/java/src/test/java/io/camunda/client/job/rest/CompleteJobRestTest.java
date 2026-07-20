@@ -18,6 +18,7 @@ package io.camunda.client.job.rest;
 import static io.camunda.client.api.command.enums.JobResultType.AD_HOC_SUB_PROCESS;
 import static io.camunda.client.api.command.enums.JobResultType.USER_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.response.ActivatedJob;
@@ -89,6 +90,44 @@ class CompleteJobRestTest extends ClientRestTest {
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getLeaseToken()).isEqualTo(leaseToken);
+  }
+
+  @Test
+  void shouldCompleteJobWithBusinessId() {
+    // given
+    final long jobKey = 12;
+    final String businessId = "biz-1";
+
+    // when
+    client.newCompleteCommand(jobKey).withBusinessId(businessId).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getBusinessId()).isEqualTo(businessId);
+  }
+
+  @Test
+  void shouldNotSetBusinessIdByDefault() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getBusinessId()).isNull();
+  }
+
+  @Test
+  void shouldRejectBlankBusinessId() {
+    // given
+    final long jobKey = 12;
+
+    // when/then
+    assertThatThrownBy(() -> client.newCompleteCommand(jobKey).withBusinessId("   "))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("businessId");
   }
 
   @Test

@@ -105,6 +105,26 @@ public interface CompleteJobCommandStep1
    */
   CompleteJobCommandStep1 withLeaseToken(String leaseToken);
 
+  /**
+   * Assigns the given business id to the job's root process instance as part of completing the job,
+   * letting a worker derive the identifier from work it just performed.
+   *
+   * <p>The assignment is single and irreversible and is only accepted while business id uniqueness
+   * is disabled. Only artifacts created after the assignment carry the business id;
+   * already-existing ones are not enriched. Completing with a business id that differs from one
+   * already assigned rejects the whole completion, leaving the job open; re-sending the identical
+   * business id is an idempotent no-op.
+   *
+   * <p>Passing {@code null} leaves the business id unset (no assignment is requested). A blank
+   * business id is rejected with an {@link IllegalArgumentException}.
+   *
+   * @param businessId the business id to assign to the root process instance
+   * @return the builder for this command. Call {@link #send()} to complete the command and send it
+   *     to the broker.
+   * @throws IllegalArgumentException if {@code businessId} is blank
+   */
+  CompleteJobCommandStep1 withBusinessId(String businessId);
+
   interface CompleteJobCommandJobResultStep {
     /**
      * Initializes the job result to allow corrections or a denial to be configured.

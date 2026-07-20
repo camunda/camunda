@@ -137,6 +137,11 @@ public final class JobClient {
     return this;
   }
 
+  public JobClient withBusinessId(final String businessId) {
+    jobRecord.setBusinessId(businessId);
+    return this;
+  }
+
   public JobClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;

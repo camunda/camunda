@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBusinessIdAssignmentBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBusinessIdRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
@@ -104,6 +106,12 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
         (job key '%d', type '%s', processInstanceKey '%d')
       """;
 
+  private static final String BUSINESS_ID_ASSIGNMENT_NO_INSTANCE_MESSAGE =
+      """
+        Expected to complete job with key '%d' and assign a business id to its process instance \
+        with key '%d', but no such process instance was found
+      """;
+
   private static final Set<String> CORRECTABLE_PROPERTIES =
       Set.of(
           UserTaskRecord.ASSIGNEE,
@@ -126,6 +134,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private final EventHandle eventHandle;
   private final ProcessingState processState;
   private final VariableBehavior variableBehavior;
+  private final ProcessInstanceBusinessIdAssignmentBehavior businessIdAssignmentBehavior;
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -141,7 +150,8 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
       final EventHandle eventHandle,
       final CslAuthorizationCheck cslCheck,
       final VariableBehavior variableBehavior,
-      final boolean includeVariablesInJobCompletedEvent) {
+      final boolean includeVariablesInJobCompletedEvent,
+      final boolean businessIdUniquenessEnabled) {
     processState = state;
     userTaskState = state.getUserTaskState();
     elementInstanceState = state.getElementInstanceState();
@@ -150,6 +160,9 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.includeVariablesInJobCompletedEvent = includeVariablesInJobCompletedEvent;
+    businessIdAssignmentBehavior =
+        new ProcessInstanceBusinessIdAssignmentBehavior(
+            writers.state(), businessIdUniquenessEnabled);
     preconditionChecker =
         new JobCommandPreconditionValidator(
             state.getJobState(),
@@ -165,7 +178,8 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
                 this::checkTaskListenerJobForSupportingDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkCreatingListenerJobForAssigneeCorrection,
-                this::checkTaskListenerJobForUnknownPropertyCorrections),
+                this::checkTaskListenerJobForUnknownPropertyCorrections,
+                this::checkBusinessIdAssignment),
             cslCheck);
     this.cslCheck = cslCheck;
     this.jobMetrics = jobMetrics;
@@ -222,7 +236,56 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     if (!includeVariablesInJobCompletedEvent) {
       job.setVariables(command.getValue().getVariablesBuffer());
     }
+    appendBusinessIdAssignment(command, job);
     postCompleteActions(job);
+  }
+
+  /**
+   * Assigns a Business ID to the job's process instance when the completion command carries one
+   * (ADR 0006, D11/D12). The assignment has already been validated as a precondition, so on any
+   * failure the whole COMPLETE command is rejected and the job is not completed (atomicity). The
+   * {@code ASSIGNED} event is appended before {@link #postCompleteActions(JobRecord)} so that any
+   * artifacts created while the process continues snapshot the newly assigned value.
+   */
+  private void appendBusinessIdAssignment(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    final String businessIdToAssign = command.getValue().getBusinessId();
+    if (businessIdToAssign.isEmpty()) {
+      return;
+    }
+
+    final var processInstance = elementInstanceState.getInstance(job.getProcessInstanceKey());
+    final var processInstanceRecord = processInstance.getValue();
+    final var assignment =
+        new ProcessInstanceBusinessIdRecord()
+            .setProcessInstanceKey(job.getProcessInstanceKey())
+            .setBusinessId(businessIdToAssign);
+    businessIdAssignmentBehavior.enrich(assignment, processInstanceRecord);
+    businessIdAssignmentBehavior.appendAssignedEvent(job.getProcessInstanceKey(), assignment);
+  }
+
+  /**
+   * Validates the optional Business ID assignment carried on the completion command against the
+   * job's process instance, reusing the same rules as the standalone ASSIGN command (ADR 0006,
+   * D12). Runs as a completion precondition so a failed assignment rejects the whole command.
+   */
+  private Either<Rejection, JobRecord> checkBusinessIdAssignment(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    final String businessIdToAssign = command.getValue().getBusinessId();
+    if (businessIdToAssign.isEmpty()) {
+      return Either.right(job);
+    }
+
+    final var processInstance = elementInstanceState.getInstance(job.getProcessInstanceKey());
+    if (processInstance == null) {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              BUSINESS_ID_ASSIGNMENT_NO_INSTANCE_MESSAGE.formatted(
+                  command.getKey(), job.getProcessInstanceKey())));
+    }
+
+    return businessIdAssignmentBehavior.validate(processInstance, businessIdToAssign).map(d -> job);
   }
 
   private void preCompleteActions(final JobRecord job, final ProcessingSession session) {

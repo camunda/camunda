@@ -228,6 +228,9 @@ public final class RequestMapper extends RequestUtil {
     if (grpcRequest.hasLeaseToken()) {
       brokerRequest.setLeaseToken(grpcRequest.getLeaseToken());
     }
+    if (grpcRequest.hasBusinessId()) {
+      brokerRequest.setBusinessId(ensureRequiredBusinessIdValid(grpcRequest.getBusinessId()));
+    }
     return brokerRequest;
   }
 

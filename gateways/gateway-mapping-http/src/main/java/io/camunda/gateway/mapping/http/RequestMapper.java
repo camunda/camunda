@@ -17,6 +17,7 @@ import static io.camunda.gateway.mapping.http.validator.ElementRequestValidator.
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobBatchUpdateRequest;
+import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobCompletionRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.gateway.mapping.http.validator.JobRequestValidator.validateJobUpdateRequest;
 import static io.camunda.gateway.mapping.http.validator.MessageRequestValidator.validateMessageCorrelationRequest;
@@ -255,13 +256,17 @@ public class RequestMapper {
                 correlationRequest.getBusinessId()));
   }
 
-  public static CompleteJobRequest toJobCompletionRequest(
+  public static Either<ProblemDetail, CompleteJobRequest> toJobCompletionRequest(
       final JobCompletionRequest completionRequest, final long jobKey) {
-    return new CompleteJobRequest(
-        jobKey,
-        getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
-        getJobResultOrDefault(completionRequest),
-        completionRequest == null ? null : completionRequest.getLeaseToken());
+    return getResult(
+        validateJobCompletionRequest(completionRequest),
+        () ->
+            new CompleteJobRequest(
+                jobKey,
+                getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
+                getJobResultOrDefault(completionRequest),
+                completionRequest == null ? null : completionRequest.getLeaseToken(),
+                completionRequest == null ? null : completionRequest.getBusinessId()));
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -946,7 +951,11 @@ public class RequestMapper {
       @Nullable String leaseToken) {}
 
   public record CompleteJobRequest(
-      long jobKey, Map<String, Object> variables, JobResult result, @Nullable String leaseToken) {}
+      long jobKey,
+      Map<String, Object> variables,
+      JobResult result,
+      @Nullable String leaseToken,
+      @Nullable String businessId) {}
 
   public record UpdateJobRequest(
       long jobKey,

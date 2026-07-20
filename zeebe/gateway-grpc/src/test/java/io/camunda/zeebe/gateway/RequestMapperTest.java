@@ -716,6 +716,60 @@ public class RequestMapperTest {
   }
 
   @Nested
+  class CompleteJobRequestBusinessIdTest {
+
+    @Test
+    public void shouldMapValidBusinessId() {
+      // given
+      final var grpcRequest =
+          CompleteJobRequest.newBuilder().setJobKey(1L).setBusinessId("order-12345").build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEqualTo("order-12345");
+    }
+
+    @Test
+    public void shouldNotSetBusinessIdWhenAbsent() {
+      // given
+      final var grpcRequest = CompleteJobRequest.newBuilder().setJobKey(1L).build();
+
+      // when
+      final var brokerRequest = RequestMapper.toCompleteJobRequest(grpcRequest);
+
+      // then
+      assertThat(brokerRequest.getRequestWriter().getBusinessId()).isEmpty();
+    }
+
+    @Test
+    public void shouldRejectEmptyBusinessId() {
+      // given
+      final var grpcRequest =
+          CompleteJobRequest.newBuilder().setJobKey(1L).setBusinessId("").build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toCompleteJobRequest(grpcRequest))
+          .isInstanceOf(InvalidBusinessIdException.class)
+          .hasMessageContaining("no business id was provided");
+    }
+
+    @Test
+    public void shouldRejectBusinessIdExceedingMaxLength() {
+      // given
+      final var grpcRequest =
+          CompleteJobRequest.newBuilder().setJobKey(1L).setBusinessId("a".repeat(257)).build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toCompleteJobRequest(grpcRequest))
+          .isInstanceOf(InvalidBusinessIdException.class)
+          .hasMessageContaining("business id")
+          .hasMessageContaining("256");
+    }
+  }
+
+  @Nested
   class CreateProcessInstanceWithResultRequestBusinessIdTest {
 
     @Test

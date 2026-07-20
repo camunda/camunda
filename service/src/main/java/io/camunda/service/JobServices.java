@@ -157,12 +157,16 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final Map<String, Object> variables,
       final JobResult result,
       final String leaseToken,
+      final String businessId,
       final CamundaAuthentication authentication) {
     final var request =
         new BrokerCompleteJobRequest(
             jobKey, getDocumentOrEmpty(variables), result, maxVariableNameLength);
     if (leaseToken != null) {
       request.setLeaseToken(leaseToken);
+    }
+    if (businessId != null) {
+      request.setBusinessId(businessId);
     }
     return sendBrokerRequest(request, authentication);
   }
