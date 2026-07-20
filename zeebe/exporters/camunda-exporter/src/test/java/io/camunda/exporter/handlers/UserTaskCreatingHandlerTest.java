@@ -163,7 +163,7 @@ public class UserTaskCreatingHandlerTest {
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setKey(recordKey)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -191,7 +191,7 @@ public class UserTaskCreatingHandlerTest {
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setKey(recordKey)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

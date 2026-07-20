@@ -184,7 +184,7 @@ public class JobBatchMetricsExportedHandlerTest {
             .setTenantId("tenant1")
             .setJobType("jobType1")
             .setWorker("worker1");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

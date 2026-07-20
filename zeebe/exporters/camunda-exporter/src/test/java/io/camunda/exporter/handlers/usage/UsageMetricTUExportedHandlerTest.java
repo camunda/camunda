@@ -93,7 +93,7 @@ class UsageMetricTUExportedHandlerTest
     final var now = OffsetDateTime.now().toEpochSecond();
     final var usageMetricsBatch = new UsageMetricsTUBatch(EVENT_KEY);
     composeUsageMetricsTU(now).forEach(usageMetricsBatch::addMetric);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

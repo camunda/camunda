@@ -277,7 +277,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     final CorrelatedMessageSubscriptionEntity entity =
         underTest.createNewEntity(underTest.generateIds(record).getFirst());
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

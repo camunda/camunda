@@ -92,7 +92,7 @@ public class FormHandlerTest {
   void shouldAddEntityOnFlush() {
     // given
     final FormEntity inputEntity = new FormEntity().setId("111");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -106,7 +106,7 @@ public class FormHandlerTest {
   void shouldAddEntityOnFlushForDeletion() {
     // given
     final FormEntity inputEntity = new FormEntity().setId("111").setKey(123L).setIsDeleted(true);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

@@ -207,7 +207,7 @@ public class UserTaskVariableHandlerTest {
             .setScopeKey(456L);
 
     variableBatch.getVariables().addAll(List.of(processVariableEntity, taskVariableEntity));
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final ArgumentCaptor<String> idCaptor = ArgumentCaptor.forClass(String.class);

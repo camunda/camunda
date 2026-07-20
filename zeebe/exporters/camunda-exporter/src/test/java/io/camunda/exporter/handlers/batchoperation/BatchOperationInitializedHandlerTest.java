@@ -108,7 +108,7 @@ class BatchOperationInitializedHandlerTest {
             .setId("123")
             .setState(BatchOperationState.ACTIVE)
             .setStartDate(startDate);
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
 
     // when

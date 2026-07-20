@@ -578,7 +578,7 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
     expectedUpdateFields.put(LAST_UPDATE_TIME, jobEntity.getLastUpdateTime());
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -645,7 +645,7 @@ final class JobHandlerTest {
     expectedUpdateFields.put(JOB_DENIED_REASON, deniedReason);
     expectedUpdateFields.put(LAST_UPDATE_TIME, jobEntity.getLastUpdateTime());
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

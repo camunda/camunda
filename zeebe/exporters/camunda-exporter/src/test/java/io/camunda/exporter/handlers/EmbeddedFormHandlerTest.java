@@ -100,7 +100,7 @@ public class EmbeddedFormHandlerTest {
     final var batch = new EmbeddedFormBatch().setId("111");
     batch.setForms(Collections.singletonList(inputEntity));
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
 
     // when
@@ -118,7 +118,7 @@ public class EmbeddedFormHandlerTest {
     final var batch = new EmbeddedFormBatch().setId("111");
     batch.setForms(Arrays.asList(firstInputEntity, secondInputEntity));
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
 
     // when
@@ -134,7 +134,7 @@ public class EmbeddedFormHandlerTest {
     // given
     final var inputEntity = new EmbeddedFormBatch().setId("111");
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
 
     // when

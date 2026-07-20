@@ -111,7 +111,7 @@ final class DecisionHandlerTest {
   void shouldAddEntityOnFlush() {
     // given
     final DecisionDefinitionEntity inputEntity = new DecisionDefinitionEntity().setId("111");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

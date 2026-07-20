@@ -199,7 +199,7 @@ class ProcessInstanceHistoryDeletionOperationHandlerTest {
     entity.setProcessInstanceKey(456L);
     entity.setCompletedDate(OffsetDateTime.now());
     entity.setErrorMessage("error message");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
     handler.flush(index, entity, mockRequest);
     verify(mockRequest, times(1))

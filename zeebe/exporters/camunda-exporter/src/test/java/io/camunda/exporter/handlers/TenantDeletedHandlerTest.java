@@ -78,7 +78,7 @@ public class TenantDeletedHandlerTest {
   void shouldDeleteEntityOnFlush() throws PersistenceException {
     // given
     final TenantEntity inputEntity = new TenantEntity().setId("test-tenant");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

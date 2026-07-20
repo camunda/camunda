@@ -113,7 +113,7 @@ class ListViewFromChunkItemHandlerTest {
     entity.setBatchOperationIds(List.of(batchOperationKey));
 
     // when
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
     underTest.flush(index, entity, batchRequest);
 

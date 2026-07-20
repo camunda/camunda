@@ -116,7 +116,7 @@ public class ListViewVariableFromVariableHandlerTest {
     expectedUpdateFields.put(VAR_NAME, inputEntity.getVarName());
     expectedUpdateFields.put(VAR_VALUE, inputEntity.getVarValue());
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
