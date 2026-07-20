@@ -13,7 +13,7 @@ package io.camunda.it.rdbms.db.util;
  * <p>The admin JDBC URL (see {@value AbstractAuroraReplicationCluster#ENV_JDBC_URL}) is expected to
  * be a {@code jdbc:postgresql://<endpoint>:5432/postgres}-style URL.
  */
-public final class AuroraReplicationCluster extends AbstractAuroraReplicationCluster {
+public final class AuroraPostgresReplicationCluster extends AbstractAuroraReplicationCluster {
 
   @Override
   protected String dropDatabaseStatement(final String databaseName) {
