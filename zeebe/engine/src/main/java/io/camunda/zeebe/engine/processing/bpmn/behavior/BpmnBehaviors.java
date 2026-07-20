@@ -64,4 +64,6 @@ public interface BpmnBehaviors {
   BpmnAdHocSubProcessBehavior adHocSubProcessBehavior();
 
   AgentInstanceBehavior agentInstanceBehavior();
+
+  BpmnProcessDeletionBehavior processDeletionBehavior();
 }
