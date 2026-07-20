@@ -323,8 +323,26 @@ public final class SourceLoop<R> {
     }
   }
 
+  /**
+   * Closes a controller, defensively demoting it first if it is still ACTIVE. {@link
+   * PartitionRoleController#close()} calls {@link Task#close()} — the FULL close, not {@link
+   * Task#closeKeepingStores()} — whenever a task is present, and a task built to participate in
+   * role changes closes its own provider from {@link Task#close()} exactly as it always has (see
+   * e.g. {@code ProjectionStageTask#close()}); closing an ACTIVE controller directly would
+   * therefore close the provider twice — once from that {@code close()}, once more from {@link
+   * PartitionRoleController#close()} itself. Demoting first ({@link
+   * PartitionRoleController#demote()} — {@link Task#closeKeepingStores()}, provider left open)
+   * makes {@code role()} STANDBY (task {@code null}) before this ever calls {@code close()}, so the
+   * provider closes exactly once. Every caller here reaches this already-demoted in practice
+   * ({@link #demoteOrRelease} demotes before releasing, {@link #applyStandbyRevocations} only ever
+   * touches a STANDBY controller) except {@link #closeRoleControllers}, shutdown's true teardown of
+   * whatever role a controller was still in.
+   */
   private void closeController(
       final int partition, final PartitionRoleController<?, R> controller) {
+    if (controller.role() == PartitionRoleController.Role.ACTIVE) {
+      controller.demote();
+    }
     try {
       controller.close();
     } catch (final Exception e) {
