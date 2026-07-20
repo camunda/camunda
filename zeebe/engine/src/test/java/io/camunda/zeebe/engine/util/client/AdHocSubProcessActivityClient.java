@@ -56,6 +56,17 @@ public class AdHocSubProcessActivityClient {
     return expectation.apply(position);
   }
 
+  public Record<AdHocSubProcessInstructionRecordValue> activate(final String username) {
+    final var position =
+        writer.writeCommand(
+            AdHocSubProcessInstructionIntent.ACTIVATE,
+            username,
+            adHocSubProcessInstructionRecord,
+            authorizedTenantIds.toArray(new String[0]));
+
+    return expectation.apply(position);
+  }
+
   public AdHocSubProcessActivityClient expectRejection() {
     expectation = REJECTION_EXPECTATION;
     return this;
