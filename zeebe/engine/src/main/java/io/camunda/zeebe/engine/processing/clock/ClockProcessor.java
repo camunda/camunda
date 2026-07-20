@@ -67,7 +67,7 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
 
     applyClockModification(eventKey, intent, resultIntent, clockRecord);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, resultIntent, clockRecord, command);
+      responseWriter.writeAcceptedResponseOnCommand(eventKey, resultIntent, clockRecord, command);
     }
 
     commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);

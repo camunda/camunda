@@ -45,7 +45,8 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
       if (optionalResource.isPresent()) {
         final var record = asResourceRecord(optionalResource.get());
         stateWriter.appendFollowUpEvent(resourceKey, ResourceIntent.FETCHED, record);
-        responseWriter.writeEventOnCommand(resourceKey, ResourceIntent.FETCHED, record, command);
+        responseWriter.writeAcceptedResponseOnCommand(
+            resourceKey, ResourceIntent.FETCHED, record, command);
         return;
       }
     }

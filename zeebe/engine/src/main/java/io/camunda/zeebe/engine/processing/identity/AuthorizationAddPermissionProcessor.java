@@ -61,7 +61,7 @@ public final class AuthorizationAddPermissionProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord, command);
   }
 

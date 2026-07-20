@@ -70,7 +70,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     stateWriter.appendFollowUpEvent(eventKey, SignalIntent.BROADCASTED, signalRecord);
 
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, SignalIntent.BROADCASTED, signalRecord, command);
+      responseWriter.writeAcceptedResponseOnCommand(
+          eventKey, SignalIntent.BROADCASTED, signalRecord, command);
     }
 
     signalSubscriptionState.visitBySignalName(

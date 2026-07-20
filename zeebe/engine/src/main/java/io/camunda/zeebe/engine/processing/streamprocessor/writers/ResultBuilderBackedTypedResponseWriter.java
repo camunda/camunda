@@ -62,7 +62,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeEventOnCommand(
+  public void writeAcceptedResponseOnCommand(
       final long eventKey,
       final Intent eventState,
       final UnpackedObject eventValue,

@@ -98,6 +98,8 @@ public final class VariableDocumentUpdateProcessor
     final long key = keyGenerator.nextKey();
 
     writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-    writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+    writers
+        .response()
+        .writeAcceptedResponseOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 }

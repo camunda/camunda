@@ -73,7 +73,7 @@ public class DecisionEvaluationEvaluteProcessor
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),
                   evaluationRecordTuple.getRight());
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),
                   evaluationRecordTuple.getRight(),

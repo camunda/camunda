@@ -134,7 +134,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
           });
     }
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.FAILED, failedJob);
-    responseWriter.writeEventOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
+    responseWriter.writeAcceptedResponseOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
     jobMetrics.countJobEvent(JobAction.FAILED, failedJob.getJobKind(), failedJob.getType());
 
     setFailedVariables(failedJob);

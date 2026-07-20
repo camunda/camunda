@@ -62,6 +62,6 @@ public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserT
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, updateRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, updateRecord);
-    responseWriter.writeEventOnCommand(userTaskKey, UserTaskIntent.UPDATED, updateRecord, command);
+    responseWriter.writeAcceptedResponseOnCommand(userTaskKey, UserTaskIntent.UPDATED, updateRecord, command);
   }
 }
