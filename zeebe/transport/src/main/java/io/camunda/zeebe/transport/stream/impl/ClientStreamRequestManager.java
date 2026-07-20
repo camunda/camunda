@@ -32,10 +32,13 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,16 +238,22 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     final var request = new RemoveStreamRequest().streamId(registration.streamId());
     final var payload = BufferUtil.bufferAsArray(request);
 
-    final var pendingRequest = registration.pendingRequest();
-    if (pendingRequest == null) {
+    final var previousRequests =
+        Stream.of(registration.pendingRequest(), registration.legacyPendingRequest())
+            .filter(Objects::nonNull)
+            .map(CompletionStage::toCompletableFuture)
+            .toArray(CompletableFuture[]::new);
+    if (previousRequests.length == 0) {
       sendRemoveRequestAndLegacy(registration, payload);
       return;
     }
 
-    // to minimize the likelihood of out-of-order requests on the server side, wait until the
-    // current request is finished before sending the next request, regardless of the result
-    pendingRequest.whenCompleteAsync(
-        (ok, error) -> sendRemoveRequestAndLegacy(registration, payload), executor::run);
+    // to minimize the likelihood of out-of-order requests on the server side, wait until any
+    // current request (primary or legacy) is finished before sending the next one, regardless of
+    // the result
+    CompletableFuture.allOf(previousRequests)
+        .whenCompleteAsync(
+            (ok, error) -> sendRemoveRequestAndLegacy(registration, payload), executor::run);
   }
 
   private void sendRemoveRequestAndLegacy(
@@ -309,6 +318,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final byte[] request,
       final CompletableFuture<Void> added) {
     if (registration.state() != State.ADDING) {
+      added.complete(null);
       return;
     }
 
@@ -350,6 +360,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final byte[] request,
       final CompletableFuture<Void> legacyAdded) {
     if (registration.state() != State.ADDING) {
+      legacyAdded.complete(null);
       return;
     }
 
@@ -361,6 +372,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
             Function.identity(),
             registration.serverId(),
             REQUEST_TIMEOUT);
+    registration.setLegacyPendingRequest(pendingRequest);
     pendingRequest.whenCompleteAsync(
         (response, error) ->
             handleAddResponse(
@@ -381,6 +393,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     final var state = registration.state();
     if (state != State.ADDING) {
       LOGGER.trace("Skip handling ADD response since the state is {}", state, error);
+      added.complete(null);
       return;
     }
 
@@ -417,6 +430,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final byte[] request,
       final CompletableFuture<Void> removed) {
     if (registration.state() != State.REMOVING) {
+      removed.complete(null);
       return;
     }
 
@@ -458,6 +472,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
       final byte[] request,
       final CompletableFuture<Void> legacyRemoved) {
     if (registration.state() != State.REMOVING) {
+      legacyRemoved.complete(null);
       return;
     }
 
@@ -469,6 +484,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
             Function.identity(),
             registration.serverId(),
             REQUEST_TIMEOUT);
+    registration.setLegacyPendingRequest(pendingRequest);
     pendingRequest.whenCompleteAsync(
         (response, error) ->
             handleRemoveResponse(
@@ -489,6 +505,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     final var state = registration.state();
     if (state != State.REMOVING) {
       LOGGER.trace("Skip handling REMOVE response since the state is {}", state, error);
+      removed.complete(null);
       return;
     }
 
