@@ -107,6 +107,32 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
     return registration;
   }
 
+  /**
+   * Registers the OIDC redirect diagnostics filter when {@code
+   * security.auth.ccsm.diagnosticsEnabled=true}. The filter logs DEBUG/WARN diagnostics about
+   * forwarded-header mismatches and session-cookie issues in the OIDC redirect flow.
+   */
+  @Bean
+  @Order(org.springframework.core.Ordered.HIGHEST_PRECEDENCE)
+  FilterRegistrationBean<OidcRedirectDiagnosticsFilter> oidcRedirectDiagnosticsFilter() {
+    final var registration = new FilterRegistrationBean<OidcRedirectDiagnosticsFilter>();
+    final boolean enabled =
+        configurationService
+            .getAuthConfiguration()
+            .getCcsmAuthConfiguration()
+            .isDiagnosticsEnabled();
+    final String callbackPath = REST_API_PATH + AUTHENTICATION_PATH + CALLBACK;
+    registration.setFilter(new OidcRedirectDiagnosticsFilter(callbackPath));
+    registration.addUrlPatterns("/*");
+    registration.setOrder(org.springframework.core.Ordered.HIGHEST_PRECEDENCE);
+    registration.setEnabled(enabled);
+    if (enabled) {
+      LOG.info(
+          "OIDC redirect diagnostics filter enabled (security.auth.ccsm.diagnosticsEnabled=true)");
+    }
+    return registration;
+  }
+
   @Bean
   @Order(1)
   protected SecurityFilterChain configurePublicApi(final HttpSecurity http) {
