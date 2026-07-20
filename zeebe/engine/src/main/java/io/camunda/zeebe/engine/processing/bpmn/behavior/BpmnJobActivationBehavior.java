@@ -7,16 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
-import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsAdapter;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -35,7 +31,6 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -61,8 +56,7 @@ public class BpmnJobActivationBehavior {
   private final JobProcessingMetrics jobMetrics;
   private final InstantSource clock;
   private final PermissionsBehavior permissionsBehavior;
-  private final LazyTokenClaimsConverter claimsConverter;
-  private final EngineSecurityConfig securityConfig;
+  private final CslAuthorizationCheck cslCheck;
   private final JobAuthorizationLogger jobAuthorizationLogger;
 
   public BpmnJobActivationBehavior(
@@ -73,8 +67,7 @@ public class BpmnJobActivationBehavior {
       final JobProcessingMetrics jobMetrics,
       final InstantSource clock,
       final PermissionsBehavior permissionsBehavior,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
+      final CslAuthorizationCheck cslCheck) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -83,8 +76,7 @@ public class BpmnJobActivationBehavior {
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
     this.permissionsBehavior = permissionsBehavior;
-    this.claimsConverter = claimsConverter;
-    this.securityConfig = securityConfig;
+    this.cslCheck = cslCheck;
     this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
   }
 
@@ -218,16 +210,6 @@ public class BpmnJobActivationBehavior {
   }
 
   private AuthorizedTenants determineAuthorizedTenants(final Map<String, Object> claims) {
-    if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
-      return AuthorizedTenants.ANONYMOUS;
-    }
-    if (!securityConfig.isMultiTenancyChecksEnabled()) {
-      return AuthorizedTenants.DEFAULT_TENANTS;
-    }
-    if (claims.get(Authorization.AUTHORIZED_USERNAME) == null
-        && claims.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
-      return new AuthenticatedAuthorizedTenants(List.of());
-    }
-    return new AuthorizedTenantsAdapter(claimsConverter.convert(claims));
+    return cslCheck.resolveAuthorizedTenants(claims);
   }
 }

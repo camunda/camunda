@@ -267,10 +267,7 @@ public final class EngineProcessors {
             config,
             incidentMetrics,
             featureFlags.evaluateBoundaryEventCorrelationKeyInActivityScope(),
-            cslCheck,
-            authzService,
-            claimsConverter,
-            securityConfig);
+            cslCheck);
 
     typedRecordProcessors.withListener(bpmnBehaviors.incidentBehavior());
 
@@ -387,17 +384,9 @@ public final class EngineProcessors {
         writers,
         processingState,
         commandDistributionBehavior,
-        authzService,
-        claimsConverter,
-        securityConfig);
+        cslCheck);
     addConditionalEvaluationProcessors(
-        typedRecordProcessors,
-        bpmnBehaviors,
-        writers,
-        processingState,
-        authzService,
-        claimsConverter,
-        securityConfig);
+        typedRecordProcessors, bpmnBehaviors, writers, processingState, cslCheck);
     addCommandDistributionProcessors(
         commandDistributionBehavior,
         scheduledTaskStateFactory,
@@ -622,10 +611,7 @@ public final class EngineProcessors {
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final CslAuthorizationCheck cslCheck,
-      final AuthorizationCheckPort authzService,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
+      final CslAuthorizationCheck cslCheck) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -641,10 +627,7 @@ public final class EngineProcessors {
         config,
         incidentMetrics,
         evaluateBoundaryEventCorrelationKeyInActivityScope,
-        cslCheck,
-        authzService,
-        claimsConverter,
-        securityConfig);
+        cslCheck);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -878,11 +861,7 @@ public final class EngineProcessors {
       final Writers writers,
       final MutableProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckPort authzService,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
-    final var permissionsBehavior =
-        new PermissionsBehavior(processingState, authzService, claimsConverter, securityConfig);
+      final CslAuthorizationCheck cslCheck) {
     final var signalBroadcastProcessor =
         new SignalBroadcastProcessor(
             writers,
@@ -891,9 +870,7 @@ public final class EngineProcessors {
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
             commandDistributionBehavior,
-            permissionsBehavior,
-            claimsConverter,
-            securityConfig,
+            cslCheck,
             bpmnBehaviors.variableBehavior());
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
@@ -904,11 +881,7 @@ public final class EngineProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final MutableProcessingState processingState,
-      final AuthorizationCheckPort authzService,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
-    final var permissionsBehavior =
-        new PermissionsBehavior(processingState, authzService, claimsConverter, securityConfig);
+      final CslAuthorizationCheck cslCheck) {
     final var conditionalEvaluationProcessor =
         new ConditionalEvaluationEvaluateProcessor(
             writers,
@@ -916,9 +889,7 @@ public final class EngineProcessors {
             processingState,
             bpmnBehaviors.stateBehavior(),
             bpmnBehaviors.eventTriggerBehavior(),
-            permissionsBehavior,
-            claimsConverter,
-            securityConfig,
+            cslCheck,
             bpmnBehaviors.expressionProcessor());
     typedRecordProcessors.onCommand(
         ValueType.CONDITIONAL_EVALUATION,

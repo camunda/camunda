@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
@@ -88,10 +85,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final EngineConfiguration config,
       final IncidentMetrics incidentMetrics,
       final boolean evaluateBoundaryEventCorrelationKeyInActivityScope,
-      final CslAuthorizationCheck cslCheck,
-      final AuthorizationCheckPort authzService,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
+      final CslAuthorizationCheck cslCheck) {
 
     final var tenantClusterScope =
         new TenantScopeClusterVariableEvaluationContext(processingState.getClusterVariableState());
@@ -227,8 +221,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             clock,
             config.isBusinessIdUniquenessEnabled());
 
-    final var permissionsBehavior =
-        new PermissionsBehavior(processingState, authzService, claimsConverter, securityConfig);
+    final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
@@ -239,8 +232,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             jobMetrics,
             clock,
             permissionsBehavior,
-            claimsConverter,
-            securityConfig);
+            cslCheck);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(
