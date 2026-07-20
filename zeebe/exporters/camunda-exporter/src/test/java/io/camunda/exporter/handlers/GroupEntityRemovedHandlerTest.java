@@ -88,7 +88,7 @@ public class GroupEntityRemovedHandlerTest {
     final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild("111");
     final var inputEntity =
         new GroupMemberEntity().setId("111").setMemberId(memberId).setJoin(joinRelation);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

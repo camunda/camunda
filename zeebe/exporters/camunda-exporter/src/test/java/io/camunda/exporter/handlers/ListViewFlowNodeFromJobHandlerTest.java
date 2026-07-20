@@ -135,7 +135,7 @@ public class ListViewFlowNodeFromJobHandlerTest {
             .setJobFailedWithRetriesLeft(true);
     inputEntity.getJoinRelation().setParent(66L);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();

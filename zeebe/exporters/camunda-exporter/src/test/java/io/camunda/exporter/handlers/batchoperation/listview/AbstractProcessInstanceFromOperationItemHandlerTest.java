@@ -186,7 +186,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
     final String batchOperationKey = "batch-op-1";
     final var entity = underTest.createNewEntity(processInstanceKey + ":" + batchOperationKey);
     entity.setBatchOperationIds(List.of(batchOperationKey));
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // When

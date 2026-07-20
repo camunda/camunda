@@ -157,7 +157,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
   @Test
   void shouldFlushEntity() {
     // given
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
     final Record<BatchOperationChunkRecordValue> record =
         factory.generateRecordWithIntent(
@@ -183,7 +183,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
     // given
     when(batchOperationCache.get("42")).thenReturn(Optional.empty());
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
     final Record<BatchOperationChunkRecordValue> record = aChunkRecordWithMultipleItems(42L, 1);
     final var item = record.getValue().getItems().getFirst();

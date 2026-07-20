@@ -75,7 +75,7 @@ public class MappingRuleDeletedHandlerTest {
   void shouldDeleteEntityOnFlush() throws PersistenceException {
     // given
     final MappingRuleEntity inputEntity = new MappingRuleEntity().setId("111");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

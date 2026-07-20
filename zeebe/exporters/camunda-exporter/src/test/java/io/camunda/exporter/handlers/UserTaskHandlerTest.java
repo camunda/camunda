@@ -207,7 +207,7 @@ public class UserTaskHandlerTest {
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setKey(recordKey)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -240,7 +240,7 @@ public class UserTaskHandlerTest {
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setKey(recordKey)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -702,7 +702,7 @@ public class UserTaskHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(111L));
     underTest.updateEntity(taskRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -747,7 +747,7 @@ public class UserTaskHandlerTest {
     final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(123));
     underTest.updateEntity(taskRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     underTest.flush(index, taskEntity, mockRequest);
@@ -791,7 +791,7 @@ public class UserTaskHandlerTest {
         underTest.createNewEntity(String.valueOf(123)).setAssignee("test-assignee");
     underTest.updateEntity(taskRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     underTest.flush(index, taskEntity, mockRequest);
@@ -831,7 +831,7 @@ public class UserTaskHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(123));
     underTest.updateEntity(taskRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -888,7 +888,7 @@ public class UserTaskHandlerTest {
     final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(recordKey));
     underTest.updateEntity(taskRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     underTest.flush(index, taskEntity, mockRequest);
@@ -961,7 +961,7 @@ public class UserTaskHandlerTest {
     underTest.updateEntity(taskRecord, taskEntity);
     underTest.updateEntity(assignTaskRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     underTest.flush(index, taskEntity, mockRequest);
@@ -1000,7 +1000,7 @@ public class UserTaskHandlerTest {
     underTest.updateEntity(taskRecord, taskEntity);
 
     // when
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
     underTest.flush(index, taskEntity, mockRequest);
 

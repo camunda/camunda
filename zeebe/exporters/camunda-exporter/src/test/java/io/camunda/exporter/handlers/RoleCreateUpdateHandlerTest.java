@@ -108,7 +108,7 @@ public class RoleCreateUpdateHandlerTest {
   @Test
   void shouldAddEntityOnFlush() throws PersistenceException {
     // given
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final RoleEntity inputEntity = new RoleEntity().setId("111");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 

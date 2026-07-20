@@ -109,7 +109,7 @@ public class MigratedVariableHandlerTest {
             .setBpmnProcessId("procId")
             .setProcessDefinitionKey(123L)
             .setPosition(456L);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

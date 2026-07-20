@@ -86,7 +86,7 @@ public class TenantEntityRemovedHandlerTest {
     final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild("111");
     final var inputEntity =
         new TenantMemberEntity().setId("111").setMemberId("member-id-1").setJoin(joinRelation);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

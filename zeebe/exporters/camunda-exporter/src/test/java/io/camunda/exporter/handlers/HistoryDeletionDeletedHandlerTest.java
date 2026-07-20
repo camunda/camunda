@@ -133,7 +133,7 @@ class HistoryDeletionDeletedHandlerTest {
   void shouldAddEntityOnFlush() throws PersistenceException {
     // given
     final var historyDeletionEntity = new HistoryDeletionEntity();
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

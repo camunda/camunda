@@ -147,7 +147,7 @@ public class AuthorizationCreatedUpdatedHandlerTest {
   void shouldAddEntityOnFlush() throws PersistenceException {
     // given
     final var inputEntity = new AuthorizationEntity().setId("111");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
 
     // when

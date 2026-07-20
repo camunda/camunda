@@ -179,7 +179,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setTreePath("444/356/111")
             .setLevel(1)
             .setPosition(333L);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new HashMap<>();
@@ -221,7 +221,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setFlowNodeName(null)
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new HashMap<>();

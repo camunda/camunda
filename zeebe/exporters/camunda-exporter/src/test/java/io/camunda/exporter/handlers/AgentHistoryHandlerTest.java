@@ -329,7 +329,7 @@ final class AgentHistoryHandlerTest {
     final var entity = new AgentHistoryEntity().setId("1");
     underTest.updateEntity(record, entity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

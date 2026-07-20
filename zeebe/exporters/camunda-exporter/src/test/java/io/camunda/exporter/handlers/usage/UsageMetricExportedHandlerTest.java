@@ -95,7 +95,7 @@ class UsageMetricExportedHandlerTest
     final var existingMetrics = composeUsageMetrics(now, 11L, 22L);
     final var usageMetricsBatch = new UsageMetricsBatch(EVENT_KEY);
     existingMetrics.forEach(usageMetricsBatch::addMetric);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

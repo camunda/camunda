@@ -98,7 +98,7 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
     // given
     final ProcessInstanceForListViewEntity inputEntity =
         new ProcessInstanceForListViewEntity().setId("111").setBusinessId("my-business-id");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -116,7 +116,7 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
     // given
     final ProcessInstanceForListViewEntity inputEntity =
         new ProcessInstanceForListViewEntity().setId("111").setBusinessId("");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();

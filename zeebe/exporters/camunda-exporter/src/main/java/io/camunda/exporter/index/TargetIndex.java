@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.index;
 
-public interface TargetIndex {
+public sealed interface TargetIndex permits MainIndex {
   String name();
 
   static TargetIndex mainIndex(final String name) {

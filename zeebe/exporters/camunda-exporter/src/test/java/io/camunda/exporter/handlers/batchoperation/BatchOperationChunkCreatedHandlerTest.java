@@ -122,7 +122,7 @@ class BatchOperationChunkCreatedHandlerTest {
     final var entity = new BatchOperationEntity().setId("123:chunk").setEndDate(null);
     final Record<BatchOperationChunkRecordValue> record = createRecord(1L, 11L);
     underTest.updateEntity(record, entity);
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
 
     // when

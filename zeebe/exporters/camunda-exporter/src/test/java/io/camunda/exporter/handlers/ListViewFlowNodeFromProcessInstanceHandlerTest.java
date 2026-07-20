@@ -188,7 +188,7 @@ public class ListViewFlowNodeFromProcessInstanceHandlerTest {
             .setActivityId("A")
             .setActivityType(FlowNodeType.CALL_ACTIVITY)
             .setActivityState(FlowNodeState.ACTIVE);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();

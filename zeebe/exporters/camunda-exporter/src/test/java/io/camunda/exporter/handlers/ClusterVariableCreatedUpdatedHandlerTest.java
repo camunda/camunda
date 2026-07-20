@@ -155,7 +155,7 @@ public class ClusterVariableCreatedUpdatedHandlerTest {
                 io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope.TENANT)
             .setKind(ClusterVariableKind.SECRET_REFERENCE);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

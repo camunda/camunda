@@ -120,7 +120,7 @@ public class UserTaskProcessInstanceHandlerTest {
   void shouldAddEntityOnFlush() {
     // given
     final TaskProcessInstanceEntity inputEntity = new TaskProcessInstanceEntity().setId("111");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

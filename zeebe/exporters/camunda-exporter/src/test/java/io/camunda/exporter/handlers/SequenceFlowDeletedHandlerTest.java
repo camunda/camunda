@@ -107,7 +107,7 @@ public class SequenceFlowDeletedHandlerTest {
   void shouldDeleteEntityOnFlush() {
     // given
     final SequenceFlowEntity inputEntity = new SequenceFlowEntity();
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

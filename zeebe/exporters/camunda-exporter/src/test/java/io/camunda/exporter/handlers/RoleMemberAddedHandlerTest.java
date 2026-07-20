@@ -85,7 +85,7 @@ public class RoleMemberAddedHandlerTest {
     final var joinRelation = RoleIndex.JOIN_RELATION_FACTORY.createChild("111");
     final var inputEntity =
         new RoleMemberEntity().setId("111").setMemberId("member-id-2").setJoin(joinRelation);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

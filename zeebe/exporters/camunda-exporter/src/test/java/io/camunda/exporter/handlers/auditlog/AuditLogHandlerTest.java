@@ -124,7 +124,7 @@ class AuditLogHandlerTest {
   @Test
   void shouldAddEntityOnFlush() throws PersistenceException {
     final var entity = new AuditLogEntity().setId(ENTITY_ID);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     handler.flush(index, entity, batchRequest);

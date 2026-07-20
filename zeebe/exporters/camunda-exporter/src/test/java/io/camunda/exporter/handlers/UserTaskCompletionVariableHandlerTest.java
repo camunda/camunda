@@ -135,7 +135,7 @@ public class UserTaskCompletionVariableHandlerTest {
     // given
     final SnapshotTaskVariableEntity inputEntity =
         new SnapshotTaskVariableEntity().setId("111").setValue("value").setIsPreview(false);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

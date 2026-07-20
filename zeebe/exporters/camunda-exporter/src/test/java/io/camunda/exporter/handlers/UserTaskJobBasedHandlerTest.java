@@ -301,7 +301,7 @@ public class UserTaskJobBasedHandlerTest {
             .setKey(recordKey)
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -335,7 +335,7 @@ public class UserTaskJobBasedHandlerTest {
             .setState(TaskState.CREATED)
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -611,7 +611,7 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -652,7 +652,7 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -715,7 +715,7 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -779,7 +779,7 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -843,7 +843,7 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
@@ -901,7 +901,7 @@ public class UserTaskJobBasedHandlerTest {
                     .withKey(legacyJobKey)
                     .withValue(migrationCancelValue));
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when: process the migration cancel through the handler
@@ -961,7 +961,7 @@ public class UserTaskJobBasedHandlerTest {
                     .withKey(legacyJobKey)
                     .withValue(migrationCancelValue));
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
     final TaskEntity sharedEntity = underTest.createNewEntity(String.valueOf(legacyJobKey));
 
@@ -1034,7 +1034,7 @@ public class UserTaskJobBasedHandlerTest {
                     .withKey(legacyJobKey)
                     .withValue(normalCancelValue));
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when: non-migration cancel is handled normally (state update, not delete)
@@ -1082,7 +1082,7 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
