@@ -10,10 +10,11 @@ package io.camunda.qa.util.multidb;
 import static io.camunda.qa.util.multidb.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.configuration.beans.BrokerBasedProperties;
-import io.camunda.exporter.CamundaExporter;
+import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
+import io.camunda.configuration.Exporter;
+import io.camunda.configuration.SecondaryStorage;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import java.util.Map;
@@ -38,83 +39,23 @@ public class MultiDbConfiguratorTest {
     multiDbConfigurator.configureElasticsearchSupport(EXPECTED_URL, EXPECTED_PREFIX);
 
     // then
-
-    /* Tasklist Config Assertions */
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.tasklist.elasticsearch.indexPrefix",
-        EXPECTED_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.elasticsearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.zeebeElasticsearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.tasklist.elasticsearch.indexPrefix",
-        EXPECTED_PREFIX);
     assertProperty(
         testSimpleCamundaApplication,
         "camunda.tasklist.zeebeElasticsearch.prefix",
         EXPECTED_ZEEBE_PREFIX);
 
-    /* Operate Config Assertions */
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.elasticsearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(testSimpleCamundaApplication, "camunda.operate.elasticsearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.zeebeElasticsearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.elasticsearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.operate.zeebeElasticsearch.prefix",
-        EXPECTED_ZEEBE_PREFIX);
+    final SecondaryStorage secondaryStorage =
+        testSimpleCamundaApplication.unifiedConfig().getData().getSecondaryStorage();
+    assertThat(secondaryStorage.getType()).isEqualTo(SecondaryStorageType.elasticsearch);
+    assertThat(secondaryStorage.getRetention().isEnabled()).isFalse();
+    assertThat(secondaryStorage.getRetention().getMinimumAge()).isEqualTo("0s");
+    assertDocumentBasedDatabase(
+        secondaryStorage.getElasticsearch(), EXPECTED_URL, EXPECTED_PREFIX, "1h");
 
-    /* Camunda Config Assertions */
-
-    assertProperty(testSimpleCamundaApplication, "camunda.database.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(testSimpleCamundaApplication, "camunda.database.url", EXPECTED_URL);
-
-    final BrokerBasedProperties brokerBasedProperties =
-        testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
-    assertThat(brokerBasedProperties).isNotNull();
-
-    final ExporterCfg camundaExporter =
-        brokerBasedProperties
-            .getExporters()
-            .get(CamundaExporter.class.getSimpleName().toLowerCase());
-    assertThat(camundaExporter).isNotNull();
-
-    final Map<String, Object> exporterArgs = camundaExporter.getArgs();
-    assertThat(exporterArgs.get("index")).isEqualTo(Map.of("prefix", EXPECTED_PREFIX));
-
-    assertThat(exporterArgs.get("connect"))
-        .isEqualTo(
-            Map.of(
-                "url",
-                EXPECTED_URL,
-                "indexPrefix",
-                EXPECTED_PREFIX,
-                "type",
-                io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH));
-
-    assertThat(exporterArgs.get("history"))
-        .isEqualTo(
-            Map.of(
-                "waitPeriodBeforeArchiving",
-                "1h",
-                "retention",
-                Map.of(
-                    "enabled",
-                    Boolean.toString(false),
-                    "policyName",
-                    EXPECTED_PREFIX + "-ilm",
-                    "minimumAge",
-                    "0s",
-                    "usageMetricsPolicyName",
-                    EXPECTED_PREFIX + "-usage-metrics-ilm",
-                    "usageMetricsMinimumAge",
-                    "0s")));
+    // the camunda exporter is not declared explicitly; it is derived from the unified
+    // secondary-storage configuration at startup so that physical tenants export to their own
+    // storage instead of inheriting a root-pinned connection
+    assertNoExplicitCamundaExporter(testSimpleCamundaApplication);
   }
 
   @Test
@@ -128,78 +69,13 @@ public class MultiDbConfiguratorTest {
     multiDbConfigurator.configureElasticsearchSupport(EXPECTED_URL, EXPECTED_PREFIX, true);
 
     // then
-
-    final BrokerBasedProperties brokerBasedProperties =
-        testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
-    assertThat(brokerBasedProperties).isNotNull();
-
-    final ExporterCfg camundaExporter =
-        brokerBasedProperties
-            .getExporters()
-            .get(CamundaExporter.class.getSimpleName().toLowerCase());
-    assertThat(camundaExporter).isNotNull();
-
-    final Map<String, Object> exporterArgs = camundaExporter.getArgs();
-    assertThat(exporterArgs.get("history"))
-        .isEqualTo(
-            Map.of(
-                "waitPeriodBeforeArchiving",
-                "1s",
-                "retention",
-                Map.of(
-                    "enabled",
-                    Boolean.toString(true),
-                    "policyName",
-                    EXPECTED_PREFIX + "-ilm",
-                    "minimumAge",
-                    "0s",
-                    "usageMetricsPolicyName",
-                    EXPECTED_PREFIX + "-usage-metrics-ilm",
-                    "usageMetricsMinimumAge",
-                    "0s")));
-  }
-
-  @Test
-  public void shouldConfigureWithOpenSearchWithRetention() {
-    // given
-    final var testSimpleCamundaApplication = new TestCamundaApplication();
-    final MultiDbConfigurator multiDbConfigurator =
-        new MultiDbConfigurator(testSimpleCamundaApplication);
-
-    // when
-    multiDbConfigurator.configureOpenSearchSupport(
-        EXPECTED_URL, EXPECTED_PREFIX, EXPECTED_USER, EXPECTED_PW, true, false);
-
-    // then
-
-    final BrokerBasedProperties brokerBasedProperties =
-        testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
-    assertThat(brokerBasedProperties).isNotNull();
-
-    final ExporterCfg camundaExporter =
-        brokerBasedProperties
-            .getExporters()
-            .get(CamundaExporter.class.getSimpleName().toLowerCase());
-    assertThat(camundaExporter).isNotNull();
-
-    final Map<String, Object> exporterArgs = camundaExporter.getArgs();
-    assertThat(exporterArgs.get("history"))
-        .isEqualTo(
-            Map.of(
-                "waitPeriodBeforeArchiving",
-                "1s",
-                "retention",
-                Map.of(
-                    "enabled",
-                    Boolean.toString(true),
-                    "policyName",
-                    EXPECTED_PREFIX + "-ilm",
-                    "minimumAge",
-                    "0s",
-                    "usageMetricsPolicyName",
-                    EXPECTED_PREFIX + "-usage-metrics-ilm",
-                    "usageMetricsMinimumAge",
-                    "0s")));
+    final SecondaryStorage secondaryStorage =
+        testSimpleCamundaApplication.unifiedConfig().getData().getSecondaryStorage();
+    assertThat(secondaryStorage.getRetention().isEnabled()).isTrue();
+    assertThat(secondaryStorage.getRetention().getMinimumAge()).isEqualTo("0s");
+    assertDocumentBasedDatabase(
+        secondaryStorage.getElasticsearch(), EXPECTED_URL, EXPECTED_PREFIX, "1s");
+    assertNoExplicitCamundaExporter(testSimpleCamundaApplication);
   }
 
   @Test
@@ -214,83 +90,31 @@ public class MultiDbConfiguratorTest {
         EXPECTED_URL, EXPECTED_PREFIX);
 
     // then
+    final SecondaryStorage secondaryStorage =
+        testSimpleCamundaApplication.unifiedConfig().getData().getSecondaryStorage();
+    assertThat(secondaryStorage.getType()).isEqualTo(SecondaryStorageType.elasticsearch);
+    assertDocumentBasedDatabase(
+        secondaryStorage.getElasticsearch(), EXPECTED_URL, EXPECTED_PREFIX, "1h");
 
-    /* Tasklist Config Assertions */
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.tasklist.elasticsearch.indexPrefix",
-        EXPECTED_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.elasticsearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.zeebeElasticsearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.tasklist.elasticsearch.indexPrefix",
-        EXPECTED_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.tasklist.zeebeElasticsearch.prefix",
-        EXPECTED_ZEEBE_PREFIX);
-
-    /* Operate Config Assertions */
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.elasticsearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(testSimpleCamundaApplication, "camunda.operate.elasticsearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.zeebeElasticsearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.elasticsearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.operate.zeebeElasticsearch.prefix",
-        EXPECTED_ZEEBE_PREFIX);
-
-    /* Camunda Config Assertions */
-
-    assertProperty(testSimpleCamundaApplication, "camunda.database.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(testSimpleCamundaApplication, "camunda.database.url", EXPECTED_URL);
-
-    final BrokerBasedProperties brokerBasedProperties =
-        testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
-    assertThat(brokerBasedProperties).isNotNull();
-
-    final ExporterCfg esExporter =
-        brokerBasedProperties
+    final Exporter esExporter =
+        testSimpleCamundaApplication
+            .unifiedConfig()
+            .getData()
             .getExporters()
             .get(ElasticsearchExporter.class.getSimpleName().toLowerCase());
     assertThat(esExporter).isNotNull();
     assertThat(esExporter.getClassName()).isEqualTo(ElasticsearchExporter.class.getName());
-
-    final Map<String, Object> esExporterArgs = esExporter.getArgs();
-    assertThat(esExporterArgs)
+    assertThat(esExporter.getArgs())
         .isEqualTo(
             Map.of(
                 "url",
                 EXPECTED_URL,
                 "index",
-                Map.of("prefix", EXPECTED_PREFIX + "-zeebe-records"),
+                Map.of("prefix", EXPECTED_ZEEBE_PREFIX),
                 "bulk",
                 Map.of("size", 1)));
 
-    final ExporterCfg camundaExporter =
-        brokerBasedProperties
-            .getExporters()
-            .get(CamundaExporter.class.getSimpleName().toLowerCase());
-    assertThat(camundaExporter).isNotNull();
-
-    final Map<String, Object> exporterArgs = camundaExporter.getArgs();
-    assertThat(exporterArgs.get("index")).isEqualTo(Map.of("prefix", EXPECTED_PREFIX));
-
-    assertThat(exporterArgs.get("connect"))
-        .isEqualTo(
-            Map.of(
-                "url",
-                EXPECTED_URL,
-                "indexPrefix",
-                EXPECTED_PREFIX,
-                "type",
-                io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH));
+    assertNoExplicitCamundaExporter(testSimpleCamundaApplication);
   }
 
   @Test
@@ -305,92 +129,43 @@ public class MultiDbConfiguratorTest {
         EXPECTED_URL, EXPECTED_PREFIX, EXPECTED_USER, EXPECTED_PW);
 
     // then
-
-    /* Tasklist Config Assertions */
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.opensearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(testSimpleCamundaApplication, "camunda.tasklist.opensearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.zeebeOpensearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.opensearch.indexPrefix", EXPECTED_PREFIX);
     assertProperty(
         testSimpleCamundaApplication,
         "camunda.tasklist.zeebeOpensearch.prefix",
         EXPECTED_ZEEBE_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.opensearch.username", EXPECTED_USER);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.opensearch.password", EXPECTED_PW);
 
-    /* Operate Config Assertions */
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.opensearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(testSimpleCamundaApplication, "camunda.operate.opensearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.zeebeOpensearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.opensearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.operate.zeebeOpensearch.prefix",
-        EXPECTED_ZEEBE_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.opensearch.username", EXPECTED_USER);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.opensearch.password", EXPECTED_PW);
+    final SecondaryStorage secondaryStorage =
+        testSimpleCamundaApplication.unifiedConfig().getData().getSecondaryStorage();
+    assertThat(secondaryStorage.getType()).isEqualTo(SecondaryStorageType.opensearch);
+    assertThat(secondaryStorage.getRetention().isEnabled()).isFalse();
+    assertDocumentBasedDatabase(
+        secondaryStorage.getOpensearch(), EXPECTED_URL, EXPECTED_PREFIX, "1h");
+    assertThat(secondaryStorage.getOpensearch().getUsername()).isEqualTo(EXPECTED_USER);
+    assertThat(secondaryStorage.getOpensearch().getPassword()).isEqualTo(EXPECTED_PW);
+    assertThat(secondaryStorage.getOpensearch().isAwsEnabled()).isFalse();
 
-    /* Camunda Config Assertions */
+    assertNoExplicitCamundaExporter(testSimpleCamundaApplication);
+  }
 
-    assertProperty(testSimpleCamundaApplication, "camunda.database.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(testSimpleCamundaApplication, "camunda.database.url", EXPECTED_URL);
-    assertProperty(testSimpleCamundaApplication, "camunda.database.username", EXPECTED_USER);
-    assertProperty(testSimpleCamundaApplication, "camunda.database.password", EXPECTED_PW);
+  @Test
+  public void shouldConfigureWithOpenSearchWithRetention() {
+    // given
+    final var testSimpleCamundaApplication = new TestCamundaApplication();
+    final MultiDbConfigurator multiDbConfigurator =
+        new MultiDbConfigurator(testSimpleCamundaApplication);
 
-    final BrokerBasedProperties brokerBasedProperties =
-        testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
-    assertThat(brokerBasedProperties).isNotNull();
+    // when
+    multiDbConfigurator.configureOpenSearchSupport(
+        EXPECTED_URL, EXPECTED_PREFIX, EXPECTED_USER, EXPECTED_PW, true, false);
 
-    final ExporterCfg camundaExporter =
-        brokerBasedProperties
-            .getExporters()
-            .get(CamundaExporter.class.getSimpleName().toLowerCase());
-    assertThat(camundaExporter).isNotNull();
-
-    final Map<String, Object> exporterArgs = camundaExporter.getArgs();
-    assertThat(exporterArgs.get("index")).isEqualTo(Map.of("prefix", EXPECTED_PREFIX));
-
-    assertThat(exporterArgs.get("connect"))
-        .isEqualTo(
-            Map.of(
-                "url",
-                EXPECTED_URL,
-                "indexPrefix",
-                EXPECTED_PREFIX,
-                "type",
-                io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH,
-                "username",
-                EXPECTED_USER,
-                "password",
-                EXPECTED_PW));
-
-    assertThat(exporterArgs.get("history"))
-        .isEqualTo(
-            Map.of(
-                "waitPeriodBeforeArchiving",
-                "1h",
-                "retention",
-                Map.of(
-                    "enabled",
-                    Boolean.toString(false),
-                    "policyName",
-                    EXPECTED_PREFIX + "-ilm",
-                    "minimumAge",
-                    "0s",
-                    "usageMetricsPolicyName",
-                    EXPECTED_PREFIX + "-usage-metrics-ilm",
-                    "usageMetricsMinimumAge",
-                    "0s")));
+    // then
+    final SecondaryStorage secondaryStorage =
+        testSimpleCamundaApplication.unifiedConfig().getData().getSecondaryStorage();
+    assertThat(secondaryStorage.getRetention().isEnabled()).isTrue();
+    assertThat(secondaryStorage.getRetention().getMinimumAge()).isEqualTo("0s");
+    assertDocumentBasedDatabase(
+        secondaryStorage.getOpensearch(), EXPECTED_URL, EXPECTED_PREFIX, "1s");
+    assertNoExplicitCamundaExporter(testSimpleCamundaApplication);
   }
 
   @Test
@@ -405,100 +180,56 @@ public class MultiDbConfiguratorTest {
         EXPECTED_URL, EXPECTED_PREFIX, EXPECTED_USER, EXPECTED_PW);
 
     // then
+    final SecondaryStorage secondaryStorage =
+        testSimpleCamundaApplication.unifiedConfig().getData().getSecondaryStorage();
+    assertThat(secondaryStorage.getType()).isEqualTo(SecondaryStorageType.opensearch);
+    assertDocumentBasedDatabase(
+        secondaryStorage.getOpensearch(), EXPECTED_URL, EXPECTED_PREFIX, "1h");
 
-    /* Tasklist Config Assertions */
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.opensearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(testSimpleCamundaApplication, "camunda.tasklist.opensearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.zeebeOpensearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.opensearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.tasklist.zeebeOpensearch.prefix",
-        EXPECTED_ZEEBE_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.opensearch.username", EXPECTED_USER);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.tasklist.opensearch.password", EXPECTED_PW);
-
-    /* Operate Config Assertions */
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.opensearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(testSimpleCamundaApplication, "camunda.operate.opensearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.zeebeOpensearch.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.opensearch.indexPrefix", EXPECTED_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication,
-        "camunda.operate.zeebeOpensearch.prefix",
-        EXPECTED_ZEEBE_PREFIX);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.opensearch.username", EXPECTED_USER);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.operate.opensearch.password", EXPECTED_PW);
-
-    /* Camunda Config Assertions */
-
-    assertProperty(testSimpleCamundaApplication, "camunda.database.indexPrefix", EXPECTED_PREFIX);
-
-    assertProperty(testSimpleCamundaApplication, "camunda.database.url", EXPECTED_URL);
-    assertProperty(
-        testSimpleCamundaApplication, "camunda.data.secondary-storage.url", EXPECTED_URL);
-
-    assertProperty(testSimpleCamundaApplication, "camunda.database.username", EXPECTED_USER);
-    assertProperty(testSimpleCamundaApplication, "camunda.database.password", EXPECTED_PW);
-
-    final BrokerBasedProperties brokerBasedProperties =
-        testSimpleCamundaApplication.bean(BrokerBasedProperties.class);
-    assertThat(brokerBasedProperties).isNotNull();
-
-    final ExporterCfg camundaExporter =
-        brokerBasedProperties
-            .getExporters()
-            .get(CamundaExporter.class.getSimpleName().toLowerCase());
-    assertThat(camundaExporter).isNotNull();
-
-    final Map<String, Object> exporterArgs = camundaExporter.getArgs();
-    assertThat(exporterArgs.get("index")).isEqualTo(Map.of("prefix", EXPECTED_PREFIX));
-
-    assertThat(exporterArgs.get("connect"))
-        .isEqualTo(
-            Map.of(
-                "url",
-                EXPECTED_URL,
-                "indexPrefix",
-                EXPECTED_PREFIX,
-                "type",
-                io.camunda.search.connect.configuration.DatabaseType.OPENSEARCH,
-                "username",
-                EXPECTED_USER,
-                "password",
-                EXPECTED_PW));
-
-    final ExporterCfg osExporter =
-        brokerBasedProperties
+    final Exporter osExporter =
+        testSimpleCamundaApplication
+            .unifiedConfig()
+            .getData()
             .getExporters()
             .get(OpensearchExporter.class.getSimpleName().toLowerCase());
     assertThat(osExporter).isNotNull();
     assertThat(osExporter.getClassName()).isEqualTo(OpensearchExporter.class.getName());
-
-    final Map<String, Object> esExporterArgs = osExporter.getArgs();
-    assertThat(esExporterArgs)
+    assertThat(osExporter.getArgs())
         .isEqualTo(
             Map.of(
                 "url",
                 EXPECTED_URL,
                 "index",
-                Map.of("prefix", EXPECTED_PREFIX + "-zeebe-records"),
+                Map.of("prefix", EXPECTED_ZEEBE_PREFIX),
                 "bulk",
                 Map.of("size", 1),
                 "authentication",
                 Map.of("username", EXPECTED_USER, "password", EXPECTED_PW)));
+
+    assertNoExplicitCamundaExporter(testSimpleCamundaApplication);
   }
 
+  private static void assertDocumentBasedDatabase(
+      final DocumentBasedSecondaryStorageDatabase database,
+      final String expectedUrl,
+      final String expectedPrefix,
+      final String expectedWaitPeriodBeforeArchiving) {
+    assertThat(database.getUrl()).isEqualTo(expectedUrl);
+    assertThat(database.getIndexPrefix()).isEqualTo(expectedPrefix);
+    assertThat(database.getHistory().getPolicyName()).isEqualTo(expectedPrefix + "-ilm");
+    assertThat(database.getHistory().getWaitPeriodBeforeArchiving())
+        .isEqualTo(expectedWaitPeriodBeforeArchiving);
+    assertThat(database.getBulk().getSize()).isEqualTo(1);
+    assertThat(database.getRefreshInterval()).isEqualTo("100ms");
+  }
+
+  private static void assertNoExplicitCamundaExporter(
+      final TestCamundaApplication testApplication) {
+    assertThat(testApplication.unifiedConfig().getData().getExporters())
+        .doesNotContainKey("camundaexporter");
+  }
+
+  @SuppressWarnings("unchecked")
   private <T> void assertProperty(
       final TestCamundaApplication applicationContext,
       final String propertyKey,

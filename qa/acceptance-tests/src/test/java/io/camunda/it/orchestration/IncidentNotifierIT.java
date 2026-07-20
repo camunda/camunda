@@ -26,14 +26,12 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -77,25 +75,14 @@ public class IncidentNotifierIT {
     // stub webhook endpoint
     wireMockServer.stubFor(post(urlEqualTo(WEBHOOK_PATH)).willReturn(aResponse().withStatus(200)));
 
-    final var camundaExporter = CamundaExporter.class.getSimpleName().toLowerCase();
-
-    // configure exporter to point to WireMock
+    // configure the incident notifier to point to WireMock
     STANDALONE_CAMUNDA.withUnifiedConfig(
         c -> {
-          final var newArgs =
-              new HashMap<>(c.getData().getExporters().get(camundaExporter).getArgs());
-          final var baseUrl = wireMockServer.baseUrl();
-          newArgs.put(
-              "notifier",
-              Map.of(
-                  "webhook",
-                  baseUrl + WEBHOOK_PATH,
-                  "auth0Domain",
-                  "localhost:" + wireMockServer.port(),
-                  "auth0Protocol",
-                  "http"));
-
-          c.getData().getExporters().get(camundaExporter).setArgs(newArgs);
+          final var notifier =
+              c.getData().getSecondaryStorage().getDocumentBasedDatabase().getIncidentNotifier();
+          notifier.setWebhook(wireMockServer.baseUrl() + WEBHOOK_PATH);
+          notifier.setAuth0Domain("localhost:" + wireMockServer.port());
+          notifier.setAuth0Protocol("http");
         });
   }
 
