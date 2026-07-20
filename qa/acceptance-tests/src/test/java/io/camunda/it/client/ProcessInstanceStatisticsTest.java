@@ -74,17 +74,24 @@ public class ProcessInstanceStatisticsTest {
     waitForProcessInstances(
         1, f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED));
 
-    // when
-    final var actual =
-        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
-
-    // then
-    assertThat(actual).hasSize(2);
-
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L),
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+    // The process instance may report state=COMPLETED before the flow node instance records
+    // are updated, so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics for completed process")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("EndEvent", 0L, 0L, 0L, 1L),
+                        new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L)));
   }
 
   @Test
@@ -95,16 +102,24 @@ public class ProcessInstanceStatisticsTest {
     waitForProcessInstances(1, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(1, processDefinitionKey);
 
-    // when
-    final var actual =
-        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
-
-    // then
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("UserTask", 1L, 0L, 0L, 0L),
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+    // The user task record may be indexed before the flow node instance record is updated,
+    // so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics for active process")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("UserTask", 1L, 0L, 0L, 0L),
+                        new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L)));
   }
 
   @Test
@@ -159,16 +174,24 @@ public class ProcessInstanceStatisticsTest {
         1,
         f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.TERMINATED));
 
-    // when
-    final var actual =
-        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
-
-    // then
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("UserTask", 0L, 1L, 0L, 0L),
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+    // The process instance may report state=TERMINATED before the flow node instance records
+    // are updated, so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics for canceled process")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("UserTask", 0L, 1L, 0L, 0L),
+                        new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L)));
   }
 
   @Test
@@ -196,16 +219,24 @@ public class ProcessInstanceStatisticsTest {
     waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForUserTasks(6, processDefinitionKey);
 
-    // when
-    final var actual =
-        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
-
-    // then
-    assertThat(actual)
-        .hasSize(2)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("UserTaskMultiInstance", 3L, 0L, 0L, 0L),
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+    // The user task records may be indexed before the flow node instance records are updated,
+    // so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics for multi-instance activity")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("UserTaskMultiInstance", 3L, 0L, 0L, 0L),
+                        new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L)));
   }
 
   @Test
@@ -249,16 +280,25 @@ public class ProcessInstanceStatisticsTest {
                             .join()
                             .items())
                     .hasSize(3));
-    // when - then
-    assertThat(
-            camundaClient
-                .newProcessInstanceElementStatisticsRequest(processInstanceKey)
-                .send()
-                .join())
-        .hasSize(2)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("ScriptTaskMultiInstance", 0L, 0L, 3L, 0L),
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+
+    // The element instance records may be updated with the incident before the flow node
+    // instance record is, so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics with 3 incidents on iterations only")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("ScriptTaskMultiInstance", 0L, 0L, 3L, 0L),
+                        new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L)));
   }
 
   @Test
@@ -303,16 +343,24 @@ public class ProcessInstanceStatisticsTest {
                             .items())
                     .hasSize(1));
 
-    // when - then
-    assertThat(
-            camundaClient
-                .newProcessInstanceElementStatisticsRequest(processInstanceKey)
-                .send()
-                .join())
-        .hasSize(2)
-        .containsExactlyInAnyOrder(
-            new ProcessElementStatisticsImpl("UserTaskMultiInstance", 0L, 0L, 1L, 0L),
-            new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L));
+    // The process instance record may report hasIncident=true before the flow node instance
+    // record is updated, so we poll the element statistics endpoint.
+    Awaitility.await("should return element statistics with incident on multi-instance body")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                // when
+                assertThat(
+                        camundaClient
+                            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+                            .send()
+                            .join())
+                    // then
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                        new ProcessElementStatisticsImpl("UserTaskMultiInstance", 0L, 0L, 1L, 0L),
+                        new ProcessElementStatisticsImpl("StartEvent", 0L, 0L, 0L, 1L)));
   }
 
   private static DeploymentEvent deployResource(
