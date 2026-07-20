@@ -42,7 +42,7 @@ env:
   PARENT_WORKFLOW_FILE: 'docker-build-helm-integration.yml'
   MEDIC_TEST_AUTOMATION: '<!subteam^S09UF0EV0HG|test-automation-medic>'
   MEDIC_DISTRIBUTION: '<!subteam^S053K7C7QKU|distribution-medic>'
-  MEDIC_MONOREPO_DEVOPS: '<!subteam^S07D6C6B18T|monorepo-devops-medic>'
+  MEDIC_ENGINEERING_OPERATIONS: '<!subteam^S07D6C6B18T|monorepo-ci-medic>'
   MEDIC_CORE_FEATURES: '<!subteam^S08P2CU9V8W|core-features-medic>'
   STREAK_MARKER_ACTIVE: 'AlwaysGreen streak (active)'
   STREAK_MARKER_RESOLVED: 'AlwaysGreen streak (resolved)'
@@ -202,7 +202,7 @@ jobs:
             # ----------------------------------------------------------------
             # Build medic pings from failure-context artifacts on the latest run.
             # ----------------------------------------------------------------
-            MEDIC_PINGS="${MEDIC_MONOREPO_DEVOPS}"   # default owner: pipeline plumbing
+            MEDIC_PINGS="${MEDIC_ENGINEERING_OPERATIONS}"   # default owner: pipeline plumbing
 
             if [[ "${IS_STREAK}" == "true" ]]; then
               WORK_DIR="${RUNNER_TEMP}/streak-context-${BASE_REF//\//-}"
@@ -224,7 +224,7 @@ jobs:
                   case "$owner" in
                     "@camunda/test-automation-team")   mentions+=("${MEDIC_TEST_AUTOMATION}") ;;
                     "@camunda/distribution")            mentions+=("${MEDIC_DISTRIBUTION}") ;;
-                    "@camunda/engineering-operations")    mentions+=("${MEDIC_MONOREPO_DEVOPS}") ;;
+                    "@camunda/engineering-operations")    mentions+=("${MEDIC_ENGINEERING_OPERATIONS}") ;;
                     "@camunda/core-features")           mentions+=("${MEDIC_CORE_FEATURES}") ;;
                   esac
                 done <<<"$OWNERS"

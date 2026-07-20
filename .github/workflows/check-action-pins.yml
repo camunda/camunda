@@ -153,7 +153,7 @@ jobs:
               '```',
               '',
               '### Need an exception?',
-              'If this action genuinely cannot be SHA-pinned (e.g. the vendor publishes only tags, or there is a policy reason), please contact the **monorepo-devops team on Slack**. The team owns the pinning policy and can apply the right exception centrally.',
+              'If this action genuinely cannot be SHA-pinned (e.g. the vendor publishes only tags, or there is a policy reason), please contact the **Engineering Operations team on Slack**. The team owns the pinning policy and can apply the right exception centrally.',
             ].join('\n');
 
             const resolvedBody = () => [
