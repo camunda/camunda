@@ -41,15 +41,24 @@
     <!-- Camunda License v1.0 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
+<<<<<<< HEAD
     <plugin.version.flatten>1.6.0</plugin.version.flatten>
+=======
+    <plugin.version.flatten>1.7.3</plugin.version.flatten>
+>>>>>>> 07e36d0b (build: publish flattened POM for pom-packaging modules during Central release)
     <!-- Default: do not swap the reactor POM for the flattened one. Overridden to true only under
          the central-sonatype-publish profile, so pom-packaging modules publish a self-contained
          (coordinates + metadata + resolved dependency versions) POM to Maven Central without
          altering normal reactor builds. Defined here (same POM as the profile) so the profile
          override wins; a definition in a child POM would shadow it. -->
     <flatten.updatePomFile>false</flatten.updatePomFile>
+<<<<<<< HEAD
     <plugin.version.javadoc>3.10.1</plugin.version.javadoc>
     <plugin.version.license>4.5</plugin.version.license>
+=======
+    <plugin.version.javadoc>3.12.0</plugin.version.javadoc>
+    <plugin.version.license>5.0.0</plugin.version.license>
+>>>>>>> 07e36d0b (build: publish flattened POM for pom-packaging modules during Central release)
     <plugin.version.spotless>3.2.1</plugin.version.spotless>
 
     <!--
@@ -430,10 +439,13 @@
       <id>central-sonatype-publish</id>
       <properties>
         <plugin.version.gpg>1.6</plugin.version.gpg>
+<<<<<<< HEAD
         <!-- TEMP override: release-parent 4.0.0 pins central-publishing-maven-plugin 0.7.0,
              which fails to deserialize Sonatype Central's new "warnings" response field.
              Remove once release-parent is bumped to >=4.1.0 (which pins 0.8.0). -->
         <plugin.version.central-publishing>0.8.0</plugin.version.central-publishing>
+=======
+>>>>>>> 07e36d0b (build: publish flattened POM for pom-packaging modules during Central release)
         <!-- Publish the flattened POM for pom-packaging modules so Central can extract coordinates
              and required metadata. Scoped to this publish profile to avoid altering normal builds. -->
         <flatten.updatePomFile>true</flatten.updatePomFile>
