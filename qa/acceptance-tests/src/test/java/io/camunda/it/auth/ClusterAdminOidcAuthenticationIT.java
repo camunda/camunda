@@ -140,8 +140,12 @@ public class ClusterAdminOidcAuthenticationIT {
     // when — a valid token that matches no configured client, group, or claim
     final HttpResponse<String> response = get(clusterUri(), bearer(accessToken(CLIENT_STRANGER)));
 
-    // then — authenticated, but without ROLE_CLUSTER_ADMIN the chain denies with 403
+    // then — authenticated, but without ROLE_CLUSTER_ADMIN the chain denies with 403 via the
+    // shared AuthFailureHandler (problem+json), matching the Basic chain
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_FORBIDDEN);
+    assertThat(response.headers().firstValue("content-type").orElse(""))
+        .contains("application/problem+json");
+    assertThat(response.body()).contains("\"status\":403");
   }
 
   @Test
@@ -149,8 +153,11 @@ public class ClusterAdminOidcAuthenticationIT {
     // when
     final HttpResponse<String> response = get(clusterUri(), null);
 
-    // then
+    // then — 401 via the shared handler (problem+json), not the default bearer challenge
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    assertThat(response.headers().firstValue("content-type").orElse(""))
+        .contains("application/problem+json");
+    assertThat(response.body()).contains("\"status\":401");
   }
 
   @Test
@@ -158,8 +165,11 @@ public class ClusterAdminOidcAuthenticationIT {
     // when
     final HttpResponse<String> response = get(clusterUri(), "Bearer not-a-valid-jwt");
 
-    // then
+    // then — 401 via the shared handler (problem+json), not the default bearer challenge
     assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    assertThat(response.headers().firstValue("content-type").orElse(""))
+        .contains("application/problem+json");
+    assertThat(response.body()).contains("\"status\":401");
   }
 
   private static void configureRealm() {

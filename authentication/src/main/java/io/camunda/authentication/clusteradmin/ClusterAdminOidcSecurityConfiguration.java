@@ -77,6 +77,7 @@ public class ClusterAdminOidcSecurityConfiguration {
                         jwt ->
                             jwt.decoder(jwtDecoder)
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter))
+                    .authenticationEntryPoint(authFailureHandler)
                     .accessDeniedHandler(authFailureHandler))
         .cors(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
