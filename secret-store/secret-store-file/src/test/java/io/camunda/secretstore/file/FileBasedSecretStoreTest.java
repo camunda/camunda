@@ -127,7 +127,7 @@ class FileBasedSecretStoreTest {
 
   @Test
   void shouldSkipHiddenEntriesInList() throws IOException {
-    // given — a real secret plus entries Kubernetes creates for atomic updates
+    // given: a real secret plus hidden entries (a leading-dot file and an atomic-update dir)
     writeSecret("a", "1");
     writeSecret(".env", "hidden");
     Files.createDirectory(secretsDir.resolve("..2026_07_13_10_00_00.123456789"));
@@ -155,8 +155,9 @@ class FileBasedSecretStoreTest {
   }
 
   @Test
-  void shouldResolveThroughKubernetesSymlinkLayout() throws IOException {
-    // given — mimic a mounted Secret volume: real files under ..data, symlinks at the top level
+  void shouldFollowSymlinkToRealFile() throws IOException {
+    // given: real files under a hidden ..data dir with top-level symlinks (the atomic-update
+    // layout a mounted Secret volume uses)
     final var dataDir = Files.createDirectory(secretsDir.resolve("..data"));
     Files.writeString(dataDir.resolve("db-password"), "s3cr3t", StandardCharsets.UTF_8);
     Files.createSymbolicLink(secretsDir.resolve("db-password"), dataDir.resolve("db-password"));
@@ -285,7 +286,7 @@ class FileBasedSecretStoreTest {
 
   @Test
   void shouldReturnNotFoundForHiddenName() throws IOException {
-    // given — a hidden file is k8s plumbing, not a listable/resolvable secret
+    // given: a hidden (leading-dot) file is not a listable or resolvable secret
     writeSecret(".env", "hidden");
     final var store = new FileBasedSecretStore(secretsDir);
 
@@ -301,14 +302,40 @@ class FileBasedSecretStoreTest {
   }
 
   @Test
-  void shouldThrowWhenSecretIsNotValidUtf8() throws IOException {
-    // given — bytes that are not decodable as UTF-8 (0xC3 expects a continuation byte)
+  void shouldReturnFailedWhenSecretIsNotValidUtf8() throws IOException {
+    // given: bytes that are not decodable as UTF-8 (0xC3 expects a continuation byte)
     Files.write(secretsDir.resolve("bad"), new byte[] {(byte) 0xC3, (byte) 0x28});
     final var store = new FileBasedSecretStore(secretsDir);
 
-    // when / then — surfaced loudly rather than silently substituting U+FFFD
-    assertThatThrownBy(() -> store.resolve(Set.of(new FileBasedSecretReference("bad"))))
-        .isInstanceOf(SecretStoreUnavailableException.class);
+    // when
+    final var entry =
+        store
+            .resolve(Set.of(new FileBasedSecretReference("bad")))
+            .get(new FileBasedSecretReference("bad"));
+
+    // then: surfaced as a per-ref failure rather than silently substituting U+FFFD or throwing
+    assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
+    assertThat(((SecretResolutionResult.Failed) entry).code())
+        .isEqualTo(SecretErrorCode.UNREADABLE);
+  }
+
+  @Test
+  void shouldFailOnlyUnreadableRefWhileResolvingOthersInBatch() throws IOException {
+    // given: one readable secret and one that cannot be decoded as UTF-8
+    writeSecret("good", "value");
+    Files.write(secretsDir.resolve("bad"), new byte[] {(byte) 0xC3, (byte) 0x28});
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // when
+    final var result =
+        store.resolve(
+            Set.of(new FileBasedSecretReference("good"), new FileBasedSecretReference("bad")));
+
+    // then: the unreadable secret fails on its own without aborting the batch
+    assertThat(resolvedValue(result, "good")).isEqualTo("value");
+    final var bad = result.get(new FileBasedSecretReference("bad"));
+    assertThat(bad).isInstanceOf(SecretResolutionResult.Failed.class);
+    assertThat(((SecretResolutionResult.Failed) bad).code()).isEqualTo(SecretErrorCode.UNREADABLE);
   }
 
   @Test
@@ -329,7 +356,8 @@ class FileBasedSecretStoreTest {
 
     // when / then
     assertThatThrownBy(() -> store.resolve(Set.of(new FileBasedSecretReference("any"))))
-        .isInstanceOf(SecretStoreUnavailableException.class);
+        .isInstanceOf(SecretStoreUnavailableException.class)
+        .hasMessageContaining("does not exist or is not a directory");
   }
 
   @Test
@@ -338,7 +366,9 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir.resolve("nonexistent"));
 
     // when / then
-    assertThatThrownBy(store::list).isInstanceOf(SecretStoreUnavailableException.class);
+    assertThatThrownBy(store::list)
+        .isInstanceOf(SecretStoreUnavailableException.class)
+        .hasMessageContaining("does not exist or is not a directory");
   }
 
   @Test
@@ -350,8 +380,11 @@ class FileBasedSecretStoreTest {
 
     // when / then
     assertThatThrownBy(() -> store.resolve(Set.of(new FileBasedSecretReference("any"))))
-        .isInstanceOf(SecretStoreUnavailableException.class);
-    assertThatThrownBy(store::list).isInstanceOf(SecretStoreUnavailableException.class);
+        .isInstanceOf(SecretStoreUnavailableException.class)
+        .hasMessageContaining("does not exist or is not a directory");
+    assertThatThrownBy(store::list)
+        .isInstanceOf(SecretStoreUnavailableException.class)
+        .hasMessageContaining("does not exist or is not a directory");
   }
 
   @Test

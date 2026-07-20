@@ -7,7 +7,9 @@
  */
 package io.camunda.secretstore.file;
 
+import static io.camunda.secretstore.SecretErrorCode.ACCESS_DENIED;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
+import static io.camunda.secretstore.SecretErrorCode.UNREADABLE;
 import static java.util.stream.Collectors.toMap;
 
 import io.camunda.secretstore.SecretResolutionResult;
@@ -100,9 +102,14 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
     } catch (final NoSuchFileException e) {
       // deleted between the check above and the read (e.g. rotation): treat as not found
       return notFound(name);
-    } catch (final IOException | SecurityException e) {
-      throw new SecretStoreUnavailableException(
-          "Failed to read secret '" + name + "' in '" + directory + "': " + e.getMessage(), e);
+    } catch (final SecurityException e) {
+      // one inaccessible secret must not abort the batch: surface it as a per-ref failure so the
+      // other refs still resolve.
+      return new SecretResolutionResult.Failed(
+          ACCESS_DENIED, "Access denied reading secret: " + name, e);
+    } catch (final IOException e) {
+      // read or decode failure (e.g. malformed UTF-8) for this one secret: fail only this ref.
+      return new SecretResolutionResult.Failed(UNREADABLE, "Failed to read secret: " + name, e);
     }
   }
 
