@@ -249,6 +249,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                 metadataPath,
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.DSYNC);
         final var output = Channels.newOutputStream(channel)) {
       metadata.encode(output);
