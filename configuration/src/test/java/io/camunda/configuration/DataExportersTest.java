@@ -116,4 +116,64 @@ class DataExportersTest {
           .containsEntry("foo", expectedExporterCfg);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // class has a registered merger (TestExporterConfigMergers.RecordingMerger)
+        "camunda.data.exporters.foo.class-name=io.camunda.configuration.test.MergeableExporter",
+        "camunda.data.exporters.foo.jar-path=jar-path",
+        "camunda.data.exporters.foo.args.arg1=value1",
+        "zeebe.broker.exporters.foo.className=io.camunda.configuration.test.MergeableExporter",
+        "zeebe.broker.exporters.foo.jarPath=jar-path",
+        "zeebe.broker.exporters.foo.args.arg1=value1Legacy",
+        "zeebe.broker.exporters.foo.args.arg2=value2",
+      })
+  class WithRegisteredMergerMergesArgs {
+    final BrokerBasedProperties brokerCfg;
+
+    WithRegisteredMergerMergesArgs(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldMergeLegacyAndUnifiedArgsViaExporterConfigMerger() {
+      final ExporterCfg exporterCfg = brokerCfg.getExporters().get("foo");
+      assertThat(exporterCfg).isNotNull();
+      assertThat(exporterCfg.getArgs())
+          .containsEntry("arg1", "value1") // unified (overlay) wins the collision
+          .containsEntry("arg2", "value2") // legacy (base) fills the gap
+          .containsEntry(
+              "mergedby", "test-merger"); // proves the SPI merger ran, not a full replace
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // class has NO registered merger
+        "camunda.data.exporters.foo.class-name=io.camunda.configuration.test.NoMergerExporter",
+        "camunda.data.exporters.foo.jar-path=jar-path",
+        "camunda.data.exporters.foo.args.arg1=value1",
+        "zeebe.broker.exporters.foo.className=io.camunda.configuration.test.NoMergerExporter",
+        "zeebe.broker.exporters.foo.jarPath=jar-path",
+        "zeebe.broker.exporters.foo.args.arg2=value2",
+      })
+  class WithNoMergerReplacesArgsWholesale {
+    final BrokerBasedProperties brokerCfg;
+
+    WithNoMergerReplacesArgsWholesale(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldReplaceArgsWholesaleWhenNoMergerShipsForClass() {
+      final ExporterCfg exporterCfg = brokerCfg.getExporters().get("foo");
+      assertThat(exporterCfg).isNotNull();
+      assertThat(exporterCfg.getArgs())
+          .containsEntry("arg1", "value1") // unified taken as-is
+          .doesNotContainKey("arg2") // legacy dropped: no merger ⇒ whole-map replace
+          .doesNotContainKey("mergedby"); // merger did not run
+    }
+  }
 }

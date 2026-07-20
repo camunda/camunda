@@ -37,6 +37,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.Throttle;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.Write;
 import io.camunda.configuration.Zone;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -65,15 +66,18 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.broker.system.configuration.partitioning.ZoneAwareCfg;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
 import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.ServiceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -1107,8 +1111,77 @@ public class BrokerBasedPropertiesOverride {
       LOGGER.warn(warningMessage);
     }
 
+    final List<ExporterConfigMerger> mergers =
+        ServiceLoader.load(ExporterConfigMerger.class).stream()
+            .map(ServiceLoader.Provider::get)
+            .toList();
+
     exporters.forEach(
-        (name, exporter) -> override.getExporters().put(name, exporter.toExporterCfg()));
+        (name, exporter) -> {
+          final ExporterCfg newCfg = exporter.toExporterCfg();
+          final ExporterCfg existing = override.getExporters().get(name);
+          if (existing != null && existing.getArgs() != null) {
+            newCfg.setArgs(mergeExporterArgs(mergers, name, newCfg, existing));
+          }
+          override.getExporters().put(name, newCfg);
+        });
+  }
+
+  /**
+   * Merges the legacy {@code args} (base) with the unified {@code args} (overlay) for one exporter.
+   * When an {@link ExporterConfigMerger} ships for the exporter's class, that class-aware merger
+   * deep-merges them (unified wins per key, legacy fills gaps); otherwise the unified args replace
+   * the legacy args wholesale — partial inheritance is only offered for classes whose config model
+   * a merger can introspect. Never mutates the input maps.
+   */
+  private static Map<String, Object> mergeExporterArgs(
+      final List<ExporterConfigMerger> mergers,
+      final String exporterName,
+      final ExporterCfg unified,
+      final ExporterCfg legacy) {
+    final String className =
+        unified.getClassName() != null ? unified.getClassName() : legacy.getClassName();
+    final ExporterConfigMerger merger = findExporterConfigMerger(mergers, exporterName, className);
+    if (merger == null) {
+      // no merger for this class: whole-map replace, the unified args exactly as declared
+      return unified.getArgs();
+    }
+    // defensive: mergers are SPI code and must not mutate their inputs — hand them immutable
+    // copies. legacy is the base (root position), unified overrides (tenant position) so unified
+    // wins.
+    final Map<String, Object> legacyArgs = immutableArgsCopy(legacy.getArgs());
+    final Map<String, Object> unifiedArgs = immutableArgsCopy(unified.getArgs());
+    try {
+      return merger.merge(legacyArgs, unifiedArgs);
+    } catch (final RuntimeException e) {
+      throw new UnifiedConfigurationException(
+          String.format(
+              "Failed to merge exporter args for exporter '%s': %s", exporterName, e.getMessage()),
+          e);
+    }
+  }
+
+  private static ExporterConfigMerger findExporterConfigMerger(
+      final List<ExporterConfigMerger> mergers, final String exporterName, final String className) {
+    if (className == null) {
+      return null;
+    }
+    final List<ExporterConfigMerger> claimants =
+        mergers.stream().filter(merger -> merger.supports(className)).toList();
+    if (claimants.size() > 1) {
+      throw new UnifiedConfigurationException(
+          String.format(
+              "Multiple ExporterConfigMerger implementations claim exporter class '%s' (exporter "
+                  + "'%s'): %s. Exactly one merger may support a given exporter class.",
+              className,
+              exporterName,
+              claimants.stream().map(m -> m.getClass().getName()).toList()));
+    }
+    return claimants.isEmpty() ? null : claimants.getFirst();
+  }
+
+  private static Map<String, Object> immutableArgsCopy(final Map<String, Object> args) {
+    return args == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(args));
   }
 
   private static void populateFromGlobalListeners(
