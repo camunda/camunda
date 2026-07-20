@@ -579,6 +579,63 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldContinueExportingWithHealthyExporterWhileOtherIsStuckRetrying() {
+    // given - exporter-0's backing store can be toggled to simulate an outage (e.g. a stopped DB)
+    final AtomicBoolean exporter0ShouldFail = new AtomicBoolean(false);
+    exporters
+        .get(0)
+        .onExport(
+            e -> {
+              if (exporter0ShouldFail.get()) {
+                throw new RuntimeException("simulated database outage");
+              }
+            });
+
+    startExporterDirector(exporterDescriptors);
+
+    // when - both exporters are healthy: the first record reaches both
+    final long eventPosition1 = writeEvent();
+    Awaitility.await("both exporters export the first record while healthy")
+        .untilAsserted(
+            () -> {
+              assertThat(exporters.get(0).getExportedRecords()).hasSize(1);
+              assertThat(exporters.get(1).getExportedRecords()).hasSize(1);
+            });
+
+    // exporter-0's backing store goes down: every export attempt fails from now on
+    exporter0ShouldFail.set(true);
+    final long eventPosition2 = writeEvent();
+    final long eventPosition3 = writeEvent();
+    final long eventPosition4 = writeEvent();
+
+    // then - exporter-1 keeps exporting the new records immediately, without waiting for
+    // exporter-0's retries or backoff
+    Awaitility.await("the healthy exporter exports all new records while its sibling is stuck")
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(1).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(
+                        eventPosition1, eventPosition2, eventPosition3, eventPosition4));
+
+    // exporter-0 made no further progress at all while its backing store was down
+    assertThat(exporters.get(0).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition1);
+
+    // when - exporter-0's backing store recovers
+    exporter0ShouldFail.set(false);
+
+    // then - it catches up and exports everything it missed, in order, proving no records were
+    // lost while it was stuck
+    doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
+        .until((r) -> exporters.get(0).getExportedRecords().size() >= 4);
+    assertThat(exporters.get(0).getExportedRecords())
+        .extracting(Record::getPosition)
+        .containsExactly(eventPosition1, eventPosition2, eventPosition3, eventPosition4);
+  }
+
+  @Test
   public void shouldExecuteScheduledTask() throws Exception {
     // given
     final CountDownLatch timerTriggerLatch = new CountDownLatch(1);
