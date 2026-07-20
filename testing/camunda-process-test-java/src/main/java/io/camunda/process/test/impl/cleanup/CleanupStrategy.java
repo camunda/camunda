@@ -16,9 +16,10 @@
 package io.camunda.process.test.impl.cleanup;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Instant;
-import java.util.Set;
+import java.util.Collection;
 import java.util.function.Supplier;
 
 public interface CleanupStrategy {
@@ -27,5 +28,5 @@ public interface CleanupStrategy {
       CamundaManagementClient managementClient,
       Supplier<CamundaClient> clientSupplier,
       Instant testCaseStartTime,
-      Set<Long> deploymentKeys);
+      Collection<DeploymentEvent> deployments);
 }

@@ -29,6 +29,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
@@ -67,6 +68,7 @@ public class CompleteUserTaskTest {
 
   @Mock private CamundaProcessTestRuntime camundaProcessTestRuntime;
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
+  @Mock private Consumer<DeploymentEvent> deploymentCallback;
   @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
 
@@ -100,6 +102,7 @@ public class CompleteUserTaskTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
@@ -225,6 +228,7 @@ public class CompleteUserTaskTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectFailure,
               jsonMapper,
@@ -272,6 +276,7 @@ public class CompleteUserTaskTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
@@ -461,6 +466,7 @@ public class CompleteUserTaskTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectFailure,
               jsonMapper,

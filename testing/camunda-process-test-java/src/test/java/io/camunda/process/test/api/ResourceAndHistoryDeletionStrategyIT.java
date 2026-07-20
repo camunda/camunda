@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.impl.cleanup.ResourceAndHistoryDeletionStrategy;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -45,12 +46,22 @@ public class ResourceAndHistoryDeletionStrategyIT {
     // given
     final String preexistingProcessId = "preexisting-" + System.nanoTime();
     deploySimpleProcess(preexistingProcessId);
-    client.newCreateInstanceCommand().bpmnProcessId(preexistingProcessId).latestVersion().send().join();
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(preexistingProcessId)
+        .latestVersion()
+        .send()
+        .join();
 
     final Instant testCaseStartTime = processTestContext.getCurrentTime();
     final String testCaseProcessId = "test-case-" + System.nanoTime();
-    final long testCaseDeploymentKey = deploySimpleProcess(testCaseProcessId);
-    client.newCreateInstanceCommand().bpmnProcessId(testCaseProcessId).latestVersion().send().join();
+    final DeploymentEvent testCaseDeployment = deploySimpleProcess(testCaseProcessId);
+    client
+        .newCreateInstanceCommand()
+        .bpmnProcessId(testCaseProcessId)
+        .latestVersion()
+        .send()
+        .join();
 
     final ResourceAndHistoryDeletionStrategy strategy = new ResourceAndHistoryDeletionStrategy();
 
@@ -59,7 +70,7 @@ public class ResourceAndHistoryDeletionStrategyIT {
         Mockito.mock(CamundaManagementClient.class),
         processTestContext::createClient,
         testCaseStartTime,
-        Collections.singleton(testCaseDeploymentKey));
+        Collections.singleton(testCaseDeployment));
 
     // then
     Awaitility.await("Wait until test-case process instances are deleted")
@@ -85,14 +96,13 @@ public class ResourceAndHistoryDeletionStrategyIT {
         .isNotNull();
   }
 
-  private long deploySimpleProcess(final String processId) {
+  private DeploymentEvent deploySimpleProcess(final String processId) {
     return client
         .newDeployResourceCommand()
         .addProcessModel(
             Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
             processId + ".bpmn")
         .send()
-        .join()
-        .getKey();
+        .join();
   }
 }

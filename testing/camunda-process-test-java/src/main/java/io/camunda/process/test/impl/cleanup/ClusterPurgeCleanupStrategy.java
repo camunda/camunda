@@ -16,10 +16,11 @@
 package io.camunda.process.test.impl.cleanup;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Set;
+import java.util.Collection;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +34,7 @@ public final class ClusterPurgeCleanupStrategy implements CleanupStrategy {
       final CamundaManagementClient managementClient,
       final Supplier<CamundaClient> clientSupplier,
       final Instant testCaseStartTime,
-      final Set<Long> deploymentKeys) {
+      final Collection<DeploymentEvent> deployments) {
     LOG.debug("Purging cluster runtime data");
     final Instant startTime = Instant.now();
     managementClient.purgeCluster();

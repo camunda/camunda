@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -60,6 +61,7 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
 
   @Mock private CamundaProcessTestRuntime camundaProcessTestRuntime;
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
+  @Mock private Consumer<DeploymentEvent> deploymentCallback;
   @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
 
@@ -91,6 +93,7 @@ class CamundaProcessTestContextAwaitBehaviorResolutionTest {
         new CamundaProcessTestContextImpl(
             camundaProcessTestRuntime,
             clientCreationCallback,
+            deploymentCallback,
             clockClient,
             CamundaAssert::getAwaitBehavior,
             jsonMapper,
