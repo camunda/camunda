@@ -229,7 +229,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 										<Field
 											name={filter}
 											validate={OPTIONAL_FILTER_FIELDS[filter].validate}
-											type={OPTIONAL_FILTER_FIELDS[filter].type}
+											type={OPTIONAL_FILTER_FIELDS[filter].type === 'checkbox' ? 'checkbox' : undefined}
 										>
 											{({input}) => {
 												const field = OPTIONAL_FILTER_FIELDS[filter];

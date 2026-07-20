@@ -21,7 +21,7 @@
 function parseSearchValueSafe(raw: string) {
 	if (/^-?\d+$/.test(raw)) {
 		const num = Number(raw);
-		if (!Number.isSafeInteger(num) || String(num) !== raw) {
+		if (!Number.isSafeInteger(num) || (raw !== '-0' && String(num) !== raw)) {
 			return raw;
 		}
 	}
