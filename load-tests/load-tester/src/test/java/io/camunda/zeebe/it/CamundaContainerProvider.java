@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.it;
 
+import static io.camunda.process.test.impl.runtime.ContainerRuntimeEnvs.CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_DEFAULTHISTORYTTL;
+
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.time.Duration;
@@ -40,7 +42,12 @@ final class CamundaContainerProvider {
         System.getProperty(
             IMAGE_VERSION_PROPERTY, CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
     return new CamundaContainer(DockerImageName.parse(imageName).withTag(imageVersion))
-        .withImagePullPolicy(PullPolicy.ageBased(Duration.ofHours(12)));
+        .withImagePullPolicy(PullPolicy.ageBased(Duration.ofHours(12)))
+        // CamundaContainer defaults the RDBMS history TTL to PT2S and runs cleanup every 2-5s, so
+        // completed process instances are purged within seconds of completion. These ITs query
+        // completed instances after an async delay, which races that cleanup and flakes when the
+        // runner is slow. Extend the TTL so instances survive the assertion window.
+        .withEnv(CAMUNDA_ENV_DATA_SECONDARYSTORAGE_RDBMS_HISTORY_DEFAULTHISTORYTTL, "PT1H");
   }
 
   static void registerClientProperties(
