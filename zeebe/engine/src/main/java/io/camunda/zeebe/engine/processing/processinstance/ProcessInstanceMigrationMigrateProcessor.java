@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdH
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -151,6 +153,21 @@ public class ProcessInstanceMigrationMigrateProcessor
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
+    }
+
+    final var authorizations = command.getAuthorizations();
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null
+        || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
+      final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
+      if (!authorizedTenants.isAuthorizedForTenantId(processInstanceRecord.getTenantId())) {
+        final var message =
+            AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                "migrate a process instance", processInstanceKey, "such process instance");
+        enrichRejectionCommand(command, processInstanceRecord);
+        rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, message);
+        return;
+      }
     }
 
     requireNonDuplicateSourceElementIds(mappingInstructions, processInstanceKey);

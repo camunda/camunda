@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -248,7 +249,8 @@ public final class ProcessInstanceModificationModifyProcessor
       final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
       if (!authorizedTenants.isAuthorizedForTenantId(processInstance.getValue().getTenantId())) {
         final String tenantReason =
-            String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
+            AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                "modify a process instance", eventKey, "such process instance");
         responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, tenantReason);
         rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, tenantReason);
         return;

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
@@ -151,6 +152,23 @@ public final class DeploymentCreateProcessor
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
+    }
+
+    final var authorizations = command.getAuthorizations();
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null
+        || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
+      final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
+      if (!authorizedTenants.isAuthorizedForTenantId(command.getValue().getTenantId())) {
+        final var message =
+            "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
+                .formatted(
+                    PermissionType.CREATE,
+                    AuthorizationResourceType.RESOURCE,
+                    command.getValue().getTenantId());
+        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+        return;
+      }
     }
 
     transformAndDistributeDeployment(command);
