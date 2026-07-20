@@ -1,6 +1,6 @@
 # description: Runs daily to assign Renovate PRs to team members and manage stale PRs
 # type: CI Helper
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 ---
 name: Renovate Daily
@@ -15,7 +15,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  TEST_OWNER: '@camunda/monorepo-devops-team'
+  TEST_OWNER: '@camunda/engineering-operations'
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:

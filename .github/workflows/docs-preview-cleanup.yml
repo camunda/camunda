@@ -1,6 +1,6 @@
 # description: Weekly cleanup of orphaned documentation preview deployments
 # type: maintenance
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Docs Preview Cleanup
 
@@ -22,7 +22,7 @@ defaults:
     shell: bash
 
 env:
-  TEST_OWNER: '@camunda/monorepo-devops-team'
+  TEST_OWNER: '@camunda/engineering-operations'
 
 jobs:
   cleanup-orphaned-previews:
@@ -47,10 +47,10 @@ jobs:
             exit 0
           }
           git checkout gh-pages
-          
+
           # Check if pr-preview directory exists
           [[ ! -d "pr-preview" ]] && { echo "ℹ️ No pr-preview directory found"; exit 0; }
-          
+
           echo "📁 Current pr-preview contents:"
           ls -la pr-preview/
           echo ""
@@ -58,16 +58,16 @@ jobs:
           # Get open PRs and extract preview directories
           open_prs=$(gh pr list --state open --json number --jq '.[].number' --limit 500 | sort -n)
           cleaned_count=0
-          
+
           echo "Open PRs: $(echo "$open_prs" | tr '\n' ' ')"
-          
+
           # Process each preview directory
           for dir in pr-preview/pr-*/; do
             [[ ! -d "$dir" ]] && continue
-            
+
             pr_num=$(basename "$dir" | sed 's/pr-//')
             echo "Checking preview directory for PR #$pr_num"
-            
+
             # Check if this PR number exists in the open PRs list
             if echo "$open_prs" | grep -Fxq "$pr_num"; then
               echo "✅ PR #$pr_num is open, keeping preview"
@@ -86,7 +86,7 @@ jobs:
               fi
             fi
           done
-          
+
           echo "Summary: Purged $cleaned_count orphaned preview(s)"
 
       - name: Commit cleanup changes

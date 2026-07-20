@@ -15,16 +15,16 @@
 .github/workflows/c8run* @camunda/distribution
 /c8run/ @camunda/distribution
 
-# General Automation, Unified CI and release helpers by Monorepo DevOps team
-/.github/actions/build*/*                                @camunda/monorepo-devops-team
-/.github/actions/is-fork/*                               @camunda/monorepo-devops-team
-/.github/actions/observe*/*                              @camunda/monorepo-devops-team
-/.github/actions/paths-filter/*                          @camunda/monorepo-devops-team
-/.github/actions/setup-build/*                           @camunda/monorepo-devops-team
-/.github/actions/setup-maven*/*                          @camunda/monorepo-devops-team
-/.github/actions/renew-github-token/*                    @camunda/monorepo-devops-team
-/.github/actions/dependency-vuln-check/*                 @camunda/monorepo-devops-team
-/.github/dependency-review-config.json                   @camunda/monorepo-devops-team
+# General Automation, Unified CI and release helpers by Engineering Operations team
+/.github/actions/build*/*                                @camunda/engineering-operations
+/.github/actions/is-fork/*                               @camunda/engineering-operations
+/.github/actions/observe*/*                              @camunda/engineering-operations
+/.github/actions/paths-filter/*                          @camunda/engineering-operations
+/.github/actions/setup-build/*                           @camunda/engineering-operations
+/.github/actions/setup-maven*/*                          @camunda/engineering-operations
+/.github/actions/renew-github-token/*                    @camunda/engineering-operations
+/.github/actions/dependency-vuln-check/*                 @camunda/engineering-operations
+/.github/dependency-review-config.json                   @camunda/engineering-operations
 
 ###################
 ## Core Features ##

@@ -86,7 +86,7 @@
       "enabled": false
     },
     {
-      "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
+      "description": "Identify updates related to builds, tooling, etc. that should be routed to Engineering Operations team.",
       "matchManagers": [
         "dockerfile",
         "maven-wrapper",

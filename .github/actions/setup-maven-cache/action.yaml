@@ -1,7 +1,7 @@
 ---
 name: Setup Maven Cache
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Configured GHA cache for Maven global cache dir (no save on PRs), see https://camunda.github.io/camunda/ci/#caching-strategy
 

@@ -322,65 +322,65 @@
 
 
 ################################
-## @camunda/monorepo-devops-team
+## @camunda/engineering-operations
 ################################
 
 # CI skills
-/.claude/skills/act-testing/ @camunda/monorepo-devops-team
-/.claude/skills/ci-security-compliance/ @camunda/monorepo-devops-team
-/.claude/skills/ci-validation/ @camunda/monorepo-devops-team
-/.claude/skills/ci-workflow-authoring/ @camunda/monorepo-devops-team
+/.claude/skills/act-testing/ @camunda/engineering-operations
+/.claude/skills/ci-security-compliance/ @camunda/engineering-operations
+/.claude/skills/ci-validation/ @camunda/engineering-operations
+/.claude/skills/ci-workflow-authoring/ @camunda/engineering-operations
 
 # Root build configuration
-/pom.xml                    @camunda/monorepo-devops-team
-/maven-settings.xml         @camunda/monorepo-devops-team
-/.mvn/                      @camunda/monorepo-devops-team
-/library-parent/            @camunda/monorepo-devops-team
-/parent/                    @camunda/monorepo-devops-team
-/bom/                       @camunda/monorepo-devops-team
+/pom.xml                    @camunda/engineering-operations
+/maven-settings.xml         @camunda/engineering-operations
+/.mvn/                      @camunda/engineering-operations
+/library-parent/            @camunda/engineering-operations
+/parent/                    @camunda/engineering-operations
+/bom/                       @camunda/engineering-operations
 
 # Monorepo docs site
-/monorepo-docs-site/        @camunda/monorepo-devops-team
+/monorepo-docs-site/        @camunda/engineering-operations
 
 # GitHub Actions and CI/CD
-/.github/actions/build*/*   @camunda/monorepo-devops-team
-/.github/actions/is-fork/*  @camunda/monorepo-devops-team
-/.github/actions/observe*/* @camunda/monorepo-devops-team
-/.github/actions/paths-filter/* @camunda/monorepo-devops-team
-/.github/actions/setup-build/* @camunda/monorepo-devops-team
-/.github/actions/setup-maven*/* @camunda/monorepo-devops-team
-/.github/workflows/add-to-projects.yml @camunda/monorepo-devops-team
-/.github/workflows/backport.yml @camunda/monorepo-devops-team
-/.github/workflows/camunda-helm-integration.yml @camunda/monorepo-devops-team
-/.github/workflows/camunda-platform-release* @camunda/monorepo-devops-team
-/.github/workflows/chatops* @camunda/monorepo-devops-team
-/.github/workflows/check-licenses.yml @camunda/monorepo-devops-team
-/.github/workflows/check-pr-conflicts.yml @camunda/monorepo-devops-team
-/.github/workflows/ci.yml @camunda/monorepo-devops-team
-/.github/workflows/ci-database-integration-tests-reusable.yml @camunda/monorepo-devops-team
-/.github/workflows/ci-webapp-run-ut-reuseable.yml @camunda/monorepo-devops-team
-/.github/workflows/commitlint.yml @camunda/monorepo-devops-team
-/.github/workflows/dispatch-release* @camunda/monorepo-devops-team
-/.github/workflows/docs* @camunda/monorepo-devops-team
-/.github/workflows/issue-add-support-label.yml @camunda/monorepo-devops-team
-/.github/workflows/labeler.yml @camunda/monorepo-devops-team
-/.github/workflows/preview-env* @camunda/monorepo-devops-team
-/.github/workflows/reject-updates-using-merge-commit.yml @camunda/monorepo-devops-team
-/.github/workflows/renovatelint.yml @camunda/monorepo-devops-team
-/.github/workflows/retry-workflow.yml @camunda/monorepo-devops-team
-/.github/workflows/statistics-daily.yml @camunda/monorepo-devops-team
-/.github/workflows/statistics-weekly.yml @camunda/monorepo-devops-team
-/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team
-/.github/workflows/check-outdated-prs.yml @camunda/monorepo-devops-team
-/.github/workflows/create-urgent-hotfix-img.yml @camunda/monorepo-devops-team
-/.github/workflows/auto-merge-back-to-stable.yml @camunda/monorepo-devops-team
-/.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml @camunda/monorepo-devops-team
-/.github/workflows/opened_issue_labeler.yml @camunda/monorepo-devops-team
-/.github/workflows/migration-labeler.yml @camunda/monorepo-devops-team
-/.github/workflows/critical-issue.yml @camunda/monorepo-devops-team
-/.github/workflows/release-branch-notifications.yml @camunda/monorepo-devops-team
-/.github/workflows/add-release-comments-to-issues.yml @camunda/monorepo-devops-team
-/.github/workflows/update-identity.yml @camunda/monorepo-devops-team
+/.github/actions/build*/*   @camunda/engineering-operations
+/.github/actions/is-fork/*  @camunda/engineering-operations
+/.github/actions/observe*/* @camunda/engineering-operations
+/.github/actions/paths-filter/* @camunda/engineering-operations
+/.github/actions/setup-build/* @camunda/engineering-operations
+/.github/actions/setup-maven*/* @camunda/engineering-operations
+/.github/workflows/add-to-projects.yml @camunda/engineering-operations
+/.github/workflows/backport.yml @camunda/engineering-operations
+/.github/workflows/camunda-helm-integration.yml @camunda/engineering-operations
+/.github/workflows/camunda-platform-release* @camunda/engineering-operations
+/.github/workflows/chatops* @camunda/engineering-operations
+/.github/workflows/check-licenses.yml @camunda/engineering-operations
+/.github/workflows/check-pr-conflicts.yml @camunda/engineering-operations
+/.github/workflows/ci.yml @camunda/engineering-operations
+/.github/workflows/ci-database-integration-tests-reusable.yml @camunda/engineering-operations
+/.github/workflows/ci-webapp-run-ut-reuseable.yml @camunda/engineering-operations
+/.github/workflows/commitlint.yml @camunda/engineering-operations
+/.github/workflows/dispatch-release* @camunda/engineering-operations
+/.github/workflows/docs* @camunda/engineering-operations
+/.github/workflows/issue-add-support-label.yml @camunda/engineering-operations
+/.github/workflows/labeler.yml @camunda/engineering-operations
+/.github/workflows/preview-env* @camunda/engineering-operations
+/.github/workflows/reject-updates-using-merge-commit.yml @camunda/engineering-operations
+/.github/workflows/renovatelint.yml @camunda/engineering-operations
+/.github/workflows/retry-workflow.yml @camunda/engineering-operations
+/.github/workflows/statistics-daily.yml @camunda/engineering-operations
+/.github/workflows/statistics-weekly.yml @camunda/engineering-operations
+/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/engineering-operations
+/.github/workflows/check-outdated-prs.yml @camunda/engineering-operations
+/.github/workflows/create-urgent-hotfix-img.yml @camunda/engineering-operations
+/.github/workflows/auto-merge-back-to-stable.yml @camunda/engineering-operations
+/.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml @camunda/engineering-operations
+/.github/workflows/opened_issue_labeler.yml @camunda/engineering-operations
+/.github/workflows/migration-labeler.yml @camunda/engineering-operations
+/.github/workflows/critical-issue.yml @camunda/engineering-operations
+/.github/workflows/release-branch-notifications.yml @camunda/engineering-operations
+/.github/workflows/add-release-comments-to-issues.yml @camunda/engineering-operations
+/.github/workflows/update-identity.yml @camunda/engineering-operations
 
 ################################
 ## Late overrides
@@ -390,4 +390,4 @@
 # earlier rule (e.g. `/.github/workflows/zeebe*`) needs to be reverted to a
 # different team for a particular file.
 /.github/workflows/c8-orchestration-cluster-request-validation-nightly.yml @camunda/qa-engineering
-/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team
+/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/engineering-operations

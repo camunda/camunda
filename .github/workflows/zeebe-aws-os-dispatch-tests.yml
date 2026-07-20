@@ -99,7 +99,7 @@ jobs:
             maven-test-fork-count: 7
             maven-test-profiles: multi-db-test-client
             runs-on: aws-core-8-default
-            owner: '@camunda/monorepo-devops-team'
+            owner: '@camunda/engineering-operations'
           - group: camunda-qa-acceptance-tests-non-client
             name: "Camunda QA Module Non-Client Tests"
             maven-modules: "'io.camunda:camunda-qa-acceptance-tests'"
@@ -107,7 +107,7 @@ jobs:
             maven-test-fork-count: 7
             maven-test-profiles: multi-db-test-non-client
             runs-on: aws-core-8-default
-            owner: '@camunda/monorepo-devops-team'
+            owner: '@camunda/engineering-operations'
           - group: search-client-opensearch
             name: "Search Client OpenSearch ITs"
             maven-modules: "'io.camunda:camunda-search-client-connect,io.camunda:camunda-search-client-opensearch'"
