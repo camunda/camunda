@@ -92,7 +92,12 @@ public class BackupPriorityConfiguration {
             // OPERATE
             new MetadataIndex(indexPrefix, isElasticsearch),
             // HISTORY DELETION
-            new HistoryDeletionIndex(indexPrefix, isElasticsearch));
+            new HistoryDeletionIndex(indexPrefix, isElasticsearch),
+            // ENTITY HIERARCHY ROOTS (must precede their dependents in later tiers)
+            new ProcessIndex(indexPrefix, isElasticsearch),
+            new DecisionRequirementsIndex(indexPrefix, isElasticsearch),
+            new DecisionIndex(indexPrefix, isElasticsearch),
+            new FormIndex(indexPrefix, isElasticsearch));
 
     final List<Prio2Backup> prio2 =
         List.of(
@@ -124,12 +129,6 @@ public class BackupPriorityConfiguration {
 
     final List<Prio4Backup> prio4 =
         List.of(
-            // OPERATE
-            new DecisionIndex(indexPrefix, isElasticsearch),
-            new DecisionRequirementsIndex(indexPrefix, isElasticsearch),
-            new ProcessIndex(indexPrefix, isElasticsearch),
-            // TASKLIST
-            new FormIndex(indexPrefix, isElasticsearch),
             // USER MANAGEMENT
             new AuthorizationIndex(indexPrefix, isElasticsearch),
             new GroupIndex(indexPrefix, isElasticsearch),

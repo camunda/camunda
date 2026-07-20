@@ -68,7 +68,7 @@ marker sub-interfaces:
 
 |   Interface   |                           Intended for                           |
 |---------------|------------------------------------------------------------------|
-| `Prio1Backup` | State/progress tracking indices - must be snapshotted first      |
+| `Prio1Backup` | State/progress tracking indices, and entity-hierarchy roots (process/decision definitions, forms) whose dependents live in a later tier - must be snapshotted first |
 | `Prio2Backup` | Primary entity head indices (`list-view`, `task`)                |
 | `Prio3Backup` | Detail/event indices that reference Prio 2 entities              |
 | `Prio4Backup` | Reference data, user management, metrics, audit - least volatile |
@@ -87,12 +87,12 @@ sequential snapshot parts** (empty parts are skipped):
 
 | Part |                                                                                                                                                                                                                        Contents                                                                                                                                                                                                                         |                       Why this order                        |
 |------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| 1    | **Prio 1 main**: `operate-metadata`, `camunda-history-deletion`                                                                                                                                                                                                                                                                                                                                                                                         | Import/post-import state - must precede everything else     |
+| 1    | **Prio 1 main**: `operate-metadata`, `camunda-history-deletion`, `operate-process`, `operate-decision`, `operate-decision-requirements`, `tasklist-form`                                                                                                                                                                                                                                                                                              | Import/post-import state, plus entity-hierarchy roots that must precede their dependents |
 | 2    | **Prio 2 main**: `operate-list-view`, `tasklist-task`                                                                                                                                                                                                                                                                                                                                                                                                   | Head entities; detail records (Prio 3) reference these      |
 | 3    | **Prio 2 dated**: all `operate-list-view_<date>`, `tasklist-task_<date>` archived shards                                                                                                                                                                                                                                                                                                                                                                | Archived shards of Prio 2 templates                         |
 | 4    | **Prio 3 main**: `operate-batch-operation`, `operate-operation`, `operate-decision-instance`, `operate-flow-node-instance`, `operate-incident`, `operate-job`, `operate-message`, `operate-post-importer-queue`, `operate-sequence-flow`, `operate-variable`, `tasklist-task-variable`, `tasklist-snapshot-task-variable`, `camunda-message-subscription`                                                                                               | Detail records dependent on Prio 2                          |
 | 5    | **Prio 3 dated**: archived shards for all Prio 3 templates                                                                                                                                                                                                                                                                                                                                                                                              | Archived shards of Prio 3 templates                         |
-| 6    | **Prio 4 main**: `operate-decision`, `operate-decision-requirements`, `operate-process`, `tasklist-form`, `camunda-authorization`, `camunda-group`, `camunda-mapping-rule`, `camunda-persistent-web-session`, `camunda-role`, `camunda-tenant`, `camunda-user`, `camunda-usage-metric`, `camunda-usage-metric-tu`, `camunda-audit-log`, `camunda-audit-log-cleanup`, `camunda-cluster-variable`, `camunda-job-metrics-batch`, `camunda-global-listener` | Reference/static data; least likely to change between parts |
+| 6    | **Prio 4 main**: `camunda-authorization`, `camunda-group`, `camunda-mapping-rule`, `camunda-persistent-web-session`, `camunda-role`, `camunda-tenant`, `camunda-user`, `camunda-usage-metric`, `camunda-usage-metric-tu`, `camunda-audit-log`, `camunda-audit-log-cleanup`, `camunda-cluster-variable`, `camunda-job-metrics-batch`, `camunda-global-listener` | Reference/static data; least likely to change between parts |
 | 7    | **Prio 4 dated**: archived shards for templated Prio 4 indices                                                                                                                                                                                                                                                                                                                                                                                          | Archived shards of Prio 4 templates                         |
 
 :::note[Archiving interaction]
@@ -108,7 +108,12 @@ the main index always snapshotted first.
 When a new index or template descriptor is created:
 
 1. Decide which priority interface it implements (`Prio1Backup` through `Prio4Backup`) based on its
-   dependency position in the import chain.
+   dependency position in the import chain. If the new descriptor is a hierarchy
+   root that later descriptors will depend on (e.g. a new kind of definition
+   index), it must implement a strictly earlier tier than all of its dependents —
+   not just "the tier that feels closest to reference data." See `Prio1Backup`'s
+   role for `ProcessIndex`/`DecisionIndex`/`DecisionRequirementsIndex` as the
+   precedent.
 2. Add it to `BackupPriorityConfiguration.getBackupPriorities()` in the appropriate priority list.
 3. If the index is only present when an optional component is deployed (e.g. a feature flag), set
    `required()` to `false` in the descriptor.

@@ -16,8 +16,17 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
@@ -100,7 +109,13 @@ class BackupPrioritiesTest {
     final var iterator = indices.iterator();
     // PRIO 1
     assertThat(iterator.next().allIndices())
-        .containsExactlyInAnyOrder("operate-metadata-8.8.0_", "camunda-history-deletion-8.9.0_");
+        .containsExactlyInAnyOrder(
+            "operate-metadata-8.8.0_",
+            "camunda-history-deletion-8.9.0_",
+            "operate-process-8.3.0_",
+            "operate-decision-8.3.0_",
+            "operate-decision-requirements-8.3.0_",
+            "tasklist-form-8.4.0_");
     // PRIO 2 main indices
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.8.0_");
@@ -166,10 +181,6 @@ class BackupPrioritiesTest {
     // PRIO 4 main indices
     assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
-            "operate-decision-8.3.0_",
-            "operate-decision-requirements-8.3.0_",
-            "operate-process-8.3.0_",
-            "tasklist-form-8.4.0_",
             "camunda-authorization-8.8.0_",
             "camunda-group-8.8.0_",
             "camunda-mapping-rule-8.8.0_",
@@ -208,5 +219,42 @@ class BackupPrioritiesTest {
       assertThat(indexList.allIndices())
           .allSatisfy(i -> assertThat(i).doesNotStartWith("optimize"));
     }
+  }
+
+  @Test
+  public void parentEntitiesAreBackedUpBeforeDependents() {
+    final var configuration = new BackupPriorityConfiguration(new Camunda());
+    final var priorities = configuration.backupPriorities();
+
+    final var tierByClass = new HashMap<Class<?>, Integer>();
+    recordTier(priorities.prio1(), 1, tierByClass);
+    recordTier(priorities.prio2(), 2, tierByClass);
+    recordTier(priorities.prio3(), 3, tierByClass);
+    recordTier(priorities.prio4(), 4, tierByClass);
+
+    assertThat(tierByClass.get(ProcessIndex.class))
+        .describedAs(
+            "ProcessIndex (process definition) must be backed up before "
+                + "ListViewTemplate (process instances), its dependents")
+        .isLessThan(tierByClass.get(ListViewTemplate.class));
+    assertThat(tierByClass.get(ProcessIndex.class))
+        .describedAs(
+            "ProcessIndex (process definition) must be backed up before "
+                + "MessageSubscriptionTemplate, which references it")
+        .isLessThan(tierByClass.get(MessageSubscriptionTemplate.class));
+    assertThat(tierByClass.get(DecisionIndex.class))
+        .describedAs(
+            "DecisionIndex must be backed up before DecisionInstanceTemplate, " + "its dependent")
+        .isLessThan(tierByClass.get(DecisionInstanceTemplate.class));
+    assertThat(tierByClass.get(FormIndex.class))
+        .describedAs("FormIndex must be backed up before TaskTemplate, which references it")
+        .isLessThan(tierByClass.get(TaskTemplate.class));
+  }
+
+  private static void recordTier(
+      final List<? extends BackupPriority> tierMembers,
+      final int tier,
+      final Map<Class<?>, Integer> tierByClass) {
+    tierMembers.forEach(member -> tierByClass.put(member.getClass(), tier));
   }
 }
