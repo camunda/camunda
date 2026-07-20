@@ -111,7 +111,6 @@ const AdvancedStringFilterField: React.FC<FieldProps> = ({input, label, selectab
 				value={filter?.value ?? ''}
 				onChange={(event) => handleValueChange(event.target.value)}
 				onBlur={input.onBlur}
-				autoFocus
 			/>
 		</Container>
 	);

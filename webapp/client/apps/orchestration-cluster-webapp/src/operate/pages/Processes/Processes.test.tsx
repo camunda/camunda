@@ -8,7 +8,7 @@
 
 import {it} from '#/vitest-modules/test-extend';
 import {renderWithRouter} from '#/vitest-modules/render-with-router';
-import {describe, expect} from 'vitest';
+import {afterEach, beforeEach, describe, expect} from 'vitest';
 import {userEvent} from 'vitest/browser';
 import {HttpResponse} from 'msw';
 import {mockQueryProcessDefinitionsEndpoint} from '#/shared-test-modules/mock-handlers';
@@ -16,6 +16,7 @@ import {
 	createProcessDefinition,
 	createQueryProcessDefinitionsResponse,
 } from '#/shared-test-modules/api-mocks/process-definitions';
+import {createSystemConfiguration} from '#/shared-test-modules/api-mocks/system-configuration';
 import {Processes} from './Processes';
 
 const PROCESS_DEFINITIONS = HttpResponse.json(
@@ -56,6 +57,14 @@ function renderPage(props?: RenderProps) {
 }
 
 describe('<Processes />', () => {
+	beforeEach(() => {
+		sessionStorage.setItem('clientConfig', JSON.stringify(createSystemConfiguration()));
+	});
+
+	afterEach(() => {
+		sessionStorage.clear();
+	});
+
 	it('should render the filter sections', async ({worker}) => {
 		worker.use(mockQueryProcessDefinitionsEndpoint({successResponse: PROCESS_DEFINITIONS}));
 

@@ -15,7 +15,22 @@ const processesSearchSchema = z.object({
 	process: z.string().optional(),
 	version: z.number().int().positive().optional(),
 	elementId: z.string().optional(),
-	errorMessage: z.string().optional(),
+	tenantId: z.coerce.string().optional(),
+	// coerce: small (safe-range) numeric-looking keys still arrive typed as a JS number from the
+	// router's search parser (main.tsx's parseSearchValueSafe only keeps precision-losing large
+	// keys as strings, it doesn't change the type of small ones) — normalize to string either way
+	processInstanceKey: z.coerce.string().optional(),
+	parentProcessInstanceKey: z.coerce.string().optional(),
+	businessId: z.coerce.string().optional(),
+	batchOperationKey: z.coerce.string().optional(),
+	// coerce: the router's search parser can turn a numeric-looking error message (e.g. "404")
+	// into a number, which a plain z.string() would reject — coerce keeps it valid either way
+	errorMessage: z.coerce.string().optional(),
+	hasRetriesLeft: z.boolean().optional(),
+	startDateFrom: z.string().optional(),
+	startDateTo: z.string().optional(),
+	endDateFrom: z.string().optional(),
+	endDateTo: z.string().optional(),
 	active: z.boolean().default(true),
 	incidents: z.boolean().default(true),
 	completed: z.boolean().default(false),
@@ -27,17 +42,6 @@ export const Route = createFileRoute('/_auth/operate/processes')({
 	loader: ({context: {queryClient}}) =>
 		queryClient.ensureQueryData(queries.queryProcessDefinitions({page: {limit: 1000}})),
 	component: function ProcessesRoute() {
-		const {process, version, elementId, active, incidents, completed, canceled} = Route.useSearch();
-		return (
-			<Processes
-				process={process}
-				version={version}
-				elementId={elementId}
-				active={active}
-				incidents={incidents}
-				completed={completed}
-				canceled={canceled}
-			/>
-		);
+		return <Processes {...Route.useSearch()} />;
 	},
 });

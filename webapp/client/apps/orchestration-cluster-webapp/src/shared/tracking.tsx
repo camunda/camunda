@@ -148,6 +148,10 @@ type Events =
 	| {
 			eventName: 'operate:date-range-popover-opened';
 			filterName: string;
+	  }
+	| {
+			eventName: 'operate:optional-filter-selected';
+			filterName: string;
 	  };
 
 const STAGE_ENV = getStage(window.location.host);

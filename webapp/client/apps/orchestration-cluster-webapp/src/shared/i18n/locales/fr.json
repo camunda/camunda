@@ -454,7 +454,20 @@
 					"active": "Actif",
 					"incidents": "Incidents",
 					"completed": "Terminé",
-					"canceled": "Annulé"
+					"canceled": "Annulé",
+					"tenant": "Client",
+					"processInstanceKey": "Clé(s) d'instance de processus",
+					"processInstanceKeyPlaceholder": "séparées par un espace ou une virgule",
+					"businessId": "Business ID",
+					"batchOperationKey": "Clé d'opération par lot",
+					"parentProcessInstanceKey": "Clé de l'instance de processus parente",
+					"errorMessage": "Message d'erreur",
+					"hasRetriesLeft": "Tâche échouée avec des tentatives restantes",
+					"startDateRange": "Plage de dates de début",
+					"endDateRange": "Plage de dates de fin",
+					"removeFilter": "Supprimer le filtre {{label}}",
+					"startDatePopoverTitle": "Filtrer les instances par date de début",
+					"endDatePopoverTitle": "Filtrer les instances par date de fin"
 				}
 			},
 			"decisions": {
