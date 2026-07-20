@@ -36,7 +36,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -160,25 +159,12 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    */
   public <T extends Comparable<T>> Optional<T> getQuorumFor(
       final Function<RaftMemberContext, T> calculateMemberValue) {
-    final var contexts = new ArrayList<>(remoteActiveMembers);
-
     if (configuration.requiresJointConsensus()) {
       final var oldMembers = configuration.oldMembers();
       final var newMembers = configuration.newMembers();
 
-      final var oldContexts =
-          contexts.stream()
-              .filter(context -> oldMembers.contains(context.getMember()))
-              .collect(Collectors.toCollection(ArrayList::new));
-      final var newContexts =
-          contexts.stream()
-              .filter(context -> newMembers.contains(context.getMember()))
-              .collect(Collectors.toCollection(ArrayList::new));
-
-      final var oldQuorum =
-          getQuorumFor(oldContexts, calculateMemberValue, oldMembers.contains(localMember));
-      final var newQuorum =
-          getQuorumFor(newContexts, calculateMemberValue, newMembers.contains(localMember));
+      final var oldQuorum = getQuorumFor(oldMembers, calculateMemberValue);
+      final var newQuorum = getQuorumFor(newMembers, calculateMemberValue);
       if (oldQuorum.isPresent() && newQuorum.isPresent()) {
         return Optional.of(Comparators.min(oldQuorum.get(), newQuorum.get()));
       } else if (oldQuorum.isPresent()) {
@@ -188,14 +174,25 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       }
     }
 
-    return getQuorumFor(
-        contexts, calculateMemberValue, configuration.newMembers().contains(localMember));
+    return getQuorumFor(configuration.newMembers(), calculateMemberValue);
   }
 
   private <T extends Comparable<T>> Optional<T> getQuorumFor(
-      final List<RaftMemberContext> contexts,
-      final Function<RaftMemberContext, T> calculateMemberValue,
-      final boolean includeLocalMemberInQuorum) {
+      final Collection<RaftMember> members,
+      final Function<RaftMemberContext, T> calculateMemberValue) {
+    // Under joint consensus, `remoteMemberContexts` is not authoritative, because it contains
+    // entries from old and new configurations. So filter for members that actually are in the
+    // configuration.
+    final var activeMembers =
+        members.stream().filter(member -> member.getType() == Type.ACTIVE).toList();
+    final var includeLocalMemberInQuorum =
+        activeMembers.stream().anyMatch(member -> member.memberId().equals(localMember.memberId()));
+    final var contexts =
+        activeMembers.stream()
+            .filter(member -> !member.memberId().equals(localMember.memberId()))
+            .map(member -> remoteMemberContexts.get(member.memberId()))
+            .collect(Collectors.toCollection(ArrayList::new));
+
     if (contexts.isEmpty()) {
       return Optional.empty();
     }
@@ -263,9 +260,11 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
           new JointConsensusVoteQuorum(
               callback,
               configuration.oldMembers().stream()
+                  .filter(member -> member.getType() == Type.ACTIVE)
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()),
               configuration.newMembers().stream()
+                  .filter(member -> member.getType() == Type.ACTIVE)
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()));
     } else {
@@ -273,6 +272,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
           new SimpleVoteQuorum(
               callback,
               configuration.newMembers().stream()
+                  .filter(member -> member.getType() == Type.ACTIVE)
                   .map(RaftMember::memberId)
                   .collect(Collectors.toSet()));
     }
