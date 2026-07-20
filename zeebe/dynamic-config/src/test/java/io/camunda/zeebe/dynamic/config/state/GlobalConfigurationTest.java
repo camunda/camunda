@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.BrokerState.State;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.FixedConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRobinConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
@@ -19,6 +21,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -408,6 +411,105 @@ class GlobalConfigurationTest {
                   new GlobalConfiguration(
                       1, Optional.empty(), Map.of(), Optional.empty(), Optional.empty(), null))
           .isInstanceOf(NullPointerException.class);
+    }
+  }
+
+  @Nested
+  class ConfigurationChangeNavigation {
+
+    @Test
+    void shouldReturnPendingChangeForTargetMemberOnly() {
+      // given
+      final var config =
+          config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE), MEMBER_1, broker(0, State.LEAVING)))
+              .startConfigurationChange(List.of(new MemberLeaveOperation(MEMBER_1)));
+
+      // when / then
+      assertThat(config.pendingChangesFor(MEMBER_1)).contains(new MemberLeaveOperation(MEMBER_1));
+      assertThat(config.pendingChangesFor(MEMBER_0)).isEmpty();
+      assertThat(config.nextPendingOperation()).isEqualTo(new MemberLeaveOperation(MEMBER_1));
+    }
+
+    @Test
+    void shouldReturnEmptyPendingChangeWhenNoChangeInProgress() {
+      // given
+      final var config = config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)));
+
+      // when / then
+      assertThat(config.pendingChangesFor(MEMBER_0)).isEmpty();
+    }
+
+    @Test
+    void shouldStepPlanWithoutBumpingVersionWhileOperationsRemain() {
+      // given — two operations pending
+      final var config =
+          config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)))
+              .startConfigurationChange(
+                  List.of(new MemberJoinOperation(MEMBER_1), new MemberLeaveOperation(MEMBER_0)));
+
+      // when — advance past the first operation with a no-op updater
+      final var advanced = config.advanceConfigurationChange(UnaryOperator.identity());
+
+      // then — one operation remains, the version is unchanged (still the start version)
+      assertThat(advanced.hasPendingChanges()).isTrue();
+      assertThat(advanced.pendingChanges().get().pendingOperations())
+          .containsExactly(new MemberLeaveOperation(MEMBER_0));
+      assertThat(advanced.version()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldCompleteChangeAndRemoveLeftMembersOnLastOperation() {
+      // given — MEMBER_1 is leaving; a single operation targets it
+      final var config =
+          config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE), MEMBER_1, broker(0, State.LEAVING)))
+              .startConfigurationChange(List.of(new MemberLeaveOperation(MEMBER_1)));
+
+      // when — the operation completes and marks MEMBER_1 as LEFT
+      final var advanced =
+          config.advanceConfigurationChange(
+              c -> c.updateMember(MEMBER_1, b -> b.setState(State.LEFT)));
+
+      // then — the change is completed, MEMBER_1 is removed, version is bumped, lastChange is set
+      assertThat(advanced.hasPendingChanges()).isFalse();
+      assertThat(advanced.hasMember(MEMBER_1)).isFalse();
+      assertThat(advanced.hasMember(MEMBER_0)).isTrue();
+      assertThat(advanced.version()).isEqualTo(6);
+      assertThat(advanced.lastChange()).isPresent();
+    }
+
+    @Test
+    void shouldThrowWhenAdvancingWithoutPendingChange() {
+      // given
+      final var config = config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)));
+
+      // when / then
+      assertThatThrownBy(() -> config.advanceConfigurationChange(UnaryOperator.identity()))
+          .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void shouldCancelPendingChangesBumpingVersionByTwo() {
+      // given
+      final var config =
+          config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)))
+              .startConfigurationChange(List.of(new MemberLeaveOperation(MEMBER_0)));
+
+      // when
+      final var cancelled = config.cancelPendingChanges();
+
+      // then
+      assertThat(cancelled.hasPendingChanges()).isFalse();
+      assertThat(cancelled.version()).isEqualTo(7); // start bumped to 5, cancel adds 2
+      assertThat(cancelled.lastChange()).isPresent();
+    }
+
+    @Test
+    void shouldReturnSameConfigWhenCancellingWithoutPendingChange() {
+      // given
+      final var config = config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)));
+
+      // when / then
+      assertThat(config.cancelPendingChanges()).isSameAs(config);
     }
   }
 }

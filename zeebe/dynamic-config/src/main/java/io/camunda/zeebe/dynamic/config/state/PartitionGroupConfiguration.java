@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
@@ -278,6 +279,57 @@ public record PartitionGroupConfiguration(
 
   public boolean hasPendingChanges() {
     return pendingChanges.isPresent() && pendingChanges.orElseThrow().hasPendingChanges();
+  }
+
+  /**
+   * Returns the next pending operation for the given memberId, or empty if the next pending
+   * operation (if any) is not applicable to that member. Mirrors {@code
+   * ClusterConfiguration#pendingChangesFor(MemberId)}.
+   */
+  public Optional<ClusterConfigurationChangeOperation> pendingChangesFor(final MemberId memberId) {
+    if (pendingChanges.isEmpty() || !pendingChanges.get().hasPendingChangesFor(memberId)) {
+      return Optional.empty();
+    }
+    return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
+  }
+
+  public ClusterConfigurationChangeOperation nextPendingOperation() {
+    if (!hasPendingChanges()) {
+      throw new NoSuchElementException();
+    }
+    return pendingChanges.orElseThrow().nextPendingOperation();
+  }
+
+  /**
+   * When the operation returned by {@link #pendingChangesFor(MemberId)} completes, the result is
+   * reflected here by applying {@code configurationUpdater} and then advancing past the completed
+   * operation (see {@link #advance()}). Mirrors {@code
+   * ClusterConfiguration#advanceConfigurationChange}.
+   */
+  public PartitionGroupConfiguration advanceConfigurationChange(
+      final UnaryOperator<PartitionGroupConfiguration> configurationUpdater) {
+    return configurationUpdater.apply(this).advance();
+  }
+
+  /**
+   * Cancels any pending changes, returning a new configuration with the already-applied changes and
+   * no pending changes. This is a dangerous operation that can leave the configuration
+   * inconsistent; it should only be used as a last resort when a change is stuck. Mirrors {@code
+   * ClusterConfiguration#cancelPendingChanges()}.
+   */
+  public PartitionGroupConfiguration cancelPendingChanges() {
+    if (!hasPendingChanges()) {
+      return this;
+    }
+    final var cancelledChange = pendingChanges.orElseThrow().cancel();
+    // Increment version by 2 to avoid conflicts with other members who are applying the change.
+    return new PartitionGroupConfiguration(
+        version + 2,
+        incarnationNumber,
+        members,
+        routingState,
+        Optional.empty(),
+        Optional.of(cancelledChange));
   }
 
   public boolean hasMember(final MemberId memberId) {

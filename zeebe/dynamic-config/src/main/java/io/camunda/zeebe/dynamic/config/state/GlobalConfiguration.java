@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedMap;
@@ -254,6 +255,101 @@ public record GlobalConfiguration(
 
   public boolean hasPendingChanges() {
     return pendingChanges.isPresent() && pendingChanges.orElseThrow().hasPendingChanges();
+  }
+
+  /**
+   * Returns the next pending operation for the given memberId, or empty if the next pending
+   * operation (if any) is not applicable to that member. Mirrors {@code
+   * ClusterConfiguration#pendingChangesFor(MemberId)}.
+   */
+  public Optional<ClusterConfigurationChangeOperation> pendingChangesFor(final MemberId memberId) {
+    if (pendingChanges.isEmpty() || !pendingChanges.get().hasPendingChangesFor(memberId)) {
+      return Optional.empty();
+    }
+    return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
+  }
+
+  public ClusterConfigurationChangeOperation nextPendingOperation() {
+    if (!hasPendingChanges()) {
+      throw new NoSuchElementException();
+    }
+    return pendingChanges.orElseThrow().nextPendingOperation();
+  }
+
+  /**
+   * When the operation returned by {@link #pendingChangesFor(MemberId)} completes, the result is
+   * reflected here by applying {@code configurationUpdater} and then advancing past the completed
+   * operation. Mirrors {@code ClusterConfiguration#advanceConfigurationChange}.
+   */
+  public GlobalConfiguration advanceConfigurationChange(
+      final UnaryOperator<GlobalConfiguration> configurationUpdater) {
+    return configurationUpdater.apply(this).advance();
+  }
+
+  /**
+   * Steps the ongoing change plan past its first pending operation. While operations remain the
+   * plan is simply stepped forward and the version is unchanged. When the last operation is
+   * removed, the change is completed: {@code pendingChanges} is cleared, {@code lastChange} is set,
+   * members whose lifecycle state is {@link BrokerState.State#LEFT} are removed, and the version is
+   * bumped so peers overwrite their local copy on merge. Mirrors {@code
+   * ClusterConfiguration#advance()}.
+   *
+   * @throws IllegalStateException if there is no pending change to advance
+   */
+  public GlobalConfiguration advance() {
+    if (!hasPendingChanges()) {
+      throw new IllegalStateException(
+          "Expected to advance the configuration change, but there is no pending change");
+    }
+
+    final var result =
+        new GlobalConfiguration(
+            version,
+            clusterId,
+            members,
+            partitionDistributorConfig,
+            Optional.of(pendingChanges.orElseThrow().advance()),
+            lastChange);
+
+    if (result.hasPendingChanges()) {
+      return result;
+    }
+
+    // The last operation has been applied. Complete the change: remove members marked as LEFT and
+    // bump the version so other members merge by overwriting their local copy.
+    final var remainingMembers =
+        result.members().entrySet().stream()
+            .filter(entry -> entry.getValue().state() != BrokerState.State.LEFT)
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    final var completedChange = pendingChanges.orElseThrow().completed();
+    return new GlobalConfiguration(
+        result.version() + 1,
+        clusterId,
+        remainingMembers,
+        partitionDistributorConfig,
+        Optional.empty(),
+        Optional.of(completedChange));
+  }
+
+  /**
+   * Cancels any pending changes, returning a new configuration with the already-applied changes and
+   * no pending changes. This is a dangerous operation that can leave the configuration
+   * inconsistent; it should only be used as a last resort when a change is stuck. Mirrors {@code
+   * ClusterConfiguration#cancelPendingChanges()}.
+   */
+  public GlobalConfiguration cancelPendingChanges() {
+    if (!hasPendingChanges()) {
+      return this;
+    }
+    final var cancelledChange = pendingChanges.orElseThrow().cancel();
+    // Increment version by 2 to avoid conflicts with other members who are applying the change.
+    return new GlobalConfiguration(
+        version + 2,
+        clusterId,
+        members,
+        partitionDistributorConfig,
+        Optional.empty(),
+        Optional.of(cancelledChange));
   }
 
   public boolean hasMember(final MemberId memberId) {
