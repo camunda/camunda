@@ -102,7 +102,7 @@ public class ResourceDeletedHandlerTest {
   void shouldDeleteEntityOnFlush() throws PersistenceException {
     // given
     final DeployedResourceEntity entity = new DeployedResourceEntity().setId("42");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

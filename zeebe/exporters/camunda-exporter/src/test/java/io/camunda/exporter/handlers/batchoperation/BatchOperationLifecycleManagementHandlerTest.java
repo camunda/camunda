@@ -272,7 +272,7 @@ class BatchOperationLifecycleManagementHandlerTest {
   @Test
   void shouldFlushEntityWithConditionalScript() throws Exception {
     // given
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest batchRequest = mock(BatchRequest.class);
     final BatchOperationEntity entity =
         new BatchOperationEntity()
@@ -301,7 +301,7 @@ class BatchOperationLifecycleManagementHandlerTest {
   @Test
   void shouldFlushEntityWithErrorsInScript() throws Exception {
     // given
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest batchRequest = mock(BatchRequest.class);
     final var errorEntity =
         new io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity()

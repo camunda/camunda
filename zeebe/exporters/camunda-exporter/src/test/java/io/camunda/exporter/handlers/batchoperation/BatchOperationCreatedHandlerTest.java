@@ -247,7 +247,7 @@ class BatchOperationCreatedHandlerTest {
             .setType(OperationType.RESOLVE_INCIDENT)
             .setActorType(AuditLogActorType.USER)
             .setActorId("username");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
 
     // when

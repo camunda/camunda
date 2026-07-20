@@ -109,7 +109,7 @@ abstract class AbstractOperationHandlerTest<R extends RecordValue> {
             .setLockOwner(null)
             .setCompletedDate(OffsetDateTime.now());
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(OperationTemplate.STATE, entity.getState());

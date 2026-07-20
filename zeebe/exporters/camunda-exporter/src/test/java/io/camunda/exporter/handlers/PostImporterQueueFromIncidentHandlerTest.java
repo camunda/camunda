@@ -130,7 +130,7 @@ public class PostImporterQueueFromIncidentHandlerTest {
     final int partitionId = 3;
     final PostImporterQueueEntity inputEntity =
         new PostImporterQueueEntity().setId("111").setPartitionId(partitionId);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

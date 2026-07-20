@@ -122,7 +122,7 @@ public class GlobalListenerCreatedUpdatedHandlerTest {
             .setPriority(50)
             .setSource(GlobalListenerSource.API)
             .setListenerType(GlobalListenerType.USER_TASK);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

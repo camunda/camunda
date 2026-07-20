@@ -167,7 +167,7 @@ class JobWaitStateHandlerTest {
   void shouldFlushAddEntityToIndex() throws PersistenceException {
     // given
     final var entity = new WaitStateEntity().setId(String.valueOf(JOB_KEY));
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
@@ -181,7 +181,7 @@ class JobWaitStateHandlerTest {
   void shouldFlushRemoveDeleteFromIndexBySameId() throws PersistenceException {
     // given
     final var entity = new WaitStateEntity().setId(String.valueOf(JOB_KEY));
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
@@ -284,7 +284,7 @@ class JobWaitStateHandlerTest {
     // given — FAILED/RETRIES_UPDATED: transformer nulls elementId to avoid overwriting stored value
     final var id = String.valueOf(JOB_KEY);
     final var entity = new WaitStateEntity().setId(id).setDetails("{\"retries\":0}");
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
@@ -310,7 +310,7 @@ class JobWaitStateHandlerTest {
             .setElementId("task-after-migration")
             .setBpmnProcessId("target-process")
             .setDetails("{\"retries\":3}");
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when

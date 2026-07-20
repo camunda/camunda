@@ -120,7 +120,7 @@ class ProcessDeletedHandlerTest {
   void shouldFlushPartialUpdateWithIsDeletedTrue() throws Exception {
     // given
     final ProcessEntity entity = new ProcessEntity().setId("789");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

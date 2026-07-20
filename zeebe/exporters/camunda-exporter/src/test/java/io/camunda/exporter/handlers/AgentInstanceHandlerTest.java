@@ -17,7 +17,6 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -355,7 +354,7 @@ final class AgentInstanceHandlerTest {
     final var entity = new AgentInstanceEntity().setId("1");
     underTest.updateEntity(record, entity);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
@@ -390,7 +389,7 @@ final class AgentInstanceHandlerTest {
             .setCompletionDate(completionDate)
             .setLastUpdatedDate(completionDate);
 
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when

@@ -173,7 +173,7 @@ class UserTaskWaitStateHandlerTest {
   void shouldFlushAddEntityToIndex() throws PersistenceException {
     // given
     final var entity = new WaitStateEntity().setId(String.valueOf(USER_TASK_KEY));
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
@@ -187,7 +187,7 @@ class UserTaskWaitStateHandlerTest {
   void shouldFlushRemoveDeleteFromIndexBySameId() throws PersistenceException {
     // given
     final var entity = new WaitStateEntity().setId(String.valueOf(USER_TASK_KEY));
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
@@ -225,7 +225,7 @@ class UserTaskWaitStateHandlerTest {
     // given — elementId null means no migration, only task metadata changed
     final var id = String.valueOf(USER_TASK_KEY);
     final var entity = new WaitStateEntity().setId(id).setDetails("{\"taskKey\":999}");
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
@@ -251,7 +251,7 @@ class UserTaskWaitStateHandlerTest {
             .setElementId("task-after-migration")
             .setBpmnProcessId("target-process")
             .setDetails("{\"taskKey\":999}");
-    final var index = mock(TargetIndex.class);
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when

@@ -177,7 +177,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setTreePath("PI_111")
             .setTags(Set.of("businessKey:123", "priority:high"))
             .setBusinessId("my-business-id");
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -216,7 +216,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setPartitionId(12)
             .setPosition(123L)
             .setState(ProcessInstanceState.ACTIVE);
-    final TargetIndex index = mock(TargetIndex.class);
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
