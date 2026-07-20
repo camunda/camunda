@@ -64,6 +64,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   DistributionState getDistributionState();
 
+  ProcessDeleteDrainState getProcessDeleteDrainState();
+
   PendingMessageSubscriptionState getPendingMessageSubscriptionState();
 
   PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState();

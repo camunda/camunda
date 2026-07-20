@@ -89,6 +89,9 @@ public interface MutableProcessingState extends ProcessingState {
   MutableDistributionState getDistributionState();
 
   @Override
+  MutableProcessDeleteDrainState getProcessDeleteDrainState();
+
+  @Override
   MutableMigrationState getMigrationState();
 
   @Override
