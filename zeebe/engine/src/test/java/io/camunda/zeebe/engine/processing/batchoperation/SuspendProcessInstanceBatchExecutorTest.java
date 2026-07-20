@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 
@@ -22,6 +26,10 @@ public final class SuspendProcessInstanceBatchExecutorTest extends AbstractBatch
   @Test
   public void shouldDispatchSuspendCommandForEachItem() {
     // given
+    final var user = createUser();
+    addProcessDefinitionPermissionsToUser(user, PermissionType.SUSPEND_PROCESS_INSTANCE);
+    final Map<String, Object> claims = Map.of(AUTHORIZED_USERNAME, user.getUsername());
+
     engine
         .deployment()
         .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
@@ -31,7 +39,7 @@ public final class SuspendProcessInstanceBatchExecutorTest extends AbstractBatch
 
     // when
     final var batchOperationKey =
-        createNewSuspendProcessInstanceBatchOperation(Set.of(processInstanceKey));
+        createNewSuspendProcessInstanceBatchOperation(Set.of(processInstanceKey), claims);
 
     // then
     assertThat(
@@ -42,11 +50,13 @@ public final class SuspendProcessInstanceBatchExecutorTest extends AbstractBatch
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.COMPLETED);
 
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withIntents(ProcessInstanceIntent.SUSPEND)
-                .withRecordKey(processInstanceKey)
-                .getFirst())
-        .satisfies(r -> assertThat(r.getBatchOperationReference()).isEqualTo(batchOperationKey));
+    final var suspendCommand =
+        RecordingExporter.processInstanceRecords()
+            .withRecordType(RecordType.COMMAND)
+            .withIntents(ProcessInstanceIntent.SUSPEND)
+            .withRecordKey(processInstanceKey)
+            .getFirst();
+    assertThat(suspendCommand.getAuthorizations()).isEqualTo(claims);
+    assertThat(suspendCommand.getBatchOperationReference()).isEqualTo(batchOperationKey);
   }
 }
