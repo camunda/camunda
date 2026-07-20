@@ -8,9 +8,11 @@
 package io.camunda.zeebe.dynamic.config.state;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.Status;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.Phase;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -137,6 +139,98 @@ public record CurrentClusterConfiguration(
         globalConfiguration,
         Map.of(DEFAULT_GROUP, defaultGroup),
         toPhasedChangeState(legacy));
+  }
+
+  /**
+   * Projects this multi-group configuration back to a legacy single-group {@link
+   * ClusterConfiguration} representing the {@link #DEFAULT_GROUP}. This is the inverse of {@link
+   * #fromLegacy(ClusterConfiguration)} and backs the {@code getClusterConfiguration()} compat
+   * accessor used by read consumers (e.g. the REST topology API) that have not yet migrated to the
+   * multi-group model.
+   *
+   * <p>Each member combines its cluster-wide lifecycle state (from {@link #globalConfiguration})
+   * with its default-group partition assignment (from {@code partitionGroups[default]}); a member
+   * whose default-group operating mode is {@link Mode#RECOVERING} is projected to the legacy {@link
+   * MemberState.State#RECOVERING} state. {@code routingState} and {@code incarnationNumber} come
+   * from the default group; {@code clusterId} and {@code partitionDistributorConfig} from the
+   * global configuration.
+   *
+   * <p>The pending/last change is a best-effort projection: {@code pendingChanges} reflects
+   * whichever sub-config currently has an active plan (global first, then the default group), and
+   * {@code lastChange} is derived from the {@link PhasedChangeState}. Cross-sub-config change
+   * details cannot be represented losslessly in the flat legacy plan, so this projection is
+   * intended for display and equivalence checks, not for driving legacy change execution.
+   */
+  public ClusterConfiguration toLegacyDefault() {
+    final PartitionGroupConfiguration defaultGroup =
+        partitionGroups.getOrDefault(DEFAULT_GROUP, PartitionGroupConfiguration.empty(version));
+
+    final Map<MemberId, MemberState> members = new HashMap<>();
+    globalConfiguration
+        .members()
+        .forEach(
+            (memberId, brokerState) ->
+                members.put(
+                    memberId, toLegacyMemberState(brokerState, defaultGroup.getMember(memberId))));
+
+    final Optional<ClusterChangePlan> pendingChanges =
+        globalConfiguration
+            .pendingChanges()
+            .filter(ClusterChangePlan::hasPendingChanges)
+            .or(() -> defaultGroup.pendingChanges().filter(ClusterChangePlan::hasPendingChanges));
+
+    final Optional<CompletedChange> lastChange =
+        phasedChangeState.lastChange().map(CurrentClusterConfiguration::toLegacyCompletedChange);
+
+    return ClusterConfiguration.builder()
+        .version(Math.max(globalConfiguration.version(), defaultGroup.version()))
+        .members(members)
+        .lastChange(lastChange)
+        .pendingChanges(pendingChanges)
+        .routingState(defaultGroup.routingState())
+        .clusterId(globalConfiguration.clusterId())
+        .incarnationNumber(defaultGroup.incarnationNumber())
+        .partitionDistributorConfig(globalConfiguration.partitionDistributorConfig())
+        .build();
+  }
+
+  private static MemberState toLegacyMemberState(
+      final BrokerState brokerState, final @Nullable BrokerPartitionState partitionState) {
+    final Map<Integer, PartitionState> partitions =
+        partitionState != null ? partitionState.partitions() : Map.of();
+    final MemberState.State state =
+        partitionState != null && partitionState.mode() == Mode.RECOVERING
+            ? MemberState.State.RECOVERING
+            : toLegacyLifecycleState(brokerState.state());
+    final long version =
+        partitionState != null
+            ? Math.max(brokerState.version(), partitionState.version())
+            : brokerState.version();
+    final Instant lastUpdated =
+        partitionState != null && partitionState.lastUpdated().isAfter(brokerState.lastUpdated())
+            ? partitionState.lastUpdated()
+            : brokerState.lastUpdated();
+    return new MemberState(version, lastUpdated, state, partitions);
+  }
+
+  private static MemberState.State toLegacyLifecycleState(final BrokerState.State state) {
+    return switch (state) {
+      case UNINITIALIZED -> MemberState.State.UNINITIALIZED;
+      case JOINING -> MemberState.State.JOINING;
+      case ACTIVE -> MemberState.State.ACTIVE;
+      case LEAVING -> MemberState.State.LEAVING;
+      case LEFT -> MemberState.State.LEFT;
+    };
+  }
+
+  private static CompletedChange toLegacyCompletedChange(final CompletedPhasedChange change) {
+    final Status status =
+        switch (change.status()) {
+          case COMPLETED -> Status.COMPLETED;
+          case FAILED -> Status.FAILED;
+          case CANCELLED -> Status.CANCELLED;
+        };
+    return new CompletedChange(change.id(), status, change.startedAt(), change.completedAt());
   }
 
   /**
