@@ -18,6 +18,12 @@ api.long-polling.timeout
 api.rest.cluster-variable.max-metadata-size
 api.rest.process-cache.expiration-idle
 api.rest.process-cache.max-size
+aws.access-key
+aws.region
+aws.role-arn
+aws.secret-key
+aws.session-token
+aws.web-identity-token-file
 cluster.global-listeners.user-task
 cluster.partition-count
 cluster.replication-factor

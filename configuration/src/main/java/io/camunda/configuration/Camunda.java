@@ -31,6 +31,7 @@ public class Camunda {
   @NestedConfigurationProperty private Document document = new Document();
   @NestedConfigurationProperty private Webapps webapps = new Webapps();
   @NestedConfigurationProperty private Secrets secrets = new Secrets();
+  @NestedConfigurationProperty private Aws aws = new Aws();
 
   @NestedConfigurationProperty
   private ProcessInstanceCreation processInstanceCreation = new ProcessInstanceCreation();
@@ -154,5 +155,13 @@ public class Camunda {
 
   public void setSecrets(final Secrets secrets) {
     this.secrets = secrets;
+  }
+
+  public Aws getAws() {
+    return aws;
+  }
+
+  public void setAws(final Aws aws) {
+    this.aws = aws;
   }
 }
