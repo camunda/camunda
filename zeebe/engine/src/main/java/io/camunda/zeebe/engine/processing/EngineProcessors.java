@@ -506,7 +506,8 @@ public final class EngineProcessors {
     AgentHistoryProcessors.addAgentHistoryProcessors(
         keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
 
-    SecretReferenceProcessors.addSecretReferenceProcessors(typedRecordProcessors);
+    SecretReferenceProcessors.addSecretReferenceProcessors(
+        typedRecordProcessors, writers, keyGenerator, processingState);
 
     return typedRecordProcessors;
   }
