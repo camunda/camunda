@@ -23,7 +23,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -39,6 +38,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final ImmutableChecksumsSFV checksums;
   private final FileBasedSnapshotId snapshotId;
   private final SnapshotMetadata metadata;
+  private final long metadataSizeBytes;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
 
   private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
@@ -52,6 +52,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       final ImmutableChecksumsSFV checksums,
       final FileBasedSnapshotId snapshotId,
       final SnapshotMetadata metadata,
+      final long metadataSizeBytes,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
       final ConcurrencyControl actor) {
     this.directory = directory;
@@ -59,6 +60,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     this.checksums = checksums;
     this.snapshotId = snapshotId;
     this.metadata = metadata;
+    this.metadataSizeBytes = metadataSizeBytes;
     this.onSnapshotDeleted = onSnapshotDeleted;
     this.actor = actor;
   }
@@ -131,9 +133,8 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public OptionalLong getTotalSizeInBytes() {
-    final var totalSizeBytes = metadata.totalSizeBytes();
-    return totalSizeBytes > 0 ? OptionalLong.of(totalSizeBytes) : OptionalLong.empty();
+  public long getTotalSizeInBytes() {
+    return metadata.totalSizeBytes() + metadataSizeBytes;
   }
 
   @Override

@@ -9,7 +9,6 @@ package io.camunda.zeebe.snapshots.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
@@ -40,9 +39,7 @@ public class FileBasedSnapshotMetadataTest {
   @Test
   void shouldSerializeDeserialize() throws IOException {
     final var metadata = new FileBasedSnapshotMetadata(1, 100L, 200L, 300L, 350L, true, 4096L);
-    final var bos = new ByteArrayOutputStream(1024);
-    metadata.encode(bos);
-    final var deserialized = FileBasedSnapshotMetadata.decode(bos.toByteArray());
+    final var deserialized = FileBasedSnapshotMetadata.decode(metadata.encode());
     assertThat(deserialized).isEqualTo(metadata);
     assertThat(deserialized.totalSizeBytes()).isEqualTo(4096L);
   }

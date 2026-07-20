@@ -275,7 +275,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
       metadata = persistedMetadata;
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(
-              directory, snapshotId, getChecksumCollection(), persistedMetadata);
+              directory,
+              snapshotId,
+              getChecksumCollection(),
+              persistedMetadata,
+              writtenMetadataBytes);
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);

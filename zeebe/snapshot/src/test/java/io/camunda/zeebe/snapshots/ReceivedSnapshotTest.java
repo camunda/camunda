@@ -111,10 +111,10 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot.getId())
         .as("the received snapshot has the same ID as the sent snapshot")
         .isEqualTo(persistedSnapshot.getId());
-    assertThat(persistedSnapshot.getTotalSizeInBytes()).isPresent();
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).isGreaterThan(0);
     assertThat(receivedSnapshot.getTotalSizeInBytes())
         .as("the received snapshot carries the sender's total size")
-        .hasValue(persistedSnapshot.getTotalSizeInBytes().getAsLong());
+        .isEqualTo(persistedSnapshot.getTotalSizeInBytes());
   }
 
   @Test

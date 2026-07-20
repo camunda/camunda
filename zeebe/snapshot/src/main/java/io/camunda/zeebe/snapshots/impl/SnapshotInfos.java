@@ -38,17 +38,23 @@ final class SnapshotInfos {
   }
 
   public static MutableChecksumsSFV calculate(final Path snapshotDirectory) throws IOException {
-    return computeSnapshotInfos(snapshotDirectory, snapshotPath -> SnapshotFilesInfo.none())
+    return computeSnapshotInfos(snapshotDirectory, snapshotPath -> SnapshotFilesInfo.none(), false)
         .checksum();
   }
 
-  public static Result of(final Path snapshotDirectory, final SnapshotFileInfoProvider provider)
+  public static Result of(
+      final Path snapshotDirectory,
+      final SnapshotFileInfoProvider provider,
+      final boolean needsTotalSize)
       throws IOException {
-    return computeSnapshotInfos(snapshotDirectory, provider);
+    return computeSnapshotInfos(snapshotDirectory, provider, needsTotalSize);
   }
 
   private static Result computeSnapshotInfos(
-      final Path snapshotDirectory, final SnapshotFileInfoProvider provider) throws IOException {
+      final Path snapshotDirectory,
+      final SnapshotFileInfoProvider provider,
+      final boolean needsTotalSize)
+      throws IOException {
 
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotInfos::isNotMetadataFile).sorted()) {
@@ -65,8 +71,11 @@ final class SnapshotInfos {
         } else {
           sfvChecksum.updateFromFile(file);
         }
-        final var size = fileSizes.get(fileName);
-        totalSizeInBytes += size != null ? size : Files.size(file);
+
+        if (needsTotalSize) {
+          final var size = fileSizes.get(fileName);
+          totalSizeInBytes += size != null ? size : Files.size(file);
+        }
       }
 
       // While persisting transient snapshot, the checksum of metadata file is added at the end.
