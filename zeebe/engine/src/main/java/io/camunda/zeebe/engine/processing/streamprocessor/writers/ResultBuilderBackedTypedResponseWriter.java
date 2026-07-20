@@ -53,7 +53,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeRejection(
+  public void writeRejectedResponse(
       final long key,
       final Intent intent,
       final UnifiedRecordValue value,
