@@ -10798,11 +10798,11 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (method, statusCode)",
+              "expr": "sum(label_replace(label_replace(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]), \"method\", \"$1\", \"grpc_method\", \"(.+)\"), \"statusCode\", \"$1\", \"code\", \"(.+)\") or on(method, statusCode, pod) rate(grpc_server_processing_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (method, statusCode, pod)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{method}} ({{statusCode}})",
+              "legendFormat": "{{method}} ({{statusCode}}) in {{pod}}",
               "refId": "A"
             }
           ],
