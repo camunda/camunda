@@ -39,6 +39,21 @@ describe('<AvailableTools />', () => {
     expect(secondTool).toHaveTextContent('Sends an email to a recipient.');
   });
 
+  it('should render tools in alphabetical order by name', () => {
+    const tools: AgentTool[] = [
+      {name: 'send_email', description: null, elementId: null},
+      {name: 'analyze_data', description: null, elementId: null},
+      {name: 'get_weather', description: null, elementId: null},
+    ];
+
+    render(<AvailableTools tools={tools} />);
+
+    const items = screen.getAllByRole('listitem');
+    expect(items[0]).toHaveAccessibleName('analyze_data');
+    expect(items[1]).toHaveAccessibleName('get_weather');
+    expect(items[2]).toHaveAccessibleName('send_email');
+  });
+
   it('should render an empty hint when no tools are configured', () => {
     render(<AvailableTools tools={[]} />);
 
