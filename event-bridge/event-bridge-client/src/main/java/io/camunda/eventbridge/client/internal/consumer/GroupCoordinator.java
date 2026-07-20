@@ -76,6 +76,13 @@ public final class GroupCoordinator {
   private volatile String memberId;
   private volatile long memberEpoch = 0;
 
+  // The last standby target this coordinator reported to the listener (event-bridge-streaming ADR
+  // 0009 decision 6 / consumer-groups ADR 0006 decision 1), so a later full target can be diffed
+  // into a delta the same way applyOwnedPartitions diffs active ownership. Empty until {@link
+  // #applyStandbyAssignment} is ever called — today, only from a test/internal caller (see its
+  // javadoc for the wire-status gap).
+  private volatile List<TopicPartition> standbyPartitions = List.of();
+
   private volatile ScheduledFuture<?> scheduledHeartbeat;
 
   // Single-flight guard for rejoin(): with a static instanceId the coordinator holds the instance
@@ -560,6 +567,36 @@ public final class GroupCoordinator {
   /** Sets the rebalance listener (never null); replaces any previous one. */
   void setRebalanceListener(final RebalanceListener listener) {
     rebalanceListener = listener == null ? NO_OP_REBALANCE_LISTENER : listener;
+  }
+
+  /**
+   * Applies a full standby-assignment target (event-bridge-streaming ADR 0009 decision 6 /
+   * consumer-groups ADR 0006 decision 1): diffs it against the target last applied here and
+   * notifies the rebalance listener of standby-only assign/revoke deltas, mirroring {@link
+   * #applyOwnedPartitions} for active ownership — a partition present in both the previous and the
+   * new target is not re-signalled.
+   *
+   * <p><b>Not wired from a real heartbeat yet.</b> {@code onHeartbeatResponse} has no standby data
+   * to pass here: the client-facing gateway wire contract ({@code ConsumerHeartbeatResponse},
+   * event-bridge-api-proto) carries no standby-assignment field, even though the coordinator's
+   * internal {@code HeartbeatResponse} already computes and carries one. Adding that field is
+   * deliberately out of scope for this pass (ADR 0009 follow-up work item 4's remaining product-
+   * surface gap) — until it lands, only a test or internal caller can reach this method.
+   */
+  public void applyStandbyAssignment(final List<TopicPartition> target) {
+    final List<TopicPartition> sorted = subscription.sorted(target);
+    final List<TopicPartition> previous = standbyPartitions;
+    standbyPartitions = sorted;
+    final List<TopicPartition> revoked = new ArrayList<>(previous);
+    revoked.removeAll(sorted);
+    final List<TopicPartition> assigned = new ArrayList<>(sorted);
+    assigned.removeAll(previous);
+    if (!revoked.isEmpty()) {
+      rebalanceListener.onStandbyPartitionsRevoked(revoked);
+    }
+    if (!assigned.isEmpty()) {
+      rebalanceListener.onStandbyPartitionsAssigned(assigned);
+    }
   }
 
   /**
