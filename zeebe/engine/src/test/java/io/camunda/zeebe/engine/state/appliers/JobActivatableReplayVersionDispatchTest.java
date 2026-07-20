@@ -33,8 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 /**
  * Exercises the real {@link EventAppliers#applyState} version-dispatch path for #56962 — the
  * mechanism that resolves a persisted record's own {@code recordVersion} to an applier at replay
- * time. {@code JobActivatableReplayDivergenceTest} calls {@code DbJobState}'s insert methods
- * directly and never exercises this dispatch/version-resolution step; this test closes that gap.
+ * time.
  *
  * <p>recordVersion=2 reproduces replaying a CREATED event originally processed and persisted by a
  * pre-#53724 broker, whose latest registered CREATED version was 2 (confirmed via {@code git show
