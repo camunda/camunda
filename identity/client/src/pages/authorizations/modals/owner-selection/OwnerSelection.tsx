@@ -7,10 +7,10 @@
  */
 
 import { ComboBox, TextInputSkeleton } from "@carbon/react";
-import { SearchResponse, useApi } from "src/utility/api";
+import { type SearchResponse, useApi } from "src/utility/api";
 import { ApiDefinition } from "src/utility/api/request";
 import useTranslate from "src/utility/localization";
-import { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
+import type { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type OwnerSelectionProps<T> = {
   id: string;
