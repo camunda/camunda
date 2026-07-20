@@ -103,7 +103,7 @@ public class ListLogStorage implements LogStorage {
   private record Entry(ByteBuffer data) {}
 
   private final class ListLogStorageReader implements LogStorageReader {
-    AtomicInteger currentIndex;
+    final AtomicInteger currentIndex = new AtomicInteger(0);
 
     @Override
     public void seek(final long position) {
