@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -312,6 +313,15 @@ public final class PartitionModeHandler implements ModeChangeExecutor, AsyncClos
                       .filter(
                           partitionId -> health.get(partitionId) == PartitionHealthStatus.HEALTHY)
                       .collect(Collectors.toSet());
+              if (healthyPartitions.size() < expectedPartitions.size()) {
+                final var unhealthyPartitions = new HashSet<>(expectedPartitions);
+                unhealthyPartitions.removeAll(healthyPartitions);
+                LOG.warn(
+                    "Partition group {}: partitions {} are not healthy during recovery transition - {}",
+                    partitionGroup,
+                    unhealthyPartitions,
+                    health);
+              }
               result.complete(healthyPartitions);
             });
   }
