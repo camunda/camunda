@@ -7,27 +7,35 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.ClusterOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 
 /**
  * Waits for a member's partition manager to finish starting in the target {@link Mode}. Emitted
  * after the per-member {@code ModeChangeOperation}s so that the cluster change only completes once
- * every member's partitions are actually up. It changes no cluster configuration state; it only
- * gates the change plan until the local transition has settled.
+ * every member's partitions are actually up. Writes {@link PartitionState.State#RECOVERING} or
+ * {@link PartitionState.State#ACTIVE} for the subset of this member's partitions that {@link
+ * ModeChangeExecutor#awaitModeApplied(Mode)} confirms transitioned; partitions outside that subset
+ * (e.g. unhealthy ones) keep their prior state.
  */
 public class AwaitModeChangeApplier implements ClusterOperationApplier {
 
+  private final MemberId memberId;
   private final Mode mode;
   private final ModeChangeExecutor modeChangeExecutor;
 
-  public AwaitModeChangeApplier(final Mode mode, final ModeChangeExecutor modeChangeExecutor) {
+  public AwaitModeChangeApplier(
+      final MemberId memberId, final Mode mode, final ModeChangeExecutor modeChangeExecutor) {
+    this.memberId = Objects.requireNonNull(memberId);
     this.mode = Objects.requireNonNull(mode);
     this.modeChangeExecutor = Objects.requireNonNull(modeChangeExecutor);
   }
@@ -44,13 +52,32 @@ public class AwaitModeChangeApplier implements ClusterOperationApplier {
     modeChangeExecutor
         .awaitModeApplied(mode)
         .onComplete(
-            (ignored, error) -> {
+            (confirmedPartitions, error) -> {
               if (error != null) {
                 result.completeExceptionally(error);
               } else {
-                result.complete(UnaryOperator.identity());
+                result.complete(writeConfirmedPartitions(confirmedPartitions));
               }
             });
     return result;
+  }
+
+  private UnaryOperator<ClusterConfiguration> writeConfirmedPartitions(
+      final Set<Integer> confirmedPartitions) {
+    if (confirmedPartitions.isEmpty()) {
+      return UnaryOperator.identity();
+    }
+    final UnaryOperator<PartitionState> partitionStateUpdater =
+        mode == Mode.RECOVERING ? PartitionState::toRecovering : PartitionState::toActive;
+    return clusterConfiguration ->
+        clusterConfiguration.updateMember(
+            memberId,
+            memberState -> {
+              var updatedState = memberState;
+              for (final var partitionId : confirmedPartitions) {
+                updatedState = updatedState.updatePartition(partitionId, partitionStateUpdater);
+              }
+              return updatedState;
+            });
   }
 }

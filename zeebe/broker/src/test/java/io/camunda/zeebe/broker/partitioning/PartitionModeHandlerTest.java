@@ -27,6 +27,7 @@ import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -141,6 +142,11 @@ final class PartitionModeHandlerTest {
   private void givenPartitionRoles(final Map<Integer, PartitionRole> roles) {
     when(topologyManager.getLocalPartitionRoles())
         .thenReturn(CompletableActorFuture.completed(Map.copyOf(roles)));
+  }
+
+  private void givenPartitionHealth(final Map<Integer, PartitionHealthStatus> health) {
+    when(topologyManager.getLocalPartitionHealth())
+        .thenReturn(CompletableActorFuture.completed(Map.copyOf(health)));
   }
 
   private void progress() {
@@ -371,7 +377,7 @@ final class PartitionModeHandlerTest {
     void shouldFailWhenNotInExpectedMode() {
       // given - the member is in processing mode but a recovery transition is awaited
       // when
-      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.RECOVERING);
+      final ActorFuture<Set<Integer>> await = handler.awaitModeApplied(Mode.RECOVERING);
       progress();
 
       // then
@@ -379,48 +385,86 @@ final class PartitionModeHandlerTest {
     }
 
     @Test
-    void shouldCompleteWhenNoLocalPartitions() {
+    void shouldCompleteWithEmptySetWhenNoLocalPartitions() {
       // given - this member replicates no partitions of the group
       givenLocalPartitions();
 
       // when
-      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
+      final ActorFuture<Set<Integer>> await = handler.awaitModeApplied(Mode.PROCESSING);
       progress();
 
       // then
-      assertThat(await.isDone()).isTrue();
       assertThat(await.isCompletedExceptionally()).isFalse();
+      assertThat(await.join()).isEmpty();
     }
 
     @Test
-    void shouldCompleteWhenAllPartitionsReachedProcessingRoles() {
+    void shouldCompleteWithAllPartitionsWhenProcessingRolesReached() {
       // given
       givenLocalPartitions(1, 2);
       givenPartitionRoles(Map.of(1, PartitionRole.LEADER, 2, PartitionRole.FOLLOWER));
 
       // when
-      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
+      final ActorFuture<Set<Integer>> await = handler.awaitModeApplied(Mode.PROCESSING);
       progress();
 
-      // then - the first poll already sees ready roles
-      assertThat(await.isDone()).isTrue();
+      // then - processing readiness is role-only, no health gating
       assertThat(await.isCompletedExceptionally()).isFalse();
+      assertThat(await.join()).containsExactlyInAnyOrder(1, 2);
     }
 
     @Test
-    void shouldCompleteForRecoveryWhenPartitionsInactive() {
-      // given - in recovery mode, the partitions are expected to be deactivated
+    void shouldCompleteWithHealthyPartitionsWhenRecovering() {
+      // given
       givenCurrentManager(GROUP, recoveryManager);
       givenLocalPartitions(1, 2);
       givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE, 2, PartitionRole.INACTIVE));
+      givenPartitionHealth(
+          Map.of(1, PartitionHealthStatus.HEALTHY, 2, PartitionHealthStatus.HEALTHY));
 
       // when
-      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.RECOVERING);
+      final ActorFuture<Set<Integer>> await = handler.awaitModeApplied(Mode.RECOVERING);
       progress();
 
       // then
-      assertThat(await.isDone()).isTrue();
       assertThat(await.isCompletedExceptionally()).isFalse();
+      assertThat(await.join()).containsExactlyInAnyOrder(1, 2);
+    }
+
+    @Test
+    void shouldExcludeDeadPartitionsFromConfirmedSetButStillComplete() {
+      // given - partition 2 reached INACTIVE but never recovered, so it's DEAD
+      givenCurrentManager(GROUP, recoveryManager);
+      givenLocalPartitions(1, 2);
+      givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE, 2, PartitionRole.INACTIVE));
+      givenPartitionHealth(Map.of(1, PartitionHealthStatus.HEALTHY, 2, PartitionHealthStatus.DEAD));
+
+      // when
+      final ActorFuture<Set<Integer>> await = handler.awaitModeApplied(Mode.RECOVERING);
+      progress();
+
+      // then - the operation still completes (a dead partition must not stall the cluster
+      // change), but only the healthy partition is in the confirmed set
+      assertThat(await.isCompletedExceptionally()).isFalse();
+      assertThat(await.join()).containsExactly(1);
+    }
+
+    @Test
+    void shouldRetryWhenHealthNotYetReported() {
+      // given - role reached INACTIVE, but health hasn't been reported yet (a race between
+      // RecoveryPartitionManager's role batch and its health batch)
+      givenCurrentManager(GROUP, recoveryManager);
+      givenLocalPartitions(1);
+      givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE));
+      givenPartitionHealth(Map.of());
+
+      // when
+      final ActorFuture<Set<Integer>> await = handler.awaitModeApplied(Mode.RECOVERING);
+      progress();
+
+      // then - the operation fails so the cluster change can be retried, same as an
+      // unready role
+      assertThat(await.isCompletedExceptionally()).isTrue();
     }
 
     @Test
@@ -430,7 +474,7 @@ final class PartitionModeHandlerTest {
       givenPartitionRoles(Map.of(1, PartitionRole.INACTIVE));
 
       // when
-      final ActorFuture<Void> await = handler.awaitModeApplied(Mode.PROCESSING);
+      final ActorFuture<Set<Integer>> await = handler.awaitModeApplied(Mode.PROCESSING);
       progress();
 
       // then - the operation fails so the cluster change can be retried

@@ -518,6 +518,7 @@ schemas:
       - JOINING
       - ACTIVE
       - LEAVING
+      - RECOVERING
 
   TopologyVersion:
     title: TopologyVersion

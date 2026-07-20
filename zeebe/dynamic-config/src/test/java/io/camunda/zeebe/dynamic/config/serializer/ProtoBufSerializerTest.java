@@ -25,11 +25,14 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.ExporterStateEnum;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
@@ -37,6 +40,7 @@ import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.List;
 import java.util.Map;
@@ -307,5 +311,25 @@ final class ProtoBufSerializerTest {
 
     // then
     assertThat(deserialized.state()).isEqualTo(ExportingState.UNKNOWN);
+  }
+
+  @Test
+  void shouldEncodeAndDecodePartitionStateRecovering() {
+    // given
+    final var partitionConfig = DynamicPartitionConfig.init();
+    final var clusterConfiguration =
+        ClusterConfiguration.init()
+            .addMember(
+                MemberId.from("1"),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig).toRecovering())));
+    final var gossipState = new ClusterConfigurationGossipState();
+    gossipState.setClusterConfiguration(clusterConfiguration);
+
+    // when
+    final var decoded = protoBufSerializer.decode(protoBufSerializer.encode(gossipState));
+
+    // then
+    assertThat(decoded.getClusterConfiguration()).isEqualTo(clusterConfiguration);
   }
 }

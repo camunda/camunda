@@ -259,6 +259,28 @@ class ConfigurationUtilTest {
         .correlatesMessagesToPartitions(2);
   }
 
+  @Test
+  void shouldIncludeRecoveringPartitionsInDistribution() {
+    // given
+    final PartitionMetadata partitionOne =
+        new PartitionMetadata(
+            new PartitionId(GROUP_NAME, 1), Set.of(member(0)), Map.of(member(0), 1), 1, member(0));
+
+    final ClusterConfiguration topology =
+        ClusterConfiguration.init()
+            .addMember(
+                member(0),
+                MemberState.initializeAsActive(
+                    Map.of(1, PartitionState.active(1, partitionConfig).toRecovering())));
+
+    // when
+    final var partitionDistribution =
+        ConfigurationUtil.getPartitionDistributionFrom(topology, GROUP_NAME);
+
+    // then
+    assertThat(partitionDistribution).containsExactly(partitionOne);
+  }
+
   private MemberId member(final int id) {
     return MemberId.from(String.valueOf(id));
   }

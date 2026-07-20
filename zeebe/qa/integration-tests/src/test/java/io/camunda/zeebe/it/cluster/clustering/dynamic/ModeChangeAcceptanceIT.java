@@ -85,6 +85,22 @@ final class ModeChangeAcceptanceIT {
           .timeout(Duration.ofSeconds(30))
           .untilAsserted(() -> assertAllCreateInstanceAttemptsFail(processId));
 
+      // and - every local partition reports RECOVERING via the cluster topology actuator
+      Awaitility.await("All local partitions report RECOVERING (iteration " + i + ")")
+          .timeout(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var topology = actuator.getTopology();
+                assertThat(topology.getBrokers())
+                    .flatExtracting(io.camunda.zeebe.management.cluster.BrokerState::getPartitions)
+                    .extracting(io.camunda.zeebe.management.cluster.PartitionState::getState)
+                    .allMatch(
+                        state ->
+                            state
+                                == io.camunda.zeebe.management.cluster.PartitionStateCode
+                                    .RECOVERING);
+              });
+
       // when - transition back to PROCESSING
       final var toProcessing = triggerModeChange(trigger, actuator, "PROCESSING");
       Awaitility.await("Cluster transitions to PROCESSING (iteration " + i + ")")
@@ -105,6 +121,20 @@ final class ModeChangeAcceptanceIT {
               PARTITIONS_COUNT, i)
           .containsExactlyInAnyOrderElementsOf(
               IntStream.rangeClosed(1, PARTITIONS_COUNT).boxed().collect(Collectors.toList()));
+
+      // and - every local partition reports ACTIVE again via the cluster topology actuator
+      Awaitility.await("All local partitions report ACTIVE (iteration " + i + ")")
+          .timeout(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var topology = actuator.getTopology();
+                assertThat(topology.getBrokers())
+                    .flatExtracting(io.camunda.zeebe.management.cluster.BrokerState::getPartitions)
+                    .extracting(io.camunda.zeebe.management.cluster.PartitionState::getState)
+                    .allMatch(
+                        state ->
+                            state == io.camunda.zeebe.management.cluster.PartitionStateCode.ACTIVE);
+              });
     }
   }
 
