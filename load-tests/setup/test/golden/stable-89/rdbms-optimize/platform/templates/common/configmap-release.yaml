@@ -19,7 +19,7 @@ data:
   info: |-
     - name: c8-golden-stable-89-rdbms-optimize
       namespace: c8-golden-stable-89-rdbms-optimize
-      version: 14.6.0
+      version: 14.6.1
       tags:
       - dev
       custom-properties: []
@@ -30,13 +30,13 @@ data:
         url: http://localhost:18080/auth
       - name: Identity
         id: identity
-        version: 8.9.5
+        version: 8.9.6
         url: http://localhost:8080
         readiness: http://identity.c8-golden-stable-89-rdbms-optimize:82/actuator/health
         metrics: http://identity.c8-golden-stable-89-rdbms-optimize:82/actuator/prometheus
       - name: Optimize
         id: optimize
-        version: 8.9.11
+        version: 8.9.12
         url: http://localhost:8083
         readiness: http://optimize.c8-golden-stable-89-rdbms-optimize:80/api/readyz
         metrics: http://optimize.c8-golden-stable-89-rdbms-optimize:8092/actuator/prometheus
