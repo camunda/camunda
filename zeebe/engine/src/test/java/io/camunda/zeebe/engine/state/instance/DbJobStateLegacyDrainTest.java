@@ -20,11 +20,13 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
@@ -168,6 +170,36 @@ final class DbJobStateLegacyDrainTest {
     // afterwards is still found
     seedLegacyJob(2L, type, TENANT);
     assertThat(activatableKeys(type)).containsExactly(2L);
+  }
+
+  @Test
+  void shouldFindAndDrainLegacyJobInsertedByReplayOfPreVersionedCreatedEvent() {
+    // given: the real applier version-dispatch used at replay, not a direct CF seed
+    final var eventAppliers = new EventAppliers();
+    eventAppliers.registerEventAppliers(processingState);
+    final DirectBuffer type = wrapString("type-a");
+    final JobRecord createdRecord =
+        new JobRecord().setType(type).setTenantId(TENANT).setRetries(3).setDeadline(-1L);
+
+    // when: a CREATED event as persisted by a pre-#53724 broker (recordVersion=2) is replayed
+    // through the real dispatch path, which must land the job in the legacy JOB_ACTIVATABLE CF
+    eventAppliers.applyState(1L, JobIntent.CREATED, createdRecord, 2);
+
+    // then: forEachActivatableJobs finds it via Phase 2 — the flag must not be set while a
+    // replay-inserted legacy entry still exists
+    assertThat(activatableKeys(type)).containsExactly(1L);
+
+    // when: the job is activated, which removes it from the legacy CF the same way
+    // makeJobNotActivatable does for any other deactivation
+    final JobRecord activateRecord =
+        new JobRecord().setType(type).setTenantId(TENANT).setRetries(3).setDeadline(1_000L);
+    jobState.activate(1L, activateRecord);
+
+    // then: the legacy CF is now globally empty, so the flag is set on this scan and a legacy
+    // entry seeded afterwards is never found again
+    assertThat(activatableKeys(type)).isEmpty();
+    seedLegacyJob(2L, type, TENANT);
+    assertThat(activatableKeys(type)).isEmpty();
   }
 
   @Test
