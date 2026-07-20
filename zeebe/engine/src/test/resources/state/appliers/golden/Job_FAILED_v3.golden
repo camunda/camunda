@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
+import io.camunda.zeebe.util.EnsureUtil;
 
 /**
  * Owns the FAILED orchestration directly and, on the activatable branch, inserts into {@code
@@ -33,6 +34,8 @@ final class JobFailedV3Applier implements TypedEventApplier<JobIntent, JobRecord
 
   @Override
   public void applyState(final long key, final JobRecord value) {
+    EnsureUtil.ensureNotNullOrEmpty("type", value.getTypeBuffer());
+
     if (value.getRetries() > 0) {
       if (value.getRetryBackoff() > 0) {
         jobState.addJobBackoff(key, value.getRecurringTime());

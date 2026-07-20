@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.util.EnsureUtil;
 
 /**
  * Owns the RECURRED_AFTER_BACKOFF orchestration directly and inserts into {@code
@@ -29,6 +30,8 @@ public class JobRecurredV2Applier implements TypedEventApplier<JobIntent, JobRec
 
   @Override
   public void applyState(final long key, final JobRecord value) {
+    EnsureUtil.ensureNotNullOrEmpty("type", value.getTypeBuffer());
+
     jobState.updateJobRecord(key, value);
     jobState.updateJobState(key, State.ACTIVATABLE);
     jobState.removeJobDeadline(key, value.getDeadline());

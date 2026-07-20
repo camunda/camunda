@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.util.EnsureUtil;
 
 /**
  * Owns the YIELDED orchestration directly and inserts into {@code JOB_ACTIVATABLE_BY_PRIORITY} via
@@ -29,6 +30,8 @@ public final class JobYieldedV2Applier implements TypedEventApplier<JobIntent, J
 
   @Override
   public void applyState(final long key, final JobRecord value) {
+    EnsureUtil.ensureNotNullOrEmpty("type", value.getTypeBuffer());
+
     jobState.updateJobRecord(key, value);
     jobState.updateJobState(key, State.ACTIVATABLE);
     jobState.removeJobDeadline(key, value.getDeadline());

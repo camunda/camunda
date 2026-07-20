@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
+import io.camunda.zeebe.util.EnsureUtil;
 
 /**
  * Owns the TIMED_OUT orchestration directly and inserts into {@code JOB_ACTIVATABLE_BY_PRIORITY}
@@ -33,6 +34,9 @@ public class JobTimedOutV3Applier implements TypedEventApplier<JobIntent, JobRec
 
   @Override
   public void applyState(final long key, final JobRecord value) {
+    EnsureUtil.ensureNotNullOrEmpty("type", value.getTypeBuffer());
+    EnsureUtil.ensureGreaterThan("deadline", value.getDeadline(), 0);
+
     jobState.updateJobRecord(key, value);
     jobState.updateJobState(key, State.ACTIVATABLE);
     jobState.removeJobDeadline(key, value.getDeadline());
