@@ -1,6 +1,7 @@
+# type: Release
+# owner: @camunda/engineering-operations
+---
 name: Camunda Platform Release
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   workflow_dispatch:
@@ -55,7 +56,7 @@ jobs:
     steps:
       - id: slack-notify
         name: Send slack notification
-        uses: slackapi/slack-github-action@v1.27.1
+        uses: slackapi/slack-github-action@fcfb566f8b0aab22203f066d80ca1d7e4b5d05b3 # v1.27.1
         with:
           # For posting a rich message using Block Kit
           payload: |

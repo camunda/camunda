@@ -467,7 +467,7 @@ jobs:
       checks: read
       pull-requests: write
     env:
-      TEST_OWNER: '@camunda/monorepo-devops-team'
+      TEST_OWNER: '@camunda/engineering-operations'
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
       - name: Generate GitHub token

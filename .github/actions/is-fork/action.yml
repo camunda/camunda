@@ -1,5 +1,7 @@
-# owner: @camunda/monorepo-devops-team
+---
 name: Is Fork
+
+# owner: @camunda/engineering-operations
 
 description: |
   Checks if current job runs on code from a forked repository (via PR).
