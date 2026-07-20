@@ -204,23 +204,6 @@ public class BrokerAdminServiceTest {
   }
 
   @Test
-  void shouldPauseStreamProcessorAndExporterAndTakeSnapshotWhenPrepareUgrade() {
-    // given
-    resourcesHelper.createSingleJob("test");
-
-    // when
-    partitions.prepareUpgrade();
-    waitForSnapshotAtBroker();
-
-    // then
-    final var status = partitions.query();
-    assertThat(status.get(1).streamProcessorPhase()).isEqualTo(Phase.PAUSED.toString());
-    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.PAUSED.toString());
-    assertThat(status.get(1).processedPosition())
-        .isEqualTo(status.get(1).processedPositionInSnapshot());
-  }
-
-  @Test
   void shouldPauseStreamProcessorAfterRestart() {
     // given
     partitions.pauseProcessing();
