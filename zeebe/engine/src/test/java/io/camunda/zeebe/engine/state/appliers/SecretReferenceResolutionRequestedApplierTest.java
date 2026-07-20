@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import java.util.ArrayList;
 import java.util.List;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,6 +76,38 @@ final class SecretReferenceResolutionRequestedApplierTest {
   }
 
   @Test
+  void shouldAccumulateJobsAcrossSeparateResolutionRequestedEvents() {
+    // given — two separate RESOLUTION_REQUESTED events for the same secret, each adding a different
+    // job
+    final var record1 =
+        new SecretReferenceRecord()
+            .setStoreId("store-1")
+            .setSecretReference("secret-a")
+            .addJobKey(1L);
+    final var record2 =
+        new SecretReferenceRecord()
+            .setStoreId("store-1")
+            .setSecretReference("secret-a")
+            .addJobKey(2L);
+
+    // when
+    applier.applyState(100L, record1);
+    applier.applyState(101L, record2);
+
+    // then — both jobs are in the waiting-jobs index and the reference stays pending
+    assertThat(state.isPending("store-1", "secret-a")).isTrue();
+    final List<Long> waitingJobs = new ArrayList<>();
+    state.visitJobsBySecretReference(
+        "store-1",
+        "secret-a",
+        jobKey -> {
+          waitingJobs.add(jobKey);
+          return true;
+        });
+    assertThat(waitingJobs).containsExactlyInAnyOrder(1L, 2L);
+  }
+
+  @Test
   void shouldIndexSecretReferenceByJob() {
     // given
     final var record =
@@ -87,7 +120,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
     applier.applyState(100L, record);
 
     // then — CF2: (storeId, secretReference) pairs indexed by job
-    final List<Object> pairs = new ArrayList<>();
+    final List<Tuple> pairs = new ArrayList<>();
     state.visitSecretReferencesByJob(
         1L,
         (storeId, secretReference) -> {
@@ -98,7 +131,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
   }
 
   @Test
-  void shouldBeIdempotentOnReplay() {
+  void shouldNotDuplicateJobOnRepeatedResolutionRequest() {
     // given
     final var record =
         new SecretReferenceRecord()
@@ -106,9 +139,9 @@ final class SecretReferenceResolutionRequestedApplierTest {
             .setSecretReference("secret-a")
             .addJobKey(1L);
 
-    // when — apply twice, as replay would
+    // when — apply twice, as would happen when the same job triggers a repeated activation attempt
     applier.applyState(100L, record);
-    applier.applyState(100L, record);
+    applier.applyState(101L, record);
 
     // then — no duplicate waiting-job entries
     final List<Long> waitingJobs = new ArrayList<>();
@@ -164,7 +197,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
     applier.applyState(101L, record2);
 
     // then — CF2: both (storeId, secretReference) pairs are indexed under job 1
-    final List<Object> pairs = new ArrayList<>();
+    final List<Tuple> pairs = new ArrayList<>();
     state.visitSecretReferencesByJob(
         1L,
         (storeId, secretReference) -> {
