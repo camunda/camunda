@@ -1,7 +1,9 @@
 # ADR 0009 — State changelogs on compacted topics
 
 - Status: Accepted (2026-07-16) — supersedes the state-transport core of ADR 0006 (decisions 2,
-  3, 6 there); sign-off recorded in [ADR 0006](0006-standby-tasks-warm-failover.md)'s Status line.
+  3, 6 there). The supersession was decided with the failover-first re-scoping of decision 4
+  below; [ADR 0006](0006-standby-tasks-warm-failover.md)'s Status line records the split between
+  its superseded and retained content.
 - Date: 2026-07-15
 - Scope: `event-bridge-streaming` commit path, analytics shards, `event-bridge-consumer-groups`
   roles, disaster/bootstrap recovery
@@ -116,7 +118,7 @@ truth; local RocksDB is a restart accelerator.
 - Local persistence becomes a pure optimization (0006 reached the same property via snapshots):
   members can run on ephemeral disks; an intact disk only shortens catch-up.
 - ADR 0006 remains the reference for the assignment-protocol design; its Status must note this
-  supersession once signed off (its implementation had not started).
+  supersession (see both Status lines; its implementation had not started).
 
 ## Considered and rejected
 
@@ -138,8 +140,9 @@ truth; local RocksDB is a restart accelerator.
    position in the shard transaction.
 2. Epoch fencing on the changelog producer path (reuse coordinator-epoch validation).
 3. Rebuild + intact-disk restore paths; retire the retained-window replay guard.
-4. Standby-on-changelog implementation over 0006's protocol surface — sign-off recorded, under
-   implementation (`roman/eb-standby-failover`).
-5. Docs: stamp 0006's Status line on sign-off (done); consumer-contract note ("state, not events")
+4. Standby-on-changelog implementation over 0006's protocol surface — supersession decided
+   (decision 4 as amended), under implementation (`roman/eb-standby-failover`).
+5. Docs: stamp 0006's Status line with the supersession split (done); consumer-contract note
+   ("state, not events")
    on the topic/API docs.
 
