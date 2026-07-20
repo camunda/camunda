@@ -77,7 +77,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   @Override
   protected void onActorStarted() {
     communicationService.replyToAsync(
-        StreamTopics.PUSH.topic(DEFAULT_PHYSICAL_TENANT_ID),
+        StreamTopics.PUSH.legacyTopic(),
         MessageUtil::parsePushRequest,
         apiHandler::handlePushRequest,
         BufferUtil::bufferAsArray,
@@ -153,11 +153,14 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
     if (registeredRestartPhysicalTenants.add(physicalTenantId)) {
       registerRestartTopicHandler(
           StreamTopics.RESTART_STREAMS.topic(physicalTenantId), physicalTenantId);
+      registerLegacyRestartHandler(physicalTenantId);
+    }
+  }
 
-      if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-        // Rolling-upgrade compat; remove alongside the legacy topic in 8.11.
-        registerRestartTopicHandler(StreamTopics.RESTART_STREAMS.dualTopic(), physicalTenantId);
-      }
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void registerLegacyRestartHandler(final String physicalTenantId) {
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      registerRestartTopicHandler(StreamTopics.RESTART_STREAMS.legacyTopic(), physicalTenantId);
     }
   }
 

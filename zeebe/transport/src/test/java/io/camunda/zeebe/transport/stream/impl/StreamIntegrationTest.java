@@ -426,7 +426,7 @@ final class StreamIntegrationTest {
     }
 
     @Test
-    void shouldAddStreamAgainOnDualRestartRequest() {
+    void shouldAddStreamAgainOnLegacyRestartRequest() {
       // given
       final var streamType = BufferUtil.wrapString("foo");
       final var properties = new TestSerializableData();
@@ -457,7 +457,7 @@ final class StreamIntegrationTest {
             .cluster
             .getCommunicationService()
             .send(
-                StreamTopics.RESTART_STREAMS.dualTopic(),
+                StreamTopics.RESTART_STREAMS.legacyTopic(),
                 ArrayUtil.EMPTY_BYTE_ARRAY,
                 Function.identity(),
                 Function.identity(),

@@ -17,9 +17,10 @@ final class StreamTopicsTest {
 
   @ParameterizedTest
   @EnumSource(StreamTopics.class)
-  void shouldUseLegacyUnprefixedTopicForDefaultTenant(final StreamTopics topic) {
+  void shouldPrefixTopicForDefaultTenant(final StreamTopics topic) {
     assertThat(topic.topic(DEFAULT_PHYSICAL_TENANT_ID))
-        .doesNotStartWith(DEFAULT_PHYSICAL_TENANT_ID + "-");
+        .isEqualTo(DEFAULT_PHYSICAL_TENANT_ID + "-" + topic.legacyTopic())
+        .startsWith(DEFAULT_PHYSICAL_TENANT_ID + "-");
   }
 
   @ParameterizedTest
@@ -30,10 +31,9 @@ final class StreamTopicsTest {
 
   @ParameterizedTest
   @EnumSource(StreamTopics.class)
-  void shouldUseDefaultPrefixedTopicForDualTopic(final StreamTopics topic) {
-    assertThat(topic.dualTopic())
-        .isEqualTo(DEFAULT_PHYSICAL_TENANT_ID + "-" + topic.topic(DEFAULT_PHYSICAL_TENANT_ID))
-        .startsWith(DEFAULT_PHYSICAL_TENANT_ID + "-")
+  void shouldUseUnprefixedNameForLegacyTopic(final StreamTopics topic) {
+    assertThat(topic.legacyTopic())
+        .doesNotContain(DEFAULT_PHYSICAL_TENANT_ID + "-")
         .isNotEqualTo(topic.topic(DEFAULT_PHYSICAL_TENANT_ID));
   }
 }

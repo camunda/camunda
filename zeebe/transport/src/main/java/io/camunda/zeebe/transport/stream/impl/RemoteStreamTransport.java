@@ -71,14 +71,7 @@ public final class RemoteStreamTransport<M> extends Actor {
         StreamTopics.ADD.topic(physicalTenantId),
         StreamTopics.REMOVE.topic(physicalTenantId),
         StreamTopics.REMOVE_ALL.topic(physicalTenantId));
-
-    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-      // Rolling-upgrade compat; remove alongside the legacy topic in 8.11.
-      registerTopicHandlers(
-          StreamTopics.ADD.dualTopic(),
-          StreamTopics.REMOVE.dualTopic(),
-          StreamTopics.REMOVE_ALL.dualTopic());
-    }
+    registerLegacyTopicHandlers();
   }
 
   @Override
@@ -87,14 +80,28 @@ public final class RemoteStreamTransport<M> extends Actor {
         StreamTopics.ADD.topic(physicalTenantId),
         StreamTopics.REMOVE.topic(physicalTenantId),
         StreamTopics.REMOVE_ALL.topic(physicalTenantId));
+    unsubscribeLegacyTopics();
+    requestHandler.close();
+  }
 
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void registerLegacyTopicHandlers() {
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      registerTopicHandlers(
+          StreamTopics.ADD.legacyTopic(),
+          StreamTopics.REMOVE.legacyTopic(),
+          StreamTopics.REMOVE_ALL.legacyTopic());
+    }
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void unsubscribeLegacyTopics() {
     if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       unsubscribeTopics(
-          StreamTopics.ADD.dualTopic(),
-          StreamTopics.REMOVE.dualTopic(),
-          StreamTopics.REMOVE_ALL.dualTopic());
+          StreamTopics.ADD.legacyTopic(),
+          StreamTopics.REMOVE.legacyTopic(),
+          StreamTopics.REMOVE_ALL.legacyTopic());
     }
-    requestHandler.close();
   }
 
   public void removeAll(final MemberId member) {
@@ -109,7 +116,7 @@ public final class RemoteStreamTransport<M> extends Actor {
   public CompletableFuture<Void> restartStreams(final MemberId receiver) {
     final var completed = new CompletableFuture<Void>();
     sendRestartStreamsRequest(receiver, completed, INITIAL_RETRY_DELAY_MS);
-    sendDualRestartStreamsRequest(receiver);
+    sendLegacyRestartStreamsRequest(receiver);
     return completed;
   }
 
@@ -139,14 +146,14 @@ public final class RemoteStreamTransport<M> extends Actor {
   }
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
-  private void sendDualRestartStreamsRequest(final MemberId receiver) {
+  private void sendLegacyRestartStreamsRequest(final MemberId receiver) {
     if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       return;
     }
 
     transport
         .send(
-            StreamTopics.RESTART_STREAMS.dualTopic(),
+            StreamTopics.RESTART_STREAMS.legacyTopic(),
             ArrayUtil.EMPTY_BYTE_ARRAY,
             Function.identity(),
             Function.identity(),
@@ -154,7 +161,7 @@ public final class RemoteStreamTransport<M> extends Actor {
             REQUEST_TIMEOUT)
         .exceptionallyAsync(
             error -> {
-              LOG.trace("Failed to restart streams for dual topic member '{}'", receiver, error);
+              LOG.trace("Failed to restart streams for legacy topic member '{}'", receiver, error);
               return null;
             },
             actor);

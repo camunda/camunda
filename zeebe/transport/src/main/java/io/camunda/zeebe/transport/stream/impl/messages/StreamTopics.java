@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
-import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
-
 import java.util.Objects;
 
 public enum StreamTopics {
@@ -24,17 +22,14 @@ public enum StreamTopics {
     this.topic = topic;
   }
 
+  /** The physicalTenantId-scoped topic name, used for every physical tenant, including default. */
   public String topic(final String physicalTenantId) {
     Objects.requireNonNull(physicalTenantId, "physicalTenantId must not be null");
-    // remove this condition that leads to legacy topic in 8.11
-    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-      return topic;
-    }
     return physicalTenantId + "-" + topic;
   }
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
-  public String dualTopic() {
-    return DEFAULT_PHYSICAL_TENANT_ID + "-" + topic;
+  public String legacyTopic() {
+    return topic;
   }
 }

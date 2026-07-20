@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -184,7 +185,8 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
                       Function.identity(),
                       serverId,
                       true);
-                  dualSendIfDefaultTenant(physicalTenantId, StreamTopics.REMOVE, payload, serverId);
+                  legacyUnicastIfDefaultTenant(
+                      StreamTopics.REMOVE, physicalTenantId, payload, serverId);
                   purgeRegistration(streamId, serverId);
                 }));
   }
@@ -209,9 +211,14 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     }
 
     final var payload = BufferUtil.bufferAsArray(request);
-    dualSendIfDefaultTenant(
-        registration.physicalTenantId(), StreamTopics.ADD, payload, registration.serverId());
-    sendAddRequest(registration, payload);
+    final var added = new CompletableFuture<Void>();
+    final var legacyAdded = new CompletableFuture<Void>();
+
+    sendAddRequest(registration, payload, added);
+    sendLegacyAddRequestIfDefaultTenant(registration, payload, legacyAdded);
+
+    CompletableFuture.allOf(added, legacyAdded)
+        .whenCompleteAsync((ok, error) -> registration.transitionToAdded(), executor::run);
   }
 
   private void remove(final ClientStreamRegistration<M> registration) {
@@ -227,19 +234,34 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
     final var request = new RemoveStreamRequest().streamId(registration.streamId());
     final var payload = BufferUtil.bufferAsArray(request);
-    dualSendIfDefaultTenant(
-        registration.physicalTenantId(), StreamTopics.REMOVE, payload, registration.serverId());
 
     final var pendingRequest = registration.pendingRequest();
     if (pendingRequest == null) {
-      sendRemoveRequest(registration, payload);
+      sendRemoveRequestAndLegacy(registration, payload);
       return;
     }
 
     // to minimize the likelihood of out-of-order requests on the server side, wait until the
     // current request is finished before sending the next request, regardless of the result
     pendingRequest.whenCompleteAsync(
-        (ok, error) -> sendRemoveRequest(registration, payload), executor::run);
+        (ok, error) -> sendRemoveRequestAndLegacy(registration, payload), executor::run);
+  }
+
+  private void sendRemoveRequestAndLegacy(
+      final ClientStreamRegistration<M> registration, final byte[] payload) {
+    final var removed = new CompletableFuture<Void>();
+    final var legacyRemoved = new CompletableFuture<Void>();
+
+    sendRemoveRequest(registration, payload, removed);
+    sendLegacyRemoveRequestIfDefaultTenant(registration, payload, legacyRemoved);
+
+    CompletableFuture.allOf(removed, legacyRemoved)
+        .whenCompleteAsync(
+            (ok, error) -> {
+              registration.transitionToRemoved();
+              purgeRegistration(registration.streamId(), registration.serverId());
+            },
+            executor::run);
   }
 
   /**
@@ -283,7 +305,9 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   }
 
   private void sendAddRequest(
-      final ClientStreamRegistration<M> registration, final byte[] request) {
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final CompletableFuture<Void> added) {
     if (registration.state() != State.ADDING) {
       return;
     }
@@ -298,15 +322,62 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
             REQUEST_TIMEOUT);
     registration.setPendingRequest(pendingRequest);
     pendingRequest.whenCompleteAsync(
-        (response, error) -> handleAddResponse(registration, request, response, error),
+        (response, error) ->
+            handleAddResponse(
+                registration,
+                response,
+                error,
+                () -> sendAddRequest(registration, request, added),
+                added),
+        executor::run);
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void sendLegacyAddRequestIfDefaultTenant(
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final CompletableFuture<Void> legacyAdded) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(registration.physicalTenantId())) {
+      legacyAdded.complete(null);
+      return;
+    }
+
+    sendLegacyAddRequest(registration, request, legacyAdded);
+  }
+
+  private void sendLegacyAddRequest(
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final CompletableFuture<Void> legacyAdded) {
+    if (registration.state() != State.ADDING) {
+      return;
+    }
+
+    final var pendingRequest =
+        communicationService.send(
+            StreamTopics.ADD.legacyTopic(),
+            request,
+            Function.identity(),
+            Function.identity(),
+            registration.serverId(),
+            REQUEST_TIMEOUT);
+    pendingRequest.whenCompleteAsync(
+        (response, error) ->
+            handleAddResponse(
+                registration,
+                response,
+                error,
+                () -> sendLegacyAddRequest(registration, request, legacyAdded),
+                legacyAdded),
         executor::run);
   }
 
   private void handleAddResponse(
       final ClientStreamRegistration<M> registration,
-      final byte[] request,
       final byte[] responseBuffer,
-      final @Nullable Throwable error) {
+      final @Nullable Throwable error,
+      final Runnable retry,
+      final CompletableFuture<Void> added) {
     final var state = registration.state();
     if (state != State.ADDING) {
       LOGGER.trace("Skip handling ADD response since the state is {}", state, error);
@@ -318,7 +389,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     if (error == null) {
       response = responseDecoder.decode(responseBuffer, new AddStreamResponse());
       if (response.isRight()) {
-        registration.transitionToAdded();
+        added.complete(null);
         return;
       }
 
@@ -338,11 +409,13 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         registration.serverId(),
         RETRY_DELAY,
         failure);
-    executor.schedule(RETRY_DELAY, () -> sendAddRequest(registration, request));
+    executor.schedule(RETRY_DELAY, retry);
   }
 
   private void sendRemoveRequest(
-      final ClientStreamRegistration<M> registration, final byte[] request) {
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final CompletableFuture<Void> removed) {
     if (registration.state() != State.REMOVING) {
       return;
     }
@@ -357,15 +430,62 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
             REQUEST_TIMEOUT);
     registration.setPendingRequest(pendingRequest);
     pendingRequest.whenCompleteAsync(
-        (response, error) -> handleRemoveResponse(registration, request, response, error),
+        (response, error) ->
+            handleRemoveResponse(
+                registration,
+                response,
+                error,
+                () -> sendRemoveRequest(registration, request, removed),
+                removed),
+        executor::run);
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void sendLegacyRemoveRequestIfDefaultTenant(
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final CompletableFuture<Void> legacyRemoved) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(registration.physicalTenantId())) {
+      legacyRemoved.complete(null);
+      return;
+    }
+
+    sendLegacyRemoveRequest(registration, request, legacyRemoved);
+  }
+
+  private void sendLegacyRemoveRequest(
+      final ClientStreamRegistration<M> registration,
+      final byte[] request,
+      final CompletableFuture<Void> legacyRemoved) {
+    if (registration.state() != State.REMOVING) {
+      return;
+    }
+
+    final var pendingRequest =
+        communicationService.send(
+            StreamTopics.REMOVE.legacyTopic(),
+            request,
+            Function.identity(),
+            Function.identity(),
+            registration.serverId(),
+            REQUEST_TIMEOUT);
+    pendingRequest.whenCompleteAsync(
+        (response, error) ->
+            handleRemoveResponse(
+                registration,
+                response,
+                error,
+                () -> sendLegacyRemoveRequest(registration, request, legacyRemoved),
+                legacyRemoved),
         executor::run);
   }
 
   private void handleRemoveResponse(
       final ClientStreamRegistration<M> registration,
-      final byte[] request,
       final byte[] responseBuffer,
-      final @Nullable Throwable error) {
+      final @Nullable Throwable error,
+      final Runnable retry,
+      final CompletableFuture<Void> removed) {
     final var state = registration.state();
     if (state != State.REMOVING) {
       LOGGER.trace("Skip handling REMOVE response since the state is {}", state, error);
@@ -377,8 +497,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     if (error == null) {
       response = responseDecoder.decode(responseBuffer, new RemoveStreamResponse());
       if (response.isRight()) {
-        registration.transitionToRemoved();
-        purgeRegistration(registration.streamId(), registration.serverId());
+        removed.complete(null);
         return;
       }
 
@@ -394,14 +513,18 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     //   - ErrorResponse.code in [ MALFORMED, INVALID ]
     switch (failure) {
       // all returned errors are currently unnecessary to retry
-      case final UnrecoverableException e -> handleUnrecoverableExceptionOnRemove(registration, e);
+      case final UnrecoverableException e ->
+          handleUnrecoverableExceptionOnRemove(registration, e, removed);
       // no point retrying if the remote handler failed to handle our request
-      case final RemoteHandlerFailure e -> handleUnrecoverableExceptionOnRemove(registration, e);
+      case final RemoteHandlerFailure e ->
+          handleUnrecoverableExceptionOnRemove(registration, e, removed);
       // should not happen, since it means the member was removed from the topology, but keep as a
       // failsafe
-      case final NoSuchMemberException e -> handleUnrecoverableExceptionOnRemove(registration, e);
+      case final NoSuchMemberException e ->
+          handleUnrecoverableExceptionOnRemove(registration, e, removed);
       // essentially happens due to malformed request, no point retrying
-      case final ProtocolException e -> handleUnrecoverableExceptionOnRemove(registration, e);
+      case final ProtocolException e ->
+          handleUnrecoverableExceptionOnRemove(registration, e, removed);
       default -> {
         LOGGER.debug(
             "Failed to remove remote stream {} on {}, will retry in {}",
@@ -409,13 +532,15 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
             registration.serverId(),
             RETRY_DELAY,
             failure);
-        executor.schedule(RETRY_DELAY, () -> sendRemoveRequest(registration, request));
+        executor.schedule(RETRY_DELAY, retry);
       }
     }
   }
 
   private void handleUnrecoverableExceptionOnRemove(
-      final ClientStreamRegistration<M> registration, final Throwable e) {
+      final ClientStreamRegistration<M> registration,
+      final Throwable e,
+      final CompletableFuture<Void> removed) {
     LOGGER.debug(
         """
         Failed to remove stream '{}' for member '{}'; unrecoverable error occurred on recipient
@@ -423,8 +548,7 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         registration.streamId(),
         registration.serverId(),
         e);
-    registration.transitionToRemoved();
-    purgeRegistration(registration.streamId(), registration.serverId());
+    removed.complete(null);
   }
 
   private void purgeRegistration(final UUID streamId, final MemberId serverId) {
@@ -449,19 +573,19 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
         Function.identity(),
         brokerId,
         true);
-    dualSendIfDefaultTenant(
-        physicalTenantId, StreamTopics.REMOVE_ALL, REMOVE_ALL_REQUEST, brokerId);
+    legacyUnicastIfDefaultTenant(
+        StreamTopics.REMOVE_ALL, physicalTenantId, REMOVE_ALL_REQUEST, brokerId);
   }
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
-  private void dualSendIfDefaultTenant(
-      final String physicalTenantId,
+  private void legacyUnicastIfDefaultTenant(
       final StreamTopics topic,
+      final String physicalTenantId,
       final byte[] payload,
       final MemberId serverId) {
     if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       return;
     }
-    communicationService.unicast(topic.dualTopic(), payload, Function.identity(), serverId, true);
+    communicationService.unicast(topic.legacyTopic(), payload, Function.identity(), serverId, true);
   }
 }

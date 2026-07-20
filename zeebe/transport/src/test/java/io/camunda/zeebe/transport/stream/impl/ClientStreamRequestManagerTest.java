@@ -83,13 +83,18 @@ final class ClientStreamRequestManagerTest {
             any(),
             any()))
         .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
+    when(mockTransport.send(eq(StreamTopics.ADD.legacyTopic()), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
     clientStream.open(requestManager, Collections.emptySet());
   }
 
   @Test
   void shouldNotAddWhenRemoving() {
     // given - adding the stream, then removing it without completing the request, leaving it in
-    // REMOVING indefinitely
+    // REMOVING indefinitely; stub both the primary and legacy REMOVE so neither resolves
     final var serverId = MemberId.anonymous();
     final var pendingRequest = new CompletableFuture<byte[]>();
     when(mockTransport.<byte[], byte[]>send(
@@ -99,6 +104,9 @@ final class ClientStreamRequestManagerTest {
             any(),
             eq(serverId),
             any()))
+        .thenReturn(pendingRequest);
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), eq(serverId), any()))
         .thenReturn(pendingRequest);
     requestManager.add(clientStream, serverId);
     requestManager.remove(clientStream, serverId);
@@ -174,7 +182,8 @@ final class ClientStreamRequestManagerTest {
 
   @Test
   void shouldNotRemoveIfAlreadyRemoving() {
-    // given - we add the stream then remove it, with the remove request pending indefinitely
+    // given - we add the stream then remove it, with the remove request pending indefinitely;
+    // stub both the primary and legacy REMOVE so neither resolves
     final var serverId = MemberId.anonymous();
     final var pendingRequest = new CompletableFuture<byte[]>();
     when(mockTransport.<byte[], byte[]>send(
@@ -184,6 +193,9 @@ final class ClientStreamRequestManagerTest {
             any(),
             eq(serverId),
             any()))
+        .thenReturn(pendingRequest);
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), eq(serverId), any()))
         .thenReturn(pendingRequest);
     requestManager.add(clientStream, serverId);
     requestManager.remove(clientStream, serverId);
@@ -207,9 +219,14 @@ final class ClientStreamRequestManagerTest {
     // given
     final var pendingRequest = new CompletableFuture<byte[]>();
     final var serverId = MemberId.anonymous();
-    when(mockTransport.<byte[], byte[]>send(any(), any(), any(), any(), any(), any()))
-        .thenReturn(pendingRequest)
-        .thenReturn(CompletableFuture.completedFuture(new byte[0]));
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(pendingRequest);
     requestManager.add(clientStream, serverId);
 
     // when
@@ -722,34 +739,81 @@ final class ClientStreamRequestManagerTest {
   }
 
   @Test
-  void shouldDualSendAddRemoveAndRemoveAllForDefaultTenant() {
+  void shouldSendLegacyAddRequestForDefaultTenant() {
+    // given - hold the primary (prefixed) ADD pending so we can observe that legacy alone isn't
+    // enough to mark the stream added; legacy resolves via the default success stub from setup()
+    final var serverId = MemberId.anonymous();
+    final var primaryPending = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(primaryPending);
+
+    // when
+    requestManager.add(clientStream, serverId);
+
+    // then - legacy ADD was sent, but the stream isn't added until the primary succeeds too
+    verify(mockTransport)
+        .send(eq(StreamTopics.ADD.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    assertThat(clientStream.isConnected(serverId)).isFalse();
+
+    // when - the primary finally succeeds
+    primaryPending.complete(addStreamSuccess);
+
+    // then
+    assertThat(clientStream.isConnected(serverId)).isTrue();
+  }
+
+  @Test
+  void shouldSendLegacyRemoveRequestForDefaultTenant() {
+    // given
+    final var serverId = MemberId.anonymous();
+    requestManager.add(clientStream, serverId);
+    final var primaryPending = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(primaryPending);
+
+    // when
+    requestManager.remove(clientStream, serverId);
+
+    // then - legacy REMOVE was sent, but the stream stays connected until the primary succeeds too
+    verify(mockTransport)
+        .send(eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    assertThat(clientStream.isConnected(serverId)).isTrue();
+
+    // when - the primary finally succeeds
+    primaryPending.complete(removeStreamSuccess);
+
+    // then
+    assertThat(clientStream.isConnected(serverId)).isFalse();
+  }
+
+  @Test
+  void shouldUnicastLegacyRemoveAllForDefaultTenant() {
     // given
     final var serverId = MemberId.anonymous();
 
-    // when - ADD
-    requestManager.add(clientStream, serverId);
-
-    // then - dual-sent on the default-prefixed topic (rolling-upgrade compatibility)
-    verify(mockTransport)
-        .unicast(eq(StreamTopics.ADD.dualTopic()), any(), any(), eq(serverId), anyBoolean());
-
-    // when - REMOVE
-    requestManager.remove(clientStream, serverId);
-
-    // then
-    verify(mockTransport)
-        .unicast(eq(StreamTopics.REMOVE.dualTopic()), any(), any(), eq(serverId), anyBoolean());
-
-    // when - REMOVE_ALL
+    // when
     requestManager.removeAll(Map.of(DEFAULT_PHYSICAL_TENANT_ID, Set.of(serverId)));
 
     // then
     verify(mockTransport)
-        .unicast(eq(StreamTopics.REMOVE_ALL.dualTopic()), any(), any(), eq(serverId), anyBoolean());
+        .unicast(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), eq(serverId), anyBoolean());
   }
 
   @Test
-  void shouldNotDualSendForNonDefaultTenant() {
+  void shouldNotSendOrUnicastLegacyTopicsForNonDefaultTenant() {
     // given
     final String physicalTenantId = "tenant1";
     final var tenantStream =
@@ -760,19 +824,30 @@ final class ClientStreamRequestManagerTest {
             physicalTenantId);
     tenantStream.open(requestManager, Collections.emptySet());
     final var serverId = MemberId.anonymous();
+    when(mockTransport.send(
+            eq(StreamTopics.ADD.topic(physicalTenantId)), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.topic(physicalTenantId)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
 
     // when
     requestManager.add(tenantStream, serverId);
     requestManager.remove(tenantStream, serverId);
     requestManager.removeAll(Map.of(physicalTenantId, Set.of(serverId)));
 
-    // then - never sent on any default-prefixed dual topic
+    // then - never sent/unicast on any legacy topic
     verify(mockTransport, never())
-        .unicast(eq(StreamTopics.ADD.dualTopic()), any(), any(), any(), anyBoolean());
+        .send(eq(StreamTopics.ADD.legacyTopic()), any(), any(), any(), any(), any());
     verify(mockTransport, never())
-        .unicast(eq(StreamTopics.REMOVE.dualTopic()), any(), any(), any(), anyBoolean());
+        .send(eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), any(), any());
     verify(mockTransport, never())
-        .unicast(eq(StreamTopics.REMOVE_ALL.dualTopic()), any(), any(), any(), anyBoolean());
+        .unicast(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), anyBoolean());
   }
 
   private static Stream<MessagingException> provideMessagingFailures() {

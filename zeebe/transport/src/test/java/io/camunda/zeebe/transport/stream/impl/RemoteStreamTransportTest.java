@@ -170,7 +170,7 @@ final class RemoteStreamTransportTest {
   }
 
   @Test
-  void shouldReplyOnDualAddRemoveAndRemoveAllTopicsForDefaultTenant() {
+  void shouldReplyOnLegacyAddRemoveAndRemoveAllTopicsForDefaultTenant() {
     // given
     final var streamId = UUID.randomUUID();
     final var senderMemberId = sender.getMembershipService().getLocalMember().id();
@@ -185,7 +185,7 @@ final class RemoteStreamTransportTest {
         receiver
             .getCommunicationService()
             .send(
-                StreamTopics.ADD.dualTopic(),
+                StreamTopics.ADD.legacyTopic(),
                 BufferUtil.bufferAsArray(addRequest),
                 Function.identity(),
                 Function.identity(),
@@ -199,7 +199,7 @@ final class RemoteStreamTransportTest {
         receiver
             .getCommunicationService()
             .send(
-                StreamTopics.REMOVE.dualTopic(),
+                StreamTopics.REMOVE.legacyTopic(),
                 BufferUtil.bufferAsArray(removeRequest),
                 Function.identity(),
                 Function.identity(),
@@ -212,7 +212,7 @@ final class RemoteStreamTransportTest {
         receiver
             .getCommunicationService()
             .send(
-                StreamTopics.REMOVE_ALL.dualTopic(),
+                StreamTopics.REMOVE_ALL.legacyTopic(),
                 ArrayUtil.EMPTY_BYTE_ARRAY,
                 Function.identity(),
                 Function.identity(),
@@ -222,7 +222,7 @@ final class RemoteStreamTransportTest {
   }
 
   @Test
-  void shouldNotReplyOnDualTopicsForNonDefaultTenant() {
+  void shouldNotReplyOnLegacyTopicsForNonDefaultTenant() {
     // given
     CloseHelper.quietClose(transport);
     final var nonDefaultTransport =
@@ -244,14 +244,14 @@ final class RemoteStreamTransportTest {
           receiver
               .getCommunicationService()
               .send(
-                  StreamTopics.ADD.dualTopic(),
+                  StreamTopics.ADD.legacyTopic(),
                   ArrayUtil.EMPTY_BYTE_ARRAY,
                   Function.identity(),
                   Function.identity(),
                   sender.getMembershipService().getLocalMember().id(),
                   Duration.ofSeconds(5));
 
-      // then - no handler registered on the default-prefixed dual topic for a non-default tenant
+      // then - no handler registered on the legacy topic for a non-default tenant
       assertThat(addResponse).failsWithin(Duration.ofSeconds(5));
     } finally {
       CloseHelper.quietClose(nonDefaultTransport);
@@ -259,16 +259,16 @@ final class RemoteStreamTransportTest {
   }
 
   @Test
-  void shouldDualSendRestartStreamsOnDefaultPrefixedTopicForDefaultTenant() {
+  void shouldSendLegacyRestartStreamsRequestForDefaultTenant() {
     // given
-    final var dualRestartReceived = new AtomicBoolean(false);
+    final var legacyRestartReceived = new AtomicBoolean(false);
     receiver
         .getCommunicationService()
         .replyTo(
-            StreamTopics.RESTART_STREAMS.dualTopic(),
+            StreamTopics.RESTART_STREAMS.legacyTopic(),
             Function.identity(),
             (id, ignored) -> {
-              dualRestartReceived.set(true);
+              legacyRestartReceived.set(true);
               return ArrayUtil.EMPTY_BYTE_ARRAY;
             },
             Function.identity(),
@@ -280,8 +280,8 @@ final class RemoteStreamTransportTest {
 
     // then
     assertThat(completed).succeedsWithin(Duration.ofSeconds(5));
-    Awaitility.await("until the dual RESTART_STREAMS request is received")
-        .untilTrue(dualRestartReceived);
+    Awaitility.await("until the legacy RESTART_STREAMS request is received")
+        .untilTrue(legacyRestartReceived);
   }
 
   private Node createNode(final String id) {
