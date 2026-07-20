@@ -242,7 +242,6 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 															size="sm"
 															labelText={t(field.labelKey)}
 															placeholder={field.placeholderKey ? t(field.placeholderKey) : undefined}
-															autoFocus
 														/>
 													);
 												}
@@ -254,12 +253,11 @@ const OptionalFiltersFormGroup: React.FC<Props> = ({filters, visibleFilters, onV
 															labelText={t(field.labelKey)}
 															placeholder={field.placeholderKey ? t(field.placeholderKey) : undefined}
 															rows={field.rows}
-															autoFocus
 														/>
 													);
 												}
 												if (field.type === 'checkbox') {
-													return <Checkbox {...input} id={filter} labelText={t(field.labelKey)} autoFocus />;
+													return <Checkbox {...input} id={filter} labelText={t(field.labelKey)} />;
 												}
 												return null;
 											}}
