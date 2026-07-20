@@ -1,5 +1,5 @@
 # type: Project Management
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Assign new issues to the default projects
 
@@ -83,8 +83,8 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/79
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/feel-js
-      - id: add-to-devops
-        name: Add to Monorepo DevOps Team project
+      - id: add-to-engops
+        name: Add to Engineering Operations project
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/115

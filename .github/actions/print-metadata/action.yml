@@ -3,7 +3,7 @@
 ---
 name: Print Metadata
 
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 
 description: Prints the job's metadata for easier owner attribution in build logs.
 

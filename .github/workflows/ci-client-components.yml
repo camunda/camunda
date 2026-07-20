@@ -2,7 +2,7 @@
 # test location: /client-components
 # called by: ci.yml
 # type: CI
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations-team
 name: Client Components Jobs
 
 on:

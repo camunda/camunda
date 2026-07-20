@@ -15,7 +15,7 @@
 const sidebars = {
   tutorialSidebar: [
     'index',
-    'monorepo-devops-team-processes',
+    'eng-ops-processes',
     'collaboration-guidelines',
     {
       type: 'category',

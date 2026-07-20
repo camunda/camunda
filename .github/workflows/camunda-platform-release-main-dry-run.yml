@@ -1,5 +1,5 @@
 # type: Release
-# owner: @camunda/monorepo-devops-team
+# owner: @camunda/engineering-operations
 ---
 name: Camunda Platform Release Dry Run from main
 
@@ -16,7 +16,7 @@ on:
     - cron: '0 1 * * 1-5'
 
 env:
-  TEST_OWNER: '@camunda/monorepo-devops-team'
+  TEST_OWNER: '@camunda/engineering-operations'
 
 jobs:
   setup:
