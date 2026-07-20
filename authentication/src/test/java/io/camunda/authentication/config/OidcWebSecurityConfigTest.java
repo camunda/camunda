@@ -19,6 +19,7 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -175,38 +176,32 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
     assertThat(testResult).hasStatusOk();
   }
 
-  @Test
-  public void shouldAcceptRequestToOperateStaticAssetsWithoutAuthentication() {
-    // regression for the "Unable to preload CSS" crash: Operate's static assets must be
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        // Operate
+        "/operate/assets/app.css",
+        "/operate/client-config.js",
+        "/operate/custom.css",
+        "/operate/favicon.ico",
+        // Admin
+        "/admin/assets/app.js",
+        "/admin/favicon.ico"
+      })
+  public void shouldNotRequireAuthenticationForOperateAndAdminStaticAssets(final String assetPath) {
+    // regression for the SPA crash on session expiry ("Unable to preload CSS" in Operate,
+    // "Failed to fetch dynamically imported module" in Admin): these static assets must be
     // deliverable to an unauthenticated (e.g. expired-session) browser so the SPA can load and
-    // then handle the API 401 via its graceful session-expiry redirect, as Tasklist already does.
+    // then redirect to login via its graceful API-401 handling, as Tasklist already does.
 
     // when
     final MvcTestResult testResult =
-        mockMvcTester
-            .get()
-            .uri("https://localhost" + TestApiController.DUMMY_OPERATE_ASSET_ENDPOINT)
-            .exchange();
+        mockMvcTester.get().uri("https://localhost" + assetPath).exchange();
 
-    // then
-    assertThat(testResult).hasStatusOk();
-  }
-
-  @Test
-  public void shouldAcceptRequestToAdminStaticAssetsWithoutAuthentication() {
-    // regression for the "Failed to fetch dynamically imported module" crash: the Admin SPA's
-    // static assets must be deliverable to an unauthenticated (e.g. expired-session) browser so the
-    // SPA can load and then handle the API 401 via its graceful session-expiry redirect.
-
-    // when
-    final MvcTestResult testResult =
-        mockMvcTester
-            .get()
-            .uri("https://localhost" + TestApiController.DUMMY_ADMIN_ASSET_ENDPOINT)
-            .exchange();
-
-    // then
-    assertThat(testResult).hasStatusOk();
+    // then: permitted -> passes the security filter (200 if served, 404 with no handler in this
+    // test slice); it must never be 401, which is what a protected webapp path returns.
+    assertThat(testResult.getResponse().getStatus())
+        .isIn(HttpStatus.OK.value(), HttpStatus.NOT_FOUND.value());
   }
 
   @Test
