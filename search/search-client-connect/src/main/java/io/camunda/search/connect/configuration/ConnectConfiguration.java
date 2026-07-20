@@ -34,6 +34,7 @@ public class ConnectConfiguration {
   private String indexPrefix = "";
   private List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private boolean isAwsEnabled = false;
+  private AwsConfiguration aws = new AwsConfiguration();
   private ProxyConfiguration proxy;
 
   /** Use {@link ConnectConfiguration#getTypeEnum()} */
@@ -52,6 +53,14 @@ public class ConnectConfiguration {
 
   public void setAwsEnabled(final boolean awsEnabled) {
     isAwsEnabled = awsEnabled;
+  }
+
+  public AwsConfiguration getAws() {
+    return aws;
+  }
+
+  public void setAws(final AwsConfiguration aws) {
+    this.aws = aws;
   }
 
   public DatabaseType getTypeEnum() {
