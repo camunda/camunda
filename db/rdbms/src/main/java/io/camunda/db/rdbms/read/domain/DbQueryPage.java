@@ -9,9 +9,13 @@ package io.camunda.db.rdbms.read.domain;
 
 import io.camunda.search.sort.SortOrder;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public record DbQueryPage(
-    Integer size, Integer from, Integer maxTotalHits, List<KeySetPagination> keySetPagination) {
+    Integer size,
+    @Nullable Integer from,
+    @Nullable Integer maxTotalHits,
+    @Nullable List<KeySetPagination> keySetPagination) {
 
   public record KeySetPagination(List<KeySetPaginationFieldEntry> entries) {}
 
@@ -30,7 +34,7 @@ public record DbQueryPage(
     public static final class Builder {
       private final String fieldName;
       private final Object fieldValue;
-      private SortOrder order;
+      private @Nullable SortOrder order;
       private boolean isSearchAfter;
 
       private Builder(final String fieldName, final Object fieldValue) {

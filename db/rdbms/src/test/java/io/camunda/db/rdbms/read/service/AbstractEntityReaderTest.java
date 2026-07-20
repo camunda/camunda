@@ -18,6 +18,8 @@ import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting.SortingEntry;
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.ProcessInstanceSort;
@@ -196,6 +198,32 @@ class AbstractEntityReaderTest {
             new SortingEntry<>(ProcessInstanceSearchColumn.START_DATE, SortOrder.DESC),
             // Note: duplicated PROCESS_DEFINITION_NAME is ignored
             new SortingEntry<>(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+  }
+
+  @Test
+  void shouldRejectEmptyAfterCursor() {
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b -> b.addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+    final SearchQueryPage page = SearchQueryPage.of(p -> p.from(0).size(10).after(""));
+
+    assertThatThrownBy(() -> reader.convertPaging(sort, page))
+        .isInstanceOf(CamundaSearchException.class)
+        .extracting(e -> ((CamundaSearchException) e).getReason())
+        .isEqualTo(Reason.INVALID_ARGUMENT);
+  }
+
+  @Test
+  void shouldRejectEmptyBeforeCursor() {
+    final DbQuerySorting<ProcessInstanceEntity> sort =
+        DbQuerySorting.of(
+            b -> b.addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+    final SearchQueryPage page = SearchQueryPage.of(p -> p.from(0).size(10).before(""));
+
+    assertThatThrownBy(() -> reader.convertPaging(sort, page))
+        .isInstanceOf(CamundaSearchException.class)
+        .extracting(e -> ((CamundaSearchException) e).getReason())
+        .isEqualTo(Reason.INVALID_ARGUMENT);
   }
 
   // ---- Null-value keyset pagination tests ----

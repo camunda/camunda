@@ -20,6 +20,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,8 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
   }
 
   @Override
-  public AuditLogEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+  public @Nullable AuditLogEntity getById(
+      final String id, final ResourceAccessChecks resourceAccessChecks) {
     final var result = search(AuditLogQuery.of(b -> b.filter(f -> f.auditLogKeys(id))));
     return Optional.ofNullable(result.items())
         .flatMap(items -> items.stream().findFirst())

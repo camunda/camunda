@@ -14,6 +14,8 @@ import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPagination;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.SearchQueryResult;
@@ -32,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 abstract class AbstractEntityReader<T> {
 
@@ -40,7 +43,7 @@ abstract class AbstractEntityReader<T> {
   private final RdbmsReaderConfig readerConfig;
 
   public AbstractEntityReader(
-      final SearchColumn<T>[] searchableColumns, final RdbmsReaderConfig readerConfig) {
+      final SearchColumn<T> @Nullable [] searchableColumns, final RdbmsReaderConfig readerConfig) {
     final var searchColumns =
         Objects.requireNonNullElse(searchableColumns, (SearchColumn<T>[]) EMPTY_SEARCHABLE_COLUMNS);
 
@@ -122,7 +125,11 @@ abstract class AbstractEntityReader<T> {
       final DbQuerySorting<T> sort, final SearchQueryPage page) {
     final boolean isSearchAfter = page.after() != null;
     final var cursorValue = isSearchAfter ? page.after() : page.before();
-    final Object[] sortValues = Cursor.decode(cursorValue, sort.columns());
+    final var sortValues = Cursor.decode(cursorValue, sort.columns());
+    if (sortValues == null) {
+      throw new CamundaSearchException(
+          "Cannot paginate with an empty or malformed cursor", Reason.INVALID_ARGUMENT);
+    }
     final List<KeySetPagination> keySetPagination = new ArrayList<>();
 
     for (int i = 0; i < sort.orderings().size(); i++) {
@@ -148,7 +155,7 @@ abstract class AbstractEntityReader<T> {
   }
 
   protected final SearchQueryResult<T> buildSearchQueryResult(
-      final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
+      final long totalHits, final List<T> hits, final @Nullable DbQuerySorting<T> dbSort) {
     final var maxTotalHits = readerConfig.maxTotalHits();
     final var returnedTotalHits = totalHits > maxTotalHits ? maxTotalHits : totalHits;
     final var hasMoreItems = totalHits > maxTotalHits;

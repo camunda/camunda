@@ -9,10 +9,11 @@ package io.camunda.search.clients;
 
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.search.query.SearchQueryResult;
+import org.jspecify.annotations.Nullable;
 
 public interface PersistentWebSessionClient {
 
-  PersistentWebSessionEntity getPersistentWebSession(final String sessionId);
+  @Nullable PersistentWebSessionEntity getPersistentWebSession(final String sessionId);
 
   void upsertPersistentWebSession(final PersistentWebSessionEntity persistentWebSessionEntity);
 

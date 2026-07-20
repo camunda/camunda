@@ -22,6 +22,7 @@ import io.camunda.security.core.authz.ResourceAccessChecks;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
   }
 
   @Override
-  public ProcessInstanceEntity getByKey(
+  public @Nullable ProcessInstanceEntity getByKey(
       final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key).orElse(null);
   }
