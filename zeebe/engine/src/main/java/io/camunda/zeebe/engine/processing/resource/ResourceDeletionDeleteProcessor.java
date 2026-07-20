@@ -582,6 +582,10 @@ public class ResourceDeletionDeleteProcessor
     if (tenantId.isEmpty()) {
       return determineAuthorizedTenants(command);
     }
+    final var userTenants = determineAuthorizedTenants(command);
+    if (!userTenants.isAuthorizedForTenantId(tenantId)) {
+      throw new NoSuchResourceException(command.getValue().getResourceKey());
+    }
     return new AuthenticatedAuthorizedTenants(tenantId);
   }
 
@@ -639,7 +643,7 @@ public class ResourceDeletionDeleteProcessor
       return AuthorizedTenants.ANONYMOUS;
     }
     if (!securityConfig.isMultiTenancyChecksEnabled()) {
-      return AuthorizedTenants.DEFAULT_TENANTS;
+      return AuthorizedTenants.ANONYMOUS;
     }
     if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
         && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {

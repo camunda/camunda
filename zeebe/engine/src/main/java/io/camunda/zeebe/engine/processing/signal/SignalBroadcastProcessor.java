@@ -156,7 +156,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             ? PermissionType.CREATE_PROCESS_INSTANCE
             : PermissionType.UPDATE_PROCESS_INSTANCE;
     final var isAuthorized =
-        cslCheck.check(
+        cslCheck.checkForDistributedCommand(
             command,
             RequiredAuthorization.of(
                 b ->

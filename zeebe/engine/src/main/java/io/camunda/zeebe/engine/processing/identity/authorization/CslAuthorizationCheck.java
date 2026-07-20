@@ -138,6 +138,41 @@ public final class CslAuthorizationCheck {
   }
 
   /**
+   * Like {@link #check} but skips the internal-command gate in {@link #resolveForCheck}. Use for
+   * distributed commands: on target partitions they appear as internal (no request metadata) but
+   * still carry the originating user's claims and must be subject to authorization checks.
+   *
+   * <p>All other skip conditions (anonymous user, security disabled, no principal) still apply.
+   */
+  public <T> Either<Rejection, T> checkForDistributedCommand(
+      final TypedRecord<?> command,
+      final RequiredAuthorization<?> required,
+      final T value,
+      final Rejection noPrincipalRejection) {
+    final var authorizations = command.getAuthorizations();
+    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return Either.right(value);
+    }
+    if (!securityConfig.isAuthorizationsEnabled()
+        && !securityConfig.isMultiTenancyChecksEnabled()) {
+      return Either.right(value);
+    }
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      if (!securityConfig.isAuthorizationsEnabled()) {
+        return Either.right(value);
+      }
+      return Either.left(noPrincipalRejection);
+    }
+    final var auth = claimsConverter.resolve(authorizations);
+    final var result = authzService.check(auth, required);
+    if (result.isLeft()) {
+      return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
+    }
+    return Either.right(value);
+  }
+
+  /**
    * Full authorization check for single-check sites.
    *
    * <p>Applies {@link #resolveForCheck} and, if a principal is present, delegates to {@link

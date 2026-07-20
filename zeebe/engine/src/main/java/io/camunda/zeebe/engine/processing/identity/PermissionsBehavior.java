@@ -188,6 +188,10 @@ public class PermissionsBehavior {
     return Either.right(null);
   }
 
+  public AuthorizedTenants resolveAuthorizedTenants(final Map<String, Object> authorizations) {
+    return cslCheck.resolveAuthorizedTenants(authorizations);
+  }
+
   public Either<Rejection, PersistedAuthorization> authorizationExists(
       final AuthorizationRecord authorizationRecord, final String rejectionMessage) {
     final var key = authorizationRecord.getAuthorizationKey();

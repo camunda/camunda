@@ -140,6 +140,14 @@ public class AuthorizationArchTest {
                     String.class))
             .or(
                 ArchConditions.callMethod(
+                    PermissionsBehavior.class,
+                    "isAuthorizedWithResourceIdentifiers",
+                    TypedRecord.class,
+                    AuthorizationResourceType.class,
+                    PermissionType.class,
+                    String.class))
+            .or(
+                ArchConditions.callMethod(
                     ProcessInstanceCreationHelper.class,
                     "isAuthorized",
                     TypedRecord.class,

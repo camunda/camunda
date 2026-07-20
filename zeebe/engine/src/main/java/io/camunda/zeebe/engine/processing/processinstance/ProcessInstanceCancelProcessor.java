@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -101,6 +102,23 @@ public final class ProcessInstanceCancelProcessor
           RejectionType.NOT_FOUND,
           String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
       return false;
+    }
+
+    final var authorizations = command.getAuthorizations();
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null
+        || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
+      final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
+      if (!authorizedTenants.isAuthorizedForTenantId(elementInstance.getValue().getTenantId())) {
+        rejectionWriter.appendRejection(
+            command,
+            RejectionType.NOT_FOUND,
+            String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
+        responseWriter.writeRejectionOnCommand(
+            command,
+            RejectionType.NOT_FOUND,
+            String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
+        return false;
+      }
     }
 
     final var isAuthorized =

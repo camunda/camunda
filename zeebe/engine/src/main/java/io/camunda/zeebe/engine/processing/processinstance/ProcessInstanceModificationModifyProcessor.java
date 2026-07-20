@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static java.util.function.Predicate.not;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -239,6 +240,19 @@ public final class ProcessInstanceModificationModifyProcessor
       responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
+    }
+
+    final var authorizations = command.getAuthorizations();
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null
+        || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
+      final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
+      if (!authorizedTenants.isAuthorizedForTenantId(processInstance.getValue().getTenantId())) {
+        final String tenantReason =
+            String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, tenantReason);
+        rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, tenantReason);
+        return;
+      }
     }
 
     final var isAuthorized =
