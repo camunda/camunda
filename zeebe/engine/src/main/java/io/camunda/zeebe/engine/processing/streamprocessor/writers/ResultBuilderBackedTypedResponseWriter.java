@@ -75,7 +75,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeEvent(final TypedRecord<?> event) {
+  public void writeAcceptedResponse(final TypedRecord<?> event) {
     writeResponse(
         event.getKey(),
         event.getIntent(),

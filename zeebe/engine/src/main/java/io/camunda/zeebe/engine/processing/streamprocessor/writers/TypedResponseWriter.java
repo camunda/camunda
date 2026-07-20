@@ -35,7 +35,7 @@ public interface TypedResponseWriter {
       final long requestId,
       final int requestStreamId);
 
-  void writeEvent(TypedRecord<?> event);
+  void writeAcceptedResponse(TypedRecord<?> event);
 
   void writeEventOnCommand(
       long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
