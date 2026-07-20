@@ -190,15 +190,18 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.START,
-            new MessageStartProcessInstanceRequestStartProcessor(writers.state(), messageState))
+            new MessageStartProcessInstanceRequestStartProcessor(
+                writers.state(), writers.response(), messageState, messageCorrelationState))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_UNIQUENESS,
-            new MessageStartProcessInstanceRequestRejectUniquenessProcessor(writers.state()))
+            new MessageStartProcessInstanceRequestRejectUniquenessProcessor(
+                writers.state(), writers.response(), messageCorrelationState, messageState))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_NO_SUBSCRIPTION,
-            new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(writers.state()))
+            new MessageStartProcessInstanceRequestRejectNoSubscriptionProcessor(
+                writers.state(), writers.response(), messageCorrelationState, messageState))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REJECT_EXPIRED,
