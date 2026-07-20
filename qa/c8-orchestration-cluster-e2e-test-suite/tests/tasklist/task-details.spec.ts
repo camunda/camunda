@@ -380,7 +380,11 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Unassigned');
-    await taskPanelPage.openTask('Confirm Employee Details');
+    // The next task can take a moment to be indexed/rendered right after
+    // the previous one completes, so allow more time than the default 10s.
+    await taskPanelPage.openTask('Confirm Employee Details', {
+      timeout: 30000,
+    });
     await taskDetailsPage.clickAssignToMeButton();
 
     await taskDetailsPage.assertFieldValue(
