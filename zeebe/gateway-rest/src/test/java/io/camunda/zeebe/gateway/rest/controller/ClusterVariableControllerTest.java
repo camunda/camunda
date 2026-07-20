@@ -15,7 +15,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
+import io.camunda.search.query.ClusterVariableQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ClusterVariableServices;
@@ -25,6 +28,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -55,11 +59,13 @@ public class ClusterVariableControllerTest extends RestControllerTest {
   static final String GLOBAL_WITH_NAME_URL = GLOBAL_URL + "/%s";
   static final String TENANT_URL = CLUSTER_VARIABLE_PREFIX_URL + "/tenants/%s";
   static final String TENANT_WITH_NAME_URL = TENANT_URL + "/%s";
+  static final String SEARCH_URL = CLUSTER_VARIABLE_PREFIX_URL + "/search";
   // large enough that 101 minimal metadata entries (~1.8k serialized chars) don't also trip
   // this limit, so the too-many-entries test exercises only the entry-count check
   static final int TEST_MAX_CLUSTER_VARIABLE_METADATA_SIZE = 2000;
 
   @Captor ArgumentCaptor<ClusterVariableRequest> createRequestCaptor;
+  @Captor ArgumentCaptor<ClusterVariableQuery> searchQueryCaptor;
   @MockitoBean ClusterVariableServices clusterVariableServices;
   @MockitoBean CamundaSecurityLibraryProperties cslProperties;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -1195,6 +1201,64 @@ public class ClusterVariableControllerTest extends RestControllerTest {
         .json("{\"kind\":\"JSON\"}", JsonCompareMode.LENIENT);
 
     assertThat(createRequestCaptor.getValue().kind()).isNull();
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByKindFilter() {
+    // given
+    when(clusterVariableServices.search(any(), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<ClusterVariableEntity>()
+                .total(0)
+                .items(List.of())
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(clusterVariableServices).search(searchQueryCaptor.capture(), any());
+    final var capturedQuery = searchQueryCaptor.getValue();
+    assertThat(capturedQuery).isNotNull();
+  }
+
+  @Test
+  void shouldReturnKindInClusterVariableSearchResults() {
+    // given
+    final var entity = mock(ClusterVariableEntity.class);
+    when(entity.name()).thenReturn("myVar");
+    when(entity.value()).thenReturn("\"val\"");
+    when(entity.isPreview()).thenReturn(false);
+    when(entity.scope()).thenReturn(ClusterVariableScope.GLOBAL);
+    when(entity.kind()).thenReturn(ClusterVariableKind.SECRET_REFERENCE);
+    when(entity.metadata()).thenReturn(List.of());
+    when(clusterVariableServices.search(any(), any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<ClusterVariableEntity>()
+                .total(1)
+                .items(List.of(entity))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .jsonPath("$.items[0].kind")
+        .isEqualTo("SECRET_REFERENCE");
   }
 
   @TestConfiguration

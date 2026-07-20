@@ -15,7 +15,9 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
+import io.camunda.client.api.search.filter.builder.ClusterVariableKindProperty;
 import io.camunda.client.api.search.filter.builder.ClusterVariableScopeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
@@ -97,4 +99,21 @@ public interface ClusterVariableFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ClusterVariableFilter isTruncated(final Boolean isTruncated);
+
+  /**
+   * Filters cluster variables by the specified kind.
+   *
+   * @param kind the kind of the cluster variable (JSON or SECRET_REFERENCE)
+   * @return the updated filter
+   */
+  ClusterVariableFilter kind(final ClusterVariableKind kind);
+
+  /**
+   * Filters cluster variables by the specified kind using {@link ClusterVariableKindProperty}
+   * consumer.
+   *
+   * @param fn the kind {@link ClusterVariableKindProperty} consumer of the variable
+   * @return the updated filter
+   */
+  ClusterVariableFilter kind(final Consumer<ClusterVariableKindProperty> fn);
 }

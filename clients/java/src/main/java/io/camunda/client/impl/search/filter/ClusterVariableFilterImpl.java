@@ -15,10 +15,13 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.api.search.filter.ClusterVariableFilter;
+import io.camunda.client.api.search.filter.builder.ClusterVariableKindProperty;
 import io.camunda.client.api.search.filter.builder.ClusterVariableScopeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.ClusterVariableKindPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ClusterVariableScopePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
@@ -94,6 +97,20 @@ public class ClusterVariableFilterImpl
   @Override
   public ClusterVariableFilter isTruncated(final Boolean isTruncated) {
     filter.setIsTruncated(isTruncated);
+    return this;
+  }
+
+  @Override
+  public ClusterVariableFilter kind(final ClusterVariableKind kind) {
+    kind(b -> b.eq(kind));
+    return this;
+  }
+
+  @Override
+  public ClusterVariableFilter kind(final Consumer<ClusterVariableKindProperty> fn) {
+    final ClusterVariableKindProperty property = new ClusterVariableKindPropertyImpl();
+    fn.accept(property);
+    filter.setKind(provideSearchRequestProperty(property));
     return this;
   }
 
