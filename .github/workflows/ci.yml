@@ -1731,53 +1731,28 @@ jobs:
 
       - name: Setup jq
         if: steps.bypass.outputs.present != 'true'
-        uses: dcarbone/install-jq-action@8867ddb4788346d7c22b72ea2e2ffe4d514c7bcb # v2.1.0
+        uses: dcarbone/install-jq-action@4fcb5062d7ce9bc4382d1a352d19ba3ba2c317c1 # v4.0.1
         with:
-          version: 1.6
+          version: 1.8.2
           force: 'true'
 
-      - name: Read Zeebe unit tests matrix outputs
+      - name: Read matrix outputs
         if: steps.bypass.outputs.present != 'true'
-        id: zeebe-matrix-read
+        id: matrix-read
         shell: bash
         run: |
-          result="$(find . -maxdepth 2 -name zeebe-unit-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
-          echo "result=${result}" >> "$GITHUB_OUTPUT"
-      - name: Read Integration tests matrix outputs
-        if: steps.bypass.outputs.present != 'true'
-        id: integration-matrix-read
-        shell: bash
-        run: |
-          result="$(find . -maxdepth 2 -name integration-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
-          echo "result=${result}" >> "$GITHUB_OUTPUT"
-      - name: Read Physical-tenant acceptance tests matrix outputs
-        if: steps.bypass.outputs.present != 'true'
-        id: physical-tenant-acceptance-matrix-read
-        shell: bash
-        run: |
-          result="$(find . -maxdepth 2 -name physical-tenant-acceptance-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
-          echo "result=${result}" >> "$GITHUB_OUTPUT"
-      - name: Read Database integration tests matrix outputs
-        if: steps.bypass.outputs.present != 'true'
-        id: database-integration-matrix-read
-        shell: bash
-        run: |
-          result="$(find . -maxdepth 2 -name database-integration-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
-          echo "result=${result}" >> "$GITHUB_OUTPUT"
-      - name: Read history tests matrix outputs
-        if: steps.bypass.outputs.present != 'true'
-        id: history-matrix-read
-        shell: bash
-        run: |
-          result="$(find . -maxdepth 2 -name history-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
-          echo "result=${result}" >> "$GITHUB_OUTPUT"
-      - name: Read identity tests matrix outputs
-        if: steps.bypass.outputs.present != 'true'
-        id: identity-matrix-read
-        shell: bash
-        run: |
-          result="$(find . -maxdepth 2 -name identity-tests -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
-          echo "result=${result}" >> "$GITHUB_OUTPUT"
+          for pair in \
+            "zeebe:zeebe-unit-tests" \
+            "integration:integration-tests" \
+            "physical-tenant-acceptance:physical-tenant-acceptance-tests" \
+            "database-integration:database-integration-tests" \
+            "history:history-tests" \
+            "identity:identity-tests"; do
+            output_name="${pair%%:*}"
+            artifact_name="${pair#*:}"
+            result="$(find . -maxdepth 2 -name "${artifact_name}" -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
+            echo "${output_name}=${result}" >> "$GITHUB_OUTPUT"
+          done
 
       - name: Collect flaky test results
         if: steps.bypass.outputs.present != 'true'
@@ -1787,21 +1762,21 @@ jobs:
           general-unit-tests-result: ${{ needs.general-unit-tests.result }}
           general-unit-tests-flaky: ${{ needs.general-unit-tests.outputs.flakyTests }}
           database-integration-tests-result: ${{ needs.database-integration-tests.result }}
-          database-matrix-output-result: ${{ steps.database-integration-matrix-read.outputs.result }}
+          database-matrix-output-result: ${{ steps.matrix-read.outputs.database-integration }}
           history-tests-result: ${{ needs.history-tests.result }}
-          history-matrix-output-result: ${{ steps.history-matrix-read.outputs.result }}
+          history-matrix-output-result: ${{ steps.matrix-read.outputs.history }}
           identity-tests-result: ${{ needs.identity-tests.result }}
-          identity-matrix-output-result: ${{ steps.identity-matrix-read.outputs.result }}
+          identity-matrix-output-result: ${{ steps.matrix-read.outputs.identity }}
           rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
           rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
           docker-checks-result: ${{ needs.docker-checks.result }}
           docker-checks-flaky: ${{ needs.docker-checks.outputs.flakyTests }}
           zeebe-tests-result: ${{ needs.zeebe-unit-tests.result }}
-          zeebe-matrix-output-result: ${{ steps.zeebe-matrix-read.outputs.result }}
+          zeebe-matrix-output-result: ${{ steps.matrix-read.outputs.zeebe }}
           integration-tests-result: ${{ needs.integration-tests.result }}
-          integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
+          integration-matrix-output-result: ${{ steps.matrix-read.outputs.integration }}
           physical-tenant-acceptance-tests-result: ${{ needs.physical-tenant-acceptance-tests.result }}
-          physical-tenant-acceptance-matrix-output-result: ${{ steps.physical-tenant-acceptance-matrix-read.outputs.result }}
+          physical-tenant-acceptance-matrix-output-result: ${{ steps.matrix-read.outputs.physical-tenant-acceptance }}
 
       - name: Check if there are flaky tests to analyze
         if: steps.bypass.outputs.present != 'true'
