@@ -55,6 +55,23 @@ async function correlateStartMessage(
   });
 }
 
+// The message-start subscription is opened asynchronously after deployment, so the first
+// correlate can race ahead of it and be rejected NOT_FOUND ("no subscription found"). Retry
+// until the subscription exists and the correlate creates the instance. A rejected correlate
+// creates nothing, so exactly one instance results from the first successful correlate.
+async function correlateStartMessageUntilCreated(
+  request: APIRequestContext,
+  businessId: string,
+): Promise<Record<string, string>> {
+  let created: Record<string, string> = {};
+  await expect(async () => {
+    const res = await correlateStartMessage(request, businessId);
+    await assertStatusCode(res, 200);
+    created = await res.json();
+  }).toPass(defaultAssertionOptions);
+  return created;
+}
+
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Correlate Message - Business ID API', () => {
   test.beforeAll(async () => {
@@ -68,9 +85,7 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
     const localState: Record<string, string> = {processInstanceKey: ''};
 
     await test.step('Correlate message with a Business ID', async () => {
-      const res = await correlateStartMessage(request, businessId);
-      await assertStatusCode(res, 200);
-      const json = await res.json();
+      const json = await correlateStartMessageUntilCreated(request, businessId);
       assertRequiredFields(json, correlateMessageRequiredFields);
       expect(json.processInstanceKey).toBeDefined();
       localState['processInstanceKey'] = json.processInstanceKey;
@@ -100,9 +115,8 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
     const localState: Record<string, string> = {processInstanceKey: ''};
 
     await test.step('Correlate first message with the Business ID', async () => {
-      const res = await correlateStartMessage(request, businessId);
-      await assertStatusCode(res, 200);
-      localState['processInstanceKey'] = (await res.json()).processInstanceKey;
+      const json = await correlateStartMessageUntilCreated(request, businessId);
+      localState['processInstanceKey'] = json.processInstanceKey;
     });
 
     await test.step('First instance becomes visible for the Business ID', async () => {
