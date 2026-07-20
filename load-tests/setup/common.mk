@@ -125,56 +125,50 @@ else ifeq ($(secondary_storage),none)
 endif
 platform_values += -f camunda-platform-values-$(secondary_storage).yaml
 
+install_es_prom_exporter = false
+
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
-else ifeq ($(secondary_storage),none)
-	# Optimize requires a secondary storage backend (Elasticsearch, OpenSearch,
-	# or a dedicated Elasticsearch cluster); it cannot run at all when secondary
-	# storage is disabled entirely.
-	platform_values += --set optimize.enabled=false
-else ifeq ($(secondary_storage),opensearch)
-	# When deploying the OpenSearch secondary storage, Optimize needs the
-	# OpenSearch-specific exporter/client configuration.
-ifneq ($(wildcard camunda-platform-values-optimize-opensearch.yaml),)
-	platform_values += -f camunda-platform-values-optimize-opensearch.yaml
-endif
-else ifeq ($(secondary_storage),elasticsearch)
-	# When deploying the Elasticsearch secondary storage, Optimize needs the
-	# Elasticsearch-specific exporter/client configuration.
-	platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
 else
-	ifeq ($(filter $(secondary_storage),$(optimize_self_sufficient_storages)),)
-		# If we are not using Elasticsearch/OpenSearch as a secondary storage, Optimize will
-		# be configured with the Elasticsearch backend, either:
-		# * Using the same Elasticsearch cluster as the secondary storage, if
-		#   the secondary storage is also Elasticsearch.
-		# * Or using its dedicated Elasticsearch cluster, different from the
-		#   configured secondary storage.
-		platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
-	endif
+	platform_values += -f camunda-platform-values-optimize.yaml
+
+    ifeq ($(secondary_storage),opensearch)
+        # When deploying the OpenSearch secondary storage, Optimize needs the
+        # OpenSearch-specific exporter/client configuration.
+        ifneq ($(wildcard camunda-platform-values-optimize-opensearch.yaml),)
+            platform_values += -f camunda-platform-values-optimize-opensearch.yaml
+        endif
+
+        install_es_prom_exporter = true
+        es_prom_exporter_es_uri = http://opensearch:9200
+        _load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
+    else ifeq ($(secondary_storage),elasticsearch)
+        # When deploying the Elasticsearch secondary storage, Optimize needs the
+        # Elasticsearch-specific exporter/client configuration.
+        platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
+
+        install_es_prom_exporter = true
+        es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
+        _load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
+    else
+        ifeq ($(filter $(secondary_storage),$(optimize_self_sufficient_storages)),)
+            # If we are not using Elasticsearch/OpenSearch as a secondary storage, Optimize will
+            # be configured with the Elasticsearch backend, either:
+            # * Using the same Elasticsearch cluster as the secondary storage, if
+            #   the secondary storage is also Elasticsearch.
+            # * Or using its dedicated Elasticsearch cluster, different from the
+            #   configured secondary storage.
+            platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
+            install_es_prom_exporter = true
+            es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
+            _load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
+        endif
+    endif
 endif
 
 # Platform values with stable configuration
 platform_values_stable = $(platform_values) -f values-stable.yaml
-
-ifeq ($(secondary_storage),elasticsearch)
-	install_es_prom_exporter = true
-	es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
-else ifeq ($(secondary_storage),opensearch)
-	install_es_prom_exporter = true
-	es_prom_exporter_es_uri = http://opensearch:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
-else ifeq ($(enable_optimize),true)
-	# Here, the secondary storage is either none or an RDBMS database.
-	# Elasticsearch is always used in this case as the backend for Optimize.
-	install_es_prom_exporter = true
-	es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
-	_load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
-else
-	install_es_prom_exporter = false
-endif
 
 ifeq ($(chaos),true)
 	_load_test_setup_flags += --set chaosKiller.enabled=true

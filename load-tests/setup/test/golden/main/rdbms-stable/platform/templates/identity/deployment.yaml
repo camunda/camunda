@@ -83,11 +83,6 @@ spec:
                 secretKeyRef:
                   name: camunda-credentials
                   key: identity-firstuser-password
-            - name: VALUES_OPTIMIZE-LOADTEST_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: camunda-credentials
-                  key: identity-optimize-loadtest-client-secret
             - name: IDENTITY_LOG_APPENDER
               value: Stackdriver
           envFrom:

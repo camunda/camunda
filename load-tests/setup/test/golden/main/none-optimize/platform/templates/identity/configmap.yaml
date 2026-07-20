@@ -158,15 +158,6 @@ data:
         webmodeler:
           root-url: "http://localhost:8070"
       clients:
-        - id: optimize-loadtest
-          name: Optimize Load Tester
-          secret: ${VALUES_OPTIMIZE-LOADTEST_CLIENT_SECRET:}
-          redirectUris: 
-          rootUrl: 
-          type: m2m
-          permissions:
-            - definition: write:*
-              resourceServerId: optimize-api
       users:
         - username: "demo"
           password: ${VALUES_IDENTITY_FIRSTUSER_PASSWORD:}

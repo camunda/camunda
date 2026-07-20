@@ -38,7 +38,6 @@ global:
     component: benchmark-n2-standard-4
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
-  # Identity authentication is enabled for Optimize
   identity:
     keycloak:
       auth:
@@ -48,11 +47,6 @@ global:
           existingSecretKey: identity-keycloak-admin-password
     auth:
       enabled: true
-      optimize:
-        clientId: optimize
-        secret:
-          existingSecret: camunda-credentials
-          existingSecretKey: identity-optimize-client-token
   security:
     authentication:
       type: oidc
@@ -64,74 +58,10 @@ identity:
     secret:
       existingSecret: camunda-credentials
       existingSecretKey: identity-firstuser-password
-  # Dedicated M2M Keycloak client for the load-tester's Optimize meter, with `write:*` on optimize-api.
-  clients:
-    - id: optimize-loadtest
-      name: Optimize Load Tester
-      type: m2m
-      secret:
-        existingSecret: camunda-credentials
-        existingSecretKey: identity-optimize-loadtest-client-secret
-      permissions:
-        - resourceServerId: optimize-api
-          definition: write:*
   env:
     # https://docs.camunda.io/docs/self-managed/components/management-identity/miscellaneous/configuration-variables/#google-stackdriver-json-logging
     - name: IDENTITY_LOG_APPENDER
       value: Stackdriver
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
-
-optimize:
-  enabled: true
-  fullnameOverride: optimize # we override the names for simplicity of the deployment
-  extraConfiguration:
-    - file: application.yml
-      content: |
-        historyCleanup:
-          cronTrigger: '*/30 * * * *'
-          ttl: 'P1D'
-          processDataCleanup:
-            enabled: true
-  env:
-    # https://docs.camunda.io/docs/self-managed/components/optimize/configuration/logging/#google-stackdriver-json-logging
-    - name: OPTIMIZE_LOG_APPENDER
-      value: Stackdriver
-    # Bearer-token (JWT) auth for /api/** (camunda/camunda#46878); consumed by the load-tester meter.
-    - name: CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED
-      value: "true"
-    - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
-      value: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
-
-    # Configure Optimize to use the full size of the ES/OS cluster it connects
-    # to. Otherwise, the default configuration of 1 primary + 1 replica creates
-    # bottlenecks on 2 nodes and doesn't spread the disk usage correctly across
-    # the cluster.
-    # Ideally, this value should default to the number of Elasticsearch nodes
-    # in the cluster.
-    - name: CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
-      value: "3" # default 1
-    - name: CAMUNDA_OPTIMIZE_OPENSEARCH_SETTINGS_INDEX_NUMBER_OF_SHARDS
-      value: "3" # default 1
-
-    # Improve performances of Optimize for the load tests.
-    # This is load-test specific and different configuration of cluster
-    # configuration (different hardware resources for instance) and/or type of
-    # workload may benefit (or even require) from a different value here.
-    - name: CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE
-      value: "1000" # default 200
-
-    # Disable object variable flattening: Optimize's own default (true) turns
-    # every object variable into multiple stored variables (one per property,
-    # plus the raw serialized value), causing outsized ES storage on top of
-    # Optimize's already-higher per-variable cost. SaaS already disables this
-    # in production; see camunda/camunda#57127 and camunda/camunda-docs#9326.
-    - name: CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE
-      value: "false" # default true
-
   tolerations:
     - key: nodepool
       operator: Equal

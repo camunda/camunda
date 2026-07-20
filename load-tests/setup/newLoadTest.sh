@@ -177,7 +177,14 @@ case "$secondary_storage" in
     ;;
 esac
 
-if [[ "$enable_optimize" == "true" ]]; then
+
+if [[ "$enable_optimize" == "true" && "$secondary_storage" == "none" ]]; then
+  echo "Optimize requires a secondary storage backend; forcefully disabling Optimize."
+  enable_optimize=false
+elif [[ "$enable_optimize" == "true" ]]; then
+  # Optimize-specific configuration
+  cp -v "$VERSION_DIR/values/camunda-platform-values-optimize.yaml" "$TARGET_DIRECTORY/"
+
   if [[ "$secondary_storage" == "elasticsearch" ]]; then
     # stable-87's Makefile uses this file when secondary_storage=elasticsearch;
     # for other versions it's harmlessly present (their Makefiles skip it for ES).
@@ -185,10 +192,9 @@ if [[ "$enable_optimize" == "true" ]]; then
   elif [[ "$secondary_storage" == "opensearch" ]]; then
     optimize_opensearch_config_file="$VERSION_DIR/values/camunda-platform-values-optimize-opensearch.yaml"
     if [[ -f "$optimize_opensearch_config_file" ]]; then
+      # We don't ship the OpenSearch configuration for Optimize on 8.8
       cp -v "$optimize_opensearch_config_file" "$TARGET_DIRECTORY/"
     fi
-  elif [[ "$secondary_storage" == "none" ]]; then
-    echo "Optimize requires a secondary storage backend; ignoring enable_optimize=true because secondary_storage=none"
   else
     # Non-ES/non-OS storage: forcefully configure Optimize to use Elasticsearch.
     elasticsearchEnabled=true
