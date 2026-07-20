@@ -10,9 +10,24 @@ package io.camunda.application.commons.backup;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
 import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
 
-import io.camunda.configuration.Camunda;
+import io.camunda.application.commons.backup.BackupServiceRegistry.PhysicalTenantBackup;
+import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.configuration.DocumentBasedSecondaryStorageBackup;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.search.connect.tenant.SearchClients;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.webapps.backup.BackupRepository;
+import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.BackupServiceImpl;
+import io.camunda.webapps.backup.BackupWiring;
+import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
+import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
+import io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
@@ -58,35 +73,141 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
+import io.camunda.zeebe.util.VersionUtil;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-@Configuration
+/**
+ * Builds the {@link BackupServiceRegistry}: one fully-wired {@link BackupService} per physical
+ * tenant, each bound to that tenant's search cluster, index prefix, snapshot repository, and
+ * tenant-scoped snapshot naming.
+ *
+ * <p>This replaces the previous fan-out of per-tenant {@code Map<String, ...>} beans (props,
+ * priorities, ES/OS repositories, services). Those maps were only ever consumed together to
+ * assemble the per-tenant services and are now assembled inline here, so the registry is the single
+ * bean the {@code backupHistory} actuator and {@link
+ * io.camunda.application.StandaloneBackupManager} depend on.
+ */
+@Configuration(proxyBeanMethods = false)
 @ConditionalOnSecondaryStorageType({elasticsearch, opensearch})
-public class BackupPriorityConfiguration {
+public class BackupServiceRegistryConfiguration {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BackupPriorityConfiguration.class);
-  private final SecondaryStorage secondaryStorage;
+  private static final Logger LOG =
+      LoggerFactory.getLogger(BackupServiceRegistryConfiguration.class);
 
-  public BackupPriorityConfiguration(final Camunda configuration) {
-    secondaryStorage = configuration.getData().getSecondaryStorage();
+  @Bean("backupThreadPoolExecutor")
+  public ThreadPoolTaskExecutor backupThreadPoolExecutor() {
+    final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(1);
+    executor.setMaxPoolSize(8);
+    executor.setKeepAliveSeconds(60);
+    executor.setThreadNamePrefix("webapps_backup_");
+    executor.setStrictEarlyShutdown(true);
+    executor.setQueueCapacity(4096);
+    executor.initialize();
+    return executor;
   }
 
   @Bean
-  public BackupPriorities backupPriorities() {
+  public BackupServiceRegistry backupServiceRegistry(
+      final PhysicalTenantResolver physicalTenantResolver,
+      final SearchClients searchClients,
+      @Qualifier("searchEngineConfigurationsByTenant")
+          final Map<String, SearchEngineConfiguration> searchEngineConfigurationsByTenant,
+      @Qualifier("physicalTenantScopedIndexDescriptors")
+          final Map<String, IndexDescriptors> indexDescriptorsByPhysicalTenant,
+      @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
+
+    final var backups = new ArrayList<PhysicalTenantBackup>();
+    physicalTenantResolver
+        .getAll()
+        .forEach(
+            (physicalTenantId, tenantConfig) -> {
+              final var secondaryStorage = tenantConfig.getData().getSecondaryStorage();
+              final var props = props(VersionUtil.getVersion(), backupConfig(secondaryStorage));
+              warnIfNoRepositoryConfigured(secondaryStorage, props);
+
+              final var repository =
+                  backupRepository(physicalTenantId, searchClients, props, threadPoolTaskExecutor);
+              final var indexDescriptors = indexDescriptorsByPhysicalTenant.get(physicalTenantId);
+              final var backupService =
+                  new BackupServiceImpl(
+                      threadPoolTaskExecutor,
+                      new BackupWiring(backupPriorities(secondaryStorage), props, repository),
+                      searchEngineConfigurationsByTenant.get(physicalTenantId),
+                      indexDescriptors.indices(),
+                      indexDescriptors.templates());
+
+              backups.add(new PhysicalTenantBackup(physicalTenantId, backupService, props));
+            });
+    return new BackupServiceRegistry(backups);
+  }
+
+  private static BackupRepository backupRepository(
+      final String physicalTenantId,
+      final SearchClients searchClients,
+      final BackupRepositoryProps props,
+      final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
+    final var snapshotNameProvider = snapshotNameProvider(physicalTenantId);
+    final var esClient = searchClients.esClients().get(physicalTenantId);
+    if (esClient != null) {
+      return new ElasticsearchBackupRepository(
+          esClient, props, snapshotNameProvider, threadPoolTaskExecutor);
+    }
+    return new OpensearchBackupRepository(
+        searchClients.osClients().get(physicalTenantId),
+        searchClients.osAsyncClients().get(physicalTenantId),
+        props,
+        snapshotNameProvider);
+  }
+
+  private static void warnIfNoRepositoryConfigured(
+      final SecondaryStorage secondaryStorage, final BackupRepositoryProps props) {
+    if (props.repositoryName() == null || props.repositoryName().isBlank()) {
+      LOG.warn(
+          "No backup repository configured for {} secondary storage. Backup endpoints are"
+              + " active but will reject all requests until a repository is configured via"
+              + " 'camunda.data.secondary-storage.{}.backup.repository-name'.",
+          secondaryStorage.getType(),
+          secondaryStorage.getType());
+    }
+  }
+
+  static WebappsSnapshotNameProvider snapshotNameProvider(final String physicalTenantId) {
+    return PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)
+        ? new WebappsSnapshotNameProvider()
+        : new WebappsSnapshotNameProvider(physicalTenantId);
+  }
+
+  static BackupRepositoryProps props(
+      final String version, final DocumentBasedSecondaryStorageBackup backupConfig) {
+    return new BackupRepositoryPropsRecord(
+        version,
+        backupConfig.getRepositoryName(),
+        backupConfig.getSnapshotTimeout(),
+        backupConfig.getIncompleteCheckTimeout().getSeconds());
+  }
+
+  private static DocumentBasedSecondaryStorageBackup backupConfig(
+      final SecondaryStorage secondaryStorage) {
+    return elasticsearch.equals(secondaryStorage.getType())
+        ? secondaryStorage.getElasticsearch().getBackup()
+        : secondaryStorage.getOpensearch().getBackup();
+  }
+
+  static BackupPriorities backupPriorities(final SecondaryStorage secondaryStorage) {
     final boolean isElasticsearch = secondaryStorage.getType().isElasticSearch();
     final var indexPrefix =
         isElasticsearch
             ? secondaryStorage.getElasticsearch().getIndexPrefix()
             : secondaryStorage.getOpensearch().getIndexPrefix();
-    return getBackupPriorities(indexPrefix, isElasticsearch);
-  }
-
-  private BackupPriorities getBackupPriorities(
-      final String indexPrefix, final boolean isElasticsearch) {
     final List<Prio1Backup> prio1 =
         List.of(
             // OPERATE

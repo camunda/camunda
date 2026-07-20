@@ -612,8 +612,36 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HistoryBackupDetail'
+        physicalTenants:
+          type: array
+          description: >-
+            Per-physical-tenant breakdown of this backup's state. Populated when
+            multiple physical tenants are configured; the top-level state, details
+            and failureReason fields above remain the aggregated view across all
+            physical tenants for backward compatibility.
+          items:
+            $ref: '#/components/schemas/HistoryBackupTenantInfo'
       required:
         - backupId
+        - state
+        - details
+
+    HistoryBackupTenantInfo:
+      type: object
+      properties:
+        physicalTenantId:
+          type: string
+          description: Id of the physical tenant this backup state belongs to
+        state:
+          $ref: '#/components/schemas/HistoryStateCode'
+        failureReason:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryBackupDetail'
+      required:
+        - physicalTenantId
         - state
         - details
 

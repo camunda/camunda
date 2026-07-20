@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import java.util.HashSet;
@@ -71,8 +72,11 @@ class BackupPrioritiesTest {
 
   @Test
   public void testBackupPriorities() {
-    final var configuration = new BackupPriorityConfiguration(new Camunda());
-    final var priorities = configuration.backupPriorities();
+    final var camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    final var priorities =
+        BackupServiceRegistryConfiguration.backupPriorities(
+            camunda.getData().getSecondaryStorage());
 
     final Set<String> allPriorities =
         priorities.allPriorities().map(obj -> obj.getClass().getName()).collect(Collectors.toSet());
@@ -91,8 +95,11 @@ class BackupPrioritiesTest {
 
   @Test
   public void testBackupPrioritiesIndicesSplitBySnapshot() {
-    final var configuration = new BackupPriorityConfiguration(new Camunda());
-    final var priorities = configuration.backupPriorities();
+    final var camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setType(SecondaryStorageType.elasticsearch);
+    final var priorities =
+        BackupServiceRegistryConfiguration.backupPriorities(
+            camunda.getData().getSecondaryStorage());
 
     final var indices = priorities.indicesSplitBySnapshot().toList();
 

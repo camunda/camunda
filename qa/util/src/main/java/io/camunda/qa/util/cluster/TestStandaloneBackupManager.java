@@ -13,6 +13,7 @@ import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.search.NativeSearchClientsConfiguration;
 import io.camunda.application.commons.search.PhysicalTenantSearchClientReadersConfiguration;
+import io.camunda.application.commons.search.PhysicalTenantSearchEngineConfigurations;
 import io.camunda.application.commons.search.SearchClientReaderConfiguration;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -34,6 +35,7 @@ public class TestStandaloneBackupManager
         StandaloneBackupManager.class,
         NativeSearchClientsConfiguration.class,
         PhysicalTenantSearchClientReadersConfiguration.class,
+        PhysicalTenantSearchEngineConfigurations.class,
         SearchClientReaderConfiguration.class);
   }
 
