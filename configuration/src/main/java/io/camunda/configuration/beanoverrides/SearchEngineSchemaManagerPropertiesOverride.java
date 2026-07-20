@@ -56,7 +56,6 @@ public class SearchEngineSchemaManagerPropertiesOverride {
     override.setVersionCheckRestrictionEnabled(
         camunda.getSystem().getUpgrade().getEnableVersionCheck());
 
-    /* Clean-up properties */
     camunda
         .getData()
         .getSecondaryStorage()
@@ -64,6 +63,7 @@ public class SearchEngineSchemaManagerPropertiesOverride {
         .ifPresent(
             secondaryStorage -> {
               override.setPerformCleanup(secondaryStorage.isPerformCleanup());
+              override.setCreateSchema(secondaryStorage.isCreateSchema());
             });
   }
 }
