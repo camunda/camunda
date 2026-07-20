@@ -72,12 +72,12 @@ public class AwaitModeChangeApplier implements ClusterOperationApplier {
     return clusterConfiguration ->
         clusterConfiguration.updateMember(
             memberId,
-            memberState ->
-                confirmedPartitions.stream()
-                    .reduce(
-                        memberState,
-                        (state, partitionId) ->
-                            state.updatePartition(partitionId, partitionStateUpdater),
-                        (first, second) -> second));
+            memberState -> {
+              var updatedState = memberState;
+              for (final var partitionId : confirmedPartitions) {
+                updatedState = updatedState.updatePartition(partitionId, partitionStateUpdater);
+              }
+              return updatedState;
+            });
   }
 }

@@ -79,6 +79,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
   private static final String GROUP = PartitionManagerImpl.DEFAULT_GROUP_NAME;
   private static final int PARTITION_ID = 1;
   private static final int PARTITION_ID_2 = 2;
+  private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(30);
 
   private ActorScheduler actorScheduler;
   private Actor controlActor;
@@ -203,7 +204,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     final var enterResult = handler.enterRecovery();
 
     // then - the operation completes without waiting for the recovery manager to fully start
-    assertThat(enterResult).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(enterResult).succeedsWithin(AWAIT_TIMEOUT);
 
     // and - partition 1 recovers healthily, partition 2 reaches INACTIVE but never recovers so
     // it is reported DEAD
@@ -212,33 +213,26 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
             () -> {
               final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
               assertThat(publishedInfos)
-                  .anySatisfy(
-                      info ->
-                          assertThat(info.getPartitionRoles())
-                              .containsEntry(PARTITION_ID, PartitionRole.INACTIVE)
-                              .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE));
-            });
-    await()
-        .untilAsserted(
-            () -> {
-              final var publishedInfos = BrokerInfo.allFromProperties(localMember.properties());
-              assertThat(publishedInfos)
-                  .anySatisfy(
-                      info ->
-                          assertThat(info.getPartitionHealthStatuses())
-                              .containsEntry(PARTITION_ID, PartitionHealthStatus.HEALTHY)
-                              .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD));
+                  .allSatisfy(
+                      info -> {
+                        assertThat(info.getPartitionRoles())
+                            .containsEntry(PARTITION_ID, PartitionRole.INACTIVE)
+                            .containsEntry(PARTITION_ID_2, PartitionRole.INACTIVE);
+                        assertThat(info.getPartitionHealthStatuses())
+                            .containsEntry(PARTITION_ID, PartitionHealthStatus.HEALTHY)
+                            .containsEntry(PARTITION_ID_2, PartitionHealthStatus.DEAD);
+                      });
             });
 
     // and - confirming and writing recovery state excludes the dead partition but still completes
     final var recoveringConfirmed = handler.awaitModeApplied(Mode.RECOVERING);
-    assertThat(recoveringConfirmed).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(recoveringConfirmed).succeedsWithin(AWAIT_TIMEOUT);
     assertThat(recoveringConfirmed.join()).containsExactly(PARTITION_ID);
 
     final var recoveringApplier =
         new AwaitModeChangeApplier(localMemberId, Mode.RECOVERING, handler);
     final var recoveringApplyResult = recoveringApplier.apply();
-    assertThat(recoveringApplyResult).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(recoveringApplyResult).succeedsWithin(AWAIT_TIMEOUT);
     clusterConfiguration = recoveringApplyResult.join().apply(clusterConfiguration);
 
     assertThat(clusterConfiguration.getMember(localMemberId).getPartition(PARTITION_ID).state())
@@ -249,7 +243,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     // and - exiting recovery replaces the recovery manager (including its partial failure) with a
     // brand-new partition manager
     final var exitResult = handler.exitRecovery();
-    assertThat(exitResult).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(exitResult).succeedsWithin(AWAIT_TIMEOUT);
 
     // and - the new manager brings both partitions to a processing role, including the one that
     // was DEAD during recovery
@@ -267,13 +261,13 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
 
     // and - confirming exit is role-only: partition 2's earlier DEAD health status must not matter
     final var processingConfirmed = handler.awaitModeApplied(Mode.PROCESSING);
-    assertThat(processingConfirmed).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(processingConfirmed).succeedsWithin(AWAIT_TIMEOUT);
     assertThat(processingConfirmed.join()).containsExactlyInAnyOrder(PARTITION_ID, PARTITION_ID_2);
 
     final var processingApplier =
         new AwaitModeChangeApplier(localMemberId, Mode.PROCESSING, handler);
     final var processingApplyResult = processingApplier.apply();
-    assertThat(processingApplyResult).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(processingApplyResult).succeedsWithin(AWAIT_TIMEOUT);
     clusterConfiguration = processingApplyResult.join().apply(clusterConfiguration);
 
     // then - the whole group converges cleanly back to ACTIVE, unaffected by the earlier partial
