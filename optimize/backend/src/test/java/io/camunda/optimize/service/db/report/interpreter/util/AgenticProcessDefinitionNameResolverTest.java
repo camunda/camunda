@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.report.interpreter.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.DefinitionType;
@@ -93,6 +94,33 @@ class AgenticProcessDefinitionNameResolverTest {
     assertThat(result.getGroups())
         .extracting(GroupByResult::getLabel)
         .containsExactly("Heavy Agent", "light-process");
+  }
+
+  @Test
+  void shouldFallBackToKeyWhenLatestVersionNameIsNull() {
+    // given
+    final CompositeCommandResult result = resultWithGroups("nameless-process");
+    when(definitionService.getLatestCachedDefinitionOnAnyTenant(
+            DefinitionType.PROCESS, "nameless-process"))
+        .thenReturn(Optional.of(definitionWithName(null)));
+
+    // when
+    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+
+    // then the null name is ignored and the label falls back to the key
+    assertThat(result.getGroups().getFirst().getLabel()).isEqualTo("nameless-process");
+  }
+
+  @Test
+  void shouldNotQueryDefinitionServiceForBlankKeys() {
+    // given a group whose key is blank (nothing to resolve)
+    final CompositeCommandResult result = resultWithGroups("   ");
+
+    // when
+    AgenticProcessDefinitionNameResolver.applyLatestVersionNameLabels(result, definitionService);
+
+    // then the definition service is never consulted
+    verifyNoInteractions(definitionService);
   }
 
   private static CompositeCommandResult resultWithGroups(final String... processDefinitionKeys) {
