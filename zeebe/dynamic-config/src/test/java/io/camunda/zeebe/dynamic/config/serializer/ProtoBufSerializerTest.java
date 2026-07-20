@@ -152,6 +152,22 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
+  void shouldEncodeAndDecodeExporterStateChangeRequest() {
+    // given
+    final var request =
+        new io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
+            .ExporterStateChangeRequest(
+            io.camunda.zeebe.dynamic.config.state.ExportingState.SOFT_PAUSED, false);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeExporterStateChangeRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExporterStateChangeRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
   void shouldEncodeAndDecodeExporterDeleteRequest() {
     // given
     final var exporterDeleteRequest = new ExporterDeleteRequest("expId", false);

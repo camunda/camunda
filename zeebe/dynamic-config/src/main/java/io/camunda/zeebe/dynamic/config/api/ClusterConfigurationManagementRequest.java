@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.Preconditions.assertNonEmpty;
 import static io.camunda.zeebe.util.Preconditions.assertPositive;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -128,6 +129,9 @@ public sealed interface ClusterConfigurationManagementRequest {
       implements ClusterConfigurationManagementRequest {}
 
   record ExporterEnableRequest(String exporterId, Optional<String> initializeFrom, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  record ExporterStateChangeRequest(ExportingState state, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record CancelChangeRequest(long changeId) implements ClusterConfigurationManagementRequest {
