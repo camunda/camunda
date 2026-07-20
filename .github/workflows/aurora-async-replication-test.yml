@@ -21,8 +21,7 @@ on:
       db_engine:
         description: 'Aurora engine to provision (postgresql or mysql)'
         type: string
-        required: false
-        default: 'postgresql'
+        required: true
       skip_destroy:
         description: 'Keep the Aurora infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
@@ -41,8 +40,7 @@ on:
         options:
           - postgresql
           - mysql
-        required: false
-        default: 'postgresql'
+        required: true
       skip_destroy:
         description: 'Keep the Aurora infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
