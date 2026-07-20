@@ -44,8 +44,8 @@ public final class SecretReferenceBatchJobsReactivatedApplier
     final List<Map.Entry<String, String>> refs = new ArrayList<>();
     secretReferenceState.visitSecretReferencesByJob(
         jobKey,
-        (sid, sref) -> {
-          refs.add(Map.entry(sid, sref));
+        (secretId, secretRef) -> {
+          refs.add(Map.entry(secretId, secretRef));
           return true;
         });
     for (final Map.Entry<String, String> ref : refs) {

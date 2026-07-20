@@ -70,10 +70,7 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
 
   @Test
   void shouldWriteBatchJobsReactivatedEventForCurrentBatch() {
-    // given - two eligible jobs on the command; both are also present in state
-    secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
-    secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 1L);
-    secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 2L);
+    // given - two jobs on the command; not seeded in state (event application removes them first)
     final var value =
         new SecretReferenceRecord()
             .setStoreId(STORE_ID)
@@ -98,10 +95,9 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
 
   @Test
   void shouldWriteFollowUpBatchReactivateJobsCommandWhenMoreJobsExist() {
-    // given - three jobs waiting in state; command carries only the first two (current batch)
+    // given - job 3 is still in state (jobs 1 and 2 were removed by event application already);
+    //         command carries jobs 1 and 2 as the current batch
     secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
-    secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 1L);
-    secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 2L);
     secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 3L);
     final var value =
         new SecretReferenceRecord()
@@ -126,10 +122,7 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
 
   @Test
   void shouldNotWriteFollowUpCommandWhenNoBatchJobsRemain() {
-    // given - all waiting jobs are on the command (current batch)
-    secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
-    secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 1L);
-    secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 2L);
+    // given - no jobs remain in state (all were removed by event application); command carries all
     final var value =
         new SecretReferenceRecord()
             .setStoreId(STORE_ID)
@@ -150,11 +143,11 @@ public final class SecretReferenceBatchReactivateJobsProcessorTest {
 
   @Test
   void shouldIncludeIneligibleJobsInNextBatch() {
-    // given - jobs 3 and 4 are waiting; job 3 also has another pending ref (secret2), making it
+    // given - job 1 is on the current batch (already removed from state by event application);
+    //         jobs 3 and 4 remain; job 3 also waits on secret2 (still pending), making it
     //         ineligible for reactivation, but it should still appear in the next batch command
     //         (the applier decides eligibility, not the processor)
     secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
-    secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 1L);
     secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 3L);
     secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, 4L);
     secretReferenceState.addPendingSecretReference(STORE_ID, "secret2");

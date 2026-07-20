@@ -18,9 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @ExcludeAuthorizationCheck
 public final class SecretReferenceBatchReactivateJobsProcessor
@@ -49,13 +47,10 @@ public final class SecretReferenceBatchReactivateJobsProcessor
     final var storeId = value.getStoreId();
     final var secretReference = value.getSecretReference();
 
-    // Write the current batch as an event first. Applying this event removes these job keys from
-    // the waiting-jobs index, so they will not be re-selected by the next-batch query below.
     stateWriter.appendFollowUpEvent(
         record.getKey(), SecretReferenceIntent.BATCH_JOBS_REACTIVATED, value);
 
-    final Set<Long> currentBatch = new HashSet<>(value.getJobKeys());
-    final List<Long> nextBatch = buildNextBatch(storeId, secretReference, currentBatch);
+    final List<Long> nextBatch = buildNextBatch(storeId, secretReference);
 
     if (!nextBatch.isEmpty()) {
       final var nextRecord =
@@ -68,16 +63,13 @@ public final class SecretReferenceBatchReactivateJobsProcessor
     }
   }
 
-  private List<Long> buildNextBatch(
-      final String storeId, final String secretReference, final Set<Long> currentBatch) {
+  private List<Long> buildNextBatch(final String storeId, final String secretReference) {
     final List<Long> nextBatch = new ArrayList<>();
     secretReferenceState.visitJobsBySecretReference(
         storeId,
         secretReference,
         jobKey -> {
-          if (!currentBatch.contains(jobKey)) {
-            nextBatch.add(jobKey);
-          }
+          nextBatch.add(jobKey);
           return nextBatch.size() < MAX_BATCH_SIZE;
         });
     return nextBatch;
