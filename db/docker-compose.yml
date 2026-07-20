@@ -79,6 +79,8 @@ services:
       ORACLE_PASSWORD: sys_user_password
       APP_USER: camunda
       APP_USER_PASSWORD: camunda
+    volumes:
+      - ./docker-compose-init/03-grant-camunda-create-oracle-free.sql:/container-entrypoint-initdb.d/03-grant-camunda-create-oracle.sql:ro
     # Customize healthcheck script options for startup
     healthcheck:
       test: [ "CMD", "healthcheck.sh" ]
@@ -98,6 +100,8 @@ services:
       ORACLE_PASSWORD: sys_user_password
       APP_USER: camunda
       APP_USER_PASSWORD: camunda
+    volumes:
+      - ./docker-compose-init/03-grant-camunda-create-oracle-xe.sql:/container-entrypoint-initdb.d/03-grant-camunda-create-oracle.sql:ro
     # Customize healthcheck script options for startup
     healthcheck:
       test: [ "CMD", "healthcheck.sh" ]

@@ -192,12 +192,12 @@ class PhysicalTenantSchemaProvisionerTest {
   }
 
   @Test
-  void shouldNotAttemptCleanupForOracleAndH2() {
-    // given a URL that would fail if a connection were attempted
+  void shouldNotThrowWhenDroppingOracleUserFails() {
+    // given a URL with no matching driver so the DROP USER bootstrap connection fails fast
     final String unreachableUrl = "jdbc:invalid://does-not-exist";
 
-    // when / then — Oracle (table-prefix isolation) and H2 (per-PT in-memory DB) have no namespace
-    // object to drop, so dropNamespace is a no-op and never touches the connection
+    // when / then — Oracle now isolates by user/schema, so cleanup issues DROP USER; the failure is
+    // best-effort and must be swallowed
     assertThatNoException()
         .isThrownBy(
             () ->
@@ -207,6 +207,16 @@ class PhysicalTenantSchemaProvisionerTest {
                     "user",
                     "pass",
                     "ABCDEFGHIJ_tenanta"));
+  }
+
+  @Test
+  void shouldNotAttemptCleanupForH2() {
+    // given a URL that would fail if a connection were attempted
+    final String unreachableUrl = "jdbc:invalid://does-not-exist";
+
+    // when / then — H2 uses a per-PT in-memory DB with no namespace object to drop, so
+    // dropNamespace
+    // is a no-op and never touches the connection
     assertThatNoException()
         .isThrownBy(
             () ->
