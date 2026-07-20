@@ -10694,6 +10694,113 @@
           ],
           "title": "Record write latency",
           "type": "heatmap"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Shows p50, p90, and p99 MsgPack serialization and deserialization durations grouped by concrete value class.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 126
+          },
+          "id": 312,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "histogram_quantile(0.50, sum by (recordType, le) (rate(zeebe_msgpack_deserialization_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
+              "format": "time_series",
+              "legendFormat": "deserialize p50 {{recordType}}",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "histogram_quantile(0.90, sum by (recordType, le) (rate(zeebe_msgpack_deserialization_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
+              "format": "time_series",
+              "legendFormat": "deserialize p90 {{recordType}}",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "histogram_quantile(0.99, sum by (recordType, le) (rate(zeebe_msgpack_deserialization_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
+              "format": "time_series",
+              "legendFormat": "deserialize p99 {{recordType}}",
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "histogram_quantile(0.50, sum by (recordType, le) (rate(zeebe_msgpack_serialization_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
+              "format": "time_series",
+              "legendFormat": "serialize p50 {{recordType}}",
+              "refId": "D"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "histogram_quantile(0.90, sum by (recordType, le) (rate(zeebe_msgpack_serialization_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
+              "format": "time_series",
+              "legendFormat": "serialize p90 {{recordType}}",
+              "refId": "E"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "histogram_quantile(0.99, sum by (recordType, le) (rate(zeebe_msgpack_serialization_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
+              "format": "time_series",
+              "legendFormat": "serialize p99 {{recordType}}",
+              "refId": "F"
+            }
+          ],
+          "title": "MsgPack Serialization and Deserialization Percentiles",
+          "type": "timeseries"
         }
       ],
       "title": "Latency",
