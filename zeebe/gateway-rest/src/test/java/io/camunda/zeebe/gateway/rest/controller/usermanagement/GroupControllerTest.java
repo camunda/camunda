@@ -208,6 +208,68 @@ public class GroupControllerTest {
 
   @Nested
   @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(properties = "camunda.security.authentication.oidc.groups-claim=g1")
+  public class CamundaGroupsDisabledViaKebabCasePropertyTest extends RestControllerTest {
+
+    private static final String FORBIDDEN_MESSAGE =
+        """
+        {
+          "type": "about:blank",
+          "status": 403,
+          "title": "Access issue",
+          "detail": "%%s endpoint is not accessible: %s",
+          "instance": "%%s"
+        }"""
+            .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
+
+    // GroupController's own @ConditionalOnCamundaGroupsEnabled does not yet relax-match the
+    // kebab-case property, so the controller bean is still created here (unlike
+    // CamundaGroupsDisabledTest above) and needs the same mocks as CamundaGroupsEnabledTest. This
+    // test only verifies that ApiFiltersConfiguration's Groups API filter correctly blocks the
+    // request regardless.
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean private SecurityConfiguration securityConfiguration;
+
+    @BeforeEach
+    void setup() {
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(groupServices);
+      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
+    }
+
+    @Test
+    void shouldReturnErrorOnCreateWhenGroupsClaimSetViaKebabCaseKey() {
+      // given
+      final var groupName = "testGroup";
+      final var description = "description";
+      final var groupId = "g1";
+      // when
+      webClient
+          .post()
+          .uri(GROUP_BASE_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(
+              new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(
+              FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL), JsonCompareMode.STRICT);
+    }
+  }
+
+  @Nested
+  @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=")
   public class CamundaGroupsEnabledTest extends RestControllerTest {
     @MockitoBean private GroupServices groupServices;
