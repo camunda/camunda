@@ -24,12 +24,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public class ListLogStorage implements LogStorage {
 
   private final ConcurrentNavigableMap<Long, Integer> positionIndexMapping;
   private final ConcurrentSkipListMap<Integer, Entry> entries;
-  private LongConsumer positionListener;
+  private @Nullable LongConsumer positionListener;
   private final Set<CommitListener> commitListeners = new HashSet<>();
   private final List<ListLogStorageReader> listLogStorageReaders;
   private final AtomicInteger currentIndex = new AtomicInteger(0);
@@ -121,8 +124,8 @@ public class ListLogStorage implements LogStorage {
 
     @Override
     public boolean hasNext() {
-      return currentIndex.get() >= 0
-          && !entries.tailMap(currentIndex.get()).isEmpty(); // && currentIndex < entries.size();
+      final var index = currentIndex.get();
+      return index >= 0 && !entries.tailMap(index).isEmpty(); // && currentIndex < entries.size();
     }
 
     @Override
@@ -131,9 +134,11 @@ public class ListLogStorage implements LogStorage {
         throw new NoSuchElementException();
       }
 
-      final int index = currentIndex.get();
-
-      final var buffer = new UnsafeBuffer(entries.get(index).data);
+      final var entry = entries.get(currentIndex.get());
+      if (entry == null) {
+        throw new NoSuchElementException();
+      }
+      final var buffer = new UnsafeBuffer(entry.data);
       currentIndex.incrementAndGet();
       return buffer;
     }
