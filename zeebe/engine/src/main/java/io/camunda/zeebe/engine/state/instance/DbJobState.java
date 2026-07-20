@@ -269,6 +269,14 @@ public final class DbJobState implements JobState, MutableJobState {
    */
   @Deprecated
   @Override
+  public void makeActivatable(final long key) {
+    final JobRecord record = getJob(key);
+    if (record != null) {
+      updateJob(key, record, State.ACTIVATABLE);
+    }
+  }
+
+  @Override
   public void resolve(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ACTIVATABLE);
   }

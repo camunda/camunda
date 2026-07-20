@@ -144,7 +144,7 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
     this.storeId.wrapString(storeId);
     this.secretReference.wrapString(secretReference);
     this.jobKey.wrapLong(jobKey);
-    waitingJobsByJobKeyColumnFamily.deleteExisting(jobKeyAndSecretRef);
-    waitingJobsBySecretRefColumnFamily.deleteExisting(secretRefAndJobKey);
+    waitingJobsByJobKeyColumnFamily.deleteIfExists(jobKeyAndSecretRef);
+    waitingJobsBySecretRefColumnFamily.deleteIfExists(secretRefAndJobKey);
   }
 }
