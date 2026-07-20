@@ -7,7 +7,7 @@ Processors are where the engine's logic lives. They consume commands and produce
 - **Bulk of logic lives here**, not in event appliers. Processors are easier to fix when bugs are found or behavior must be adjusted.
 - **Read-only state access only.** Mutation goes through events + appliers. Use the `*State` (read-only) interface from a processor, never the `Mutable*State` interface.
 - **Composition over inheritance.** Reuse logic via `Behavior` classes (e.g., `BpmnJobActivationBehavior`), not via subclasses.
-- **A processor must always end the command's processing by appending an event or a rejection.** A command is considered processed (after replay) when a follow-up record points to it.
+- **A processor must always end the command's processing by appending an event or a rejection** — either directly via `StateWriter.appendFollowUpEvent(...)` / `TypedRejectionWriter.appendRejection(...)`, or transitively through a behavior class that wraps one of these calls. A command is considered processed (after replay) when a follow-up record points to it. A call to `TypedResponseWriter` does not satisfy this: it only sends the response to the client, via gRPC or REST — it never appends anything to the log.
 - **Exceptions are a last-resort rollback mechanism**, not a control-flow tool. They are expensive at engine throughput.
   - Prefer pre-validation: validate the command before appending any events.
   - Throw only when validation is only possible mid-processing, after some events have already been appended. The stream processor will roll back the appended records and call `tryHandleError`, where the processor typically appends a command rejection to recover.
