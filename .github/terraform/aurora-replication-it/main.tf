@@ -68,6 +68,29 @@ variable "instance_class" {
   default = "db.r6g.large"
 }
 
+# The aurora-global module also defaults to aurora-postgresql/18.3; both must be overridden
+# together when switching engine, since the module's own engine_version default is a Postgres
+# version regardless of which engine is selected.
+variable "engine" {
+  type    = string
+  default = "aurora-postgresql"
+}
+
+variable "engine_version" {
+  type    = string
+  default = "18.3"
+}
+
+# Database port used by both the Aurora cluster (implicitly, via its engine default) and the
+# bastion's egress rule below. NOTE: the aurora-global module's own security groups (in
+# camunda-deployment-references) additionally hardcode 5432 for both the primary and secondary
+# clusters — until that is parameterized upstream, setting engine to aurora-mysql here alone is
+# not sufficient for end-to-end connectivity on port 3306.
+variable "port" {
+  type    = number
+  default = 5432
+}
+
 # Scaled 1 -> 0 -> 1 by the test to remove/restore the replica instance while
 # keeping the secondary cluster (and storage replication) in place.
 variable "secondary_num_instances" {
@@ -115,6 +138,8 @@ module "aurora" {
   }
 
   global_cluster_identifier = "${var.name_prefix}-global"
+  engine                    = var.engine
+  engine_version            = var.engine_version
   master_username           = var.master_username
   master_password           = var.master_password
   instance_class            = var.instance_class
@@ -202,7 +227,7 @@ resource "aws_security_group" "bastion" {
     Purpose = "aurora-async-replication-it"
   }
 
-  # outbound only: 443 for the SSM agent, 5432 towards Aurora
+  # outbound only: 443 for the SSM agent, var.port towards Aurora
   egress {
     from_port   = 443
     to_port     = 443
@@ -212,11 +237,11 @@ resource "aws_security_group" "bastion" {
   }
 
   egress {
-    from_port   = 5432
-    to_port     = 5432
+    from_port   = var.port
+    to_port     = var.port
     protocol    = "TCP"
     cidr_blocks = [data.aws_vpc.primary.cidr_block]
-    description = "PostgreSQL to Aurora"
+    description = "Aurora database port"
   }
 }
 
