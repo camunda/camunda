@@ -61,6 +61,7 @@ import io.camunda.gateway.protocol.model.MessageCorrelationResult;
 import io.camunda.gateway.protocol.model.MessagePublicationResult;
 import io.camunda.gateway.protocol.model.Partition.HealthEnum;
 import io.camunda.gateway.protocol.model.Partition.RoleEnum;
+import io.camunda.gateway.protocol.model.Partition.StateEnum;
 import io.camunda.gateway.protocol.model.ProcessInstanceReference;
 import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.RoleCreateResult;
@@ -910,6 +911,7 @@ public final class ResponseMapper {
                     .partitionId(partition.partitionId())
                     .role(EnumUtil.convert(partition.role(), RoleEnum.class))
                     .health(EnumUtil.convert(partition.health(), HealthEnum.class))
+                    .state(EnumUtil.convert(partition.state(), StateEnum.class))
                     .build())
         .toList();
   }

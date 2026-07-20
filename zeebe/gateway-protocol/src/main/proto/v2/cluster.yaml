@@ -242,6 +242,7 @@ components:
         - partitionId
         - role
         - health
+        - state
       properties:
         partitionId:
           description: The unique ID of this partition.
@@ -264,6 +265,23 @@ components:
             - healthy
             - unhealthy
             - dead
+        state:
+          description: >
+            Describes the current operational state of the partition within the cluster
+            configuration. May be null if the gateway has not yet received cluster
+            configuration data for this partition.
+          type: string
+          nullable: true
+          example: active
+          enum:
+            - unknown
+            - joining
+            - active
+            - leaving
+            - recovering
+      x-properties-added-in-version:
+        - propertyName: state
+          addedInVersion: "8.10"
 
     ClusterModeChangeResponse:
       description: The planned changes resulting from a cluster mode transition request.

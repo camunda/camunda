@@ -15,6 +15,7 @@ import io.camunda.service.TopologyServices.Broker;
 import io.camunda.service.TopologyServices.Health;
 import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Role;
+import io.camunda.service.TopologyServices.State;
 import io.camunda.service.TopologyServices.Topology;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -65,7 +66,8 @@ public class TopologyControllerTest extends RestControllerTest {
                 {
                   "partitionId": 1,
                   "health": "healthy",
-                  "role": "leader"
+                  "role": "leader",
+                  "state": null
                 }
               ]
             },
@@ -78,7 +80,8 @@ public class TopologyControllerTest extends RestControllerTest {
                 {
                   "partitionId": 1,
                   "health": "healthy",
-                  "role": "follower"
+                  "role": "follower",
+                  "state": null
                 }
               ]
             },
@@ -91,7 +94,8 @@ public class TopologyControllerTest extends RestControllerTest {
                 {
                   "partitionId": 1,
                   "health": "unhealthy",
-                  "role": "inactive"
+                  "role": "inactive",
+                  "state": null
                 }
               ]
             }
@@ -107,24 +111,90 @@ public class TopologyControllerTest extends RestControllerTest {
                     BrokerMemberId.from(0),
                     "localhost",
                     26501,
-                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY)),
+                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY, null)),
                     version),
                 new Broker(
                     BrokerMemberId.from(1),
                     "localhost",
                     26502,
-                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY)),
+                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY, null)),
                     version),
                 new Broker(
                     BrokerMemberId.from(2),
                     "localhost",
                     26503,
-                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
+                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY, null)),
                     version)),
             "cluster-id",
             3,
             1,
             3,
+            version,
+            1L);
+    Mockito.when(topologyServices.getTopology())
+        .thenReturn(CompletableFuture.completedFuture(topology));
+
+    // when / then
+    webClient
+        .get()
+        .uri(baseUrl)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"/v1/topology", "/v2/topology"})
+  public void shouldGetTopologyWithRecoveringPartitionState(final String baseUrl) {
+    // given
+    final var version = VersionUtil.getVersion();
+    final var expectedResponse =
+        """
+        {
+          "clusterId": "cluster-id",
+          "gatewayVersion": "%s",
+          "clusterSize": 1,
+          "partitionsCount": 1,
+          "replicationFactor": 1,
+          "lastCompletedChangeId": "1",
+          "brokers": [
+            {
+              "nodeId": 0,
+              "host": "localhost",
+              "port": 26501,
+              "version": "%s",
+              "partitions": [
+                {
+                  "partitionId": 1,
+                  "health": "healthy",
+                  "role": "leader",
+                  "state": "recovering"
+                }
+              ]
+            }
+          ]
+        }
+        """
+            .formatted(version, version);
+
+    final var topology =
+        new Topology(
+            List.of(
+                new Broker(
+                    BrokerMemberId.from(0),
+                    "localhost",
+                    26501,
+                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY, State.RECOVERING)),
+                    version)),
+            "cluster-id",
+            1,
+            1,
+            1,
             version,
             1L);
     Mockito.when(topologyServices.getTopology())

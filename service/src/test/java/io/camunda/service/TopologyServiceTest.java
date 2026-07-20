@@ -18,14 +18,20 @@ import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.service.TopologyServices.Health;
 import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Role;
+import io.camunda.service.TopologyServices.State;
 import io.camunda.service.TopologyServices.Topology;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
@@ -208,21 +214,21 @@ public class TopologyServiceTest {
                     0,
                     "localhost",
                     26501,
-                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY)),
+                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY, null)),
                     version),
                 new Broker(
                     zone,
                     1,
                     "localhost",
                     26502,
-                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY)),
+                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY, null)),
                     version),
                 new Broker(
                     zone,
                     2,
                     "localhost",
                     26503,
-                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
+                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY, null)),
                     version)),
             "cluster-id",
             3,
@@ -236,6 +242,53 @@ public class TopologyServiceTest {
 
     // then
     Assertions.assertThat(topology).isEqualTo(expectedTopology);
+  }
+
+  @ParameterizedTest
+  @EnumSource(PartitionState.State.class)
+  public void shouldExposePartitionOperationalState(final PartitionState.State dynamicConfigState) {
+    // given
+    final var version = VersionUtil.getVersion();
+    when(topologyManager.getTopology(PHYSICAL_TENANT_ID))
+        .thenReturn(new TestBrokerClusterState(null, version, "cluster-id"));
+
+    final var leaderMemberId = BrokerMemberId.from(null, 0).memberId();
+    final var clusterConfiguration =
+        ClusterConfiguration.builder()
+            .members(
+                Map.of(
+                    leaderMemberId,
+                    MemberState.initializeAsActive(
+                        Map.of(
+                            1,
+                            new PartitionState(
+                                dynamicConfigState, 1, DynamicPartitionConfig.init())))))
+            .build();
+    when(topologyManager.getClusterConfiguration()).thenReturn(clusterConfiguration);
+
+    // when
+    final var topology = services.getTopology().join();
+
+    // then
+    final var leaderPartitionState =
+        topology.brokers().stream()
+            .filter(broker -> broker.nodeIdx() == 0)
+            .findFirst()
+            .orElseThrow()
+            .partitions()
+            .getFirst()
+            .state();
+    Assertions.assertThat(leaderPartitionState).isEqualTo(expectedState(dynamicConfigState));
+  }
+
+  private static State expectedState(final PartitionState.State dynamicConfigState) {
+    return switch (dynamicConfigState) {
+      case UNKNOWN, BOOTSTRAPPING -> State.UNKNOWN;
+      case JOINING -> State.JOINING;
+      case ACTIVE -> State.ACTIVE;
+      case LEAVING -> State.LEAVING;
+      case RECOVERING -> State.RECOVERING;
+    };
   }
 
   @Test

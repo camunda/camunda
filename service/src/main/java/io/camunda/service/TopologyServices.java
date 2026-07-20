@@ -16,6 +16,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
@@ -100,13 +101,15 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
           .replicationFactor(clusterState.getReplicationFactor())
           .lastCompletedChangeId(clusterState.getLastCompletedChangeId());
 
+      final var clusterConfiguration = brokerClient.getTopologyManager().getClusterConfiguration();
+
       clusterState
           .getBrokers()
           .forEach(
               brokerId -> {
                 final var broker = Broker.Builder.create();
                 addBrokerInfo(broker, brokerId, clusterState);
-                addPartitionInfoToBrokerInfo(broker, brokerId, clusterState);
+                addPartitionInfoToBrokerInfo(broker, brokerId, clusterState, clusterConfiguration);
 
                 topology.addBroker(broker.build());
               });
@@ -134,7 +137,8 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
   private void addPartitionInfoToBrokerInfo(
       final Broker.Builder broker,
       final BrokerMemberId brokerId,
-      final BrokerClusterState topology) {
+      final BrokerClusterState topology,
+      final @Nullable ClusterConfiguration clusterConfiguration) {
     topology
         .getPartitions()
         .forEach(
@@ -160,8 +164,42 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
                             .map(PartitionHealthStatus::name)
                             .orElse("null"));
               }
+              setState(brokerId, partitionId, clusterConfiguration, partition);
               broker.addPartition(partition.build());
             });
+  }
+
+  private void setState(
+      final BrokerMemberId brokerId,
+      final Integer partitionId,
+      final @Nullable ClusterConfiguration clusterConfiguration,
+      final Partition.Builder partition) {
+    if (clusterConfiguration == null) {
+      return;
+    }
+
+    final var memberState = clusterConfiguration.members().get(brokerId.memberId());
+    if (memberState == null) {
+      return;
+    }
+
+    final var partitionState = memberState.getPartition(partitionId);
+    if (partitionState == null) {
+      return;
+    }
+
+    partition.state(mapState(partitionState.state()));
+  }
+
+  private static State mapState(
+      final io.camunda.zeebe.dynamic.config.state.PartitionState.State state) {
+    return switch (state) {
+      case UNKNOWN, BOOTSTRAPPING -> State.UNKNOWN;
+      case JOINING -> State.JOINING;
+      case ACTIVE -> State.ACTIVE;
+      case LEAVING -> State.LEAVING;
+      case RECOVERING -> State.RECOVERING;
+    };
   }
 
   private boolean setRole(
@@ -331,11 +369,12 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
     }
   }
 
-  public record Partition(Integer partitionId, Role role, Health health) {
+  public record Partition(Integer partitionId, Role role, Health health, @Nullable State state) {
     static class Builder {
       Integer partitionId;
       Role role;
       Health health;
+      @Nullable State state;
 
       public static Builder create() {
         return new Builder();
@@ -356,8 +395,13 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
         return this;
       }
 
+      public Builder state(final @Nullable State state) {
+        this.state = state;
+        return this;
+      }
+
       public Partition build() {
-        return new Partition(partitionId, role, health);
+        return new Partition(partitionId, role, health, state);
       }
     }
   }
@@ -374,6 +418,15 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
     HEALTHY,
     UNHEALTHY,
     DEAD
+  }
+
+  /** Describes the current operational state of the partition in the cluster configuration. */
+  public enum State {
+    UNKNOWN,
+    JOINING,
+    ACTIVE,
+    LEAVING,
+    RECOVERING
   }
 
   public enum ClusterStatus {

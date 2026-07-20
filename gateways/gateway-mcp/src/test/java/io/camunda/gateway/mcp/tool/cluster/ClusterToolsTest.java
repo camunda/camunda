@@ -125,6 +125,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                                       .partitionId(1)
                                       .role(RoleEnum.LEADER)
                                       .health(HealthEnum.HEALTHY)
+                                      .state(null)
                                       .build()))
                           .version(version)
                           .build(),
@@ -138,6 +139,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                                       .partitionId(1)
                                       .role(RoleEnum.FOLLOWER)
                                       .health(HealthEnum.HEALTHY)
+                                      .state(null)
                                       .build()))
                           .version(version)
                           .build(),
@@ -151,6 +153,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                                       .partitionId(1)
                                       .role(RoleEnum.INACTIVE)
                                       .health(HealthEnum.UNHEALTHY)
+                                      .state(null)
                                       .build()))
                           .version(version)
                           .build()))
@@ -169,21 +172,23 @@ class ClusterToolsTest extends OperationalToolsTest {
                       0,
                       "localhost",
                       26501,
-                      List.of(new TopologyServices.Partition(1, Role.LEADER, Health.HEALTHY)),
+                      List.of(new TopologyServices.Partition(1, Role.LEADER, Health.HEALTHY, null)),
                       version),
                   new Broker(
                       null,
                       1,
                       "localhost",
                       26502,
-                      List.of(new TopologyServices.Partition(1, Role.FOLLOWER, Health.HEALTHY)),
+                      List.of(
+                          new TopologyServices.Partition(1, Role.FOLLOWER, Health.HEALTHY, null)),
                       version),
                   new Broker(
                       null,
                       2,
                       "localhost",
                       26503,
-                      List.of(new TopologyServices.Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
+                      List.of(
+                          new TopologyServices.Partition(1, Role.INACTIVE, Health.UNHEALTHY, null)),
                       version)),
               "cluster-id",
               3,
