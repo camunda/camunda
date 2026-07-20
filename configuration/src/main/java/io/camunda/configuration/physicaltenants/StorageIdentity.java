@@ -69,6 +69,7 @@ record StorageIdentity(
     SecondaryStorageType type, List<String> connection, String namespace, String schema) {
 
   private static final String ORACLE_VENDOR_ID = "oracle";
+  private static final String NO_SCHEMA = "";
 
   /**
    * Extracts the storage identity of a resolved tenant, or {@code null} when the tenant has no
@@ -85,13 +86,13 @@ record StorageIdentity(
               type,
               secondaryStorage.getElasticsearch(),
               secondaryStorage.getElasticsearch().getIndexPrefix(),
-              "");
+              NO_SCHEMA);
       case opensearch ->
           identityOf(
               type,
               secondaryStorage.getOpensearch(),
               secondaryStorage.getOpensearch().getIndexPrefix(),
-              "");
+              NO_SCHEMA);
       case rdbms -> {
         final Rdbms rdbms = secondaryStorage.getRdbms();
         yield identityOf(type, rdbms, rdbms.getPrefix(), oracleSchemaOf(rdbms));
@@ -117,10 +118,10 @@ record StorageIdentity(
   private static String oracleSchemaOf(final Rdbms rdbms) {
     final String vendorId = rdbms.getDatabaseVendorId();
     if (vendorId == null || !ORACLE_VENDOR_ID.equals(vendorId.trim().toLowerCase(Locale.ROOT))) {
-      return "";
+      return NO_SCHEMA;
     }
     final String username = rdbms.getUsername();
-    return username == null ? "" : username.trim().toUpperCase(Locale.ROOT);
+    return username == null ? NO_SCHEMA : username.trim().toUpperCase(Locale.ROOT);
   }
 
   /**
