@@ -24,12 +24,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public class ListLogStorage implements LogStorage {
 
   private final ConcurrentNavigableMap<Long, Integer> positionIndexMapping;
   private final ConcurrentSkipListMap<Integer, Entry> entries;
-  private LongConsumer positionListener;
+  private @Nullable LongConsumer positionListener;
   private final Set<CommitListener> commitListeners = new HashSet<>();
   private final List<ListLogStorageReader> listLogStorageReaders;
   private final AtomicInteger currentIndex = new AtomicInteger(0);
@@ -93,22 +96,25 @@ public class ListLogStorage implements LogStorage {
 
   public void reset() {
     final Integer lastIndex =
-        listLogStorageReaders.stream().map(r -> r.currentIndex).min(Integer::compareTo).orElse(0);
+        listLogStorageReaders.stream()
+            .map(r -> r.currentIndex.get())
+            .min(Integer::compareTo)
+            .orElse(0);
     entries.headMap(lastIndex).clear();
   }
 
   private record Entry(ByteBuffer data) {}
 
   private final class ListLogStorageReader implements LogStorageReader {
-    volatile int currentIndex;
+    final AtomicInteger currentIndex = new AtomicInteger(0);
 
     @Override
     public void seek(final long position) {
-      currentIndex =
+      currentIndex.set(
           Optional.ofNullable(positionIndexMapping.lowerEntry(position))
               .map(Map.Entry::getValue)
               //              .map(index -> index - 1)
-              .orElse(0);
+              .orElse(0));
     }
 
     @Override
@@ -118,8 +124,8 @@ public class ListLogStorage implements LogStorage {
 
     @Override
     public boolean hasNext() {
-      return currentIndex >= 0
-          && !entries.tailMap(currentIndex).isEmpty(); // && currentIndex < entries.size();
+      final var index = currentIndex.get();
+      return index >= 0 && !entries.tailMap(index).isEmpty(); // && currentIndex < entries.size();
     }
 
     @Override
@@ -128,10 +134,13 @@ public class ListLogStorage implements LogStorage {
         throw new NoSuchElementException();
       }
 
-      final int index = currentIndex;
-      currentIndex++;
-
-      return new UnsafeBuffer(entries.get(index).data);
+      final var entry = entries.get(currentIndex.get());
+      if (entry == null) {
+        throw new NoSuchElementException();
+      }
+      final var buffer = new UnsafeBuffer(entry.data);
+      currentIndex.incrementAndGet();
+      return buffer;
     }
   }
 }
