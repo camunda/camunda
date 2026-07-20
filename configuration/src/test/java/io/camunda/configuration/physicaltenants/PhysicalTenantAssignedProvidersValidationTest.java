@@ -316,6 +316,243 @@ class PhysicalTenantAssignedProvidersValidationTest {
         .doesNotThrowAnyException();
   }
 
+  @Test
+  void shouldRejectIssuerCollisionWhenNoPhysicalTenantsConfigured() {
+    // given an OIDC cluster with no physical tenants and two root-level providers sharing the same
+    // issuer — the synthesized default tenant uses the full set, so the collision must be caught
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp.example.com"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("default")
+        .withMessageContaining("same issuer URI")
+        .withMessageContaining("https://idp.example.com");
+  }
+
+  // -------------------------------------------------------------------------
+  // Issuer URI collision: assigned list
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldRejectTwoNamedProvidersWithSameIssuerInAssigned() {
+    // given two named providers sharing the same issuer-uri, both in a tenant's assigned list
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "a",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "b"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("same issuer URI")
+        .withMessageContaining("https://idp.example.com");
+  }
+
+  @Test
+  void shouldRejectDefaultSlotAndNamedProviderSharingIssuerInAssigned() {
+    // given the default slot and a named provider both configured with the same issuer-uri,
+    // and a tenant assigning both via the reserved "oidc" id and the named id
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.oidc.issuer-uri", "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "oidc",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "a"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("tenanta")
+        .withMessageContaining("same issuer URI")
+        .withMessageContaining("https://idp.example.com");
+  }
+
+  @Test
+  void shouldAcceptAssignedProvidersWithDistinctIssuers() {
+    // given two named providers with different issuers, both in a tenant's assigned list
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp-a.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp-b.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "a",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "b"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAcceptWhenTwoProvidersShareIssuerButOnlyOneIsAssigned() {
+    // given two cluster-level providers sharing the same issuer, but each tenant assigning only
+    // one — the collision check is scoped to each tenant's effective set, not the root set.
+    // The default tenant must also declare an explicit assigned to avoid seeing both colliding
+    // providers in its implicit full set.
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "a",
+                // constrain the default tenant too so it does not see both colliding providers
+                "camunda.physical-tenants.default.security.authentication.providers.assigned[0]",
+                    "a"));
+
+    // when / then — no collision in the effective assigned set for either tenant
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldNotReportFalseCollisionForDuplicateIdInAssigned() {
+    // given a single named provider whose id appears twice in assigned (a config typo) — the same
+    // provider id resolves to the same issuer once, so there is no real collision
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "a",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "a"));
+
+    // when / then — deduplication prevents a false issuer-collision report
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldAcceptAssignedProvidersWithNullIssuers() {
+    // given assigned providers that have no issuer-uri configured (null issuers are not a
+    // collision)
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.client-id", "client-a",
+                "camunda.security.authentication.providers.oidc.b.client-id", "client-b",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "a",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "b"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldRespectTenantOverlayIssuerWhenCheckingCollisions() {
+    // given root providers "a" and "b" sharing the same issuer — a collision at root level.
+    // tenanta overrides "a" to a distinct issuer via its PT overlay, so its effective set has no
+    // collision. The default tenant is constrained to a single-provider assigned so it does not
+    // see the root-level collision.
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp.example.com",
+                // tenanta overrides provider "a" to a different issuer
+                "camunda.physical-tenants.tenanta.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://other-idp.example.com",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[0]",
+                    "a",
+                "camunda.physical-tenants.tenanta.security.authentication.providers.assigned[1]",
+                    "b",
+                // constrain the default tenant so it does not see both colliding root providers
+                "camunda.physical-tenants.default.security.authentication.providers.assigned[0]",
+                    "a"));
+
+    // when / then — overlay makes the effective issuers distinct for tenanta
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
+  // -------------------------------------------------------------------------
+  // Issuer URI collision: default tenant with implicit full set (no assigned)
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldRejectDefaultTenantWithoutAssignedWhenFullSetHasIssuerCollision() {
+    // given two cluster-level named providers sharing the same issuer, and the default tenant
+    // omitting providers.assigned (implicit full set) — the collision must fail fast
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp.example.com",
+                // trigger default tenant discovery with no assigned
+                "camunda.physical-tenants.default.security.authentication.providers.oidc.a.client-id",
+                    "client-a"));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("default")
+        .withMessageContaining("same issuer URI")
+        .withMessageContaining("https://idp.example.com");
+  }
+
+  @Test
+  void shouldAcceptDefaultTenantWithoutAssignedWhenFullSetHasDistinctIssuers() {
+    // given two cluster-level named providers with distinct issuers, default tenant with no
+    // assigned
+    final Environment environment =
+        environmentWith(
+            Map.of(
+                "camunda.security.authentication.method", "oidc",
+                "camunda.security.authentication.providers.oidc.a.issuer-uri",
+                    "https://idp-a.example.com",
+                "camunda.security.authentication.providers.oidc.b.issuer-uri",
+                    "https://idp-b.example.com",
+                "camunda.physical-tenants.default.security.authentication.providers.oidc.a.client-id",
+                    "client-a"));
+
+    // when / then
+    assertThatCode(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .doesNotThrowAnyException();
+  }
+
   // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------

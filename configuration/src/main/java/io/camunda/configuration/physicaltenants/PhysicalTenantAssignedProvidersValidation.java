@@ -10,8 +10,12 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -52,6 +56,9 @@ import org.springframework.core.env.Environment;
  *       overlay.
  *   <li>A named provider literally called {@value #DEFAULT_SLOT_ASSIGNED_ID} collides with the
  *       reserved default-slot id and is rejected as unsupported.
+ *   <li>Among the effective provider set (the {@code assigned} list, or all providers for the
+ *       default tenant without a selection), no two providers may carry the same {@code
+ *       issuer-uri}: identical issuers produce an ambiguous token-validation chain at runtime.
  * </ul>
  */
 @NullMarked
@@ -85,9 +92,15 @@ final class PhysicalTenantAssignedProvidersValidation {
     final Set<String> rootNamedIds = childSegments(environment, ROOT_NAMED_PROVIDERS);
     final boolean rootDefaultSlotPresent = hasDescendant(environment, ROOT_DEFAULT_SLOT);
 
-    for (final String tenantId : childSegments(environment, PHYSICAL_TENANTS_NAME)) {
+    final Set<String> discoveredTenantIds = childSegments(environment, PHYSICAL_TENANTS_NAME);
+    boolean defaultTenantExplicitlyDiscovered = false;
+
+    for (final String tenantId : discoveredTenantIds) {
       final List<String> assigned = bindAssigned(binder, tenantId);
       final boolean isDefault = PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantId);
+      if (isDefault) {
+        defaultTenantExplicitlyDiscovered = true;
+      }
 
       if (!oidcMethod) {
         if (assigned != null) {
@@ -117,6 +130,12 @@ final class PhysicalTenantAssignedProvidersValidation {
         // The default tenant may omit a selection (implicit full set); a non-default tenant must
         // declare one so its provider set is explicit.
         if (isDefault) {
+          // Build the implicit full-set and check it for issuer collisions.
+          final List<String> allProviderIds = new ArrayList<>(namedIds);
+          if (rootDefaultSlotPresent || hasTenantOverlayDefaultSlot(environment, tenantId)) {
+            allProviderIds.add(DEFAULT_SLOT_ASSIGNED_ID);
+          }
+          checkIssuerCollisions(binder, tenantId, allProviderIds);
           continue;
         }
         throw fail(
@@ -160,6 +179,21 @@ final class PhysicalTenantAssignedProvidersValidation {
                     DEFAULT_SLOT_ASSIGNED_ID,
                     ROOT_AUTH));
       }
+
+      checkIssuerCollisions(binder, tenantId, assigned);
+    }
+
+    // The default tenant is synthesized even when no physical tenants are configured at all (the
+    // common single-tenant deployment). If it was never explicitly discovered above, run the
+    // root-level full-set issuer collision check here so that duplicate issuers on cluster-level
+    // providers are still caught.
+    if (oidcMethod && !defaultTenantExplicitlyDiscovered) {
+      final List<String> rootProviderIds = new ArrayList<>(rootNamedIds);
+      if (rootDefaultSlotPresent) {
+        rootProviderIds.add(DEFAULT_SLOT_ASSIGNED_ID);
+      }
+      checkIssuerCollisions(
+          binder, PhysicalTenantResolver.DEFAULT_PHYSICAL_TENANT_ID, rootProviderIds);
     }
   }
 
@@ -225,6 +259,60 @@ final class PhysicalTenantAssignedProvidersValidation {
       }
     }
     return false;
+  }
+
+  /**
+   * Resolves the effective {@code issuer-uri} for {@code providerId} under {@code tenantId},
+   * preferring the PT-overlay path and falling back to the root path. Returns {@code null} when
+   * neither path carries a value.
+   */
+  private static @Nullable String resolveIssuerUri(
+      final Binder binder, final String tenantId, final String providerId) {
+    final String ptPath;
+    final String rootPath;
+    if (DEFAULT_SLOT_ASSIGNED_ID.equals(providerId)) {
+      ptPath =
+          "%s.%s.security.authentication.oidc.issuer-uri"
+              .formatted(PHYSICAL_TENANTS_PREFIX, tenantId);
+      rootPath = ROOT_AUTH + ".oidc.issuer-uri";
+    } else {
+      ptPath =
+          "%s.%s.security.authentication.providers.oidc.%s.issuer-uri"
+              .formatted(PHYSICAL_TENANTS_PREFIX, tenantId, providerId);
+      rootPath = ROOT_AUTH + ".providers.oidc." + providerId + ".issuer-uri";
+    }
+    return binder
+        .bind(ptPath, Bindable.of(String.class))
+        .orElseGet(() -> binder.bind(rootPath, Bindable.of(String.class)).orElse(null));
+  }
+
+  /**
+   * Fails if any two provider ids in {@code providerIds} resolve to the same {@code issuer-uri}
+   * under {@code tenantId}. Provider ids whose issuer is {@code null} are skipped (not yet
+   * configured, or set elsewhere).
+   */
+  private static void checkIssuerCollisions(
+      final Binder binder, final String tenantId, final Collection<String> providerIds) {
+    final Map<String, List<String>> byIssuer = new LinkedHashMap<>();
+    // Deduplicate: a repeated id in `assigned` carries the same issuer twice, which would
+    // otherwise appear as a false collision. The distinct set preserves insertion order.
+    for (final String id : new LinkedHashSet<>(providerIds)) {
+      final String issuer = resolveIssuerUri(binder, tenantId, id);
+      if (issuer != null) {
+        byIssuer.computeIfAbsent(issuer, k -> new ArrayList<>()).add(id);
+      }
+    }
+    final List<String> collisions =
+        byIssuer.entrySet().stream()
+            .filter(e -> e.getValue().size() > 1)
+            .map(e -> "issuer '%s' is claimed by providers %s".formatted(e.getKey(), e.getValue()))
+            .toList();
+    if (!collisions.isEmpty()) {
+      throw fail(
+          ("physical tenant '%s' assigns providers sharing the same issuer URI — "
+                  + "each assigned provider must use a distinct issuer. Conflicts: %s")
+              .formatted(tenantId, collisions));
+    }
   }
 
   private static UnifiedConfigurationException fail(final String detail) {
