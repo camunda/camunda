@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -54,6 +55,10 @@ final class CrossPartitionMessageStartBusinessIdIT {
   // hash("biz-1")
   // route to different partitions under PARTITION_COUNT=3, so the cross-partition arm is exercised.
   private static final String CORRELATION_KEY = "ck-1";
+  // A second, distinct correlationKey for the dedup arm: it must differ from CORRELATION_KEY so the
+  // local correlationKey lock written by the first publish does not short-circuit the second
+  // publish before it exercises the Business ID uniqueness check.
+  private static final String SECOND_CORRELATION_KEY = "ck-2";
   private static final String BUSINESS_ID = "biz-1";
 
   private static final String PROCESS_ID = "wf-cross-partition-bizid";
@@ -74,6 +79,9 @@ final class CrossPartitionMessageStartBusinessIdIT {
           .connectTo("task")
           .done();
 
+  // @TestZeebe(partitionCount) only drives how many partitions the framework awaits in the topology
+  // before the test runs; it does not configure the broker. The broker's partitions are set via
+  // setPartitionCount below (a TestStandaloneBroker defaults to a single partition).
   @TestZeebe(partitionCount = PARTITION_COUNT)
   private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker()
@@ -138,6 +146,36 @@ final class CrossPartitionMessageStartBusinessIdIT {
 
     // and once the holder's job exists (the uniqueness index on P_B is populated)
     RecordingExporter.jobRecords(JobIntent.CREATED).withType(JOB_TYPE).getFirst();
+
+    // a second message-start publish carrying the same Business ID (via a different correlationKey,
+    // so the local correlationKey lock does not short-circuit the cross-partition ask) is
+    // deduplicated: no second instance is started, regardless of where the second publish lands
+    final var secondPublish =
+        client
+            .newPublishMessageCommand()
+            .messageName(MESSAGE_NAME)
+            .correlationKey(SECOND_CORRELATION_KEY)
+            .businessId(BUSINESS_ID)
+            .timeToLive(Duration.ZERO)
+            .send()
+            .join();
+
+    final long activationsAfterSecondPublish =
+        RecordingExporter.records()
+            .limit(
+                r ->
+                    r.getIntent() == MessageIntent.EXPIRED
+                        && r.getKey() == secondPublish.getMessageKey())
+            .processInstanceRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .withElementType(BpmnElementType.PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .count();
+    assertThat(activationsAfterSecondPublish)
+        .as(
+            "the second message-start with the same Business ID is deduplicated; only one instance"
+                + " is ever started")
+        .isEqualTo(1L);
 
     // a CreateProcessInstance with the same Business ID is rejected across partitions
     assertThatThrownBy(
