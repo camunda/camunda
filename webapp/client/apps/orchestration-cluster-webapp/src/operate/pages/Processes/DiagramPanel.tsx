@@ -26,8 +26,13 @@ type ProcessDefinitionSelection =
 
 function isStatisticsPayload(
 	payload: unknown,
-): payload is {elementState: ElementState | 'completedEndEvents'; count: number} {
-	return typeof payload === 'object' && payload !== null && 'elementState' in payload && 'count' in payload;
+): payload is {elementState: ElementState | 'completedEndEvents'; count?: number} {
+	return (
+		typeof payload === 'object' &&
+		payload !== null &&
+		'elementState' in payload &&
+		(!('count' in payload) || typeof payload.count === 'number')
+	);
 }
 
 function StatisticsOverlays() {
