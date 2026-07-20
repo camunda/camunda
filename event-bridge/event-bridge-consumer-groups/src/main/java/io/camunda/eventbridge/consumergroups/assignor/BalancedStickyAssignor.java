@@ -21,7 +21,39 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TreeSet;
 
+/**
+ * Sticky least-loaded assignor for active partition ownership, extended (consumer-groups ADR 0006
+ * decision 1, retained by event-bridge-streaming ADR 0009) with standby placement: anti-affine to
+ * the partition's active owner, sticky across rebalances, bounded per-member ({@link
+ * #maxWarmingPartitionsPerMember}), and consulted for <b>ready-only promotion</b> — a partition
+ * whose previous active owner left the group is reassigned only to a member the caller reports as a
+ * ready standby for it ({@link PartitionAssignor.PartitionAssignmentContext#readyStandbys()});
+ * absent a ready standby, the partition is left unassigned this round rather than handed to an
+ * arbitrary least-loaded member (correctness over availability, mirroring the halt-instead-of-
+ * continue discipline event-bridge-streaming ADR 0009 decision 4 uses on the changelog-producer
+ * side). This gate only ever engages when the group has {@code standbyReplicas > 0}; a group with
+ * none behaves byte-for-byte as before standby support existed.
+ *
+ * <p>Anti-affinity here is member-level only (a partition's standbys never share a member with its
+ * active owner, nor with each other): the assignor has no failure-domain/rack input to place
+ * standbys away from the active's host or availability zone, since no such topology is modeled
+ * anywhere in this codebase today.
+ */
 public class BalancedStickyAssignor implements PartitionAssignor {
+
+  private final int maxWarmingPartitionsPerMember;
+
+  public BalancedStickyAssignor() {
+    this(Integer.MAX_VALUE);
+  }
+
+  /**
+   * @param maxWarmingPartitionsPerMember the warming cap (ADR 0006 decision 1); unbounded if <= 0.
+   */
+  public BalancedStickyAssignor(final int maxWarmingPartitionsPerMember) {
+    this.maxWarmingPartitionsPerMember =
+        maxWarmingPartitionsPerMember <= 0 ? Integer.MAX_VALUE : maxWarmingPartitionsPerMember;
+  }
 
   @Override
   public PartitionAssignment assign(final PartitionAssignmentContext context) {
@@ -54,18 +86,32 @@ public class BalancedStickyAssignor implements PartitionAssignor {
           }
         });
 
-    // Step 1: Preserve sticky assignments
+    // Every partition that had an active owner at all before this round (even one now gone) --
+    // distinguishes "orphaned by a departed active" (a failover, subject to ready-only promotion)
+    // from "never assigned before" (initial assignment, always filled immediately).
+    final var everHadOwner = new HashSet<TopicPartition>();
+    previous.values().forEach(everHadOwner::addAll);
+
+    // Step 1: Preserve sticky assignments; gate orphaned partitions behind ready-only promotion.
     final var unassigned = new TreeSet<TopicPartition>();
     for (final var partition : partitions) {
       final var owner = previousOwner.get(partition);
       if (owner != null) {
         assignment.get(owner).add(partition);
-      } else {
-        unassigned.add(partition);
+        continue;
       }
+      if (context.standbyReplicas() > 0 && everHadOwner.contains(partition)) {
+        final var readyMember = readyStandbyFor(partition, consumers, context.readyStandbys());
+        if (readyMember != null) {
+          assignment.get(readyMember).add(partition);
+        }
+        // No ready standby: leave unassigned this round rather than filling it below.
+        continue;
+      }
+      unassigned.add(partition);
     }
 
-    // Step 2: Assign remaining to least-loaded
+    // Step 2: Assign remaining (brand-new partitions, or standbys disabled) to least-loaded
     final var queue =
         new PriorityQueue<>(
             Comparator.<String>comparingInt(c -> assignment.get(c).size())
@@ -85,7 +131,91 @@ public class BalancedStickyAssignor implements PartitionAssignor {
     final var result = new HashMap<String, List<TopicPartition>>();
     assignment.forEach((c, parts) -> result.put(c, new ArrayList<>(parts)));
 
-    return new PartitionAssignment(result);
+    final var standbyResult =
+        context.standbyReplicas() <= 0
+            ? Map.<String, List<TopicPartition>>of()
+            : assignStandbys(context, consumers, partitions, result);
+
+    return new PartitionAssignment(result, standbyResult);
+  }
+
+  /** The first (sorted) consumer that reports readiness for {@code partition}, or {@code null}. */
+  private String readyStandbyFor(
+      final TopicPartition partition,
+      final List<String> consumers,
+      final Map<String, Set<TopicPartition>> readyStandbys) {
+    for (final var consumer : consumers) {
+      if (readyStandbys.getOrDefault(consumer, Set.of()).contains(partition)) {
+        return consumer;
+      }
+    }
+    return null;
+  }
+
+  private Map<String, List<TopicPartition>> assignStandbys(
+      final PartitionAssignmentContext context,
+      final List<String> consumers,
+      final List<TopicPartition> partitions,
+      final Map<String, List<TopicPartition>> activeResult) {
+
+    final var activeOwner = new HashMap<TopicPartition, String>();
+    activeResult.forEach((member, owned) -> owned.forEach(p -> activeOwner.put(p, member)));
+
+    final var previousStandbyOwner = new HashMap<TopicPartition, List<String>>();
+    context
+        .assignment()
+        .standbyAssignments()
+        .forEach(
+            (member, owned) ->
+                owned.forEach(
+                    p ->
+                        previousStandbyOwner
+                            .computeIfAbsent(p, k -> new ArrayList<>())
+                            .add(member)));
+
+    final Map<String, Set<TopicPartition>> standby = new HashMap<>();
+    consumers.forEach(c -> standby.put(c, new LinkedHashSet<>()));
+    final var warmingCount = new HashMap<String, Integer>();
+    consumers.forEach(c -> warmingCount.put(c, 0));
+
+    for (final var partition : partitions) {
+      final var active = activeOwner.get(partition);
+      final var candidates = new LinkedHashSet<String>(consumers);
+      candidates.remove(active);
+
+      final var chosen = new LinkedHashSet<String>();
+      // Sticky: keep previous standby holders that are still valid candidates.
+      previousStandbyOwner.getOrDefault(partition, List.of()).stream()
+          .filter(candidates::contains)
+          .filter(m -> warmingCount.get(m) < maxWarmingPartitionsPerMember)
+          .limit(context.standbyReplicas())
+          .forEach(chosen::add);
+
+      // Fill remaining slots least-loaded-first among the candidates not already chosen.
+      final var remaining = new ArrayList<>(candidates);
+      remaining.removeAll(chosen);
+      remaining.sort(
+          Comparator.<String>comparingInt(warmingCount::get)
+              .thenComparing(Comparator.naturalOrder()));
+      for (final var candidate : remaining) {
+        if (chosen.size() >= context.standbyReplicas()) {
+          break;
+        }
+        if (warmingCount.get(candidate) < maxWarmingPartitionsPerMember) {
+          chosen.add(candidate);
+        }
+      }
+
+      chosen.forEach(
+          member -> {
+            standby.get(member).add(partition);
+            warmingCount.merge(member, 1, Integer::sum);
+          });
+    }
+
+    final var result = new HashMap<String, List<TopicPartition>>();
+    standby.forEach((c, parts) -> result.put(c, new ArrayList<>(parts)));
+    return result;
   }
 
   private void rebalance(

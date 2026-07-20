@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -76,18 +77,44 @@ public final class RebalanceRecord extends UnifiedRecordValue {
     return this;
   }
 
-  /** The proposed target as {@code memberId → (topic, partition)s} (insertion order preserved). */
+  /** The proposed active target as {@code memberId → (topic, partition)s} (insertion order). */
   public Map<String, List<TopicPartition>> getMembers() {
     final var members = new LinkedHashMap<String, List<TopicPartition>>();
     membersProp.forEach(m -> members.put(m.getMemberId(), m.getPartitions()));
     return members;
   }
 
+  /** The proposed standby target as {@code memberId → (topic, partition)s}; empty when unset. */
+  public Map<String, List<TopicPartition>> getStandbyMembers() {
+    final var members = new LinkedHashMap<String, List<TopicPartition>>();
+    membersProp.forEach(m -> members.put(m.getMemberId(), m.getStandbyPartitions()));
+    return members;
+  }
+
+  /** Sets only the active target, leaving every member's standby target empty. */
   public RebalanceRecord setMembers(final Map<String, List<TopicPartition>> assignment) {
+    return setAssignments(assignment, Map.of());
+  }
+
+  /**
+   * Sets both the active and standby targets in one pass (consumer-groups ADR 0006 decision 1): one
+   * {@link MemberAssignment} entry per member id appearing in either map, so a member that is
+   * purely a standby (no active partitions) still gets an entry.
+   */
+  public RebalanceRecord setAssignments(
+      final Map<String, List<TopicPartition>> active,
+      final Map<String, List<TopicPartition>> standby) {
     membersProp.reset();
-    assignment.forEach(
-        (memberId, partitions) ->
-            membersProp.add().setMemberId(memberId).setPartitions(partitions));
+    final var memberIds = new LinkedHashSet<String>();
+    memberIds.addAll(active.keySet());
+    memberIds.addAll(standby.keySet());
+    memberIds.forEach(
+        memberId ->
+            membersProp
+                .add()
+                .setMemberId(memberId)
+                .setPartitions(active.getOrDefault(memberId, List.of()))
+                .setStandbyPartitions(standby.getOrDefault(memberId, List.of())));
     return this;
   }
 

@@ -40,13 +40,19 @@ public final class MemberState extends UnpackedObject implements DbValue {
   private final LongProperty assignedEpochProp = new LongProperty("assignedEpoch", 0L);
   private final ArrayProperty<TopicPartitionValue> targetPartitionsProp =
       new ArrayProperty<>("targetPartitions", TopicPartitionValue::new);
+  // The assignor's standby target for this member (consumer-groups ADR 0006 decision 1) -
+  // partitions it should warm via the changelog but does not fold. Empty for a member with no
+  // standby role, today's behavior for a row written before this field existed.
+  private final ArrayProperty<TopicPartitionValue> standbyTargetPartitionsProp =
+      new ArrayProperty<>("standbyTargetPartitions", TopicPartitionValue::new);
 
   public MemberState() {
-    super(4);
+    super(5);
     declareProperty(instanceIdProp)
         .declareProperty(memberEpochProp)
         .declareProperty(assignedEpochProp)
-        .declareProperty(targetPartitionsProp);
+        .declareProperty(targetPartitionsProp)
+        .declareProperty(standbyTargetPartitionsProp);
   }
 
   public long getAssignedEpoch() {
@@ -89,6 +95,19 @@ public final class MemberState extends UnpackedObject implements DbValue {
   public MemberState setTargetPartitions(final List<TopicPartition> partitions) {
     targetPartitionsProp.reset();
     partitions.forEach(p -> targetPartitionsProp.add().copyFrom(p));
+    return this;
+  }
+
+  /** The assignor's standby target for this member; empty for a member with no standby role. */
+  public List<TopicPartition> getStandbyTargetPartitions() {
+    return standbyTargetPartitionsProp.stream().map(TopicPartitionValue::toTopicPartition).toList();
+  }
+
+  public MemberState setStandbyTargetPartitions(final List<TopicPartition> partitions) {
+    standbyTargetPartitionsProp.reset();
+    if (partitions != null) {
+      partitions.forEach(p -> standbyTargetPartitionsProp.add().copyFrom(p));
+    }
     return this;
   }
 }

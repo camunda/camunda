@@ -11,6 +11,7 @@ import io.camunda.eventbridge.consumergroups.record.RebalanceRecord;
 import io.camunda.eventbridge.consumergroups.state.mutable.MutableConsumerGroupState;
 import io.camunda.eventbridge.stream.TypedEventApplier;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
+import java.util.List;
 
 /**
  * Applies {@code GROUP_REBALANCED}: advances the group's assignment epoch and sets each member's
@@ -48,6 +49,7 @@ public final class GroupRebalancedApplier
       state.untrackRebalanceDue(groupId, oldDueAt);
     }
 
+    final var standbyMembers = value.getStandbyMembers();
     value
         .getMembers()
         .forEach(
@@ -55,6 +57,7 @@ public final class GroupRebalancedApplier
               final var member = state.getMember(groupId, memberId);
               if (member != null) {
                 member.setTargetPartitions(partitions);
+                member.setStandbyTargetPartitions(standbyMembers.getOrDefault(memberId, List.of()));
                 state.putMember(groupId, memberId, member);
               }
             });

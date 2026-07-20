@@ -115,8 +115,10 @@ final class GroupLivenessTest {
       final String... memberIds) {
     final Map<String, MemberSnapshot> roster = new LinkedHashMap<>();
     for (final var memberId : memberIds) {
-      roster.put(memberId, new MemberSnapshot(memberId, null, groupEpoch, 1L, List.of()));
+      roster.put(
+          memberId, new MemberSnapshot(memberId, null, groupEpoch, 1L, List.of(), List.of()));
     }
-    return new GroupSnapshot("g", groupEpoch, assignmentEpoch, state, 0L, Map.of("t", 4), roster);
+    return new GroupSnapshot(
+        "g", groupEpoch, assignmentEpoch, state, 0L, Map.of("t", 4), 0, roster);
   }
 }

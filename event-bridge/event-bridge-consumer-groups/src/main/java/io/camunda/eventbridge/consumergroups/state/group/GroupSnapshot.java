@@ -26,6 +26,8 @@ import java.util.Map;
  *     only meaningful while {@code state == EMPTY}, {@code 0} otherwise
  * @param subscriptions the topics the group subscribes to with their partition counts ({@code topic
  *     → partitionCount}); the assignor balances all their partitions together
+ * @param standbyReplicas standby replicas per partition (consumer-groups ADR 0006 decision 1); 0 =
+ *     no standbys, fixed at group creation
  * @param members the current roster, {@code memberId → snapshot}
  */
 public record GroupSnapshot(
@@ -35,17 +37,22 @@ public record GroupSnapshot(
     GroupLifecycle state,
     long emptySince,
     Map<String, Integer> subscriptions,
+    int standbyReplicas,
     Map<String, MemberSnapshot> members) {
 
   public boolean isRebalancePending() {
     return assignmentEpoch < groupEpoch;
   }
 
-  /** One member's replicated identity, epoch, convergence epoch, and target partitions. */
+  /**
+   * One member's replicated identity, epoch, convergence epoch, active target partitions, and
+   * standby target partitions (empty for a member with no standby role).
+   */
   public record MemberSnapshot(
       String memberId,
       String instanceId,
       long memberEpoch,
       long assignedEpoch,
-      List<TopicPartition> targetPartitions) {}
+      List<TopicPartition> targetPartitions,
+      List<TopicPartition> standbyTargetPartitions) {}
 }

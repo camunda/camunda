@@ -75,7 +75,8 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
         newGroupEpoch,
         newGroupEpoch,
         subscriptions,
-        rebalanceDueAt);
+        rebalanceDueAt,
+        cmd.getStandbyReplicas());
     respondJoined(command, cmd.getMemberId(), newGroupEpoch);
   }
 
@@ -86,7 +87,8 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
       final long memberEpoch,
       final long groupEpoch,
       final Map<String, Integer> subscriptions,
-      final long rebalanceDueAt) {
+      final long rebalanceDueAt,
+      final int standbyReplicas) {
     final var event =
         new MembershipRecord()
             .setGroupId(command.getValue().getGroupId())
@@ -100,7 +102,11 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
             // retention deadline a revived EMPTY group carried.
             .setState(GroupLifecycle.PREPARING_REBALANCE)
             .setEmptySince(0L)
-            .setRebalanceDueAt(rebalanceDueAt);
+            .setRebalanceDueAt(rebalanceDueAt)
+            // Fixed at group creation only (the applier ignores this on a join to an existing
+            // group); carried on every join regardless so the first join of a group always
+            // supplies it.
+            .setStandbyReplicas(standbyReplicas);
     writers.state().appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_JOINED, event);
   }
 

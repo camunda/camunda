@@ -39,7 +39,11 @@ public final class MemberJoinedApplier
     var group = state.getGroup(groupId);
     final var oldDueAt = group == null ? 0L : group.getRebalanceDueAt();
     if (group == null) {
-      group = new GroupState().setSubscriptions(value.getSubscriptions()).setAssignmentEpoch(0);
+      group =
+          new GroupState()
+              .setSubscriptions(value.getSubscriptions())
+              .setAssignmentEpoch(0)
+              .setStandbyReplicas(value.getStandbyReplicas());
     }
     group.setGroupEpoch(value.getGroupEpoch());
     group.setState(value.getState());

@@ -25,10 +25,17 @@ public final class MemberAssignment extends ObjectValue {
   private final StringProperty memberIdProp = new StringProperty("memberId", "");
   private final ArrayProperty<TopicPartitionValue> partitionsProp =
       new ArrayProperty<>("partitions", TopicPartitionValue::new);
+  // The member's standby target within this proposal (consumer-groups ADR 0006 decision 1); empty
+  // for a group with no standby replicas configured, today's behavior for a record written before
+  // this field existed.
+  private final ArrayProperty<TopicPartitionValue> standbyPartitionsProp =
+      new ArrayProperty<>("standbyPartitions", TopicPartitionValue::new);
 
   public MemberAssignment() {
-    super(2);
-    declareProperty(memberIdProp).declareProperty(partitionsProp);
+    super(3);
+    declareProperty(memberIdProp)
+        .declareProperty(partitionsProp)
+        .declareProperty(standbyPartitionsProp);
   }
 
   public String getMemberId() {
@@ -47,6 +54,18 @@ public final class MemberAssignment extends ObjectValue {
   public MemberAssignment setPartitions(final List<TopicPartition> partitions) {
     partitionsProp.reset();
     partitions.forEach(p -> partitionsProp.add().copyFrom(p));
+    return this;
+  }
+
+  public List<TopicPartition> getStandbyPartitions() {
+    return standbyPartitionsProp.stream().map(TopicPartitionValue::toTopicPartition).toList();
+  }
+
+  public MemberAssignment setStandbyPartitions(final List<TopicPartition> standbyPartitions) {
+    standbyPartitionsProp.reset();
+    if (standbyPartitions != null) {
+      standbyPartitions.forEach(p -> standbyPartitionsProp.add().copyFrom(p));
+    }
     return this;
   }
 }
