@@ -34,4 +34,29 @@ public interface RebalanceListener {
    * the source when no local state exists for the partition.
    */
   default void onPartitionsAssigned(final Collection<TopicPartition> assigned) {}
+
+  /**
+   * Called when a partition enters this consumer's <b>standby</b> target (event-bridge-streaming
+   * ADR 0009 decision 6 / consumer-groups ADR 0006 decision 1) — the member should warm it (tail
+   * its changelog) without processing the source. Unlike {@link #onPartitionsAssigned}, a standby
+   * partition is never exclusively owned, so there is no cooperative revoke-before-assign handshake
+   * to protect: the coordinator delivers its standby target as a full set on every heartbeat, and
+   * the client reports only the delta against what it last reported here, mirroring {@link
+   * #onPartitionsAssigned}.
+   *
+   * <p><b>Wire status:</b> nothing calls this yet in production. The coordinator already computes
+   * and carries a member's standby target on its internal heartbeat response ({@code
+   * HeartbeatResponse#getStandbyAssignment()}), but the client-facing gateway wire contract ({@code
+   * ConsumerHeartbeatResponse}, event-bridge-api-proto) has no field for it, so a real heartbeat
+   * cannot deliver it here today. This callback (and {@link #onStandbyPartitionsRevoked}) exists so
+   * the runtime has a stable, unit-tested seam to react to once that wire field lands.
+   */
+  default void onStandbyPartitionsAssigned(final Collection<TopicPartition> assigned) {}
+
+  /**
+   * Called when a partition leaves this consumer's standby target — see {@link
+   * #onStandbyPartitionsAssigned} for the delta/full-target semantics and the current wire-status
+   * caveat.
+   */
+  default void onStandbyPartitionsRevoked(final Collection<TopicPartition> revoked) {}
 }

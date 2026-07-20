@@ -15,6 +15,8 @@ import io.camunda.eventbridge.streaming.MessageDeserializer;
 import io.camunda.eventbridge.streaming.RecordFilter;
 import io.camunda.eventbridge.streaming.Task;
 import io.camunda.eventbridge.streaming.TaskFactory;
+import io.camunda.eventbridge.streaming.changelog.PartitionRoleController;
+import io.camunda.eventbridge.streaming.changelog.PartitionRoleControllerFactory;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -57,6 +59,33 @@ import org.slf4j.LoggerFactory;
  * task whose shard restored no local state rebuilds it from the source start (change-log-free
  * handoff), skipping the stale pre-seek records of the current poll batch.
  *
+ * <p><b>Role-aware dispatch</b> (event-bridge-streaming ADR 0009 decision 6 / consumer-groups ADR
+ * 0006 decision 1), active only when the runtime is built with a {@link
+ * PartitionRoleControllerFactory}: a partition's {@link PartitionRoleController} — and the store it
+ * owns — survives every role flip; only the driver on top of it changes.
+ *
+ * <ul>
+ *   <li>A new STANDBY-target partition ({@code onStandbyPartitionsAssigned}) opens its controller
+ *       and only tails its changelog ({@link #pollStandbies()}) — no {@link PartitionActor}, no
+ *       source fetch.
+ *   <li>A new ACTIVE assignment ({@code onPartitionsAssigned}) reuses the partition's controller if
+ *       one is already warming as a standby, or opens one fresh, then promotes it ({@link
+ *       PartitionRoleController#promote()}) — the identical cold-rebuild-then-fold path either way,
+ *       so a promoted fold cannot tell itself apart from a restart. Only now does a {@link
+ *       PartitionActor} exist for the partition, wrapping {@link
+ *       PartitionRoleController#activeTask()}.
+ *   <li>An ACTIVE revoke ({@code onPartitionsRevoked}) stops the actor cooperatively as always
+ *       (final cut, then close); once it has stopped, the controller demotes ({@link
+ *       PartitionRoleController#demote()} — {@link Task#closeKeepingStores()}, store left open) and
+ *       either keeps tailing as a standby (still in this member's standby target) or is fully
+ *       closed (no longer assigned in any role).
+ *   <li>A STANDBY-target revoke ({@code onStandbyPartitionsRevoked}) for a partition not driven
+ *       ACTIVE here closes its controller outright.
+ * </ul>
+ *
+ * Without a {@link PartitionRoleControllerFactory} configured, none of the above runs: a partition
+ * materializes straight through its {@link TaskFactory} exactly as before, byte for byte.
+ *
  * @param <R> the decoded record type
  */
 public final class SourceLoop<R> {
@@ -83,9 +112,22 @@ public final class SourceLoop<R> {
   private final Duration pollTimeout;
   private final long errorBackoffMs;
   private final BooleanSupplier running;
+  // Nullable: role-aware dispatch (see the class javadoc) runs only when the application opts in.
+  private final PartitionRoleControllerFactory<R> roleControllerFactory;
 
   private final Map<Integer, PartitionActor<R>> actors = new HashMap<>();
   private final Set<Integer> revoking = new HashSet<>();
+
+  // Role-aware dispatch state (unused unless roleControllerFactory != null). A partition present in
+  // roleControllers is this member's controller for it in whichever role it currently drives; an
+  // ACTIVE entry also has a PartitionActor in `actors` wrapping the same controller's activeTask().
+  private final Map<Integer, PartitionRoleController<?, R>> roleControllers = new HashMap<>();
+  // This member's last-known standby target (a full set delivered by the coordinator, ADR 0009
+  // decision 7), used only to decide — once a revoked ACTIVE partition's final cut completes —
+  // whether to demote it to STANDBY (still in the target) or fully release it.
+  private final Set<Integer> standbyTarget = new HashSet<>();
+  private final Queue<Integer> newlyStandbyAssigned = new ConcurrentLinkedQueue<>();
+  private final Queue<Integer> newlyStandbyRevoked = new ConcurrentLinkedQueue<>();
 
   // Partitions paused on the consumer because their queue refused an offer, and the decoded
   // entries parked while paused (in offset order). Only the current poll batch can still carry
@@ -119,7 +161,8 @@ public final class SourceLoop<R> {
       final int maxPoll,
       final Duration pollTimeout,
       final long errorBackoffMs,
-      final BooleanSupplier running) {
+      final BooleanSupplier running,
+      final PartitionRoleControllerFactory<R> roleControllerFactory) {
     this.consumer = consumer;
     this.sourceTopic = sourceTopic;
     this.instanceId = instanceId;
@@ -133,6 +176,7 @@ public final class SourceLoop<R> {
     this.pollTimeout = pollTimeout;
     this.errorBackoffMs = errorBackoffMs;
     this.running = running;
+    this.roleControllerFactory = roleControllerFactory;
   }
 
   /**
@@ -151,6 +195,16 @@ public final class SourceLoop<R> {
           public void onPartitionsRevoked(final Collection<TopicPartition> partitions) {
             enqueue(newlyRevoked, partitions);
           }
+
+          @Override
+          public void onStandbyPartitionsAssigned(final Collection<TopicPartition> partitions) {
+            enqueue(newlyStandbyAssigned, partitions);
+          }
+
+          @Override
+          public void onStandbyPartitionsRevoked(final Collection<TopicPartition> partitions) {
+            enqueue(newlyStandbyRevoked, partitions);
+          }
         });
   }
 
@@ -161,6 +215,7 @@ public final class SourceLoop<R> {
         applyRebalance();
         reapStoppedRevoked();
         resumePaused();
+        pollStandbies();
         pollAndRoute();
       } catch (final InterruptedException e) {
         Thread.currentThread().interrupt();
@@ -178,6 +233,8 @@ public final class SourceLoop<R> {
   }
 
   private void applyRebalance() {
+    applyStandbyRevocations();
+    applyStandbyAssignments();
     for (Integer partition; (partition = newlyRevoked.poll()) != null; ) {
       final PartitionActor<R> actor = actors.get(partition);
       if (actor != null && revoking.add(partition)) {
@@ -198,6 +255,39 @@ public final class SourceLoop<R> {
     }
   }
 
+  /**
+   * Drains standby-target revocations (a full-target delta, event-bridge-streaming ADR 0009
+   * decision 6): a partition whose controller is still in the STANDBY role — i.e. not driven ACTIVE
+   * here — is fully closed, since nothing on this member needs it any longer. A partition driven
+   * ACTIVE here is left untouched; its standby-target membership matters only once its eventual
+   * revoke completes (see {@link #demoteOrRelease}).
+   */
+  private void applyStandbyRevocations() {
+    for (Integer partition; (partition = newlyStandbyRevoked.poll()) != null; ) {
+      standbyTarget.remove(partition);
+      final PartitionRoleController<?, R> controller = roleControllers.get(partition);
+      if (controller != null && controller.role() == PartitionRoleController.Role.STANDBY) {
+        closeController(partition, controller);
+      }
+    }
+  }
+
+  /**
+   * Drains standby-target assignments: a partition new to this member's standby target opens its
+   * controller in the STANDBY role — warming from the changelog start, or resuming from an intact
+   * local position — and is never promoted here. A partition this member already drives (in either
+   * role) is left alone; its controller already exists.
+   */
+  private void applyStandbyAssignments() {
+    for (Integer partition; (partition = newlyStandbyAssigned.poll()) != null; ) {
+      standbyTarget.add(partition);
+      if (!roleControllers.containsKey(partition)) {
+        roleControllers.put(partition, roleControllerFactory.startAsStandby(partition));
+        LOG.info("Source loop '{}' warming standby for partition {}", instanceId, partition);
+      }
+    }
+  }
+
   /** Reaps revoked partitions whose actor has finished its final commit and closed. */
   private void reapStoppedRevoked() throws InterruptedException {
     for (final Integer partition : new ArrayList<>(revoking)) {
@@ -205,8 +295,99 @@ public final class SourceLoop<R> {
       if (actor == null || actor.awaitStopped(0)) {
         actors.remove(partition);
         revoking.remove(partition);
+        demoteOrRelease(partition);
         LOG.info("Source loop '{}' released partition {}", instanceId, partition);
       }
+    }
+  }
+
+  /**
+   * Once a revoked ACTIVE partition's actor has stopped: if role-aware dispatch is off, or this
+   * partition never had a controller, there is nothing further to do (today's behavior). Otherwise
+   * hands the controller back to the STANDBY role ({@link PartitionRoleController#demote()} —
+   * {@link Task#closeKeepingStores()}, the store stays open) and either keeps it warming (still in
+   * this member's standby target) or fully closes it (no role left to play here).
+   */
+  private void demoteOrRelease(final int partition) {
+    final PartitionRoleController<?, R> controller = roleControllers.get(partition);
+    if (controller == null) {
+      return;
+    }
+    if (controller.role() == PartitionRoleController.Role.ACTIVE) {
+      controller.demote();
+    }
+    if (standbyTarget.contains(partition)) {
+      LOG.info("Source loop '{}' demoted partition {} to standby", instanceId, partition);
+    } else {
+      closeController(partition, controller);
+    }
+  }
+
+  /**
+   * Closes a controller, defensively demoting it first if it is still ACTIVE. {@link
+   * PartitionRoleController#close()} calls {@link Task#close()} — the FULL close, not {@link
+   * Task#closeKeepingStores()} — whenever a task is present, and a task built to participate in
+   * role changes closes its own provider from {@link Task#close()} exactly as it always has (see
+   * e.g. {@code ProjectionStageTask#close()}); closing an ACTIVE controller directly would
+   * therefore close the provider twice — once from that {@code close()}, once more from {@link
+   * PartitionRoleController#close()} itself. Demoting first ({@link
+   * PartitionRoleController#demote()} — {@link Task#closeKeepingStores()}, provider left open)
+   * makes {@code role()} STANDBY (task {@code null}) before this ever calls {@code close()}, so the
+   * provider closes exactly once. Every caller here reaches this already-demoted in practice
+   * ({@link #demoteOrRelease} demotes before releasing, {@link #applyStandbyRevocations} only ever
+   * touches a STANDBY controller) except {@link #closeRoleControllers}, shutdown's true teardown of
+   * whatever role a controller was still in.
+   */
+  private void closeController(
+      final int partition, final PartitionRoleController<?, R> controller) {
+    if (controller.role() == PartitionRoleController.Role.ACTIVE) {
+      controller.demote();
+    }
+    try {
+      controller.close();
+    } catch (final Exception e) {
+      LOG.warn("Failed to close role controller for partition {}", partition, e);
+    }
+    roleControllers.remove(partition);
+  }
+
+  /**
+   * Polls every controller currently in the STANDBY role once (event-bridge-streaming ADR 0009
+   * decision 6): tails its changelog and applies whatever complete cuts have accumulated since the
+   * last poll. Runs on the source thread alongside the source topic's own poll — a standby never
+   * fetches or folds the source, so this is cheap relative to {@link #pollAndRoute()}. A no-op when
+   * no {@link PartitionRoleControllerFactory} is configured (no controllers exist at all).
+   */
+  private void pollStandbies() {
+    if (roleControllers.isEmpty()) {
+      return;
+    }
+    for (final Map.Entry<Integer, PartitionRoleController<?, R>> entry :
+        roleControllers.entrySet()) {
+      final PartitionRoleController<?, R> controller = entry.getValue();
+      if (controller.role() == PartitionRoleController.Role.STANDBY) {
+        try {
+          controller.pollStandby();
+        } catch (final RuntimeException e) {
+          LOG.warn(
+              "Source loop '{}' failed polling standby partition {}",
+              instanceId,
+              entry.getKey(),
+              e);
+        }
+      }
+    }
+  }
+
+  /**
+   * Closes every remaining role controller regardless of role — called once on runtime shutdown, a
+   * true teardown rather than a role flip (unlike {@link #demoteOrRelease}, an ACTIVE controller
+   * here is fully closed, not demoted: nothing will drive it further in this process).
+   */
+  public void closeRoleControllers() {
+    for (final Map.Entry<Integer, PartitionRoleController<?, R>> entry :
+        new ArrayList<>(roleControllers.entrySet())) {
+      closeController(entry.getKey(), entry.getValue());
     }
   }
 
@@ -347,6 +528,12 @@ public final class SourceLoop<R> {
    * Materializes a partition's task, submits its actor, and registers it. A task whose shard
    * restored no local state is rebuilt from the source start (seek + queue reset), and the
    * partition is noted so this poll's stale pre-seek records for it are skipped.
+   *
+   * <p>Role-aware (see the class javadoc): when a {@link PartitionRoleControllerFactory} is
+   * configured, the task comes from the partition's {@link PartitionRoleController} instead of
+   * {@link #taskFactory} — reused if the partition is already warming as a standby, opened fresh
+   * otherwise — immediately {@link PartitionRoleController#promote}d either way, so the fold sees
+   * the identical cold-rebuild-then-fold sequence regardless of which case this was.
    */
   private PartitionActor<R> materialize(final int partitionId) {
     // A fresh materialization must not inherit pause state from a previous incarnation (the
@@ -355,11 +542,23 @@ public final class SourceLoop<R> {
     if (paused.remove(partitionId)) {
       consumer.resume(List.of(new TopicPartition(sourceTopic, partitionId)));
     }
-    // The ownership epoch reads through to the consumer's live membership: a task samples it at
-    // each commit barrier, so a fenced-and-rejoined member stamps its new epoch from then on.
-    final Task<R> task = taskFactory.create(partitionId, consumer::memberEpoch);
-    task.init();
-    final long baseline = task.restore();
+    final Task<R> task;
+    final long baseline;
+    if (roleControllerFactory != null) {
+      PartitionRoleController<?, R> controller = roleControllers.get(partitionId);
+      if (controller == null) {
+        controller = roleControllerFactory.startAsStandby(partitionId);
+        roleControllers.put(partitionId, controller);
+      }
+      baseline = controller.promote();
+      task = controller.activeTask();
+    } else {
+      // The ownership epoch reads through to the consumer's live membership: a task samples it at
+      // each commit barrier, so a fenced-and-rejoined member stamps its new epoch from then on.
+      task = taskFactory.create(partitionId, consumer::memberEpoch);
+      task.init();
+      baseline = task.restore();
+    }
     final PartitionQueue<R> queue = new PartitionQueue<>(queueCapacity);
     if (baseline == Task.NO_OFFSET) {
       // Reassigned to a member with no local state for it: replay from the source start to rebuild

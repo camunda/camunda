@@ -893,6 +893,25 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
 
   @Override
   public void close() {
+    closeKeepingStores();
+    try {
+      provider.close();
+    } catch (final Exception e) {
+      LOG.warn("Failed to close state provider for facts partition {}", partition, e);
+    }
+  }
+
+  /**
+   * Releases everything this task owns EXCEPT {@link #provider} (event-bridge-streaming ADR 0009
+   * decision 6 / consumer-groups ADR 0006 decision 1's demotion lifecycle): the topology, the
+   * serving-store connection and this task's own meter registrations all get torn down and
+   * re-created on the next promotion exactly as they would on an ordinary restart, but the RocksDB
+   * provider stays open for the {@link io.camunda.eventbridge.streaming.changelog.ChangelogApplier}
+   * that takes over driving it as a standby. {@link #close()} is this plus the provider close — the
+   * only thing it adds.
+   */
+  @Override
+  public void closeKeepingStores() {
     topology.close();
     try {
       // Drain the rows the mergers' close converged (plus anything staged since the last commit) —
@@ -902,11 +921,6 @@ public final class AggregationStageTask implements Task<ShuffleEnvelope>, AutoCl
       datasetStore.close();
     } catch (final Exception e) {
       LOG.warn("Failed to close serving store for facts partition {}", partition, e);
-    }
-    try {
-      provider.close();
-    } catch (final Exception e) {
-      LOG.warn("Failed to close state provider for facts partition {}", partition, e);
     }
     // Deregister this task's meters so a re-opened partition task's registrations are not
     // silently ignored and this task becomes collectable (the lag gauge holds a strong reference).

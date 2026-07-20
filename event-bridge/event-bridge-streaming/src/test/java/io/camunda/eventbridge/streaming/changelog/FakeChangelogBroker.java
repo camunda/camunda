@@ -20,6 +20,8 @@ import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.EventBridgeClient.BatchPublisher;
 import io.camunda.eventbridge.client.FetchResult;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -37,6 +39,11 @@ final class FakeChangelogBroker {
   private final ByteArrayOutputStream log = new ByteArrayOutputStream();
   private long entryCount;
   final EventBridgeClient client = mock(EventBridgeClient.class);
+  // Every position a fetchFromTopic call requested, in call order — lets a multi-member test
+  // assert an applier warmed once and never re-fetched from the changelog start (a torn-tail
+  // recourse or a spurious cold restart would show up as a later, unexpected zero).
+  private final List<Long> fetchPositionsRequested =
+      Collections.synchronizedList(new ArrayList<>());
 
   FakeChangelogBroker() {
     when(client.newBatch())
@@ -58,7 +65,16 @@ final class FakeChangelogBroker {
               return publisher;
             });
     when(client.fetchFromTopic(any(), anyInt(), anyLong(), anyInt()))
-        .thenAnswer(invocation -> CompletableFuture.completedFuture(fetch()));
+        .thenAnswer(
+            invocation -> {
+              fetchPositionsRequested.add(invocation.getArgument(2, Long.class));
+              return CompletableFuture.completedFuture(fetch());
+            });
+  }
+
+  /** Every position a {@code fetchFromTopic} call requested so far, in call order. */
+  List<Long> fetchPositionsRequested() {
+    return List.copyOf(fetchPositionsRequested);
   }
 
   /** Appends {@code entries} (no marker) directly — used to simulate a torn tail. */

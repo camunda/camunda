@@ -9,6 +9,7 @@ package io.camunda.eventbridge.streaming;
 
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.EventBridgeClient;
+import io.camunda.eventbridge.streaming.changelog.PartitionRoleControllerFactory;
 import io.camunda.eventbridge.streaming.internals.CutMetrics;
 import io.camunda.eventbridge.streaming.internals.Partition;
 import io.camunda.eventbridge.streaming.internals.PartitionActor;
@@ -95,6 +96,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final ActorScheduler injectedScheduler;
   private final ExecutorService injectedSinkExecutor;
   private final ThreadFactory sinkThreadFactory;
+  private final PartitionRoleControllerFactory<R> roleControllerFactory;
 
   private volatile boolean running;
   private volatile Consumer consumer;
@@ -127,6 +129,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
         builder.sinkThreadFactory != null
             ? builder.sinkThreadFactory
             : defaultSinkThreadFactory(instanceId);
+    roleControllerFactory = builder.roleControllerFactory;
   }
 
   public static <R> Builder<R> builder() {
@@ -236,7 +239,8 @@ public final class StreamRuntime<R> implements AutoCloseable {
             maxPoll,
             pollTimeout,
             errorBackoffMs,
-            () -> running);
+            () -> running,
+            roleControllerFactory);
 
     // Register before the first heartbeat so the initial assignment is observed. The callback runs
     // on the heartbeat thread and only records the delta; the source stage applies it.
@@ -247,17 +251,15 @@ public final class StreamRuntime<R> implements AutoCloseable {
 
     source.run();
 
-    shutdown(
-        source.partitionActors(),
-        ownsScheduler ? scheduler : null,
-        ownsSinkExecutor ? sinkExecutor : null);
+    shutdown(source, ownsScheduler ? scheduler : null, ownsSinkExecutor ? sinkExecutor : null);
     LOG.info("Stream runtime '{}' stopped", instanceId);
   }
 
   private void shutdown(
-      final Collection<PartitionActor<R>> partitionActors,
+      final SourceLoop<R> source,
       final ActorScheduler ownedScheduler,
       final ExecutorService ownedSinkExecutor) {
+    final Collection<PartitionActor<R>> partitionActors = source.partitionActors();
     // Ask each actor to make its final cut and close, then wait — the actors need the scheduler
     // and sink executor alive to do it, so tear those down only afterwards.
     partitionActors.forEach(PartitionActor::requestStop);
@@ -272,6 +274,10 @@ public final class StreamRuntime<R> implements AutoCloseable {
         break;
       }
     }
+    // Any surviving role controller (event-bridge-streaming ADR 0009 decision 6) — an ACTIVE
+    // shard just stopped above, or a still-warming standby — is torn down fully here: this is
+    // process shutdown, not a role flip, so nothing demotes; every controller simply closes.
+    source.closeRoleControllers();
     if (ownedScheduler != null) {
       try {
         ownedScheduler.close();
@@ -340,6 +346,7 @@ public final class StreamRuntime<R> implements AutoCloseable {
     private ActorScheduler actorScheduler;
     private ExecutorService sinkExecutor;
     private ThreadFactory sinkThreadFactory;
+    private PartitionRoleControllerFactory<R> roleControllerFactory;
 
     private Builder() {}
 
@@ -548,6 +555,21 @@ public final class StreamRuntime<R> implements AutoCloseable {
         throw new IllegalArgumentException("maxProcessBatch must be >= 1, was " + maxProcessBatch);
       }
       this.maxProcessBatch = maxProcessBatch;
+      return this;
+    }
+
+    /**
+     * Opts this runtime into role-aware dispatch (event-bridge-streaming ADR 0009 decision 6 /
+     * consumer-groups ADR 0006 decision 1): partitions in this member's standby target warm by
+     * tailing their changelog instead of folding the source, and an ACTIVE assignment promotes a
+     * warmed standby's controller in place rather than tearing down and rebuilding — see {@link
+     * io.camunda.eventbridge.streaming.internals.SourceLoop}'s class javadoc for the exact
+     * dispatch. Optional; when unset (the default) every partition materializes straight through
+     * {@link #taskFactory}, exactly as before this option existed.
+     */
+    public Builder<R> roleControllerFactory(
+        final PartitionRoleControllerFactory<R> roleControllerFactory) {
+      this.roleControllerFactory = roleControllerFactory;
       return this;
     }
 
