@@ -18,6 +18,7 @@ import {
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   defaultAssertionOptions,
+  extendedAssertionOptions,
   uniqueBusinessId,
 } from '../../../../utils/constants';
 import {correlateMessageRequiredFields} from '../../../../utils/beans/requestBeans';
@@ -55,10 +56,13 @@ async function correlateStartMessage(
   });
 }
 
-// The message-start subscription is opened asynchronously after deployment, so the first
-// correlate can race ahead of it and be rejected NOT_FOUND ("no subscription found"). Retry
-// until the subscription exists and the correlate creates the instance. A rejected correlate
-// creates nothing, so exactly one instance results from the first successful correlate.
+// The message-start subscription opens synchronously on the deployment's origin partition but is
+// distributed to the other partitions asynchronously. A correlate carries no TTL (unlike a
+// buffered publish), so it is rejected NOT_FOUND ("but none was found") whenever it reaches a
+// partition where the subscription is not yet live. Under heavy parallel load this distribution
+// lag can exceed the default 30s window, so poll with the extended (loaded-cluster) window until
+// the subscription is live. A rejected correlate creates no instance and the loop stops at the
+// first success, so exactly one instance results.
 async function correlateStartMessageUntilCreated(
   request: APIRequestContext,
   businessId: string,
@@ -68,7 +72,7 @@ async function correlateStartMessageUntilCreated(
     const res = await correlateStartMessage(request, businessId);
     await assertStatusCode(res, 200);
     created = await res.json();
-  }).toPass(defaultAssertionOptions);
+  }).toPass(extendedAssertionOptions);
   return created;
 }
 
@@ -158,9 +162,8 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
     };
 
     await test.step('Correlate message and cancel the created instance', async () => {
-      const res = await correlateStartMessage(request, businessId);
-      await assertStatusCode(res, 200);
-      localState['firstKey'] = (await res.json()).processInstanceKey;
+      const json = await correlateStartMessageUntilCreated(request, businessId);
+      localState['firstKey'] = json.processInstanceKey;
       await expect(async () => {
         const json = await searchInstancesByBusinessId(request, businessId);
         expect(json.page.totalItems).toBe(1);
@@ -170,8 +173,8 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
 
     await test.step('Correlate again with the same Business ID after cancellation', async () => {
       // Wait until the cancelled holder is no longer ACTIVE so the Business ID lock is released,
-      // then correlate exactly once. Retrying the correlate inside `toPass` could create multiple
-      // instances and leak resources.
+      // then correlate. The retry only re-fires on a NOT_FOUND rejection (no instance created), so
+      // it cannot leak instances and stops at the first successful correlate.
       await expect(async () => {
         const res = await request.post(
           buildUrl(PROCESS_INSTANCE_SEARCH_ENDPOINT),
@@ -185,11 +188,9 @@ test.describe.parallel('Correlate Message - Business ID API', () => {
         expect(json.page.totalItems).toBe(0);
       }).toPass(defaultAssertionOptions);
 
-      const res = await correlateStartMessage(request, businessId);
-      await assertStatusCode(res, 200);
-      const key = (await res.json()).processInstanceKey;
-      expect(key).not.toBe(localState['firstKey']);
-      localState['secondKey'] = key;
+      const json = await correlateStartMessageUntilCreated(request, businessId);
+      expect(json.processInstanceKey).not.toBe(localState['firstKey']);
+      localState['secondKey'] = json.processInstanceKey;
     });
 
     await cancelProcessInstance(localState['secondKey']);
