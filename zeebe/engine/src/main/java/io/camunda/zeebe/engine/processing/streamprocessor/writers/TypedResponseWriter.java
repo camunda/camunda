@@ -18,7 +18,7 @@ public interface TypedResponseWriter {
 
   void writeRejectedResponseOnCommand(TypedRecord<?> command, RejectionType type, String reason);
 
-  void writeRejection(
+  void writeRejectedResponseOnCommand(
       final TypedRecord<?> command,
       final RejectionType type,
       final String reason,
