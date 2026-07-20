@@ -108,9 +108,20 @@ jobs:
       secondary-storage-type: ${{ needs.sanitize-branch-name.outputs.storage-type }}
       reuse-tag: ${{ inputs.reuse-tag }}
 
+  verify-install:
+    name: Verify Install
+    needs: [sanitize-branch-name, create-benchmark]
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/camunda-verify-load-test.yml
+    secrets: inherit
+    with:
+      namespace: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+
   await-benchmark:
     name: Await Benchmark
-    needs: create-benchmark
+    needs: verify-install
     runs-on: ubuntu-latest
     permissions: {}
     steps:
