@@ -468,6 +468,18 @@
 					"removeFilter": "Supprimer le filtre {{label}}",
 					"startDatePopoverTitle": "Filtrer les instances par date de début",
 					"endDatePopoverTitle": "Filtrer les instances par date de fin"
+				},
+				"diagramHeader": {
+					"title": "Processus",
+					"processName": "Nom du processus",
+					"processId": "ID du processus",
+					"versionTag": "Étiquette de version"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Plusieurs versions sont sélectionnées pour le processus \"{{name}}\"",
+					"selectSingleVersion": "Pour voir un diagramme, sélectionnez une seule version",
+					"noProcessSelected": "Aucun processus n'est sélectionné",
+					"selectProcessInFilters": "Pour voir un diagramme, sélectionnez un processus dans le panneau des filtres"
 				}
 			},
 			"decisions": {
