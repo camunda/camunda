@@ -273,7 +273,11 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   // backup range tracking
   CHECKPOINTS(140, PARTITION_LOCAL),
-  BACKUP_RANGES(141, PARTITION_LOCAL);
+  BACKUP_RANGES(141, PARTITION_LOCAL),
+
+  // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
+  // definition being deleted while it has running instances. Lives on the aggregating partition.
+  DRAINING_PROCESS_DELETE(159, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
