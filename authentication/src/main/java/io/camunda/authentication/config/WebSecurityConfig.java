@@ -1044,7 +1044,13 @@ public class WebSecurityConfig {
                               "/tasklist/assets/**",
                               "/tasklist/client-config.js",
                               "/tasklist/custom.css",
-                              "/tasklist/favicon.ico")
+                              "/tasklist/favicon.ico",
+                              "/operate/assets/**",
+                              "/operate/client-config.js",
+                              "/operate/custom.css",
+                              "/operate/favicon.ico",
+                              "/admin/assets/**",
+                              "/admin/favicon.ico")
                           .permitAll()
                           .anyRequest()
                           .authenticated())

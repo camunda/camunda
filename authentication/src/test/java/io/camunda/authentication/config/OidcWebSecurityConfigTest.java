@@ -19,6 +19,7 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
@@ -173,6 +174,41 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
     // then
     assertThat(testResult).hasStatusOk();
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        // Tasklist
+        "/tasklist/assets/app.css",
+        "/tasklist/client-config.js",
+        "/tasklist/custom.css",
+        "/tasklist/favicon.ico",
+        // Operate
+        "/operate/assets/app.css",
+        "/operate/client-config.js",
+        "/operate/custom.css",
+        "/operate/favicon.ico",
+        // Admin
+        "/admin/assets/app.js",
+        "/admin/favicon.ico"
+      })
+  public void shouldNotRequireAuthenticationForPublicWebappStaticAssets(final String assetPath) {
+    // The webapp SPAs (Tasklist, Operate, Admin) serve their static assets under these paths; they
+    // must be deliverable to an unauthenticated (e.g. expired-session) browser so the SPA can load
+    // and then redirect to login via its graceful API-401 handling. Otherwise a lazily-loaded chunk
+    // fetched after the session expires is redirected/401'd, the module load fails, and the SPA
+    // renders a fatal error boundary ("Unable to preload CSS" / "Failed to fetch dynamically
+    // imported module").
+
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester.get().uri("https://localhost" + assetPath).exchange();
+
+    // then: permitted -> passes the security filter (200 if served, 404 with no handler in this
+    // test slice); it must never be 401, which is what a protected webapp path returns.
+    assertThat(testResult.getResponse().getStatus())
+        .isIn(HttpStatus.OK.value(), HttpStatus.NOT_FOUND.value());
   }
 
   @Test
