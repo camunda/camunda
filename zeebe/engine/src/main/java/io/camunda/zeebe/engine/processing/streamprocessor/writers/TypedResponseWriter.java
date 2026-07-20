@@ -40,7 +40,7 @@ public interface TypedResponseWriter {
   void writeEventOnCommand(
       long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
 
-  void writeResponse(
+  void writeAcceptedResponse(
       long eventKey,
       Intent eventState,
       UnpackedObject eventValue,

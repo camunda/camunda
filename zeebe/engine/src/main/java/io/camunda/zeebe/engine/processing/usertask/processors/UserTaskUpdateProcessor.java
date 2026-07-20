@@ -123,7 +123,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
     switch (request.valueType()) {
       case USER_TASK -> {
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
-        responseWriter.writeResponse(
+        responseWriter.writeAcceptedResponse(
             userTaskKey,
             UserTaskIntent.UPDATED,
             userTaskRecord,
@@ -161,7 +161,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
             variableDocumentRecord,
             m -> m.operationReference(request.operationReference()));
 
-        responseWriter.writeResponse(
+        responseWriter.writeAcceptedResponse(
             variableDocumentKey,
             VariableDocumentIntent.UPDATED,
             variableDocumentRecord,
