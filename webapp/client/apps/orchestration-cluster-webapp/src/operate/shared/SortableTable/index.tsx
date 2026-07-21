@@ -7,7 +7,16 @@
  */
 
 import {useRef} from 'react';
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@carbon/react';
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+	TableSelectAll,
+	TableSelectRow,
+} from '@carbon/react';
 import {TableContainer, ScrollContainer, LoadingOverlay, EmptyStateContainer} from './styled';
 import {ColumnHeader} from './ColumnHeader';
 import {InfiniteScroller} from '../InfiniteScroller/InfiniteScroller';
@@ -34,6 +43,14 @@ type Props<TRow> = {
 	onVerticalScrollStartReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollStartReach'];
 	onVerticalScrollEndReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollEndReach'];
 	'data-testid'?: string;
+	selectionType?: 'checkbox';
+	selectAllLabel?: string;
+	selectRowLabel?: (rowId: string) => string;
+	checkIsAllSelected?: () => boolean;
+	checkIsIndeterminate?: () => boolean;
+	checkIsRowSelected?: (rowId: string) => boolean;
+	onSelectAll?: () => void;
+	onSelect?: (rowId: string) => void;
 };
 
 function SortableTable<TRow>({
@@ -47,26 +64,48 @@ function SortableTable<TRow>({
 	onVerticalScrollStartReach,
 	onVerticalScrollEndReach,
 	'data-testid': dataTestId,
+	selectionType,
+	selectAllLabel,
+	selectRowLabel,
+	checkIsAllSelected,
+	checkIsIndeterminate,
+	checkIsRowSelected,
+	onSelectAll,
+	onSelect,
 }: Props<TRow>) {
 	const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
 	const hasScrollHandlers = onVerticalScrollStartReach !== undefined || onVerticalScrollEndReach !== undefined;
+	const isSelectable = selectionType === 'checkbox';
+	const columnCount = columns.length + (isSelectable ? 1 : 0);
 
 	const tableBody = (
 		<TableBody>
 			{rows.length === 0 && emptyState !== undefined ? (
 				<TableRow>
-					<TableCell colSpan={columns.length}>
+					<TableCell colSpan={columnCount}>
 						<EmptyStateContainer>{emptyState}</EmptyStateContainer>
 					</TableCell>
 				</TableRow>
 			) : (
-				rows.map((row) => (
-					<TableRow key={rowKey(row)}>
-						{columns.map((col) => (
-							<TableCell key={col.key}>{col.render(row)}</TableCell>
-						))}
-					</TableRow>
-				))
+				rows.map((row) => {
+					const id = rowKey(row);
+					return (
+						<TableRow key={id}>
+							{isSelectable && (
+								<TableSelectRow
+									id={`select-row-${id}`}
+									name={`select-row-${id}`}
+									aria-label={selectRowLabel?.(id) ?? ''}
+									checked={checkIsRowSelected?.(id) ?? false}
+									onSelect={() => onSelect?.(id)}
+								/>
+							)}
+							{columns.map((col) => (
+								<TableCell key={col.key}>{col.render(row)}</TableCell>
+							))}
+						</TableRow>
+					);
+				})
 			)}
 		</TableBody>
 	);
@@ -77,6 +116,16 @@ function SortableTable<TRow>({
 			<Table size={size} isSortable>
 				<TableHead>
 					<TableRow>
+						{isSelectable && (
+							<TableSelectAll
+								id="select-all-rows"
+								name="select-all-rows"
+								aria-label={selectAllLabel ?? ''}
+								checked={checkIsAllSelected?.() ?? false}
+								indeterminate={checkIsIndeterminate?.()}
+								onSelect={() => onSelectAll?.()}
+							/>
+						)}
 						{columns.map((col) =>
 							col.sortKey !== undefined ? (
 								<ColumnHeader
