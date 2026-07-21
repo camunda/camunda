@@ -44,7 +44,7 @@ public record ClusterVariableEntity(
       final Boolean isPreview,
       final ClusterVariableScope scope,
       final String tenantId) {
-    this(id, name, value, fullValue, isPreview, scope, tenantId, new ArrayList<>());
+    this(id, name, value, fullValue, isPreview, scope, tenantId, new ArrayList<>(), null);
   }
 
   @Override
