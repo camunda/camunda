@@ -147,7 +147,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     messageRecord.setDeadline(command.getTimestamp() + messageRecord.getTimeToLive());
 
     stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, command.getValue());
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
     final var correlatingSubscriptions = new Subscriptions();

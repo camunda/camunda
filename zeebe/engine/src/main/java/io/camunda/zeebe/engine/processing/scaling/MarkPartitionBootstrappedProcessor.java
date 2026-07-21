@@ -78,7 +78,7 @@ public class MarkPartitionBootstrappedProcessor
         final var scalingKey = keyGenerator.nextKey();
         final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
         stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
-        responseWriter.writeEventOnCommand(
+        responseWriter.writeAcceptedResponseOnCommand(
             scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp, command);
 
         // now the PARTITION_BOOTSTRAPPED event has been applied to the state, let's check if

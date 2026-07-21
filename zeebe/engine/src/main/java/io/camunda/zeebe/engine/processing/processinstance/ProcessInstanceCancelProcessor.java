@@ -79,7 +79,7 @@ public final class ProcessInstanceCancelProcessor
     final ProcessInstanceRecord value = elementInstance.getValue();
     commandWriter.appendFollowUpCommand(
         command.getKey(), ProcessInstanceIntent.TERMINATE_ELEMENT, value);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), ProcessInstanceIntent.ELEMENT_TERMINATING, value, command);
   }
 

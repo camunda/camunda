@@ -111,7 +111,8 @@ public final class BatchOperationCreateProcessor
         BatchOperationIntent.CREATED,
         recordWithKey,
         FollowUpEventMetadata.of(b -> b.batchOperationReference(key)));
-    responseWriter.writeEventOnCommand(key, BatchOperationIntent.CREATED, recordWithKey, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        key, BatchOperationIntent.CREATED, recordWithKey, command);
     commandDistributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.BATCH_OPERATION)

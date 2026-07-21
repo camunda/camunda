@@ -111,7 +111,8 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
 
     final var groupKey = persistedRecord.get().getGroupKey();
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_REMOVED, record);
-    responseWriter.writeEventOnCommand(groupKey, GroupIntent.ENTITY_REMOVED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        groupKey, GroupIntent.ENTITY_REMOVED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior

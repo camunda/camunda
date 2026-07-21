@@ -116,7 +116,7 @@ public final class ProcessInstanceCreationCreateProcessor
 
     stateWriter.appendFollowUpEvent(entityKey, ProcessInstanceCreationIntent.CREATED, record);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           entityKey, ProcessInstanceCreationIntent.CREATED, record, command);
     }
 

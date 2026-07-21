@@ -82,7 +82,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
       // Async request might be absent if the assignment transition was triggered internally
       // by Zeebe due to an assignee configured in the process model.
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
       return;
     }

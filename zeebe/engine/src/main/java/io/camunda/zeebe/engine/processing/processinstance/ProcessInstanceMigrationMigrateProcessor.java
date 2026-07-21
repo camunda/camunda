@@ -185,7 +185,7 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value, command);
   }
 

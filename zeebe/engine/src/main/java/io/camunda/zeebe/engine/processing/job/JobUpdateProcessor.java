@@ -61,7 +61,7 @@ public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
                   errors);
               if (errors.isEmpty()) {
                 stateWriter.appendFollowUpEvent(jobKey, JobIntent.UPDATED, job);
-                responseWriter.writeEventOnCommand(jobKey, JobIntent.UPDATED, job, command);
+                responseWriter.writeAcceptedResponseOnCommand(jobKey, JobIntent.UPDATED, job, command);
               } else {
                 handleRejection(errors, command);
               }

@@ -118,7 +118,7 @@ public class MappingRuleUpdateProcessor
     }
 
     stateWriter.appendFollowUpEvent(record.getMappingRuleKey(), MappingRuleIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         record.getMappingRuleKey(), MappingRuleIntent.UPDATED, record, command);
 
     commandDistributionBehavior
