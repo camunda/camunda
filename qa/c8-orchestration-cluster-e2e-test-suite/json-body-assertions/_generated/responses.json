@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "d4bdbb11521f0c0f08a559642e4cd7bd634c7657",
-    "generatedAt": "2026-07-17T12:27:50.212Z",
+    "commit": "808f0b2ca3e1c392cfb3a5a732d4d03af34d2b6f",
+    "generatedAt": "2026-07-21T10:09:11.983Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "2cea6d2ed57e10d0cef0314cf973064157fb60ac2115f311ec3154ab342edeaf"
+    "specSha256": "487e1f9d21dfac1529f3ef9a4f0e0505e7503a71c6227bccf77f1870ff65629e"
   },
   "responses": [
     {
@@ -423,11 +423,7 @@
                 {
                   "name": "commitStatus",
                   "type": "string",
-                  "enumValues": [
-                    "COMMITTED",
-                    "PENDING",
-                    "DISCARDED"
-                  ]
+                  "enumValues": ["COMMITTED", "PENDING", "DISCARDED"]
                 },
                 {
                   "name": "content",
@@ -568,12 +564,7 @@
                 {
                   "name": "actorType",
                   "type": "string",
-                  "enumValues": [
-                    "ANONYMOUS",
-                    "CLIENT",
-                    "UNKNOWN",
-                    "USER"
-                  ],
+                  "enumValues": ["ANONYMOUS", "CLIENT", "UNKNOWN", "USER"],
                   "nullable": true
                 },
                 {
@@ -598,11 +589,7 @@
                 {
                   "name": "category",
                   "type": "string",
-                  "enumValues": [
-                    "ADMIN",
-                    "DEPLOYED_RESOURCES",
-                    "USER_TASKS"
-                  ]
+                  "enumValues": ["ADMIN", "DEPLOYED_RESOURCES", "USER_TASKS"]
                 },
                 {
                   "name": "decisionDefinitionId",
@@ -742,10 +729,7 @@
                 {
                   "name": "result",
                   "type": "string",
-                  "enumValues": [
-                    "FAIL",
-                    "SUCCESS"
-                  ]
+                  "enumValues": ["FAIL", "SUCCESS"]
                 },
                 {
                   "name": "rootProcessInstanceKey",
@@ -815,12 +799,7 @@
           {
             "name": "actorType",
             "type": "string",
-            "enumValues": [
-              "ANONYMOUS",
-              "CLIENT",
-              "UNKNOWN",
-              "USER"
-            ],
+            "enumValues": ["ANONYMOUS", "CLIENT", "UNKNOWN", "USER"],
             "nullable": true
           },
           {
@@ -845,11 +824,7 @@
           {
             "name": "category",
             "type": "string",
-            "enumValues": [
-              "ADMIN",
-              "DEPLOYED_RESOURCES",
-              "USER_TASKS"
-            ]
+            "enumValues": ["ADMIN", "DEPLOYED_RESOURCES", "USER_TASKS"]
           },
           {
             "name": "decisionDefinitionId",
@@ -989,10 +964,7 @@
           {
             "name": "result",
             "type": "string",
-            "enumValues": [
-              "FAIL",
-              "SUCCESS"
-            ]
+            "enumValues": ["FAIL", "SUCCESS"]
           },
           {
             "name": "rootProcessInstanceKey",
@@ -1167,6 +1139,7 @@
                     "PROCESS_DEFINITION",
                     "RESOURCE",
                     "ROLE",
+                    "SECRET",
                     "SYSTEM",
                     "TENANT",
                     "USER",
@@ -1268,6 +1241,7 @@
               "PROCESS_DEFINITION",
               "RESOURCE",
               "ROLE",
+              "SECRET",
               "SYSTEM",
               "TENANT",
               "USER",
@@ -1590,10 +1564,7 @@
                 {
                   "name": "type",
                   "type": "string",
-                  "enumValues": [
-                    "QUERY_FAILED",
-                    "RESULT_BUFFER_SIZE_EXCEEDED"
-                  ]
+                  "enumValues": ["QUERY_FAILED", "RESULT_BUFFER_SIZE_EXCEEDED"]
                 }
               ],
               "optional": []
@@ -1640,6 +1611,14 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": ["JSON", "SECRET_REFERENCE"],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1650,10 +1629,7 @@
           {
             "name": "scope",
             "type": "string",
-            "enumValues": [
-              "GLOBAL",
-              "TENANT"
-            ]
+            "enumValues": ["GLOBAL", "TENANT"]
           },
           {
             "name": "tenantId",
@@ -1675,6 +1651,14 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": ["JSON", "SECRET_REFERENCE"],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1685,10 +1669,7 @@
           {
             "name": "scope",
             "type": "string",
-            "enumValues": [
-              "GLOBAL",
-              "TENANT"
-            ]
+            "enumValues": ["GLOBAL", "TENANT"]
           },
           {
             "name": "tenantId",
@@ -1710,6 +1691,14 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": ["JSON", "SECRET_REFERENCE"],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1720,10 +1709,7 @@
           {
             "name": "scope",
             "type": "string",
-            "enumValues": [
-              "GLOBAL",
-              "TENANT"
-            ]
+            "enumValues": ["GLOBAL", "TENANT"]
           },
           {
             "name": "tenantId",
@@ -1754,6 +1740,14 @@
                   "type": "boolean"
                 },
                 {
+                  "name": "kind",
+                  "type": "string",
+                  "enumValues": ["JSON", "SECRET_REFERENCE"],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "0",
+                  "wrapper": true
+                },
+                {
                   "name": "metadata",
                   "type": "object"
                 },
@@ -1764,10 +1758,7 @@
                 {
                   "name": "scope",
                   "type": "string",
-                  "enumValues": [
-                    "GLOBAL",
-                    "TENANT"
-                  ]
+                  "enumValues": ["GLOBAL", "TENANT"]
                 },
                 {
                   "name": "tenantId",
@@ -1820,6 +1811,14 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": ["JSON", "SECRET_REFERENCE"],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1830,10 +1829,7 @@
           {
             "name": "scope",
             "type": "string",
-            "enumValues": [
-              "GLOBAL",
-              "TENANT"
-            ]
+            "enumValues": ["GLOBAL", "TENANT"]
           },
           {
             "name": "tenantId",
@@ -1855,6 +1851,14 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": ["JSON", "SECRET_REFERENCE"],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1865,10 +1869,7 @@
           {
             "name": "scope",
             "type": "string",
-            "enumValues": [
-              "GLOBAL",
-              "TENANT"
-            ]
+            "enumValues": ["GLOBAL", "TENANT"]
           },
           {
             "name": "tenantId",
@@ -1890,6 +1891,14 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": ["JSON", "SECRET_REFERENCE"],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1900,10 +1909,7 @@
           {
             "name": "scope",
             "type": "string",
-            "enumValues": [
-              "GLOBAL",
-              "TENANT"
-            ]
+            "enumValues": ["GLOBAL", "TENANT"]
           },
           {
             "name": "tenantId",
@@ -2653,12 +2659,7 @@
           {
             "name": "state",
             "type": "string",
-            "enumValues": [
-              "EVALUATED",
-              "FAILED",
-              "UNSPECIFIED",
-              "UNKNOWN"
-            ]
+            "enumValues": ["EVALUATED", "FAILED", "UNSPECIFIED", "UNKNOWN"]
           },
           {
             "name": "tenantId",
@@ -3009,9 +3010,7 @@
           {
             "name": "camunda.document.type",
             "type": "string",
-            "enumValues": [
-              "camunda"
-            ]
+            "enumValues": ["camunda"]
           },
           {
             "name": "contentHash",
@@ -3084,9 +3083,7 @@
                 {
                   "name": "camunda.document.type",
                   "type": "string",
-                  "enumValues": [
-                    "camunda"
-                  ]
+                  "enumValues": ["camunda"]
                 },
                 {
                   "name": "contentHash",
@@ -3188,9 +3185,7 @@
                 {
                   "name": "camunda.document.type",
                   "type": "string",
-                  "enumValues": [
-                    "camunda"
-                  ]
+                  "enumValues": ["camunda"]
                 },
                 {
                   "name": "contentHash",
@@ -3465,11 +3460,7 @@
                 {
                   "name": "state",
                   "type": "string",
-                  "enumValues": [
-                    "ACTIVE",
-                    "COMPLETED",
-                    "TERMINATED"
-                  ]
+                  "enumValues": ["ACTIVE", "COMPLETED", "TERMINATED"]
                 },
                 {
                   "name": "tenantId",
@@ -3599,11 +3590,7 @@
           {
             "name": "state",
             "type": "string",
-            "enumValues": [
-              "ACTIVE",
-              "COMPLETED",
-              "TERMINATED"
-            ]
+            "enumValues": ["ACTIVE", "COMPLETED", "TERMINATED"]
           },
           {
             "name": "tenantId",
@@ -3865,10 +3852,7 @@
           {
             "name": "source",
             "type": "string",
-            "enumValues": [
-              "CONFIGURATION",
-              "API"
-            ]
+            "enumValues": ["CONFIGURATION", "API"]
           },
           {
             "name": "type",
@@ -3910,10 +3894,7 @@
           {
             "name": "source",
             "type": "string",
-            "enumValues": [
-              "CONFIGURATION",
-              "API"
-            ]
+            "enumValues": ["CONFIGURATION", "API"]
           },
           {
             "name": "type",
@@ -3955,10 +3936,7 @@
           {
             "name": "source",
             "type": "string",
-            "enumValues": [
-              "CONFIGURATION",
-              "API"
-            ]
+            "enumValues": ["CONFIGURATION", "API"]
           },
           {
             "name": "type",
@@ -4005,10 +3983,7 @@
                 {
                   "name": "source",
                   "type": "string",
-                  "enumValues": [
-                    "CONFIGURATION",
-                    "API"
-                  ]
+                  "enumValues": ["CONFIGURATION", "API"]
                 },
                 {
                   "name": "type",
@@ -5835,20 +5810,12 @@
                 {
                   "name": "messageSubscriptionState",
                   "type": "string",
-                  "enumValues": [
-                    "CORRELATED",
-                    "CREATED",
-                    "DELETED",
-                    "MIGRATED"
-                  ]
+                  "enumValues": ["CORRELATED", "CREATED", "DELETED", "MIGRATED"]
                 },
                 {
                   "name": "messageSubscriptionType",
                   "type": "string",
-                  "enumValues": [
-                    "START_EVENT",
-                    "PROCESS_EVENT"
-                  ]
+                  "enumValues": ["START_EVENT", "PROCESS_EVENT"]
                 },
                 {
                   "name": "processDefinitionId",
@@ -6753,11 +6720,7 @@
                 {
                   "name": "state",
                   "type": "string",
-                  "enumValues": [
-                    "ACTIVE",
-                    "COMPLETED",
-                    "TERMINATED"
-                  ]
+                  "enumValues": ["ACTIVE", "COMPLETED", "TERMINATED"]
                 },
                 {
                   "name": "tags",
@@ -6907,11 +6870,7 @@
           {
             "name": "state",
             "type": "string",
-            "enumValues": [
-              "ACTIVE",
-              "COMPLETED",
-              "TERMINATED"
-            ]
+            "enumValues": ["ACTIVE", "COMPLETED", "TERMINATED"]
           },
           {
             "name": "tags",
@@ -7821,11 +7780,7 @@
                 {
                   "name": "stage",
                   "type": "string",
-                  "enumValues": [
-                    "dev",
-                    "int",
-                    "prod"
-                  ],
+                  "enumValues": ["dev", "int", "prod"],
                   "nullable": true
                 }
               ],
@@ -8328,11 +8283,7 @@
                       {
                         "name": "health",
                         "type": "string",
-                        "enumValues": [
-                          "healthy",
-                          "unhealthy",
-                          "dead"
-                        ]
+                        "enumValues": ["healthy", "unhealthy", "dead"]
                       },
                       {
                         "name": "partitionId",
@@ -8341,11 +8292,7 @@
                       {
                         "name": "role",
                         "type": "string",
-                        "enumValues": [
-                          "leader",
-                          "follower",
-                          "inactive"
-                        ]
+                        "enumValues": ["leader", "follower", "inactive"]
                       }
                     ],
                     "optional": []
@@ -8913,12 +8860,7 @@
                 {
                   "name": "actorType",
                   "type": "string",
-                  "enumValues": [
-                    "ANONYMOUS",
-                    "CLIENT",
-                    "UNKNOWN",
-                    "USER"
-                  ],
+                  "enumValues": ["ANONYMOUS", "CLIENT", "UNKNOWN", "USER"],
                   "nullable": true
                 },
                 {
@@ -8943,11 +8885,7 @@
                 {
                   "name": "category",
                   "type": "string",
-                  "enumValues": [
-                    "ADMIN",
-                    "DEPLOYED_RESOURCES",
-                    "USER_TASKS"
-                  ]
+                  "enumValues": ["ADMIN", "DEPLOYED_RESOURCES", "USER_TASKS"]
                 },
                 {
                   "name": "decisionDefinitionId",
@@ -9087,10 +9025,7 @@
                 {
                   "name": "result",
                   "type": "string",
-                  "enumValues": [
-                    "FAIL",
-                    "SUCCESS"
-                  ]
+                  "enumValues": ["FAIL", "SUCCESS"]
                 },
                 {
                   "name": "rootProcessInstanceKey",
