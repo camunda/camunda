@@ -188,6 +188,24 @@ public enum StarterLatencyMetricsDoc implements ExtendedMeterDocumentation {
     public Duration[] getTimerSLOs() {
       return BUCKETS;
     }
+  },
+
+  PENDING_PROCESS_INSTANCES {
+
+    @Override
+    public String getDescription() {
+      return "The number of process instances that have been started by the starter, but are not yet available for querying.";
+    }
+
+    @Override
+    public String getName() {
+      return "starter.data.availability.pending.process.instances";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
   };
 
   public enum StarterLatencyMetricKeyNames implements KeyName {
