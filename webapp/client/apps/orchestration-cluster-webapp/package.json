@@ -36,7 +36,6 @@
 		"bpmn-js": "18.19.0",
 		"date-fns": "4.4.0",
 		"diagram-js-minimap": "5.4.0",
-		"dmn-font": "0.6.2",
 		"dmn-js-decision-table": "17.8.1",
 		"dmn-js-literal-expression": "17.8.1",
 		"dmn-js-shared": "17.8.1",

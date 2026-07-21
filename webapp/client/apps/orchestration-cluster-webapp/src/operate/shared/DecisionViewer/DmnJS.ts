@@ -9,7 +9,6 @@
 import 'dmn-js-shared/assets/css/dmn-js-shared.css';
 import 'dmn-js-decision-table/assets/css/dmn-js-decision-table.css';
 import 'dmn-js-literal-expression/assets/css/dmn-js-literal-expression.css';
-import 'dmn-font/dist/css/dmn.css';
 import Manager from 'dmn-js-shared/lib/base/Manager';
 // @ts-expect-error no type declarations for this package
 import {is} from 'dmn-js-shared/lib/util/ModelUtil';
