@@ -61,6 +61,7 @@ const DetailsTab: React.FC = () => {
     hasSelection,
     resolvedElementInstance,
     selectedElementId,
+    selectedElementInstanceKey,
     selectedAnchorElementId,
     selectedInstancesCount,
     isSelectedInstanceMultiInstanceBody,
@@ -171,12 +172,19 @@ const DetailsTab: React.FC = () => {
 
   const messageSubscription = messageSubscriptionResult?.items?.[0] ?? null;
 
-  // Multi-instance bodies have no agent instance associated with the multi-instance
-  // element instance. Agents are assigned to the spawned inner instances.
-  // Fall back to elementId-only filtering when multi-instance body is selected.
+  /**
+   * Alias to {@linkcode selectedElementInstanceKey} if non multi-instance elements
+   * are selected. For multi-instance elements, agent instances data is linked to
+   * the inner instances and not the multi-instance element instance.
+   *
+   * **Note:** Intentionally uses {@linkcode selectedElementInstanceKey} and not the resolved
+   * element-instance key to keep agent details stable when an element is activated again.
+   * An agent instance can be reused across multiple element activations, and the agent details
+   * can be viewed just fine without an explicit element instance being selected/resolved.
+   */
   const agentElementInstanceKey = isSelectedInstanceMultiInstanceBody
     ? null
-    : elementInstanceKey;
+    : selectedElementInstanceKey;
 
   const {
     data: agentInstancesResult,
@@ -524,10 +532,6 @@ const DetailsTab: React.FC = () => {
     );
   }
 
-  if (isFetchingElement) {
-    return <StructuredListSkeleton rowCount={5} />;
-  }
-
   const hasMultipleInstances =
     selectedInstancesCount !== null && selectedInstancesCount > 1;
 
@@ -573,7 +577,9 @@ const DetailsTab: React.FC = () => {
       )}
       <SectionContainer>
         <SectionHeading>Element Instance</SectionHeading>
-        {resolvedElementInstance === null ? (
+        {isFetchingElement ? (
+          <StructuredListSkeleton rowCount={5} />
+        ) : resolvedElementInstance === null ? (
           <ElementInstanceHint>
             {hasMultipleInstances
               ? 'To view the details, select a single element instance in the instance history.'
