@@ -660,7 +660,10 @@ public class CamundaMultiDBExtension
       return restAddress;
     }
     final String base = restAddress.toString().replaceAll("/+$", "");
-    return URI.create(base + "/physical-tenants/" + physicalTenantId);
+    // keep the trailing slash so the address matches the root REST address convention: raw-HTTP
+    // tests concatenate relative paths onto getRestAddress() (e.g. ApplicationAuthorizationIT's
+    // createUri), which 404s on ".../<tenant>v2/..." without it
+    return URI.create(base + "/physical-tenants/" + physicalTenantId + "/");
   }
 
   private void setupTestApplication(final Class<?> testClass) {
