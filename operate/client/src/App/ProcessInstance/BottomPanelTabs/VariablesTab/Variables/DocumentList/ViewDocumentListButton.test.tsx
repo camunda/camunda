@@ -348,8 +348,11 @@ describe('<ViewDocumentListButton />', () => {
     expect(
       activeItem.getByLabelText('Preview document for variable files'),
     ).toBeEnabled();
-    expect(
-      activeItem.getByLabelText('Download document for variable files'),
-    ).toBeEnabled();
+    const activeDownloadLink = activeItem.getByLabelText(
+      'Download document for variable files',
+    );
+    expect(activeDownloadLink).toBeEnabled();
+    expect(activeDownloadLink).toHaveAttribute('href', '/v2/documents/active');
+    expect(activeDownloadLink).toHaveAttribute('download', 'active.png');
   });
 });
