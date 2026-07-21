@@ -22,6 +22,8 @@ public enum DataDeletionMode {
 
   /**
    * Uses public APIs to delete test-scoped process/decision instance data and deployed resources.
+   *
+   * <p>Experimental: this mode does not guarantee that all test-case data or resources are deleted.
    */
   RESOURCE_AND_HISTORY_DELETION,
 
