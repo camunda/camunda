@@ -1744,7 +1744,7 @@ public class MultiTenancyIT {
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
               String.format(
-                  "Expected to migrate a process instance with key '%d', but no such process instance was found",
+                  "Expected to migrate process instance but no process instance found with key '%d'",
                   processInstanceKey));
     }
   }
