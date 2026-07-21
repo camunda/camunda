@@ -94,7 +94,7 @@ jobs:
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
       CONFTEST_VERSION: '0.68.2'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: camunda/infra-global-github-actions/actionlint@0077d059bb0d698e1086a4b46517cb7917fa8300 # actionlint: v1.0.2
@@ -142,7 +142,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - name: Determine fetch depth for checkout
         id: depth
         run: |
@@ -177,7 +177,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
@@ -205,7 +205,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - name: Check for missing junit-vintage-engine
@@ -229,7 +229,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
         with:
@@ -273,7 +273,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
         with:
@@ -306,7 +306,7 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
@@ -338,7 +338,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/codeowners-setup-cli
@@ -370,7 +370,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
@@ -418,7 +418,7 @@ jobs:
             -Dquickly=true
             -DskipQaBuild=true
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
@@ -480,7 +480,7 @@ jobs:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
@@ -593,7 +593,7 @@ jobs:
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/build-frontend
@@ -683,7 +683,7 @@ jobs:
     timeout-minutes: 5
     permissions: { }
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - name: Set all test constants
         id: set-constants
         run: |
@@ -962,7 +962,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
@@ -1065,7 +1065,7 @@ jobs:
             owner: '@camunda/core-features'
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_CLIENT_MODULES }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - name: Print metadata
@@ -1260,7 +1260,7 @@ jobs:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token for the GCS distball download
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       # Consume the shared distball's io.camunda SNAPSHOTs instead of a ~15 min reactor build.
@@ -1348,7 +1348,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - name: Generate cache key with current hour
@@ -1475,7 +1475,7 @@ jobs:
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - name: Print metadata
@@ -1552,7 +1552,7 @@ jobs:
       TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:${{ needs.generate-db-versions.outputs.elasticsearch-8 }}
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
@@ -1921,7 +1921,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -1973,7 +1973,7 @@ jobs:
     permissions:
       contents: write  # required by Dependency Submission API
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
@@ -2043,10 +2043,10 @@ jobs:
       pull-requests: write
       actions: read  # required to list snapshot-workflow runs for base resolution (Workstream D)
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Check for vulnerable dependencies
-        uses: camunda/infra-global-github-actions/dependency-vuln-check@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+        uses: camunda/infra-global-github-actions/dependency-vuln-check@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
         with:
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
@@ -2137,7 +2137,7 @@ jobs:
       run:
         working-directory: ${{ env.SUITE_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -2175,7 +2175,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
     if: needs.detect-changes.outputs.protobuf-changes == 'true'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - id: pr-body
@@ -2224,7 +2224,7 @@ jobs:
       # renovate: datasource=npm depName=@camunda8/spectral-cli
       SPECTRAL_VERSION: '6.16.1'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - name: Setup Node.js for Spectral
@@ -2291,7 +2291,7 @@ jobs:
     env:
       VERIFIER_DIR: .github/scripts/x-added-in-version-check
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - name: Checkout PR
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
@@ -2359,7 +2359,7 @@ jobs:
     timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -2384,7 +2384,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - name: Install bats and xmllint
@@ -2411,7 +2411,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         timeout-minutes: 1
       - name: Install pytest
@@ -2556,7 +2556,7 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
@@ -2630,7 +2630,7 @@ jobs:
       group: ${{ needs.utils-get-concurrency-group-for-docker-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
@@ -2702,7 +2702,7 @@ jobs:
     env:
       TEST_OWNER: '@camunda/core-features'
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
