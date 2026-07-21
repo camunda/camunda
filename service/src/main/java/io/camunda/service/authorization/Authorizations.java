@@ -10,6 +10,7 @@ package io.camunda.service.authorization;
 import static io.camunda.security.api.model.authz.AuthorizationResourceType.COMPONENT;
 import static io.camunda.security.api.model.authz.AuthorizationResourceType.SECRET;
 import static io.camunda.security.api.model.authz.PermissionType.ACCESS;
+import static io.camunda.security.api.model.authz.PermissionType.READ;
 import static io.camunda.security.api.model.authz.PermissionType.READ_TASK_LISTENER;
 import static io.camunda.security.api.model.authz.PermissionType.REVEAL;
 
@@ -113,6 +114,9 @@ public abstract class Authorizations {
 
   public static final RequiredAuthorization<Object> SECRET_REVEAL_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.resourceType(SECRET).permissionType(REVEAL));
+
+  public static final RequiredAuthorization<Object> SECRET_READ_AUTHORIZATION =
+      RequiredAuthorization.of(a -> a.resourceType(SECRET).permissionType(READ));
 
   public static final RequiredAuthorization<TenantEntity> TENANT_READER_AUTHORIZATION =
       RequiredAuthorization.of(a -> a.tenant().read());

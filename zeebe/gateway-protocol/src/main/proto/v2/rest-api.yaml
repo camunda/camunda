@@ -431,6 +431,8 @@ paths:
   # Secret endpoints
   /secrets/resolve:
     $ref: 'secrets.yaml#/paths/~1secrets~1resolve'
+  /secrets/list:
+    $ref: 'secrets.yaml#/paths/~1secrets~1list'
 
   # Setup endpoints
   /setup/user:

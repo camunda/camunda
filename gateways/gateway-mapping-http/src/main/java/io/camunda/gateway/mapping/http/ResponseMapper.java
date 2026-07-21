@@ -68,6 +68,7 @@ import io.camunda.gateway.protocol.model.ResourceResult;
 import io.camunda.gateway.protocol.model.RoleCreateResult;
 import io.camunda.gateway.protocol.model.RoleUpdateResult;
 import io.camunda.gateway.protocol.model.SecretErrorCode;
+import io.camunda.gateway.protocol.model.SecretListResult;
 import io.camunda.gateway.protocol.model.SecretResolutionError;
 import io.camunda.gateway.protocol.model.SecretResolveResult;
 import io.camunda.gateway.protocol.model.SignalBroadcastResult;
@@ -702,6 +703,10 @@ public final class ResponseMapper {
       case ACCESS_DENIED -> SecretErrorCode.ACCESS_DENIED;
       case INVALID_REFERENCE -> SecretErrorCode.INVALID_REFERENCE;
     };
+  }
+
+  public static SecretListResult toSecretListResult(final List<String> references) {
+    return SecretListResult.Builder.create().references(references).build();
   }
 
   public static UserCreateResult toUserCreateResponse(final UserRecord userRecord) {
