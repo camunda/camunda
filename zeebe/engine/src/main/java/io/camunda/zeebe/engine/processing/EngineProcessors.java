@@ -23,7 +23,6 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
@@ -63,7 +62,6 @@ import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -163,8 +161,6 @@ public final class EngineProcessors {
     final var processDefinitionMetrics =
         new ProcessDefinitionMetrics(
             typedRecordProcessorContext.getMeterRegistry(), processingState.getProcessState());
-    final var authorizationCheckMetrics =
-        new AuthorizationCheckMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var tenantMetrics = new TenantMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
@@ -172,9 +168,6 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
-    final var authCheckBehavior =
-        new AuthorizationCheckBehavior(
-            processingState, securityConfig, config, authorizationCheckMetrics);
     final var asyncRequestBehavior =
         new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
     final var transientProcessMessageSubscriptionState =
@@ -410,7 +403,6 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
-        authCheckBehavior,
         securityConfig,
         cslCheck,
         authorizationScopeStateAdapter,
@@ -432,7 +424,6 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         securityConfig,
-        authCheckBehavior,
         authorizationScopeStateAdapter,
         membershipStateAdapter);
 
@@ -542,7 +533,6 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig,
       final CslAuthorizationCheck cslCheck,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
@@ -554,7 +544,6 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         cslCheck,
-        authCheckBehavior,
         securityConfig,
         authorizationScopeStateAdapter);
 

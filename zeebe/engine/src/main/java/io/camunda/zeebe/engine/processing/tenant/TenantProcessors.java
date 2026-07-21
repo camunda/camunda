@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -30,7 +29,6 @@ public class TenantProcessors {
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final EngineSecurityConfig securityConfig,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
       final MembershipStateAdapter membershipStateAdapter) {
     typedRecordProcessors
@@ -62,7 +60,6 @@ public class TenantProcessors {
                 writers,
                 commandDistributionBehavior,
                 securityConfig,
-                authCheckBehavior,
                 membershipStateAdapter))
         .onCommand(
             ValueType.TENANT,
@@ -73,7 +70,6 @@ public class TenantProcessors {
                 keyGenerator,
                 writers,
                 commandDistributionBehavior,
-                authCheckBehavior,
                 membershipStateAdapter))
         .onCommand(
             ValueType.TENANT,
@@ -84,7 +80,6 @@ public class TenantProcessors {
                 keyGenerator,
                 writers,
                 commandDistributionBehavior,
-                authCheckBehavior,
                 authorizationScopeStateAdapter,
                 membershipStateAdapter));
   }

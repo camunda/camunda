@@ -11,7 +11,6 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -41,7 +40,6 @@ public class AuthorizationCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
   private final AuthorizationEntityValidator authorizationEntityChecker;
   private final AuthorizationScopeStateAdapter authorizationScopeStateAdapter;
@@ -52,7 +50,6 @@ public class AuthorizationCreateProcessor
       final ProcessingState processingState,
       final CommandDistributionBehavior distributionBehavior,
       final CslAuthorizationCheck cslCheck,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     this.keyGenerator = keyGenerator;
@@ -61,7 +58,6 @@ public class AuthorizationCreateProcessor
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
-    authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
     authorizationEntityChecker = new AuthorizationEntityValidator(processingState, securityConfig);
     this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
@@ -107,7 +103,6 @@ public class AuthorizationCreateProcessor
                   command.getKey(), AuthorizationIntent.CREATED, command.getValue());
               sideEffectWriter.appendSideEffect(
                   () -> {
-                    authorizationCheckBehavior.clearAuthorizationsCache();
                     authorizationScopeStateAdapter.invalidateAll();
                     return true;
                   });
@@ -137,7 +132,6 @@ public class AuthorizationCreateProcessor
         .distribute(command);
     sideEffectWriter.appendSideEffect(
         () -> {
-          authorizationCheckBehavior.clearAuthorizationsCache();
           authorizationScopeStateAdapter.invalidateAll();
           return true;
         });

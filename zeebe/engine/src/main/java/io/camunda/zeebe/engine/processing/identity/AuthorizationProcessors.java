@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -28,7 +27,6 @@ public final class AuthorizationProcessors {
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
       final CslAuthorizationCheck cslCheck,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
     typedRecordProcessors.onCommand(
@@ -40,7 +38,6 @@ public final class AuthorizationProcessors {
             processingState,
             distributionBehavior,
             cslCheck,
-            authCheckBehavior,
             securityConfig,
             authorizationScopeStateAdapter));
     typedRecordProcessors.onCommand(
@@ -52,7 +49,6 @@ public final class AuthorizationProcessors {
             processingState,
             distributionBehavior,
             cslCheck,
-            authCheckBehavior,
             authorizationScopeStateAdapter));
     typedRecordProcessors.onCommand(
         ValueType.AUTHORIZATION,
@@ -63,7 +59,6 @@ public final class AuthorizationProcessors {
             processingState,
             distributionBehavior,
             cslCheck,
-            authCheckBehavior,
             securityConfig,
             authorizationScopeStateAdapter));
   }
