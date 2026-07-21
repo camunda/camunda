@@ -201,6 +201,29 @@ public class AuthorizationArchTest {
                     RequiredAuthorization.class,
                     Object.class,
                     Rejection.class))
+            // Or the processor should delegate the combined RBAC+tenant check to
+            // CslAuthorizationCheck.checkAuthorizationAndTenant
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuthorizationAndTenant",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class,
+                    String.class,
+                    Rejection.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuthorizationAndTenant",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class,
+                    Function.class,
+                    String.class,
+                    Rejection.class))
             // Or the class should delegate an already-resolved-principal check to
             // CslAuthorizationCheck.checkAuth (used by UserTaskAuthorizationCheck for the
             // per-alternative resource-id and property-scoped grants)
