@@ -610,4 +610,43 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_cluster_variable_metadata_table" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <tableExists tableName="${prefix}CLUSTER_VARIABLE_METADATA"/>
+      </not>
+    </preConditions>
+    <createTable tableName="${prefix}CLUSTER_VARIABLE_METADATA">
+      <column name="CLUSTER_VARIABLE_ID" type="NVARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true"
+          foreignKeyName="${prefix}FK_CLUSTER_VARIABLE_METADATA_CLUSTER_VARIABLE"
+          referencedTableName="${prefix}CLUSTER_VARIABLE" referencedColumnNames="CLUSTER_VARIABLE_ID"
+          deleteCascade="true"/>
+      </column>
+      <column name="METADATA_KEY" type="NVARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="METADATA_VALUE" type="VARCHAR(8192)"/>
+      <column name="METADATA_VALUE_NUMBER" type="DOUBLE"/>
+    </createTable>
+
+    <modifySql dbms="oracle">
+      <!-- Oracle only supports a size 4000 characters in varchar2 -->
+      <replace replace="VARCHAR2(8192)" with="VARCHAR2(4000)"/>
+    </modifySql>
+  </changeSet>
+
+  <changeSet id="create_cluster_variable_metadata_cluster_variable_id_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_CLUSTER_VARIABLE_METADATA_CLUSTER_VARIABLE_ID"
+          tableName="${prefix}CLUSTER_VARIABLE_METADATA"/>
+      </not>
+    </preConditions>
+    <createIndex tableName="${prefix}CLUSTER_VARIABLE_METADATA"
+      indexName="${prefix}IDX_CLUSTER_VARIABLE_METADATA_CLUSTER_VARIABLE_ID">
+      <column name="CLUSTER_VARIABLE_ID"/>
+    </createIndex>
+  </changeSet>
+
 </databaseChangeLog>

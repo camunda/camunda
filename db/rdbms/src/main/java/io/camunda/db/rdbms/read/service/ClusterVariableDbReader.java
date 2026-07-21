@@ -11,8 +11,10 @@ import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.ClusterVariableDbQuery;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.columns.ClusterVariableSearchColumn;
+import io.camunda.db.rdbms.write.domain.ClusterVariableMetadataDbModel;
 import io.camunda.search.clients.reader.ClusterVariableReader;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -20,6 +22,7 @@ import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.util.ClusterVariableUtil;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +68,7 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
     LOG.trace("[RDBMS DB] Search for cluster variables with filter {}", query);
     return executePagedQuery(
         () -> clusterVariableMapper.count(dbQuery),
-        () -> clusterVariableMapper.search(dbQuery),
+        () -> hydrateMetadata(clusterVariableMapper.search(dbQuery)),
         dbPage,
         dbSort);
   }
@@ -77,15 +80,53 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
   @Override
   public @Nullable ClusterVariableEntity getTenantScopedClusterVariable(
       final String name, final String tenant, final ResourceAccessChecks resourceAccessChecks) {
-    return clusterVariableMapper.get(
-        ClusterVariableUtil.generateID(name, tenant, ClusterVariableScope.TENANT));
+    return hydrateMetadata(
+        clusterVariableMapper.get(
+            ClusterVariableUtil.generateID(name, tenant, ClusterVariableScope.TENANT)));
   }
 
   @Override
   public @Nullable ClusterVariableEntity getGloballyScopedClusterVariable(
       final String name, final ResourceAccessChecks resourceAccessChecks) {
-    return clusterVariableMapper.get(
-        ClusterVariableUtil.generateID(name, null, ClusterVariableScope.GLOBAL));
+    return hydrateMetadata(
+        clusterVariableMapper.get(
+            ClusterVariableUtil.generateID(name, null, ClusterVariableScope.GLOBAL)));
+  }
+
+  /**
+   * Fetches metadata for the given cluster variables in a single batched query and attaches it to
+   * each entity.
+   */
+  private List<ClusterVariableEntity> hydrateMetadata(final List<ClusterVariableEntity> entities) {
+    if (entities.isEmpty()) {
+      return entities;
+    }
+
+    final var ids = entities.stream().map(ClusterVariableEntity::id).toList();
+    final var metadataByClusterVariableId =
+        clusterVariableMapper.findMetadataByClusterVariableIds(ids).stream()
+            .collect(Collectors.groupingBy(ClusterVariableMetadataDbModel::clusterVariableId));
+
+    entities.forEach(
+        entity -> {
+          final var metadata = entity.metadata();
+          if (metadata != null) {
+            metadata.addAll(
+                metadataByClusterVariableId.getOrDefault(entity.id(), List.of()).stream()
+                    .map(m -> new MetadataEntry(m.key(), m.value(), m.valueNumber()))
+                    .toList());
+          }
+        });
+
+    return entities;
+  }
+
+  private @Nullable ClusterVariableEntity hydrateMetadata(
+      final @Nullable ClusterVariableEntity entity) {
+    if (entity == null) {
+      return null;
+    }
+    return hydrateMetadata(List.of(entity)).getFirst();
   }
 
   @Override

@@ -42,7 +42,9 @@ public enum ContextType {
   USER_TASK(true),
   VARIABLE(false),
   WAIT_STATE(false),
-  CLUSTER_VARIABLE(false),
+  // delete+insert is used for CLUSTER_VARIABLE_METADATA child rows, so order must be preserved
+  // to ensure DELETE runs before INSERT
+  CLUSTER_VARIABLE(true),
   PROCESS_DEF_VAR_NAME_LOOKUP(false),
   // for global listeners, event types are updated through delete+insert, so order needs to be
   // preserved

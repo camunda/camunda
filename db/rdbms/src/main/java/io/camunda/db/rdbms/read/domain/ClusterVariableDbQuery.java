@@ -24,6 +24,10 @@ public record ClusterVariableDbQuery(
     DbQuerySorting<ClusterVariableEntity> sort,
     DbQueryPage page) {
 
+  public List<ClusterVariableMetadataSearchFilter> metadataSearchFilters() {
+    return ClusterVariableMetadataSearchFilter.from(filter.metadataOperations());
+  }
+
   public static ClusterVariableDbQuery of(
       final Function<ClusterVariableDbQuery.Builder, ObjectBuilder<ClusterVariableDbQuery>> fn) {
     return fn.apply(new ClusterVariableDbQuery.Builder()).build();

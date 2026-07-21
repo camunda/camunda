@@ -12,11 +12,14 @@ import static io.camunda.zeebe.protocol.record.value.ClusterVariableScope.GLOBAL
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.db.rdbms.write.service.ClusterVariableWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
+import java.util.List;
+import java.util.Map;
 
 public class ClusterVariableExportHandler
     implements RdbmsExportHandler<ClusterVariableRecordValue> {
@@ -51,12 +54,29 @@ public class ClusterVariableExportHandler
     final var builder =
         new ClusterVariableDbModel.ClusterVariableDbModelBuilder()
             .name(value.getName())
-            .value(value.getValue());
+            .value(value.getValue())
+            .metadata(mapMetadata(value.getMetadata()));
     if (value.getScope() == GLOBAL) {
       builder.scope(ClusterVariableScope.GLOBAL).tenantId(null);
     } else {
       builder.scope(ClusterVariableScope.TENANT).tenantId(value.getTenantId());
     }
     return builder.build();
+  }
+
+  private List<MetadataEntry> mapMetadata(final Map<String, Object> metadata) {
+    if (metadata == null || metadata.isEmpty()) {
+      return List.of();
+    }
+    return metadata.entrySet().stream()
+        .filter(entry -> entry.getValue() != null)
+        .map(
+            entry -> {
+              final var metadataValue = entry.getValue();
+              final var numericValue =
+                  metadataValue instanceof Number number ? number.doubleValue() : null;
+              return new MetadataEntry(entry.getKey(), String.valueOf(metadataValue), numericValue);
+            })
+        .toList();
   }
 }

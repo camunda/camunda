@@ -9,8 +9,10 @@ package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.ClusterVariableDbQuery;
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
+import io.camunda.db.rdbms.write.domain.ClusterVariableMetadataDbModel;
 import io.camunda.search.entities.ClusterVariableEntity;
 import java.util.List;
+import org.apache.ibatis.annotations.Param;
 
 public interface ClusterVariableMapper {
 
@@ -18,9 +20,16 @@ public interface ClusterVariableMapper {
 
   void insert(ClusterVariableDbModel variable);
 
+  void insertMetadata(ClusterVariableDbModel variable);
+
+  void deleteMetadata(String id);
+
   void delete(ClusterVariableDbModel variable);
 
   Long count(ClusterVariableDbQuery filter);
 
   List<ClusterVariableEntity> search(ClusterVariableDbQuery filter);
+
+  List<ClusterVariableMetadataDbModel> findMetadataByClusterVariableIds(
+      @Param("ids") List<String> ids);
 }

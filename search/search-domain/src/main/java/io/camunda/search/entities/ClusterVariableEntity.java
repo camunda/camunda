@@ -33,6 +33,19 @@ public record ClusterVariableEntity(
     metadata = metadata != null ? new ArrayList<>(metadata) : new ArrayList<>();
   }
 
+  // Used by the RDBMS resultMap's <constructor>, whose args mirror this signature; the
+  // <collection> for metadata is mapped separately and hydrated onto the mutable list below.
+  public ClusterVariableEntity(
+      final String id,
+      final String name,
+      final String value,
+      final String fullValue,
+      final Boolean isPreview,
+      final ClusterVariableScope scope,
+      final String tenantId) {
+    this(id, name, value, fullValue, isPreview, scope, tenantId, new ArrayList<>());
+  }
+
   @Override
   public boolean hasTenantScope() {
     return ClusterVariableScope.TENANT.equals(scope);

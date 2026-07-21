@@ -23,6 +23,7 @@ import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ClusterVariableEntity;
+import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -30,6 +31,7 @@ import io.camunda.search.query.ClusterVariableQuery;
 import io.camunda.search.sort.ClusterVariableSort;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -372,6 +374,66 @@ public class ClusterVariableIT {
   }
 
   @TestTemplate
+  public void shouldSaveAndFindTenantClusterVariableWithMetadata(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
+
+    final List<MetadataEntry> metadata =
+        List.of(
+            new MetadataEntry("kind", "CREDENTIAL", null),
+            new MetadataEntry("schemaVersion", "2", 2.0));
+    final ClusterVariableDbModel clusterVariable =
+        ClusterVariableFixtures.createRandomTenantClusterVariable(generateRandomString(50))
+            .copy(b -> ((ClusterVariableDbModelBuilder) b).metadata(metadata));
+    createAndSaveVariables(rdbmsService, clusterVariable);
+
+    final var instance =
+        clusterVariableReader.getTenantScopedClusterVariable(
+            clusterVariable.name(),
+            clusterVariable.tenantId(),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.CLUSTER_VARIABLE, clusterVariable.name()));
+
+    assertThat(instance).isNotNull();
+    assertVariableDbModelEqualToEntity(clusterVariable, instance);
+  }
+
+  @TestTemplate
+  public void shouldUpdateClusterVariableReplacesMetadata(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
+
+    final ClusterVariableDbModel clusterVariable =
+        ClusterVariableFixtures.createRandomTenantClusterVariable(generateRandomString(50))
+            .copy(
+                b ->
+                    ((ClusterVariableDbModelBuilder) b)
+                        .metadata(List.of(new MetadataEntry("kind", "CREDENTIAL", null))));
+    rdbmsWriters.getClusterVariableWriter().create(clusterVariable);
+    rdbmsWriters.flush();
+
+    final List<MetadataEntry> updatedMetadata =
+        List.of(new MetadataEntry("schemaVersion", "3", 3.0));
+    final ClusterVariableDbModel updatedClusterVariable =
+        clusterVariable.copy(b -> ((ClusterVariableDbModelBuilder) b).metadata(updatedMetadata));
+    rdbmsWriters.getClusterVariableWriter().update(updatedClusterVariable);
+    rdbmsWriters.flush();
+
+    final var instance =
+        clusterVariableReader.getTenantScopedClusterVariable(
+            clusterVariable.name(),
+            clusterVariable.tenantId(),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.CLUSTER_VARIABLE, clusterVariable.name()));
+
+    assertThat(instance).isNotNull();
+    assertVariableDbModelEqualToEntity(updatedClusterVariable, instance);
+  }
+
+  @TestTemplate
   public void shouldDeleteTenantClusterVariable(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -443,7 +505,7 @@ public class ClusterVariableIT {
 
   private void assertVariableDbModelEqualToEntity(
       final ClusterVariableDbModel dbModel, final ClusterVariableEntity entity) {
-    // metadata is not yet persisted in ClusterVariableDbModel, so it has no equivalent to compare
-    assertThat(entity).usingRecursiveComparison().ignoringFields("metadata").isEqualTo(dbModel);
+    // the metadata JOIN has no ORDER BY, so row order across metadata entries is not guaranteed
+    assertThat(entity).usingRecursiveComparison().ignoringCollectionOrder().isEqualTo(dbModel);
   }
 }
