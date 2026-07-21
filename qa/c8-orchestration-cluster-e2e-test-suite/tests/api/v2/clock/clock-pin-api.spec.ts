@@ -16,7 +16,8 @@ import {
 import {deploy} from '../../../../utils/zeebeClient';
 import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 
-test.describe('Pin Clock API Tests', () => {
+//Skipped due to bug 49858: https://github.com/camunda/camunda/issues/49858
+test.describe.skip('Pin Clock API Tests', () => {
   let processDefinitionId: string;
 
   test.beforeAll(async ({request}) => {
