@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.conditional;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -91,12 +92,18 @@ public class ConditionalEvaluationEvaluateProcessor
   public void processRecord(final TypedRecord<ConditionalEvaluationRecord> command) {
     final var record = command.getValue();
 
-    if (!isAuthorizedForTenant(command, record.getTenantId())) {
-      final var failureMessage =
-          USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId());
-      rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, failureMessage);
-      responseWriter.writeRejectedResponseOnCommand(
-          command, RejectionType.FORBIDDEN, failureMessage);
+    final var tenantCheck =
+        cslCheck.checkTenant(
+            command,
+            record.getTenantId(),
+            record,
+            new Rejection(
+                RejectionType.FORBIDDEN,
+                USER_NOT_ASSIGNED_TO_TENANT_MESSAGE.formatted(record.getTenantId())));
+    if (tenantCheck.isLeft()) {
+      final var rejection = tenantCheck.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -232,16 +239,6 @@ public class ConditionalEvaluationEvaluateProcessor
     if (authResult.isLeft()) {
       throw new ForbiddenException(authResult.getLeft());
     }
-  }
-
-  private boolean isAuthorizedForTenant(
-      final TypedRecord<ConditionalEvaluationRecord> command, final String tenantId) {
-    if (!cslCheck.isMultiTenancyChecksEnabled()) {
-      return true;
-    }
-    return cslCheck
-        .resolveAuthorizedTenants(command.getAuthorizations())
-        .isAuthorizedForTenantId(tenantId);
   }
 
   private record MatchedStartEvent(

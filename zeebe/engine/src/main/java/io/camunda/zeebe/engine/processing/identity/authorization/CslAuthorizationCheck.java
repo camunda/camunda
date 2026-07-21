@@ -122,6 +122,39 @@ public final class CslAuthorizationCheck {
   }
 
   /**
+   * Tenant-assignment check for command sites that must verify tenant membership independently of a
+   * resource {@link #check} — e.g. a command-level tenant gate, or a site whose RBAC check runs at
+   * a different granularity (one tenant, many resource checks).
+   *
+   * <p>Encapsulates the skip-logic hand-rolled across engine processors: when multi-tenancy checks
+   * are disabled the check is a no-op; otherwise the authorized tenants are resolved from the
+   * command's claims (anonymous access is authorized for every tenant) and {@code tenantId} must be
+   * among them.
+   *
+   * <p>Callers own the rejection semantics: {@code notAssignedRejection} carries the {@link
+   * io.camunda.zeebe.protocol.record.RejectionType} — {@code FORBIDDEN} to signal "not assigned to
+   * tenant", or {@code NOT_FOUND} to mask an existing resource — and the message.
+   *
+   * @param value the value to return on success (mirrors {@link #check}; enables {@code flatMap}
+   *     composition with it)
+   * @param notAssignedRejection the rejection to return when the principal is not assigned to
+   *     {@code tenantId}
+   */
+  public <T> Either<Rejection, T> checkTenant(
+      final TypedRecord<?> command,
+      final String tenantId,
+      final T value,
+      final Rejection notAssignedRejection) {
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return Either.right(value);
+    }
+    if (resolveAuthorizedTenants(command.getAuthorizations()).isAuthorizedForTenantId(tenantId)) {
+      return Either.right(value);
+    }
+    return Either.left(notAssignedRejection);
+  }
+
+  /**
    * Direct authentication-based check for multi-check callers that have already resolved the
    * principal via {@link #resolveForCheck}.
    *
