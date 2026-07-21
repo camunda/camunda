@@ -297,7 +297,8 @@ public class FailOverReplicationTest {
     data.setSnapshotPeriod(SNAPSHOT_PERIOD);
 
     final var maxSize = DataSize.ofKilobytes(32);
-    data.setLogSegmentSize(maxSize);
+    // segment size must fit the atomic identity-setup batch written at startup
+    data.setLogSegmentSize(DataSize.ofKilobytes(128));
     data.setLogIndexDensity(1);
     brokerCfg.getNetwork().setMaxMessageSize(maxSize);
   }

@@ -80,4 +80,42 @@ class AuthzModelMapperTest {
         new AuthorizationScope(AuthorizationResourceMatcher.PROPERTY, "", "tenantId");
     assertThat(AuthzModelMapper.fromProtocol(AuthzModelMapper.toProtocol(scope))).isEqualTo(scope);
   }
+
+  @Test
+  void shouldMapEveryCslAuthorizationResourceTypeToProtocol() {
+    for (final AuthorizationResourceType value : AuthorizationResourceType.values()) {
+      assertThat(AuthzModelMapper.fromProtocol(AuthzModelMapper.toProtocol(value)))
+          .as("round trip of %s", value)
+          .isEqualTo(value);
+    }
+  }
+
+  @Test
+  void shouldMapEveryCslPermissionTypeToProtocol() {
+    for (final PermissionType value : PermissionType.values()) {
+      assertThat(AuthzModelMapper.fromProtocol(AuthzModelMapper.toProtocol(value)))
+          .as("round trip of %s", value)
+          .isEqualTo(value);
+    }
+  }
+
+  @Test
+  void shouldMapEveryProtocolAuthorizationResourceTypeToCsl() {
+    for (final io.camunda.zeebe.protocol.record.value.AuthorizationResourceType value :
+        io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.values()) {
+      assertThat(AuthzModelMapper.toProtocol(AuthzModelMapper.fromProtocol(value)))
+          .as("round trip of %s", value)
+          .isEqualTo(value);
+    }
+  }
+
+  @Test
+  void shouldMapEveryProtocolPermissionTypeToCsl() {
+    for (final io.camunda.zeebe.protocol.record.value.PermissionType value :
+        io.camunda.zeebe.protocol.record.value.PermissionType.values()) {
+      assertThat(AuthzModelMapper.toProtocol(AuthzModelMapper.fromProtocol(value)))
+          .as("round trip of %s", value)
+          .isEqualTo(value);
+    }
+  }
 }

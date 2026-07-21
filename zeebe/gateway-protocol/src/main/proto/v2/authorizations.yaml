@@ -445,6 +445,7 @@ components:
         - READ_USAGE_METRIC
         - READ_USER_TASK
         - READ_TASK_LISTENER
+        - REVEAL
         - SUSPEND_PROCESS_INSTANCE
         - UPDATE
         - UPDATE_PROCESS_INSTANCE
@@ -471,6 +472,7 @@ components:
         - PROCESS_DEFINITION
         - RESOURCE
         - ROLE
+        - SECRET
         - SYSTEM
         - TENANT
         - USER

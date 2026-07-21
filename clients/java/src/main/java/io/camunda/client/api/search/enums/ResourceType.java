@@ -32,6 +32,7 @@ public enum ResourceType {
   PROCESS_DEFINITION,
   RESOURCE,
   ROLE,
+  SECRET,
   SYSTEM,
   TENANT,
   USER,
