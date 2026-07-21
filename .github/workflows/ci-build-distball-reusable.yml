@@ -23,10 +23,8 @@ env:
 jobs:
   build-distball:
     name: "Build / Distribution Tarball"
-    # Transport differs by runner: docker-checks (GitHub-hosted, ci.yml only) uses the GHA
-    # artifact API; self-hosted gcp-perf consumers (integration-tests, and the reusable
-    # database/webapp-UT workflows) use GCS, since the artifact API is throughput-capped on
-    # self-hosted runners.
+    # GHA artifact API for ci.yml's docker-checks (GitHub-hosted); GCS for self-hosted
+    # gcp-perf consumers, since the artifact API is throughput-capped there.
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 30
     permissions:
