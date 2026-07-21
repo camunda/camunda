@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public interface ClusterConfigurationService extends AsyncClosable {
   PartitionDistribution getPartitionDistribution();
@@ -43,10 +44,11 @@ public interface ClusterConfigurationService extends AsyncClosable {
   void removeInconsistentConfigurationListener();
 
   void registerRequestValidator(
-      String physicalTenantId, ClusterConfigurationRequestValidator<?, ?> validator);
+      @Nullable String physicalTenantId, ClusterConfigurationRequestValidator<?, ?> validator);
 
   void removeRequestValidator(
-      String physicalTenantId, Class<? extends ClusterConfigurationManagementRequest> requestType);
+      @Nullable String physicalTenantId,
+      Class<? extends ClusterConfigurationManagementRequest> requestType);
 
   default List<PartitionMetadata> getMemberPartitions(final MemberId memberId) {
     final var partitionDistribution = getPartitionDistribution();
