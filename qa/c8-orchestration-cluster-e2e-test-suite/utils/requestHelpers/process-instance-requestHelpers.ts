@@ -140,18 +140,17 @@ export async function verifyIncidentsForProcessInstance(
       buildUrl(`/process-instances/${processInstanceKey}/incidents/search`),
       {
         headers: jsonHeaders(),
-        data: {
-          filter: {
-            state: 'ACTIVE',
-          },
-        },
+        data: {},
       },
     );
     await assertStatusCode(res, 200);
     const json = await res.json();
+    const activeIncidentCount = (json.items as Array<{state: string}>).filter(
+      (incident) => incident.state === 'ACTIVE',
+    ).length;
     expect(
-      json.page.totalItems,
-      `Unexpected number of incident items. Found: ${JSON.stringify(json)}`,
+      activeIncidentCount,
+      `Unexpected number of active incident items. Found: ${JSON.stringify(json)}`,
     ).toBe(expectedIncidentCount);
   }).toPass(defaultAssertionOptions);
 }
