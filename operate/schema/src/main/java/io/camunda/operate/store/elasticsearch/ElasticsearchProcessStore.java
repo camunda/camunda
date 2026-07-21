@@ -8,6 +8,7 @@
 package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
+import static io.camunda.operate.util.ElasticsearchUtil.QUERY_MAX_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
@@ -203,13 +204,15 @@ public class ElasticsearchProcessStore implements ProcessStore {
   @Override
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
       final String tenantId, @Nullable final Set<String> allowedBPMNProcessIds) {
-
     final var query = buildQuery(tenantId, allowedBPMNProcessIds);
     final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
 
     final var searchRequestBuilder =
         new SearchRequest.Builder()
             .index(processIndex.getAlias())
+            // Set an explicit page size to avoid the Elasticsearch scroll default of 10 hits per
+            // round-trip, which is very slow for deployments with many process definitions.
+            .size(QUERY_MAX_SIZE)
             .query(tenantAwareQuery)
             .source(
                 src ->

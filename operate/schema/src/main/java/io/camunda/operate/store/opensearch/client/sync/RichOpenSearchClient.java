@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class RichOpenSearchClient {
+  public static final int QUERY_MAX_SIZE = 10000;
   private static final Logger LOGGER = LoggerFactory.getLogger(RichOpenSearchClient.class);
   final OpenSearchBatchOperations openSearchBatchOperations;
   final OpenSearchClusterOperations openSearchClusterOperations;
