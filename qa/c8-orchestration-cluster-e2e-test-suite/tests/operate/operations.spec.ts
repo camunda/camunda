@@ -120,14 +120,20 @@ test.describe('Operations', () => {
     });
 
     await test.step('Retry single instance using operation button', async () => {
+      await expect(
+        operateProcessesPage.getRetryInstanceButton(
+          instance.processInstanceKey,
+        ),
+      ).toBeVisible({timeout: 120000});
       await operateProcessesPage.clickRetryInstanceButton(
         instance.processInstanceKey,
       );
 
-      await expect(operateProcessesPage.singleOperationSpinner).toBeVisible();
-      await expect(operateProcessesPage.singleOperationSpinner).toBeHidden({
-        timeout: 90000,
-      });
+      const instanceSpinner = operateProcessesPage.getInstanceOperationSpinner(
+        instance.processInstanceKey,
+      );
+      await expect(instanceSpinner).toBeVisible();
+      await expect(instanceSpinner).toBeHidden({timeout: 90000});
     });
 
     await test.step('Cancel single instance using operation button', async () => {
