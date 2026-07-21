@@ -549,7 +549,7 @@ public final class PartitionManagerImpl
   }
 
   @Override
-  public ActorFuture<Void> setExporterState(
+  public ActorFuture<Void> setExportingState(
       final int partitionId, final ExportingState exportingState) {
     final var result = concurrencyControl.<Void>createFuture();
     concurrencyControl.run(() -> setExporterState(partitionId, exportingState, result));

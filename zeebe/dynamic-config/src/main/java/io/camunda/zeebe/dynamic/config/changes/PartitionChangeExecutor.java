@@ -119,5 +119,5 @@ public interface PartitionChangeExecutor {
    * @param exportingState the target exporting state
    * @return a future that completes when the exporting state has been applied
    */
-  ActorFuture<Void> setExporterState(final int partitionId, final ExportingState exportingState);
+  ActorFuture<Void> setExportingState(final int partitionId, final ExportingState exportingState);
 }

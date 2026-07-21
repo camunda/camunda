@@ -70,7 +70,7 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
   }
 
   @Override
-  public ActorFuture<Void> setExporterState(
+  public ActorFuture<Void> setExportingState(
       final int partitionId, final ExportingState exportingState) {
     return CompletableActorFuture.completed(null);
   }

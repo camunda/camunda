@@ -76,7 +76,7 @@ final class ExportingStateChangeApplier implements MemberOperationApplier {
 
     for (final int partitionId : partitions) {
       partitionChangeExecutor
-          .setExporterState(partitionId, state)
+          .setExportingState(partitionId, state)
           .onComplete(
               (nothing, error) -> {
                 if (error != null) {
