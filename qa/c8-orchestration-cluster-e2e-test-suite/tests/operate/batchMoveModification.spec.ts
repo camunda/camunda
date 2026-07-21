@@ -66,9 +66,12 @@ test.describe('Process Instance Batch Modification', () => {
         assertion: async () => {
           await expect(
             page.getByText(`${NUM_PROCESS_INSTANCES} results`),
-          ).toBeVisible({timeout: 5000});
+          ).toBeVisible({timeout: 15000});
         },
         onFailure: async () => {
+          // Let the seeded instances finish importing into Operate before
+          // re-navigating; the count won't be exact until the import settles.
+          await sleep(5000);
           await gotoProcessesPage(page, {
             searchParams: {
               active: 'true',
@@ -78,6 +81,7 @@ test.describe('Process Instance Batch Modification', () => {
             },
           });
         },
+        maxRetries: 5,
       });
     });
 
@@ -138,8 +142,15 @@ test.describe('Process Instance Batch Modification', () => {
           ).toBeVisible({timeout: 30000});
         },
         onFailure: async () => {
+          // The batch move is applied asynchronously and then imported into
+          // Operate; a plain reload can outrun that. Give the operation time
+          // to finish and be indexed before re-reading the filtered list. The
+          // shipArticles/canceled filters are URL params, so reload preserves
+          // them.
+          await sleep(5000);
           await page.reload();
         },
+        maxRetries: 5,
       });
     });
 

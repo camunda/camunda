@@ -69,8 +69,10 @@ class OperateDecisionsPage {
   async gotoDecisionsPage(options?: {
     searchParams?: SearchParams;
   }): Promise<void> {
+    const baseUrl = `${process.env.CORE_APPLICATION_OPERATE_URL}/operate/decisions`;
+
     if (!options?.searchParams) {
-      await this.page.goto('/decisions');
+      await this.page.goto(baseUrl);
       return;
     }
 
@@ -81,7 +83,7 @@ class OperateDecisionsPage {
       }
     });
 
-    await this.page.goto(`/decisions?${searchParams.toString()}`);
+    await this.page.goto(`${baseUrl}?${searchParams.toString()}`);
   }
 
   async selectDecisionName(option: string): Promise<void> {
@@ -95,6 +97,14 @@ class OperateDecisionsPage {
         });
         await expect(optionLocator).toBeVisible();
         await optionLocator.click();
+        // Confirm the selection actually committed. Under nightly load the
+        // option click can visually succeed without updating the combobox,
+        // leaving the list unfiltered — the observed failure signature was an
+        // empty Name combobox after selection, which let callers proceed
+        // against the full, unfiltered list.
+        await expect(this.decisionNameFilter).toHaveValue(option, {
+          timeout: 10000,
+        });
       },
       onFailure: async () => {
         await this.page.reload();
