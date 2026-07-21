@@ -7,8 +7,13 @@
  */
 package io.camunda.zeebe.gateway.rest.validation;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import io.camunda.gateway.protocol.model.LicenseResponse;
 import io.camunda.zeebe.gateway.rest.RestTest;
+import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -16,6 +21,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -84,6 +90,13 @@ class ResponseValidationSpringMvcIntegrationTest {
   @Import(ResponseValidationAdvice.class)
   @TestPropertySource(properties = "camunda.rest.response-validation.enabled=true")
   class ResponseValidationEnabled extends RestTest {
+
+    @MockitoBean private SecondaryStorageInterceptor secondaryStorageInterceptor;
+
+    @BeforeEach
+    void mockSecondaryStorageInterceptor() {
+      when(secondaryStorageInterceptor.preHandle(any(), any(), any())).thenReturn(true);
+    }
 
     @Test
     void shouldReturn500WhenResponseViolatesContract() {
@@ -168,6 +181,13 @@ class ResponseValidationSpringMvcIntegrationTest {
   @Nested
   @WebMvcTest(value = TestResponseValidationController.class)
   class ResponseValidationDisabled extends RestTest {
+
+    @MockitoBean private SecondaryStorageInterceptor secondaryStorageInterceptor;
+
+    @BeforeEach
+    void mockSecondaryStorageInterceptor() {
+      when(secondaryStorageInterceptor.preHandle(any(), any(), any())).thenReturn(true);
+    }
 
     @Test
     void shouldReturn200EvenWhenResponseViolatesContract() {
