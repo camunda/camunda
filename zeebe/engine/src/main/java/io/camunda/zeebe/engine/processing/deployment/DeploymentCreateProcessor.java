@@ -166,7 +166,7 @@ public final class DeploymentCreateProcessor
                     AuthorizationResourceType.RESOURCE,
                     command.getValue().getTenantId());
         rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-        responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+        responseWriter.writeRejectedResponseOnCommand(command, RejectionType.FORBIDDEN, message);
         return;
       }
     }

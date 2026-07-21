@@ -73,7 +73,8 @@ public class DecisionEvaluationEvaluateProcessor
               decisionId);
       if (isAuthorized.isLeft()) {
         final var rejection = isAuthorized.getLeft();
-        responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+        responseWriter.writeRejectedResponseOnCommand(
+            command, rejection.type(), rejection.reason());
         rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
         return;
       }

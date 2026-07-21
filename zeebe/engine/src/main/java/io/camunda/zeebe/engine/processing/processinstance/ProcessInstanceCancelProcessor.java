@@ -113,7 +113,7 @@ public final class ProcessInstanceCancelProcessor
             command,
             RejectionType.NOT_FOUND,
             String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
-        responseWriter.writeRejectionOnCommand(
+        responseWriter.writeRejectedResponseOnCommand(
             command,
             RejectionType.NOT_FOUND,
             String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
