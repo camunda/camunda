@@ -67,6 +67,7 @@ public class TopologyServiceTest {
     topologyManager = mock(BrokerTopologyManager.class);
     when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
     when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(clusterState);
+    when(topologyManager.getClusterConfiguration()).thenReturn(ClusterConfiguration.uninitialized());
     services =
         new TopologyServices(
             PHYSICAL_TENANT_ID,
