@@ -404,15 +404,15 @@ public final class ControllableRaftContexts {
     final var target =
         raftServers.keySet().stream()
             .filter(id -> !id.equals(memberId))
-            .min(java.util.Comparator.comparing(MemberId::id));
-    if (target.isEmpty()) {
+            .min(java.util.Comparator.comparing(MemberId::id))
+            .orElse(null);
+    if (target == null) {
       return;
     }
-    LOG.info(
-        "Transferring leadership from {} to {} via TimeoutNow", memberId.id(), target.get().id());
+    LOG.info("Transferring leadership from {} to {} via TimeoutNow", memberId.id(), target.id());
     final var request =
         TimeoutNowRequest.builder().withTerm(raftContext.getTerm()).withLeader(memberId).build();
-    raftContext.getProtocol().timeoutNow(target.get(), request);
+    raftContext.getProtocol().timeoutNow(target, request);
   }
 
   // Find current leader and execute an append request
