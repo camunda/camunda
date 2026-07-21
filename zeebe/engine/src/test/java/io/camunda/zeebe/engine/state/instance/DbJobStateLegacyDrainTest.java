@@ -173,6 +173,35 @@ final class DbJobStateLegacyDrainTest {
   }
 
   @Test
+  void shouldFindOwnTenantsLegacyJobWhileAnotherTenantsLegacyJobCoexists() {
+    // given: two tenants each have their own legacy job of the same type, coexisting in the CF
+    // at the same time
+    final DirectBuffer type = wrapString("type-a");
+    final String otherTenant = "other-tenant";
+    seedLegacyJob(1L, type, TENANT);
+    seedLegacyJob(2L, type, otherTenant);
+
+    // when/then: querying TENANT finds only its own job, not the other tenant's
+    assertThat(activatableKeys(type)).containsExactly(1L);
+  }
+
+  @Test
+  void shouldReturnTypeAsPriorityLeqZeroJobAfterGlobalEmptinessCheckTouchesTypeB() {
+    // given: type A's legacy prefix is empty but type B keeps the legacy CF non-empty, which
+    // forces the isEmpty() global-emptiness check to run — and that check's underlying seek
+    // wraps the shared jobTypeKey field with type B's entry as a side effect
+    final DirectBuffer typeA = wrapString("type-a");
+    final DirectBuffer typeB = wrapString("type-b");
+    seedLegacyJob(1L, typeB, TENANT);
+    createActivatableJob(2L, typeA, 0); // priority <= 0, served in Phase 3
+
+    // when: querying type A must still resolve Phase 3 against type A, not type B — if
+    // jobTypeKey were not restored after the isEmpty() call, this would incorrectly come back
+    // empty
+    assertThat(activatableKeys(typeA)).containsExactly(2L);
+  }
+
+  @Test
   void shouldFindAndDrainLegacyJobInsertedByReplayOfPreVersionedCreatedEvent() {
     // given: the real applier version-dispatch used at replay, not a direct CF seed
     final var eventAppliers = new EventAppliers();
