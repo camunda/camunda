@@ -24,6 +24,7 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
+import io.camunda.operate.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -511,5 +512,21 @@ public class ElasticsearchProcessStoreTest {
 
     // Verify no includes are set (all other fields should be returned)
     assertThat(capturedRequest.source().fetchSource().includes()).isNullOrEmpty();
+  }
+
+  @Test
+  public void testGetProcessesGroupedSetsExplicitPageSize() throws IOException {
+    // Given
+    when(processIndex.getAlias()).thenReturn("process-index");
+    when(tenantAwareClient.search(any(SearchRequest.class), any())).thenReturn(List.of());
+
+    // When
+    underTest.getProcessesGrouped("<default>", null);
+
+    // Then - the scroll search must set an explicit page size to avoid the Elasticsearch scroll
+    // default of 10 hits per round-trip (see issue #58282)
+    final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+    Mockito.verify(tenantAwareClient).search(captor.capture(), any());
+    assertThat(captor.getValue().source().size()).isEqualTo(ElasticsearchUtil.QUERY_MAX_SIZE);
   }
 }

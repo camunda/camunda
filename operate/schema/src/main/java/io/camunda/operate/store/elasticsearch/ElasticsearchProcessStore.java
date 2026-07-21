@@ -19,6 +19,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTA
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_NAME;
 import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
+import static io.camunda.operate.util.ElasticsearchUtil.QUERY_MAX_SIZE;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
@@ -237,6 +238,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
     final SearchSourceBuilder sourceBuilder =
         new SearchSourceBuilder()
+            // Set an explicit page size to avoid the Elasticsearch scroll default of 10 hits per
+            // round-trip, which is very slow for deployments with many process definitions.
+            .size(QUERY_MAX_SIZE)
             .query(buildQuery(tenantId, allowedBPMNProcessIds))
             .fetchSource(
                 new String[] {

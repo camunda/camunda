@@ -10,6 +10,7 @@ package io.camunda.operate.store.opensearch;
 import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.ListViewTemplate.*;
+import static io.camunda.operate.store.opensearch.client.OpenSearchOperation.QUERY_MAX_SIZE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.cardinalityAggregation;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.filtersAggregation;
@@ -128,6 +129,9 @@ public class OpensearchProcessStore implements ProcessStore {
 
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
+            // Set an explicit page size to avoid the OpenSearch scroll default of 10 hits per
+            // round-trip, which is very slow for deployments with many process definitions.
+            .size(QUERY_MAX_SIZE)
             .query(withTenantCheck(withTenantIdQuery(tenantId, query)))
             .source(
                 sourceInclude(
