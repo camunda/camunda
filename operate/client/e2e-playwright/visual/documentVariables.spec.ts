@@ -224,4 +224,40 @@ test.describe('document variable visualization', () => {
     await expect(page.getByText(/Failed to load image preview/)).toBeVisible();
     await expect(page).toHaveScreenshot();
   });
+
+  test('document download', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: documentReferenceProcessInstance.detail,
+        callHierarchy: documentReferenceProcessInstance.callHierarchy,
+        elementInstances: documentReferenceProcessInstance.elementInstances,
+        statistics: documentReferenceProcessInstance.statistics,
+        sequenceFlows: documentReferenceProcessInstance.sequenceFlows,
+        variables: documentReferenceProcessInstance.variables,
+        xml: documentReferenceProcessInstance.xml,
+      }),
+    );
+    await page.route('/v2/documents/*', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/pdf',
+        body: 'document contents',
+      }),
+    );
+    const pdfVariable = page.getByTestId('variable-pdf_doc');
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: documentReferenceProcessInstance.detail.processInstanceKey,
+    });
+
+    await expect(pdfVariable).toBeVisible();
+
+    const downloadPromise = page.waitForEvent('download');
+    await pdfVariable.getByRole('link', {name: 'Download'}).click();
+    const download = await downloadPromise;
+
+    expect(await download.failure()).toBeNull();
+    expect(download.suggestedFilename()).toBe('test_document.pdf');
+  });
 });
