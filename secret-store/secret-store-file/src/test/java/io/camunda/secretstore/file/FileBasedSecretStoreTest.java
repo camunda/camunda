@@ -319,13 +319,43 @@ class FileBasedSecretStoreTest {
     final var resultDotDot = store.resolve(Set.of(".."));
     final var resultSlash = store.resolve(Set.of("a/b"));
 
-    // then — invalid names return Failed(NOT_FOUND) rather than throwing
+    // then — invalid names return Failed(INVALID_REF) rather than throwing
     assertThat(resultDotDot.get("..")).isInstanceOf(SecretResolutionResult.Failed.class);
     assertThat(((SecretResolutionResult.Failed) resultDotDot.get("..")).code())
-        .isEqualTo(SecretErrorCode.NOT_FOUND);
+        .isEqualTo(SecretErrorCode.INVALID_REF);
     assertThat(resultSlash.get("a/b")).isInstanceOf(SecretResolutionResult.Failed.class);
     assertThat(((SecretResolutionResult.Failed) resultSlash.get("a/b")).code())
-        .isEqualTo(SecretErrorCode.NOT_FOUND);
+        .isEqualTo(SecretErrorCode.INVALID_REF);
+  }
+
+  @Test
+  void shouldReturnInvalidRefForBlankNameInResolve() {
+    // given
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // when
+    final var result = store.resolve(Set.of("   "));
+
+    // then
+    final var entry = result.get("   ");
+    assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
+    assertThat(((SecretResolutionResult.Failed) entry).code())
+        .isEqualTo(SecretErrorCode.INVALID_REF);
+  }
+
+  @Test
+  void shouldReturnInvalidRefForBackslashNameInResolve() {
+    // given
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // when
+    final var result = store.resolve(Set.of("a\\b"));
+
+    // then
+    final var entry = result.get("a\\b");
+    assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
+    assertThat(((SecretResolutionResult.Failed) entry).code())
+        .isEqualTo(SecretErrorCode.INVALID_REF);
   }
 
   @Test

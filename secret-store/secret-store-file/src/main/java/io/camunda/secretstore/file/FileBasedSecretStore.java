@@ -8,6 +8,7 @@
 package io.camunda.secretstore.file;
 
 import static io.camunda.secretstore.SecretErrorCode.ACCESS_DENIED;
+import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static io.camunda.secretstore.SecretErrorCode.UNREADABLE;
 import static java.util.stream.Collectors.toMap;
@@ -72,7 +73,7 @@ public final class FileBasedSecretStore implements SecretStore {
         Files.newDirectoryStream(directory, FileBasedSecretStore::isVisibleRegularFile)) {
       for (final Path entry : entries) {
         final var name = entry.getFileName().toString();
-        if (!FileBasedSecretReference.isValid(name)) {
+        if (!isValidSecretName(name)) {
           LOG.warn("Skipping file with invalid secret name '{}' in '{}'", name, directory);
           continue;
         }
@@ -90,8 +91,8 @@ public final class FileBasedSecretStore implements SecretStore {
   }
 
   private SecretResolutionResult resolveOne(final String name) {
-    if (!FileBasedSecretReference.isValid(name)) {
-      return notFound(name);
+    if (!isValidSecretName(name)) {
+      return new SecretResolutionResult.Failed(INVALID_REF, "Invalid secret name: " + name, null);
     }
     // name is validated to a single path segment, so this is always a direct child.
     final var file = directory.resolve(name);
@@ -150,6 +151,16 @@ public final class FileBasedSecretStore implements SecretStore {
 
   private static boolean isVisibleRegularFile(final Path path) {
     return !isHidden(path.getFileName().toString()) && Files.isRegularFile(path);
+  }
+
+  private static boolean isValidSecretName(final String name) {
+    if (name.isBlank()) {
+      return false;
+    }
+    if (name.indexOf('/') >= 0 || name.indexOf('\\') >= 0) {
+      return false;
+    }
+    return !".".equals(name) && !"..".equals(name);
   }
 
   private static boolean isHidden(final String name) {
