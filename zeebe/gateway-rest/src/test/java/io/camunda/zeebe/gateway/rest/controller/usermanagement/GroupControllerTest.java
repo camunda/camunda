@@ -208,6 +208,47 @@ public class GroupControllerTest {
 
   @Nested
   @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(properties = "camunda.security.authentication.oidc.groups-claim=g1")
+  public class CamundaGroupsDisabledViaKebabCasePropertyTest extends RestControllerTest {
+
+    private static final String FORBIDDEN_MESSAGE =
+        """
+        {
+          "type": "about:blank",
+          "status": 403,
+          "title": "Access issue",
+          "detail": "%%s endpoint is not accessible: %s",
+          "instance": "%%s"
+        }"""
+            .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
+
+    @Test
+    void shouldReturnErrorOnCreateWhenGroupsClaimSetViaKebabCaseKey() {
+      // given
+      final var groupName = "testGroup";
+      final var description = "description";
+      final var groupId = "g1";
+      // when
+      webClient
+          .post()
+          .uri(GROUP_BASE_URL)
+          .accept(MediaType.APPLICATION_JSON)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(
+              new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
+          .exchange()
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(
+              FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL), JsonCompareMode.STRICT);
+    }
+  }
+
+  @Nested
+  @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=")
   public class CamundaGroupsEnabledTest extends RestControllerTest {
     @MockitoBean private GroupServices groupServices;
