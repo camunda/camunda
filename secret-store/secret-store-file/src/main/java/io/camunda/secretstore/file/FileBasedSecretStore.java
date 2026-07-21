@@ -60,7 +60,7 @@ public final class FileBasedSecretStore implements SecretStore {
       return Map.of();
     }
     requireDirectory();
-    LOG.debug("Resolving {} secret refs from '{}'", names.size(), directory);
+    LOG.debug("Resolving {} secrets from '{}'", names.size(), directory);
     return names.stream().collect(toMap(name -> name, this::resolveOne));
   }
 
