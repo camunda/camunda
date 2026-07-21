@@ -186,20 +186,16 @@ const DetailsTab: React.FC = () => {
     ? null
     : selectedElementInstanceKey;
 
-  const {
-    data: agentInstancesResult,
-    isLoading: isAgentLoading,
-    isError: isAgentError,
-  } = useAgentInstancesForElement({
-    processInstanceKey: processInstance?.processInstanceKey ?? '',
-    elementId: effectiveElementId ?? '',
-    elementInstanceKey: agentElementInstanceKey,
-    enabled: !!processInstance?.processInstanceKey && !!effectiveElementId,
-    enablePeriodicRefetch: true,
-  });
+  const {data: agentInstancesResult, isError: isAgentError} =
+    useAgentInstancesForElement({
+      processInstanceKey: processInstance?.processInstanceKey ?? '',
+      elementId: effectiveElementId ?? '',
+      elementInstanceKey: agentElementInstanceKey,
+      enabled: !!processInstance?.processInstanceKey && !!effectiveElementId,
+      enablePeriodicRefetch: true,
+    });
   const showAgentInstance =
     (agentInstancesResult && agentInstancesResult.items.length > 0) ||
-    isAgentLoading ||
     isAgentError;
 
   const calledDecisionInstance = decisionInstanceSearchResult?.items?.find(
@@ -535,7 +531,11 @@ const DetailsTab: React.FC = () => {
   const hasMultipleInstances =
     selectedInstancesCount !== null && selectedInstancesCount > 1;
 
-  if (resolvedElementInstance === null && !showAgentInstance) {
+  if (
+    resolvedElementInstance === null &&
+    !isFetchingElement &&
+    !showAgentInstance
+  ) {
     return (
       <EmptyMessageContainer>
         <EmptyMessage
@@ -567,7 +567,6 @@ const DetailsTab: React.FC = () => {
           hasMoreTotalItems={
             agentInstancesResult?.page.hasMoreTotalItems ?? false
           }
-          isLoading={isAgentLoading}
           isError={isAgentError}
           selectedElementInstanceKey={agentElementInstanceKey}
         />
