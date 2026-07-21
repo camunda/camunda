@@ -234,7 +234,12 @@ public class RestoreApp implements ApplicationRunner {
     final var restoreRequest =
         new RestoreRequest(backupIds, fromStr, toStr, databaseType, continuousBackups, false);
     final RestoreValidator validator = new RestoreValidator(backupStore);
-    validator.validate(restoreRequest);
+    final var result = validator.validate(restoreRequest);
+    if (result.isLeft()) {
+      // every ClusterConfigurationRequestFailedException permitted subtype extends
+      // RuntimeException; the sealed interface itself just can't say so in Java.
+      throw (RuntimeException) result.getLeft();
+    }
   }
 
   private boolean hasTimeRange() {

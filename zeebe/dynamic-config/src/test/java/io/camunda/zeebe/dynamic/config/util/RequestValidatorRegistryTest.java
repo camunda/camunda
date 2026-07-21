@@ -8,13 +8,16 @@
 package io.camunda.zeebe.dynamic.config.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 final class RequestValidatorRegistryTest {
@@ -36,8 +39,9 @@ final class RequestValidatorRegistryTest {
       }
 
       @Override
-      public RestoreRequest validate(final RestoreRequest request) {
-        return rewrittenTo;
+      public Either<ClusterConfigurationRequestFailedException, RestoreRequest> validate(
+          final @NonNull RestoreRequest request) {
+        return Either.right(rewrittenTo);
       }
     };
   }
@@ -51,7 +55,7 @@ final class RequestValidatorRegistryTest {
     final var result = registry.validateRequest(request);
 
     // then
-    assertThat(result).isSameAs(request);
+    assertThat(result.get()).isSameAs(request);
   }
 
   @Test
@@ -65,7 +69,7 @@ final class RequestValidatorRegistryTest {
     final var result = registry.validateRequest(request);
 
     // then
-    assertThat(result).isSameAs(rewritten);
+    assertThat(result.get()).isSameAs(rewritten);
   }
 
   @Test
@@ -76,9 +80,11 @@ final class RequestValidatorRegistryTest {
 
     // when validating a request for the default tenant, no validator matches, and the request
     // requires validation
+    final var result = registry.validateRequest(request);
+
     // then
-    assertThatThrownBy(() -> registry.validateRequest(request))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class);
   }
 
   @Test
@@ -92,7 +98,7 @@ final class RequestValidatorRegistryTest {
     final var result = registry.validateRequest(request);
 
     // then
-    assertThat(result).isSameAs(rewritten);
+    assertThat(result.get()).isSameAs(rewritten);
   }
 
   @Test
@@ -109,7 +115,7 @@ final class RequestValidatorRegistryTest {
     final var result = registry.validateRequest(request);
 
     // then
-    assertThat(result).isSameAs(rewrittenByTenantSpecific);
+    assertThat(result.get()).isSameAs(rewrittenByTenantSpecific);
   }
 
   @Test
@@ -117,9 +123,12 @@ final class RequestValidatorRegistryTest {
     // given a request type that requires validation, with nothing registered for it
     final var request = restoreRequest();
 
+    // when
+    final var result = registry.validateRequest(request);
+
     // then
-    assertThatThrownBy(() -> registry.validateRequest(request))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class);
   }
 
   @Test
@@ -132,9 +141,11 @@ final class RequestValidatorRegistryTest {
 
     // when validating after deregistration, no validator matches, and the request requires
     // validation
+    final var result = registry.validateRequest(restoreRequest());
+
     // then
-    assertThatThrownBy(() -> registry.validateRequest(restoreRequest()))
-        .isInstanceOf(IllegalArgumentException.class);
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class);
   }
 
   @Test
@@ -150,6 +161,7 @@ final class RequestValidatorRegistryTest {
     registry.deregisterValidator(null, RestoreRequest.class);
 
     // then the tenant-specific validator is unaffected
-    assertThat(registry.validateRequest(restoreRequest())).isSameAs(rewrittenByTenantSpecific);
+    assertThat(registry.validateRequest(restoreRequest()).get())
+        .isSameAs(rewrittenByTenantSpecific);
   }
 }

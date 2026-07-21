@@ -50,6 +50,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
@@ -109,7 +110,10 @@ final class ClusterConfigurationManagementApiTest {
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                recordingCoordinator, id0, new TestConcurrencyControl(), request -> request));
+                recordingCoordinator,
+                id0,
+                new TestConcurrencyControl(),
+                request -> Either.right(request)));
 
     requestServer.start();
   }

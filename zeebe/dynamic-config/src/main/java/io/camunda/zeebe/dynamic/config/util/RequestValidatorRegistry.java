@@ -8,7 +8,10 @@
 package io.camunda.zeebe.dynamic.config.util;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
+import io.camunda.zeebe.util.Either;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -66,15 +69,15 @@ public final class RequestValidatorRegistry {
    * validator.
    *
    * @param request the request to validate
-   * @return the request produced by the registered validator (which may be a rewritten request of a
-   *     different concrete type than the input), or the original request unchanged if none is
-   *     registered for its type and tenant
-   * @throws IllegalArgumentException if the request requires validation but no validator is
-   *     registered for its type and tenant
+   * @return an {@link Either.Right} with the request produced by the registered validator (which
+   *     may be a rewritten request of a different concrete type than the input), or the original
+   *     request unchanged if none is registered for its type and tenant; an {@link Either.Left}
+   *     with an {@link InvalidRequest} if the request requires validation but no validator is
+   *     registered for its type and tenant, or if the registered validator rejects it
    */
   @SuppressWarnings("unchecked")
-  public ClusterConfigurationManagementRequest validateRequest(
-      final ClusterConfigurationManagementRequest request) {
+  public Either<ClusterConfigurationRequestFailedException, ClusterConfigurationManagementRequest>
+      validateRequest(final ClusterConfigurationManagementRequest request) {
     final var requestType = request.getClass();
     final var validator =
         findValidator(new ValidatorKey(requestType, request.physicalTenantId()))
@@ -87,11 +90,12 @@ public final class RequestValidatorRegistry {
           .validate(request);
     }
     if (request.requiresValidation()) {
-      throw new IllegalArgumentException(
-          "Cannot handle %s: validation is required but no validator is registered for tenant '%s'."
-              .formatted(requestType.getSimpleName(), request.physicalTenantId()));
+      return Either.left(
+          new InvalidRequest(
+              "Cannot handle %s: validation is required but no validator is registered for tenant '%s'."
+                  .formatted(requestType.getSimpleName(), request.physicalTenantId())));
     }
-    return request;
+    return Either.right(request);
   }
 
   private Optional<ClusterConfigurationRequestValidator<?, ?>> findValidator(
@@ -106,6 +110,7 @@ public final class RequestValidatorRegistry {
   /** Blocking validation hook handed to the request handler. */
   @FunctionalInterface
   public interface RequestValidator {
-    ClusterConfigurationManagementRequest validate(ClusterConfigurationManagementRequest request);
+    Either<ClusterConfigurationRequestFailedException, ClusterConfigurationManagementRequest>
+        validate(ClusterConfigurationManagementRequest request);
   }
 }

@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry.RequestVali
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -59,9 +60,8 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
     // given
     final var handler =
         handler(
-            request -> {
-              throw new IllegalArgumentException("backupId and time range are mutually exclusive");
-            });
+            request ->
+                Either.left(new InvalidRequest("backupId and time range are mutually exclusive")));
 
     // when
     final var failure = failureOf(handler.restore(restoreRequest()));
@@ -100,7 +100,7 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
         .thenReturn(
             CompletableActorFuture.completed(
                 new ConfigurationChangeResult(config, config, 1L, List.of())));
-    final var handler = handler(request -> request);
+    final var handler = handler(request -> Either.right(request));
 
     // when
     final ActorFuture<ClusterConfigurationChangeResponse> result =
@@ -121,7 +121,7 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
         handler(
             r -> {
               received.set(r);
-              return r;
+              return Either.right(r);
             });
     when(coordinator.applyOperations(any()))
         .thenReturn(
@@ -142,10 +142,7 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
     // default, so a validator registered for another request type is never accidentally skipped
     final var request = new AddMembersRequest(Set.of(MemberId.from("1")), false);
     final var handler =
-        handler(
-            r -> {
-              throw new IllegalArgumentException("members are not allowed right now");
-            });
+        handler(r -> Either.left(new InvalidRequest("members are not allowed right now")));
 
     // when
     final var failure = failureOf(handler.addMembers(request));

@@ -34,6 +34,7 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry.RequestValidator;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -239,11 +240,9 @@ public final class ClusterConfigurationManagementRequestsHandler
 
   /**
    * Runs the (optional, blocking) validator registered for the request type, on the same actor
-   * thread that {@link io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry} is
-   * registered/deregistered on, before delegating to the coordinator with the {@link
-   * ConfigurationChangeRequest} produced by {@code transform} from the (possibly rewritten)
-   * request. A validation failure is mapped to a failed future carrying the validator's error
-   * message so it propagates to the caller.
+   * thread that {@link RequestValidatorRegistry} is registered/deregistered on, before delegating
+   * to the coordinator with the {@link ConfigurationChangeRequest} produced by {@code transform}
+   * from the (possibly rewritten) request.
    */
   @SuppressWarnings("unchecked")
   private <T extends ClusterConfigurationManagementRequest>
@@ -252,15 +251,15 @@ public final class ClusterConfigurationManagementRequestsHandler
     return executor
         .call(() -> requestValidator.validate(request))
         .andThen(
-            (validated, error) -> {
-              if (error instanceof final IllegalArgumentException e) {
-                return CompletableActorFuture.completedExceptionally(
-                    new InvalidRequest(e.getMessage()));
-              }
+            (result, error) -> {
               if (error != null) {
                 return CompletableActorFuture.completedExceptionally(error);
               }
-              final var validatedRequest = (T) validated;
+              if (result.isLeft()) {
+                return CompletableActorFuture.completedExceptionally(
+                    (RuntimeException) result.getLeft());
+              }
+              final var validatedRequest = (T) result.get();
               return handleRequest(request.dryRun(), transform.apply(validatedRequest));
             },
             executor);

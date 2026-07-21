@@ -9,12 +9,16 @@ package io.camunda.zeebe.restore.validation;
 
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.Preconditions;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -36,13 +40,18 @@ public final class RestoreValidator
   }
 
   @Override
-  public RestoreRequest validate(final RestoreRequest request) {
+  public @NonNull Either<ClusterConfigurationRequestFailedException, RestoreRequest> validate(
+      final @NonNull RestoreRequest request) {
     if (backupStore == null) {
-      throw new IllegalArgumentException(
-          "Cannot restore: no backup store is configured on this broker.");
+      return Either.left(
+          new InvalidRequest("Cannot restore: no backup store is configured on this broker."));
     }
-    validateParameters(request);
-    return request;
+    try {
+      validateParameters(request);
+    } catch (final IllegalArgumentException e) {
+      return Either.left(new InvalidRequest(e.getMessage()));
+    }
+    return Either.right(request);
   }
 
   @VisibleForTesting
