@@ -26,6 +26,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.jar.ExternalJarRepository;
 import java.time.Duration;
@@ -36,6 +37,8 @@ import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -484,58 +487,32 @@ final class PartitionConfigurationManagerTest {
               testConcurrencyControl);
     }
 
-    @Test
-    void shouldPauseExporterDirectorAndUpdateConfigInContext() {
+    @ParameterizedTest
+    @EnumSource(
+        value = ExportingState.class,
+        names = {"PAUSED", "SOFT_PAUSED", "EXPORTING"})
+    void shouldUpdateExporterDirectorAndConfigInContext(final ExportingState exportingState) {
       // given
       partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
       final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
-      when(mockExporterDirector.pauseExporting())
-          .thenReturn(testConcurrencyControl.createCompletedFuture());
+      final ActorFuture<Void> completedFuture = testConcurrencyControl.createCompletedFuture();
+      when(mockExporterDirector.pauseExporting()).thenReturn(completedFuture);
+      when(mockExporterDirector.softPauseExporting()).thenReturn(completedFuture);
+      when(mockExporterDirector.resumeExporting()).thenReturn(completedFuture);
       partitionTransitionContext.setExporterDirector(mockExporterDirector);
 
       // when
-      partitionConfigurationManager.setExporterState(ExportingState.PAUSED).join();
+      partitionConfigurationManager.setExporterState(exportingState).join();
 
       // then
       assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().state())
-          .isEqualTo(ExportingState.PAUSED);
-      verify(mockExporterDirector).pauseExporting();
-    }
-
-    @Test
-    void shouldSoftPauseExporterDirector() {
-      // given
-      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
-      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
-      when(mockExporterDirector.softPauseExporting())
-          .thenReturn(testConcurrencyControl.createCompletedFuture());
-      partitionTransitionContext.setExporterDirector(mockExporterDirector);
-
-      // when
-      partitionConfigurationManager.setExporterState(ExportingState.SOFT_PAUSED).join();
-
-      // then
-      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().state())
-          .isEqualTo(ExportingState.SOFT_PAUSED);
-      verify(mockExporterDirector).softPauseExporting();
-    }
-
-    @Test
-    void shouldResumeExporterDirector() {
-      // given
-      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
-      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
-      when(mockExporterDirector.resumeExporting())
-          .thenReturn(testConcurrencyControl.createCompletedFuture());
-      partitionTransitionContext.setExporterDirector(mockExporterDirector);
-
-      // when
-      partitionConfigurationManager.setExporterState(ExportingState.EXPORTING).join();
-
-      // then
-      assertThat(partitionTransitionContext.getDynamicPartitionConfig().exporting().state())
-          .isEqualTo(ExportingState.EXPORTING);
-      verify(mockExporterDirector).resumeExporting();
+          .isEqualTo(exportingState);
+      switch (exportingState) {
+        case PAUSED -> verify(mockExporterDirector).pauseExporting();
+        case SOFT_PAUSED -> verify(mockExporterDirector).softPauseExporting();
+        case EXPORTING -> verify(mockExporterDirector).resumeExporting();
+        case UNKNOWN -> throw new AssertionError("Unexpected exporting state: " + exportingState);
+      }
     }
 
     @Test
