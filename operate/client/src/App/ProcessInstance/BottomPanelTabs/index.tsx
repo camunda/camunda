@@ -101,6 +101,16 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
 
   const tabItems = [
     {
+      label: 'Instance History',
+      to: {
+        pathname: Paths.processInstanceHistory({processInstanceId}),
+      },
+      key: 'instance-history',
+      selected: currentPage === 'process-details-instance-history',
+      title: 'Instance History',
+      visible: isHistoryTabVisible,
+    },
+    {
       label: 'Incidents',
       to: {pathname: Paths.processInstanceIncidents({processInstanceId})},
       key: 'incidents',
@@ -161,16 +171,6 @@ const BottomPanelTabs: React.FC<{isHistoryTabVisible: boolean}> = ({
       selected: currentPage === 'process-details-operations-log',
       title: 'Operations Log',
       visible: true,
-    },
-    {
-      label: 'Instance History',
-      to: {
-        pathname: Paths.processInstanceHistory({processInstanceId}),
-      },
-      key: 'instance-history',
-      selected: currentPage === 'process-details-instance-history',
-      title: 'Instance History',
-      visible: isHistoryTabVisible,
     },
   ] satisfies React.ComponentProps<typeof TabListNav>['items'];
 
