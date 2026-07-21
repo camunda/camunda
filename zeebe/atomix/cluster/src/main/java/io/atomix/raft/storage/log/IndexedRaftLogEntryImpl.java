@@ -54,4 +54,9 @@ record IndexedRaftLogEntryImpl(long index, long term, RaftEntry entry, JournalRe
     record.serializedRecord().getBytes(0, serializedRecord);
     return new ReplicatableJournalRecord(term, index, record.checksum(), serializedRecord);
   }
+
+  @Override
+  public int size() {
+    return record.size();
+  }
 }

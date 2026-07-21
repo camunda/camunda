@@ -190,6 +190,92 @@ class SegmentedJournalReaderTest {
     assertThat(BufferUtil.bufferAsString(record.data())).isEqualTo("");
   }
 
+  @Test
+  void shouldReturnZeroBytesUntilEndForEmptyJournal() {
+    // given
+    assertThat(reader.bytesUntilEnd()).isZero();
+  }
+
+  @Test
+  void shouldReturnAllBytesUntilEndAtStart() {
+    // given
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
+      journal.append(i, recordDataWriter);
+    }
+    reader.seekToFirst();
+
+    // then
+    assertThat(reader.bytesUntilEnd()).isEqualTo((long) ENTRIES_PER_SEGMENT * entrySize);
+  }
+
+  @Test
+  void shouldReturnZeroBytesUntilEndAfterConsumingAll() {
+    // given
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
+      journal.append(i, recordDataWriter);
+    }
+    reader.seekToFirst();
+
+    // when
+    while (reader.hasNext()) {
+      reader.next();
+    }
+
+    // then
+    assertThat(reader.bytesUntilEnd()).isZero();
+  }
+
+  @Test
+  void shouldDecreaseBytesUntilEndByEntrySizePerRead() {
+    // given
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
+    for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
+      journal.append(i, recordDataWriter);
+    }
+    reader.seekToFirst();
+
+    // then
+    long expected = (long) ENTRIES_PER_SEGMENT * entrySize;
+    while (reader.hasNext()) {
+      assertThat(reader.bytesUntilEnd()).isEqualTo(expected);
+      reader.next();
+      expected -= entrySize;
+    }
+    assertThat(reader.bytesUntilEnd()).isZero();
+  }
+
+  @Test
+  void shouldSumBytesUntilEndAcrossSegments() {
+    // given
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
+    final int total = ENTRIES_PER_SEGMENT * 3;
+    for (int i = 1; i <= total; i++) {
+      journal.append(i, recordDataWriter);
+    }
+    reader.seekToFirst();
+
+    // then
+    assertThat(reader.bytesUntilEnd()).isEqualTo((long) total * entrySize);
+  }
+
+  @Test
+  void shouldReturnRemainingBytesUntilEndAfterSeekIntoLaterSegment() {
+    // given
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
+    final int total = ENTRIES_PER_SEGMENT * 3;
+    for (int i = 1; i <= total; i++) {
+      journal.append(i, recordDataWriter);
+    }
+
+    // when
+    final int seekIndex = ENTRIES_PER_SEGMENT + 2;
+    reader.seek(seekIndex);
+
+    // then
+    assertThat(reader.bytesUntilEnd()).isEqualTo((long) (total - seekIndex + 1) * entrySize);
+  }
+
   private int getSerializedSize(final DirectBuffer data) {
     final var record = new RecordData(Long.MAX_VALUE, Long.MAX_VALUE, data);
     final var serializer = new SBESerializer();

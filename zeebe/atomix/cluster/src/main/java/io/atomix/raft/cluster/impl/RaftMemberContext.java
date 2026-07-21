@@ -23,6 +23,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.nio.ByteBuffer;
 import org.slf4j.LoggerFactory;
@@ -51,8 +52,11 @@ public final class RaftMemberContext {
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
   private IndexedRaftLogEntry currentEntry;
-  private long snapshotReplicationLag;
+  private volatile long snapshotReplicationLag;
   private long snapshotChunkBytesInFlight;
+  private volatile long logReplicationLag;
+  private long sentAppendWatermark;
+  private long acknowledgedAppendWatermark;
 
   RaftMemberContext(
       final DefaultRaftMember member,
@@ -78,6 +82,8 @@ public final class RaftMemberContext {
     failureTime = 0;
     snapshotReplicationLag = 0;
     snapshotChunkBytesInFlight = 0;
+    logReplicationLag = 0;
+    acknowledgedAppendWatermark = sentAppendWatermark;
 
     if (reader != null) {
       closeReader();
@@ -119,21 +125,22 @@ public final class RaftMemberContext {
   }
 
   private void openReader(final RaftLog log) {
-    switch (member.getType()) {
-      case PASSIVE:
-        reader = log.openCommittedReader();
-        resetReaderAtEndOfLog(reader);
-        break;
-      case PROMOTABLE:
-      case ACTIVE:
-        reader = log.openUncommittedReader();
-        resetReaderAtEndOfLog(reader);
-        break;
-      default:
+    reader = newReader(log);
+    if (reader != null) {
+      resetReaderAtEndOfLog(reader);
+    }
+  }
+
+  private RaftLogReader newReader(final RaftLog log) {
+    return switch (member.getType()) {
+      case PASSIVE -> log.openCommittedReader();
+      case PROMOTABLE, ACTIVE -> log.openUncommittedReader();
+      default -> {
         LoggerFactory.getLogger(RaftMemberContext.class)
             .error("ResetState: No case for Member type {}", member.getType());
-        break;
-    }
+        yield null;
+      }
+    };
   }
 
   private void resetReaderAtEndOfLog(final RaftLogReader reader) {
@@ -265,6 +272,7 @@ public final class RaftMemberContext {
         .add("installing", installing)
         .add("failures", failures)
         .add("snapshotReplicationLag", snapshotReplicationLag)
+        .add("logReplicationLag", logReplicationLag)
         .toString();
   }
 
@@ -482,16 +490,50 @@ public final class RaftMemberContext {
     this.snapshotChunkBytesInFlight = snapshotChunkBytesInFlight;
   }
 
+  /** Tracks replication lag for each locally-appended entry. */
+  public void recordAppendedBytes(final long appendedBytes) {
+    logReplicationLag += appendedBytes;
+  }
+
+  /**
+   * Update the watermark tracking appended bytes for lag replication, and return the new watermark.
+   *
+   * @param bytes the size of this append batch, in bytes
+   * @return the updated watermark
+   */
+  public long recordInFlightAppend(final long bytes) {
+    sentAppendWatermark += bytes;
+    return sentAppendWatermark;
+  }
+
+  /**
+   * Acknowledges every byte up to {@code appendWatermark}. A later successful request therefore
+   * accounts for an earlier request whose local future timed out, while callbacks at or below the
+   * current watermark are no-ops.
+   */
+  public void acknowledgeInFlightAppends(final long appendWatermark) {
+    if (appendWatermark <= acknowledgedAppendWatermark) {
+      return;
+    }
+    final long acknowledgedBytes = appendWatermark - acknowledgedAppendWatermark;
+    // non-atomic write is okay because we only write from one thread
+    logReplicationLag = Math.max(0, logReplicationLag - acknowledgedBytes);
+    acknowledgedAppendWatermark = appendWatermark;
+  }
+
+  public long getLogReplicationLag() {
+    return logReplicationLag;
+  }
+
   /**
    * The total per-follower replication lag in bytes.
    *
-   * <p>Currently this is the remaining snapshot-install bytes; log replication lag will be added to
-   * this total in future.
+   * <p>This is the outstanding log replication bytes plus the remaining snapshot-install bytes.
    *
    * @return the replication lag in bytes, never negative
    */
   public long getReplicationLagBytes() {
-    return snapshotReplicationLag;
+    return Math.max(0, logReplicationLag + snapshotReplicationLag);
   }
 
   public boolean hasNextEntry() {
@@ -517,6 +559,26 @@ public final class RaftMemberContext {
       currentEntry = reader.next();
     } else {
       currentEntry = null;
+    }
+
+    acknowledgedAppendWatermark = sentAppendWatermark;
+    logReplicationLag = reader.bytesUntilEnd();
+  }
+
+  public void beginSnapshotInstall(final RaftLog log, final PersistedSnapshot persistedSnapshot) {
+    setNextSnapshotIndex(persistedSnapshot.getIndex());
+    setNextSnapshotChunkId(null);
+    setSnapshotReplicationLag(persistedSnapshot.getTotalSizeInBytes());
+
+    // Get the remaining log bytes after the snapshot with a temporary reader to avoid disrupting
+    // the current reader
+    try (final var lagReader = newReader(log)) {
+      if (lagReader == null) {
+        return;
+      }
+      lagReader.seek(persistedSnapshot.getIndex() + 1);
+      acknowledgedAppendWatermark = sentAppendWatermark;
+      logReplicationLag = lagReader.bytesUntilEnd();
     }
   }
 }

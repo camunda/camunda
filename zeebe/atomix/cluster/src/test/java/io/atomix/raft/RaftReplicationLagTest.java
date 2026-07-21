@@ -34,7 +34,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class RaftSnapshotReplicationLagTest {
+public class RaftReplicationLagTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
   private RaftServer leader;
@@ -89,21 +89,66 @@ public class RaftSnapshotReplicationLagTest {
   }
 
   @Test
+  public void shouldTrackLogReplicationLagWhileFollowerCatchesUp() throws Throwable {
+    // given
+    follower = raftRule.getFollower().orElseThrow();
+    final var followerId = MemberId.from(follower.name());
+    raftRule.partition(follower);
+
+    // when
+    raftRule.appendEntries(5);
+
+    // then
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(logReplicationLag(followerId))
+                    .describedAs("log lag accrues while the follower is unreachable")
+                    .isPositive());
+
+    // when
+    raftRule.reconnect(follower);
+
+    // then
+    final var registry = leader.getContext().getMeterRegistry();
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var member = leader.getContext().getCluster().getMemberContext(followerId);
+              assertThat(member.getLogReplicationLag())
+                  .describedAs("log lag drains once the follower catches up")
+                  .isZero();
+              assertThat(member.getReplicationLagBytes())
+                  .describedAs("total lag drains to zero with no snapshot involved")
+                  .isZero();
+              final var gauge = replicationLagGauge(registry, followerId);
+              assertThat(gauge).describedAs("the gauge remains published").isNotNull();
+              assertThat(gauge.value())
+                  .describedAs("the published gauge reflects the drained log lag")
+                  .isZero();
+            });
+  }
+
+  @Test
   public void shouldPublishReplicationLagThroughMeterRegistry() throws Throwable {
     // given
     final int numberOfChunks = 10;
-    final var snapshot = disconnectFollowerAndTakeSnapshot(numberOfChunks);
-    final long totalSnapshotSize = snapshot.getTotalSizeInBytes();
+    disconnectFollowerAndTakeSnapshot(numberOfChunks);
     final var followerId = MemberId.from(follower.name());
     final var registry = leader.getContext().getMeterRegistry();
 
     final List<Double> observedGauge = new CopyOnWriteArrayList<>();
+    final List<Double> observedInternalLag = new CopyOnWriteArrayList<>();
     leaderProtocol.interceptRequest(
         InstallRequest.class,
         request -> {
+          final var member = leader.getContext().getCluster().getMemberContext(followerId);
           final var gauge = replicationLagGauge(registry, followerId);
-          if (gauge != null) {
+          if (member != null && gauge != null) {
             observedGauge.add(gauge.value());
+            observedInternalLag.add((double) member.getReplicationLagBytes());
           }
         });
 
@@ -112,9 +157,9 @@ public class RaftSnapshotReplicationLagTest {
 
     // then
     assertThat(observedGauge).isNotEmpty();
-    assertThat(observedGauge.get(0))
-        .describedAs("the gauge is seeded with the full snapshot size before the first chunk")
-        .isEqualTo((double) totalSnapshotSize);
+    assertThat(observedGauge)
+        .describedAs("the published gauge mirrors the member's replication lag at every step")
+        .containsExactlyElementsOf(observedInternalLag);
     assertThat(observedGauge)
         .describedAs("the published gauge only ever decreases while the install progresses")
         .isSortedAccordingTo(Comparator.reverseOrder());
@@ -125,9 +170,61 @@ public class RaftSnapshotReplicationLagTest {
               final var gauge = replicationLagGauge(registry, followerId);
               assertThat(gauge).describedAs("the gauge remains published").isNotNull();
               assertThat(gauge.value())
-                  .describedAs("the gauge is zeroed once the install completes")
+                  .describedAs("the gauge is zeroed once replication catches up")
                   .isZero();
             });
+  }
+
+  @Test
+  public void shouldExcludePreSnapshotBytesFromLogLagDuringInstall() throws Throwable {
+    // given
+    follower = raftRule.getFollower().orElseThrow();
+    raftRule.partition(follower);
+    leader.getContext().setPreferSnapshotReplicationThreshold(1);
+
+    final var preSnapshotCommit = raftRule.appendEntries(20);
+    final var snapshot = raftRule.takeSnapshot(leader, preSnapshotCommit, 10, true).orElseThrow();
+    raftRule.appendEntries(2);
+
+    final var followerId = MemberId.from(follower.name());
+    final long snapshotSize = snapshot.getTotalSizeInBytes();
+    final long postSnapshotBytes = bytesAfterSnapshotIndex(leader, snapshot.getIndex());
+
+    final List<Long> logLagAtInstall = new CopyOnWriteArrayList<>();
+    final List<Long> totalLagAtInstall = new CopyOnWriteArrayList<>();
+    leaderProtocol.interceptRequest(
+        InstallRequest.class,
+        request -> {
+          final var member = leader.getContext().getCluster().getMemberContext(followerId);
+          if (member != null) {
+            logLagAtInstall.add(member.getLogReplicationLag());
+            totalLagAtInstall.add(member.getReplicationLagBytes());
+          }
+        });
+
+    // when
+    reconnectFollowerAndAwaitSnapshot();
+
+    // then
+    assertThat(logLagAtInstall).isNotEmpty();
+    assertThat(logLagAtInstall.get(0))
+        .describedAs("log lag at install start is the bytes after the snapshot, not the stale span")
+        .isEqualTo(postSnapshotBytes);
+    assertThat(totalLagAtInstall.get(0))
+        .describedAs("total lag is the remaining snapshot plus the post-snapshot log bytes")
+        .isEqualTo(snapshotSize + postSnapshotBytes);
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(
+                        leader
+                            .getContext()
+                            .getCluster()
+                            .getMemberContext(followerId)
+                            .getReplicationLagBytes())
+                    .describedAs("lag drains to zero once the install and log catch-up complete")
+                    .isZero());
   }
 
   @Test
@@ -162,12 +259,23 @@ public class RaftSnapshotReplicationLagTest {
         .gauge();
   }
 
+  private long bytesAfterSnapshotIndex(final RaftServer server, final long snapshotIndex) {
+    try (final var reader = server.getContext().getLog().openUncommittedReader()) {
+      reader.seek(snapshotIndex + 1);
+      return Math.max(0, reader.bytesUntilEnd());
+    }
+  }
+
   private long snapshotReplicationLag(final MemberId followerId) {
     return leader
         .getContext()
         .getCluster()
         .getMemberContext(followerId)
         .getSnapshotReplicationLag();
+  }
+
+  private long logReplicationLag(final MemberId followerId) {
+    return leader.getContext().getCluster().getMemberContext(followerId).getLogReplicationLag();
   }
 
   private PersistedSnapshot disconnectFollowerAndTakeSnapshot(final int numberOfChunks)
