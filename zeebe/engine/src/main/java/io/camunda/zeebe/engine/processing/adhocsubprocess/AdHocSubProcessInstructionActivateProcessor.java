@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -26,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProce
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -46,20 +49,20 @@ public class AdHocSubProcessInstructionActivateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
-  private final PermissionsBehavior permissionsBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final BpmnAdHocSubProcessBehavior bpmnAdHocSubProcessBehavior;
 
   public AdHocSubProcessInstructionActivateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final PermissionsBehavior permissionsBehavior,
+      final CslAuthorizationCheck cslCheck,
       final BpmnBehaviors bpmnBehaviors) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
-    this.permissionsBehavior = permissionsBehavior;
+    this.cslCheck = cslCheck;
     bpmnAdHocSubProcessBehavior = bpmnBehaviors.adHocSubProcessBehavior();
   }
 
@@ -75,21 +78,6 @@ public class AdHocSubProcessInstructionActivateProcessor
               ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND,
               command.getValue().getAdHocSubProcessInstanceKey()));
 
-      return;
-    }
-
-    final var tenantCheck =
-        permissionsBehavior.checkTenant(
-            command,
-            adHocSubProcessElementInstance.getValue().getTenantId(),
-            adHocSubProcessElementInstance,
-            new Rejection(
-                RejectionType.NOT_FOUND,
-                ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND.formatted(
-                    command.getValue().getAdHocSubProcessInstanceKey())));
-    if (tenantCheck.isLeft()) {
-      final var rejection = tenantCheck.getLeft();
-      writeRejectionError(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -202,10 +190,22 @@ public class AdHocSubProcessInstructionActivateProcessor
   private Either<Rejection, AdHocSubProcessInstructionRecord> authorize(
       final TypedRecord<AdHocSubProcessInstructionRecord> command,
       final ElementInstance adHocSubProcessElementInstance) {
-    return permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+    return cslCheck.checkAuthorizationAndTenant(
         command,
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.UPDATE_PROCESS_INSTANCE,
-        adHocSubProcessElementInstance.getValue().getBpmnProcessId());
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(
+                        AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROCESS_DEFINITION))
+                    .permissionType(
+                        AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                    .resourceId(adHocSubProcessElementInstance.getValue().getBpmnProcessId())),
+        command.getValue(),
+        AuthorizationRejectionMapper.forbidden(
+            PermissionType.UPDATE_PROCESS_INSTANCE, AuthorizationResourceType.PROCESS_DEFINITION),
+        adHocSubProcessElementInstance.getValue().getTenantId(),
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND.formatted(
+                command.getValue().getAdHocSubProcessInstanceKey())));
   }
 }

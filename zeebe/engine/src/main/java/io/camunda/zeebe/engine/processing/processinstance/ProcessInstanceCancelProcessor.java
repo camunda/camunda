@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -52,13 +55,13 @@ public final class ProcessInstanceCancelProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final PermissionsBehavior permissionsBehavior;
+  private final CslAuthorizationCheck cslCheck;
 
   public ProcessInstanceCancelProcessor(
       final ProcessingState processingState,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final PermissionsBehavior permissionsBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     elementInstanceState = processingState.getElementInstanceState();
     asyncRequestState = processingState.getAsyncRequestState();
     responseWriter = writers.response();
@@ -66,7 +69,7 @@ public final class ProcessInstanceCancelProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.permissionsBehavior = permissionsBehavior;
+    this.cslCheck = cslCheck;
   }
 
   @Override
@@ -104,29 +107,27 @@ public final class ProcessInstanceCancelProcessor
       return false;
     }
 
-    final var tenantCheck =
-        permissionsBehavior.checkTenant(
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
             command,
-            elementInstance.getValue().getTenantId(),
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.CANCEL_PROCESS_INSTANCE))
+                        .resourceId(elementInstance.getValue().getBpmnProcessId())),
             elementInstance,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.CANCEL_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            elementInstance.getValue().getTenantId(),
             new Rejection(
                 RejectionType.NOT_FOUND,
                 String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey())));
-    if (tenantCheck.isLeft()) {
-      final var rejection = tenantCheck.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
-      return false;
-    }
-
-    final var isAuthorized =
-        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-            command,
-            AuthorizationResourceType.PROCESS_DEFINITION,
-            PermissionType.CANCEL_PROCESS_INSTANCE,
-            elementInstance.getValue().getBpmnProcessId());
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());

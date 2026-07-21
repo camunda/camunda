@@ -148,8 +148,12 @@ public final class DeploymentCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
-    final var isAuthorized =
-        cslCheck.check(
+    final var tenantId = command.getValue().getTenantId();
+    final var tenantMessage =
+        "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
+            .formatted(PermissionType.CREATE, AuthorizationResourceType.RESOURCE, tenantId);
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
             command,
             RequiredAuthorization.of(
                 b ->
@@ -160,26 +164,11 @@ public final class DeploymentCreateProcessor
             command.getValue(),
             AuthorizationRejectionMapper.forbidden(
                 PermissionType.CREATE, AuthorizationResourceType.RESOURCE),
-            AuthorizationRejectionMapper::toBareRejection);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
-      return;
-    }
-
-    final var tenantId = command.getValue().getTenantId();
-    final var tenantMessage =
-        "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
-            .formatted(PermissionType.CREATE, AuthorizationResourceType.RESOURCE, tenantId);
-    final var tenantCheck =
-        cslCheck.checkTenant(
-            command,
+            AuthorizationRejectionMapper::toBareRejection,
             tenantId,
-            command.getValue(),
             new Rejection(RejectionType.FORBIDDEN, tenantMessage));
-    if (tenantCheck.isLeft()) {
-      final var rejection = tenantCheck.getLeft();
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;

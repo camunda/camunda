@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -32,6 +34,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -61,7 +64,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final JobState jobState;
-  private final PermissionsBehavior permissionsBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final IncidentMetrics incidentMetrics;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
 
@@ -71,7 +74,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       final TypedRecordProcessor<UserTaskRecord> userTaskProcessor,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final PermissionsBehavior permissionsBehavior,
+      final CslAuthorizationCheck cslCheck,
       final IncidentMetrics incidentMetrics) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     this.userTaskProcessor = userTaskProcessor;
@@ -83,7 +86,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     userTaskState = processingState.getUserTaskState();
     this.jobActivationBehavior = jobActivationBehavior;
     jobState = processingState.getJobState();
-    this.permissionsBehavior = permissionsBehavior;
+    this.cslCheck = cslCheck;
     this.incidentMetrics = incidentMetrics;
     this.bannedInstanceCheck =
         new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
@@ -92,8 +95,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   @Override
   public void processRecord(final TypedRecord<IncidentRecord> command) {
     final long key = command.getKey();
-    final var authorizedTenantIds =
-        permissionsBehavior.resolveAuthorizedTenants(command.getAuthorizations());
+    final var authorizedTenantIds = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     final var incident = incidentState.getIncidentRecord(key, authorizedTenantIds);
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
@@ -111,11 +113,20 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     }
 
     final var isAuthorized =
-        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+        cslCheck.check(
             command,
-            AuthorizationResourceType.PROCESS_DEFINITION,
-            PermissionType.UPDATE_PROCESS_INSTANCE,
-            incident.getBpmnProcessId());
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(incident.getBpmnProcessId())),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       enrichRejectionCommand(command, incident);

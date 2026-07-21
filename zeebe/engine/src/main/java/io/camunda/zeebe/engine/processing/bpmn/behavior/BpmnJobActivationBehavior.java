@@ -12,7 +12,6 @@ import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -33,7 +32,6 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -174,7 +172,7 @@ public class BpmnJobActivationBehavior {
         switch (jobActivationProperties.tenantFilter()) {
           case ASSIGNED -> {
             final var authorizedTenants =
-                determineAuthorizedTenants(jobActivationProperties.claims());
+                cslCheck.resolveAuthorizedTenants(jobActivationProperties.claims());
             yield !authorizedTenants.isAnonymous()
                 && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
           }
@@ -216,9 +214,5 @@ public class BpmnJobActivationBehavior {
       final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
     return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
         || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
-  }
-
-  private AuthorizedTenants determineAuthorizedTenants(final Map<String, Object> claims) {
-    return cslCheck.resolveAuthorizedTenants(claims);
   }
 }

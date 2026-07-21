@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static java.util.function.Predicate.not;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -25,7 +26,8 @@ import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -45,6 +47,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -200,14 +203,14 @@ public final class ProcessInstanceModificationModifyProcessor
   private final ElementActivationBehavior elementActivationBehavior;
   private final VariableBehavior variableBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
-  private final PermissionsBehavior permissionsBehavior;
+  private final CslAuthorizationCheck cslCheck;
 
   public ProcessInstanceModificationModifyProcessor(
       final Writers writers,
       final ElementInstanceState elementInstanceState,
       final ProcessState processState,
       final BpmnBehaviors bpmnBehaviors,
-      final PermissionsBehavior permissionsBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
@@ -220,7 +223,7 @@ public final class ProcessInstanceModificationModifyProcessor
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
-    this.permissionsBehavior = permissionsBehavior;
+    this.cslCheck = cslCheck;
   }
 
   @Override
@@ -241,29 +244,27 @@ public final class ProcessInstanceModificationModifyProcessor
       return;
     }
 
-    final var tenantCheck =
-        permissionsBehavior.checkTenant(
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
             command,
-            processInstance.getValue().getTenantId(),
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.MODIFY_PROCESS_INSTANCE))
+                        .resourceId(processInstance.getValue().getBpmnProcessId())),
             processInstance,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.MODIFY_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            processInstance.getValue().getTenantId(),
             new Rejection(
                 RejectionType.NOT_FOUND,
                 ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(eventKey)));
-    if (tenantCheck.isLeft()) {
-      final var rejection = tenantCheck.getLeft();
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      return;
-    }
-
-    final var isAuthorized =
-        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-            command,
-            AuthorizationResourceType.PROCESS_DEFINITION,
-            PermissionType.MODIFY_PROCESS_INSTANCE,
-            processInstance.getValue().getBpmnProcessId());
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       enrichRejectionCommand(command, processInstance.getValue());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

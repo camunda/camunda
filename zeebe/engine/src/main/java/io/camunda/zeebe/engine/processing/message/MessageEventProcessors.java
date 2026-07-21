@@ -13,7 +13,6 @@ import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -71,10 +70,7 @@ public final class MessageEventProcessors {
     final var elementInstanceState = processingState.getElementInstanceState();
     final var bannedInstanceState = processingState.getBannedInstanceState();
     final var businessIdUniquenessEnabled = config.isBusinessIdUniquenessEnabled();
-    final var permissionsBehavior =
-        new PermissionsBehavior(
-            processingState,
-            new CslAuthorizationCheck(authCheckPort, claimsConverter, securityConfig));
+    final var cslCheck = new CslAuthorizationCheck(authCheckPort, claimsConverter, securityConfig);
 
     typedRecordProcessors
         .onCommand(
@@ -92,7 +88,7 @@ public final class MessageEventProcessors {
                 processState,
                 bpmnBehaviors.eventTriggerBehavior(),
                 bpmnBehaviors.stateBehavior(),
-                permissionsBehavior,
+                cslCheck,
                 routingInfo,
                 elementInstanceState,
                 bannedInstanceState,
@@ -164,14 +160,12 @@ public final class MessageEventProcessors {
                 messageState,
                 subscriptionState,
                 subscriptionCommandSender,
-                permissionsBehavior,
+                cslCheck,
                 elementInstanceState,
                 bannedInstanceState,
                 businessIdUniquenessEnabled,
                 routingInfo,
-                partitionId,
-                claimsConverter,
-                securityConfig))
+                partitionId))
         .onCommand(
             ValueType.MESSAGE_START_PROCESS_INSTANCE_REQUEST,
             MessageStartProcessInstanceRequestIntent.REQUEST,

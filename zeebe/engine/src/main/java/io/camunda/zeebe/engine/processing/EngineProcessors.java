@@ -332,6 +332,7 @@ public final class EngineProcessors {
             config,
             asyncRequestBehavior,
             permissionsBehavior,
+            cslCheck,
             authCheckBehavior,
             transientProcessMessageSubscriptionState,
             processEngineMetrics);
@@ -647,6 +648,7 @@ public final class EngineProcessors {
       final EngineConfiguration config,
       final AsyncRequestBehavior asyncRequestBehavior,
       final PermissionsBehavior permissionsBehavior,
+      final CslAuthorizationCheck cslCheck,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ProcessEngineMetrics processEngineMetrics) {
@@ -665,6 +667,7 @@ public final class EngineProcessors {
         config,
         asyncRequestBehavior,
         permissionsBehavior,
+        cslCheck,
         authCheckBehavior,
         transientProcessMessageSubscriptionState,
         processEngineMetrics);
@@ -738,7 +741,6 @@ public final class EngineProcessors {
       final BpmnJobActivationBehavior jobActivationBehavior,
       final CslAuthorizationCheck cslCheck,
       final IncidentMetrics incidentMetrics) {
-    final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
@@ -746,7 +748,7 @@ public final class EngineProcessors {
         userTaskProcessor,
         writers,
         jobActivationBehavior,
-        permissionsBehavior,
+        cslCheck,
         incidentMetrics);
   }
 

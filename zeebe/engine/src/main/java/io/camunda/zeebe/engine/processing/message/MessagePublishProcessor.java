@@ -9,11 +9,13 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.MessageCorrelateBehavior.MessageData;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -53,7 +56,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private long messageKey;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
-  private final PermissionsBehavior permissionsBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final RoutingInfo routingInfo;
   private final VariableBehavior variableBehavior;
 
@@ -69,7 +72,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
-      final PermissionsBehavior permissionsBehavior,
+      final CslAuthorizationCheck cslCheck,
       final RoutingInfo routingInfo,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
@@ -81,7 +84,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    this.permissionsBehavior = permissionsBehavior;
+    this.cslCheck = cslCheck;
     this.routingInfo = routingInfo;
     this.variableBehavior = variableBehavior;
     final var eventHandle =
@@ -109,31 +112,25 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
   @Override
   public void processRecord(final TypedRecord<MessageRecord> command) {
-    final var isAuthorized =
-        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-            command,
-            AuthorizationResourceType.MESSAGE,
-            PermissionType.CREATE,
-            command.getValue().getName());
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
-      return;
-    }
-
     final var tenantId = command.getValue().getTenantId();
     final var tenantMessage =
         "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
             .formatted(PermissionType.CREATE, AuthorizationResourceType.MESSAGE, tenantId);
-    final var tenantCheck =
-        permissionsBehavior.checkTenant(
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
             command,
-            tenantId,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.MESSAGE))
+                        .permissionType(AuthzModelMapper.fromProtocol(PermissionType.CREATE))
+                        .resourceId(command.getValue().getName())),
             command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.CREATE, AuthorizationResourceType.MESSAGE),
+            tenantId,
             new Rejection(RejectionType.FORBIDDEN, tenantMessage));
-    if (tenantCheck.isLeft()) {
-      final var rejection = tenantCheck.getLeft();
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;

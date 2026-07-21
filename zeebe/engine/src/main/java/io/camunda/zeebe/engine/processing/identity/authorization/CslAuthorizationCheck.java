@@ -163,6 +163,50 @@ public final class CslAuthorizationCheck {
   }
 
   /**
+   * Combines {@link #check} and {@link #checkTenant} into the single call most command sites need:
+   * RBAC permission first, tenant membership second. Mirrors the priority {@code main}'s {@code
+   * AuthorizationCheckBehavior} aggregation gives when both checks would fail on the same command
+   * (permission rejection wins) — so a principal with no permission at all always sees {@code
+   * FORBIDDEN}, never a tenant-shaped rejection that could hint at the resource's existence.
+   *
+   * <p>Only runs the tenant check once the permission check passes; a permission failure never
+   * bothers a tenant lookup, and vice versa a resource-not-permitted-here principal never learns
+   * whether {@code tenantId} would have mattered.
+   *
+   * @param tenantNotAssignedRejection the rejection to return if the principal has the permission
+   *     but is not assigned to {@code tenantId} — callers choose {@code FORBIDDEN} for
+   *     entity-creation commands or {@code NOT_FOUND} to mask cross-tenant existence of a
+   *     looked-up-by-key resource
+   */
+  public <T> Either<Rejection, T> checkAuthorizationAndTenant(
+      final TypedRecord<?> command,
+      final RequiredAuthorization<?> required,
+      final T value,
+      final Rejection noPrincipalRejection,
+      final String tenantId,
+      final Rejection tenantNotAssignedRejection) {
+    return check(command, required, value, noPrincipalRejection)
+        .flatMap(v -> checkTenant(command, tenantId, v, tenantNotAssignedRejection));
+  }
+
+  /**
+   * Like {@link #checkAuthorizationAndTenant} but with a caller-supplied {@code denialMapper} for
+   * the permission check (see {@link #check(TypedRecord, RequiredAuthorization, Object, Rejection,
+   * Function)}).
+   */
+  public <T> Either<Rejection, T> checkAuthorizationAndTenant(
+      final TypedRecord<?> command,
+      final RequiredAuthorization<?> required,
+      final T value,
+      final Rejection noPrincipalRejection,
+      final Function<AuthorizationRejection, Rejection> denialMapper,
+      final String tenantId,
+      final Rejection tenantNotAssignedRejection) {
+    return check(command, required, value, noPrincipalRejection, denialMapper)
+        .flatMap(v -> checkTenant(command, tenantId, v, tenantNotAssignedRejection));
+  }
+
+  /**
    * Direct authentication-based check for multi-check callers that have already resolved the
    * principal via {@link #resolveForCheck}.
    *

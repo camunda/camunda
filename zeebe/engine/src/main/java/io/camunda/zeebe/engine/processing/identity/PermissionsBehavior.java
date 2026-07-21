@@ -135,18 +135,6 @@ public class PermissionsBehavior {
         AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
   }
 
-  public AuthorizedTenants resolveAuthorizedTenants(final Map<String, Object> authorizations) {
-    return cslCheck.resolveAuthorizedTenants(authorizations);
-  }
-
-  public <T> Either<Rejection, T> checkTenant(
-      final TypedRecord<?> command,
-      final String tenantId,
-      final T value,
-      final Rejection notAssignedRejection) {
-    return cslCheck.checkTenant(command, tenantId, value, notAssignedRejection);
-  }
-
   public Either<Rejection, PersistedAuthorization> authorizationExists(
       final AuthorizationRecord authorizationRecord, final String rejectionMessage) {
     final var key = authorizationRecord.getAuthorizationKey();
