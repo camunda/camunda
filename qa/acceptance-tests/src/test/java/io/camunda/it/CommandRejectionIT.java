@@ -27,6 +27,13 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.physical-tenant",
+    matches = ".+",
+    disabledReason =
+        "Instance banning is a broker-admin operation routed by partition id to the default"
+            + " partition group, not the tenant's; the ban never reaches the tenant partition"
+            + " where the instance lives, so the command is never rejected")
 public class CommandRejectionIT {
 
   @MultiDbTestApplication

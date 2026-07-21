@@ -893,18 +893,6 @@
                 <!-- Cluster purge is not routed to the per-tenant secondary store, so purged
                      entities still surface in tenant-scoped search. -->
                 <exclude>**/ClusterPurgeMultiDbIT.java</exclude>
-                <!-- Recover drives the debug CLI against a single secondary-storage connection and
-                     deletes documents there directly; the tenant-scoped read path targets a
-                     different store, so the deletion never surfaces as missing. -->
-                <exclude>**/RecoverProcessDefinitionsMultiDbIT.java</exclude>
-                <!-- Instance banning is a broker-admin operation routed by partition id to the
-                     default partition group, not the tenant's; the ban never reaches the tenant
-                     partition where the instance lives, so the command is never rejected. -->
-                <exclude>**/CommandRejectionIT.java</exclude>
-                <!-- System endpoints (/v2/system/*) are global, not tenant-scoped; a
-                     physical-tenant client prefixes /physical-tenants/<id>/ and gets 401. -->
-                <exclude>**/GlobalErrorControllerWithAuthIT.java</exclude>
-                <exclude>**/system/SystemConfigurationIT.java</exclude>
                 <!-- MCP server search/audit not yet validated under physical-tenant mode. -->
                 <exclude>**/mcp/authentication/BasicAuthMcpServerIT.java</exclude>
                 <exclude>**/mcp/authentication/OidcMcpServerIT.java</exclude>

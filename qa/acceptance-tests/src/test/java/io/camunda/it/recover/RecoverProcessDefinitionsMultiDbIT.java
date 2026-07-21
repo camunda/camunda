@@ -61,6 +61,13 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
     named = "test.integration.camunda.database.type",
     matches = "AWS_OS",
     disabledReason = "AWS OpenSearch requires a dedicated client not built by this test")
+@DisabledIfSystemProperty(
+    named = "test.integration.camunda.physical-tenant",
+    matches = ".+",
+    disabledReason =
+        "Recover drives the debug CLI against a single secondary-storage connection and deletes"
+            + " documents there directly; the tenant-scoped read path targets a different store,"
+            + " so the deletion never surfaces as missing")
 public class RecoverProcessDefinitionsMultiDbIT {
 
   private static final int TIMEOUT = 60;
