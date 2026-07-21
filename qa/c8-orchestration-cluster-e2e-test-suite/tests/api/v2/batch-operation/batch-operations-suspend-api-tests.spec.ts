@@ -137,8 +137,7 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  // Skipped due to bug 43097: https://github.com/camunda/camunda/issues/43097
-  test.skip('Suspend active batch operation returns 204 and status becomes SUSPENDED without resume', async ({
+  test('Suspend active batch operation returns 204 and status becomes SUSPENDED without resume', async ({
     request,
   }) => {
     const key = await test.step('Create cancel batch operation', async () => {
@@ -152,6 +151,11 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
 
     await test.step('Poll until batch operation is suspended', async () => {
       await expectBatchState(request, key, 'SUSPENDED');
+    });
+
+    await test.step('Cleanup: resume batch operation so it does not block others', async () => {
+      const res = await resumeBatchOperation(request, key);
+      await assertStatusCode(res, 204);
     });
   });
 });

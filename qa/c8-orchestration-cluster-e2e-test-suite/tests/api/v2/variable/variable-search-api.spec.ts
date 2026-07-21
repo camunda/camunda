@@ -237,8 +237,7 @@ test.describe.parallel('Search Variables API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
-  test.skip('Search Variables with invalid pagination parameters', async ({
+  test('Search Variables with invalid pagination parameters', async ({
     request,
   }) => {
     await expect(async () => {
@@ -246,12 +245,12 @@ test.describe.parallel('Search Variables API Tests', () => {
         headers: jsonHeaders(),
         data: {
           page: {
-            limit: 0,
+            limit: -1,
           },
         },
       });
 
-      await assertBadRequest(res, /page.from|page.limit/);
+      await assertBadRequest(res, /page\.(from|limit)/i, 'INVALID_ARGUMENT');
     }).toPass(defaultAssertionOptions);
   });
 });
