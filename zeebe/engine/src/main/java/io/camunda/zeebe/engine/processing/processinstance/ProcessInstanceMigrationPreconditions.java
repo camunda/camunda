@@ -74,7 +74,7 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnEventType.SIGNAL,
           BpmnEventType.CONDITIONAL);
 
-  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
+  static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to migrate process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
       """

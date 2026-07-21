@@ -21,7 +21,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdH
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -160,12 +159,10 @@ public class ProcessInstanceMigrationMigrateProcessor
         || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
       final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
       if (!authorizedTenants.isAuthorizedForTenantId(processInstanceRecord.getTenantId())) {
-        final var message =
-            AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                "migrate a process instance", processInstanceKey, "such process instance");
+        final var message = ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(processInstanceKey);
         enrichRejectionCommand(command, processInstanceRecord);
         rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
-        responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, message);
+        responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, message);
         return;
       }
     }
