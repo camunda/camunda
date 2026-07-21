@@ -54,7 +54,7 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
    * @param memberId the member id of the member that will apply this operation
    * @param state the exporting state to apply to all of the member's partitions
    */
-  record ExporterStateChangeOperation(MemberId memberId, ExportingState state)
+  record ExportingStateChangeOperation(MemberId memberId, ExportingState state)
       implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
 
   /**

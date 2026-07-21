@@ -12,7 +12,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExporterStateChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
@@ -37,7 +37,7 @@ public final class ExporterStateChangeRequestTransformer implements Configuratio
             .map(
                 e ->
                     (ClusterConfigurationChangeOperation)
-                        new ExporterStateChangeOperation(e.getKey(), targetState))
+                        new ExportingStateChangeOperation(e.getKey(), targetState))
             .toList();
     return Either.right(operations);
   }

@@ -15,7 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
-import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExporterStateChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Map;
@@ -51,8 +51,8 @@ final class ExporterStateChangeRequestTransformerTest {
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
         .containsExactlyInAnyOrder(
-            new ExporterStateChangeOperation(id0, ExportingState.PAUSED),
-            new ExporterStateChangeOperation(id1, ExportingState.PAUSED));
+            new ExportingStateChangeOperation(id0, ExportingState.PAUSED),
+            new ExportingStateChangeOperation(id1, ExportingState.PAUSED));
   }
 
   @Test
@@ -70,7 +70,7 @@ final class ExporterStateChangeRequestTransformerTest {
     // then — only the member not yet in the target state gets an operation
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
-        .containsExactly(new ExporterStateChangeOperation(id0, ExportingState.PAUSED));
+        .containsExactly(new ExportingStateChangeOperation(id0, ExportingState.PAUSED));
   }
 
   @Test
@@ -94,7 +94,7 @@ final class ExporterStateChangeRequestTransformerTest {
     // then
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
-        .containsExactly(new ExporterStateChangeOperation(id0, ExportingState.PAUSED));
+        .containsExactly(new ExportingStateChangeOperation(id0, ExportingState.PAUSED));
   }
 
   @Test
@@ -112,7 +112,7 @@ final class ExporterStateChangeRequestTransformerTest {
     // then
     EitherAssert.assertThat(result).isRight();
     assertThat(result.get())
-        .containsExactly(new ExporterStateChangeOperation(id0, ExportingState.PAUSED));
+        .containsExactly(new ExportingStateChangeOperation(id0, ExportingState.PAUSED));
   }
 
   @Test
