@@ -59,6 +59,7 @@ public class TopologyControllerTest extends RestControllerTest {
           "brokers": [
             {
               "nodeId": 0,
+              "brokerId": "0",
               "host": "localhost",
               "port": 26501,
               "version": "%s",
@@ -73,6 +74,7 @@ public class TopologyControllerTest extends RestControllerTest {
             },
             {
               "nodeId": 1,
+              "brokerId": "1",
               "host": "localhost",
               "port": 26502,
               "version": "%s",
@@ -87,6 +89,7 @@ public class TopologyControllerTest extends RestControllerTest {
             },
             {
               "nodeId": 2,
+              "brokerId": "2",
               "host": "localhost",
               "port": 26503,
               "version": "%s",
@@ -165,6 +168,7 @@ public class TopologyControllerTest extends RestControllerTest {
           "brokers": [
             {
               "nodeId": 0,
+              "brokerId": "0",
               "host": "localhost",
               "port": 26501,
               "version": "%s",
