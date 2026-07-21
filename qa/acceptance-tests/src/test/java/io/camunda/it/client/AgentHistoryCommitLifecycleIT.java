@@ -121,6 +121,68 @@ public class AgentHistoryCommitLifecycleIT {
         tuple(historyItemKey2, AgentInstanceHistoryCommitStatus.DISCARDED));
   }
 
+  @Test
+  void shouldDiscardSupersededActivationAndCommitWinningActivationOnJobCompletion() {
+    final long processInstanceKey = deployAndStartProcessInstance();
+    final long elementInstanceKey = getServiceTaskElementInstanceKey(processInstanceKey);
+    final long agentInstanceKey = createAgentInstance(elementInstanceKey);
+
+    // Activation 1 (superseded): activate with lease, create a history item, then fail the job.
+    final var activation1 = activateAgenticJob(processInstanceKey, true);
+    final long supersededItemKey =
+        createHistoryItem(
+            agentInstanceKey,
+            elementInstanceKey,
+            activation1,
+            AgentInstanceHistoryRole.USER,
+            "Message from superseded activation",
+            OffsetDateTime.parse("2025-06-01T10:00:00Z"));
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "superseded item indexed as PENDING before fail",
+        tuple(supersededItemKey, AgentInstanceHistoryCommitStatus.PENDING));
+
+    camundaClient
+        .newFailCommand(activation1.getKey())
+        .retries(1)
+        .withLeaseToken(activation1.getLeaseToken())
+        .execute();
+
+    // Activation 2 (winning): same job re-activated under a new lease.
+    final var activation2 = activateAgenticJob(processInstanceKey, true);
+    assertThat(activation2.getKey())
+        .as("re-activation must reuse the same job key")
+        .isEqualTo(activation1.getKey());
+    assertThat(activation2.getLeaseToken())
+        .as("re-activation must advance the lease token")
+        .isNotEqualTo(activation1.getLeaseToken());
+
+    final long winningItemKey =
+        createHistoryItem(
+            agentInstanceKey,
+            elementInstanceKey,
+            activation2,
+            AgentInstanceHistoryRole.ASSISTANT,
+            "Message from winning activation",
+            OffsetDateTime.parse("2025-06-01T10:01:00Z"));
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "both items PENDING before completion",
+        tuple(supersededItemKey, AgentInstanceHistoryCommitStatus.PENDING),
+        tuple(winningItemKey, AgentInstanceHistoryCommitStatus.PENDING));
+
+    // Complete the winning activation — JobCompleteProcessor propagates the stored lease token
+    // into AGENT_HISTORY:COMMIT, so visitByJobLease commits the winning item and discards the
+    // superseded one.
+    camundaClient.newCompleteCommand(activation2).execute();
+
+    awaitHistoryStatuses(
+        agentInstanceKey,
+        "winning item COMMITTED, superseded item DISCARDED",
+        tuple(winningItemKey, AgentInstanceHistoryCommitStatus.COMMITTED),
+        tuple(supersededItemKey, AgentInstanceHistoryCommitStatus.DISCARDED));
+  }
+
   // --- helpers: each step below is called directly from the test bodies above ---
 
   private long deployAndStartProcessInstance() {
