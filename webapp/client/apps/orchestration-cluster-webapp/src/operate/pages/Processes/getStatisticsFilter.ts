@@ -6,9 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+	GetProcessDefinitionStatisticsRequestBody,
+	ProcessInstanceState,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 type StatisticsFilter = NonNullable<GetProcessDefinitionStatisticsRequestBody['filter']>;
+
+/**
+ * Mirrors legacy Operate's `parseProcessInstancesSearchFilter` state/incidents combination:
+ * `incidents` is never scoped to `ACTIVE` — an element keeps an incident regardless of its
+ * current state, so it must stay visible even when only non-active states are selected.
+ */
+function getStateFilter(states: ProcessInstanceState[]): Pick<StatisticsFilter, 'state'> | undefined {
+	if (states.length === 0) {
+		return undefined;
+	}
+
+	return {state: states.length === 1 ? {$eq: states[0]!} : {$in: states}};
+}
 
 /** Returns `undefined` when no instance state is selected — the caller should skip the request entirely. */
 function getStatisticsFilter({
@@ -22,33 +38,32 @@ function getStatisticsFilter({
 	completed: boolean;
 	canceled: boolean;
 }): StatisticsFilter | undefined {
-	const clauses: StatisticsFilter[] = [];
-
-	if (active && incidents) {
-		clauses.push({state: {$eq: 'ACTIVE'}});
-	} else if (active) {
-		clauses.push({state: {$eq: 'ACTIVE'}, hasIncident: false});
-	} else if (incidents) {
-		clauses.push({state: {$eq: 'ACTIVE'}, hasIncident: true});
+	const states: ProcessInstanceState[] = [];
+	if (active) {
+		states.push('ACTIVE');
 	}
-
 	if (completed) {
-		clauses.push({state: {$eq: 'COMPLETED'}});
+		states.push('COMPLETED');
 	}
-
 	if (canceled) {
-		clauses.push({state: {$eq: 'TERMINATED'}});
+		states.push('TERMINATED');
 	}
 
-	if (clauses.length === 0) {
+	const stateFilter = getStateFilter(states);
+
+	if (incidents) {
+		if (stateFilter === undefined) {
+			return {hasIncident: true};
+		}
+
+		return {$or: [stateFilter, {hasIncident: true}]};
+	}
+
+	if (stateFilter === undefined) {
 		return undefined;
 	}
 
-	if (clauses.length === 1) {
-		return clauses[0]!;
-	}
-
-	return {$or: clauses};
+	return {...stateFilter, hasIncident: false};
 }
 
 export {getStatisticsFilter};
