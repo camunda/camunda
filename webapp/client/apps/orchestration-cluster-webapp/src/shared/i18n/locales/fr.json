@@ -540,6 +540,11 @@
 					"copied": "Copié",
 					"copyToClipboard": "Copier dans le presse-papiers",
 					"copiedToClipboard": "Copié dans le presse-papiers"
+				},
+				"deleteDefinitionModal": {
+					"deleteButton": "Supprimer",
+					"cancelButton": "Annuler",
+					"confirmationError": "Veuillez cocher cette case si vous souhaitez continuer."
 				}
 			}
 		}

@@ -551,6 +551,11 @@
 					"copied": "Copied",
 					"copyToClipboard": "Copy to clipboard",
 					"copiedToClipboard": "Copied to clipboard"
+				},
+				"deleteDefinitionModal": {
+					"deleteButton": "Delete",
+					"cancelButton": "Cancel",
+					"confirmationError": "Please tick this box if you want to proceed."
 				}
 			}
 		}

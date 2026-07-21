@@ -537,6 +537,11 @@
 					"copied": "Kopiert",
 					"copyToClipboard": "In die Zwischenablage kopieren",
 					"copiedToClipboard": "In die Zwischenablage kopiert"
+				},
+				"deleteDefinitionModal": {
+					"deleteButton": "Löschen",
+					"cancelButton": "Abbrechen",
+					"confirmationError": "Bitte aktivieren Sie dieses Kästchen, wenn Sie fortfahren möchten."
 				}
 			}
 		}
