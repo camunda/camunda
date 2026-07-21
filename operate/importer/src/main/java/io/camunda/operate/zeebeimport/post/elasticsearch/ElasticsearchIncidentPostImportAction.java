@@ -38,6 +38,8 @@ import io.camunda.operate.zeebeimport.post.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -103,6 +105,15 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
 
     final Map<Long, IncidentState> incidents2Process;
 
+    // Force a refresh of the post-importer-queue write index before reading the batch so that all
+    // of its shards expose their acknowledged writes. The queue is written without routing, so a
+    // single partition's entries are scattered across all shards, which refresh on independent
+    // timers. Without this, a higher-position entry on an already-refreshed shard can be returned
+    // while a lower-position entry on a not-yet-refreshed shard is still invisible; the cursor
+    // would then advance past the lower entry and, because the lower bound is strict, never revisit
+    // it. See https://github.com/camunda/camunda/issues/56117.
+    refreshPostImporterQueueIndex();
+
     // query post importer queue
     QueryBuilder partitionQ = termQuery(PARTITION_ID, partitionId);
     // first partition will also process older data with partitionId = 0
@@ -111,6 +122,9 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     }
     final SearchRequest listViewRequest =
         ElasticsearchUtil.createSearchRequest(postImporterQueueTemplate)
+            // an unavailable shard must fail the search (triggering a retry) instead of silently
+            // returning partial hits and letting the cursor skip the entries on the missing shard
+            .allowPartialSearchResults(false)
             .source(
                 new SearchSourceBuilder()
                     .query(
@@ -210,6 +224,31 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     }
     pendingIncidentsBatch.setIncidents(incidents);
     return pendingIncidentsBatch;
+  }
+
+  private void refreshPostImporterQueueIndex() {
+    // refresh the write index (not the read alias, which would fan out across all archived dated
+    // indices)
+    final RefreshRequest refreshRequest =
+        new RefreshRequest(postImporterQueueTemplate.getFullQualifiedName());
+    try {
+      final RefreshResponse response =
+          esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      if (response.getFailedShards() > 0) {
+        // a failed refresh must abort the batch (and let it retry) rather than search a
+        // potentially stale, partially-refreshed index and advance the cursor past unseen entries
+        throw new OperateRuntimeException(
+            String.format(
+                "Refresh of %s failed on %d shard(s); aborting batch to avoid skipping pending updates",
+                postImporterQueueTemplate.getFullQualifiedName(), response.getFailedShards()));
+      }
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(
+          String.format(
+              "Exception occurred while refreshing the post-importer-queue index: %s",
+              e.getMessage()),
+          e);
+    }
   }
 
   @Override

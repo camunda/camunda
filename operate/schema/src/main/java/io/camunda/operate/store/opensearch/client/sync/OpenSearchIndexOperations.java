@@ -11,6 +11,7 @@ import static java.lang.String.format;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.IndexMapping;
 import io.camunda.operate.schema.IndexMapping.IndexMappingProperty;
 import java.io.IOException;
@@ -168,6 +169,28 @@ public class OpenSearchIndexOperations extends OpenSearchRetryOperation {
       }
     } catch (final Exception ex) {
       logger.warn(String.format("Unable to refresh indices: %s", List.of(indexPatterns)), ex);
+    }
+  }
+
+  /**
+   * Refreshes the given index and fails if any shard could not be refreshed. Unlike {@link
+   * #refresh(String)}, failures are not swallowed: callers reading a forward-only position cursor
+   * (e.g. the incident post-importer) must abort and retry rather than search a partially-refreshed
+   * index and advance the cursor past not-yet-visible entries. See
+   * https://github.com/camunda/camunda/issues/56117.
+   */
+  public void refreshWithFailOnPartial(final String index) {
+    final var refreshRequest = new RefreshRequest.Builder().index(List.of(index)).build();
+    try {
+      final RefreshResponse refresh = openSearchClient.indices().refresh(refreshRequest);
+      if (refresh.shards() != null && !refresh.shards().failures().isEmpty()) {
+        throw new OperateRuntimeException(
+            String.format(
+                "Refresh of %s failed on %d shard(s); aborting to avoid skipping pending updates",
+                index, refresh.shards().failures().size()));
+      }
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(String.format("Failed to refresh index: %s", index), e);
     }
   }
 
