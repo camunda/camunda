@@ -82,13 +82,14 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
   private void rejectCommand(
       final TypedRecord<ExpressionRecord> command, final Rejection rejection) {
     rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-    responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+    responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
   }
 
   private void acceptCommand(
       final TypedRecord<ExpressionRecord> command, final ExpressionRecord resolvedValue) {
     final var key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, ExpressionIntent.EVALUATED, resolvedValue);
-    responseWriter.writeEventOnCommand(key, ExpressionIntent.EVALUATED, resolvedValue, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        key, ExpressionIntent.EVALUATED, resolvedValue, command);
   }
 }

@@ -90,7 +90,7 @@ public class MappingRuleDeleteProcessor
     if (persistedMappingRuleOptional.isEmpty()) {
       final var errorMessage = MAPPING_RULE_NOT_FOUND_ERROR_MESSAGE.formatted(id);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
@@ -104,12 +104,12 @@ public class MappingRuleDeleteProcessor
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
     final long key = keyGenerator.nextKey();
     deleteMappingRule(persistedMappingRuleOptional.get(), key);
-    responseWriter.writeEventOnCommand(key, MappingRuleIntent.DELETED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, MappingRuleIntent.DELETED, record, command);
 
     commandDistributionBehavior
         .withKey(key)

@@ -103,7 +103,7 @@ public final class MessageCorrelationCorrelateProcessor
             "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
                 .formatted(messageCorrelationRecord.getTenantId());
         rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-        responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+        responseWriter.writeRejectedResponseOnCommand(command, RejectionType.FORBIDDEN, message);
         return;
       }
     }
@@ -131,7 +131,7 @@ public final class MessageCorrelationCorrelateProcessor
     if (authorizationRejectionOptional.isPresent()) {
       final var rejection = authorizationRejectionOptional.get();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -168,7 +168,7 @@ public final class MessageCorrelationCorrelateProcessor
                 command.getValue().getName(), command.getValue().getCorrelationKey());
       }
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
@@ -182,7 +182,7 @@ public final class MessageCorrelationCorrelateProcessor
 
               stateWriter.appendFollowUpEvent(
                   messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   messageKey,
                   MessageCorrelationIntent.CORRELATED,
                   messageCorrelationRecord,

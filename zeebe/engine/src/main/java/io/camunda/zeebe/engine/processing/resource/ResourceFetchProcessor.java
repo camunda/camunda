@@ -61,7 +61,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
               checkAuthorization(command, resource);
               final var record = asResourceRecord(resource);
               stateWriter.appendFollowUpEvent(resourceKey, ResourceIntent.FETCHED, record);
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   resourceKey, ResourceIntent.FETCHED, record, command);
             },
             () -> {
@@ -154,7 +154,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
       final RejectionType rejectionType,
       final String reason) {
     rejectionWriter.appendRejection(command, rejectionType, reason);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, reason);
     return ProcessingError.EXPECTED_ERROR;
   }
 

@@ -459,7 +459,7 @@ public final class BpmnUserTaskBehavior {
             request -> {
               switch (request.valueType()) {
                 case USER_TASK ->
-                    responseWriter.writeRejection(
+                    responseWriter.writeRejectedResponse(
                         userTask.getUserTaskKey(),
                         request.intent(),
                         userTask,
@@ -473,7 +473,7 @@ public final class BpmnUserTaskBehavior {
                         .findVariableDocumentState(userTaskElementInstanceKey)
                         .ifPresent(
                             variableDocument -> {
-                              responseWriter.writeRejection(
+                              responseWriter.writeRejectedResponse(
                                   variableDocument.getKey(),
                                   request.intent(),
                                   variableDocument.getRecord(),

@@ -65,7 +65,7 @@ public final class ClockResetProcessor implements DistributedTypedRecordProcesso
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -74,7 +74,8 @@ public final class ClockResetProcessor implements DistributedTypedRecordProcesso
     final long eventKey = keyGenerator.nextKey();
     applyClockModification(eventKey, clockRecord);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, ClockIntent.RESETTED, clockRecord, command);
+      responseWriter.writeAcceptedResponseOnCommand(
+          eventKey, ClockIntent.RESETTED, clockRecord, command);
     }
 
     // Distribute to other partitions
