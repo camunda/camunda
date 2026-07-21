@@ -477,7 +477,81 @@
 				"title": "Opérations"
 			},
 			"operationsLog": {
-				"title": "Journal des opérations"
+				"title": "Journal des opérations",
+				"table": {
+					"operationType": "Type d'opération",
+					"entityType": "Type d'entité",
+					"entityKey": "Clé d'entité",
+					"parentEntity": "Entité parente",
+					"details": "Détails",
+					"actor": "Acteur",
+					"date": "Date"
+				},
+				"emptyState": {
+					"noItemsTitle": "Aucune entrée dans le journal des opérations pour le moment",
+					"noItemsDescription": "Les opérations que vous effectuez dans l'interface ou via l'API apparaîtront ici.",
+					"noResultsTitle": "Aucun journal des opérations trouvé",
+					"noResultsDescription": "Essayez d'ajuster vos filtres ou revenez plus tard."
+				},
+				"filters": {
+					"tenant": "Tenant",
+					"processSection": "Processus",
+					"processInstanceKey": "Clé d'instance de processus",
+					"processInstanceKeyPlaceholder": "Clé d'instance de processus",
+					"operationSection": "Opération",
+					"operationType": "Type d'opération",
+					"entityType": "Type d'entité",
+					"operationsStatus": "Statut des opérations",
+					"all": "Tous",
+					"chooseOption": "Choisir une option",
+					"actor": "Acteur",
+					"actorPlaceholder": "Nom d'utilisateur ou ID client",
+					"timestampDateRange": "Plage de dates de l'horodatage",
+					"filterByTimestampDateRange": "Filtrer par plage de dates de l'horodatage"
+				},
+				"entityLinks": {
+					"viewBatchOperation": "Afficher l'opération de lot {{key}}",
+					"viewProcessInstance": "Afficher l'instance de processus {{key}}",
+					"viewDecisionInstance": "Afficher l'instance de décision {{key}}",
+					"viewUserTask": "Afficher la tâche utilisateur {{key}}"
+				},
+				"details": {
+					"batchOperationType": "Type d'opération de lot",
+					"assignee": "Assigné à",
+					"resourceKey": "Clé de ressource"
+				},
+				"batchTitle": {
+					"processInstances": "instances de processus",
+					"incidents": "incidents",
+					"decisions": "décisions",
+					"processDefinitions": "définitions de processus",
+					"variables": "variables"
+				},
+				"actorTooltip": {
+					"aiAgentOnBehalfOf": "Agent IA pour le compte de {{actorType}}",
+					"mcpToolCall": "Appel d'outil MCP"
+				},
+				"modal": {
+					"status": "Statut",
+					"actor": "Acteur",
+					"entityKey": "Clé d'entité",
+					"parentEntity": "Entité parente",
+					"date": "Date",
+					"appliedTo": "Appliqué à :",
+					"multiple": "Plusieurs",
+					"viewBatchOperationDetails": "Afficher les détails de l'opération de lot",
+					"partOfBatch": "Cette opération fait partie d'un lot.",
+					"viewBatchOperationDetailsLink": "Afficher les détails de l'opération de lot.",
+					"detailsTitle": "Détails :",
+					"inboundChannel": "Canal entrant :",
+					"inboundChannelToolName": "Nom de l'outil du canal entrant :"
+				},
+				"comment": {
+					"openDetails": "Ouvrir les détails"
+				},
+				"notifications": {
+					"fetchFailed": "Impossible de récupérer les journaux d'audit"
+				}
 			},
 			"batchOperations": {
 				"title": "Opérations par lots"
@@ -540,6 +614,9 @@
 					"copied": "Copié",
 					"copyToClipboard": "Copier dans le presse-papiers",
 					"copiedToClipboard": "Copié dans le presse-papiers"
+				},
+				"filterMultiSelect": {
+					"chooseOption": "Choisir une ou plusieurs options"
 				},
 				"deleteDefinitionModal": {
 					"deleteButton": "Supprimer",

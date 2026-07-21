@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {AuditLog, QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+	AuditLog,
+	QueryAuditLogsResponseBody,
+	QueryUserTaskAuditLogsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {createPaginatedResponse} from './shared';
 
 function createAuditLog(overrides?: Partial<AuditLog>): AuditLog {
@@ -66,4 +70,22 @@ function createQueryUserTaskAuditLogsResponse(overrides?: {
 	});
 }
 
-export {createAuditLog, createQueryUserTaskAuditLogsResponse};
+function createQueryAuditLogsResponse(overrides?: {
+	items?: AuditLog[];
+	page?: Partial<QueryAuditLogsResponseBody['page']>;
+}): QueryAuditLogsResponseBody {
+	const items = overrides?.items ?? [];
+
+	return createPaginatedResponse<AuditLog>({
+		items,
+		page: {
+			totalItems: items.length,
+			startCursor: null,
+			endCursor: null,
+			hasMoreTotalItems: false,
+			...overrides?.page,
+		},
+	});
+}
+
+export {createAuditLog, createQueryUserTaskAuditLogsResponse, createQueryAuditLogsResponse};

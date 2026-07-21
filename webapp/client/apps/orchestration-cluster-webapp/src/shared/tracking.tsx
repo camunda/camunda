@@ -152,6 +152,14 @@ type Events =
 	| {
 			eventName: 'operate:optional-filter-selected';
 			filterName: string;
+	  }
+	| {
+			eventName: 'operate:audit-logs-loaded';
+			filters: string[];
+			sort: string;
+	  }
+	| {
+			eventName: 'operate:audit-logs-fetch-failed';
 	  };
 
 const STAGE_ENV = getStage(window.location.host);

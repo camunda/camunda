@@ -109,6 +109,16 @@ const mockGetAuditLogEndpoint = createEndpointMock({
 	method: endpoints.getAuditLog.method,
 });
 
+const mockQueryAuditLogsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryAuditLogs.getUrl(),
+	method: endpoints.queryAuditLogs.method,
+});
+
+const mockQueryDecisionDefinitionsEndpoint = createEndpointMock({
+	endpoint: endpoints.queryDecisionDefinitions.getUrl(),
+	method: endpoints.queryDecisionDefinitions.method,
+});
+
 export {
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
@@ -130,4 +140,6 @@ export {
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockQueryBatchOperationsEndpoint,
+	mockQueryAuditLogsEndpoint,
+	mockQueryDecisionDefinitionsEndpoint,
 };

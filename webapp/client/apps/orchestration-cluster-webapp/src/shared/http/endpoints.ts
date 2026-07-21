@@ -18,6 +18,8 @@ import {
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
 	type QueryUserTaskAuditLogsRequestBody,
+	type QueryAuditLogsRequestBody,
+	type QueryDecisionDefinitionsRequestBody,
 	type UserTask,
 	type ProcessDefinition,
 	type AuditLog,
@@ -200,6 +202,22 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.getAuditLog.getUrl({auditLogKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getAuditLog.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryAuditLogs.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryAuditLogs.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionDefinitions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryDecisionDefinitions.method,
+			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
 };
