@@ -29,7 +29,8 @@ import org.springframework.context.annotation.Configuration;
  * return {@code /**} from {@link SecurityPathPort#webappPaths()}: the stock webapp chain becomes
  * the catch-all that sorts below the bearer API chain. No custom webapp chain bean is needed.
  *
- * <p>Required application config (see {@code application-csl-spike.yaml}):
+ * <p>Required application config (the compat bridge supplies most of these; see {@code
+ * CONFIG-COMPAT.md}):
  *
  * <ul>
  *   <li>{@code optimize.security.csl.enabled=true}

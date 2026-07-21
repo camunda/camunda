@@ -25,7 +25,6 @@ and `@EnableWebSecurity`, so only one may be active. A single flag selects which
   in; wire the groups-claim extraction for real authorization).
 - `OptimizeSessionStoreAdapter` — `SessionStorePort` backed by Optimize's Elasticsearch. Stub;
   NOT registered as a bean (single-node manual testing uses in-memory `HttpSession`).
-- `application-csl-spike.yaml` — example config.
 
 No custom webapp chain is needed: CSL now orders the API chain before the webapp chain (ADR-0036),
 so the stock webapp chain with a `/**` matcher is the catch-all below the bearer API chain.
@@ -33,13 +32,14 @@ so the stock webapp chain with a `/**` matcher is the catch-all below the bearer
 ## How to run / manually test
 
 1. Build the CSL spike branch (`camunda-security-library`, branch
-   `spike/csl-optimize-webapp-support`) with `mvn install` to publish a local build that contains
-   the deny-chain toggle and the API/webapp order split.
-2. Point the camunda monorepo at that build: bump `version.camunda-security-library` in
-   `parent/pom.xml` to the installed version.
-3. Set `optimize.security.csl.enabled=true` plus the `camunda.security.*` config in
-   `application-csl-spike.yaml` (OIDC issuer/client for your IdP, `method=oidc`,
-   `unhandled-paths-chain.enabled=false`).
+   `spike/csl-optimize-webapp-support`) with `mvn install` to publish the local `0.1.0-SNAPSHOT`
+   build that contains the deny-chain toggle and the API/webapp order split.
+2. `version.camunda-security-library` in `parent/pom.xml` is already pinned to `0.1.0-SNAPSHOT`,
+   so no further change is needed — the local install from step 1 resolves.
+3. Set `optimize.security.csl.enabled=true`. The compat bridge sets the `camunda.security.*`
+   defaults (`method=oidc`, `unhandled-paths-chain.enabled=false`, `oidc.redirect-uri`) and maps
+   the existing `CAMUNDA_OPTIMIZE_IDENTITY_*` env vars to the OIDC client config, so no extra
+   `camunda.security.*` config is required. See `CONFIG-COMPAT.md` for the full mapping.
 4. Build the frontend so the SPA is served: `cd optimize/client && yarn build` (Vite, outputs
    `dist/`), then rebuild `optimize-backend` so `../client/dist` is copied to the `webapp`
    classpath. Without it, `GET /` returns `NoResourceFoundException` (no `index.html`) after login.
