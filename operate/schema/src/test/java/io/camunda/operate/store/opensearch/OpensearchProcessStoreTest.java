@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.store.opensearch;
 
+import static io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient.QUERY_MAX_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -142,5 +143,22 @@ public class OpensearchProcessStoreTest {
 
     // Verify no includes are set (all other fields should be returned)
     assertThat(builtRequest.source().filter().includes()).isNullOrEmpty();
+  }
+
+  @Test
+  public void testGetProcessesGroupedSetsExplicitPageSize() {
+    // Given
+    when(documentOperations.scrollValues(any(SearchRequest.Builder.class), eq(ProcessEntity.class)))
+        .thenReturn(List.of());
+
+    // When
+    underTest.getProcessesGrouped("<default>", null);
+
+    // Then - the scroll search must set an explicit page size to avoid the OpenSearch scroll
+    // default of 10 hits per round-trip (see issue #58282)
+    final ArgumentCaptor<SearchRequest.Builder> captor =
+        ArgumentCaptor.forClass(SearchRequest.Builder.class);
+    verify(documentOperations).scrollValues(captor.capture(), eq(ProcessEntity.class));
+    assertThat(captor.getValue().build().size()).isEqualTo(QUERY_MAX_SIZE);
   }
 }
