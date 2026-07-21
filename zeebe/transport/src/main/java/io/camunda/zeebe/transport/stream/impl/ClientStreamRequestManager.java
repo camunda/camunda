@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.jspecify.annotations.Nullable;
@@ -215,12 +216,12 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
 
     final var payload = BufferUtil.bufferAsArray(request);
     final var added = new CompletableFuture<Void>();
-    final var legacyAdded = new CompletableFuture<Void>();
-
     sendAddRequest(registration, payload, added);
-    sendLegacyAddRequestIfDefaultTenant(registration, payload, legacyAdded);
 
-    CompletableFuture.allOf(added, legacyAdded)
+    raceLegacyIfDefaultTenant(
+            added,
+            registration.physicalTenantId(),
+            legacyAdded -> sendLegacyAddRequest(registration, payload, legacyAdded))
         .whenCompleteAsync((ok, error) -> registration.transitionToAdded(), executor::run);
   }
 
@@ -259,18 +260,36 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   private void sendRemoveRequestAndLegacy(
       final ClientStreamRegistration<M> registration, final byte[] payload) {
     final var removed = new CompletableFuture<Void>();
-    final var legacyRemoved = new CompletableFuture<Void>();
-
     sendRemoveRequest(registration, payload, removed);
-    sendLegacyRemoveRequestIfDefaultTenant(registration, payload, legacyRemoved);
 
-    CompletableFuture.allOf(removed, legacyRemoved)
+    raceLegacyIfDefaultTenant(
+            removed,
+            registration.physicalTenantId(),
+            legacyRemoved -> sendLegacyRemoveRequest(registration, payload, legacyRemoved))
         .whenCompleteAsync(
             (ok, error) -> {
               registration.transitionToRemoved();
               purgeRegistration(registration.streamId(), registration.serverId());
             },
             executor::run);
+  }
+
+  /**
+   * Rolling-upgrade compat; to remove alongside the legacy topic in 8.11, delete this method and
+   * replace every {@code raceLegacyIfDefaultTenant(primary, tenantId, sendLegacy)} call with {@code
+   * primary}, then delete the now-unused {@code sendLegacy*} methods it was wired to.
+   */
+  private CompletableFuture<Void> raceLegacyIfDefaultTenant(
+      final CompletableFuture<Void> primary,
+      final String physicalTenantId,
+      final Consumer<CompletableFuture<Void>> sendLegacy) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      return primary;
+    }
+
+    final var legacy = new CompletableFuture<Void>();
+    sendLegacy.accept(legacy);
+    return CompletableFuture.anyOf(primary, legacy).thenApplyAsync(ignored -> null, executor::run);
   }
 
   /**
@@ -343,18 +362,6 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   }
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
-  private void sendLegacyAddRequestIfDefaultTenant(
-      final ClientStreamRegistration<M> registration,
-      final byte[] request,
-      final CompletableFuture<Void> legacyAdded) {
-    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(registration.physicalTenantId())) {
-      legacyAdded.complete(null);
-      return;
-    }
-
-    sendLegacyAddRequest(registration, request, legacyAdded);
-  }
-
   private void sendLegacyAddRequest(
       final ClientStreamRegistration<M> registration,
       final byte[] request,
@@ -455,18 +462,6 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
   }
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
-  private void sendLegacyRemoveRequestIfDefaultTenant(
-      final ClientStreamRegistration<M> registration,
-      final byte[] request,
-      final CompletableFuture<Void> legacyRemoved) {
-    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(registration.physicalTenantId())) {
-      legacyRemoved.complete(null);
-      return;
-    }
-
-    sendLegacyRemoveRequest(registration, request, legacyRemoved);
-  }
-
   private void sendLegacyRemoveRequest(
       final ClientStreamRegistration<M> registration,
       final byte[] request,

@@ -22,6 +22,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.LongUnaryOperator;
@@ -116,13 +117,27 @@ public final class RemoteStreamTransport<M> extends Actor {
 
   public CompletableFuture<Void> restartStreams(final MemberId receiver) {
     final var completed = new CompletableFuture<Void>();
-    final var legacyCompleted = new CompletableFuture<Void>();
-
     sendRestartStreamsRequest(receiver, completed, INITIAL_RETRY_DELAY_MS);
-    sendLegacyRestartStreamsRequestIfDefaultTenant(
-        receiver, legacyCompleted, INITIAL_RETRY_DELAY_MS);
 
-    return CompletableFuture.allOf(completed, legacyCompleted);
+    return raceLegacyIfDefaultTenant(
+        physicalTenantId,
+        completed,
+        legacyCompleted ->
+            sendLegacyRestartStreamsRequest(receiver, legacyCompleted, INITIAL_RETRY_DELAY_MS));
+  }
+
+  /** Rolling-upgrade compat; to remove alongside the legacy topic in 8.11 */
+  private CompletableFuture<Void> raceLegacyIfDefaultTenant(
+      final String physicalTenantId,
+      final CompletableFuture<Void> primary,
+      final Consumer<CompletableFuture<Void>> sendLegacy) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      return primary;
+    }
+
+    final var legacy = new CompletableFuture<Void>();
+    sendLegacy.accept(legacy);
+    return CompletableFuture.anyOf(primary, legacy).thenApplyAsync(ignored -> null, actor);
   }
 
   private void registerTopicHandlers(
@@ -181,16 +196,6 @@ public final class RemoteStreamTransport<M> extends Actor {
   }
 
   /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
-  private void sendLegacyRestartStreamsRequestIfDefaultTenant(
-      final MemberId receiver, final CompletableFuture<Void> completed, final long retryDelayMs) {
-    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
-      completed.complete(null);
-      return;
-    }
-
-    sendLegacyRestartStreamsRequest(receiver, completed, retryDelayMs);
-  }
-
   private void sendLegacyRestartStreamsRequest(
       final MemberId receiver, final CompletableFuture<Void> completed, final long retryDelayMs) {
     try {

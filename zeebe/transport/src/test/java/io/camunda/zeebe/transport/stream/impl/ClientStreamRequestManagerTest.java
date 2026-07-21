@@ -782,9 +782,9 @@ final class ClientStreamRequestManagerTest {
   }
 
   @Test
-  void shouldSendLegacyAddRequestForDefaultTenant() {
-    // given - hold the primary (prefixed) ADD pending so we can observe that legacy alone isn't
-    // enough to mark the stream added; legacy resolves via the default success stub from setup()
+  void shouldAddRegistrationAsSoonAsLegacyAddSucceedsWhilePrimaryIsPending() {
+    // given - hold the primary (prefixed) ADD pending; legacy resolves via the default success
+    // stub from setup(). Whichever responds first should be enough to mark the stream added.
     final var serverId = MemberId.anonymous();
     final var primaryPending = new CompletableFuture<byte[]>();
     when(mockTransport.<byte[], byte[]>send(
@@ -799,12 +799,12 @@ final class ClientStreamRequestManagerTest {
     // when
     requestManager.add(clientStream, serverId);
 
-    // then - legacy ADD was sent, but the stream isn't added until the primary succeeds too
+    // then - legacy ADD was sent and alone is enough to mark the stream added
     verify(mockTransport)
         .send(eq(StreamTopics.ADD.legacyTopic()), any(), any(), any(), eq(serverId), any());
-    assertThat(clientStream.isConnected(serverId)).isFalse();
+    assertThat(clientStream.isConnected(serverId)).isTrue();
 
-    // when - the primary finally succeeds
+    // when - the primary eventually succeeds too; this must be a no-op
     primaryPending.complete(addStreamSuccess);
 
     // then
@@ -812,7 +812,7 @@ final class ClientStreamRequestManagerTest {
   }
 
   @Test
-  void shouldSendLegacyRemoveRequestForDefaultTenant() {
+  void shouldRemoveRegistrationAsSoonAsLegacyRemoveSucceedsWhilePrimaryIsPending() {
     // given
     final var serverId = MemberId.anonymous();
     requestManager.add(clientStream, serverId);
@@ -829,12 +829,12 @@ final class ClientStreamRequestManagerTest {
     // when
     requestManager.remove(clientStream, serverId);
 
-    // then - legacy REMOVE was sent, but the stream stays connected until the primary succeeds too
+    // then - legacy REMOVE was sent and alone is enough to mark the stream removed
     verify(mockTransport)
         .send(eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), eq(serverId), any());
-    assertThat(clientStream.isConnected(serverId)).isTrue();
+    assertThat(clientStream.isConnected(serverId)).isFalse();
 
-    // when - the primary finally succeeds
+    // when - the primary eventually succeeds too; this must be a no-op
     primaryPending.complete(removeStreamSuccess);
 
     // then
