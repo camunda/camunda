@@ -57,11 +57,15 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
     final OffsetDateTime testCaseStartDate = testCaseStartTime.atOffset(ZoneOffset.UTC);
 
     try (final CamundaClient client = clientSupplier.get()) {
+      final Instant cancelStartTime = Instant.now();
       final String cancelProcessInstanceBatchOperationKey =
           createCancelProcessInstancesBatchOperation(client, testCaseStartDate);
       waitForBatchOperationToComplete(
           client, cancelProcessInstanceBatchOperationKey, "cancel process instances");
+      LOG.debug(
+          "Cancelled process instances in {}", Duration.between(cancelStartTime, Instant.now()));
 
+      final Instant deleteInstancesStartTime = Instant.now();
       final String deleteProcessInstanceBatchOperationKey =
           createDeleteProcessInstancesBatchOperation(client, testCaseStartDate);
       final String deleteDecisionInstanceBatchOperationKey =
@@ -71,6 +75,9 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
           client, deleteProcessInstanceBatchOperationKey, "delete process instances");
       waitForBatchOperationToComplete(
           client, deleteDecisionInstanceBatchOperationKey, "delete decision instances");
+      LOG.debug(
+          "Deleted process and decision instances in {}",
+          Duration.between(deleteInstancesStartTime, Instant.now()));
 
       deleteResources(client, deployments);
     }
@@ -148,6 +155,7 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
                       resourceKeysToDelete.add(decisionRequirements.getDecisionRequirementsKey()));
         });
 
+    final Instant deleteResourcesStartTime = Instant.now();
     final Set<String> resourceDeletionBatchOperationKeys = new LinkedHashSet<>();
     for (final long resourceKey : resourceKeysToDelete) {
       final CreateBatchOperationResponse batchOperationResponse =
@@ -166,6 +174,10 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
         .forEach(
             batchOperationKey ->
                 waitForBatchOperationToComplete(client, batchOperationKey, "delete resources"));
+    LOG.debug(
+        "Deleted {} resources in {}",
+        resourceKeysToDelete.size(),
+        Duration.between(deleteResourcesStartTime, Instant.now()));
   }
 
   private void waitForBatchOperationToComplete(
