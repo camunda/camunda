@@ -51,7 +51,7 @@ public final class RaftMemberContext {
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
   private IndexedRaftLogEntry currentEntry;
-  private long snapshotReplicationLag;
+  private volatile long snapshotReplicationLag;
   private long snapshotChunkBytesInFlight;
 
   RaftMemberContext(
