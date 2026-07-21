@@ -10,7 +10,6 @@ package io.camunda.application.commons.secrets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.secretstore.NoopSecretStore;
-import io.camunda.secretstore.SecretStore;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +32,7 @@ class SecretStoreRegistryTest {
   @Test
   void shouldReturnConfiguredStore() {
     // given
-    final var store = (SecretStore<?>) NOOP;
+    final var store = NOOP;
     final var registry = new SecretStoreRegistry(Map.of("default", store));
 
     // when
@@ -47,8 +46,8 @@ class SecretStoreRegistryTest {
   @Test
   void shouldReturnAllConfiguredStores() {
     // given
-    final var storeA = (SecretStore<?>) new NoopSecretStore();
-    final var storeB = (SecretStore<?>) new NoopSecretStore();
+    final var storeA = new NoopSecretStore();
+    final var storeB = new NoopSecretStore();
     final var registry = new SecretStoreRegistry(Map.of("store-a", storeA, "store-b", storeB));
 
     // when
@@ -56,5 +55,18 @@ class SecretStoreRegistryTest {
 
     // then
     assertThat(stores).containsKeys("store-a", "store-b");
+  }
+
+  @Test
+  void shouldCreateOneCachePerConfiguredStore() {
+    // given
+    final var registry =
+        new SecretStoreRegistry(Map.of("store-a", NOOP, "store-b", new NoopSecretStore()));
+
+    // when
+    final var caches = registry.getCaches();
+
+    // then — one cache per store, keyed by the same ID
+    assertThat(caches).containsKeys("store-a", "store-b");
   }
 }

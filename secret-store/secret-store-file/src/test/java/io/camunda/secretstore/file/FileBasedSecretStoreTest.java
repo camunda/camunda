@@ -32,8 +32,8 @@ class FileBasedSecretStoreTest {
   @TempDir Path outsideDir;
 
   private static String resolvedValue(
-      final Map<FileBasedSecretReference, SecretResolutionResult> result, final String name) {
-    final var entry = result.get(new FileBasedSecretReference(name));
+      final Map<String, SecretResolutionResult> result, final String name) {
+    final var entry = result.get(name);
     assertThat(entry).isInstanceOf(SecretResolutionResult.Resolved.class);
     return ((SecretResolutionResult.Resolved) entry).value();
   }
@@ -49,7 +49,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var result = store.resolve(Set.of(new FileBasedSecretReference("db-password")));
+    final var result = store.resolve(Set.of("db-password"));
 
     // then
     assertThat(resolvedValue(result, "db-password")).isEqualTo("s3cr3t");
@@ -62,10 +62,10 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var result = store.resolve(Set.of(new FileBasedSecretReference("missing")));
+    final var result = store.resolve(Set.of("missing"));
 
     // then
-    final var entry = result.get(new FileBasedSecretReference("missing"));
+    final var entry = result.get("missing");
     assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
     assertThat(((SecretResolutionResult.Failed) entry).code()).isEqualTo(SecretErrorCode.NOT_FOUND);
   }
@@ -78,23 +78,13 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var result =
-        store.resolve(
-            Set.of(
-                new FileBasedSecretReference("a"),
-                new FileBasedSecretReference("b"),
-                new FileBasedSecretReference("missing")));
+    final var result = store.resolve(Set.of("a", "b", "missing"));
 
     // then — result map contains an entry for every requested ref
-    assertThat(result)
-        .containsKeys(
-            new FileBasedSecretReference("a"),
-            new FileBasedSecretReference("b"),
-            new FileBasedSecretReference("missing"));
+    assertThat(result).containsKeys("a", "b", "missing");
     assertThat(resolvedValue(result, "a")).isEqualTo("1");
     assertThat(resolvedValue(result, "b")).isEqualTo("2");
-    assertThat(result.get(new FileBasedSecretReference("missing")))
-        .isInstanceOf(SecretResolutionResult.Failed.class);
+    assertThat(result.get("missing")).isInstanceOf(SecretResolutionResult.Failed.class);
   }
 
   @Test
@@ -118,11 +108,7 @@ class FileBasedSecretStoreTest {
     final var list = store.list();
 
     // then
-    assertThat(list)
-        .containsExactlyInAnyOrder(
-            new FileBasedSecretReference("a"),
-            new FileBasedSecretReference("b"),
-            new FileBasedSecretReference("c"));
+    assertThat(list).containsExactlyInAnyOrder("a", "b", "c");
   }
 
   @Test
@@ -137,7 +123,7 @@ class FileBasedSecretStoreTest {
     final var list = store.list();
 
     // then
-    assertThat(list).containsExactly(new FileBasedSecretReference("a"));
+    assertThat(list).containsExactly("a");
   }
 
   @Test
@@ -151,7 +137,7 @@ class FileBasedSecretStoreTest {
     final var list = store.list();
 
     // then
-    assertThat(list).containsExactly(new FileBasedSecretReference("a"));
+    assertThat(list).containsExactly("a");
   }
 
   @Test
@@ -164,12 +150,12 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var result = store.resolve(Set.of(new FileBasedSecretReference("db-password")));
+    final var result = store.resolve(Set.of("db-password"));
     final var list = store.list();
 
     // then — the symlink is followed for the value, and ..data is not listed
     assertThat(resolvedValue(result, "db-password")).isEqualTo("s3cr3t");
-    assertThat(list).containsExactly(new FileBasedSecretReference("db-password"));
+    assertThat(list).containsExactly("db-password");
   }
 
   @Test
@@ -182,10 +168,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var entry =
-        store
-            .resolve(Set.of(new FileBasedSecretReference("evil")))
-            .get(new FileBasedSecretReference("evil"));
+    final var entry = store.resolve(Set.of("evil")).get("evil");
 
     // then — the escaping symlink is refused, not read
     assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
@@ -202,7 +185,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when / then — the escaping symlink is not advertised as a secret
-    assertThat(store.list()).containsExactly(new FileBasedSecretReference("valid"));
+    assertThat(store.list()).containsExactly("valid");
   }
 
   @Test
@@ -212,19 +195,13 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when — first resolve returns old value
-    assertThat(
-            resolvedValue(
-                store.resolve(Set.of(new FileBasedSecretReference("api-key"))), "api-key"))
-        .isEqualTo("old-value");
+    assertThat(resolvedValue(store.resolve(Set.of("api-key")), "api-key")).isEqualTo("old-value");
 
     // rotate the file
     writeSecret("api-key", "new-value");
 
     // then — second resolve picks up the new value without restart
-    assertThat(
-            resolvedValue(
-                store.resolve(Set.of(new FileBasedSecretReference("api-key"))), "api-key"))
-        .isEqualTo("new-value");
+    assertThat(resolvedValue(store.resolve(Set.of("api-key")), "api-key")).isEqualTo("new-value");
   }
 
   @Test
@@ -237,13 +214,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var result =
-        store.resolve(
-            Set.of(
-                new FileBasedSecretReference("lf"),
-                new FileBasedSecretReference("crlf"),
-                new FileBasedSecretReference("none"),
-                new FileBasedSecretReference("double")));
+    final var result = store.resolve(Set.of("lf", "crlf", "none", "double"));
 
     // then — exactly one trailing terminator is stripped
     assertThat(resolvedValue(result, "lf")).isEqualTo("value");
@@ -262,9 +233,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var result =
-        store.resolve(
-            Set.of(new FileBasedSecretReference("json"), new FileBasedSecretReference("pem")));
+    final var result = store.resolve(Set.of("json", "pem"));
 
     // then
     assertThat(resolvedValue(result, "json")).isEqualTo(json);
@@ -278,7 +247,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var result = store.resolve(Set.of(new FileBasedSecretReference("token")));
+    final var result = store.resolve(Set.of("token"));
 
     // then
     assertThat(resolvedValue(result, "token")).isEqualTo("café-中文");
@@ -291,10 +260,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var entry =
-        store
-            .resolve(Set.of(new FileBasedSecretReference(".env")))
-            .get(new FileBasedSecretReference(".env"));
+    final var entry = store.resolve(Set.of(".env")).get(".env");
 
     // then — resolve is symmetric with list(), which also skips hidden entries
     assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
@@ -308,10 +274,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var entry =
-        store
-            .resolve(Set.of(new FileBasedSecretReference("bad")))
-            .get(new FileBasedSecretReference("bad"));
+    final var entry = store.resolve(Set.of("bad")).get("bad");
 
     // then: surfaced as a per-ref failure rather than silently substituting U+FFFD or throwing
     assertThat(entry).isInstanceOf(SecretResolutionResult.Failed.class);
@@ -327,13 +290,11 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when
-    final var result =
-        store.resolve(
-            Set.of(new FileBasedSecretReference("good"), new FileBasedSecretReference("bad")));
+    final var result = store.resolve(Set.of("good", "bad"));
 
     // then: the unreadable secret fails on its own without aborting the batch
     assertThat(resolvedValue(result, "good")).isEqualTo("value");
-    final var bad = result.get(new FileBasedSecretReference("bad"));
+    final var bad = result.get("bad");
     assertThat(bad).isInstanceOf(SecretResolutionResult.Failed.class);
     assertThat(((SecretResolutionResult.Failed) bad).code()).isEqualTo(SecretErrorCode.UNREADABLE);
   }
@@ -346,7 +307,25 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir);
 
     // when / then — the stray file is skipped, not propagated as an exception
-    assertThat(store.list()).containsExactly(new FileBasedSecretReference("valid"));
+    assertThat(store.list()).containsExactly("valid");
+  }
+
+  @Test
+  void shouldReturnFailedForInvalidNameInResolve() {
+    // given — names that are invalid as single-segment secret names
+    final var store = new FileBasedSecretStore(secretsDir);
+
+    // when
+    final var resultDotDot = store.resolve(Set.of(".."));
+    final var resultSlash = store.resolve(Set.of("a/b"));
+
+    // then — invalid names return Failed(NOT_FOUND) rather than throwing
+    assertThat(resultDotDot.get("..")).isInstanceOf(SecretResolutionResult.Failed.class);
+    assertThat(((SecretResolutionResult.Failed) resultDotDot.get("..")).code())
+        .isEqualTo(SecretErrorCode.NOT_FOUND);
+    assertThat(resultSlash.get("a/b")).isInstanceOf(SecretResolutionResult.Failed.class);
+    assertThat(((SecretResolutionResult.Failed) resultSlash.get("a/b")).code())
+        .isEqualTo(SecretErrorCode.NOT_FOUND);
   }
 
   @Test
@@ -355,7 +334,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(secretsDir.resolve("nonexistent"));
 
     // when / then
-    assertThatThrownBy(() -> store.resolve(Set.of(new FileBasedSecretReference("any"))))
+    assertThatThrownBy(() -> store.resolve(Set.of("any")))
         .isInstanceOf(SecretStoreUnavailableException.class)
         .hasMessageContaining("does not exist or is not a directory");
   }
@@ -379,7 +358,7 @@ class FileBasedSecretStoreTest {
     final var store = new FileBasedSecretStore(file);
 
     // when / then
-    assertThatThrownBy(() -> store.resolve(Set.of(new FileBasedSecretReference("any"))))
+    assertThatThrownBy(() -> store.resolve(Set.of("any")))
         .isInstanceOf(SecretStoreUnavailableException.class)
         .hasMessageContaining("does not exist or is not a directory");
     assertThatThrownBy(store::list)
@@ -405,9 +384,8 @@ class FileBasedSecretStoreTest {
             try {
               latch.await();
               for (int j = 0; j < callsPerThread; j++) {
-                final var result = store.resolve(Set.of(new FileBasedSecretReference("secret")));
-                if (!(result.get(new FileBasedSecretReference("secret"))
-                    instanceof SecretResolutionResult.Resolved)) {
+                final var result = store.resolve(Set.of("secret"));
+                if (!(result.get("secret") instanceof SecretResolutionResult.Resolved)) {
                   errors.incrementAndGet();
                 }
                 store.list();

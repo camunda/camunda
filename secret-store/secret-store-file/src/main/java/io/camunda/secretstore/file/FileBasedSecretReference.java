@@ -7,20 +7,19 @@
  */
 package io.camunda.secretstore.file;
 
-import io.camunda.secretstore.SecretReference;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A secret reference resolved by {@link FileBasedSecretStore}, where {@code name} is a file name
- * within the configured secrets directory.
+ * An internal name validator used by {@link FileBasedSecretStore}, where {@code name} is a file
+ * name within the configured secrets directory.
  *
  * <p>Names containing a path separator ({@code /} or {@code \}) or equal to a traversal token
  * ({@code .} or {@code ..}) are rejected, so the name alone cannot escape the directory. This
  * constrains the <em>name</em> only: a symlink inside the directory (as used by the Kubernetes
  * {@code ..data} layout) is still followed when the value is read.
  */
-public record FileBasedSecretReference(String name) implements SecretReference {
+record FileBasedSecretReference(String name) {
   public FileBasedSecretReference {
     Objects.requireNonNull(name, "name must not be null");
     if (name.isBlank()) {

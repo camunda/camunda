@@ -10,9 +10,8 @@ package io.camunda.secretstore;
 import java.util.Optional;
 
 /**
- * Caches resolved secret values in front of a {@link SecretStore}, keyed by that store's own {@link
- * SecretReference} type. One cache is created per configured store, so entries from different
- * stores never collide and each cache speaks the same reference type its store resolves.
+ * Caches resolved secret values in front of a {@link SecretStore}, keyed by secret name. One cache
+ * is created per configured store, so entries from different stores never collide.
  *
  * <p>Implementations must be thread-safe: a {@link SecretStore} may be resolved concurrently, so
  * the cache in front of it is accessed concurrently too.
@@ -21,15 +20,15 @@ import java.util.Optional;
  * InMemorySecretCache} has no eviction or expiry, and a TTL/eviction variant replaces it later
  * behind this same interface.
  */
-public interface SecretCache<T extends SecretReference> {
+public interface SecretCache {
 
   /**
-   * Returns the cached resolved value for the given reference.
+   * Returns the cached resolved value for the given secret name.
    *
-   * @return the cached value, or empty if the reference is not cached
+   * @return the cached value, or empty if the secret name is not cached
    */
-  Optional<String> get(T reference);
+  Optional<String> get(String name);
 
-  /** Stores the resolved value for the reference, overwriting any previously cached value. */
-  void put(T reference, String value);
+  /** Stores the resolved value for the secret name, overwriting any previously cached value. */
+  void put(String name, String value);
 }

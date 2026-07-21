@@ -16,17 +16,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * The concurrent map makes it safe to use in front of a thread-safe {@link SecretStore} and rejects
  * {@code null} keys and values.
  */
-public final class InMemorySecretCache<T extends SecretReference> implements SecretCache<T> {
+public final class InMemorySecretCache implements SecretCache {
 
-  private final Map<T, String> values = new ConcurrentHashMap<>();
+  private final Map<String, String> values = new ConcurrentHashMap<>();
 
   @Override
-  public Optional<String> get(final T reference) {
-    return Optional.ofNullable(values.get(reference));
+  public Optional<String> get(final String name) {
+    return Optional.ofNullable(values.get(name));
   }
 
   @Override
-  public void put(final T reference, final String value) {
-    values.put(reference, value);
+  public void put(final String name, final String value) {
+    values.put(name, value);
   }
 }

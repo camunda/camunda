@@ -21,7 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * must be a restrictively-permissioned, single-tenant location — as a Kubernetes Secret {@code
  * tmpfs} mount is — so that only authorized processes can place entries in it.
  */
-public final class FileBasedSecretStore implements SecretStore<FileBasedSecretReference> {
+public final class FileBasedSecretStore implements SecretStore {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileBasedSecretStore.class);
 
@@ -55,20 +55,19 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
   }
 
   @Override
-  public Map<FileBasedSecretReference, SecretResolutionResult> resolve(
-      final Set<FileBasedSecretReference> refs) {
-    if (refs.isEmpty()) {
+  public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
+    if (names.isEmpty()) {
       return Map.of();
     }
     requireDirectory();
-    LOG.debug("Resolving {} secret refs from '{}'", refs.size(), directory);
-    return refs.stream().collect(toMap(ref -> ref, this::resolveOne));
+    LOG.debug("Resolving {} secret refs from '{}'", names.size(), directory);
+    return names.stream().collect(toMap(name -> name, this::resolveOne));
   }
 
   @Override
-  public Collection<FileBasedSecretReference> list() {
+  public List<String> list() {
     requireDirectory();
-    final var refs = new ArrayList<FileBasedSecretReference>();
+    final var refs = new ArrayList<String>();
     try (final DirectoryStream<Path> entries =
         Files.newDirectoryStream(directory, FileBasedSecretStore::isVisibleRegularFile)) {
       for (final Path entry : entries) {
@@ -80,7 +79,7 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
         if (!isWithinDirectory(entry)) {
           continue;
         }
-        refs.add(new FileBasedSecretReference(name));
+        refs.add(name);
       }
     } catch (final IOException | SecurityException e) {
       throw new SecretStoreUnavailableException(
@@ -90,8 +89,10 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
     return refs;
   }
 
-  private SecretResolutionResult resolveOne(final FileBasedSecretReference ref) {
-    final var name = ref.name();
+  private SecretResolutionResult resolveOne(final String name) {
+    if (!FileBasedSecretReference.isValid(name)) {
+      return notFound(name);
+    }
     // name is validated to a single path segment, so this is always a direct child.
     final var file = directory.resolve(name);
     try {
