@@ -18,6 +18,9 @@ import org.apache.commons.lang3.StringUtils;
 
 public class ClusterVariableRecordValidator {
 
+  private static final String VARIABLE_NOT_FOUND_MSG =
+      "Invalid cluster variable name: '%s'. The variable does not exist in the scope '%s'";
+
   private final ClusterVariableState clusterVariableState;
   private final TenantState tenantState;
   private final ClusterVariableValidationConfiguration validationConfig;
@@ -81,12 +84,11 @@ public class ClusterVariableRecordValidator {
     return Either.left(
         new Rejection(
             RejectionType.NOT_FOUND,
-            "Invalid cluster variable name: '%s'. The variable does not exist in the scope '%s'"
-                .formatted(
-                    record.getName(),
-                    record.getTenantId().isBlank()
-                        ? "GLOBAL"
-                        : "tenant: '%s'".formatted(record.getTenantId()))));
+            VARIABLE_NOT_FOUND_MSG.formatted(
+                record.getName(),
+                record.getTenantId().isBlank()
+                    ? "GLOBAL"
+                    : "tenant: '%s'".formatted(record.getTenantId()))));
   }
 
   public Either<Rejection, ClusterVariableRecord> loadExisting(
@@ -109,12 +111,11 @@ public class ClusterVariableRecordValidator {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,
-              "Invalid cluster variable name: '%s'. The variable does not exist in the scope '%s'"
-                  .formatted(
-                      command.getName(),
-                      command.getTenantId().isBlank()
-                          ? "GLOBAL"
-                          : "tenant: '%s'".formatted(command.getTenantId()))));
+              VARIABLE_NOT_FOUND_MSG.formatted(
+                  command.getName(),
+                  command.getTenantId().isBlank()
+                      ? "GLOBAL"
+                      : "tenant: '%s'".formatted(command.getTenantId()))));
     }
     return Either.right(stored.get());
   }
