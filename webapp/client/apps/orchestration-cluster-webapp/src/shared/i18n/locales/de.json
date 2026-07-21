@@ -474,7 +474,81 @@
 				"title": "Operationen"
 			},
 			"operationsLog": {
-				"title": "Vorgangsprotokoll"
+				"title": "Operationsprotokoll",
+				"table": {
+					"operationType": "Vorgangstyp",
+					"entityType": "Entitätstyp",
+					"entityKey": "Entitätsschlüssel",
+					"parentEntity": "Übergeordnete Entität",
+					"details": "Details",
+					"actor": "Akteur",
+					"date": "Datum"
+				},
+				"emptyState": {
+					"noItemsTitle": "Noch keine Einträge im Operationsprotokoll",
+					"noItemsDescription": "Vorgänge, die Sie in der Benutzeroberfläche oder über die API ausführen, werden hier angezeigt.",
+					"noResultsTitle": "Kein Operationsprotokoll gefunden",
+					"noResultsDescription": "Passen Sie Ihre Filter an oder schauen Sie später noch einmal nach."
+				},
+				"filters": {
+					"tenant": "Mandant",
+					"processSection": "Prozess",
+					"processInstanceKey": "Prozessinstanzschlüssel",
+					"processInstanceKeyPlaceholder": "Prozessinstanzschlüssel",
+					"operationSection": "Vorgang",
+					"operationType": "Vorgangstyp",
+					"entityType": "Entitätstyp",
+					"operationsStatus": "Vorgangsstatus",
+					"all": "Alle",
+					"chooseOption": "Option auswählen",
+					"actor": "Akteur",
+					"actorPlaceholder": "Benutzername oder Client-ID",
+					"timestampDateRange": "Zeitstempel-Datumsbereich",
+					"filterByTimestampDateRange": "Nach Zeitstempel-Datumsbereich filtern"
+				},
+				"entityLinks": {
+					"viewBatchOperation": "Batch-Vorgang {{key}} anzeigen",
+					"viewProcessInstance": "Prozessinstanz {{key}} anzeigen",
+					"viewDecisionInstance": "Entscheidungsinstanz {{key}} anzeigen",
+					"viewUserTask": "Benutzeraufgabe {{key}} anzeigen"
+				},
+				"details": {
+					"batchOperationType": "Batch-Vorgangstyp",
+					"assignee": "Zugewiesen an",
+					"resourceKey": "Ressourcenschlüssel"
+				},
+				"batchTitle": {
+					"processInstances": "Prozessinstanzen",
+					"incidents": "Vorfälle",
+					"decisions": "Entscheidungen",
+					"processDefinitions": "Prozessdefinitionen",
+					"variables": "Variablen"
+				},
+				"actorTooltip": {
+					"aiAgentOnBehalfOf": "KI-Agent im Auftrag von {{actorType}}",
+					"mcpToolCall": "MCP-Tool-Aufruf"
+				},
+				"modal": {
+					"status": "Status",
+					"actor": "Akteur",
+					"entityKey": "Entitätsschlüssel",
+					"parentEntity": "Übergeordnete Entität",
+					"date": "Datum",
+					"appliedTo": "Angewendet auf:",
+					"multiple": "Mehrere",
+					"viewBatchOperationDetails": "Batch-Vorgangsdetails anzeigen",
+					"partOfBatch": "Dieser Vorgang ist Teil eines Batches.",
+					"viewBatchOperationDetailsLink": "Batch-Vorgangsdetails anzeigen.",
+					"detailsTitle": "Details:",
+					"inboundChannel": "Eingangskanal:",
+					"inboundChannelToolName": "Eingangskanal-Toolname:"
+				},
+				"comment": {
+					"openDetails": "Details öffnen"
+				},
+				"notifications": {
+					"fetchFailed": "Audit-Protokolle konnten nicht abgerufen werden"
+				}
 			},
 			"batchOperations": {
 				"title": "Stapeloperationen"
@@ -537,6 +611,9 @@
 					"copied": "Kopiert",
 					"copyToClipboard": "In die Zwischenablage kopieren",
 					"copiedToClipboard": "In die Zwischenablage kopiert"
+				},
+				"filterMultiSelect": {
+					"chooseOption": "Option(en) auswählen"
 				}
 			}
 		}

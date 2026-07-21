@@ -474,7 +474,81 @@
 				"title": "Operaciones"
 			},
 			"operationsLog": {
-				"title": "Registro de operaciones"
+				"title": "Registro de operaciones",
+				"table": {
+					"operationType": "Tipo de operación",
+					"entityType": "Tipo de entidad",
+					"entityKey": "Clave de entidad",
+					"parentEntity": "Entidad principal",
+					"details": "Detalles",
+					"actor": "Actor",
+					"date": "Fecha"
+				},
+				"emptyState": {
+					"noItemsTitle": "Aún no hay elementos en el registro de operaciones",
+					"noItemsDescription": "Las operaciones que realice en la interfaz o a través de la API aparecerán aquí.",
+					"noResultsTitle": "No se encontró el registro de operaciones",
+					"noResultsDescription": "Intente ajustar sus filtros o vuelva a comprobarlo más tarde."
+				},
+				"filters": {
+					"tenant": "Inquilino",
+					"processSection": "Proceso",
+					"processInstanceKey": "Clave de instancia de proceso",
+					"processInstanceKeyPlaceholder": "Clave de instancia de proceso",
+					"operationSection": "Operación",
+					"operationType": "Tipo de operación",
+					"entityType": "Tipo de entidad",
+					"operationsStatus": "Estado de las operaciones",
+					"all": "Todos",
+					"chooseOption": "Elegir opción",
+					"actor": "Actor",
+					"actorPlaceholder": "Nombre de usuario o ID de cliente",
+					"timestampDateRange": "Rango de fechas de la marca de tiempo",
+					"filterByTimestampDateRange": "Filtrar por rango de fechas de la marca de tiempo"
+				},
+				"entityLinks": {
+					"viewBatchOperation": "Ver operación por lotes {{key}}",
+					"viewProcessInstance": "Ver instancia de proceso {{key}}",
+					"viewDecisionInstance": "Ver instancia de decisión {{key}}",
+					"viewUserTask": "Ver tarea de usuario {{key}}"
+				},
+				"details": {
+					"batchOperationType": "Tipo de operación por lotes",
+					"assignee": "Asignado a",
+					"resourceKey": "Clave de recurso"
+				},
+				"batchTitle": {
+					"processInstances": "instancias de proceso",
+					"incidents": "incidentes",
+					"decisions": "decisiones",
+					"processDefinitions": "definiciones de proceso",
+					"variables": "variables"
+				},
+				"actorTooltip": {
+					"aiAgentOnBehalfOf": "Agente de IA en nombre de {{actorType}}",
+					"mcpToolCall": "Llamada de herramienta MCP"
+				},
+				"modal": {
+					"status": "Estado",
+					"actor": "Actor",
+					"entityKey": "Clave de entidad",
+					"parentEntity": "Entidad principal",
+					"date": "Fecha",
+					"appliedTo": "Aplicado a:",
+					"multiple": "Múltiples",
+					"viewBatchOperationDetails": "Ver detalles de la operación por lotes",
+					"partOfBatch": "Esta operación forma parte de un lote.",
+					"viewBatchOperationDetailsLink": "Ver detalles de la operación por lotes.",
+					"detailsTitle": "Detalles:",
+					"inboundChannel": "Canal entrante:",
+					"inboundChannelToolName": "Nombre de herramienta del canal entrante:"
+				},
+				"comment": {
+					"openDetails": "Abrir detalles"
+				},
+				"notifications": {
+					"fetchFailed": "No se pudieron recuperar los registros de auditoría"
+				}
 			},
 			"batchOperations": {
 				"title": "Operaciones en lote"
@@ -537,6 +611,9 @@
 					"copied": "Copiado",
 					"copyToClipboard": "Copiar al portapapeles",
 					"copiedToClipboard": "Copiado al portapapeles"
+				},
+				"filterMultiSelect": {
+					"chooseOption": "Elegir opción(es)"
 				}
 			}
 		}

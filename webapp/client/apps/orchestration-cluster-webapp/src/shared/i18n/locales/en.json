@@ -488,7 +488,81 @@
 				"title": "Operations"
 			},
 			"operationsLog": {
-				"title": "Operations Log"
+				"title": "Operations Log",
+				"table": {
+					"operationType": "Operation type",
+					"entityType": "Entity type",
+					"entityKey": "Entity key",
+					"parentEntity": "Parent entity",
+					"details": "Details",
+					"actor": "Actor",
+					"date": "Date"
+				},
+				"emptyState": {
+					"noItemsTitle": "No operation log items yet",
+					"noItemsDescription": "Operations that you perform in UI or via the API will appear here.",
+					"noResultsTitle": "No operations log found",
+					"noResultsDescription": "Try adjusting your filters or check back later."
+				},
+				"filters": {
+					"tenant": "Tenant",
+					"processSection": "Process",
+					"processInstanceKey": "Process instance key",
+					"processInstanceKeyPlaceholder": "Process instance key",
+					"operationSection": "Operation",
+					"operationType": "Operation type",
+					"entityType": "Entity type",
+					"operationsStatus": "Operations status",
+					"all": "All",
+					"chooseOption": "Choose option",
+					"actor": "Actor",
+					"actorPlaceholder": "Username or client ID",
+					"timestampDateRange": "Timestamp date range",
+					"filterByTimestampDateRange": "Filter by timestamp date range"
+				},
+				"entityLinks": {
+					"viewBatchOperation": "View batch operation {{key}}",
+					"viewProcessInstance": "View process instance {{key}}",
+					"viewDecisionInstance": "View decision instance {{key}}",
+					"viewUserTask": "View user task {{key}}"
+				},
+				"details": {
+					"batchOperationType": "Batch operation type",
+					"assignee": "Assignee",
+					"resourceKey": "Resource key"
+				},
+				"batchTitle": {
+					"processInstances": "process instances",
+					"incidents": "incidents",
+					"decisions": "decisions",
+					"processDefinitions": "process definitions",
+					"variables": "variables"
+				},
+				"actorTooltip": {
+					"aiAgentOnBehalfOf": "AI Agent on behalf of {{actorType}}",
+					"mcpToolCall": "MCP tool call"
+				},
+				"modal": {
+					"status": "Status",
+					"actor": "Actor",
+					"entityKey": "Entity key",
+					"parentEntity": "Parent entity",
+					"date": "Date",
+					"appliedTo": "Applied to:",
+					"multiple": "Multiple",
+					"viewBatchOperationDetails": "View batch operation details",
+					"partOfBatch": "This operation is part of a batch.",
+					"viewBatchOperationDetailsLink": "View batch operation details.",
+					"detailsTitle": "Details:",
+					"inboundChannel": "Inbound channel:",
+					"inboundChannelToolName": "Inbound channel tool name:"
+				},
+				"comment": {
+					"openDetails": "Open details"
+				},
+				"notifications": {
+					"fetchFailed": "Audit logs could not be fetched"
+				}
 			},
 			"batchOperations": {
 				"title": "Batch Operations"
@@ -551,6 +625,9 @@
 					"copied": "Copied",
 					"copyToClipboard": "Copy to clipboard",
 					"copiedToClipboard": "Copied to clipboard"
+				},
+				"filterMultiSelect": {
+					"chooseOption": "Choose option(s)"
 				}
 			}
 		}
