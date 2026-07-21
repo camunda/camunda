@@ -93,6 +93,15 @@ Matters found while manually testing the spike against a local CCSM/Keycloak set
    its redirection-endpoint path from the configured `redirect-uri` (CSL spike, ADR-0036), and the
    bridge points Optimize at `{baseUrl}/api/authentication/callback`.
 
+5. **Session-authenticated API calls 401'd** (`Could not extract request user!`), causing the SPA
+   to loop (`/api/identity/current/user`, `/api/process/overview`). Optimize's
+   `SessionService.getRequestUserOrFailNotAuthorized` resolved the user only from a bearer
+   `JwtAuthenticationToken` or the legacy `X-Optimize-Authorization` cookie; under CSL the browser
+   is authenticated via the OIDC session (`OAuth2AuthenticationToken` in the `SecurityContext`).
+   Added a branch that resolves the user id (principal name = `sub`) from that token. Broader
+   follow-up: other user-resolution sites in Optimize (and the `MembershipPort` stub) likely need
+   the same CSL-principal bridge for full functionality.
+
 ## Follow-ups (tracked in ADR-0036)
 
 1. Real `SessionStorePort` over Optimize's Elasticsearch + a session index; remove the old
