@@ -25,14 +25,14 @@ import java.util.function.UnaryOperator;
  * member-level operation: it fans out the change to all local partitions, awaits completion of all
  * of them, and only then updates the member's partition configs to reflect the new state.
  */
-final class ExporterStateChangeApplier implements MemberOperationApplier {
+final class ExportingStateChangeApplier implements MemberOperationApplier {
 
   private final MemberId memberId;
   private final ExportingState state;
   private final PartitionChangeExecutor partitionChangeExecutor;
   private Set<Integer> partitions = Set.of();
 
-  ExporterStateChangeApplier(
+  ExportingStateChangeApplier(
       final MemberId memberId,
       final ExportingState state,
       final PartitionChangeExecutor partitionChangeExecutor) {

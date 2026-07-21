@@ -153,7 +153,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               awaitModeChangeOperation.mode(),
               modeChangeExecutor);
       case final ExportingStateChangeOperation exportingStateChangeOperation ->
-          new ExporterStateChangeApplier(
+          new ExportingStateChangeApplier(
               exportingStateChangeOperation.memberId(),
               exportingStateChangeOperation.state(),
               partitionChangeExecutor);

@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
-final class ExporterStateChangeApplierTest {
+final class ExportingStateChangeApplierTest {
 
   private final PartitionChangeExecutor partitionChangeExecutor =
       mock(PartitionChangeExecutor.class);
@@ -33,8 +33,8 @@ final class ExporterStateChangeApplierTest {
   private final MemberId localMemberId = MemberId.from("1");
   private final ExportingState targetState = ExportingState.PAUSED;
 
-  private final ExporterStateChangeApplier applier =
-      new ExporterStateChangeApplier(localMemberId, targetState, partitionChangeExecutor);
+  private final ExportingStateChangeApplier applier =
+      new ExportingStateChangeApplier(localMemberId, targetState, partitionChangeExecutor);
 
   @Test
   void shouldFailInitIfMemberDoesNotExist() {
@@ -123,7 +123,7 @@ final class ExporterStateChangeApplierTest {
   }
 
   private ClusterConfiguration clusterWithPartitions(final int... partitionIds) {
-    var partitions = new java.util.HashMap<Integer, PartitionState>();
+    final var partitions = new java.util.HashMap<Integer, PartitionState>();
     for (final int partitionId : partitionIds) {
       partitions.put(partitionId, PartitionState.active(1, DynamicPartitionConfig.init()));
     }
