@@ -251,7 +251,7 @@ final class DbJobStateLegacyDrainTest {
   }
 
   // Targets an explicit state instance — needed when testing a simulated restart,
-  // where the in-memory legacyCfDrained flag is reset to its initial false value.
+  // where the in-memory isLegacyCfDrained flag is reset to its initial false value.
   private List<Long> activatableKeys(final MutableJobState state, final DirectBuffer type) {
     return activatableKeys(state, type, Integer.MAX_VALUE);
   }

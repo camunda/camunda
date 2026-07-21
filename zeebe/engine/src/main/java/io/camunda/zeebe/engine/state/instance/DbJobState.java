@@ -25,7 +25,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.EnsureUtil;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -60,7 +59,7 @@ public final class DbJobState implements JobState, MutableJobState {
       tenantAwareTypeJobKey;
   private final ColumnFamily<
           DbTenantAwareKey<DbCompositeKey<DbString, DbForeignKey<DbLong>>>, DbNil>
-      activatableColumnFamily;
+      deprecatedActivatableColumnFamily;
 
   // invertedPriority = Integer.MAX_VALUE - priority so higher-priority entries sort first
   // under RocksDB's unsigned byte comparator. For negative priorities the subtraction
@@ -93,8 +92,8 @@ public final class DbJobState implements JobState, MutableJobState {
       backoffColumnFamily;
   private long nextBackOffDueDate;
 
-  // In-memory, per-partition memory that the legacy JOB_ACTIVATABLE CF is globally drained.
-  private boolean legacyCfDrained = false;
+  /** In-memory, per-partition memory that the legacy JOB_ACTIVATABLE CF is globally drained. */
+  private boolean isLegacyCfDrained = false;
 
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -113,7 +112,7 @@ public final class DbJobState implements JobState, MutableJobState {
     tenantIdKey = new DbString();
     typeJobKey = new DbCompositeKey<>(jobTypeKey, fkJob);
     tenantAwareTypeJobKey = new DbTenantAwareKey<>(tenantIdKey, typeJobKey, PlacementType.SUFFIX);
-    activatableColumnFamily =
+    deprecatedActivatableColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.JOB_ACTIVATABLE,
             transactionContext,
@@ -566,7 +565,7 @@ public final class DbJobState implements JobState, MutableJobState {
     // Each phase returns true if the batch still wants more jobs. Subsequent phases are skipped
     // when the batch is full to avoid redundant state reads.
     if (visitHighPriorityJobs(tenantIds, callback)
-        && (legacyCfDrained || visitLegacyActivatableJobs(tenantIds, callback))) {
+        && (isLegacyCfDrained || visitLegacyActivatableJobs(type, tenantIds, callback))) {
       visitNonPositivePriorityJobs(tenantIds, callback);
     }
   }
@@ -660,17 +659,19 @@ public final class DbJobState implements JobState, MutableJobState {
    *
    * <p>If this type's prefix yields no entries, a global emptiness check is performed. The check
    * uses a tenant-agnostic {@link ColumnFamily#isEmpty()} seek run <b>after</b> the prefix scan
-   * returns. If the CF is empty for every type and tenant, {@link #legacyCfDrained} is set so
+   * returns. If the CF is empty for every type and tenant, {@link #isLegacyCfDrained} is set so
    * subsequent activations skip this phase entirely. A per-type empty result alone must never set
-   * the flag:
+   * the flag.
    *
    * @return {@code true} if the batch still wants more jobs; {@code false} if the batch is full
    */
   private boolean visitLegacyActivatableJobs(
-      final List<String> tenantIds, final BiFunction<Long, JobRecord, Boolean> callback) {
+      final DirectBuffer type,
+      final List<String> tenantIds,
+      final BiFunction<Long, JobRecord, Boolean> callback) {
     final var batchNotFull = new boolean[] {true};
     final var visitedAny = new boolean[] {false};
-    activatableColumnFamily.whileEqualPrefix(
+    deprecatedActivatableColumnFamily.whileEqualPrefix(
         jobTypeKey,
         entry -> {
           visitedAny[0] = true; // an entry exists for this type prefix => CF is not globally empty
@@ -681,18 +682,17 @@ public final class DbJobState implements JobState, MutableJobState {
               visitJob(entry.wrappedKey().second().inner().getValue(), callback::apply);
           return batchNotFull[0];
         });
-    // Global confirmation runs AFTER the prefix scan returns. Only worth checking when this type
-    // yielded nothing; isEmpty() is the authoritative global gate.
+    // Only worth checking globally when this type's own prefix was empty; isEmpty() is the
+    // authoritative global gate.
     if (!visitedAny[0]) {
-      // isEmpty() scans the whole CF regardless of type, and its visitor wraps the shared
-      // jobTypeKey field with the first entry it finds (of any type) before reporting non-empty.
-      // Phase 3 (visitNonPositivePriorityJobs) relies on jobTypeKey still holding the type
-      // queried by this call, so it must be restored before returning.
-      final DirectBuffer queriedType = BufferUtil.cloneBuffer(jobTypeKey.getBuffer());
-      final boolean globallyEmpty = activatableColumnFamily.isEmpty();
-      jobTypeKey.wrapBuffer(queriedType);
-      if (globallyEmpty) {
-        legacyCfDrained = true;
+      // isEmpty() finds the first entry in the whole CF regardless of type, and its visitor
+      // wraps the shared jobTypeKey field with that entry before reporting non-empty. Phase 3
+      // (visitNonPositivePriorityJobs) relies on jobTypeKey still holding the type queried by
+      // this call, so it must be restored from the caller's untouched buffer before returning.
+      final boolean isGloballyEmpty = deprecatedActivatableColumnFamily.isEmpty();
+      jobTypeKey.wrapBuffer(type);
+      if (isGloballyEmpty) {
+        isLegacyCfDrained = true;
       }
     }
     return batchNotFull[0];
@@ -774,7 +774,7 @@ public final class DbJobState implements JobState, MutableJobState {
     jobKey.wrapLong(key);
     tenantIdKey.wrapString(tenantId);
     // upsert because a failed job with retries can be made activatable multiple times
-    activatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
+    deprecatedActivatableColumnFamily.upsert(tenantAwareTypeJobKey, DbNil.INSTANCE);
   }
 
   private void makeJobNotActivatable(
@@ -791,7 +791,7 @@ public final class DbJobState implements JobState, MutableJobState {
     priorityActivatableColumnFamily.deleteIfExists(tenantAwarePriorityKey);
     // Legacy CF cleanup: pre-8.10 jobs live in JOB_ACTIVATABLE; deleteIfExists is a no-op
     // when the key is absent. Do not remove this line!
-    activatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
+    deprecatedActivatableColumnFamily.deleteIfExists(tenantAwareTypeJobKey);
   }
 
   private void addJobDeadline(final long job, final long deadline) {
