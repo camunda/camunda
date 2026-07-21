@@ -216,7 +216,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setType(FlowNodeType.SERVICE_TASK)
             .setState(FlowNodeState.ACTIVE)
             .setFlowNodeId("flowNode1")
-            .setFlowNodeId("flowNodeName")
+            .setFlowNodeName(null)
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId");
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -237,6 +237,39 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     // when
     underTest.flush(inputEntity, mockRequest);
     // then
+    verify(mockRequest, times(1))
+        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  public void shouldOmitFlowNodeNameForInnerInstanceWhenNull() {
+    final FlowNodeInstanceEntity inputEntity =
+        new FlowNodeInstanceEntity()
+            .setId("111")
+            .setKey(111)
+            .setProcessInstanceKey(444L)
+            .setPartitionId(1)
+            .setType(FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .setState(FlowNodeState.COMPLETED)
+            .setFlowNodeId("adHocSubProcess#innerInstance")
+            .setFlowNodeName(null)
+            .setProcessDefinitionKey(222L)
+            .setBpmnProcessId("bpmnId");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new HashMap<>();
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.ID, inputEntity.getId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, inputEntity.getPartitionId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
+
+    underTest.flush(inputEntity, mockRequest);
+
     verify(mockRequest, times(1))
         .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
