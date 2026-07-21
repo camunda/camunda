@@ -95,6 +95,15 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     final PendingIncidentsBatch pendingIncidentsBatch = new PendingIncidentsBatch();
     final Map<Long, IncidentState> incidents2Process;
 
+    // Force a refresh of the post-importer-queue write index before reading the batch so that all
+    // of its shards expose their acknowledged writes. The queue is written without routing, so a
+    // single partition's entries are scattered across all shards, which refresh on independent
+    // timers. Without this, a higher-position entry on an already-refreshed shard can be returned
+    // while a lower-position entry on a not-yet-refreshed shard is still invisible; the cursor
+    // would then advance past the lower entry and, because the lower bound is strict, never revisit
+    // it. See https://github.com/camunda/camunda/issues/56117.
+    refreshPostImporterQueueIndex();
+
     record Result(Long key, Long position, String intent) {}
     // query post importer queue
     Query partitionQuery = term(PARTITION_ID, partitionId);
@@ -104,6 +113,9 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     }
     final var postImporterQueueRequest =
         searchRequestBuilder(postImporterQueueTemplate)
+            // an unavailable shard must fail the search (triggering a retry) instead of silently
+            // returning partial hits and letting the cursor skip the entries on the missing shard
+            .allowPartialSearchResults(false)
             .query(
                 and(
                     gt(POSITION, lastProcessedPosition == null ? 0 : lastProcessedPosition),
@@ -175,6 +187,15 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     pendingIncidentsBatch.setIncidents(
         new ArrayList<>(incidents)); // Batch incidents must be a mutable list
     return pendingIncidentsBatch;
+  }
+
+  private void refreshPostImporterQueueIndex() {
+    // refresh the write index (not the read alias, which would fan out across all archived dated
+    // indices); a failed refresh throws and aborts the batch (letting it retry) rather than search
+    // a potentially stale, partially-refreshed index and advance the cursor past unseen entries
+    richOpenSearchClient
+        .index()
+        .refreshWithFailOnPartial(postImporterQueueTemplate.getFullQualifiedName());
   }
 
   @Override
