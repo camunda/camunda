@@ -929,9 +929,6 @@
                 <!-- Excluded under physical tenant pending follow-up; see #56134. -->
                 <exclude>**/auth/UsageMetricAuthorizationIT.java</exclude>
                 <exclude>**/*$*.java</exclude>
-                <!-- MCP server search/audit not yet validated under physical-tenant mode. -->
-                <exclude>**/mcp/authentication/BasicAuthMcpServerIT.java</exclude>
-                <exclude>**/mcp/authentication/OidcMcpServerIT.java</exclude>
               </excludes>
               <systemPropertyVariables>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
