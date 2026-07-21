@@ -152,5 +152,10 @@ test.describe('Suspend & Resume Batch Operation Tests', () => {
     await test.step('Poll until batch operation is suspended', async () => {
       await expectBatchState(request, key, 'SUSPENDED');
     });
+
+    await test.step('Cleanup: resume batch operation so it does not block others', async () => {
+      const res = await resumeBatchOperation(request, key);
+      await assertStatusCode(res, 204);
+    });
   });
 });
