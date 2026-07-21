@@ -312,11 +312,13 @@ jobs:
           payload=$(printf '%s' "$STALE_DATA" | \
             .ci/scripts/stale-backport-scripts/format-slack-report.sh)
 
-          {
-            echo "payload<<PAYLOAD_EOF"
-            echo "$payload"
-            echo "PAYLOAD_EOF"
-          } >> "$GITHUB_OUTPUT"
+          # Compact single-line JSON: slack-github-action v4's strict YAML parser rejects multi-line toJSON() output.
+          blocks=$(printf '%s' "$payload" | jq -ce '.blocks | select(type == "array")') || {
+            echo "::error::format-slack-report.sh did not produce a .blocks array — aborting before posting an invalid Slack payload" >&2
+            exit 1
+          }
+
+          echo "blocks=$blocks" >> "$GITHUB_OUTPUT"
 
       - name: Find existing Slack message to update
         id: find-message
@@ -381,7 +383,7 @@ jobs:
             channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}"
             ts: "${{ steps.find-message.outputs.message_ts }}"
             text: "Stale backport report"
-            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+            blocks: ${{ steps.format.outputs.blocks }}
 
       - name: Pin existing Slack message if not already pinned
         if: steps.find-message.outputs.found == 'true' && steps.find-message.outputs.is_pinned == 'false'
@@ -441,7 +443,7 @@ jobs:
           payload: |
             channel: "${{ inputs.slack_channel_id || steps.secrets.outputs.SLACK_TOPMONOREPOCI_CHANNEL_ID }}"
             text: "Stale backport report"
-            blocks: ${{ toJSON(fromJSON(steps.format.outputs.payload).blocks) }}
+            blocks: ${{ steps.format.outputs.blocks }}
 
       - name: Pin new Slack message
         if: steps.find-message.outputs.found != 'true'
