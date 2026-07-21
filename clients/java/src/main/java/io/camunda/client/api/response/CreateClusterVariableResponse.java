@@ -26,4 +26,6 @@ public interface CreateClusterVariableResponse {
   ClusterVariableScope getScope();
 
   String getTenantId();
+
+  io.camunda.client.api.search.enums.ClusterVariableKind getKind();
 }

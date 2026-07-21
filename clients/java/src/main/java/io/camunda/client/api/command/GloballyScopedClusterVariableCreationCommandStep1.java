@@ -50,4 +50,13 @@ public interface GloballyScopedClusterVariableCreationCommandStep1
    * @return this builder for method chaining
    */
   GloballyScopedClusterVariableCreationCommandStep1 create(String name, Object value);
+
+  /**
+   * Sets the kind of the cluster variable (optional, defaults to JSON).
+   *
+   * @param kind the kind (JSON or SECRET_REFERENCE)
+   * @return this builder for method chaining
+   */
+  GloballyScopedClusterVariableCreationCommandStep1 kind(
+      io.camunda.client.api.search.enums.ClusterVariableKind kind);
 }
