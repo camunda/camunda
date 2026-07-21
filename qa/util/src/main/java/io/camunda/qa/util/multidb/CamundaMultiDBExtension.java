@@ -227,6 +227,8 @@ public class CamundaMultiDBExtension
       "test.integration.camunda.physical-tenant";
   public static final String TEST_INTEGRATION_PHYSICAL_TENANT_ELASTICSEARCH_URL =
       "test.integration.camunda.physical-tenant.elasticsearch.url";
+  public static final String TEST_INTEGRATION_PHYSICAL_TENANT_OPENSEARCH_URL =
+      "test.integration.camunda.physical-tenant.opensearch.url";
   public static final Duration TIMEOUT_DATA_AVAILABILITY =
       Optional.ofNullable(System.getProperty(PROP_TEST_INTEGRATION_OPENSEARCH_AWS_TIMEOUT))
           .map(val -> Duration.ofSeconds(Long.parseLong(val)))
@@ -322,11 +324,21 @@ public class CamundaMultiDBExtension
     return value == null || value.isBlank() ? null : value;
   }
 
+  public static String getPhysicalTenantOpensearchUrl() {
+    final String value = System.getProperty(TEST_INTEGRATION_PHYSICAL_TENANT_OPENSEARCH_URL);
+    return value == null || value.isBlank() ? null : value;
+  }
+
   private static MultiDbSetupHelper physicalTenantSetupHelper() {
     final String ptElasticsearchUrl = getPhysicalTenantElasticsearchUrl();
-    return ptElasticsearchUrl != null
-        ? new ElasticsearchSetupHelper(ptElasticsearchUrl, List.of())
-        : new NoopDBSetupHelper();
+    if (ptElasticsearchUrl != null) {
+      return new ElasticsearchSetupHelper(ptElasticsearchUrl, List.of());
+    }
+    final String ptOpensearchUrl = getPhysicalTenantOpensearchUrl();
+    if (ptOpensearchUrl != null) {
+      return new OpenSearchSetupHelper(ptOpensearchUrl, List.of());
+    }
+    return new NoopDBSetupHelper();
   }
 
   private DatabaseType currentMultiDbDatabaseType(final ExtensionContext context) {
@@ -450,24 +462,30 @@ public class CamundaMultiDBExtension
 
     // Derive per-PT storage config based on the active database type.
     final Consumer<SecondaryStorage> configurePtStorage;
-    if (databaseType.storageType().isElasticSearch()) {
+    if (databaseType.storageType().isElasticSearch() || databaseType.storageType().isOpenSearch()) {
       // Same cluster by default (per-PT index prefix); if
-      // test.integration.camunda.physical-tenant.elasticsearch.url is set, the PT points at that
-      // separate cluster instead. Extending testPrefix keeps the PT's indices covered by the
-      // delete-by-prefix cleanup in afterAll, and the distinct prefix/URL satisfies the
-      // storage-isolation validation (SecondaryStorageIsolationValidation).
-      final var baseElasticsearch =
-          springApplication.unifiedConfig().getData().getSecondaryStorage().getElasticsearch();
+      // test.integration.camunda.physical-tenant.<elasticsearch|opensearch>.url is set, the PT
+      // points at that separate cluster instead. Extending testPrefix keeps the PT's indices
+      // covered by the delete-by-prefix cleanup in afterAll, and the distinct prefix/URL satisfies
+      // the storage-isolation validation (SecondaryStorageIsolationValidation).
+      final boolean elastic = databaseType.storageType().isElasticSearch();
+      final var baseSecondaryStorage =
+          springApplication.unifiedConfig().getData().getSecondaryStorage();
+      final var baseDatabase =
+          elastic ? baseSecondaryStorage.getElasticsearch() : baseSecondaryStorage.getOpensearch();
       final String ptUrl =
-          Optional.ofNullable(getPhysicalTenantElasticsearchUrl())
-              .orElseGet(baseElasticsearch::getUrl);
-      final String ptIndexPrefix = baseElasticsearch.getIndexPrefix() + "-" + tenantId;
+          Optional.ofNullable(
+                  elastic ? getPhysicalTenantElasticsearchUrl() : getPhysicalTenantOpensearchUrl())
+              .orElseGet(baseDatabase::getUrl);
+      final String ptIndexPrefix = baseDatabase.getIndexPrefix() + "-" + tenantId;
       configurePtStorage =
           secondaryStorage -> {
-            secondaryStorage.setType(SecondaryStorageType.elasticsearch);
-            final var elasticsearch = secondaryStorage.getElasticsearch();
-            elasticsearch.setUrl(ptUrl);
-            elasticsearch.setIndexPrefix(ptIndexPrefix);
+            secondaryStorage.setType(
+                elastic ? SecondaryStorageType.elasticsearch : SecondaryStorageType.opensearch);
+            final var database =
+                elastic ? secondaryStorage.getElasticsearch() : secondaryStorage.getOpensearch();
+            database.setUrl(ptUrl);
+            database.setIndexPrefix(ptIndexPrefix);
           };
     } else if (databaseType == DatabaseType.RDBMS_H2) {
       // Fresh in-memory database per PT — DBs are already separate, so no prefix needed.
@@ -716,19 +734,23 @@ public class CamundaMultiDBExtension
     }
     if (physicalTenantId != null
         && !databaseType.storageType().isRdbms()
-        && !databaseType.storageType().isElasticSearch()) {
+        && !databaseType.storageType().isElasticSearch()
+        && !databaseType.storageType().isOpenSearch()) {
       throw new IllegalStateException(
-          "Physical-tenant mode (%s) is only supported on RDBMS or Elasticsearch storage; got %s."
-              .formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
+          "Physical-tenant mode (%s) is only supported on RDBMS, Elasticsearch or OpenSearch"
+              + " storage; got %s.".formatted(TEST_INTEGRATION_PHYSICAL_TENANT, databaseType));
     }
 
     // Multi-PT mode: @MultiDbPhysicalTenants overrides the single-PT path
     final MultiDbPhysicalTenants multiPtAnnotation =
         AnnotationSupport.findAnnotation(testClass, MultiDbPhysicalTenants.class).orElse(null);
     if (multiPtAnnotation != null) {
-      if (!databaseType.storageType().isRdbms() && !databaseType.storageType().isElasticSearch()) {
+      if (!databaseType.storageType().isRdbms()
+          && !databaseType.storageType().isElasticSearch()
+          && !databaseType.storageType().isOpenSearch()) {
         throw new IllegalStateException(
-            "@MultiDbPhysicalTenants is only supported on RDBMS or Elasticsearch storage; got "
+            "@MultiDbPhysicalTenants is only supported on RDBMS, Elasticsearch or OpenSearch"
+                + " storage; got "
                 + databaseType);
       }
       multiPhysicalTenantIds = validatedPhysicalTenantIds(multiPtAnnotation.value());
@@ -823,6 +845,7 @@ public class CamundaMultiDBExtension
         case OS:
           setupHelper.applyIndexPoliciesPollInterval(
               Duration.ofMinutes(1)); // OpenSearch can't go lower
+          ptSetupHelper.applyIndexPoliciesPollInterval(Duration.ofMinutes(1));
           break;
         default:
           break;
