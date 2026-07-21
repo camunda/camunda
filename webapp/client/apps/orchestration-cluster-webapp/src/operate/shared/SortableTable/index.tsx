@@ -32,7 +32,7 @@ type Column<TRow> = {
 	render: (row: TRow) => React.ReactNode;
 };
 
-type Props<TRow> = {
+type BaseProps<TRow> = {
 	columns: Column<TRow>[];
 	rows: TRow[];
 	rowKey: (row: TRow) => string;
@@ -43,40 +43,40 @@ type Props<TRow> = {
 	onVerticalScrollStartReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollStartReach'];
 	onVerticalScrollEndReach?: React.ComponentProps<typeof InfiniteScroller>['onVerticalScrollEndReach'];
 	'data-testid'?: string;
-	selectionType?: 'checkbox';
-	selectAllLabel?: string;
-	selectRowLabel?: (rowId: string) => string;
-	checkIsAllSelected?: () => boolean;
-	checkIsIndeterminate?: () => boolean;
-	checkIsRowSelected?: (rowId: string) => boolean;
-	onSelectAll?: () => void;
-	onSelect?: (rowId: string) => void;
 };
 
-function SortableTable<TRow>({
-	columns,
-	rows,
-	rowKey,
-	size = 'md',
-	isFetching = false,
-	emptyState,
-	onSort,
-	onVerticalScrollStartReach,
-	onVerticalScrollEndReach,
-	'data-testid': dataTestId,
-	selectionType,
-	selectAllLabel,
-	selectRowLabel,
-	checkIsAllSelected,
-	checkIsIndeterminate,
-	checkIsRowSelected,
-	onSelectAll,
-	onSelect,
-}: Props<TRow>) {
+type SelectionProps = {
+	selectionType: 'checkbox';
+	selectAllLabel: string;
+	selectRowLabel: (rowId: string) => string;
+	checkIsAllSelected: () => boolean;
+	checkIsIndeterminate: () => boolean;
+	checkIsRowSelected: (rowId: string) => boolean;
+	onSelectAll: () => void;
+	onSelect: (rowId: string) => void;
+};
+
+// Selection is all-or-nothing: passing `selectionType: 'checkbox'` requires every other
+// selection prop too, so a caller can't accidentally render a checkbox with an empty aria-label.
+type Props<TRow> = BaseProps<TRow> & ({selectionType?: undefined} | SelectionProps);
+
+function SortableTable<TRow>(props: Props<TRow>) {
+	const {
+		columns,
+		rows,
+		rowKey,
+		size = 'md',
+		isFetching = false,
+		emptyState,
+		onSort,
+		onVerticalScrollStartReach,
+		onVerticalScrollEndReach,
+		'data-testid': dataTestId,
+	} = props;
+	const selection = props.selectionType === 'checkbox' ? props : undefined;
 	const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
 	const hasScrollHandlers = onVerticalScrollStartReach !== undefined || onVerticalScrollEndReach !== undefined;
-	const isSelectable = selectionType === 'checkbox';
-	const columnCount = columns.length + (isSelectable ? 1 : 0);
+	const columnCount = columns.length + (selection !== undefined ? 1 : 0);
 
 	const tableBody = (
 		<TableBody>
@@ -91,13 +91,13 @@ function SortableTable<TRow>({
 					const id = rowKey(row);
 					return (
 						<TableRow key={id}>
-							{isSelectable && (
+							{selection !== undefined && (
 								<TableSelectRow
 									id={`select-row-${id}`}
 									name={`select-row-${id}`}
-									aria-label={selectRowLabel?.(id) ?? ''}
-									checked={checkIsRowSelected?.(id) ?? false}
-									onSelect={() => onSelect?.(id)}
+									aria-label={selection.selectRowLabel(id)}
+									checked={selection.checkIsRowSelected(id)}
+									onSelect={() => selection.onSelect(id)}
 								/>
 							)}
 							{columns.map((col) => (
@@ -116,14 +116,14 @@ function SortableTable<TRow>({
 			<Table size={size} isSortable>
 				<TableHead>
 					<TableRow>
-						{isSelectable && (
+						{selection !== undefined && (
 							<TableSelectAll
 								id="select-all-rows"
 								name="select-all-rows"
-								aria-label={selectAllLabel ?? ''}
-								checked={checkIsAllSelected?.() ?? false}
-								indeterminate={checkIsIndeterminate?.()}
-								onSelect={() => onSelectAll?.()}
+								aria-label={selection.selectAllLabel}
+								checked={selection.checkIsAllSelected()}
+								indeterminate={selection.checkIsIndeterminate()}
+								onSelect={() => selection.onSelectAll()}
 							/>
 						)}
 						{columns.map((col) =>
