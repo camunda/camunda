@@ -108,6 +108,22 @@ Matters found while manually testing the spike against a local CCSM/Keycloak set
    follow-up: other user-resolution sites in Optimize (and the `MembershipPort` stub) likely need
    the same CSL-principal bridge for full functionality.
 
+6. **Logout did nothing.** The SPA calls Optimize's `GET /api/authentication/logout`, which ran only
+   the legacy cookie cleanup (revoke refresh token, delete `X-Optimize-Authorization`) and never
+   touched the CSL server session, so the user stayed logged in. Fixed: the logout endpoint now
+   also runs a `SecurityContextLogoutHandler` (invalidate the session, which deletes it from the
+   `SessionStorePort`, and clear the context). IdP end-session (Keycloak logout via CSL's
+   `oidcLogout`) is a follow-up — this is a local logout only.
+7. **`CCSMUserCache` cannot load users** (`WARN … Could not retrieve user because no user token
+   present`). It resolves users from Identity using `ccsmTokenService.getCurrentUserAuthToken()`,
+   which reads the user access token from the old Optimize cookie; under CSL that token lives in the
+   OIDC session's `OAuth2AuthorizedClient`, not a cookie. **Known regression, not yet fixed.** Fix
+   approach: bridge the "current user auth token" to the CSL access token (from the
+   `OAuth2AuthorizedClientService`/`OAuth2AuthorizedClientManager` keyed by the current
+   `OAuth2AuthenticationToken`, or the `OidcUser` token). This is the same host-side token/user
+   resolution rewiring called out in ADR-0036 and affects user display/search and any Identity call
+   that needs the user's token.
+
 ## Follow-ups (tracked in ADR-0036)
 
 1. `SessionStorePort` over Optimize's Elasticsearch + `web-session` index — **done (ES-only)**.
