@@ -9,12 +9,14 @@
 import {Api, User} from '@carbon/react/icons';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10/audit-log';
 
-const ActorIcon: React.FC<{auditLog: AuditLog}> = ({auditLog}) => {
+type Props = React.SVGProps<SVGSVGElement> & {auditLog: AuditLog};
+
+const ActorIcon: React.FC<Props> = ({auditLog, ...rest}) => {
 	switch (auditLog.actorType) {
 		case 'USER':
-			return <User />;
+			return <User {...rest} />;
 		case 'CLIENT':
-			return <Api />;
+			return <Api {...rest} />;
 		default:
 			return null;
 	}

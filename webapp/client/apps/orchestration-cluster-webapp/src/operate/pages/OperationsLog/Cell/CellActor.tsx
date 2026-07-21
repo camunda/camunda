@@ -44,12 +44,12 @@ const CellActor: React.FC<Props> = ({item}) => {
 		<OperationLogName>
 			{hasActorIcon(item) && (
 				<Tooltip autoAlign align="bottom-start" description={getTooltipActorContent(item.actorType)}>
-					<ActorIcon auditLog={item} />
+					<ActorIcon auditLog={item} data-testid="actor-icon" />
 				</Tooltip>
 			)}
 			{item.agentElementId && (
 				<Tooltip autoAlign align="bottom-start" description={getTooltipActorContent('AGENT')}>
-					<AiAgentIcon />
+					<AiAgentIcon data-testid="agent-icon" />
 				</Tooltip>
 			)}
 			{item.inboundChannelType === 'MCP' && (
@@ -65,7 +65,7 @@ const CellActor: React.FC<Props> = ({item}) => {
 						</AuthorTooltip>
 					}
 				>
-					<McpIcon />
+					<McpIcon data-testid="mcp-icon" />
 				</Tooltip>
 			)}
 			{item.actorId}

@@ -105,6 +105,9 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				sort: sortField,
 			});
 		}
+		// Only re-fire when a new page of results actually arrives, matching legacy's `select`-based
+		// tracking; including requestFilter/sortField would double-fire between a filter change and
+		// the query settling.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [data]);
 

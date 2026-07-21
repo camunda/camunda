@@ -32,7 +32,6 @@ const FilterMultiSelect: React.FC<Props> = ({name, titleText, items}) => {
 				return (
 					<MultiSelect
 						id={name}
-						data-testid={name}
 						items={items}
 						selectedItems={selectedItems}
 						itemToString={(selectedItem) => spaceAndCapitalize(selectedItem)}
