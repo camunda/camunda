@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static java.util.function.Predicate.not;
 
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -242,17 +241,19 @@ public final class ProcessInstanceModificationModifyProcessor
       return;
     }
 
-    final var authorizations = command.getAuthorizations();
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null
-        || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
-      final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
-      if (!authorizedTenants.isAuthorizedForTenantId(processInstance.getValue().getTenantId())) {
-        final String tenantReason = ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(eventKey);
-        responseWriter.writeRejectedResponseOnCommand(
-            command, RejectionType.NOT_FOUND, tenantReason);
-        rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, tenantReason);
-        return;
-      }
+    final var tenantCheck =
+        permissionsBehavior.checkTenant(
+            command,
+            processInstance.getValue().getTenantId(),
+            processInstance,
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(eventKey)));
+    if (tenantCheck.isLeft()) {
+      final var rejection = tenantCheck.getLeft();
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      return;
     }
 
     final var isAuthorized =

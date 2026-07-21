@@ -12,10 +12,10 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -168,21 +168,21 @@ public final class DeploymentCreateProcessor
       return;
     }
 
-    final var authorizations = command.getAuthorizations();
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null
-        || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
-      final var authorizedTenants = cslCheck.resolveAuthorizedTenants(authorizations);
-      if (!authorizedTenants.isAuthorizedForTenantId(command.getValue().getTenantId())) {
-        final var message =
-            "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
-                .formatted(
-                    PermissionType.CREATE,
-                    AuthorizationResourceType.RESOURCE,
-                    command.getValue().getTenantId());
-        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-        responseWriter.writeRejectedResponseOnCommand(command, RejectionType.FORBIDDEN, message);
-        return;
-      }
+    final var tenantId = command.getValue().getTenantId();
+    final var tenantMessage =
+        "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
+            .formatted(PermissionType.CREATE, AuthorizationResourceType.RESOURCE, tenantId);
+    final var tenantCheck =
+        cslCheck.checkTenant(
+            command,
+            tenantId,
+            command.getValue(),
+            new Rejection(RejectionType.FORBIDDEN, tenantMessage));
+    if (tenantCheck.isLeft()) {
+      final var rejection = tenantCheck.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
     }
 
     transformAndDistributeDeployment(command);

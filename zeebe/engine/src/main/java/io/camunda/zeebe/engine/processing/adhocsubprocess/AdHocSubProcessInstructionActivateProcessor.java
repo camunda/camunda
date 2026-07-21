@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
@@ -79,20 +78,19 @@ public class AdHocSubProcessInstructionActivateProcessor
       return;
     }
 
-    final var authorizations = command.getAuthorizations();
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null
-        || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
-      final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
-      if (!authorizedTenants.isAuthorizedForTenantId(
-          adHocSubProcessElementInstance.getValue().getTenantId())) {
-        writeRejectionError(
+    final var tenantCheck =
+        permissionsBehavior.checkTenant(
             command,
-            RejectionType.NOT_FOUND,
-            ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND.formatted(
-                command.getValue().getAdHocSubProcessInstanceKey()));
-
-        return;
-      }
+            adHocSubProcessElementInstance.getValue().getTenantId(),
+            adHocSubProcessElementInstance,
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND.formatted(
+                    command.getValue().getAdHocSubProcessInstanceKey())));
+    if (tenantCheck.isLeft()) {
+      final var rejection = tenantCheck.getLeft();
+      writeRejectionError(command, rejection.type(), rejection.reason());
+      return;
     }
 
     if (!adHocSubProcessElementInstance.isActive()) {

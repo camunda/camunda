@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -122,21 +122,21 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       return;
     }
 
-    final var authorizations = command.getAuthorizations();
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null
-        || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
-      final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
-      if (!authorizedTenants.isAuthorizedForTenantId(command.getValue().getTenantId())) {
-        final var message =
-            "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
-                .formatted(
-                    PermissionType.CREATE,
-                    AuthorizationResourceType.MESSAGE,
-                    command.getValue().getTenantId());
-        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-        responseWriter.writeRejectedResponseOnCommand(command, RejectionType.FORBIDDEN, message);
-        return;
-      }
+    final var tenantId = command.getValue().getTenantId();
+    final var tenantMessage =
+        "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
+            .formatted(PermissionType.CREATE, AuthorizationResourceType.MESSAGE, tenantId);
+    final var tenantCheck =
+        permissionsBehavior.checkTenant(
+            command,
+            tenantId,
+            command.getValue(),
+            new Rejection(RejectionType.FORBIDDEN, tenantMessage));
+    if (tenantCheck.isLeft()) {
+      final var rejection = tenantCheck.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
     }
 
     messageRecord = command.getValue();

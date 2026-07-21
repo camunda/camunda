@@ -127,9 +127,12 @@ public final class CslAuthorizationCheck {
    * a different granularity (one tenant, many resource checks).
    *
    * <p>Encapsulates the skip-logic hand-rolled across engine processors: when multi-tenancy checks
-   * are disabled the check is a no-op; otherwise the authorized tenants are resolved from the
-   * command's claims (anonymous access is authorized for every tenant) and {@code tenantId} must be
-   * among them.
+   * are disabled the check is a no-op; when no username or clientId claim is present the check is
+   * also a no-op (mirrors {@link #resolveForCheck} — a no-principal command is either an internal
+   * command already exempted upstream, or authorizations are disabled and the primary permission
+   * check already let it through; either way there is no principal to hold a tenant assignment
+   * requirement against). Otherwise the authorized tenants are resolved from the command's claims
+   * (anonymous access is authorized for every tenant) and {@code tenantId} must be among them.
    *
    * <p>Callers own the rejection semantics: {@code notAssignedRejection} carries the {@link
    * io.camunda.zeebe.protocol.record.RejectionType} — {@code FORBIDDEN} to signal "not assigned to
@@ -148,7 +151,12 @@ public final class CslAuthorizationCheck {
     if (!securityConfig.isMultiTenancyChecksEnabled()) {
       return Either.right(value);
     }
-    if (resolveAuthorizedTenants(command.getAuthorizations()).isAuthorizedForTenantId(tenantId)) {
+    final var authorizations = command.getAuthorizations();
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return Either.right(value);
+    }
+    if (resolveAuthorizedTenants(authorizations).isAuthorizedForTenantId(tenantId)) {
       return Either.right(value);
     }
     return Either.left(notAssignedRejection);

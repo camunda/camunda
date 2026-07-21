@@ -12,8 +12,8 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
@@ -154,17 +154,20 @@ public class ProcessInstanceMigrationMigrateProcessor
       return;
     }
 
-    final var authorizations = command.getAuthorizations();
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) != null
-        || authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) != null) {
-      final var authorizedTenants = permissionsBehavior.resolveAuthorizedTenants(authorizations);
-      if (!authorizedTenants.isAuthorizedForTenantId(processInstanceRecord.getTenantId())) {
-        final var message = ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(processInstanceKey);
-        enrichRejectionCommand(command, processInstanceRecord);
-        rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
-        responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, message);
-        return;
-      }
+    final var tenantCheck =
+        permissionsBehavior.checkTenant(
+            command,
+            processInstanceRecord.getTenantId(),
+            processInstanceRecord,
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(processInstanceKey)));
+    if (tenantCheck.isLeft()) {
+      final var rejection = tenantCheck.getLeft();
+      enrichRejectionCommand(command, processInstanceRecord);
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
+      return;
     }
 
     requireNonDuplicateSourceElementIds(mappingInstructions, processInstanceKey);
