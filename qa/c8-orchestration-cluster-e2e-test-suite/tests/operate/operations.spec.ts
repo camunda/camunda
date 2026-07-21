@@ -97,10 +97,10 @@ test.describe('Operations', () => {
     });
   });
 
-  // Skipped due to bug 42375: https://github.com/camunda/camunda/issues/42375
-  // Bug closed as "not planned": a cancel operation on a single instance is not
-  // added to the operations panel by design, so this test's assertion cannot pass.
-  test.skip('Retry and cancel single instance', async ({
+  // Regression coverage for bug 42375 (closed as "not planned" / intended behavior):
+  // a retry on a single instance is added to the operations panel, but a cancel is not.
+  // https://github.com/camunda/camunda/issues/42375
+  test('Retry and cancel single instance', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
@@ -140,25 +140,25 @@ test.describe('Operations', () => {
       ).toBeVisible();
     });
 
-    await test.step('Validate operation in operations list', async () => {
+    await test.step('Verify retry operation appears in operations list', async () => {
       await expect(operateOperationPanelPage.operationList).toBeHidden();
       await operateOperationPanelPage.expandOperationIdField();
 
       await expect(operateOperationPanelPage.operationList).toBeVisible();
 
-      const operationEntry =
-        operateOperationPanelPage.getCancelOperationEntry(1);
+      const retryEntry = operateOperationPanelPage
+        .getAllOperationEntries()
+        .filter({hasText: 'Retry'})
+        .first();
 
-      await expect(operationEntry).toBeVisible();
-      await expect(operationEntry.getByText(DATE_REGEX)).toBeVisible();
+      await expect(retryEntry).toBeVisible();
+      await expect(retryEntry.getByText(DATE_REGEX)).toBeVisible();
+    });
 
-      const operationId = await operationEntry.getByRole('link').innerText();
-
-      await operateOperationPanelPage.clickOperationLink(operationEntry);
-      await expect(operateFiltersPanelPage.operationIdFilter).toHaveValue(
-        operationId,
-      );
-      await expect(operateProcessesPage.resultsCount).toBeVisible();
+    await test.step('Verify cancel does not create an operations panel entry', async () => {
+      await expect(
+        operateOperationPanelPage.getCancelOperationEntry(1),
+      ).toBeHidden();
     });
 
     await test.step('Validate canceled instance details', async () => {
