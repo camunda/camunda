@@ -14,6 +14,7 @@ import java.util.HashMap;
 import org.junit.jupiter.api.Test;
 
 class FileBasedSecretReferenceTest {
+
   @Test
   void shouldCreateWithName() {
     // given / when
@@ -42,6 +43,34 @@ class FileBasedSecretReferenceTest {
     assertThatThrownBy(() -> new FileBasedSecretReference(""))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be blank");
+  }
+
+  @Test
+  void shouldRejectNameWithForwardSlash() {
+    assertThatThrownBy(() -> new FileBasedSecretReference("nested/secret"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("path separator");
+  }
+
+  @Test
+  void shouldRejectNameWithBackslash() {
+    assertThatThrownBy(() -> new FileBasedSecretReference("nested\\secret"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("path separator");
+  }
+
+  @Test
+  void shouldRejectCurrentDirectoryToken() {
+    assertThatThrownBy(() -> new FileBasedSecretReference("."))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("traversal");
+  }
+
+  @Test
+  void shouldRejectParentDirectoryToken() {
+    assertThatThrownBy(() -> new FileBasedSecretReference(".."))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("traversal");
   }
 
   @Test
