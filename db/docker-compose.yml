@@ -189,7 +189,10 @@ services:
       - discovery.type=single-node
       - plugins.security.disabled=true
       - bootstrap.memory_lock=true
-      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx1024m"
+      # matches the root opensearch service: the PT node handles one full schema per concurrent
+      # test fork, and at 1g heap its shard initialization falls behind in CI, leaving every
+      # fork's SchemaManager.startup in a permanent "all shards failed" retry loop
+      - "OPENSEARCH_JAVA_OPTS=-Xms1024m -Xmx2048m"
       - OPENSEARCH_INITIAL_ADMIN_PASSWORD=yourStrongPassword123!
       - action.destructive_requires_name=false
     ulimits:
