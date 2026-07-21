@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.HashMap;
@@ -31,6 +32,8 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   private final Set<Integer> partitions = new HashSet<>();
   private final Map<Tuple<BrokerMemberId, Integer>, PartitionHealthStatus>
       brokerPartitionHealthStatus = new HashMap<>();
+  private final Map<Tuple<BrokerMemberId, Integer>, PartitionState.State> partitionStates =
+      new HashMap<>();
   private final Map<Integer, Set<BrokerMemberId>> inactivePartitionsToNodeIds = new HashMap<>();
   private final Map<Integer, Set<BrokerMemberId>> followerPartitionToNodeIds = new HashMap<>();
   private String clusterId = "";
@@ -121,6 +124,13 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   }
 
   @Override
+  public PartitionState.State getPartitionState(
+      final BrokerMemberId brokerId, final int partition) {
+    return partitionStates.getOrDefault(
+        Tuple.of(brokerId, partition), PartitionState.State.UNKNOWN);
+  }
+
+  @Override
   public long getLastCompletedChangeId() {
     throw new UnsupportedOperationException();
   }
@@ -152,6 +162,11 @@ public final class TestBrokerClusterState implements BrokerClusterState {
       final int partitionId,
       final PartitionHealthStatus partitionHealthStatus) {
     brokerPartitionHealthStatus.put(Tuple.of(nodeId, partitionId), partitionHealthStatus);
+  }
+
+  public void setPartitionState(
+      final BrokerMemberId nodeId, final int partitionId, final PartitionState.State state) {
+    partitionStates.put(Tuple.of(nodeId, partitionId), state);
   }
 
   public void addPartitionInactive(final int partitionId, final BrokerMemberId nodeId) {

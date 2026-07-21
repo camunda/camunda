@@ -16,7 +16,6 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
@@ -102,15 +101,13 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
           .replicationFactor(clusterState.getReplicationFactor())
           .lastCompletedChangeId(clusterState.getLastCompletedChangeId());
 
-      final var clusterConfiguration = brokerClient.getTopologyManager().getClusterConfiguration();
-
       clusterState
           .getBrokers()
           .forEach(
               brokerId -> {
                 final var broker = Broker.Builder.create();
                 addBrokerInfo(broker, brokerId, clusterState);
-                addPartitionInfoToBrokerInfo(broker, brokerId, clusterState, clusterConfiguration);
+                addPartitionInfoToBrokerInfo(broker, brokerId, clusterState);
 
                 topology.addBroker(broker.build());
               });
@@ -138,8 +135,7 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
   private void addPartitionInfoToBrokerInfo(
       final Broker.Builder broker,
       final BrokerMemberId brokerId,
-      final BrokerClusterState topology,
-      final ClusterConfiguration clusterConfiguration) {
+      final BrokerClusterState topology) {
     topology
         .getPartitions()
         .forEach(
@@ -165,7 +161,7 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
                             .map(PartitionHealthStatus::name)
                             .orElse("null"));
               }
-              setState(brokerId, partitionId, clusterConfiguration, partition);
+              partition.state(mapState(topology.getPartitionState(brokerId, partitionId)));
               broker.addPartition(partition.build());
             });
   }
@@ -190,26 +186,6 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
     }
 
     return true;
-  }
-
-  private void setState(
-      final BrokerMemberId brokerId,
-      final Integer partitionId,
-      final ClusterConfiguration clusterConfiguration,
-      final Partition.Builder partition) {
-    final var memberState = clusterConfiguration.members().get(brokerId.memberId());
-    if (memberState == null) {
-      partition.state(State.UNKNOWN);
-      return;
-    }
-
-    final var partitionState = memberState.getPartition(partitionId);
-    if (partitionState == null) {
-      partition.state(State.UNKNOWN);
-      return;
-    }
-
-    partition.state(mapState(partitionState.state()));
   }
 
   private static State mapState(final PartitionState.State state) {

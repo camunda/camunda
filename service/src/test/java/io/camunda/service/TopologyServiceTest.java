@@ -24,14 +24,10 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
-import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
@@ -67,8 +63,6 @@ public class TopologyServiceTest {
     topologyManager = mock(BrokerTopologyManager.class);
     when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
     when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(clusterState);
-    when(topologyManager.getClusterConfiguration())
-        .thenReturn(ClusterConfiguration.uninitialized());
     services =
         new TopologyServices(
             PHYSICAL_TENANT_ID,
@@ -252,21 +246,7 @@ public class TopologyServiceTest {
     // given
     final var version = VersionUtil.getVersion();
     when(topologyManager.getTopology(PHYSICAL_TENANT_ID))
-        .thenReturn(new TestBrokerClusterState(null, version, "cluster-id"));
-
-    final var leaderMemberId = BrokerMemberId.from(null, 0).memberId();
-    final var clusterConfiguration =
-        ClusterConfiguration.builder()
-            .members(
-                Map.of(
-                    leaderMemberId,
-                    MemberState.initializeAsActive(
-                        Map.of(
-                            1,
-                            new PartitionState(
-                                dynamicConfigState, 1, DynamicPartitionConfig.init())))))
-            .build();
-    when(topologyManager.getClusterConfiguration()).thenReturn(clusterConfiguration);
+        .thenReturn(new TestBrokerClusterState(null, version, "cluster-id", dynamicConfigState));
 
     // when
     final var topology = services.getTopology().join();
@@ -316,8 +296,17 @@ public class TopologyServiceTest {
    * Topology stub which returns a static topology with 3 brokers, 1 partition, replication factor
    * 3, where 0 is the leader (healthy), 1 is the follower (healthy), and 2 is inactive (unhealthy).
    */
-  private record TestBrokerClusterState(@Nullable String zone, String version, String clusterId)
+  private record TestBrokerClusterState(
+      @Nullable String zone,
+      String version,
+      String clusterId,
+      PartitionState.State leaderPartitionState)
       implements BrokerClusterState {
+
+    TestBrokerClusterState(
+        final @Nullable String zone, final String version, final String clusterId) {
+      this(zone, version, clusterId, PartitionState.State.UNKNOWN);
+    }
 
     @Override
     public boolean isInitialized() {
@@ -391,6 +380,15 @@ public class TopologyServiceTest {
         case 2 -> PartitionHealthStatus.UNHEALTHY;
         default -> PartitionHealthStatus.NULL_VAL;
       };
+    }
+
+    @Override
+    public PartitionState.State getPartitionState(
+        final BrokerMemberId brokerId, final int partition) {
+      if (partition == 1 && brokerId.nodeIdx() == 0) {
+        return leaderPartitionState;
+      }
+      return PartitionState.State.UNKNOWN;
     }
 
     @Override

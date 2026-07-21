@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.protocol.impl.encoding.AdminResponse;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
@@ -255,6 +256,11 @@ public class ExportingControlServiceTest {
       @Override
       public PartitionHealthStatus getPartitionHealth(
           final @NonNull BrokerMemberId brokerId, final int partition) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public State getPartitionState(final BrokerMemberId brokerId, final int partition) {
         throw new UnsupportedOperationException();
       }
 
