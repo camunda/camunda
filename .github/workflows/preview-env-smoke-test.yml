@@ -86,6 +86,14 @@ jobs:
         - deployment:
             run: false
     steps:
+      # Sparse-checkout .github so local composite actions (npm-ci-with-retry,
+      # observe-build-status) resolve.
+      - name: Check out .github for local actions
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Install Teleport
         uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
@@ -113,7 +121,7 @@ jobs:
           # Use full path since sudo doesn't inherit PATH
           sudo -E "$(which tsh)" proxy app "${TELEPORT_APP}" --port 443 --debug &
           sleep 5
-          
+
           # Verify tunnel is running
           if ! nc -z 127.0.0.1 443; then
             echo "::error::Failed to start tsh proxy on port 443"
@@ -242,6 +250,12 @@ jobs:
     permissions:
       actions: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Import secrets
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
@@ -300,4 +314,13 @@ jobs:
                 }
               ]
             }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 

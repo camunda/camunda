@@ -176,6 +176,14 @@ jobs:
       host-name: ${{ steps.set-host-name.outputs.host-name }}
     steps:
     #########################################################################
+    # Checkout the same ref used for image tagging to ensure chart files match
+    - name: Checkout
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
+        persist-credentials: false
+
+    #########################################################################
     # Validate app-name length (only for workflow_call input)
     - name: Validate app-name length
       if: inputs.app-name != ''
@@ -224,13 +232,6 @@ jobs:
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
           secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
-
-    #########################################################################
-    # Checkout the same ref used for image tagging to ensure chart files match
-    - name: Checkout
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      with:
-        ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
 
     #########################################################################
     # Determine the argocd arguments that need to be passed to the create app command
