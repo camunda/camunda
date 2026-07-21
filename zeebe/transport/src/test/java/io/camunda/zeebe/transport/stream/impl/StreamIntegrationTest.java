@@ -37,9 +37,11 @@ import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import io.camunda.zeebe.transport.stream.api.StreamResponseException;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -50,8 +52,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.ArrayUtil;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -415,6 +419,51 @@ final class StreamIntegrationTest {
           new TestServer(createClusterNode(clusterNodes.get(0), clusterNodes))) {
         restartedServer.start();
         client.streamService.onServerJoined(restartedServer.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+
+        // then
+        awaitStreamAdded(streamType, streamId, restartedServer, server2);
+      }
+    }
+
+    @Test
+    void shouldAddStreamAgainOnLegacyRestartRequest() {
+      // given
+      final var streamType = BufferUtil.wrapString("foo");
+      final var properties = new TestSerializableData();
+      final var streamId =
+          clientStreamer
+              .add(
+                  streamType,
+                  properties,
+                  p -> CompletableActorFuture.completed(null),
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+              .join();
+      assertThat(streamId).isNotNull();
+      awaitStreamAdded(streamType, streamId, server1, server2);
+      server1.close();
+      client.streamService.onServerRemoved(server1.memberId(), DEFAULT_PHYSICAL_TENANT_ID);
+      awaitStreamOnClient(
+          streamId,
+          stream ->
+              assertThat(stream)
+                  .map(ClientStream::liveConnections)
+                  .hasValue(Set.of(server2.memberId())));
+
+      // when
+      try (final var restartedServer =
+          new TestServer(createClusterNode(clusterNodes.getFirst(), clusterNodes))) {
+        restartedServer.start();
+        restartedServer
+            .cluster
+            .getCommunicationService()
+            .send(
+                StreamTopics.RESTART_STREAMS.legacyTopic(),
+                ArrayUtil.EMPTY_BYTE_ARRAY,
+                Function.identity(),
+                Function.identity(),
+                client.cluster.getMembershipService().getLocalMember().id(),
+                Duration.ofSeconds(5))
+            .join();
 
         // then
         awaitStreamAdded(streamType, streamId, restartedServer, server2);

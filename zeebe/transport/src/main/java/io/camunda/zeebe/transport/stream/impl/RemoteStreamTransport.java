@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
@@ -20,7 +22,9 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.function.LongUnaryOperator;
 import org.agrona.collections.ArrayUtil;
 import org.jspecify.annotations.Nullable;
@@ -65,32 +69,41 @@ public final class RemoteStreamTransport<M> extends Actor {
 
   @Override
   protected void onActorStarting() {
-    transport.replyTo(
+    registerTopicHandlers(
         StreamTopics.ADD.topic(physicalTenantId),
-        MessageUtil::parseAddRequest,
-        requestHandler::add,
-        BufferUtil::bufferAsArray,
-        actor::run);
-    transport.replyTo(
         StreamTopics.REMOVE.topic(physicalTenantId),
-        MessageUtil::parseRemoveRequest,
-        requestHandler::remove,
-        BufferUtil::bufferAsArray,
-        actor::run);
-    transport.replyTo(
-        StreamTopics.REMOVE_ALL.topic(physicalTenantId),
-        Function.identity(),
-        this::onRemoveAll,
-        Function.identity(),
-        actor::run);
+        StreamTopics.REMOVE_ALL.topic(physicalTenantId));
+    registerLegacyTopicHandlers();
   }
 
   @Override
   protected void onActorClosing() {
-    transport.unsubscribe(StreamTopics.ADD.topic(physicalTenantId));
-    transport.unsubscribe(StreamTopics.REMOVE.topic(physicalTenantId));
-    transport.unsubscribe(StreamTopics.REMOVE_ALL.topic(physicalTenantId));
+    unsubscribeTopics(
+        StreamTopics.ADD.topic(physicalTenantId),
+        StreamTopics.REMOVE.topic(physicalTenantId),
+        StreamTopics.REMOVE_ALL.topic(physicalTenantId));
+    unsubscribeLegacyTopics();
     requestHandler.close();
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void registerLegacyTopicHandlers() {
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      registerTopicHandlers(
+          StreamTopics.ADD.legacyTopic(),
+          StreamTopics.REMOVE.legacyTopic(),
+          StreamTopics.REMOVE_ALL.legacyTopic());
+    }
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void unsubscribeLegacyTopics() {
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      unsubscribeTopics(
+          StreamTopics.ADD.legacyTopic(),
+          StreamTopics.REMOVE.legacyTopic(),
+          StreamTopics.REMOVE_ALL.legacyTopic());
+    }
   }
 
   public void removeAll(final MemberId member) {
@@ -105,7 +118,51 @@ public final class RemoteStreamTransport<M> extends Actor {
   public CompletableFuture<Void> restartStreams(final MemberId receiver) {
     final var completed = new CompletableFuture<Void>();
     sendRestartStreamsRequest(receiver, completed, INITIAL_RETRY_DELAY_MS);
-    return completed;
+
+    return raceLegacyIfDefaultTenant(
+        physicalTenantId,
+        completed,
+        legacyCompleted ->
+            sendLegacyRestartStreamsRequest(receiver, legacyCompleted, INITIAL_RETRY_DELAY_MS));
+  }
+
+  /** Rolling-upgrade compat; to remove alongside the legacy topic in 8.11 */
+  private CompletableFuture<Void> raceLegacyIfDefaultTenant(
+      final String physicalTenantId,
+      final CompletableFuture<Void> primary,
+      final Consumer<CompletableFuture<Void>> sendLegacy) {
+    if (!DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      return primary;
+    }
+
+    final var legacy = new CompletableFuture<Void>();
+    sendLegacy.accept(legacy);
+    return CompletableFuture.anyOf(primary, legacy).thenApplyAsync(ignored -> null, actor);
+  }
+
+  private void registerTopicHandlers(
+      final String addTopic, final String removeTopic, final String removeAllTopic) {
+    transport.replyTo(
+        addTopic,
+        MessageUtil::parseAddRequest,
+        requestHandler::add,
+        BufferUtil::bufferAsArray,
+        actor::run);
+    transport.replyTo(
+        removeTopic,
+        MessageUtil::parseRemoveRequest,
+        requestHandler::remove,
+        BufferUtil::bufferAsArray,
+        actor::run);
+    transport.replyTo(
+        removeAllTopic, Function.identity(), this::onRemoveAll, Function.identity(), actor::run);
+  }
+
+  private void unsubscribeTopics(
+      final String addTopic, final String removeTopic, final String removeAllTopic) {
+    transport.unsubscribe(addTopic);
+    transport.unsubscribe(removeTopic);
+    transport.unsubscribe(removeAllTopic);
   }
 
   private void sendRestartStreamsRequest(
@@ -113,7 +170,13 @@ public final class RemoteStreamTransport<M> extends Actor {
     try {
       sendRestartStreamsRequest(receiver)
           .whenCompleteAsync(
-              (ok, error) -> onRestartStreamsResponse(receiver, error, completed, retryDelayMs),
+              (ok, error) ->
+                  onRestartStreamsResponse(
+                      receiver,
+                      error,
+                      completed,
+                      retryDelayMs,
+                      nextDelay -> sendRestartStreamsRequest(receiver, completed, nextDelay)),
               actor);
     } catch (final Exception e) {
       LOG.warn("Failed to restart streams for member '{}'", receiver, e);
@@ -132,11 +195,43 @@ public final class RemoteStreamTransport<M> extends Actor {
         .thenApplyAsync(ok -> null, actor);
   }
 
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void sendLegacyRestartStreamsRequest(
+      final MemberId receiver, final CompletableFuture<Void> completed, final long retryDelayMs) {
+    try {
+      sendLegacyRestartStreamsRequest(receiver)
+          .whenCompleteAsync(
+              (ok, error) ->
+                  onRestartStreamsResponse(
+                      receiver,
+                      error,
+                      completed,
+                      retryDelayMs,
+                      nextDelay -> sendLegacyRestartStreamsRequest(receiver, completed, nextDelay)),
+              actor);
+    } catch (final Exception e) {
+      LOG.warn("Failed to restart legacy streams for member '{}'", receiver, e);
+    }
+  }
+
+  private CompletableFuture<Void> sendLegacyRestartStreamsRequest(final MemberId receiver) {
+    return transport
+        .send(
+            StreamTopics.RESTART_STREAMS.legacyTopic(),
+            ArrayUtil.EMPTY_BYTE_ARRAY,
+            Function.identity(),
+            Function.identity(),
+            receiver,
+            REQUEST_TIMEOUT)
+        .thenApplyAsync(ok -> null, actor);
+  }
+
   private void onRestartStreamsResponse(
       final MemberId receiver,
       final @Nullable Throwable error,
       final CompletableFuture<Void> completed,
-      final long retryDelayMs) {
+      final long retryDelayMs,
+      final LongConsumer retry) {
     if (error == null) {
       LOG.debug("Requested streams from client service member '{}'", receiver);
       completed.complete(null);
@@ -185,9 +280,7 @@ public final class RemoteStreamTransport<M> extends Actor {
             retryDelayMs,
             error);
         final var nextRetryDelay = retryDelaySupplier.applyAsLong(retryDelayMs);
-        actor.schedule(
-            Duration.ofMillis(nextRetryDelay),
-            () -> sendRestartStreamsRequest(receiver, completed, nextRetryDelay));
+        actor.schedule(Duration.ofMillis(nextRetryDelay), () -> retry.accept(nextRetryDelay));
       }
     }
   }

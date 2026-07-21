@@ -83,13 +83,18 @@ final class ClientStreamRequestManagerTest {
             any(),
             any()))
         .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
+    when(mockTransport.send(eq(StreamTopics.ADD.legacyTopic()), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
     clientStream.open(requestManager, Collections.emptySet());
   }
 
   @Test
   void shouldNotAddWhenRemoving() {
     // given - adding the stream, then removing it without completing the request, leaving it in
-    // REMOVING indefinitely
+    // REMOVING indefinitely; stub both the primary and legacy REMOVE so neither resolves
     final var serverId = MemberId.anonymous();
     final var pendingRequest = new CompletableFuture<byte[]>();
     when(mockTransport.<byte[], byte[]>send(
@@ -99,6 +104,9 @@ final class ClientStreamRequestManagerTest {
             any(),
             eq(serverId),
             any()))
+        .thenReturn(pendingRequest);
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), eq(serverId), any()))
         .thenReturn(pendingRequest);
     requestManager.add(clientStream, serverId);
     requestManager.remove(clientStream, serverId);
@@ -174,7 +182,8 @@ final class ClientStreamRequestManagerTest {
 
   @Test
   void shouldNotRemoveIfAlreadyRemoving() {
-    // given - we add the stream then remove it, with the remove request pending indefinitely
+    // given - we add the stream then remove it, with the remove request pending indefinitely;
+    // stub both the primary and legacy REMOVE so neither resolves
     final var serverId = MemberId.anonymous();
     final var pendingRequest = new CompletableFuture<byte[]>();
     when(mockTransport.<byte[], byte[]>send(
@@ -184,6 +193,9 @@ final class ClientStreamRequestManagerTest {
             any(),
             eq(serverId),
             any()))
+        .thenReturn(pendingRequest);
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), eq(serverId), any()))
         .thenReturn(pendingRequest);
     requestManager.add(clientStream, serverId);
     requestManager.remove(clientStream, serverId);
@@ -207,9 +219,14 @@ final class ClientStreamRequestManagerTest {
     // given
     final var pendingRequest = new CompletableFuture<byte[]>();
     final var serverId = MemberId.anonymous();
-    when(mockTransport.<byte[], byte[]>send(any(), any(), any(), any(), any(), any()))
-        .thenReturn(pendingRequest)
-        .thenReturn(CompletableFuture.completedFuture(new byte[0]));
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(pendingRequest);
     requestManager.add(clientStream, serverId);
 
     // when
@@ -442,6 +459,49 @@ final class ClientStreamRequestManagerTest {
             eq(serverId),
             any());
     verify(concurrencyControl, never()).schedule(any(), any());
+    assertThat(clientStream.isConnected(serverId)).isFalse();
+  }
+
+  @Test
+  void shouldWaitForPendingLegacyAddOnRemove() {
+    // given - the primary ADD succeeds immediately (default stub), but the legacy ADD is left
+    // pending; this leaves the registration in ADDING with only a legacy request in flight
+    final var serverId = MemberId.anonymous();
+    final var legacyPendingRequest = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.ADD.legacyTopic()), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(legacyPendingRequest);
+    requestManager.add(clientStream, serverId);
+
+    // when - remove is requested while the legacy ADD is still in flight
+    requestManager.remove(clientStream, serverId);
+
+    // then - neither REMOVE (primary nor legacy) is sent yet, to avoid racing the legacy ADD
+    verify(mockTransport, never())
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    verify(mockTransport, never())
+        .send(eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), eq(serverId), any());
+
+    // when - the legacy ADD finally completes
+    legacyPendingRequest.complete(addStreamSuccess);
+
+    // then - only now is REMOVE sent on both channels
+    verify(mockTransport)
+        .send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any());
+    verify(mockTransport)
+        .send(eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), eq(serverId), any());
     assertThat(clientStream.isConnected(serverId)).isFalse();
   }
 
@@ -719,6 +779,118 @@ final class ClientStreamRequestManagerTest {
     // then - only the default-tenant registration is torn down
     assertThat(clientStream.isConnected(serverId)).isFalse();
     assertThat(otherStream.isConnected(serverId)).isTrue();
+  }
+
+  @Test
+  void shouldAddRegistrationAsSoonAsLegacyAddSucceedsWhilePrimaryIsPending() {
+    // given - hold the primary (prefixed) ADD pending; legacy resolves via the default success
+    // stub from setup(). Whichever responds first should be enough to mark the stream added.
+    final var serverId = MemberId.anonymous();
+    final var primaryPending = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.ADD.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(primaryPending);
+
+    // when
+    requestManager.add(clientStream, serverId);
+
+    // then - legacy ADD was sent and alone is enough to mark the stream added
+    verify(mockTransport)
+        .send(eq(StreamTopics.ADD.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    assertThat(clientStream.isConnected(serverId)).isTrue();
+
+    // when - the primary eventually succeeds too; this must be a no-op
+    primaryPending.complete(addStreamSuccess);
+
+    // then
+    assertThat(clientStream.isConnected(serverId)).isTrue();
+  }
+
+  @Test
+  void shouldRemoveRegistrationAsSoonAsLegacyRemoveSucceedsWhilePrimaryIsPending() {
+    // given
+    final var serverId = MemberId.anonymous();
+    requestManager.add(clientStream, serverId);
+    final var primaryPending = new CompletableFuture<byte[]>();
+    when(mockTransport.<byte[], byte[]>send(
+            eq(StreamTopics.REMOVE.topic(DEFAULT_PHYSICAL_TENANT_ID)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(primaryPending);
+
+    // when
+    requestManager.remove(clientStream, serverId);
+
+    // then - legacy REMOVE was sent and alone is enough to mark the stream removed
+    verify(mockTransport)
+        .send(eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), eq(serverId), any());
+    assertThat(clientStream.isConnected(serverId)).isFalse();
+
+    // when - the primary eventually succeeds too; this must be a no-op
+    primaryPending.complete(removeStreamSuccess);
+
+    // then
+    assertThat(clientStream.isConnected(serverId)).isFalse();
+  }
+
+  @Test
+  void shouldUnicastLegacyRemoveAllForDefaultTenant() {
+    // given
+    final var serverId = MemberId.anonymous();
+
+    // when
+    requestManager.removeAll(Map.of(DEFAULT_PHYSICAL_TENANT_ID, Set.of(serverId)));
+
+    // then
+    verify(mockTransport)
+        .unicast(
+            eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), eq(serverId), anyBoolean());
+  }
+
+  @Test
+  void shouldNotSendOrUnicastLegacyTopicsForNonDefaultTenant() {
+    // given
+    final String physicalTenantId = "tenant1";
+    final var tenantStream =
+        new AggregatedClientStream<>(
+            UUID.randomUUID(),
+            new LogicalId<>(
+                new UnsafeBuffer(BufferUtil.wrapString("tenant-foo")), new TestMetadata()),
+            physicalTenantId);
+    tenantStream.open(requestManager, Collections.emptySet());
+    final var serverId = MemberId.anonymous();
+    when(mockTransport.send(
+            eq(StreamTopics.ADD.topic(physicalTenantId)), any(), any(), any(), eq(serverId), any()))
+        .thenReturn(CompletableFuture.completedFuture(addStreamSuccess));
+    when(mockTransport.send(
+            eq(StreamTopics.REMOVE.topic(physicalTenantId)),
+            any(),
+            any(),
+            any(),
+            eq(serverId),
+            any()))
+        .thenReturn(CompletableFuture.completedFuture(removeStreamSuccess));
+
+    // when
+    requestManager.add(tenantStream, serverId);
+    requestManager.remove(tenantStream, serverId);
+    requestManager.removeAll(Map.of(physicalTenantId, Set.of(serverId)));
+
+    // then - never sent/unicast on any legacy topic
+    verify(mockTransport, never())
+        .send(eq(StreamTopics.ADD.legacyTopic()), any(), any(), any(), any(), any());
+    verify(mockTransport, never())
+        .send(eq(StreamTopics.REMOVE.legacyTopic()), any(), any(), any(), any(), any());
+    verify(mockTransport, never())
+        .unicast(eq(StreamTopics.REMOVE_ALL.legacyTopic()), any(), any(), any(), anyBoolean());
   }
 
   private static Stream<MessagingException> provideMessagingFailures() {

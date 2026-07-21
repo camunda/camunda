@@ -77,7 +77,7 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
   @Override
   protected void onActorStarted() {
     communicationService.replyToAsync(
-        StreamTopics.PUSH.topic(DEFAULT_PHYSICAL_TENANT_ID),
+        StreamTopics.PUSH.legacyTopic(),
         MessageUtil::parsePushRequest,
         apiHandler::handlePushRequest,
         BufferUtil::bufferAsArray,
@@ -151,12 +151,25 @@ public final class ClientStreamServiceImpl<M extends BufferWriter> extends Actor
 
   private void registerRestartHandler(final String physicalTenantId) {
     if (registeredRestartPhysicalTenants.add(physicalTenantId)) {
-      communicationService.replyTo(
-          StreamTopics.RESTART_STREAMS.topic(physicalTenantId),
-          Function.identity(),
-          (sender, payload) -> apiHandler.handleRestartRequest(sender, physicalTenantId, payload),
-          Function.identity(),
-          actor::run);
+      registerRestartTopicHandler(
+          StreamTopics.RESTART_STREAMS.topic(physicalTenantId), physicalTenantId);
+      registerLegacyRestartHandler(physicalTenantId);
     }
+  }
+
+  /** Rolling-upgrade compat; remove alongside the legacy topic in 8.11. */
+  private void registerLegacyRestartHandler(final String physicalTenantId) {
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      registerRestartTopicHandler(StreamTopics.RESTART_STREAMS.legacyTopic(), physicalTenantId);
+    }
+  }
+
+  private void registerRestartTopicHandler(final String topic, final String physicalTenantId) {
+    communicationService.replyTo(
+        topic,
+        Function.identity(),
+        (sender, payload) -> apiHandler.handleRestartRequest(sender, physicalTenantId, payload),
+        Function.identity(),
+        actor::run);
   }
 }
