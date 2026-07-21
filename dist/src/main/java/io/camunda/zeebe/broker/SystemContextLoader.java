@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.IntFunction;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -71,6 +73,7 @@ public final class SystemContextLoader {
   private NodeIdProvider nodeIdProvider;
   private Path workingDirectory;
   private List<ExporterDescriptor> exporterDescriptors;
+  private @Nullable IntFunction<Long> exportedPositionSupplier;
 
   public SystemContextLoader withShutdownTimeout(final Duration shutdownTimeout) {
     this.shutdownTimeout = shutdownTimeout;
@@ -173,6 +176,12 @@ public final class SystemContextLoader {
     return this;
   }
 
+  public SystemContextLoader withExportedPositionSupplier(
+      final @Nullable IntFunction<Long> exportedPositionSupplier) {
+    this.exportedPositionSupplier = exportedPositionSupplier;
+    return this;
+  }
+
   public SystemContext createSystemContext() {
     final Map<String, PhysicalTenantContext> physicalTenantContexts =
         physicalTenantResolver.mapValues(this::buildPhysicalTenantContext);
@@ -190,6 +199,7 @@ public final class SystemContextLoader {
         jwtDecoderFactory,
         oidcClaimsProviderFactory,
         searchClientsProxy,
+        exportedPositionSupplier,
         nodeIdProvider,
         physicalTenantResolver);
   }

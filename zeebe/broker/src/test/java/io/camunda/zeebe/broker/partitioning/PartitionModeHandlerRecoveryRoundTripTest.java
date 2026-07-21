@@ -154,6 +154,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
             new FailingActorSchedulingService(actorScheduler, PARTITION_ID_2),
             new SimpleMeterRegistry(),
             transport,
+            (ignored) -> 0L,
             topologyManager);
 
     // exit manager: a lightweight fake standing in for a real Raft-based PartitionManagerImpl -

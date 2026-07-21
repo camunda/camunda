@@ -13,7 +13,6 @@ import io.camunda.application.commons.configuration.WorkingDirectoryConfiguratio
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
@@ -109,8 +108,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.brokerClient = brokerClient;
     this.shutdownHelper = shutdownHelper;
     this.meterRegistry = meterRegistry;
-    physicalTenantEngineContexts =
-        physicalTenantResolver.mapValues(this::buildPhysicalTenantEngineContext);
     this.unifiedConfiguration = unifiedConfiguration;
     this.physicalTenantResolver = physicalTenantResolver;
     this.serviceRegistry = serviceRegistry;
@@ -151,6 +148,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withNodeIdProvider(nodeIdProvider)
             .withWorkingDirectory(workingDirectory.path())
             .withExporterDescriptors(exporterDescriptors)
+            .withExportedPositionSupplier(rdbmsExportedPositionSupplier)
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
@@ -188,33 +186,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       final var position = exporterPositionMapper.findOne(partition);
       return position == null ? null : position.lastExportedPosition();
     };
-  }
-
-  private PhysicalTenantEngineContext buildPhysicalTenantEngineContext(
-      final io.camunda.configuration.Camunda camunda) {
-    final var s = camunda.getSecurity();
-    final var securityConfig =
-        new EngineSecurityConfig(
-            s.getAuthentication(),
-            s.getAuthorizations().isEnabled(),
-            s.getMultiTenancy().isChecksEnabled(),
-            s.getInitialization(),
-            s.getCompiledIdValidationPattern(),
-            s.getCompiledGroupIdValidationPattern());
-    final var authorizationConverter = new BrokerRequestAuthorizationConverter(securityConfig);
-    final var featureFlags = buildFeatureFlags(camunda.getProcessing());
-    return new PhysicalTenantEngineContext(securityConfig, authorizationConverter, featureFlags);
-  }
-
-  private FeatureFlags buildFeatureFlags(final Processing p) {
-    final var flags = configuration.config().getExperimental().getFeatures().toFeatureFlags();
-    flags.setYieldingDueDateChecker(p.isEnableYieldingDueDateChecker());
-    flags.setEnableMessageTTLCheckerAsync(p.isEnableAsyncMessageTtlChecker());
-    flags.setEnableTimerDueDateCheckerAsync(p.isEnableAsyncTimerDuedateChecker());
-    flags.setEnableStraightThroughProcessingLoopDetector(
-        p.isEnableStraightthroughProcessingLoopDetector());
-    flags.setEnableMessageBodyOnExpired(p.isEnableMessageBodyOnExpired());
-    return flags;
   }
 
   private void cleanupWorkingDirectory() {
