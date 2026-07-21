@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJob
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.element.LinkedResource;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -109,6 +110,7 @@ public final class BpmnJobBehavior {
   private static final Set<State> CANCELABLE_STATES =
       EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   private final JobRecord jobRecord = new JobRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
@@ -392,7 +394,8 @@ public final class BpmnJobBehavior {
         jobProperties,
         JobKind.BPMN_ELEMENT,
         JobListenerEventType.UNSPECIFIED,
-        element.getJobWorkerProperties().getTaskHeaders());
+        element.getJobWorkerProperties().getTaskHeaders(),
+        element.getSecretReferences());
   }
 
   public void createNewExecutionListenerJob(
@@ -407,7 +410,8 @@ public final class BpmnJobBehavior {
         jobProperties,
         JobKind.EXECUTION_LISTENER,
         jobListenerEventType,
-        executionListener.getJobWorkerProperties().getTaskHeaders());
+        executionListener.getJobWorkerProperties().getTaskHeaders(),
+        Map.of());
   }
 
   public void createNewTaskListenerJob(
@@ -424,7 +428,8 @@ public final class BpmnJobBehavior {
                     JobKind.TASK_LISTENER,
                     fromTaskListenerEventType(listener.getEventType()),
                     extractUserTaskHeaders(
-                        taskRecordValue, changedAttributes, listener.getJobWorkerProperties())))
+                        taskRecordValue, changedAttributes, listener.getJobWorkerProperties()),
+                    Map.of()))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
@@ -437,7 +442,8 @@ public final class BpmnJobBehavior {
         jobProperties,
         JobKind.AD_HOC_SUB_PROCESS,
         JobListenerEventType.UNSPECIFIED,
-        element.getJobWorkerProperties().getTaskHeaders());
+        element.getJobWorkerProperties().getTaskHeaders(),
+        element.getSecretReferences());
   }
 
   private Either<Failure, JobProperties> evaluateTaskListenerJobExpressions(
@@ -596,7 +602,8 @@ public final class BpmnJobBehavior {
       final JobProperties props,
       final JobKind jobKind,
       final JobListenerEventType jobListenerEventType,
-      final Map<String, String> taskHeaders) {
+      final Map<String, String> taskHeaders,
+      final Map<String, Set<SecretReference>> secretReferences) {
 
     final var encodedHeaders = encodeHeaders(taskHeaders, props);
 
@@ -618,11 +625,21 @@ public final class BpmnJobBehavior {
         .setPriority(props.getPriority())
         .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
         .setBusinessId(getBusinessIdFromProcessInstance(context));
+    setJobSecretReferences(secretReferences);
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
     jobActivationBehavior.publishWork(jobKey, jobRecord);
     jobMetrics.countJobEvent(JobAction.CREATED, jobKind, props.getType());
+  }
+
+  private void setJobSecretReferences(final Map<String, Set<SecretReference>> secretReferences) {
+    // the shared jobRecord is reused across job creations, so reset before populating
+    jobRecord.resetSecretReferences();
+    secretReferences.forEach(
+        (path, secrets) ->
+            secrets.forEach(
+                secret -> jobRecord.addSecretReference(secret.storeId(), secret.name(), path)));
   }
 
   private BpmnElementType getBpmnElementTypeForLogging(

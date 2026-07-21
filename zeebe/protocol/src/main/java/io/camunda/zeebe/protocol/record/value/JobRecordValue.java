@@ -196,6 +196,15 @@ public interface JobRecordValue
    */
   boolean isJobToUserTaskMigration();
 
+  /**
+   * Returns the secret references declared in this job's input mappings, each paired with the JSON
+   * path where the resolved secret value is injected when the job is activated. Empty when the job
+   * references no secrets. The resolved secret values are never part of this record.
+   *
+   * @return the secret references of this job
+   */
+  List<JobSecretReferenceValue> getSecretReferences();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableJobResultValue.Builder.class)
   interface JobResultValue {
@@ -307,5 +316,31 @@ public interface JobRecordValue
      * @return the variables that need to be set on the element when it is activated
      */
     Map<String, Object> getVariables();
+  }
+
+  /**
+   * A secret reference declared in a job's input mapping. Carries the reference identifier and the
+   * JSON path where the resolved value is injected, never the resolved secret value itself.
+   */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableJobSecretReferenceValue.Builder.class)
+  interface JobSecretReferenceValue {
+
+    /**
+     * @return the identifier of the secret store that holds the referenced secret
+     */
+    String getStoreId();
+
+    /**
+     * @return the name that identifies the secret within the store (e.g. {@code token} for {@code
+     *     camunda.secrets.token}); not the resolved secret value
+     */
+    String getSecretReference();
+
+    /**
+     * @return the RFC 6901 JSON pointer at which the resolved secret is injected into the job
+     *     variables on activation
+     */
+    String getPath();
   }
 }

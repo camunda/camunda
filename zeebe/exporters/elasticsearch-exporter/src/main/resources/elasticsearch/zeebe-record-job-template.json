@@ -156,6 +156,19 @@
             },
             "leaseToken": {
               "type": "keyword"
+            },
+            "secretReferences": {
+              "properties": {
+                "storeId": {
+                  "type": "keyword"
+                },
+                "secretReference": {
+                  "type": "keyword"
+                },
+                "path": {
+                  "type": "keyword"
+                }
+              }
             }
           }
         }
