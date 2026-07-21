@@ -143,12 +143,18 @@ public final class FileBasedSnapshotTest {
     }
     SnapshotInfos.persist(checksumPath, SnapshotInfos.calculate(snapshotPath));
 
+    final var metadataFileName =
+        snapshotPath.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
+    final var metadataBytes = metadata.encode();
+    Files.write(metadataFileName, metadataBytes, CREATE_NEW, StandardOpenOption.WRITE);
+
     return new FileBasedSnapshot(
         snapshotPath,
         checksumPath,
         new SfvChecksumImpl(),
         snapshotId,
         metadata,
+        metadataBytes.length,
         s -> {},
         actor.getActorControl());
   }

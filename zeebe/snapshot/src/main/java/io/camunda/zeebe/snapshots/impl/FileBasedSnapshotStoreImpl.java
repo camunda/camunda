@@ -25,6 +25,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsExcepti
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotCopyForBootstrapException;
 import io.camunda.zeebe.snapshots.SnapshotFileInfoProvider;
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.util.Either;
@@ -181,9 +182,15 @@ public final class FileBasedSnapshotStoreImpl {
     }
 
     try {
+      final var metadataBytes = readMetadataFile(path);
+      final var persistedMetadata = FileBasedSnapshotMetadata.decode(metadataBytes);
+      final var metadataHasTotalSize = persistedMetadata.totalSizeBytes() != 0;
+
+      final var snapshotInfoResult =
+          SnapshotInfos.of(path, fileInfoProvider, !metadataHasTotalSize);
+
       final var expectedChecksum = SnapshotInfos.read(checksumPath);
-      final var result = SnapshotInfos.of(path, fileInfoProvider);
-      final var actualChecksum = result.checksum();
+      final var actualChecksum = snapshotInfoResult.checksum();
       if (!actualChecksum.sameChecksums(expectedChecksum)) {
         LOGGER.warn(
             "Expected snapshot {} to have checksums {}, but the actual checksums are {}; the snapshot is most likely corrupted. The startup will fail if there is no other valid snapshot and the log has been compacted.",
@@ -193,27 +200,37 @@ public final class FileBasedSnapshotStoreImpl {
         return null;
       }
 
-      final var metadata = collectMetadata(path, result.totalSizeInBytes());
+      // Snapshots written before the totalSizeBytes field existed carry metadata but no size, so
+      // fall back to the size we just computed from the snapshot's files.
+      final SnapshotMetadata metadata;
+      if (metadataHasTotalSize) {
+        metadata = persistedMetadata;
+      } else {
+        metadata = persistedMetadata.withTotalSizeBytes(snapshotInfoResult.totalSizeInBytes());
+      }
+
       return new FileBasedSnapshot(
-          path, checksumPath, actualChecksum, snapshotId, metadata, this::onSnapshotDeleted, actor);
+          path,
+          checksumPath,
+          actualChecksum,
+          snapshotId,
+          metadata,
+          metadataBytes.length,
+          this::onSnapshotDeleted,
+          actor);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
     }
   }
 
-  private FileBasedSnapshotMetadata collectMetadata(final Path path, final long totalSizeBytes)
-      throws IOException {
+  private byte[] readMetadataFile(final Path path) throws IOException {
     final var metadataPath = path.resolve(METADATA_FILE_NAME);
     if (!metadataPath.toFile().exists()) {
       throw new IllegalStateException(
           "Expected snapshot %s to contain a metadata file, but none was found".formatted(path));
     }
-
-    final var metadata = FileBasedSnapshotMetadata.decode(Files.readAllBytes(metadataPath));
-    // Snapshots written before the totalSizeBytes field existed carry metadata but no size, so
-    // fall back to the size we just computed from the snapshot's files.
-    return metadata.totalSizeBytes() > 0 ? metadata : metadata.withTotalSizeBytes(totalSizeBytes);
+    return Files.readAllBytes(metadataPath);
   }
 
   public boolean hasSnapshotId(final String id) {
@@ -436,7 +453,8 @@ public final class FileBasedSnapshotStoreImpl {
       final Path destination,
       final FileBasedSnapshotId snapshotId,
       final ImmutableChecksumsSFV immutableChecksumsSFV,
-      final FileBasedSnapshotMetadata metadata) {
+      final FileBasedSnapshotMetadata metadata,
+      final long metadataSizeBytes) {
     final var isBootstrap = metadata.isBootstrap();
     final var currentPersistedSnapshot = currentSnapshot.get();
 
@@ -465,6 +483,7 @@ public final class FileBasedSnapshotStoreImpl {
               immutableChecksumsSFV,
               snapshotId,
               metadata,
+              metadataSizeBytes,
               this::onSnapshotDeleted,
               actor);
       final var failed =

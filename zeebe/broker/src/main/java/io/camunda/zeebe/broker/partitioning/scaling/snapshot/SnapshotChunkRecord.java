@@ -63,6 +63,11 @@ public record SnapshotChunkRecord(
     return totalFileSize;
   }
 
+  @Override
+  public long getContentLength() {
+    return content.length;
+  }
+
   // Overridden otherwise array equals is reference equality for content
   @Override
   public boolean equals(final Object o) {

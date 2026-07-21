@@ -106,9 +106,9 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          final var result = SnapshotInfos.of(directory, fileInfoProvider);
-          checksum = result.checksum();
-          totalSizeBytes = result.totalSizeInBytes();
+          final var snapshotInfoResult = SnapshotInfos.of(directory, fileInfoProvider, true);
+          checksum = snapshotInfoResult.checksum();
+          totalSizeBytes = snapshotInfoResult.totalSizeInBytes();
 
           snapshot = null;
           isValid = true;
@@ -192,7 +192,9 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                   false,
                   totalSizeBytes);
 
-      writeMetadataAndUpdateChecksum(metadata);
+      final var metadataBytes = metadata.encode();
+      writeMetadataAndUpdateChecksum(metadataBytes);
+
       // snapshot id and director were first provided without the checksum because we could only
       // calculate it just now.
       // Let's construct a new snapshot id with the checksum and move the snapshot to the final
@@ -231,7 +233,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
       }
       snapshot =
           snapshotStore.persistNewSnapshot(
-              directoryWithChecksum, idWithChecksum, checksum, metadata);
+              directoryWithChecksum, idWithChecksum, checksum, metadata, metadataBytes.length);
       future.complete(snapshot);
     } catch (final Exception e) {
       future.completeExceptionally(e);
@@ -240,8 +242,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     snapshotStore.removePendingSnapshot(this);
   }
 
-  private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)
-      throws IOException {
+  private void writeMetadataAndUpdateChecksum(final byte[] metadataBytes) throws IOException {
     final var metadataPath = directory.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
     // Write metadata file along with snapshot files
     try (final var channel =
@@ -249,10 +250,12 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                 metadataPath,
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.DSYNC);
         final var output = Channels.newOutputStream(channel)) {
-      metadata.encode(output);
-      Objects.requireNonNull(checksum, "checksum").updateFromFile(metadataPath);
+      output.write(metadataBytes);
+      Objects.requireNonNull(checksum, "checksum")
+          .updateFromBytes(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME, metadataBytes);
     }
   }
 

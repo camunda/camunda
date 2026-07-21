@@ -22,7 +22,6 @@ import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -139,23 +138,22 @@ public class FileBasedSnapshotStoreTest {
     // given / when
     final var persistedSnapshot =
         (FileBasedSnapshot) takeTransientSnapshotWithFiles(123L).persist().join();
+    final long metadataSizeBytes =
+        Files.size(
+            persistedSnapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
 
     // then
-    final long expectedSize = sumOfFilesExcludingMetadata(persistedSnapshot.getPath());
+    final long expectedSize = sumOfFileSizes(persistedSnapshot.getPath());
     assertThat(expectedSize).isPositive();
-    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(expectedSize);
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).isEqualTo(expectedSize);
     assertThat(persistedSnapshot.getMetadata()).isNotNull();
-    assertThat(persistedSnapshot.getMetadata().totalSizeBytes()).isEqualTo(expectedSize);
+    assertThat(persistedSnapshot.getMetadata().totalSizeBytes())
+        .isEqualTo(expectedSize - metadataSizeBytes);
   }
 
-  private static long sumOfFilesExcludingMetadata(final Path directory) throws IOException {
+  private static long sumOfFileSizes(final Path directory) throws IOException {
     try (final var files = Files.list(directory)) {
       return files
-          .filter(
-              path ->
-                  !path.getFileName()
-                      .toString()
-                      .equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME))
           .mapToLong(
               path -> {
                 try {
@@ -189,13 +187,16 @@ public class FileBasedSnapshotStoreTest {
         providerReportedSize
             + Files.size(snapshotPath.resolve("table-1.sst"))
             + Files.size(snapshotPath.resolve("table-2.sst"));
-    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(expectedSize);
+    final long expectedSizeWithMetadata =
+        expectedSize
+            + Files.size(snapshotPath.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
+    assertThat(persistedSnapshot.getTotalSizeInBytes()).isEqualTo(expectedSizeWithMetadata);
     assertThat(decodeMetadata(snapshotPath).totalSizeBytes()).isEqualTo(expectedSize);
 
     store.close();
     store = createStore(root);
     assertThat(store.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
-        .hasValue(expectedSize);
+        .isEqualTo(expectedSizeWithMetadata);
   }
 
   @Test
@@ -203,11 +204,11 @@ public class FileBasedSnapshotStoreTest {
     // given
     final var persistedSnapshot =
         (FileBasedSnapshot) takeTransientSnapshotWithFiles(123L).persist().join();
-    final long expectedSize = sumOfFilesExcludingMetadata(persistedSnapshot.getPath());
     downgradeMetadataToLegacy(persistedSnapshot);
     final var metadataPath =
         persistedSnapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
     final var legacyMetadataOnDisk = Files.readAllBytes(metadataPath);
+    final long expectedSize = sumOfFileSizes(persistedSnapshot.getPath());
 
     // when
     snapshotStore.close();
@@ -215,14 +216,14 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     assertThat(snapshotStore.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
-        .hasValue(expectedSize);
+        .isEqualTo(expectedSize);
     assertThat(Files.readAllBytes(metadataPath)).isEqualTo(legacyMetadataOnDisk);
     assertThat(decodeMetadata(persistedSnapshot.getPath()).totalSizeBytes()).isZero();
 
     snapshotStore.close();
     snapshotStore = createStore(rootDirectory);
     assertThat(snapshotStore.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
-        .hasValue(expectedSize);
+        .isEqualTo(expectedSize);
   }
 
   @Test
@@ -246,11 +247,9 @@ public class FileBasedSnapshotStoreTest {
   private void downgradeMetadataToLegacy(final FileBasedSnapshot snapshot) throws IOException {
     final var legacyMetadata =
         ((FileBasedSnapshotMetadata) snapshot.getMetadata()).withTotalSizeBytes(0L);
-    final var encoded = new ByteArrayOutputStream();
-    legacyMetadata.encode(encoded);
     Files.write(
         snapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME),
-        encoded.toByteArray());
+        legacyMetadata.encode());
     SnapshotInfos.persist(snapshot.getChecksumPath(), SnapshotInfos.calculate(snapshot.getPath()));
   }
 
@@ -571,11 +570,11 @@ public class FileBasedSnapshotStoreTest {
             s -> {
               assertThat(s.getId()).startsWith("1-1-0-0-0-");
               assertThat(s.getPath().getFileName().toString()).startsWith("1-1-0-0-0-");
-              assertThat(s.getTotalSizeInBytes()).isPresent();
+              assertThat(s.getTotalSizeInBytes()).isGreaterThan(0);
               assertThat(s.getMetadata())
                   .isEqualTo(
                       FileBasedSnapshotMetadata.forBootstrap(
-                          FileBasedSnapshotStoreImpl.VERSION, s.getTotalSizeInBytes().getAsLong()));
+                          FileBasedSnapshotStoreImpl.VERSION, s.getMetadata().totalSizeBytes()));
             });
 
     assertThat(snapshotStore.getBootstrapSnapshot())

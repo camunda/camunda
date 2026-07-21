@@ -51,6 +51,8 @@ public final class RaftMemberContext {
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
   private IndexedRaftLogEntry currentEntry;
+  private long snapshotReplicationLag;
+  private long snapshotChunkBytesInFlight;
 
   RaftMemberContext(
       final DefaultRaftMember member,
@@ -74,6 +76,8 @@ public final class RaftMemberContext {
     appendSucceeded = false;
     failures = 0;
     failureTime = 0;
+    snapshotReplicationLag = 0;
+    snapshotChunkBytesInFlight = 0;
 
     if (reader != null) {
       closeReader();
@@ -260,6 +264,7 @@ public final class RaftMemberContext {
         .add("configuring", configuring)
         .add("installing", installing)
         .add("failures", failures)
+        .add("snapshotReplicationLag", snapshotReplicationLag)
         .toString();
   }
 
@@ -441,6 +446,52 @@ public final class RaftMemberContext {
 
   public void setSnapshotChunkReader(final SnapshotChunkReader snapshotChunkReader) {
     this.snapshotChunkReader = snapshotChunkReader;
+  }
+
+  /** Decrements the snapshot replication lag by {@code bytes}, floored at 0. */
+  public void subtractSnapshotReplicationLag(final long bytes) {
+    snapshotReplicationLag = Math.max(0, snapshotReplicationLag - bytes);
+  }
+
+  public long getSnapshotReplicationLag() {
+    return snapshotReplicationLag;
+  }
+
+  /**
+   * Sets the remaining snapshot bytes this follower still needs when a snapshot install begins.
+   * Decremented per acknowledged chunk and zeroed on completion.
+   *
+   * @param snapshotReplicationLag the snapshot's total size in bytes
+   */
+  public void setSnapshotReplicationLag(final long snapshotReplicationLag) {
+    checkArgument(snapshotReplicationLag >= 0, "snapshotReplicationLag must be positive");
+    this.snapshotReplicationLag = snapshotReplicationLag;
+  }
+
+  public long getSnapshotChunkBytesInFlight() {
+    return snapshotChunkBytesInFlight;
+  }
+
+  /**
+   * Sets the raw content size of the snapshot chunk currently being sent, so it can be subtracted
+   * from the snapshot replication lag when the chunk is acknowledged.
+   *
+   * @param snapshotChunkBytesInFlight the raw content size of the in-flight chunk
+   */
+  public void setSnapshotChunkBytesInFlight(final long snapshotChunkBytesInFlight) {
+    this.snapshotChunkBytesInFlight = snapshotChunkBytesInFlight;
+  }
+
+  /**
+   * The total per-follower replication lag in bytes.
+   *
+   * <p>Currently this is the remaining snapshot-install bytes; log replication lag will be added to
+   * this total in future.
+   *
+   * @return the replication lag in bytes, never negative
+   */
+  public long getReplicationLagBytes() {
+    return snapshotReplicationLag;
   }
 
   public boolean hasNextEntry() {

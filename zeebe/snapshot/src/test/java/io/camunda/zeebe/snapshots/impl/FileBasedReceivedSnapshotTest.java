@@ -22,7 +22,6 @@ import io.camunda.zeebe.snapshots.SnapshotFilesInfo;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -169,6 +168,7 @@ public class FileBasedReceivedSnapshotTest {
             new SfvChecksumImpl(),
             persistedSnapshot.getSnapshotId(),
             persistedSnapshot.getMetadata(),
+            0,
             s -> {},
             null);
 
@@ -354,17 +354,19 @@ public class FileBasedReceivedSnapshotTest {
     // given
     final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
     rewriteMetadataSize(senderSnapshot, 0L);
+    final var metadataSizeBytes = expectedMetadataSizeBytes(senderSnapshot);
 
     // when
     final var persistedSnapshot = receiveSnapshot(senderSnapshot).persist().join();
 
     // then
-    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(expectedTotalDataSize());
+    assertThat(persistedSnapshot.getTotalSizeInBytes())
+        .isEqualTo(expectedTotalDataSize() + metadataSizeBytes);
 
     receiverSnapshotStore.close();
     receiverSnapshotStore = createStore(receiverSnapshotsDir.getParent());
     assertThat(receiverSnapshotStore.getLatestSnapshot().orElseThrow().getTotalSizeInBytes())
-        .hasValue(expectedTotalDataSize());
+        .isEqualTo(expectedTotalDataSize() + metadataSizeBytes);
   }
 
   @Test
@@ -372,6 +374,7 @@ public class FileBasedReceivedSnapshotTest {
     // given
     final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
     rewriteMetadataSize(senderSnapshot, 0L);
+    final var metadataSizeBytes = expectedMetadataSizeBytes(senderSnapshot);
 
     // when
     final var receivedSnapshot =
@@ -391,7 +394,8 @@ public class FileBasedReceivedSnapshotTest {
     final var persistedSnapshot = receivedSnapshot.persist().join();
 
     // then
-    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(expectedTotalDataSize());
+    assertThat(persistedSnapshot.getTotalSizeInBytes())
+        .isEqualTo(expectedTotalDataSize() + metadataSizeBytes);
   }
 
   @Test
@@ -400,23 +404,23 @@ public class FileBasedReceivedSnapshotTest {
     final var senderSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
     final long advertisedSize = 123_456_789L;
     rewriteMetadataSize(senderSnapshot, advertisedSize);
+    final long metadataSizeBytes = expectedMetadataSizeBytes(senderSnapshot);
 
     // when
     final var persistedSnapshot = receiveSnapshot(senderSnapshot).persist().join();
 
     // then
-    assertThat(persistedSnapshot.getTotalSizeInBytes()).hasValue(advertisedSize);
+    assertThat(persistedSnapshot.getTotalSizeInBytes())
+        .isEqualTo(advertisedSize + metadataSizeBytes);
   }
 
   private void rewriteMetadataSize(final FileBasedSnapshot snapshot, final long totalSizeBytes)
       throws IOException {
     final var metadata =
         ((FileBasedSnapshotMetadata) snapshot.getMetadata()).withTotalSizeBytes(totalSizeBytes);
-    final var encoded = new ByteArrayOutputStream();
-    metadata.encode(encoded);
     Files.write(
         snapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME),
-        encoded.toByteArray());
+        metadata.encode());
   }
 
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
@@ -436,6 +440,10 @@ public class FileBasedReceivedSnapshotTest {
     return SNAPSHOT_FILE_CONTENTS.values().stream()
         .mapToLong(content -> content.getBytes(StandardCharsets.UTF_8).length)
         .sum();
+  }
+
+  private long expectedMetadataSizeBytes(final FileBasedSnapshot snapshot) throws IOException {
+    return Files.size(snapshot.getPath().resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
   }
 
   private PersistedSnapshot takePersistedSnapshot(final long index) {

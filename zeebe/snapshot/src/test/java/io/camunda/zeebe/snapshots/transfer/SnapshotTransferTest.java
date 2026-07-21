@@ -122,11 +122,11 @@ public class SnapshotTransferTest {
         .satisfies(
             snapshot -> {
               assertThat(snapshot.getId()).startsWith("1-1-0-0-0-");
-              assertThat(snapshot.getTotalSizeInBytes()).isPresent();
+              assertThat(snapshot.getTotalSizeInBytes()).isGreaterThan(0);
               assertThat(snapshot.getMetadata())
                   .isEqualTo(
                       FileBasedSnapshotMetadata.forBootstrap(
-                          1, snapshot.getTotalSizeInBytes().getAsLong()));
+                          1, snapshot.getMetadata().totalSizeBytes()));
               assertThat(snapshot.isBootstrap()).isTrue();
               assertThat(snapshot.files()).isNotEmpty();
             });

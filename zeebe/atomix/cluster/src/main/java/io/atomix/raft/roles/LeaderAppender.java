@@ -372,6 +372,39 @@ final class LeaderAppender {
     appendEntries(member);
   }
 
+  /** Publishes the follower's current replication lag (floored at 0) to the metric. */
+  private void observeReplicationLag(final RaftMemberContext member) {
+    metrics.observeReplicationLagBytes(
+        member.getMember().memberId().id(), member.getReplicationLagBytes());
+  }
+
+  /**
+   * Seeds the follower's replication lag with the snapshot's total size and publishes it. An
+   * unknown size resets the lag so it cannot retain a value from an earlier snapshot.
+   */
+  private void seedSnapshotReplicationLag(
+      final RaftMemberContext member, final PersistedSnapshot persistedSnapshot) {
+    member.setSnapshotReplicationLag(persistedSnapshot.getTotalSizeInBytes());
+    observeReplicationLag(member);
+  }
+
+  /**
+   * Restarts snapshot replication from the first chunk and reseeds the published lag, so it
+   * reflects the whole snapshot the follower must receive again rather than a previously drained
+   * value.
+   */
+  private void restartSnapshotReplication(final RaftMemberContext member) {
+    member.setNextSnapshotIndex(0);
+    member.setNextSnapshotChunkId(null);
+    final var currentSnapshot = raft.getCurrentSnapshot();
+    if (currentSnapshot != null) {
+      seedSnapshotReplicationLag(member, currentSnapshot);
+    } else {
+      member.setSnapshotReplicationLag(0);
+      observeReplicationLag(member);
+    }
+  }
+
   /** Builds an install request for the given member. */
   private Optional<InstallRequest> buildInstallRequest(
       final RaftMemberContext member, final PersistedSnapshot persistedSnapshot) {
@@ -389,6 +422,7 @@ final class LeaderAppender {
       }
       member.setNextSnapshotIndex(persistedSnapshot.getIndex());
       member.setNextSnapshotChunkId(null);
+      seedSnapshotReplicationLag(member, persistedSnapshot);
     }
 
     final SnapshotChunkReader reader = member.getSnapshotChunkReader();
@@ -409,6 +443,8 @@ final class LeaderAppender {
       }
       final ByteBuffer currentChunkId = reader.nextId();
       final SnapshotChunk chunk = reader.next();
+      // Remember the chunk's tracked size so it can be subtracted from the lag once acknowledged.
+      member.setSnapshotChunkBytesInFlight(chunk.getContentLength());
 
       // Create the install request, indicating whether this is the last chunk of data based on
       // the number of bytes remaining in the buffer.
@@ -435,8 +471,7 @@ final class LeaderAppender {
           member.getMember().memberId(),
           e);
       // If snapshot was deleted, a new reader should be created with the new snapshot
-      member.setNextSnapshotIndex(0);
-      member.setNextSnapshotChunkId(null);
+      restartSnapshotReplication(member);
       return Optional.empty();
     }
   }
@@ -479,8 +514,7 @@ final class LeaderAppender {
             || (error != null && error.getCause() instanceof TimeoutException);
 
     if (!isTimeout) {
-      member.setNextSnapshotIndex(0);
-      member.setNextSnapshotChunkId(null);
+      restartSnapshotReplication(member);
     }
 
     // Log the failed attempt to contact the member.
@@ -505,12 +539,15 @@ final class LeaderAppender {
       member.setNextSnapshotIndex(0);
       member.setNextSnapshotChunkId(null);
       member.setSnapshotIndex(request.index());
+      member.setSnapshotReplicationLag(0);
       resetNextIndex(member, request.index() + 1);
     }
     // If more install requests remain, increment the member's snapshot offset.
     else {
+      member.subtractSnapshotReplicationLag(member.getSnapshotChunkBytesInFlight());
       member.setNextSnapshotChunkId(request.nextChunkId());
     }
+    observeReplicationLag(member);
 
     // Recursively append entries to the member.
     appendEntries(member);
@@ -528,8 +565,7 @@ final class LeaderAppender {
         member.getMember().memberId(),
         response.error().toString());
 
-    member.setNextSnapshotIndex(0);
-    member.setNextSnapshotChunkId(null);
+    restartSnapshotReplication(member);
   }
 
   /**

@@ -13,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import java.io.IOException;
-import java.io.OutputStream;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FileBasedSnapshotMetadata(
@@ -64,8 +63,8 @@ public record FileBasedSnapshotMetadata(
         totalSizeBytes);
   }
 
-  public void encode(final OutputStream output) throws IOException {
-    OBJECTMAPPER.writeValue(output, this);
+  public byte[] encode() throws IOException {
+    return OBJECTMAPPER.writeValueAsBytes(this);
   }
 
   public static FileBasedSnapshotMetadata decode(final byte[] serializedBytes) throws IOException {

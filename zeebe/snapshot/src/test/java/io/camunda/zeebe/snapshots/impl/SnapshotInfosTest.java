@@ -122,13 +122,27 @@ public final class SnapshotInfosTest {
         path -> new SnapshotFilesInfo(Map.of(), Map.of("file1.txt", reportedSize));
 
     // when
-    final var result = SnapshotInfos.of(multipleFileSnapshot, provider);
+    final var result = SnapshotInfos.of(multipleFileSnapshot, provider, true);
 
     // then
     final long fstatSize =
         Files.size(multipleFileSnapshot.resolve("file2.txt"))
             + Files.size(multipleFileSnapshot.resolve("file3.txt"));
     assertThat(result.totalSizeInBytes()).isEqualTo(reportedSize + fstatSize);
+  }
+
+  @Test
+  void shouldReturnZeroSizeWhenTotalSizeNotNeeded() throws Exception {
+    // given
+    final long reportedSize = Files.size(multipleFileSnapshot.resolve("file1.txt")) + 1000;
+    final SnapshotFileInfoProvider provider =
+        path -> new SnapshotFilesInfo(Map.of(), Map.of("file1.txt", reportedSize));
+
+    // when
+    final var result = SnapshotInfos.of(multipleFileSnapshot, provider, false);
+
+    // then
+    assertThat(result.totalSizeInBytes()).isEqualTo(0);
   }
 
   @Test
