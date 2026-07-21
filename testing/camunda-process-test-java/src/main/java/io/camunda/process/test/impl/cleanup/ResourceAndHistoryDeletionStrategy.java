@@ -20,7 +20,6 @@ import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.page.AnyPage;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Duration;
@@ -30,7 +29,6 @@ import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
@@ -41,7 +39,6 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
   private static final Logger LOG =
       LoggerFactory.getLogger(ResourceAndHistoryDeletionStrategy.class);
   private static final Duration BATCH_OPERATION_TIMEOUT = Duration.ofSeconds(30);
-  private static final Consumer<AnyPage> DEFAULT_PAGE_REQUEST = page -> page.limit(100);
 
   @Override
   public void cleanup(
@@ -152,6 +149,7 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
                       resourceKeysToDelete.add(decisionRequirements.getDecisionRequirementsKey()));
         });
 
+    final Set<String> resourceDeletionBatchOperationKeys = new LinkedHashSet<>();
     for (final long resourceKey : resourceKeysToDelete) {
       final CreateBatchOperationResponse batchOperationResponse =
           client
@@ -161,10 +159,14 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
               .join()
               .getCreateBatchOperationResponse();
       if (batchOperationResponse != null) {
-        waitForBatchOperationToComplete(
-            client, batchOperationResponse.getBatchOperationKey(), "delete resources");
+        resourceDeletionBatchOperationKeys.add(batchOperationResponse.getBatchOperationKey());
       }
     }
+
+    resourceDeletionBatchOperationKeys.parallelStream()
+        .forEach(
+            batchOperationKey ->
+                waitForBatchOperationToComplete(client, batchOperationKey, "delete resources"));
   }
 
   private void waitForBatchOperationToComplete(

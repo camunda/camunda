@@ -15,7 +15,12 @@
  */
 package io.camunda.process.test.impl.cleanup;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -32,7 +37,6 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
-import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Instant;
 import java.util.Arrays;
@@ -54,6 +58,11 @@ class ResourceAndHistoryDeletionStrategyTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private CamundaClient camundaClient;
 
+  @Mock private Process process;
+  @Mock private Decision decision;
+  @Mock private DecisionRequirements decisionRequirements;
+  @Mock private DeploymentEvent deployment;
+
   @Test
   void shouldSkipCleanupWhenTestCaseStartTimeIsMissing() {
     // given
@@ -70,9 +79,9 @@ class ResourceAndHistoryDeletionStrategyTest {
   void shouldDeleteTestCaseDataAndDeploymentResources() {
     // given
     final ResourceAndHistoryDeletionStrategy strategy = new ResourceAndHistoryDeletionStrategy();
-    final DeploymentEvent deployment = createDeployment(11L, 12L, 13L);
+    mockDeployment(11L, 12L, 13L);
     when(clientSupplier.get()).thenReturn(camundaClient);
-    mockBatchOperationExecution();
+    mockBatchOperationExecution(BatchOperationState.COMPLETED, BatchOperationState.COMPLETED);
     mockDeleteResourceBatchOperation("delete-resource");
 
     // when
@@ -86,6 +95,8 @@ class ResourceAndHistoryDeletionStrategyTest {
     verify(camundaClient).newDeleteResourceCommand(11L);
     verify(camundaClient).newDeleteResourceCommand(12L);
     verify(camundaClient).newDeleteResourceCommand(13L);
+    verify(camundaClient.newCreateBatchOperationCommand(), atLeastOnce()).deleteProcessInstance();
+    verify(camundaClient.newCreateBatchOperationCommand(), atLeastOnce()).deleteDecisionInstance();
   }
 
   @Test
@@ -93,7 +104,7 @@ class ResourceAndHistoryDeletionStrategyTest {
     // given
     final ResourceAndHistoryDeletionStrategy strategy = new ResourceAndHistoryDeletionStrategy();
     when(clientSupplier.get()).thenReturn(camundaClient);
-    mockBatchOperationExecution();
+    mockBatchOperationExecution(BatchOperationState.COMPLETED, BatchOperationState.COMPLETED);
 
     // when
     strategy.cleanup(
@@ -106,66 +117,98 @@ class ResourceAndHistoryDeletionStrategyTest {
     verify(camundaClient, never()).newDeleteResourceCommand(anyLong());
   }
 
-  private DeploymentEvent createDeployment(
+  @Test
+  void shouldFailWhenDeleteProcessInstancesBatchOperationIsNotCompleted() {
+    // given
+    final ResourceAndHistoryDeletionStrategy strategy = new ResourceAndHistoryDeletionStrategy();
+    when(clientSupplier.get()).thenReturn(camundaClient);
+    mockBatchOperationExecution(BatchOperationState.FAILED, BatchOperationState.COMPLETED);
+
+    // when
+    // then
+    assertThatThrownBy(
+            () ->
+                strategy.cleanup(
+                    managementClient,
+                    clientSupplier,
+                    Instant.parse("2026-01-01T00:00:00Z"),
+                    Collections.emptyList()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("delete process instances");
+  }
+
+  @Test
+  void shouldFailWhenDeleteDecisionInstancesBatchOperationIsNotCompleted() {
+    // given
+    final ResourceAndHistoryDeletionStrategy strategy = new ResourceAndHistoryDeletionStrategy();
+    when(clientSupplier.get()).thenReturn(camundaClient);
+    mockBatchOperationExecution(BatchOperationState.COMPLETED, BatchOperationState.FAILED);
+
+    // when
+    // then
+    assertThatThrownBy(
+            () ->
+                strategy.cleanup(
+                    managementClient,
+                    clientSupplier,
+                    Instant.parse("2026-01-01T00:00:00Z"),
+                    Collections.emptyList()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("delete decision instances");
+  }
+
+  private void mockDeployment(
       final long processDefinitionKey, final long decisionKey, final long decisionRequirementsKey) {
-    final Process process = mock(Process.class);
     when(process.getProcessDefinitionKey()).thenReturn(processDefinitionKey);
-    final Decision decision = mock(Decision.class);
     when(decision.getDecisionKey()).thenReturn(decisionKey);
-    final DecisionRequirements decisionRequirements = mock(DecisionRequirements.class);
     when(decisionRequirements.getDecisionRequirementsKey()).thenReturn(decisionRequirementsKey);
 
-    final DeploymentEvent deployment = mock(DeploymentEvent.class);
     when(deployment.getProcesses()).thenReturn(Arrays.asList(process));
     when(deployment.getDecisions()).thenReturn(Arrays.asList(decision));
     when(deployment.getDecisionRequirements()).thenReturn(Arrays.asList(decisionRequirements));
-    return deployment;
   }
 
-  private void mockBatchOperationExecution() {
-    final CamundaFuture<CreateBatchOperationResponse> cancelFuture = mock(CamundaFuture.class);
-    final CamundaFuture<CreateBatchOperationResponse> deleteProcessFuture =
-        mock(CamundaFuture.class);
-    final CamundaFuture<CreateBatchOperationResponse> deleteDecisionFuture =
-        mock(CamundaFuture.class);
-
+  private void mockBatchOperationExecution(
+      final BatchOperationState deleteProcessState, final BatchOperationState deleteDecisionState) {
     final CreateBatchOperationResponse cancelResponse = mock(CreateBatchOperationResponse.class);
     final CreateBatchOperationResponse deleteProcessResponse =
         mock(CreateBatchOperationResponse.class);
     final CreateBatchOperationResponse deleteDecisionResponse =
         mock(CreateBatchOperationResponse.class);
+
     when(cancelResponse.getBatchOperationKey()).thenReturn("cancel");
     when(deleteProcessResponse.getBatchOperationKey()).thenReturn("delete-process");
     when(deleteDecisionResponse.getBatchOperationKey()).thenReturn("delete-decision");
-    when(cancelFuture.join()).thenReturn(cancelResponse);
-    when(deleteProcessFuture.join()).thenReturn(deleteProcessResponse);
-    when(deleteDecisionFuture.join()).thenReturn(deleteDecisionResponse);
-
     when(camundaClient
             .newCreateBatchOperationCommand()
             .processInstanceCancel()
-            .filter(org.mockito.ArgumentMatchers.<Consumer<ProcessInstanceFilter>>any())
-            .send())
-        .thenReturn(cancelFuture);
+            .filter(anyProcessInstanceFilter())
+            .send()
+            .join())
+        .thenReturn(cancelResponse);
     when(camundaClient
             .newCreateBatchOperationCommand()
             .deleteProcessInstance()
-            .filter(org.mockito.ArgumentMatchers.<Consumer<ProcessInstanceFilter>>any())
-            .send())
-        .thenReturn(deleteProcessFuture);
+            .filter(anyProcessInstanceFilter())
+            .send()
+            .join())
+        .thenReturn(deleteProcessResponse);
     when(camundaClient
             .newCreateBatchOperationCommand()
             .deleteDecisionInstance()
-            .filter(org.mockito.ArgumentMatchers.<Consumer<DecisionInstanceFilter>>any())
-            .send())
-        .thenReturn(deleteDecisionFuture);
+            .filter(anyDecisionInstanceFilter())
+            .send()
+            .join())
+        .thenReturn(deleteDecisionResponse);
 
-    final BatchOperation completedBatchOperation = mock(BatchOperation.class);
-    when(completedBatchOperation.getStatus()).thenReturn(BatchOperationState.COMPLETED);
-    final CamundaFuture<BatchOperation> batchOperationFuture = mock(CamundaFuture.class);
-    when(batchOperationFuture.join()).thenReturn(completedBatchOperation);
-    when(camundaClient.newBatchOperationGetRequest(org.mockito.ArgumentMatchers.anyString()).send())
-        .thenReturn(batchOperationFuture);
+    when(camundaClient.newBatchOperationGetRequest(eq("cancel")).send().join().getStatus())
+        .thenReturn(BatchOperationState.COMPLETED);
+    when(camundaClient.newBatchOperationGetRequest(eq("delete-process")).send().join().getStatus())
+        .thenReturn(deleteProcessState);
+    when(camundaClient.newBatchOperationGetRequest(eq("delete-decision")).send().join().getStatus())
+        .thenReturn(deleteDecisionState);
+    when(camundaClient.newBatchOperationGetRequest(eq("delete-resource")).send().join().getStatus())
+        .thenReturn(BatchOperationState.COMPLETED);
   }
 
   private void mockDeleteResourceBatchOperation(final String batchOperationKey) {
@@ -179,7 +222,15 @@ class ResourceAndHistoryDeletionStrategyTest {
 
     final CamundaFuture<DeleteResourceResponse> deleteResourceFuture = mock(CamundaFuture.class);
     when(deleteResourceFuture.join()).thenReturn(deleteResourceResponse);
-    when(camundaClient.newDeleteResourceCommand(anyLong()).deleteHistory(true).send())
+    when(camundaClient.newDeleteResourceCommand(anyLong()).deleteHistory(anyBoolean()).send())
         .thenReturn(deleteResourceFuture);
+  }
+
+  private Consumer<ProcessInstanceFilter> anyProcessInstanceFilter() {
+    return any();
+  }
+
+  private Consumer<DecisionInstanceFilter> anyDecisionInstanceFilter() {
+    return any();
   }
 }
