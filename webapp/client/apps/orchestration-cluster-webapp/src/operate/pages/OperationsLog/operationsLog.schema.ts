@@ -20,10 +20,12 @@ const operationsLogSearchSchema = z.object({
 	operationType: z.array(auditLogOperationTypeSchema).optional(),
 	entityType: z.array(auditLogEntityTypeSchema).optional(),
 	result: auditLogResultSchema.optional(),
-	actorId: z.string().optional(),
+	// coerce: small (safe-range) numeric-looking values still arrive typed as a JS number from the
+	// router's search parser — normalize to string either way, matching the Processes route schema.
+	actorId: z.coerce.string().optional(),
 	timestampAfter: z.string().optional(),
 	timestampBefore: z.string().optional(),
-	tenantId: z.string().optional(),
+	tenantId: z.coerce.string().optional(),
 	sort: z.string().optional(),
 });
 
