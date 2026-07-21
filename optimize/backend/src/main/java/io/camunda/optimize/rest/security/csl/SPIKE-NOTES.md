@@ -63,7 +63,7 @@ Single-node in-memory sessions are used unless a `SessionStorePort` bean is adde
 2. Real `MembershipPort` (OIDC groups-claim extraction).
 3. Config backwards-compatibility layer: prototype present as
    `OptimizeSecurityConfigCompatibilityPostProcessor` (a Spring `EnvironmentPostProcessor`,
-   registered in `META-INF/spring/...EnvironmentPostProcessor.imports`, mirroring OC's
+   registered in `META-INF/spring.factories`, mirroring OC's
    `PersistentWebSessionPropertiesPostProcessor`). It bridges Optimize's existing auth config to
    `camunda.security.*` at low precedence so operators are not forced to migrate. The full
    key-by-key mapping is in `CONFIG-COMPAT.md`; the skeleton implements the representative OIDC /
