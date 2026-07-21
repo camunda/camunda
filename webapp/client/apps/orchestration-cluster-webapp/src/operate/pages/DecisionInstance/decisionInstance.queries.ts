@@ -28,4 +28,4 @@ function useDecisionInstance(decisionEvaluationInstanceKey: string) {
 	return useQuery(decisionInstanceQuery(decisionEvaluationInstanceKey));
 }
 
-export {useDecisionInstance};
+export {decisionInstanceQuery, useDecisionInstance};

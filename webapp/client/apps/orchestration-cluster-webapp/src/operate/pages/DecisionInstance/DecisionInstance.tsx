@@ -35,15 +35,6 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	const isNotFound = requestError.success && requestError.data.response?.status === 404;
 
 	useEffect(() => {
-		if (decisionInstanceId !== '' && decisionInstance?.decisionDefinitionName !== undefined) {
-			document.title = t('operate.decisionInstance.pageTitle', {
-				decisionInstanceId,
-				name: decisionInstance.decisionDefinitionName,
-			});
-		}
-	}, [decisionInstanceId, decisionInstance?.decisionDefinitionName, t]);
-
-	useEffect(() => {
 		if (status === 'success' && decisionInstance.state !== undefined) {
 			tracking.track({eventName: 'operate:decision-instance-details-loaded', state: decisionInstance.state});
 		}

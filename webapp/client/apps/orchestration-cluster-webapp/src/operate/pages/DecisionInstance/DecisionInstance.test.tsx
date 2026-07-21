@@ -36,9 +36,10 @@ describe('<DecisionInstance />', () => {
 	afterEach(() => {
 		sessionStorage.clear();
 		notificationsStore.reset();
+		vi.restoreAllMocks();
 	});
 
-	it('should render the header and set the page title', async ({worker}) => {
+	it('should render the header', async ({worker}) => {
 		const decisionInstance = createDecisionInstance();
 		worker.use(
 			mockCurrentUserEndpoint({successResponse: HttpResponse.json(createCurrentUser())}),
@@ -49,9 +50,6 @@ describe('<DecisionInstance />', () => {
 
 		await expect.element(screen.getByTestId('instance-header')).toBeVisible();
 		await expect.element(screen.getByRole('heading', {name: 'Operate Decision Instance'})).toBeInTheDocument();
-		await expect
-			.poll(() => document.title)
-			.toBe(`Operate: Decision Instance ${DECISION_INSTANCE_ID} of ${decisionInstance.decisionDefinitionName}`);
 	});
 
 	it('should track when the decision instance details are loaded', async ({worker}) => {
