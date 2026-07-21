@@ -61,9 +61,8 @@ on:
           When true, restore the io.camunda SNAPSHOTs from the run-scoped GCS
           artifact produced by a build-distball job (ci-build-distball-reusable.yml)
           elsewhere in the same run, instead of running a local build-zeebe reactor.
-          Only safe when the calling run also runs that build-distball job. Callers
-          without one must leave this false so the build-zeebe fallback runs.
-          See #52693 and #56931.
+          Leave false if the calling run has no build-distball job, so the
+          build-zeebe fallback runs. See #52693 and #56931.
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"

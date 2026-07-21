@@ -275,7 +275,6 @@ jobs:
 
   build-distball:
     name: "Build / Distribution Tarball"
-    # Build the distball once and share it, replacing a reactor build in each consumer.
     # Extracted into a reusable workflow so the standalone rdbms/search integration-test
     # workflows can share it too. See #52693 and #56931.
     # Gated on the union of all consumers' conditions so the artifact exists whenever one runs;
