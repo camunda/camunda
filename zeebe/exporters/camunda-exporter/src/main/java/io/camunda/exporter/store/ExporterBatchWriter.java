@@ -10,7 +10,7 @@ package io.camunda.exporter.store;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 public final class ExporterBatchWriter {
   private static final Logger LOG = LoggerFactory.getLogger(ExporterBatchWriter.class);
   private boolean warnAboutMessageSizeEstimation = false;
+  private final TargetIndexLocator indexLocator;
   private final Map<EntityIdAndEntityType, CachedEntity> cachedEntities = new HashMap<>();
   private final Map<EntityIdTypeAndHandler, ExporterEntity> cachedEntitiesToFlush =
       new LinkedHashMap<>();
@@ -46,9 +47,11 @@ public final class ExporterBatchWriter {
   private long totalMemoryEstimate = 0L;
 
   private ExporterBatchWriter(
+      final TargetIndexLocator indexLocator,
       final Map<ValueType, List<ExportHandler>> handlers,
       final BiConsumer<String, Error> customErrorHandler,
       final CamundaExporterMetrics metrics) {
+    this.indexLocator = indexLocator;
     this.handlers = new HashMap<>(handlers);
     this.customErrorHandler = customErrorHandler;
     this.metrics = metrics;
@@ -125,7 +128,7 @@ public final class ExporterBatchWriter {
       final var key = entry.getKey();
       final var handler = key.handler();
       final var entity = entry.getValue();
-      final var index = TargetIndex.mainIndex(handler.getIndexName());
+      final var index = indexLocator.locate(handler.getIndexName());
       handler.flush(index, entity, batchRequest);
     }
 
@@ -182,21 +185,25 @@ public final class ExporterBatchWriter {
   }
 
   public static final class Builder {
+    private final TargetIndexLocator indexLocator;
     private final CamundaExporterMetrics metrics;
     private final Map<ValueType, List<ExportHandler>> handlers = new HashMap<>();
     private BiConsumer<String, Error> customErrorHandler = (ignored, error) -> {};
 
-    private Builder(final CamundaExporterMetrics metrics) {
+    private Builder(final TargetIndexLocator indexLocator, final CamundaExporterMetrics metrics) {
+      this.indexLocator = indexLocator;
       this.metrics = metrics;
     }
 
-    public static Builder begin(final CamundaExporterMetrics metrics) {
-      return new Builder(metrics);
+    public static Builder begin(
+        final TargetIndexLocator indexLocator, final CamundaExporterMetrics metrics) {
+      return new Builder(indexLocator, metrics);
     }
 
     @VisibleForTesting
     static Builder begin() {
-      return new Builder(new CamundaExporterMetrics(new SimpleMeterRegistry()));
+      return new Builder(
+          new TargetIndexLocator(), new CamundaExporterMetrics(new SimpleMeterRegistry()));
     }
 
     public <T extends ExporterEntity<T>, R extends RecordValue> Builder withHandler(
@@ -207,7 +214,7 @@ public final class ExporterBatchWriter {
     }
 
     public ExporterBatchWriter build() {
-      return new ExporterBatchWriter(handlers, customErrorHandler, metrics);
+      return new ExporterBatchWriter(indexLocator, handlers, customErrorHandler, metrics);
     }
 
     public Builder withCustomErrorHandlers(final BiConsumer<String, Error> customErrorHandler) {

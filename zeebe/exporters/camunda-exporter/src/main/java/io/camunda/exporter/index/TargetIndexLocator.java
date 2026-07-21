@@ -7,13 +7,8 @@
  */
 package io.camunda.exporter.index;
 
-import com.google.common.annotations.VisibleForTesting;
-
-public sealed interface TargetIndex permits MainIndex {
-  String name();
-
-  @VisibleForTesting
-  static TargetIndex mainIndex(final String name) {
-    return new MainIndex(name);
+public class TargetIndexLocator {
+  public TargetIndex locate(final String indexName) {
+    return TargetIndex.mainIndex(indexName);
   }
 }
