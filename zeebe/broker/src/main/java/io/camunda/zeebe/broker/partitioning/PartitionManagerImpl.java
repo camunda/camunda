@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -552,11 +554,11 @@ public final class PartitionManagerImpl
   public ActorFuture<Void> setExportingState(
       final int partitionId, final ExportingState exportingState) {
     final var result = concurrencyControl.<Void>createFuture();
-    concurrencyControl.run(() -> setExporterState(partitionId, exportingState, result));
+    concurrencyControl.run(() -> setExportingState(partitionId, exportingState, result));
     return result;
   }
 
-  private void setExporterState(
+  private void setExportingState(
       final int partitionId, final ExportingState exportingState, final ActorFuture<Void> result) {
     final var partition = partitions.get(partitionId);
     if (partition == null) {
@@ -574,7 +576,7 @@ public final class PartitionManagerImpl
     }
     LOGGER.trace("Setting exporting state {} on partition {}", exportingState, partitionId);
     concurrencyControl.runOnCompletion(
-        partition.zeebePartition().setExporterState(exportingState),
+        partition.zeebePartition().getAdminAccess().setExportingState(exportingState),
         (ok, error) -> {
           if (error != null) {
             result.completeExceptionally(error);
@@ -582,7 +584,7 @@ public final class PartitionManagerImpl
           }
 
           LOGGER.info("Set exporting state {} on partition {}", exportingState, partitionId);
-          result.complete(null);
+          result.complete(unit());
         });
   }
 
