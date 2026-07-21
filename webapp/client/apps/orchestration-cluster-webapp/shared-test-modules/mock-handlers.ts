@@ -84,6 +84,14 @@ const mockGetProcessDefinitionXmlEndpoint = createEndpointMock({
 	method: endpoints.getProcessDefinitionXml.method,
 });
 
+const mockGetProcessDefinitionStatisticsEndpoint = createEndpointMock({
+	endpoint: endpoints.getProcessDefinitionStatistics.getUrl({
+		processDefinitionKey: ':processDefinitionKey',
+		statisticName: 'element-instances',
+	}),
+	method: endpoints.getProcessDefinitionStatistics.method,
+});
+
 const mockAssignTaskEndpoint = createEndpointMock({
 	endpoint: endpoints.assignTask.getUrl({userTaskKey: ':userTaskKey'}),
 	method: endpoints.assignTask.method,
@@ -118,6 +126,7 @@ export {
 	mockSaasTokenEndpoint,
 	mockGetUserTaskEndpoint,
 	mockGetProcessDefinitionXmlEndpoint,
+	mockGetProcessDefinitionStatisticsEndpoint,
 	mockAssignTaskEndpoint,
 	mockUnassignTaskEndpoint,
 	mockCompleteTaskEndpoint,

@@ -22,6 +22,7 @@ import {TenantField} from '#/operate/shared/TenantField/TenantField';
 import {RadioButtonChecked, WarningFilled, CheckmarkOutline} from '#/operate/shared/StateIcon/styled';
 import {IndentedGroup, CanceledIcon} from './styled';
 import {OptionalFiltersFormGroup, type OptionalFilter, type OptionalFilterValues} from './OptionalFiltersFormGroup';
+import {DiagramPanel, type ProcessDefinitionSelection} from './DiagramPanel';
 
 type FiltersFormValues = OptionalFilterValues & {tenantId?: string};
 
@@ -113,6 +114,24 @@ const Processes: React.FC<Props> = ({
 
 	const selectedProcess = processItems.find((i) => i.id === process) ?? null;
 	const selectedVersion = version;
+
+	const processDefinitionSelection = useMemo<ProcessDefinitionSelection>(() => {
+		if (!process) {
+			return {kind: 'no-match'};
+		}
+
+		const matches = data.items.filter((def) => def.processDefinitionId === process);
+
+		if (version === undefined) {
+			const first = matches[0];
+			return first === undefined
+				? {kind: 'no-match'}
+				: {kind: 'all-versions', definition: {name: first.name, processDefinitionId: first.processDefinitionId}};
+		}
+
+		const definition = matches.find((def) => def.version === version);
+		return definition === undefined ? {kind: 'no-match'} : {kind: 'single-version', definition};
+	}, [data, process, version]);
 
 	const runningChecked = active && incidents;
 	const runningIndeterminate = !runningChecked && (active || incidents);
@@ -336,7 +355,22 @@ const Processes: React.FC<Props> = ({
 					)}
 				</Form>
 			}
-			topPanel={<div />}
+			topPanel={
+				<DiagramPanel
+					processDefinitionSelection={processDefinitionSelection}
+					elementId={elementId}
+					onElementSelection={(selectedElementId) => {
+						void navigate({
+							to: '.',
+							search: (prev) => ({...prev, elementId: selectedElementId || undefined}),
+						});
+					}}
+					active={active}
+					incidents={incidents}
+					completed={completed}
+					canceled={canceled}
+				/>
+			}
 			bottomPanel={<div />}
 		/>
 	);

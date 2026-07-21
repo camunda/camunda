@@ -479,6 +479,18 @@
 					"removeFilter": "Remove {{label}} Filter",
 					"startDatePopoverTitle": "Filter instances by start date",
 					"endDatePopoverTitle": "Filter instances by end date"
+				},
+				"diagramHeader": {
+					"title": "Process",
+					"processName": "Process name",
+					"processId": "Process ID",
+					"versionTag": "Version tag"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "There is more than one Version selected for Process \"{{name}}\"",
+					"selectSingleVersion": "To see a Diagram, select a single Version",
+					"noProcessSelected": "There is no Process selected",
+					"selectProcessInFilters": "To see a Diagram, select a Process in the Filters panel"
 				}
 			},
 			"decisions": {
