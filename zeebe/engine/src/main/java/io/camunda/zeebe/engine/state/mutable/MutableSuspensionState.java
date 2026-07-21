@@ -9,7 +9,9 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.SuspensionState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBufferedCommandRecord;
+import org.jspecify.annotations.NullMarked;
 
+@NullMarked
 public interface MutableSuspensionState extends SuspensionState {
 
   /** Sets (inserts or overwrites) the suspension marker for the process instance. */

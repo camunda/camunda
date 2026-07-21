@@ -8,7 +8,10 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBufferedCommandRecordValue;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public interface SuspensionState {
 
   enum State {
@@ -20,7 +23,7 @@ public interface SuspensionState {
    * @return the current suspension marker for the process instance, or {@code null} if it has no
    *     suspension marker
    */
-  State getSuspensionState(long processInstanceKey);
+  @Nullable State getSuspensionState(long processInstanceKey);
 
   /**
    * @return {@code true} if the process instance has any suspension marker (either {@link
