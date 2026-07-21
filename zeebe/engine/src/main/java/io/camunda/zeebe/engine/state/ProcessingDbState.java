@@ -96,6 +96,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.mutable.MutableSuspensionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
@@ -106,6 +107,7 @@ import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.engine.state.secretreference.DbSecretReferenceState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
+import io.camunda.zeebe.engine.state.suspension.DbSuspensionState;
 import io.camunda.zeebe.engine.state.tenant.DbTenantState;
 import io.camunda.zeebe.engine.state.user.DbUserState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
@@ -139,6 +141,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final DbMessageCorrelationState messageCorrelationState;
   private final MutableIncidentState incidentState;
   private final MutableBannedInstanceState bannedInstanceState;
+  private final MutableSuspensionState suspensionState;
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
   private final MutableFormState formState;
@@ -215,6 +218,7 @@ public class ProcessingDbState implements MutableProcessingState {
     messageCorrelationState = new DbMessageCorrelationState(zeebeDb, transactionContext);
     incidentState = new DbIncidentState(zeebeDb, transactionContext);
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext);
+    suspensionState = new DbSuspensionState(zeebeDb, transactionContext);
     decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
     formState = new DbFormState(zeebeDb, transactionContext, config);
     resourceState = new DbResourceState(zeebeDb, transactionContext, config);
@@ -315,6 +319,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableBannedInstanceState getBannedInstanceState() {
     return bannedInstanceState;
+  }
+
+  @Override
+  public MutableSuspensionState getSuspensionState() {
+    return suspensionState;
   }
 
   @Override
