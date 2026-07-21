@@ -89,6 +89,40 @@ public class ClusterPurgeTest {
     }
   }
 
+  @RegressionTest("https://github.com/camunda/camunda/issues/55856")
+  void shouldPurgeClusterWithReplicationFactor3() {
+    // given
+    try (final var cluster =
+        TestCluster.builder()
+            .withEmbeddedGateway(true)
+            .withBrokersCount(3)
+            .withPartitionsCount(1)
+            .withReplicationFactor(3)
+            .build()
+            .start()) {
+
+      cluster.awaitCompleteTopology();
+
+      // when - purging the cluster, which scales the partition down to zero members and back up
+      final var purge = ClusterActuator.of(cluster.availableGateway()).purge(false);
+
+      // then - the purge completes. Scaling down requires the last remaining member to leave,
+      // which only works if it retains the configuration it acked but never learned to be
+      // committed before the second-to-last member went away.
+      Awaitility.await("until the purge is applied")
+          .timeout(Duration.ofMinutes(2))
+          .untilAsserted(() -> ClusterActuatorAssert.assertThat(cluster).hasAppliedChanges(purge));
+
+      try (final CamundaClient client = cluster.newClientBuilder().build()) {
+        Awaitility.await("until cluster is healthy")
+            .untilAsserted(
+                () ->
+                    TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                        .isHealthy());
+      }
+    }
+  }
+
   private static void getSet(final boolean newValue) {
     PurgingExporter.BLOCK_PURGE.set(newValue);
   }
