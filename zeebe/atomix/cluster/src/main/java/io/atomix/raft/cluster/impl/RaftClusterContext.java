@@ -26,6 +26,8 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.impl.ReconfigurationHelper;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.JointConsensusVoteQuorum;
 import io.atomix.raft.utils.SimpleVoteQuorum;
@@ -291,6 +293,37 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       configure(storedConfiguration);
     }
     return this;
+  }
+
+  /**
+   * Applies the newest configuration entry from the log if it is newer than the current
+   * configuration. Configurations take effect as soon as they are appended, so the newest
+   * configuration entry in the log is authoritative, whether it is committed or not.
+   */
+  public void reloadConfigurationFromLog() {
+    raft.checkThread();
+    IndexedRaftLogEntry lastConfigurationEntry = null;
+    // The reader needs to be uncommitted because the configuration entry might not be committed yet
+    // on this node, but committed on the leader already.
+    try (final var reader = raft.getLog().openUncommittedReader()) {
+      while (reader.hasNext()) {
+        final var entry = reader.next();
+        if (entry.entry() instanceof ConfigurationEntry) {
+          lastConfigurationEntry = entry;
+        }
+      }
+      if (lastConfigurationEntry != null) {
+        final var configurationEntry = (ConfigurationEntry) lastConfigurationEntry.entry();
+        configure(
+            new Configuration(
+                lastConfigurationEntry.index(),
+                lastConfigurationEntry.term(),
+                configurationEntry.timestamp(),
+                configurationEntry.newMembers(),
+                configurationEntry.oldMembers(),
+                false));
+      }
+    }
   }
 
   /**

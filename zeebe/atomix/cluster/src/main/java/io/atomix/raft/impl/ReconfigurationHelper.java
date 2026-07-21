@@ -22,8 +22,6 @@ import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TransferRequest;
-import io.atomix.raft.storage.log.IndexedRaftLogEntry;
-import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.ForceConfigureQuorum;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -58,8 +56,15 @@ public final class ReconfigurationHelper {
     final var result = new CompletableFuture<Void>();
     threadContext.execute(
         () -> {
+          // If the previous join was partially or fully completed, i.e. committed the first
+          // configuration with joint consensus or committed the final configuration, then in the
+          // next retry, this member can already start with that configuration. This is mainly
+          // required if the member is joining a single member cluster, making the quorum 2 out of
+          // 2. If this member did not re-start in the ACTIVE state when the other node has already
+          // included it in the quorum, then the other member cannot become leader and continue the
+          // reconfiguration step.
           try {
-            tryReloadConfigurationFromLog();
+            raftContext.getCluster().reloadConfigurationFromLog();
           } catch (final Exception e) {
             LOGGER.warn("Failed to join cluster, could not reload configuration from log", e);
             result.completeExceptionally(e);
@@ -67,7 +72,7 @@ public final class ReconfigurationHelper {
           }
 
           // Always transition to PASSIVE or the last member type as found by
-          // `tryReloadConfigurationFromLog`.
+          // `reloadConfigurationFromLog`.
           // This ensures that the member trying to join is not stuck in `INACTIVE` which would
           // prevent the joining from completing, particularly when joining a single-member cluster
           // where this new node is already required for quorum.
@@ -109,42 +114,6 @@ public final class ReconfigurationHelper {
           threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result, deadline));
         });
     return result;
-  }
-
-  /**
-   * If the previous join was partially or fully completed, i.e. committed the first configuration
-   * with joint consensus or committed the final configuration, then in the next retry, this member
-   * can already start with that configuration. This is mainly required if the member is joining to
-   * a single member cluster, making the quorum to 2 out of 2. If this member did not re-start in
-   * the ACTIVE state when the other node has already included it in the quorum, then the other
-   * member cannot become leader and continue the reconfiguration step.
-   */
-  private void tryReloadConfigurationFromLog() {
-    IndexedRaftLogEntry lastConfigurationEntry = null;
-    // The reader needs to be uncommitted because the configuration entry might not be committed yet
-    // on this node, but committed on the leader already.
-    try (final var reader = raftContext.getLog().openUncommittedReader()) {
-      while (reader.hasNext()) {
-        final var entry = reader.next();
-        if (entry.entry() instanceof ConfigurationEntry) {
-          lastConfigurationEntry = entry;
-        }
-      }
-      if (lastConfigurationEntry != null) {
-        final ConfigurationEntry configurationEntry =
-            (ConfigurationEntry) lastConfigurationEntry.entry();
-        raftContext
-            .getCluster()
-            .configure(
-                new Configuration(
-                    lastConfigurationEntry.index(),
-                    lastConfigurationEntry.term(),
-                    configurationEntry.timestamp(),
-                    configurationEntry.newMembers(),
-                    configurationEntry.oldMembers(),
-                    false));
-      }
-    }
   }
 
   /**
