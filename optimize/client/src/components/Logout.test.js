@@ -11,10 +11,10 @@ import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {Logout} from './Logout';
-import {get} from 'request';
+import {post} from 'request';
 import {addNotification} from 'notifications';
 
-jest.mock('request', () => ({get: jest.fn()}));
+jest.mock('request', () => ({post: jest.fn()}));
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
 const props = {
@@ -22,24 +22,45 @@ const props = {
   history: {replace: jest.fn()},
 };
 
-it('should logout from server', () => {
+let originalLocation;
+
+beforeEach(() => {
+  originalLocation = window.location;
+  Object.defineProperty(window, 'location', {configurable: true, value: {href: ''}});
+});
+
+afterEach(() => {
+  Object.defineProperty(window, 'location', {configurable: true, value: originalLocation});
+});
+
+it('should logout via the CSL /logout endpoint', () => {
   shallow(<Logout {...props} />);
   runLastEffect();
 
-  expect(get).toHaveBeenCalledWith('api/authentication/logout');
+  expect(post).toHaveBeenCalledWith('/logout');
 });
 
-it('should redirect to the index page', async () => {
-  props.history.replace.mockClear();
-  shallow(<Logout {...props} mightFail={(_, cb) => cb()} />);
+it('should navigate to the IdP end-session url on a 200 response', async () => {
+  const response = {status: 200, json: async () => ({url: 'http://idp/end-session'})};
+  shallow(<Logout {...props} mightFail={(_, cb) => cb(response)} />);
   runLastEffect();
 
   await flushPromises();
 
-  expect(props.history.replace).toHaveBeenCalledWith('/');
+  expect(window.location.href).toBe('http://idp/end-session');
 });
 
-it('should show an error if the logout fails', async () => {
+it('should navigate to the root on a 204 response', async () => {
+  const response = {status: 204};
+  shallow(<Logout {...props} mightFail={(_, cb) => cb(response)} />);
+  runLastEffect();
+
+  await flushPromises();
+
+  expect(window.location.href).toBe('/');
+});
+
+it('should show an error and go to the index page if the logout fails', async () => {
   props.history.replace.mockClear();
   addNotification.mockClear();
   shallow(<Logout {...props} mightFail={(_, _cb, fail) => fail()} />);

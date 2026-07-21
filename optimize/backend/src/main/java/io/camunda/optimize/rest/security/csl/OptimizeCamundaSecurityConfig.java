@@ -10,12 +10,15 @@ package io.camunda.optimize.rest.security.csl;
 import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
+import io.camunda.security.spring.spi.OidcAuthenticationEntryPoint;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 
 /**
  * SPIKE (ADR-0036): opt-in configuration that adopts CSL for Optimize.
@@ -65,5 +68,38 @@ public class OptimizeCamundaSecurityConfig {
   @ConditionalOnMissingBean
   public MembershipPort membershipPort() {
     return new OptimizeMembershipAdapter();
+  }
+
+  /**
+   * Overrides CSL's default OIDC entry point so unauthenticated {@code /api/**} XHR calls get a 401
+   * (which the SPA turns into a login) instead of a 302 to the IdP that a browser {@code fetch}
+   * cannot follow cross-origin. See {@link OptimizeOidcAuthenticationEntryPoint}.
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public OidcAuthenticationEntryPoint oidcAuthenticationEntryPoint(
+      final ClientRegistrationRepository clientRegistrationRepository) {
+    return new OptimizeOidcAuthenticationEntryPoint(
+        resolveLoginRedirectTarget(clientRegistrationRepository));
+  }
+
+  // Mirrors CSL's redirect resolution: a single registered client redirects straight to its
+  // /oauth2/authorization/{id} endpoint; anything else falls back to /login so a picker can show.
+  private static String resolveLoginRedirectTarget(
+      final ClientRegistrationRepository clientRegistrationRepository) {
+    if (clientRegistrationRepository instanceof final Iterable<?> registrations) {
+      ClientRegistration single = null;
+      int count = 0;
+      for (final Object registration : registrations) {
+        if (registration instanceof final ClientRegistration clientRegistration) {
+          single = clientRegistration;
+          count++;
+        }
+      }
+      if (count == 1) {
+        return "/oauth2/authorization/" + single.getRegistrationId();
+      }
+    }
+    return "/login";
   }
 }

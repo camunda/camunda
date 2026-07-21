@@ -108,12 +108,21 @@ Matters found while manually testing the spike against a local CCSM/Keycloak set
    follow-up: other user-resolution sites in Optimize (and the `MembershipPort` stub) likely need
    the same CSL-principal bridge for full functionality.
 
-6. **Logout did nothing.** The SPA calls Optimize's `GET /api/authentication/logout`, which ran only
-   the legacy cookie cleanup (revoke refresh token, delete `X-Optimize-Authorization`) and never
-   touched the CSL server session, so the user stayed logged in. Fixed: the logout endpoint now
-   also runs a `SecurityContextLogoutHandler` (invalidate the session, which deletes it from the
-   `SessionStorePort`, and clear the context). IdP end-session (Keycloak logout via CSL's
-   `oidcLogout`) is a follow-up — this is a local logout only.
+6. **Logout did nothing, then logged the user straight back in.** The SPA called Optimize's `GET
+   /api/authentication/logout`, which ran only the legacy cookie cleanup (revoke refresh token,
+   delete `X-Optimize-Authorization`) and never touched the CSL server session. A first fix added a
+   `SecurityContextLogoutHandler` to that endpoint, but that only invalidates the *local* session —
+   the Keycloak SSO session stayed alive, so the next `/oauth2/authorization/oidc` hop silently
+   re-authenticated. Legacy CCSM had ended the IdP session by revoking the refresh token at
+   Keycloak's logout endpoint; under CSL there is no refresh-token cookie, so that path was a no-op.
+   Fixed by aligning with OC: the SPA (`Logout.js`) now POSTs CSL's server-side `/logout` (CSRF
+   header from the request wrapper). For fetch/XHR CSL responds `200 {"url": <IdP end-session URL>}`
+   (or `204` when the IdP publishes no `end_session_endpoint`); the frontend navigates the browser
+   to that URL, which ends the Keycloak SSO session and returns to the CSL-configured
+   `post_logout_redirect_uri`. This invalidates the server session (removed from the
+   `SessionStorePort`) *and* the IdP session. Optimize's `URLRedirectFilter` already passes `/logout`
+   through to Spring Security. The legacy `GET /api/authentication/logout` endpoint stays for the
+   flag-off path.
 7. **`CCSMUserCache` could not load users** (`WARN … Could not retrieve user because no user token
    present`). `ccsmTokenService.getCurrentUserAuthToken()` read the user access token from the old
    Optimize cookie; under CSL that token lives in the OIDC session's `OAuth2AuthorizedClient`.
@@ -123,6 +132,29 @@ Matters found while manually testing the spike against a local CCSM/Keycloak set
    user lookups work. The repository is injected as an optional `ObjectProvider` (absent in legacy
    CCSM). This is the concrete instance of the host-side token/user-resolution rewiring called out
    in ADR-0036; a production adoption should apply the same bridge wherever the user token is read.
+8. **After logout the SPA hung on a spinner.** Once the session was gone, the SPA's XHR calls
+   (`/api/token`, `/api/dashboard/management`, `/api/process/overview`) were answered by the webapp
+   chain with `302 -> /oauth2/authorization/oidc -> Keycloak`; the browser followed that redirect
+   cross-origin as a `fetch`, CORS blocked it (`OPTIONS 405`, `GET` status 0), so the frontend's
+   `PrivateRoute` 401 handler never fired. CSL's default OIDC entry point returns 401 only for
+   requests carrying an `Authorization` header (bearer); Optimize's cookie-session XHR has none.
+   Fixed host-side via CSL's `OidcAuthenticationEntryPoint` SPI:
+   `OptimizeOidcAuthenticationEntryPoint` returns 401 for `/api/**` (the SPA's XHR surface) and keeps
+   the 302-to-IdP redirect for real navigations. This restores Optimize's legacy contract (API ->
+   401 -> `PrivateRoute` reloads -> navigation -> login). Worth feeding back to CSL: its default
+   entry point could content-negotiate (XHR / `Sec-Fetch-Dest: empty` -> 401) so cookie-session SPAs
+   work without a host override.
+9. **`CCSMUserCache` user *search* fails with 403 from Identity.** After #7, `getUserById` works but
+   `users().search(userToken)` returns 403 (authenticated, not authorized). The decoded token is a
+   normal `optimize` token (`iss` correct, `azp=optimize`, `scope=openid email profile` — a superset
+   of the legacy Identity-SDK `openid email`; `aud=[optimize, account]`,
+   `resource_access=[account]`), so scope is not the gap. Key point (confirmed with the team): **OC
+   does not resolve arbitrary users under OIDC** — it only searches/lists users when it stores them
+   itself (basic auth). So searching Identity for users with the requesting user's token is not an
+   OIDC-aligned pattern. Treat this as a design follow-up (how Optimize should resolve/search users
+   under OIDC — e.g. a service-account token, or no user search in OIDC mode), not a token patch. A
+   temporary `SPIKE-DEBUG` claim-decode log is in `CCSMUserCache.searchUsersInIdentity` and must be
+   removed before merge.
 
 ## Follow-ups (tracked in ADR-0036)
 
