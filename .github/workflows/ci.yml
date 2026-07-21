@@ -394,7 +394,7 @@ jobs:
     needs: [ detect-changes ]
     timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
+    runs-on: ubicloud-standard-8 # gcp-perf-core-8-default
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@20384346f55213d43c85943363f40d29e3911f97 # main
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -838,7 +838,7 @@ jobs:
               "maven-modules": "clients/camunda-spring-boot-starter,clients/camunda-spring-boot-3-starter,clients/camunda-spring-boot-starter-virtual-threads,clients/java",
               "maven-build-threads": 1,
               "maven-test-fork-count": 1,
-              "runs-on": "gcp-perf-core-8-default",
+              "runs-on": "ubicloud-standard-8",
               "owner": "@camunda/core-features",
               "module": "Clients",
               "stressRun": 1
@@ -1300,7 +1300,7 @@ jobs:
     needs: [ detect-changes, build-distball ]
     name: "General / Integration / RDBMS ITs"
     timeout-minutes: 30
-    runs-on: gcp-perf-core-8-default
+    runs-on: ubicloud-standard-8
     strategy:
       # In case of stress testing, we want the status from all jobs.
       fail-fast: false
