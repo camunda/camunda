@@ -1156,6 +1156,7 @@ jobs:
       maven-profiles: "physical-tenant"
       test-type: "physical-tenant-acceptance-tests"
       test-type-label: "Physical Tenant Acceptance"
+      test-suite-name: "acceptance"
       use-shared-distball: true
 
   physical-tenant-identity-tests:
@@ -1187,6 +1188,7 @@ jobs:
       maven-profiles: "physical-tenant-identity"
       test-type: "physical-tenant-identity-tests"
       test-type-label: "Physical Tenant Acceptance Identity"
+      test-suite-name: "identity"
       use-shared-distball: true
 
   physical-tenant-history-tests:
@@ -1218,6 +1220,7 @@ jobs:
       maven-profiles: "physical-tenant-history"
       test-type: "physical-tenant-history-tests"
       test-type-label: "Physical Tenant Acceptance History"
+      test-suite-name: "history"
       use-shared-distball: true
 
   rdbms-integration-tests:

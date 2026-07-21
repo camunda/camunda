@@ -43,6 +43,15 @@ on:
           separate Elasticsearch instance instead of reusing the default tenant's connection, by
           passing -Dtest.integration.camunda.physical-tenant.elasticsearch.url=<value>. Requires the
           "elasticsearch-tenant" docker-compose service to be running.
+      test-suite-name:
+        required: false
+        type: string
+        default: ""
+        description: >-
+          Short suite name appended to the job's display name (e.g. "identity" renders the job as
+          "elasticsearch - identity"). Leave empty to display the database type alone. Joined with
+          a non-slash separator because the GHA sidebar only displays the last " / "-separated
+          segment of the check name.
       maven-profiles:
         required: false
         type: string
@@ -93,9 +102,10 @@ env:
 
 jobs:
   integration-tests:
-    # include the test-type label so matrix entries are distinguishable in the GHA sidebar, which
-    # only shows this leaf name (e.g. "Physical Tenant Acceptance History / elasticsearch")
-    name: "${{ inputs.test-type-label }} / ${{ inputs.database-type }}"
+    # the GHA sidebar only shows the last " / "-separated segment of the composed check name, so
+    # append the suite with a non-slash separator to keep matrix entries distinguishable
+    # (e.g. "elasticsearch - identity")
+    name: "${{ inputs.database-type }}${{ inputs.test-suite-name != '' && format(' - {0}', inputs.test-suite-name) || '' }}"
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
