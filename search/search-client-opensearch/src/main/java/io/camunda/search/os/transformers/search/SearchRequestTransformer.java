@@ -11,6 +11,7 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.os.transformers.aggregator.AggregationCursorTransformer;
 import io.camunda.search.sort.SearchSortOptions;
 import java.util.Arrays;
 import java.util.List;
@@ -103,7 +104,7 @@ public final class SearchRequestTransformer
   }
 
   private List<FieldValue> of(final Object[] values) {
-    return Arrays.stream(values).map(Object::toString).map(FieldValue::of).toList();
+    return Arrays.stream(values).map(AggregationCursorTransformer::toFieldValue).toList();
   }
 
   private SourceConfig of(final SearchSourceConfig value) {

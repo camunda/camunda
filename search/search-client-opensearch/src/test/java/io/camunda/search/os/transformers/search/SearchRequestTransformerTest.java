@@ -235,6 +235,25 @@ public class SearchRequestTransformerTest {
   }
 
   @Test
+  public void shouldTransformSearchAfterPreservingNumericSortValue() {
+    // given a searchAfter cursor with a numeric sort value (as decoded from a cursor, where
+    // integers are deserialized as Long)
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(
+            b ->
+                b.index("operate-list-view-8.3.0_")
+                    .sort((s) -> s.field((f) -> f.field("key").asc()))
+                    .searchAfter(new Object[] {2251799813685249L}));
+
+    // when
+    final SearchRequest actual = transformer.apply(request);
+
+    // then the value must be serialized as a number, not coerced to a string, so search_after
+    // keeps matching the numeric sort field
+    assertThat(osQuerySerializer.serialize(actual)).contains("\"search_after\":[2251799813685249]");
+  }
+
+  @Test
   public void shouldTransformSort() {
     // given
     final SearchQueryRequest request =
