@@ -29,7 +29,6 @@ import io.atomix.raft.protocol.VoteRequest;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import org.awaitility.Awaitility;
@@ -53,7 +52,6 @@ public class RaftTimeoutNowTest {
     final var targetProtocol = (TestRaftServerProtocol) target.getContext().getProtocol();
     final LongAdder pollCount = new LongAdder();
     final LongAdder voteCount = new LongAdder();
-    final AtomicReference<VoteRequest> firstVote = new AtomicReference<>();
     targetProtocol.interceptRequest(
         PollRequest.class,
         request -> {
@@ -63,7 +61,6 @@ public class RaftTimeoutNowTest {
         VoteRequest.class,
         request -> {
           voteCount.increment();
-          firstVote.compareAndSet(null, request);
         });
 
     // when
