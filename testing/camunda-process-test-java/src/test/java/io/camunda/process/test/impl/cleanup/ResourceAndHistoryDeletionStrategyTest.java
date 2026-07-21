@@ -21,6 +21,8 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -35,10 +37,15 @@ import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.BatchOperationState;
+import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Consumer;
@@ -46,6 +53,8 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -79,19 +88,23 @@ class ResourceAndHistoryDeletionStrategyTest {
   void shouldDeleteTestCaseDataAndDeploymentResources() {
     // given
     final ResourceAndHistoryDeletionStrategy strategy = new ResourceAndHistoryDeletionStrategy();
+    final Instant testCaseStartTime = Instant.parse("2026-01-01T00:00:00Z");
     mockDeployment(11L, 12L, 13L);
     when(clientSupplier.get()).thenReturn(camundaClient);
     mockBatchOperationExecution(BatchOperationState.COMPLETED, BatchOperationState.COMPLETED);
     mockDeleteResourceBatchOperation("delete-resource");
+    clearInvocations(
+        camundaClient.newCreateBatchOperationCommand().processInstanceCancel(),
+        camundaClient.newCreateBatchOperationCommand().deleteProcessInstance(),
+        camundaClient.newCreateBatchOperationCommand().deleteDecisionInstance());
 
     // when
     strategy.cleanup(
-        managementClient,
-        clientSupplier,
-        Instant.parse("2026-01-01T00:00:00Z"),
-        Collections.singletonList(deployment));
+        managementClient, clientSupplier, testCaseStartTime, Collections.singletonList(deployment));
 
     // then
+    verifyCancelAndDeleteFilters(testCaseStartTime.atOffset(ZoneOffset.UTC));
+    verifyProcessInstancesAreCancelledBeforeDeletion();
     verify(camundaClient).newDeleteResourceCommand(11L);
     verify(camundaClient).newDeleteResourceCommand(12L);
     verify(camundaClient).newDeleteResourceCommand(13L);
@@ -231,6 +244,105 @@ class ResourceAndHistoryDeletionStrategyTest {
   }
 
   private Consumer<DecisionInstanceFilter> anyDecisionInstanceFilter() {
+    return any();
+  }
+
+  @SuppressWarnings("unchecked")
+  private void verifyCancelAndDeleteFilters(final OffsetDateTime expectedDate) {
+    final ArgumentCaptor<Consumer<ProcessInstanceFilter>> cancelFilterCaptor =
+        ArgumentCaptor.forClass((Class) Consumer.class);
+    final ArgumentCaptor<Consumer<ProcessInstanceFilter>> deleteProcessFilterCaptor =
+        ArgumentCaptor.forClass((Class) Consumer.class);
+    final ArgumentCaptor<Consumer<DecisionInstanceFilter>> deleteDecisionFilterCaptor =
+        ArgumentCaptor.forClass((Class) Consumer.class);
+
+    verify(camundaClient.newCreateBatchOperationCommand().processInstanceCancel())
+        .filter(cancelFilterCaptor.capture());
+    verify(camundaClient.newCreateBatchOperationCommand().deleteProcessInstance())
+        .filter(deleteProcessFilterCaptor.capture());
+    verify(camundaClient.newCreateBatchOperationCommand().deleteDecisionInstance())
+        .filter(deleteDecisionFilterCaptor.capture());
+
+    verifyCancelProcessFilter(cancelFilterCaptor.getValue(), expectedDate);
+    verifyDeleteProcessFilter(deleteProcessFilterCaptor.getValue(), expectedDate);
+    verifyDeleteDecisionFilter(deleteDecisionFilterCaptor.getValue(), expectedDate);
+  }
+
+  private void verifyCancelProcessFilter(
+      final Consumer<ProcessInstanceFilter> filterConsumer, final OffsetDateTime expectedDate) {
+    final ProcessInstanceFilter filter = mock(ProcessInstanceFilter.class);
+    final DateTimeProperty dateFilter = mock(DateTimeProperty.class);
+    when(filter.startDate(anyDateFilter())).thenReturn(filter);
+    when(filter.state(any(ProcessInstanceState.class))).thenReturn(filter);
+
+    filterConsumer.accept(filter);
+
+    final ArgumentCaptor<Consumer<DateTimeProperty>> dateCaptor =
+        ArgumentCaptor.forClass(Consumer.class);
+    verify(filter).startDate(dateCaptor.capture());
+    dateCaptor.getValue().accept(dateFilter);
+    verify(dateFilter).gte(expectedDate);
+    verify(filter).state(ProcessInstanceState.ACTIVE);
+  }
+
+  private void verifyDeleteProcessFilter(
+      final Consumer<ProcessInstanceFilter> filterConsumer, final OffsetDateTime expectedDate) {
+    final ProcessInstanceFilter filter = mock(ProcessInstanceFilter.class);
+    final DateTimeProperty dateFilter = mock(DateTimeProperty.class);
+    final ProcessInstanceStateProperty stateFilter = mock(ProcessInstanceStateProperty.class);
+    when(filter.startDate(anyDateFilter())).thenReturn(filter);
+    when(filter.state(anyStateFilter())).thenReturn(filter);
+
+    filterConsumer.accept(filter);
+
+    final ArgumentCaptor<Consumer<DateTimeProperty>> dateCaptor =
+        ArgumentCaptor.forClass(Consumer.class);
+    verify(filter).startDate(dateCaptor.capture());
+    dateCaptor.getValue().accept(dateFilter);
+    verify(dateFilter).gte(expectedDate);
+
+    final ArgumentCaptor<Consumer<ProcessInstanceStateProperty>> stateCaptor =
+        ArgumentCaptor.forClass(Consumer.class);
+    verify(filter).state(stateCaptor.capture());
+    stateCaptor.getValue().accept(stateFilter);
+    verify(stateFilter).in(ProcessInstanceState.COMPLETED, ProcessInstanceState.TERMINATED);
+  }
+
+  private void verifyDeleteDecisionFilter(
+      final Consumer<DecisionInstanceFilter> filterConsumer, final OffsetDateTime expectedDate) {
+    final DecisionInstanceFilter filter = mock(DecisionInstanceFilter.class);
+    final DateTimeProperty dateFilter = mock(DateTimeProperty.class);
+    when(filter.evaluationDate(anyDateFilter())).thenReturn(filter);
+
+    filterConsumer.accept(filter);
+
+    final ArgumentCaptor<Consumer<DateTimeProperty>> dateCaptor =
+        ArgumentCaptor.forClass(Consumer.class);
+    verify(filter).evaluationDate(dateCaptor.capture());
+    dateCaptor.getValue().accept(dateFilter);
+    verify(dateFilter).gte(expectedDate);
+  }
+
+  private void verifyProcessInstancesAreCancelledBeforeDeletion() {
+    final InOrder inOrder =
+        inOrder(
+            camundaClient.newCreateBatchOperationCommand().processInstanceCancel(),
+            camundaClient.newCreateBatchOperationCommand().deleteProcessInstance());
+    inOrder
+        .verify(camundaClient.newCreateBatchOperationCommand().processInstanceCancel())
+        .filter(anyProcessInstanceFilter());
+    inOrder
+        .verify(camundaClient.newCreateBatchOperationCommand().deleteProcessInstance())
+        .filter(anyProcessInstanceFilter());
+  }
+
+  @SuppressWarnings("unchecked")
+  private Consumer<DateTimeProperty> anyDateFilter() {
+    return any();
+  }
+
+  @SuppressWarnings("unchecked")
+  private Consumer<ProcessInstanceStateProperty> anyStateFilter() {
     return any();
   }
 }
