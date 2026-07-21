@@ -20,7 +20,6 @@ import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Duration;
 import java.time.Instant;
@@ -171,28 +170,25 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
 
   private void waitForBatchOperationToComplete(
       final CamundaClient client, final String batchOperationKey, final String operation) {
-    Awaitility.await(operation)
-        .atMost(BATCH_OPERATION_TIMEOUT)
-        .until(() -> hasTerminalState(client, batchOperationKey));
 
-    final BatchOperationState status =
-        client.newBatchOperationGetRequest(batchOperationKey).send().join().getStatus();
-    if (status != BatchOperationState.COMPLETED
-        && status != BatchOperationState.PARTIALLY_COMPLETED) {
+    final BatchOperationState batchOperationState =
+        Awaitility.await(operation)
+            .atMost(BATCH_OPERATION_TIMEOUT)
+            .until(
+                () ->
+                    client.newBatchOperationGetRequest(batchOperationKey).send().join().getStatus(),
+                status ->
+                    status == BatchOperationState.COMPLETED
+                        || status == BatchOperationState.PARTIALLY_COMPLETED
+                        || status == BatchOperationState.CANCELED
+                        || status == BatchOperationState.FAILED);
+
+    if (batchOperationState != BatchOperationState.COMPLETED
+        && batchOperationState != BatchOperationState.PARTIALLY_COMPLETED) {
       throw new IllegalStateException(
           String.format(
               "Batch operation %s for '%s' ended in state %s",
-              batchOperationKey, operation, status));
+              batchOperationKey, operation, batchOperationState));
     }
-  }
-
-  private boolean hasTerminalState(final CamundaClient client, final String batchOperationKey) {
-    final BatchOperation batchOperation =
-        client.newBatchOperationGetRequest(batchOperationKey).send().join();
-    final BatchOperationState status = batchOperation.getStatus();
-    return status == BatchOperationState.COMPLETED
-        || status == BatchOperationState.PARTIALLY_COMPLETED
-        || status == BatchOperationState.CANCELED
-        || status == BatchOperationState.FAILED;
   }
 }
