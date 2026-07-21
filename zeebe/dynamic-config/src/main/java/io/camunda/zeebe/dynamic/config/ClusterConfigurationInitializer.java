@@ -296,13 +296,15 @@ public interface ClusterConfigurationInitializer {
     @Override
     public ActorFuture<ClusterConfiguration> initialize() {
       if (knownMembersToSync.get().isEmpty()) {
-        completeAsUninitialized();
+        completeAsUninitialized("no known members to sync");
       } else {
         LOGGER.debug(
             "Querying members {} before initializing ClusterConfiguration",
             knownMembersToSync.get());
         clusterConfigurationUpdateNotifier.addUpdateListener(this);
-        executor.schedule(bootstrapTimeout, this::completeAsUninitialized);
+        executor.schedule(
+            bootstrapTimeout,
+            () -> completeAsUninitialized("sync timeout (%s)".formatted(bootstrapTimeout)));
         refreshAndSync();
       }
       return initialized;
@@ -349,7 +351,7 @@ public interface ClusterConfigurationInitializer {
         final var members = knownMembersToSync.get();
         if (uninitializedMembers.containsAll(members)
             && requestsInFlight.stream().noneMatch(members::contains)) {
-          completeAsUninitialized();
+          completeAsUninitialized("Polled all members and none of them is initialized");
         } else {
           scheduleRetry();
         }
@@ -372,11 +374,11 @@ public interface ClusterConfigurationInitializer {
           });
     }
 
-    private void completeAsUninitialized() {
+    private void completeAsUninitialized(final String cause) {
       if (!initialized.isDone()) {
         LOGGER.debug(
-            "No initialized cluster configuration was found within {}. Falling back to static initialization.",
-            bootstrapTimeout);
+            "No initialized cluster configuration: {}. Falling back to static initialization.",
+            cause);
         initialized.complete(ClusterConfiguration.uninitialized());
         clusterConfigurationUpdateNotifier.removeUpdateListener(this);
       }
