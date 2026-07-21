@@ -21,11 +21,12 @@ package io.camunda.zeebe.dynamic.config.api;
  * registered validator for its tenant is not validated.
  *
  * @param <T> the concrete request type this validator handles
- * @param <R> the type produced by validation; implementations that don't need to rewrite or resolve
- *     the request into a different shape should use {@code T} and return it unchanged
+ * @param <R> the request type produced by validation; implementations that don't need to rewrite
+ *     the request should use {@code T} and return it unchanged
  */
 public interface ClusterConfigurationRequestValidator<
-    T extends ClusterConfigurationManagementRequest, R> {
+    T extends ClusterConfigurationManagementRequest,
+    R extends ClusterConfigurationManagementRequest> {
 
   /** The concrete request type this validator is registered for. */
   Class<T> requestType();

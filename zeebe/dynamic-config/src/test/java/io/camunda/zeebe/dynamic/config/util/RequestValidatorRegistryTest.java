@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 
 final class RequestValidatorRegistryTest {
 
-  private static final String OTHER_TENANT = "other-tenant";
+  private static final String OTHER_TENANT = "othertenant";
 
   private final RequestValidatorRegistry registry = new RequestValidatorRegistry();
 

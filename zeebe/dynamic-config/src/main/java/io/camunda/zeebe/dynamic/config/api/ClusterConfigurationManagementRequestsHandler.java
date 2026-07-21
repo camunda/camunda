@@ -186,6 +186,14 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> migrateZone(
+      final ClusterZoneMigrationRequest zoneMigrationRequest) {
+    return handleRequest(
+        zoneMigrationRequest.dryRun(),
+        new ZoneMigrationRequestTransformer(zoneMigrationRequest.zone()));
+  }
+
+  @Override
   public ActorFuture<ClusterConfigurationChangeResponse> purge(final PurgeRequest purgeRequest) {
 
     return handleRequest(purgeRequest.dryRun(), new PurgeRequestTransformer());
@@ -247,45 +255,46 @@ public final class ClusterConfigurationManagementRequestsHandler
   public ActorFuture<ClusterConfigurationChangeResponse> restore(final RestoreRequest request) {
     return validated(
         request,
-        validated ->
-            handleRequest(
-                request.dryRun(), new RestoreRequestTransformer((RestoreRequest) validated)));
+        validated -> {
+          final var validatedRequest = (RestoreRequest) validated;
+          return handleRequest(request.dryRun(), new RestoreRequestTransformer(validatedRequest));
+        });
   }
 
   /**
-   * Runs the (optional, blocking) validator registered for the request type before delegating to
-   * {@code onValid} with the value it produced. That value need not be the same type as {@code
-   * request}: a validator may rewrite the request or resolve it into a different downstream type,
-   * so callers are responsible for casting to whatever type their validator is known to produce. A
+   * Runs the (optional, blocking) validator registered for the request type, on the same actor
+   * thread that {@link io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry} is
+   * registered/deregistered on, before delegating to {@code onValid} with the request it produced.
+   * That request need not be the same concrete type as the input: a validator may rewrite it, so
+   * callers are responsible for casting to whatever type their validator is known to produce. A
    * validation failure is mapped to a failed future carrying the validator's error message so it
    * propagates to the caller.
    */
   private ActorFuture<ClusterConfigurationChangeResponse> validated(
       final ClusterConfigurationManagementRequest request,
-      final Function<Object, ActorFuture<ClusterConfigurationChangeResponse>> onValid) {
-    final Object validated;
-    try {
-      validated = requestValidator.validate(request);
-    } catch (final IllegalArgumentException e) {
-      return failedFuture(new InvalidRequest(e.getMessage()));
-    } catch (final RuntimeException e) {
-      return failedFuture(e);
-    }
-    return onValid.apply(validated);
+      final Function<
+              ClusterConfigurationManagementRequest,
+              ActorFuture<ClusterConfigurationChangeResponse>>
+          onValid) {
+    return executor
+        .call(() -> requestValidator.validate(request))
+        .andThen(
+            (validated, error) -> {
+              if (error instanceof final IllegalArgumentException e) {
+                return failedFuture(new InvalidRequest(e.getMessage()));
+              }
+              if (error != null) {
+                return failedFuture(error);
+              }
+              return onValid.apply(validated);
+            },
+            executor);
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> failedFuture(final Throwable error) {
     final var failed = executor.<ClusterConfigurationChangeResponse>createFuture();
     failed.completeExceptionally(error);
     return failed;
-  }
-
-  @Override
-  public ActorFuture<ClusterConfigurationChangeResponse> migrateZone(
-      final ClusterZoneMigrationRequest zoneMigrationRequest) {
-    return handleRequest(
-        zoneMigrationRequest.dryRun(),
-        new ZoneMigrationRequestTransformer(zoneMigrationRequest.zone()));
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(

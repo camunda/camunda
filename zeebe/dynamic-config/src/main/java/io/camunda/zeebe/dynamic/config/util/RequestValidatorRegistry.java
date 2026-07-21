@@ -53,21 +53,23 @@ public final class RequestValidatorRegistry {
    * validator.
    *
    * @param request the request to validate
-   * @return the value produced by the registered validator (which may be a different type than the
-   *     request, e.g. a rewritten request or a resolved downstream value), or the original request
-   *     unchanged if none is registered for its type and tenant
+   * @return the request produced by the registered validator (which may be a rewritten request of a
+   *     different concrete type than the input), or the original request unchanged if none is
+   *     registered for its type and tenant
    * @throws IllegalArgumentException if the request requires validation but no validator is
    *     registered for its type and tenant
    */
   @SuppressWarnings("unchecked")
-  public Object validateRequest(final ClusterConfigurationManagementRequest request) {
+  public ClusterConfigurationManagementRequest validateRequest(
+      final ClusterConfigurationManagementRequest request) {
     final var requestType = request.getClass();
     var validator = validators.get(new ValidatorKey(requestType, request.physicalTenantId()));
     if (validator == null) {
       validator = validators.get(new ValidatorKey(requestType, null));
     }
     if (validator != null) {
-      return ((ClusterConfigurationRequestValidator<ClusterConfigurationManagementRequest, ?>)
+      return ((ClusterConfigurationRequestValidator<
+                  ClusterConfigurationManagementRequest, ClusterConfigurationManagementRequest>)
               validator)
           .validate(request);
     }
@@ -86,6 +88,6 @@ public final class RequestValidatorRegistry {
   /** Blocking validation hook handed to the request handler. */
   @FunctionalInterface
   public interface RequestValidator {
-    Object validate(ClusterConfigurationManagementRequest request);
+    ClusterConfigurationManagementRequest validate(ClusterConfigurationManagementRequest request);
   }
 }
