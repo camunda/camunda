@@ -46,7 +46,7 @@ public record BrokerClientTopologyImpl(
 
   public static BrokerClientTopologyImpl uninitialized() {
     return new BrokerClientTopologyImpl(
-        new LiveClusterState(Set.of(), Map.of()),
+        new LiveClusterState(Set.of()),
         new ConfiguredClusterState(
             UNINITIALIZED_CLUSTER_SIZE,
             0,
@@ -54,7 +54,8 @@ public record BrokerClientTopologyImpl(
             List.of(),
             NO_COMPLETED_LAST_CHANGE_ID,
             NO_CLUSTER_ID,
-            UNINITIALIZED_INCARNATION_NUMBER));
+            UNINITIALIZED_INCARNATION_NUMBER,
+            Map.of()));
   }
 
   @Override
@@ -137,7 +138,7 @@ public record BrokerClientTopologyImpl(
   @Override
   public PartitionState.State getPartitionState(
       final BrokerMemberId brokerId, final int partitionId) {
-    final var brokerPartitionStates = liveClusterState.partitionStatesPerBroker.get(brokerId);
+    final var brokerPartitionStates = configuredClusterState.partitionStates().get(brokerId);
 
     if (brokerPartitionStates == null) {
       return PartitionState.State.UNKNOWN;
@@ -157,11 +158,8 @@ public record BrokerClientTopologyImpl(
   }
 
   public static BrokerClientTopologyImpl fromMemberProperties(
-      final Collection<BrokerInfo> values,
-      final ConfiguredClusterState clusterConfiguration,
-      final Map<BrokerMemberId, Map<Integer, PartitionState.State>> partitionStates) {
-    return new BrokerClientTopologyImpl(
-        new LiveClusterState(values, partitionStates), clusterConfiguration);
+      final Collection<BrokerInfo> values, final ConfiguredClusterState clusterConfiguration) {
+    return new BrokerClientTopologyImpl(new LiveClusterState(values), clusterConfiguration);
   }
 
   record ConfiguredClusterState(
@@ -171,7 +169,8 @@ public record BrokerClientTopologyImpl(
       List<Integer> partitionIds,
       long lastChangeId,
       String clusterId,
-      long incarnationNumber) {}
+      long incarnationNumber,
+      Map<BrokerMemberId, Map<Integer, PartitionState.State>> partitionStates) {}
 
   static class LiveClusterState {
     private static final Long TERM_NONE = -1L;
@@ -181,22 +180,17 @@ public record BrokerClientTopologyImpl(
     private final Int2ObjectHashMap<Set<BrokerMemberId>> partitionInactiveNodes;
     private final HashMap<BrokerMemberId, Int2ObjectHashMap<PartitionHealthStatus>>
         partitionsHealthPerBroker;
-    private final HashMap<BrokerMemberId, Int2ObjectHashMap<PartitionState.State>>
-        partitionStatesPerBroker;
     private final HashMap<BrokerMemberId, String> brokerAddresses;
     private final HashMap<BrokerMemberId, String> brokerVersions;
     private final List<BrokerMemberId> brokers;
     private final Random randomBroker;
 
-    public LiveClusterState(
-        final Collection<BrokerInfo> distributedBrokerInfos,
-        final Map<BrokerMemberId, Map<Integer, PartitionState.State>> partitionStates) {
+    public LiveClusterState(final Collection<BrokerInfo> distributedBrokerInfos) {
       partitionLeaders = new Int2ObjectHashMap<>();
       partitionLeaderTerms = new Int2ObjectHashMap<>();
       partitionFollowers = new Int2ObjectHashMap<>();
       partitionInactiveNodes = new Int2ObjectHashMap<>();
       partitionsHealthPerBroker = new HashMap<>();
-      partitionStatesPerBroker = new HashMap<>();
       brokerAddresses = new HashMap<>();
       brokerVersions = new HashMap<>();
       brokers = new ArrayList<>(5);
@@ -219,11 +213,6 @@ public record BrokerClientTopologyImpl(
             brokerInfo.consumePartitionsHealth(
                 (partition, health) -> setPartitionHealthStatus(memberId, partition, health));
           });
-
-      partitionStates.forEach(
-          (brokerId, statesByPartition) ->
-              statesByPartition.forEach(
-                  (partitionId, state) -> setPartitionState(brokerId, partitionId, state)));
     }
 
     void setPartitionLeader(final int partitionId, final BrokerMemberId leaderId, final long term) {
@@ -248,13 +237,6 @@ public record BrokerClientTopologyImpl(
       partitionsHealth.put(partitionId, status);
     }
 
-    void setPartitionState(
-        final BrokerMemberId brokerId, final int partitionId, final PartitionState.State state) {
-      final var partitionStates =
-          partitionStatesPerBroker.computeIfAbsent(brokerId, integer -> new Int2ObjectHashMap<>());
-      partitionStates.put(partitionId, state);
-    }
-
     void addPartitionFollower(final int partitionId, final BrokerMemberId followerId) {
       partitionFollowers.computeIfAbsent(partitionId, HashSet::new).add(followerId);
       partitionLeaders.remove(partitionId, followerId);
@@ -271,13 +253,6 @@ public record BrokerClientTopologyImpl(
       if (followers != null) {
         followers.remove(brokerId);
       }
-    }
-
-    Map<BrokerMemberId, Map<Integer, PartitionState.State>> partitionStates() {
-      final Map<BrokerMemberId, Map<Integer, PartitionState.State>> result = new HashMap<>();
-      partitionStatesPerBroker.forEach(
-          (brokerId, states) -> result.put(brokerId, new HashMap<>(states)));
-      return result;
     }
   }
 }
