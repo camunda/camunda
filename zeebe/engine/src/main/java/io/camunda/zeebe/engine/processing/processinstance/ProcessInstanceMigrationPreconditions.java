@@ -45,6 +45,9 @@ import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceMigrationPreconditions {
 
+  static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
+      "Expected to migrate process instance but no process instance found with key '%d'";
+
   private static final EnumSet<BpmnElementType> SUPPORTED_ELEMENT_TYPES =
       EnumSet.of(
           BpmnElementType.PROCESS,
@@ -74,8 +77,6 @@ public final class ProcessInstanceMigrationPreconditions {
           BpmnEventType.SIGNAL,
           BpmnEventType.CONDITIONAL);
 
-  static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
-      "Expected to migrate process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_PROCESS_DEFINITION_NOT_FOUND =
       """
       Expected to migrate process instance to process definition \
