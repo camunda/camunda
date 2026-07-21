@@ -7,11 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.core.auth.RequiredAuthorization;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.security.core.port.in.AuthorizationCheckPort;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
@@ -31,7 +27,6 @@ import io.camunda.zeebe.util.Either;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 @NullMarked
@@ -50,39 +45,11 @@ public class PermissionsBehavior {
 
   private final AuthorizationState authorizationState;
   private final CslAuthorizationCheck cslCheck;
-  private final @Nullable AuthorizationCheckPort authCheckPort;
-  private final @Nullable LazyTokenClaimsConverter claimsConverter;
-  private final @Nullable EngineSecurityConfig securityConfig;
 
   public PermissionsBehavior(
       final ProcessingState processingState, final CslAuthorizationCheck cslCheck) {
-    this(processingState, cslCheck, null, null, null);
-  }
-
-  public PermissionsBehavior(
-      final ProcessingState processingState,
-      final AuthorizationCheckPort authCheckPort,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig) {
-    this(
-        processingState,
-        new CslAuthorizationCheck(authCheckPort, claimsConverter, securityConfig),
-        authCheckPort,
-        claimsConverter,
-        securityConfig);
-  }
-
-  private PermissionsBehavior(
-      final ProcessingState processingState,
-      final CslAuthorizationCheck cslCheck,
-      final @Nullable AuthorizationCheckPort authCheckPort,
-      final @Nullable LazyTokenClaimsConverter claimsConverter,
-      final @Nullable EngineSecurityConfig securityConfig) {
     authorizationState = processingState.getAuthorizationState();
     this.cslCheck = cslCheck;
-    this.authCheckPort = authCheckPort;
-    this.claimsConverter = claimsConverter;
-    this.securityConfig = securityConfig;
   }
 
   public Either<Rejection, AuthorizationRecord> isAuthorized(
@@ -157,35 +124,15 @@ public class PermissionsBehavior {
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final String resourceId) {
-    if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
-      return Either.right(null);
-    }
-    if (!securityConfig.isAuthorizationsEnabled()
-        && !securityConfig.isMultiTenancyChecksEnabled()) {
-      return Either.right(null);
-    }
-    if (claims.get(Authorization.AUTHORIZED_USERNAME) == null
-        && claims.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
-      if (!securityConfig.isAuthorizationsEnabled()) {
-        return Either.right(null);
-      }
-      return Either.left(AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
-    }
-    final var auth = claimsConverter.convert(claims);
     final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
     final var cslResourceType = AuthzModelMapper.fromProtocol(resourceType);
-    final var result =
-        authCheckPort.check(
-            auth,
-            RequiredAuthorization.of(
-                b ->
-                    b.resourceType(cslResourceType)
-                        .permissionType(cslPermType)
-                        .resourceId(resourceId)));
-    if (result.isLeft()) {
-      return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
-    }
-    return Either.right(null);
+    return cslCheck.checkWithClaims(
+        claims,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(cslResourceType).permissionType(cslPermType).resourceId(resourceId)),
+        null,
+        AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
   }
 
   public AuthorizedTenants resolveAuthorizedTenants(final Map<String, Object> authorizations) {

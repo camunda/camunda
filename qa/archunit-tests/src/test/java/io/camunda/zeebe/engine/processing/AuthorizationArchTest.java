@@ -187,6 +187,15 @@ public class AuthorizationArchTest {
             .or(
                 ArchConditions.callMethod(
                     CslAuthorizationCheck.class,
+                    "check",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class,
+                    Function.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
                     "checkForDistributedCommand",
                     TypedRecord.class,
                     RequiredAuthorization.class,

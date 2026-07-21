@@ -248,8 +248,7 @@ public final class EngineProcessors {
         (LazyTokenClaimsConverter) ports.claimsResolver();
     final var cslCheck = new CslAuthorizationCheck(authzService, claimsConverter, securityConfig);
 
-    final var permissionsBehavior =
-        new PermissionsBehavior(processingState, authzService, claimsConverter, securityConfig);
+    final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
 
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
@@ -296,7 +295,7 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         config,
         clock,
-        permissionsBehavior,
+        cslCheck,
         routingInfo,
         expressionLanguageMetrics,
         processDefinitionMetrics);
@@ -364,9 +363,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         bpmnBehaviors.jobActivationBehavior(),
-        authzService,
-        claimsConverter,
-        securityConfig,
+        cslCheck,
         incidentMetrics);
     addResourceDeletionProcessors(
         typedRecordProcessors,
@@ -680,7 +677,7 @@ public final class EngineProcessors {
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
       final InstantSource clock,
-      final PermissionsBehavior permissionsBehavior,
+      final CslAuthorizationCheck cslCheck,
       final RoutingInfo routingInfo,
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
@@ -697,7 +694,7 @@ public final class EngineProcessors {
             distributionBehavior,
             config,
             clock,
-            permissionsBehavior,
+            cslCheck,
             expressionLanguageMetrics,
             processDefinitionMetrics);
 
@@ -734,12 +731,9 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final AuthorizationCheckPort authzService,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig,
+      final CslAuthorizationCheck cslCheck,
       final IncidentMetrics incidentMetrics) {
-    final var permissionsBehavior =
-        new PermissionsBehavior(processingState, authzService, claimsConverter, securityConfig);
+    final var permissionsBehavior = new PermissionsBehavior(processingState, cslCheck);
     IncidentEventProcessors.addProcessors(
         typedRecordProcessors,
         processingState,
@@ -748,8 +742,6 @@ public final class EngineProcessors {
         writers,
         jobActivationBehavior,
         permissionsBehavior,
-        claimsConverter,
-        securityConfig,
         incidentMetrics);
   }
 
