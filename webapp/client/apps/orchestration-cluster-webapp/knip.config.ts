@@ -13,6 +13,7 @@ const config: KnipConfig = {
 	ignore: [
 		'src/global.d.ts',
 		'src/operate/shared/Diagram/bpmn-js.d.ts',
+		'src/operate/shared/DecisionViewer/dmn-js.d.ts',
 		'src/shared/feature-flags.ts',
 		'shared-test-modules/mock-handlers.ts',
 		'src/shared/browser-storage/session-storage.ts',
