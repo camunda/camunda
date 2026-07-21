@@ -74,7 +74,8 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   @Autowired PhysicalTenantIds physicalTenantIds;
 
-  @Autowired SchemaManagerContainer schemaManagerContainer;
+  @Autowired(required = false)
+  SchemaManagerContainer schemaManagerContainer;
 
   @Autowired private CamundaSecurityLibraryProperties cslProperties;
   private boolean shutdown = false;
@@ -219,6 +220,11 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   boolean isSchemaReady() {
+    if (schemaManagerContainer == null) {
+      // No async schema-init phase to wait for (e.g. RDBMS storage, which uses synchronous
+      // Liquibase migrations instead of the ES/OS schema initializer).
+      return true;
+    }
     return knownPhysicalTenants().stream().allMatch(schemaManagerContainer::isInitialized);
   }
 

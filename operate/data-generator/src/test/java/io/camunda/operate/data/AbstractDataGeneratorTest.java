@@ -225,6 +225,15 @@ class AbstractDataGeneratorTest {
     assertThat(generator.isSchemaReady()).isFalse();
   }
 
+  @Test
+  void shouldReportSchemaReadyWhenSchemaManagerContainerIsAbsent() {
+    // given: RDBMS storage, which has no async schema-init phase and never registers the bean
+    generator.schemaManagerContainer = null;
+
+    // when / then
+    assertThat(generator.isSchemaReady()).isTrue();
+  }
+
   private static final class TestDataGenerator extends AbstractDataGenerator {
 
     @Override
