@@ -30,11 +30,17 @@ const isAgentInstanceRunning = (agentInstance: AgentInstance): boolean => {
   return RUNNING_STATUSES.has(agentInstance.status);
 };
 
-const isAgentInstanceActive = (agentInstance: AgentInstance): boolean => {
-  return ACTIVE_STATUSES.has(agentInstance.status);
+const isActiveAgentInstanceStatus = (
+  agentInstanceStatus: AgentInstanceStatus,
+): boolean => {
+  return ACTIVE_STATUSES.has(agentInstanceStatus);
 };
 
 const ACTIVE_STATUSES_ARRAY: AgentInstanceStatus[] =
   Array.from(ACTIVE_STATUSES);
 
-export {isAgentInstanceRunning, isAgentInstanceActive, ACTIVE_STATUSES_ARRAY};
+export {
+  isAgentInstanceRunning,
+  isActiveAgentInstanceStatus,
+  ACTIVE_STATUSES_ARRAY,
+};

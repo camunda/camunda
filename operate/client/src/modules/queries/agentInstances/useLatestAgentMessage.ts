@@ -36,6 +36,7 @@ const useLatestAgentMessage = (
       throw error;
     },
     select: (data) => data.items[0] ?? null,
+    staleTime: 5000,
     refetchInterval: options?.enablePeriodicRefetch ? 5000 : undefined,
   });
 };
