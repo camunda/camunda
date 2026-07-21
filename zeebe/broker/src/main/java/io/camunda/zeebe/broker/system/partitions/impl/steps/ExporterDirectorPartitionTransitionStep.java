@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
@@ -141,8 +142,8 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             .receiveOnLegacySubject(
                 PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID.equals(tenantName));
 
-    final ExporterDirector director =
-        exporterDirectorBuilder.apply(exporterCtx, context.getExporterPhase());
+    final ExporterPhase exporterPhase = resolveExporterPhase(context);
+    final ExporterDirector director = exporterDirectorBuilder.apply(exporterCtx, exporterPhase);
 
     context.getComponentHealthMonitor().registerComponent(director);
 
@@ -152,7 +153,7 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           if (error == null) {
             context.setExporterDirector(director);
             // Pause/Resume here in case the state was changed after the director was created
-            switch (context.getExporterPhase()) {
+            switch (exporterPhase) {
               case PAUSED:
                 director.pauseExporting();
                 break;
@@ -169,6 +170,23 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
           }
         });
     return startFuture;
+  }
+
+  /**
+   * Resolves the exporter phase to apply when (re)starting the director. The dynamic cluster
+   * configuration is authoritative: if it defines an exporting state, it wins. Only when the
+   * dynamic state is {@link ExportingState#UNKNOWN} (e.g. a cluster upgraded from a version that
+   * did not yet track exporting in the dynamic configuration) do we fall back to the legacy
+   * persisted {@code .exporterPaused} phase, preserving upgrade compatibility.
+   */
+  private static ExporterPhase resolveExporterPhase(final PartitionTransitionContext context) {
+    final var dynamicState = context.getDynamicPartitionConfig().exporting().state();
+    return switch (dynamicState) {
+      case EXPORTING -> ExporterPhase.EXPORTING;
+      case SOFT_PAUSED -> ExporterPhase.SOFT_PAUSED;
+      case PAUSED -> ExporterPhase.PAUSED;
+      case UNKNOWN -> context.getExporterPhase();
+    };
   }
 
   private void deleteOrEnableExportersIfConfigChanged(
