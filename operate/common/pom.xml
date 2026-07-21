@@ -23,11 +23,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-util</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
 
@@ -55,12 +50,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-utils</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock-standalone</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <!-- SPRING -->
@@ -95,78 +84,14 @@
       <artifactId>spring-boot-autoconfigure</artifactId>
     </dependency>
 
-    <!-- ELASTICSEARCH -->
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>co.elastic.clients</groupId>
-      <artifactId>elasticsearch-java</artifactId>
-    </dependency>
-
-    <!-- Opensearch -->
-    <dependency>
-      <groupId>org.apache.httpcomponents.core5</groupId>
-      <artifactId>httpcore5</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opensearch.client</groupId>
-      <artifactId>opensearch-java</artifactId>
-    </dependency>
-
-    <!-- End Opensearch -->
-
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>auth</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>aws-crt-client</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>http-client-spi</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>regions</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>sts</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpcore</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpasyncclient</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jodah</groupId>
-      <artifactId>failsafe</artifactId>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
     </dependency>
 
     <dependency>
@@ -207,11 +132,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>jakarta.json</groupId>
-      <artifactId>jakarta.json-api</artifactId>
     </dependency>
 
     <dependency>
@@ -291,11 +211,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
-          <usedDependencies>
-            <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
-     classes on the classpath to resolve the AWS credentials -->
-            <dependency>software.amazon.awssdk:sts</dependency>
-          </usedDependencies>
           <ignoredUnusedDeclaredDependencies combine.children="append">
             <dep>org.junit.platform:junit-platform-suite-engine</dep>
           </ignoredUnusedDeclaredDependencies>
