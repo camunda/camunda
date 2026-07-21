@@ -491,8 +491,8 @@ public final class RaftMemberContext {
   }
 
   /** Tracks replication lag for each locally-appended entry. */
-  public void recordAppendedBytes(final long bytes) {
-    logReplicationLag += bytes;
+  public void recordAppendedBytes(final long appendedBytes) {
+    logReplicationLag += appendedBytes;
   }
 
   /**
@@ -515,8 +515,9 @@ public final class RaftMemberContext {
     if (appendWatermark <= acknowledgedAppendWatermark) {
       return;
     }
+    final long acknowledgedBytes = appendWatermark - acknowledgedAppendWatermark;
     // non-atomic write is okay because we only write from one thread
-    logReplicationLag -= appendWatermark - acknowledgedAppendWatermark;
+    logReplicationLag = Math.max(0, logReplicationLag - acknowledgedBytes);
     acknowledgedAppendWatermark = appendWatermark;
   }
 
@@ -532,7 +533,7 @@ public final class RaftMemberContext {
    * @return the replication lag in bytes, never negative
    */
   public long getReplicationLagBytes() {
-    return logReplicationLag + snapshotReplicationLag;
+    return Math.max(0, logReplicationLag + snapshotReplicationLag);
   }
 
   public boolean hasNextEntry() {
