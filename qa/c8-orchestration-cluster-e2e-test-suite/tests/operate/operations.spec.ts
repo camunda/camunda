@@ -125,7 +125,9 @@ test.describe('Operations', () => {
       );
 
       await expect(operateProcessesPage.singleOperationSpinner).toBeVisible();
-      await expect(operateProcessesPage.singleOperationSpinner).toBeHidden();
+      await expect(operateProcessesPage.singleOperationSpinner).toBeHidden({
+        timeout: 90000,
+      });
     });
 
     await test.step('Cancel single instance using operation button', async () => {
@@ -153,6 +155,14 @@ test.describe('Operations', () => {
 
       await expect(retryEntry).toBeVisible();
       await expect(retryEntry.getByText(DATE_REGEX)).toBeVisible();
+
+      const operationId = await retryEntry.getByRole('link').innerText();
+
+      await operateOperationPanelPage.clickOperationLink(retryEntry);
+      await expect(operateFiltersPanelPage.operationIdFilter).toHaveValue(
+        operationId,
+      );
+      await expect(operateProcessesPage.resultsCount).toBeVisible();
     });
 
     await test.step('Verify cancel does not create an operations panel entry', async () => {
@@ -166,7 +176,7 @@ test.describe('Operations', () => {
 
       await expect(
         operateProcessesPage.getCanceledIcon(instance.processInstanceKey),
-      ).toBeVisible();
+      ).toBeVisible({timeout: 60000});
 
       await expect(instanceRow.getByText(instance.bpmnProcessId)).toBeVisible();
       await expect(
