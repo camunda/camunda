@@ -7,15 +7,16 @@
  */
 
 import { ComboBox, TextInputSkeleton } from "@carbon/react";
-import { SearchResponse, useApi } from "src/utility/api";
+import { type SearchResponse, useApi } from "src/utility/api";
 import { ApiDefinition } from "src/utility/api/request";
 import useTranslate from "src/utility/localization";
+import type { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
 
 type OwnerSelectionProps<T> = {
   id: string;
   onChange: (OwnerId: string) => void;
   onBlur: () => void;
-  searchFn: ApiDefinition<SearchResponse<T>>;
+  searchFn: ApiDefinition<SearchResponse<T>, { page: QueryPage }>;
   getId: (item: T) => string;
   itemToString: (item: T) => string;
   isEmpty?: boolean;
@@ -31,7 +32,8 @@ const OwnerSelection = <T,>({
   isEmpty = false,
 }: OwnerSelectionProps<T>) => {
   const { t } = useTranslate("authorizations");
-  const { data, loading } = useApi(searchFn);
+  // passing in the maximum limit supported by the API is a temporary fix for https://github.com/camunda/camunda/issues/56452
+  const { data, loading } = useApi(searchFn, { page: { limit: 10000 } });
 
   if (loading) {
     return <TextInputSkeleton />;
