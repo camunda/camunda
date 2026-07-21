@@ -227,7 +227,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
       commandWriter.appendFollowUpCommand(
           command.getKey(),
           AgentHistoryIntent.COMMIT,
-          new AgentHistoryRecord().setJobKey(command.getKey()).setJobLease(""));
+          new AgentHistoryRecord().setJobKey(command.getKey()).setJobLease(job.getLeaseToken()));
     }
 
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());
