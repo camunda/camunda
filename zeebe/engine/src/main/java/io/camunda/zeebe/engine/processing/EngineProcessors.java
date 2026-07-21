@@ -333,7 +333,6 @@ public final class EngineProcessors {
             asyncRequestBehavior,
             permissionsBehavior,
             cslCheck,
-            authCheckBehavior,
             transientProcessMessageSubscriptionState,
             processEngineMetrics);
 
@@ -654,7 +653,6 @@ public final class EngineProcessors {
       final AsyncRequestBehavior asyncRequestBehavior,
       final PermissionsBehavior permissionsBehavior,
       final CslAuthorizationCheck cslCheck,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ProcessEngineMetrics processEngineMetrics) {
     return BpmnProcessors.addBpmnStreamProcessor(
@@ -671,8 +669,8 @@ public final class EngineProcessors {
         clock,
         config,
         asyncRequestBehavior,
+        permissionsBehavior,
         cslCheck,
-        authCheckBehavior,
         transientProcessMessageSubscriptionState,
         processEngineMetrics);
   }

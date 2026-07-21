@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -16,8 +17,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -62,7 +63,8 @@ public final class VariableDocumentUpdateProcessor
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final Writers writers;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
+  private final PermissionsBehavior permissionsBehavior;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
 
   public VariableDocumentUpdateProcessor(
@@ -72,7 +74,8 @@ public final class VariableDocumentUpdateProcessor
       final Writers writers,
       final MutableUserTaskState userTaskState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck,
+      final PermissionsBehavior permissionsBehavior) {
     elementInstanceState = processingState.getElementInstanceState();
     this.userTaskState = userTaskState;
     processState = processingState.getProcessState();
@@ -83,7 +86,8 @@ public final class VariableDocumentUpdateProcessor
     userTaskBehavior = bpmnBehaviors.userTaskBehavior();
     this.writers = writers;
     this.asyncRequestBehavior = asyncRequestBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
+    this.permissionsBehavior = permissionsBehavior;
     bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
@@ -110,26 +114,29 @@ public final class VariableDocumentUpdateProcessor
       return;
     }
 
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(record)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(scope.getValue().getTenantId())
-            .addResourceId(scope.getValue().getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    final var isAuthorized =
+        cslCheck
+            .checkTenant(
+                record,
+                scope.getValue().getTenantId(),
+                record.getValue(),
+                new Rejection(
+                    RejectionType.NOT_FOUND,
+                    ERROR_MESSAGE_SCOPE_NOT_FOUND.formatted(
+                        scope.getValue().getProcessInstanceKey())))
+            .flatMap(
+                recordValue ->
+                    permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+                        record,
+                        AuthorizationResourceType.PROCESS_DEFINITION,
+                        PermissionType.UPDATE_PROCESS_INSTANCE,
+                        scope.getValue().getBpmnProcessId()));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "update variables for element",
-                  scope.getValue().getProcessInstanceKey(),
-                  "such element")
-              : rejection.reason();
-      writers.rejection().appendRejection(record, rejection.type(), errorMessage);
-      writers.response().writeRejectedResponseOnCommand(record, rejection.type(), errorMessage);
+      writers.rejection().appendRejection(record, rejection.type(), rejection.reason());
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(record, rejection.type(), rejection.reason());
       return;
     }
 
