@@ -18,8 +18,10 @@ import {deploy} from '../../../../utils/zeebeClient';
 import {createProcessInstanceAndRetrieveTimeStamp} from '@requestHelpers';
 
 // Clock endpoints are alpha — their behavior is not guaranteed across versions,
-// so we skip these tests when running in forward-compatibility mode.
-
+// so this suite would normally only skip in forward-compatibility mode.
+// It is currently skipped unconditionally (both branches below) because of
+// bug 49858, which is still open and affects 8.7-8.10. Restore the
+// isForwardCompat-only condition once that bug is fixed.
 //Skipped due to bug 49858: https://github.com/camunda/camunda/issues/49858
 (isForwardCompat ? test.describe.skip : test.describe.skip)(
   'Pin Clock API Tests',

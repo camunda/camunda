@@ -145,7 +145,8 @@ export async function verifyIncidentsForProcessInstance(
     );
     await assertStatusCode(res, 200);
     const json = await res.json();
-    const activeIncidentCount = (json.items as Array<{state: string}>).filter(
+    const items = (json.items ?? []) as Array<{state: string}>;
+    const activeIncidentCount = items.filter(
       (incident) => incident.state === 'ACTIVE',
     ).length;
     expect(
