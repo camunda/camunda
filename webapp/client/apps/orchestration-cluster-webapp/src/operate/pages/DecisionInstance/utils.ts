@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {format, parseISO} from 'date-fns';
 
-export const Route = createFileRoute('/_auth/operate/decisions')({
-	component: () => <Outlet />,
-});
+function formatEvaluationDate(dateString: string | null | undefined): string {
+	return dateString ? format(parseISO(dateString), 'yyyy-MM-dd HH:mm:ss') : '--';
+}
+
+export {formatEvaluationDate};

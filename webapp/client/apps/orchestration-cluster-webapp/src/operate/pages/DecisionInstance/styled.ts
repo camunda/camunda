@@ -6,8 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet} from '@tanstack/react-router';
+import styled from 'styled-components';
 
-export const Route = createFileRoute('/_auth/operate/decisions')({
-	component: () => <Outlet />,
-});
+const Container = styled.div`
+	height: 100%;
+	position: relative;
+`;
+
+export {Container};

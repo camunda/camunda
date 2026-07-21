@@ -109,6 +109,11 @@ const mockGetAuditLogEndpoint = createEndpointMock({
 	method: endpoints.getAuditLog.method,
 });
 
+const mockGetDecisionInstanceEndpoint = createEndpointMock({
+	endpoint: endpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey: ':decisionEvaluationInstanceKey'}),
+	method: endpoints.getDecisionInstance.method,
+});
+
 export {
 	mockCurrentUserEndpoint,
 	mockLoginEndpoint,
@@ -130,4 +135,5 @@ export {
 	mockGetProcessDefinitionInstanceVersionStatisticsEndpoint,
 	mockGetIncidentProcessInstanceStatisticsByDefinitionEndpoint,
 	mockQueryBatchOperationsEndpoint,
+	mockGetDecisionInstanceEndpoint,
 };

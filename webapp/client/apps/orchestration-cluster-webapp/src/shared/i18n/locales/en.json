@@ -484,6 +484,29 @@
 			"decisions": {
 				"title": "Decisions"
 			},
+			"decisionInstance": {
+				"title": "Operate Decision Instance",
+				"pageTitle": "Operate: Decision Instance {{decisionInstanceId}} of {{name}}",
+				"notFoundNotificationTitle": "Decision instance {{decisionInstanceId}} could not be found",
+				"header": {
+					"decisionInstanceKeyColumn": "Decision Instance Key",
+					"versionColumn": "Version",
+					"businessIdColumn": "Business ID",
+					"tenantColumn": "Tenant",
+					"evaluationDateColumn": "Evaluation Date",
+					"processInstanceColumn": "Process Instance Key",
+					"versionLinkTitle": "View decision \"{{name}} version {{version}}\" instances",
+					"versionLinkTitleWithTenant": "View decision \"{{name}} version {{version}}\" instances - {{tenant}}",
+					"processInstanceLinkTitle": "View process instance {{processInstanceKey}}",
+					"noProcessInstance": "None",
+					"openDrdButton": "Open Decision Requirements Diagram"
+				},
+				"forbidden": {
+					"heading": "403 - You do not have permission to view this information",
+					"description": "Contact your administrator to get access.",
+					"learnMoreLink": "Learn more about permissions"
+				}
+			},
 			"operations": {
 				"title": "Operations"
 			},

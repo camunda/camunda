@@ -32,10 +32,8 @@ const config: KnipConfig = {
 		'src/operate/shared/FiltersPanel/**',
 		// TODO(#55642): remove when BatchOperation detail page is migrated
 		'src/operate/shared/PaginatedSortableTable/**',
-		// TODO(#56029, #56026): remove when Process Instance / Decision Instance shells are migrated
-		'src/operate/shared/InstanceHeader/**',
+		// TODO(#56029): remove when the Process Instance shell is migrated
 		'src/operate/shared/CopyButton/**',
-		'src/operate/shared/VisuallyHiddenH1/**',
 	],
 	ignoreDependencies: ['@vitest/browser'],
 	typescript: {
