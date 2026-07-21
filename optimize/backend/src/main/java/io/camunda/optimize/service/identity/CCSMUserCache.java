@@ -163,25 +163,6 @@ public class CCSMUserCache {
       searchString = searchString.toLowerCase(Locale.ENGLISH);
       if (token.isPresent()) {
         try {
-          // SPIKE-DEBUG (ADR-0036): decode non-secret claims of the token we send to Identity so we
-          // can compare the CSL session token against the legacy cookie token. Remove before merge.
-          try {
-            final com.auth0.jwt.interfaces.DecodedJWT d = com.auth0.jwt.JWT.decode(token.get());
-            LOG.warn(
-                "SPIKE-DEBUG Identity token claims: iss={} azp={} aud={} scope={} resource_access={} realm_roles={}",
-                d.getIssuer(),
-                d.getClaim("azp").asString(),
-                d.getAudience(),
-                d.getClaim("scope").asString(),
-                d.getClaim("resource_access").asMap() == null
-                    ? null
-                    : d.getClaim("resource_access").asMap(),
-                d.getClaim("realm_access").asMap() == null
-                    ? null
-                    : d.getClaim("realm_access").asMap().get("roles"));
-          } catch (final Exception ignored) {
-            LOG.warn("SPIKE-DEBUG could not decode Identity token for claim inspection");
-          }
           return identity.users().withAccessToken(token.get()).search(searchString).stream()
               .limit(maxResults)
               .map(this::mapToUserDto)

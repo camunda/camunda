@@ -144,17 +144,22 @@ Matters found while manually testing the spike against a local CCSM/Keycloak set
    401 -> `PrivateRoute` reloads -> navigation -> login). Worth feeding back to CSL: its default
    entry point could content-negotiate (XHR / `Sec-Fetch-Dest: empty` -> 401) so cookie-session SPAs
    work without a host override.
-9. **`CCSMUserCache` user *search* fails with 403 from Identity.** After #7, `getUserById` works but
-   `users().search(userToken)` returns 403 (authenticated, not authorized). The decoded token is a
-   normal `optimize` token (`iss` correct, `azp=optimize`, `scope=openid email profile` — a superset
-   of the legacy Identity-SDK `openid email`; `aud=[optimize, account]`,
-   `resource_access=[account]`), so scope is not the gap. Key point (confirmed with the team): **OC
-   does not resolve arbitrary users under OIDC** — it only searches/lists users when it stores them
-   itself (basic auth). So searching Identity for users with the requesting user's token is not an
-   OIDC-aligned pattern. Treat this as a design follow-up (how Optimize should resolve/search users
-   under OIDC — e.g. a service-account token, or no user search in OIDC mode), not a token patch. A
-   temporary `SPIKE-DEBUG` claim-decode log is in `CCSMUserCache.searchUsersInIdentity` and must be
-   removed before merge.
+9. **`CCSMUserCache` user *search* returned 403 from Identity — root cause was a Keycloak
+   provisioning gap, not a CSL regression.** Under CSL, `getUserById`/`search` use the user's OIDC
+   session access token (the `getCurrentUserAuthToken` bridge from #7), exactly as legacy used the
+   user's cookie token. Identity's user API authorizes the `read:users` client role on
+   `camunda-identity-resource-server`; the `Optimize` realm role is a composite that grants it, and
+   the demo user is meant to receive `Optimize` (compose `KEYCLOAK_USERS_0_ROLES_1=Optimize`). In the
+   local Keycloak the seed never landed: `demo` had only `Default user role` (and the compose's
+   `KEYCLOAK_USERS_0_ROLES_0=Identity` references a realm role that does not exist — it is
+   `ManagementIdentity`). So the token carried no `read:users`, no `permissions.*`, and no Identity
+   audience, and Identity 403'd. A client-credentials token for the `optimize` client failed the same
+   way (its service account also had only `Default user role`). Any build — legacy or CSL — would
+   403 with this user/Keycloak. Fixed by granting `demo` the `Optimize` realm role in Keycloak and
+   re-logging in; the `camunda-identity` default scope's audience-resolve + `permissions.${client_id}`
+   mappers (with `fullScopeAllowed=true`) then put the permissions and Identity audience in the token
+   and search works. No Optimize code change was needed. The temporary `SPIKE-DEBUG` claim-decode log
+   used to diagnose this has been removed.
 
 ## Follow-ups (tracked in ADR-0036)
 
