@@ -213,7 +213,7 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
     );
     expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
     const actualProcessDefinitionIdList = body.items.map(
-      (item: {ProcessDefinitionId: string}) => item.ProcessDefinitionId,
+      (item: {processDefinitionId: string}) => item.processDefinitionId,
     );
     const expectedProcessDefinitionIdList = [
       ...actualProcessDefinitionIdList,

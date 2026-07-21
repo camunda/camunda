@@ -177,11 +177,31 @@ test.describe.parallel('Process instance statistics by version', () => {
         );
         const field =
           sortOption.field as keyof ProcessInstanceStatisticsByVersionResponse;
-        const fieldValues: string[] = body.items.map(
-          (item: ProcessInstanceStatisticsByVersionResponse) =>
-            item[field] as string,
+        const numericFields: Array<
+          keyof ProcessInstanceStatisticsByVersionResponse
+        > = [
+          'processDefinitionVersion',
+          'activeInstancesWithIncidentCount',
+          'activeInstancesWithoutIncidentCount',
+        ];
+        const fieldValues = body.items.map(
+          (item: ProcessInstanceStatisticsByVersionResponse) => item[field],
         );
-        const sortedfieldValues = [...fieldValues].sort();
+        // Sort numeric fields numerically and string fields lexicographically,
+        // otherwise multi-digit numbers (e.g. version 10) would be compared as
+        // strings and mismatch the server's numeric ordering.
+        const sortedfieldValues = [...fieldValues].sort((a, b) => {
+          if (numericFields.includes(field)) {
+            return Number(a) - Number(b);
+          }
+          if (String(a) < String(b)) {
+            return -1;
+          }
+          if (String(a) > String(b)) {
+            return 1;
+          }
+          return 0;
+        });
         expect(fieldValues).toEqual(sortedfieldValues);
         expect(body.page.totalItems).toBeGreaterThanOrEqual(2);
         body.items.forEach(
