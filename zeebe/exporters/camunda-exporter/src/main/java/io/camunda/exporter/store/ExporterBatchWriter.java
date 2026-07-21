@@ -10,6 +10,8 @@ package io.camunda.exporter.store;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -38,7 +40,7 @@ public final class ExporterBatchWriter {
   private boolean warnAboutMessageSizeEstimation = false;
   private final TargetIndexLocator indexLocator;
   private final Map<EntityIdAndEntityType, CachedEntity> cachedEntities = new HashMap<>();
-  private final Map<EntityIdTypeAndHandler, ExporterEntity> cachedEntitiesToFlush =
+  private final Map<EntityIdTypeIndexAndHandler, ExporterEntity> cachedEntitiesToFlush =
       new LinkedHashMap<>();
   private final Map<Long, Long> cachedRecordTimestamps = new HashMap<>();
   private final Map<ValueType, List<ExportHandler>> handlers;
@@ -67,17 +69,23 @@ public final class ExporterBatchWriter {
         .forEach(
             handler -> {
               if (handler.handlesRecord(record)) {
-                final List<String> entityIds = handler.generateIds(record);
-                entityIds.forEach(
-                    id -> {
-                      updateAndCacheEntity(record, handler, id, serializedSize);
+                final List<IdAndIndex> idAndIndexes =
+                    handler.extractIdAndIndexes(indexLocator, record);
+                idAndIndexes.forEach(
+                    idAndIndex -> {
+                      updateAndCacheEntity(
+                          record, handler, idAndIndex.id(), idAndIndex.index(), serializedSize);
                     });
               }
             });
   }
 
   private void updateAndCacheEntity(
-      final Record<?> record, final ExportHandler handler, final String id, final long length) {
+      final Record<?> record,
+      final ExportHandler handler,
+      final String id,
+      final TargetIndex index,
+      final long length) {
     final var cacheKey = new EntityIdAndEntityType(id, handler.getEntityType());
 
     totalMemoryEstimate += length;
@@ -93,7 +101,8 @@ public final class ExporterBatchWriter {
     // in cases where we have bugs with writing to the same index + id, but with a different
     // entity, this helps avoid race conditions that make that behavior non-deterministic.
     // which would otherwise make spotting and fixing such bugs harder.
-    cachedEntitiesToFlush.put(new EntityIdTypeAndHandler(cacheKey, handler), cached.entity());
+    cachedEntitiesToFlush.put(
+        new EntityIdTypeIndexAndHandler(cacheKey, index, handler), cached.entity());
   }
 
   public void flush(final BatchRequest batchRequest) throws PersistenceException {
@@ -126,9 +135,10 @@ public final class ExporterBatchWriter {
     // order flushes are applied to ensure things stay deterministic
     for (final var entry : cachedEntitiesToFlush.entrySet()) {
       final var key = entry.getKey();
+      final var index = key.index();
       final var handler = key.handler();
       final var entity = entry.getValue();
-      final var index = indexLocator.locate(handler.getIndexName());
+
       handler.flush(index, entity, batchRequest);
     }
 
@@ -227,5 +237,6 @@ public final class ExporterBatchWriter {
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 
-  private record EntityIdTypeAndHandler(EntityIdAndEntityType key, ExportHandler handler) {}
+  private record EntityIdTypeIndexAndHandler(
+      EntityIdAndEntityType key, TargetIndex index, ExportHandler handler) {}
 }

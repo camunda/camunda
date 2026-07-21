@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.index.TargetIndex;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -42,6 +43,22 @@ public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValu
    * @return true if the handler can process the record, false otherwise
    */
   boolean handlesRecord(Record<R> record);
+
+  /**
+   * Extracts the id(s) and indexes for the entities that will be created or updated by the handler
+   * when processing the given record.
+   *
+   * @param indexLocator the locator used to locate target indexes
+   * @param record the record to process
+   * @return a list of ids + indexes for the entities
+   */
+  default List<IdAndIndex> extractIdAndIndexes(
+      final TargetIndexLocator indexLocator, final Record<R> record) {
+    final var indexName = getIndexName();
+    return generateIds(record).stream()
+        .map(id -> new IdAndIndex(id, indexLocator.locate(indexName)))
+        .toList();
+  }
 
   /**
    * Generates the id(s) for the entities that will be created or updated by the handler when
@@ -83,4 +100,6 @@ public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValu
    * @return the index name that the handler entities are flushed to.
    */
   String getIndexName();
+
+  record IdAndIndex(String id, TargetIndex index) {}
 }
