@@ -162,7 +162,11 @@ test.describe('Operations', () => {
       await expect(operateFiltersPanelPage.operationIdFilter).toHaveValue(
         operationId,
       );
-      await expect(operateProcessesPage.resultsCount).toBeVisible();
+      await expect(
+        operateProcessesPage.processInstanceLinkByKey(
+          instance.processInstanceKey,
+        ),
+      ).toBeVisible();
     });
 
     await test.step('Verify cancel does not create an operations panel entry', async () => {
