@@ -1,0 +1,21 @@
+{
+  "type": "default",
+  "id": "employee_confirmation_form",
+  "components": [
+    {
+      "key": "employeeName",
+      "label": "Employee Name",
+      "type": "textfield"
+    },
+    {
+      "key": "department",
+      "label": "Department",
+      "type": "textfield"
+    },
+    {
+      "key": "confirm",
+      "label": "Confirm",
+      "type": "checkbox"
+    }
+  ]
+}

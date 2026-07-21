@@ -43,6 +43,9 @@ test.beforeAll(async () => {
     './resources/zeebe_and_job_worker_process.bpmn',
     './resources/bigVariableProcessWithForm.bpmn',
     './resources/bigVariableForm.form',
+    './resources/employee_registration_no_output_mapping.bpmn',
+    './resources/employee_details_form.form',
+    './resources/employee_confirmation_form.form',
   ]);
   await sleep(1000);
 
@@ -76,6 +79,7 @@ test.beforeAll(async () => {
     createInstances('processWithDeployedForm', 1, 1),
     createInstances('zeebe_and_job_worker_process', 1, 1),
     createInstances('bigVariableProcessWithForm', 1, 1),
+    createInstances('employee_registration_no_output_mapping', 1, 1),
   ]);
 
   await sleep(1000);
@@ -454,6 +458,42 @@ test.describe('task details page', () => {
 
     await taskPanelPage.openTask('User Task with form rerender 2');
     await taskDetailsPage.assertFieldValue('Name*', 'Stuart');
+  });
+
+  test('variables are passed along the forms if no output variables are defined', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Employee Details');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.fillTextInput('Employee Name', 'Gaius Julius Caesar');
+    await taskDetailsPage.fillTextInput('Department', 'Rome');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+
+    await taskPanelPage.filterBy('Unassigned');
+    // The next task can take a moment to be indexed/rendered right after
+    // the previous one completes, so allow more time than the default 10s
+    // before handing off to openTask's own (shorter) click timeout.
+    await expect(
+      taskPanelPage.availableTasks.getByText('Confirm Employee Details', {
+        exact: true,
+      }),
+    ).toBeVisible({timeout: 30000});
+    await taskPanelPage.openTask('Confirm Employee Details');
+    await taskDetailsPage.clickAssignToMeButton();
+
+    await taskDetailsPage.assertFieldValue(
+      'Employee Name',
+      'Gaius Julius Caesar',
+    );
+    await taskDetailsPage.assertFieldValue('Department', 'Rome');
+
+    await taskDetailsPage.checkChecklistBox('Confirm');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
   });
 
   test('task completion with number form by input', async ({

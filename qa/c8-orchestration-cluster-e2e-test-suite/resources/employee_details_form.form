@@ -1,0 +1,16 @@
+{
+  "type": "default",
+  "id": "employee_details_form",
+  "components": [
+    {
+      "key": "employeeName",
+      "label": "Employee Name",
+      "type": "textfield"
+    },
+    {
+      "key": "department",
+      "label": "Department",
+      "type": "textfield"
+    }
+  ]
+}
