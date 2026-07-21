@@ -45,15 +45,17 @@ so the stock webapp chain with a `/**` matcher is the catch-all below the bearer
    `/api/ui-configuration`, `/actuator/**`, `/external/**` are reachable without auth;
    `GET /api/public/**` requires a bearer token.
 
-The OIDC login redirects to `{baseUrl}/sso-callback` (e.g. `http://localhost:8090/sso-callback`),
-so the IdP client (Keycloak/Identity `optimize` client) must allow that redirect URI. The legacy
-setup used `/api/authentication/callback`, so add `/sso-callback` to the client's valid redirect
-URIs before logging in.
+The OIDC callback reuses Optimize's existing path `{baseUrl}/api/authentication/callback`, which the
+Identity-provisioned Keycloak `optimize` client already registers as a valid redirect URI, so no
+IdP client change is needed. CSL derives its redirection-endpoint listener path from
+`camunda.security.authentication.oidc.redirect-uri` (ADR-0036), so the sent `redirect_uri` and the
+listener stay aligned on `/api/authentication/callback`.
 
 Note: Optimize's `URLRedirectFilter` (SPA routing) runs before the security chain and redirects
-unknown paths to `/#`. It is patched to pass the CSL security endpoints (`/oauth2/**`,
-`/sso-callback`, `/login`, `/logout`) through to Spring Security; without that, OIDC login
-initiation and the callback get bounced to `/#` in a redirect loop.
+unknown paths to `/#`. It is patched to pass the CSL login-initiation endpoints (`/oauth2/**`,
+`/sso-callback`, `/login`, `/logout`) through to Spring Security; the callback
+`/api/authentication/callback` already passes because `/api` is in the filter's allow-list. Without
+that passthrough, OIDC login initiation gets bounced to `/#` in a redirect loop.
 
 Single-node in-memory sessions are used unless a `SessionStorePort` bean is added and
 `camunda.security.session.persistent.enabled=true`.
@@ -65,6 +67,27 @@ Single-node in-memory sessions are used unless a `SessionStorePort` bean is adde
   API). Not yet booted end to end in this spike.
 - The `SessionStorePort` (Elasticsearch) and `MembershipPort` (groups claim) are stubs.
 - Legacy security code is not deleted, only switched off by the flag, so the two can be compared.
+
+## Testing findings (running log)
+
+Matters found while manually testing the spike against a local CCSM/Keycloak setup
+(`optimize/docker-compose.ccsm-without-optimize.yml`), and how each was addressed:
+
+1. **Config bridge not loading.** The `EnvironmentPostProcessor` was registered via the
+   auto-configuration `...EnvironmentPostProcessor.imports` file, which Spring Boot does not read
+   for EPPs. It never ran, so `method`/`unhandled-paths-chain.enabled` stayed unset and two `/**`
+   chains (basic-auth webapp via `matchIfMissing` + deny chain) collided at startup. Fixed by
+   registering the bridge in `META-INF/spring.factories`.
+2. **Missing OIDC redirect-uri.** CSL's authorization-code `ClientRegistration` requires a
+   redirect-uri; startup failed with `redirectUri cannot be empty`. The bridge now sets it.
+3. **Redirect loop via `URLRedirectFilter`.** Optimize's SPA-routing filter runs before the
+   security chain and bounced `/oauth2/authorization/**` to `/#` (confirmed by HAR: the `/#` 302
+   carried no CSL security headers). Fixed by passing the CSL login-initiation endpoints through.
+4. **`redirect_uri` mismatch with the pre-provisioned IdP client.** Identity registers the Keycloak
+   `optimize` client with the legacy callback `/api/authentication/callback`, but CSL used
+   `/sso-callback`. Rather than force operators to change their IdP client, CSL was made to derive
+   its redirection-endpoint path from the configured `redirect-uri` (CSL spike, ADR-0036), and the
+   bridge points Optimize at `{baseUrl}/api/authentication/callback`.
 
 ## Follow-ups (tracked in ADR-0036)
 
