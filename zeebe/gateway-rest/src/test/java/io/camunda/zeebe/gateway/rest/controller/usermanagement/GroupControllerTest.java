@@ -224,25 +224,6 @@ public class GroupControllerTest {
         }"""
             .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
 
-    // GroupController's own @ConditionalOnCamundaGroupsEnabled does not yet relax-match the
-    // kebab-case property, so the controller bean is still created here (unlike
-    // CamundaGroupsDisabledTest above) and needs the same mocks as CamundaGroupsEnabledTest. This
-    // test only verifies that ApiFiltersConfiguration's Groups API filter correctly blocks the
-    // request regardless.
-    @MockitoBean private GroupServices groupServices;
-    @MockitoBean private UserServices userServices;
-    @MockitoBean private RoleServices roleServices;
-    @MockitoBean private MappingRuleServices mappingRuleServices;
-    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
-    @MockitoBean private SecurityConfiguration securityConfiguration;
-
-    @BeforeEach
-    void setup() {
-      when(authenticationProvider.getCamundaAuthentication())
-          .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-      when(securityConfiguration.getCompiledIdValidationPattern()).thenReturn(ID_PATTERN);
-    }
-
     @Test
     void shouldReturnErrorOnCreateWhenGroupsClaimSetViaKebabCaseKey() {
       // given
