@@ -19,8 +19,7 @@ elasticsearch:
     - "8.19.0"
     - &saas "8.19.15"
   es9:
-    - "9.2.0"
-    - "9.3.0"
+    - "9.1.8"
   saas: *saas
 
 opensearch:
