@@ -38,6 +38,7 @@ import io.camunda.zeebe.util.DateUtil;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -84,14 +85,9 @@ final class AgentHistoryHandlerTest {
     assertThat(underTest.generateIds(record)).containsExactly(String.valueOf(record.getKey()));
   }
 
-  @ParameterizedTest(name = "[{index}] Should populate all entity fields for ''{0}'' intent")
-  @EnumSource(
-      value = AgentHistoryIntent.class,
-      names = {"CREATE", "COMMIT", "DISCARD"},
-      mode = Mode.EXCLUDE)
-  void shouldUpdateEntityForAllHandledIntents(final AgentHistoryIntent intent) {
-    // given — updateEntity() must populate ALL fields for every handled intent; the partial update
-    // (commitStatus-only) is an artefact of flush(), not of updateEntity().
+  @Test
+  void shouldPopulateAllFieldsForCreatedIntent() {
+    // given — updateEntity() must populate ALL fields for the CREATED intent.
     final long recordKey = 100L;
     final int partitionId = 1;
     final long agentInstanceKey = 50L;
@@ -151,7 +147,7 @@ final class AgentHistoryHandlerTest {
         factory.generateRecord(
             ValueType.AGENT_HISTORY,
             r ->
-                r.withIntent(intent)
+                r.withIntent(AgentHistoryIntent.CREATED)
                     .withKey(recordKey)
                     .withPartitionId(partitionId)
                     .withValue(recordValue));
@@ -162,14 +158,6 @@ final class AgentHistoryHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    final AgentHistoryCommitStatus expectedStatus =
-        switch (intent) {
-          case CREATED -> AgentHistoryCommitStatus.PENDING;
-          case COMMITTED -> AgentHistoryCommitStatus.COMMITTED;
-          case DISCARDED -> AgentHistoryCommitStatus.DISCARDED;
-          default -> throw new IllegalStateException("Unexpected intent: " + intent);
-        };
-
     assertThat(entity.getKey()).isEqualTo(recordKey);
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);
     assertThat(entity.getAgentInstanceKey()).isEqualTo(agentInstanceKey);
@@ -183,7 +171,7 @@ final class AgentHistoryHandlerTest {
     assertThat(entity.getJobLease()).isEqualTo(jobLease);
     assertThat(entity.getLoopIteration()).isEqualTo(loopIteration);
     assertThat(entity.getRole()).isEqualTo(AgentHistoryRole.ASSISTANT);
-    assertThat(entity.getCommitStatus()).isEqualTo(expectedStatus);
+    assertThat(entity.getCommitStatus()).isEqualTo(AgentHistoryCommitStatus.PENDING);
     assertThat(entity.getProducedAt())
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(producedAtMs)));
     assertThat(entity.getInputTokens()).isEqualTo(inputTokens);
@@ -197,6 +185,136 @@ final class AgentHistoryHandlerTest {
         .containsExactly(
             new AgentHistoryEmbeddedToolCallValue(
                 "tc-1", "search", "searchElement", Map.of("query", "weather")));
+  }
+
+  @ParameterizedTest(name = "[{index}] Terminal ''{0}'' event must not clobber CREATED content")
+  @EnumSource(
+      value = AgentHistoryIntent.class,
+      names = {"COMMITTED", "DISCARDED"})
+  void shouldPreserveContentToolCallsMetricsAndProducedAtWhenTerminalEventFollowsCreated(
+      final AgentHistoryIntent intent) {
+    // given — a CREATED record with distinct, non-default content, toolCalls, metrics and
+    // producedAt
+    final long recordKey = 100L;
+    final int partitionId = 1;
+    final long originalProducedAtMs = 1_000_000_000_000L;
+    // explicit (not ProtocolFactory's random default) so the clobber's fallback timestamp is
+    // deterministic
+    final long terminalRecordTimestampMs = 1_600_000_000_000L;
+
+    final var createdValue =
+        ImmutableAgentHistoryRecordValue.builder()
+            .from(buildMinimalRecordValue(50L, 3))
+            .withProducedAt(originalProducedAtMs)
+            .withMetrics(
+                ImmutableAgentHistoryMetricsValue.builder()
+                    .withInputTokens(50L)
+                    .withOutputTokens(30L)
+                    .withDurationMs(1200L)
+                    .build())
+            .withContent(
+                List.of(
+                    ImmutableAgentHistoryMessageContentValue.builder()
+                        .withContentType(
+                            io.camunda.zeebe.protocol.record.value.AgentHistoryContentType.TEXT)
+                        .withText("the original user prompt")
+                        .withObject(Map.of())
+                        .build()))
+            .withToolCalls(
+                List.of(
+                    ImmutableAgentHistoryEmbeddedToolCallValue.builder()
+                        .withToolCallId("tc-1")
+                        .withToolName("search")
+                        .withElementId("searchElement")
+                        .withArguments(Map.of("query", "weather"))
+                        .build()))
+            .build();
+
+    final Record<AgentHistoryRecordValue> createdRecord =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r ->
+                r.withIntent(AgentHistoryIntent.CREATED)
+                    .withKey(recordKey)
+                    .withPartitionId(partitionId)
+                    .withValue(createdValue));
+
+    final var entity = new AgentHistoryEntity().setId(String.valueOf(recordKey));
+
+    underTest.updateEntity(createdRecord, entity);
+
+    // when — a trimmed terminal event (empty content/toolCalls, zero metrics, producedAt 0L) lands
+    // on the SAME shared entity in the same batch, as the engine emits for COMMITTED/DISCARDED
+    final Record<AgentHistoryRecordValue> trimmedRecord =
+        factory.generateRecord(
+            ValueType.AGENT_HISTORY,
+            r ->
+                r.withIntent(intent)
+                    .withKey(recordKey)
+                    .withPartitionId(partitionId)
+                    .withTimestamp(terminalRecordTimestampMs)
+                    .withValue(
+                        ImmutableAgentHistoryRecordValue.builder()
+                            .from(createdValue)
+                            .withProducedAt(0L)
+                            .withMetrics(
+                                ImmutableAgentHistoryMetricsValue.builder()
+                                    .withInputTokens(0L)
+                                    .withOutputTokens(0L)
+                                    .withDurationMs(0L)
+                                    .build())
+                            .withContent(List.of())
+                            .withToolCalls(List.of())
+                            .build()));
+
+    underTest.updateEntity(trimmedRecord, entity);
+
+    // then — the original CREATED values for content, toolCalls, metrics and producedAt must
+    // survive; only commitStatus should reflect the terminal event.
+    final AgentHistoryCommitStatus expectedStatus =
+        switch (intent) {
+          case COMMITTED -> AgentHistoryCommitStatus.COMMITTED;
+          case DISCARDED -> AgentHistoryCommitStatus.DISCARDED;
+          default -> throw new IllegalStateException("Unexpected intent: " + intent);
+        };
+
+    SoftAssertions.assertSoftly(
+        softly -> {
+          softly
+              .assertThat(entity.getContent())
+              .as("content must still hold the original CREATED text")
+              .containsExactly(
+                  new AgentHistoryContentValue(
+                      AgentHistoryContentType.TEXT, "the original user prompt", null, null));
+          softly
+              .assertThat(entity.getToolCalls())
+              .as("toolCalls must still hold the original CREATED tool call")
+              .containsExactly(
+                  new AgentHistoryEmbeddedToolCallValue(
+                      "tc-1", "search", "searchElement", Map.of("query", "weather")));
+          softly
+              .assertThat(entity.getInputTokens())
+              .as("inputTokens must still hold the original CREATED value")
+              .isEqualTo(50L);
+          softly
+              .assertThat(entity.getOutputTokens())
+              .as("outputTokens must still hold the original CREATED value")
+              .isEqualTo(30L);
+          softly
+              .assertThat(entity.getDurationMs())
+              .as("durationMs must still hold the original CREATED value")
+              .isEqualTo(1200L);
+          softly
+              .assertThat(entity.getProducedAt())
+              .as(
+                  "producedAt must still hold the original CREATED value, not the fallback"
+                      + " timestamp of the terminal event")
+              .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(originalProducedAtMs)));
+          softly
+              .assertThat(entity.getCommitStatus())
+              .as("commitStatus must reflect the terminal event that was actually applied")
+              .isEqualTo(expectedStatus);
+        });
   }
 
   @Test
