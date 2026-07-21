@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
+import io.camunda.gateway.protocol.model.SecretListRequest;
 import io.camunda.gateway.protocol.model.SecretResolveRequest;
 import java.util.Objects;
 import java.util.Optional;
@@ -47,6 +48,15 @@ public final class SecretRequestValidator {
           }
           if (references.stream().anyMatch(Objects::isNull)) {
             violations.add("The references list must not contain null entries.");
+          }
+        });
+  }
+
+  public static Optional<ProblemDetail> validateSecretListRequest(final SecretListRequest request) {
+    return validate(
+        violations -> {
+          if (request == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("request body"));
           }
         });
   }

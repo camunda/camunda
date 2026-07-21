@@ -7,6 +7,7 @@
  */
 package io.camunda.it.auth;
 
+import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.REVEAL;
 import static io.camunda.client.api.search.enums.ResourceType.SECRET;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,13 +39,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
- * End-to-end authorization coverage for {@code POST /v2/secrets/resolve} against a real
- * authorization-enabled broker. Unlike {@code SecretControllerTest} and {@code SecretServicesTest}
- * (which mock the authorization stack), this exercises the real per-reference {@code SECRET:REVEAL}
- * check so the security guarantee is proven, not assumed.
+ * End-to-end authorization coverage for {@code POST /v2/secrets/resolve} and {@code POST
+ * /v2/secrets/list} against a real authorization-enabled broker. Unlike {@code
+ * SecretControllerTest} and {@code SecretServicesTest} (which mock the authorization stack), this
+ * exercises the real per-reference {@code SECRET:REVEAL} / {@code SECRET:READ} checks so the
+ * security guarantee is proven, not assumed.
  *
- * <p>The secret backend is mocked in Phase 1 (#56567): references in the service's mock allow-list
- * ({@code camunda.secrets.token} etc.) resolve to a placeholder value; authorization is real.
+ * <p>The secret backend is mocked in Phase 1 (#56567, #56568): references in the service's mock
+ * allow-list ({@code camunda.secrets.token} etc.) resolve to a placeholder value or are listed;
+ * authorization is real.
  */
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
@@ -66,6 +69,8 @@ class SecretAuthorizationIT {
   private static final String REVEAL_USER = "revealUser";
   private static final String WILDCARD_USER = "wildcardUser";
   private static final String NO_PERMISSION_USER = "noPermissionUser";
+  private static final String READ_USER = "readUser";
+  private static final String WILDCARD_READ_USER = "wildcardReadUser";
 
   @UserDefinition
   private static final TestUser REVEAL_USER_DEF =
@@ -86,6 +91,22 @@ class SecretAuthorizationIT {
   @UserDefinition
   private static final TestUser NO_PERMISSION_USER_DEF =
       new TestUser(NO_PERMISSION_USER, "password", List.of());
+
+  @UserDefinition
+  private static final TestUser READ_USER_DEF =
+      new TestUser(
+          READ_USER,
+          "password",
+          // Granted READ on GRANTED_REFERENCE only — not on OTHER_REFERENCE, and no REVEAL.
+          List.of(new Permissions(SECRET, READ, List.of(GRANTED_REFERENCE))));
+
+  @UserDefinition
+  private static final TestUser WILDCARD_READ_USER_DEF =
+      new TestUser(
+          WILDCARD_READ_USER,
+          "password",
+          // Granted READ on all references via the "*" wildcard.
+          List.of(new Permissions(SECRET, READ, List.of("*"))));
 
   @Test
   void shouldResolveReferenceWhenAuthorizedOnThatReference(
@@ -193,6 +214,90 @@ class SecretAuthorizationIT {
         .hasValueSatisfying(value -> assertThat(value).contains("no-store"));
   }
 
+  @Test
+  void shouldListAllReferencesWithWildcardReadGrant(
+      @Authenticated(WILDCARD_READ_USER) final CamundaClient client) throws Exception {
+    // when a user granted SECRET:READ:* lists references
+    final var response = list(client, WILDCARD_READ_USER);
+
+    // then every reference the mock backend knows is returned, names only
+    assertThat(response.statusCode()).isEqualTo(200);
+    final var body = read(response.body());
+    assertThat(referenceNames(body.get("references")))
+        .containsExactlyInAnyOrder(GRANTED_REFERENCE, OTHER_REFERENCE, "camunda.secrets.b");
+  }
+
+  @Test
+  void shouldListOnlyAuthorizedReferenceWithScopedReadGrant(
+      @Authenticated(READ_USER) final CamundaClient client) throws Exception {
+    // when a user granted SECRET:READ on GRANTED_REFERENCE only lists references
+    final var response = list(client, READ_USER);
+
+    // then only the granted reference is returned, even though the backend knows more
+    assertThat(response.statusCode()).isEqualTo(200);
+    final var body = read(response.body());
+    assertThat(referenceNames(body.get("references"))).containsExactly(GRANTED_REFERENCE);
+  }
+
+  @Test
+  void shouldReturnEmptyListWhenNoReadGrant(
+      @Authenticated(NO_PERMISSION_USER) final CamundaClient client) throws Exception {
+    // when an authenticated user without any SECRET grant lists references
+    final var response = list(client, NO_PERMISSION_USER);
+
+    // then nothing is listed, even though the backend knows references
+    assertThat(response.statusCode()).isEqualTo(200);
+    final var body = read(response.body());
+    assertThat(body.get("references")).isEmpty();
+  }
+
+  @Test
+  void shouldNotAuthorizeListingWithRevealOnlyGrant(
+      @Authenticated(REVEAL_USER) final CamundaClient client) throws Exception {
+    // when a user granted SECRET:REVEAL only (no SECRET:READ) lists references
+    final var response = list(client, REVEAL_USER);
+
+    // then the listing is empty: REVEAL does not imply READ
+    assertThat(response.statusCode()).isEqualTo(200);
+    final var body = read(response.body());
+    assertThat(body.get("references")).isEmpty();
+  }
+
+  @Test
+  void shouldRejectUnauthenticatedListRequest(
+      @Authenticated(WILDCARD_READ_USER) final CamundaClient client) throws Exception {
+    // when the list endpoint is called without credentials — the injected client is used only to
+    // discover the broker's REST base address; the request below carries no Authorization header
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(createUri(client, "v2/secrets/list"))
+            .header("Content-Type", "application/json")
+            .POST(BodyPublishers.ofString("{}"))
+            .build();
+    final var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+
+    // then it is rejected as unauthorized
+    assertThat(response.statusCode()).isEqualTo(401);
+  }
+
+  @Test
+  void shouldNotAllowDownstreamCachingOfListedReferences(
+      @Authenticated(WILDCARD_READ_USER) final CamundaClient client) throws Exception {
+    // Reference names are metadata, not values, but the response must still not be cached by an
+    // intermediary proxy or browser, consistent with every other authenticated endpoint. We do not
+    // set cache headers on the controller: they are expected from the shared Spring Security filter
+    // chain (Cache-Control: no-cache, no-store, max-age=0, must-revalidate).
+
+    // when a listing response is returned
+    final var response = list(client, WILDCARD_READ_USER);
+
+    // then it forbids downstream storage
+    assertThat(response.statusCode()).isEqualTo(200);
+    assertThat(response.headers().firstValue("Cache-Control"))
+        .as("list responses must not be cached downstream")
+        .hasValueSatisfying(value -> assertThat(value).contains("no-store"));
+  }
+
   /**
    * Issues a raw HTTP call to {@code POST /v2/secrets/resolve} authenticated as the given user. The
    * endpoint has no fluent Java client method yet.
@@ -211,6 +316,22 @@ class SecretAuthorizationIT {
     return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
   }
 
+  /**
+   * Issues a raw HTTP call to {@code POST /v2/secrets/list} authenticated as the given user. The
+   * endpoint has no fluent Java client method yet.
+   */
+  private static HttpResponse<String> list(final CamundaClient client, final String username)
+      throws Exception {
+    final var request =
+        HttpRequest.newBuilder()
+            .uri(createUri(client, "v2/secrets/list"))
+            .header("Content-Type", "application/json")
+            .header("Authorization", basicAuthentication(username))
+            .POST(BodyPublishers.ofString("{}"))
+            .build();
+    return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+  }
+
   private static JsonNode read(final String body) throws Exception {
     return JSON.readTree(body);
   }
@@ -219,6 +340,10 @@ class SecretAuthorizationIT {
     return StreamSupport.stream(array.spliterator(), false)
         .map(item -> item.get("reference").asText())
         .toList();
+  }
+
+  private static List<String> referenceNames(final JsonNode array) {
+    return StreamSupport.stream(array.spliterator(), false).map(JsonNode::asText).toList();
   }
 
   private static String basicAuthentication(final String username) {

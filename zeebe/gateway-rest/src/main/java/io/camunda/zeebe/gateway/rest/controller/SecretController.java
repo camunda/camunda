@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.gateway.mapping.http.ResponseMapper;
 import io.camunda.gateway.mapping.http.validator.SecretRequestValidator;
+import io.camunda.gateway.protocol.model.SecretListRequest;
 import io.camunda.gateway.protocol.model.SecretResolveRequest;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.service.registry.ServiceRegistry;
@@ -54,6 +55,25 @@ public class SecretController {
     return RequestExecutor.executeServiceMethod(
         () -> secretServices.resolve(references, authentication),
         ResponseMapper::toSecretResolveResult,
+        HttpStatus.OK);
+  }
+
+  @CamundaPostMapping(path = "/list")
+  public CompletableFuture<ResponseEntity<Object>> listSecrets(
+      @PhysicalTenantId final String physicalTenantId,
+      @RequestBody final SecretListRequest request) {
+    return SecretRequestValidator.validateSecretListRequest(request)
+        .<CompletableFuture<ResponseEntity<Object>>>map(
+            RestErrorMapper::mapProblemToCompletedResponse)
+        .orElseGet(() -> list(physicalTenantId));
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> list(final String physicalTenantId) {
+    final var secretServices = serviceRegistry.secretServices(physicalTenantId);
+    final var authentication = authenticationProvider.getCamundaAuthentication();
+    return RequestExecutor.executeServiceMethod(
+        () -> secretServices.list(authentication),
+        ResponseMapper::toSecretListResult,
         HttpStatus.OK);
   }
 }

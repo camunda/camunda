@@ -45,6 +45,7 @@ import org.springframework.test.json.JsonCompareMode;
 public class SecretControllerTest extends RestControllerTest {
 
   static final String RESOLVE_URL = "/v2/secrets/resolve";
+  static final String LIST_URL = "/v2/secrets/list";
 
   @Captor ArgumentCaptor<List<String>> referencesCaptor;
   @MockitoBean SecretServices secretServices;
@@ -266,6 +267,88 @@ public class SecretControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest();
     verifyNoInteractions(secretServices);
+  }
+
+  @Test
+  void shouldReturnAuthorizedReferences() {
+    // given
+    when(secretServices.list(any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of("camunda.secrets.a")));
+
+    // when / then only reference names are returned; the schema has no value field to leak
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "references": ["camunda.secrets.a"] }""",
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReturnEmptyReferencesWhenNoneAuthorized() {
+    // given
+    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when / then
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            { "references": [] }""",
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectNullListRequestBody() {
+    // given a literal JSON null body (deserialized as a null request, bypassing the model @NotNull)
+
+    // when / then it is a 400 rather than a 500 and never reaches the service
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("null")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+    verifyNoInteractions(secretServices);
+  }
+
+  @Test
+  void shouldForwardAuthenticationToServiceOnList() {
+    // given
+    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    verify(secretServices).list(eq(AUTHENTICATION_WITH_DEFAULT_TENANT));
   }
 
   private static String referencesJson(final int count) {
