@@ -22,6 +22,15 @@ jobs:
 
     steps:
     #########################################################################
+    # Checkout the specified workflow_call ref when provided; for pull_request
+    # runs, an empty inputs.ref lets checkout fall back to the event ref
+    - name: Checkout
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        ref: ${{ inputs.ref }}
+        persist-credentials: false
+
+    #########################################################################
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
     - id: sanitize
       uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
@@ -56,12 +65,6 @@ jobs:
         vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
         vault-url: ${{ secrets.VAULT_ADDR }}
-
-    #########################################################################
-    # Setup: checkout code. This is required because we are using
-    # composite actions and deployment manifests.
-    - name: Checkout
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     #########################################################################
     # Tear down preview environment
