@@ -109,7 +109,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -121,7 +121,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     }
 
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
-    responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, IncidentIntent.RESOLVED, incident, command);
     incidentMetrics.incidentResolved();
 
     publishIncidentRelatedJob(jobKey);
@@ -136,7 +136,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       final RejectionType rejectionType) {
 
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, errorMessage);
   }
 
   private void attemptToContinueProcessProcessing(

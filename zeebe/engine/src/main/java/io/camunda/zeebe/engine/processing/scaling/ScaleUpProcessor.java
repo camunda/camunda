@@ -57,13 +57,14 @@ public class ScaleUpProcessor implements DistributedTypedRecordProcessor<ScaleRe
     if (optionalRejection.isPresent()) {
       final var rejection = optionalRejection.get();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
     final var scalingKey = keyGenerator.nextKey();
     scaleUp.setScalingPosition(command.getPosition());
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALING_UP, scaleUp);
-    responseWriter.writeEventOnCommand(scalingKey, ScaleIntent.SCALING_UP, scaleUp, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        scalingKey, ScaleIntent.SCALING_UP, scaleUp, command);
     commandDistributionBehavior
         .withKey(scalingKey)
         .inQueue(DistributionQueue.SCALING)

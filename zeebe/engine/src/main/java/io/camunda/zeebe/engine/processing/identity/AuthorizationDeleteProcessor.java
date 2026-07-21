@@ -68,7 +68,8 @@ public class AuthorizationDeleteProcessor
             authorizationKey -> writeEventAndDistribute(command, authorizationKey),
             (rejection) -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
@@ -108,7 +109,7 @@ public class AuthorizationDeleteProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         authorizationKey, AuthorizationIntent.DELETED, command.getValue(), command);
     sideEffectWriter.appendSideEffect(
         () -> {

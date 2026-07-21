@@ -86,7 +86,7 @@ public final class BatchOperationCancelProcessor
     if (authorizationResult.isLeft()) {
       final Rejection rejection = authorizationResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -98,7 +98,7 @@ public final class BatchOperationCancelProcessor
     final var batchOperation = batchOperationState.get(batchOperationKey);
     if (batchOperation.isPresent() && batchOperation.get().canCancel()) {
       cancelBatchOperationEvent(cancelKey, recordValue);
-      responseWriter.writeEventOnCommand(
+      responseWriter.writeAcceptedResponseOnCommand(
           cancelKey, BatchOperationIntent.CANCELED, command.getValue(), command);
       commandDistributionBehavior
           .withKey(cancelKey)
@@ -111,7 +111,7 @@ public final class BatchOperationCancelProcessor
           command,
           RejectionType.NOT_FOUND,
           String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command,
           RejectionType.NOT_FOUND,
           String.format(BATCH_OPERATION_NOT_FOUND_MESSAGE, batchOperationKey));

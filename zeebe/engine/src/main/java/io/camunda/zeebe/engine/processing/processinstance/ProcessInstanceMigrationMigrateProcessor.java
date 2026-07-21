@@ -149,7 +149,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                   "such process instance")
               : rejection.reason();
       rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
       return;
     }
 
@@ -185,7 +185,7 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     stateWriter.appendFollowUpEvent(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         processInstanceKey, ProcessInstanceMigrationIntent.MIGRATED, value, command);
   }
 
@@ -195,13 +195,13 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     if (error instanceof final ProcessInstanceMigrationPreconditionFailedException e) {
       rejectionWriter.appendRejection(command, e.getRejectionType(), e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, e.getRejectionType(), e.getMessage());
+      responseWriter.writeRejectedResponseOnCommand(command, e.getRejectionType(), e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof final SafetyCheckFailedException e) {
       LOG.error(e.getMessage(), e);
       rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, e.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.PROCESSING_ERROR, e.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }

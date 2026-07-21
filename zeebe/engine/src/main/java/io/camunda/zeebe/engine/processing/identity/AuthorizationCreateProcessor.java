@@ -70,7 +70,8 @@ public class AuthorizationCreateProcessor
             authorizationRecord -> writeEventAndDistribute(command, command.getValue()),
             (rejection) -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
@@ -101,7 +102,7 @@ public class AuthorizationCreateProcessor
     final long key = keyGenerator.nextKey();
     authorizationRecord.setAuthorizationKey(key);
     stateWriter.appendFollowUpEvent(key, AuthorizationIntent.CREATED, authorizationRecord);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         key, AuthorizationIntent.CREATED, authorizationRecord, command);
     distributionBehavior
         .withKey(key)

@@ -91,7 +91,8 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
       final var rejectionMessage = USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(username);
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.NOT_FOUND, rejectionMessage);
       return;
     }
 
@@ -107,12 +108,12 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
     deleteUser(user);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         user.getUserKey(), UserIntent.DELETED, command.getValue(), command);
 
     final long distributionKey = keyGenerator.nextKey();

@@ -93,7 +93,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
                 .formatted(signalRecord.getTenantId());
         rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-        responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+        responseWriter.writeRejectedResponseOnCommand(command, RejectionType.FORBIDDEN, message);
         return;
       }
     }
@@ -171,7 +171,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     if (error instanceof final ForbiddenException exception) {
       rejectionWriter.appendRejection(
           command, exception.getRejectionType(), exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, exception.getRejectionType(), exception.getMessage());
       if (command.isCommandDistributed()) {
         // If the command was distributed but doesn't pass auth checks on this partition, we still
@@ -221,7 +221,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         });
 
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, SignalIntent.BROADCASTED, signalRecord, command);
+      responseWriter.writeAcceptedResponseOnCommand(
+          eventKey, SignalIntent.BROADCASTED, signalRecord, command);
     }
   }
 }

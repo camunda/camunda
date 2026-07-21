@@ -177,7 +177,8 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
             job -> completeJob(record, job),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  record, rejection.type(), rejection.reason());
             });
   }
 
@@ -186,7 +187,8 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     job.setResult(command.getValue().getResult());
 
     stateWriter.appendFollowUpEvent(command.getKey(), JobIntent.COMPLETED, job);
-    responseWriter.writeEventOnCommand(command.getKey(), JobIntent.COMPLETED, job, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        command.getKey(), JobIntent.COMPLETED, job, command);
 
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());
 

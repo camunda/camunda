@@ -120,7 +120,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     }
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_ADDED, record);
-    responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        tenantKey, TenantIntent.ENTITY_ADDED, record, command);
     sideEffectWriter.appendSideEffect(
         () -> {
           authCheckBehavior.clearAuthorizationsCache();
@@ -223,7 +224,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final String errorMessage) {
     rejectionWriter.appendRejection(command, type, errorMessage);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeRejectionOnCommand(command, type, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
     }
   }
 

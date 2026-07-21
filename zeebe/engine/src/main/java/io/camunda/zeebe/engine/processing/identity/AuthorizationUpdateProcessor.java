@@ -74,7 +74,8 @@ public class AuthorizationUpdateProcessor
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 
@@ -116,7 +117,7 @@ public class AuthorizationUpdateProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         authorizationRecord.getAuthorizationKey(),
         AuthorizationIntent.UPDATED,
         authorizationRecord,

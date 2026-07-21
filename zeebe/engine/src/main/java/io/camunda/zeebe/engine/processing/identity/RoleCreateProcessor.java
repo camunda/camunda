@@ -64,7 +64,7 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -73,14 +73,15 @@ public class RoleCreateProcessor implements DistributedTypedRecordProcessor<Role
     if (persistedRole.isPresent()) {
       final var errorMessage = ROLE_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
     final long key = keyGenerator.nextKey();
     record.setRoleKey(key);
 
     stateWriter.appendFollowUpEvent(key, RoleIntent.CREATED, record);
-    responseWriter.writeEventOnCommand(key, RoleIntent.CREATED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, RoleIntent.CREATED, record, command);
 
     commandDistributionBehavior
         .withKey(key)

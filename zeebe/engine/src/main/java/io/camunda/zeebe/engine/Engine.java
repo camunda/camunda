@@ -253,12 +253,12 @@ public class Engine implements RecordProcessor {
       writers.rejection().appendRejection(record, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, "");
       writers
           .response()
-          .writeRejectionOnCommand(record, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, "");
+          .writeRejectedResponseOnCommand(record, RejectionType.EXCEEDED_BATCH_RECORD_SIZE, "");
     } else {
       writers.rejection().appendRejection(record, RejectionType.PROCESSING_ERROR, errorMessage);
       writers
           .response()
-          .writeRejectionOnCommand(
+          .writeRejectedResponseOnCommand(
               record,
               RejectionType.PROCESSING_ERROR,
               """

@@ -66,7 +66,7 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 
@@ -78,7 +78,7 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
           "Expected pin time to be not negative but it was %d".formatted(clockRecord.getTime());
 
       rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, rejectionMessage);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.INVALID_ARGUMENT, rejectionMessage);
       return;
     }
@@ -88,7 +88,7 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
 
     applyClockModification(eventKey, intent, resultIntent, clockRecord);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, resultIntent, clockRecord, command);
+      responseWriter.writeAcceptedResponseOnCommand(eventKey, resultIntent, clockRecord, command);
     }
 
     commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);

@@ -69,7 +69,7 @@ public final class BpmnProcessResultSenderBehavior {
         .setTenantId(context.getTenantId())
         .setTags(context.getTags());
 
-    responseWriter.writeResponse(
+    responseWriter.writeAcceptedResponse(
         context.getProcessInstanceKey(),
         ProcessInstanceResultIntent.COMPLETED,
         resultRecord,

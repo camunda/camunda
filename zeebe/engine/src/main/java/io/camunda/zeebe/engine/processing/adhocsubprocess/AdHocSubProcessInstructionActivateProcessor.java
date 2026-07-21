@@ -161,7 +161,7 @@ public class AdHocSubProcessInstructionActivateProcessor
     stateWriter.appendFollowUpEvent(
         command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue());
 
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue(), command);
   }
 
@@ -170,7 +170,7 @@ public class AdHocSubProcessInstructionActivateProcessor
       final RejectionType rejectionType,
       final String errorMessage) {
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+    responseWriter.writeRejectedResponseOnCommand(command, rejectionType, errorMessage);
   }
 
   private Either<Rejection, Void> authorize(

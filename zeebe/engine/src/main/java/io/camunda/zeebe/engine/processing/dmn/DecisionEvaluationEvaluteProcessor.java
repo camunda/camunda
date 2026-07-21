@@ -83,7 +83,7 @@ public class DecisionEvaluationEvaluteProcessor
                 ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
                     "evaluate a decision", record.getDecisionKey(), "such decision")
                 : rejection.reason();
-        responseWriter.writeRejectionOnCommand(command, rejection.type(), errorMessage);
+        responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
         rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
         return;
       }
@@ -113,7 +113,7 @@ public class DecisionEvaluationEvaluteProcessor
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),
                   evaluationRecordTuple.getRight());
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),
                   evaluationRecordTuple.getRight(),
@@ -121,7 +121,7 @@ public class DecisionEvaluationEvaluteProcessor
             },
             rejection -> {
               final String reason = rejection.reason();
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), reason);
+              responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), reason);
               rejectionWriter.appendRejection(command, rejection.type(), reason);
             });
   }

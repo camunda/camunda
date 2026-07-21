@@ -85,7 +85,7 @@ public final class VariableDocumentUpdateProcessor
     if (scope == null || scope.isTerminating() || scope.isInFinalState()) {
       final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
       writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+      writers.response().writeRejectedResponseOnCommand(record, RejectionType.NOT_FOUND, reason);
       return;
     }
 
@@ -108,7 +108,7 @@ public final class VariableDocumentUpdateProcessor
                   "such element")
               : rejection.reason();
       writers.rejection().appendRejection(record, rejection.type(), errorMessage);
-      writers.response().writeRejectionOnCommand(record, rejection.type(), errorMessage);
+      writers.response().writeRejectedResponseOnCommand(record, rejection.type(), errorMessage);
       return;
     }
 
@@ -120,7 +120,9 @@ public final class VariableDocumentUpdateProcessor
       if (lifecycleState != LifecycleState.CREATED) {
         final var reason = INVALID_USER_TASK_STATE_MESSAGE.formatted(userTaskKey, lifecycleState);
         writers.rejection().appendRejection(record, RejectionType.INVALID_STATE, reason);
-        writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_STATE, reason);
+        writers
+            .response()
+            .writeRejectedResponseOnCommand(record, RejectionType.INVALID_STATE, reason);
         return;
       }
 
@@ -179,7 +181,8 @@ public final class VariableDocumentUpdateProcessor
       writers.state().appendFollowUpEvent(variableDocKey, VariableDocumentIntent.UPDATED, value);
       writers
           .response()
-          .writeEventOnCommand(variableDocKey, VariableDocumentIntent.UPDATED, value, record);
+          .writeAcceptedResponseOnCommand(
+              variableDocKey, VariableDocumentIntent.UPDATED, value, record);
       writers
           .state()
           .appendFollowUpEvent(
@@ -214,14 +217,18 @@ public final class VariableDocumentUpdateProcessor
               "Expected document to be valid msgpack, but it could not be read: '%s'",
               e.getMessage());
       writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
     final long key = keyGenerator.nextKey();
 
     writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-    writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+    writers
+        .response()
+        .writeAcceptedResponseOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
   }
 
   private static boolean hasVariables(final VariableDocumentRecord record) {

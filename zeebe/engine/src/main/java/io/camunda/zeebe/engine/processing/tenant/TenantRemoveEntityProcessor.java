@@ -104,7 +104,8 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
     final var tenantKey = persistedTenant.get().getTenantKey();
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_REMOVED, record);
-    responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
     sideEffectWriter.appendSideEffect(
         () -> {
           authCheckBehavior.clearAuthorizationsCache();
@@ -194,7 +195,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final String errorMessage) {
     rejectionWriter.appendRejection(command, type, errorMessage);
     if (command.hasRequestMetadata()) {
-      responseWriter.writeRejectionOnCommand(command, type, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(command, type, errorMessage);
     }
   }
 
