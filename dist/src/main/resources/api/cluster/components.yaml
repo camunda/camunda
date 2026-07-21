@@ -408,6 +408,7 @@ schemas:
           - ENTER_RECOVERY
           - EXIT_RECOVERY
           - AWAIT_MODE_CHANGE
+          - EXPORTING_STATE_CHANGE
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:
@@ -425,6 +426,8 @@ schemas:
         $ref: "components.yaml#/schemas/ExporterId"
       partitionDistributionConfig:
         $ref: "components.yaml#/schemas/PartitionDistributionConfig"
+      exportingState:
+        $ref: "components.yaml#/schemas/ExportingState"
 
   BrokerState:
     title: BrokerState
@@ -558,3 +561,10 @@ schemas:
     description: The ID of an exporter
     type: string
     example: "my-exporter"
+
+  ExportingState:
+    enum:
+      - EXPORTING
+      - PAUSED
+      - SOFT_PAUSED
+      - UNKNOWN
