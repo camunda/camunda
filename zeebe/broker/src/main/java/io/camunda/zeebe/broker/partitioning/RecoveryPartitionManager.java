@@ -118,8 +118,6 @@ public final class RecoveryPartitionManager
         () -> {
           if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
             clusterConfigurationService.registerPartitionChangeExecutors(this, this);
-            clusterConfigurationService.registerRequestValidator(
-                partitionGroup, new RestoreValidator(backupStore));
           }
           startInternal(result);
         });
@@ -134,9 +132,8 @@ public final class RecoveryPartitionManager
         () -> {
           if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
             clusterConfigurationService.removePartitionChangeExecutor();
-            clusterConfigurationService.removeRequestValidator(
-                partitionGroup, RestoreRequest.class);
           }
+          clusterConfigurationService.removeRequestValidator(partitionGroup, RestoreRequest.class);
           stopInternal(result);
         });
     return result;
@@ -158,6 +155,9 @@ public final class RecoveryPartitionManager
       result.completeExceptionally(e);
       return;
     }
+
+    clusterConfigurationService.registerRequestValidator(
+        partitionGroup, new RestoreValidator(backupStore));
 
     final var startFutures = new ArrayList<ActorFuture<Void>>();
     for (final var partitionMetadata : localPartitions) {
