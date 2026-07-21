@@ -164,24 +164,28 @@ public final class ReconfigurationHelper {
               } else if (response.status() == Status.OK) {
                 LOGGER.debug("Join request accepted");
                 result.complete(null);
-              } else if (response.error().type() == RaftError.Type.NO_LEADER) {
+              } else if (response.error().type() == RaftError.Type.NO_LEADER
+                  || response.error().type() == RaftError.Type.CONFIGURATION_ERROR) {
                 if (Instant.now().isBefore(deadline)) {
                   LOGGER.debug(
                       "Join request failed, retrying after {}",
                       raftContext.getElectionTimeout(),
                       response.error().createException());
-                  // The member is reachable but doesn't know a leader yet. Re-offer it so that,
-                  // after falling over to the remaining members, it is retried once a new leader
-                  // could be elected. The election may depend on this join attempt: while the
-                  // join is in flight, this server is a passive member that answers polls and
-                  // votes.
+                  // The member is reachable but doesn't know a leader yet, or the leader cannot
+                  // make configuration changes yet. Re-offer it so that, after falling over to the
+                  // remaining members, it is retried once the cluster made progress. That progress
+                  // may depend on this join attempt: while the join is in flight, this server is a
+                  // passive member that answers polls and votes and accepts appends. For example,
+                  // a leader that recovered an uncommitted joint configuration cannot commit its
+                  // initialization entry - and thus rejects configuration changes - until the
+                  // joining member acknowledged it.
                   assistingMembers.offer(receiver);
                   threadContext.schedule(
                       raftContext.getElectionTimeout(),
                       () -> joinWithRetry(joining, assistingMembers, result, deadline));
                 } else {
                   LOGGER.error(
-                      "Join request failed, not retrying because no leader was elected within {}",
+                      "Join request failed, not retrying because the join did not complete within {}",
                       raftContext.getConfigurationChangeTimeout(),
                       response.error().createException());
                   result.completeExceptionally(response.error().createException());
