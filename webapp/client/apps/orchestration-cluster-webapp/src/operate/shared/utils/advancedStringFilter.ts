@@ -8,6 +8,7 @@
 
 import {z} from 'zod';
 import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import {parseIds} from './parseIds';
 
 const VALUE_SEPARATOR = '_';
 
@@ -46,5 +47,33 @@ function splitEncodedFilterOperation(encodedOperation: string) {
 	return {operator: result.data, value};
 }
 
-export {encodeFilterOperation, splitEncodedFilterOperation};
+/**
+ * Decodes a URL-ready-encoded advanced string filter value (as produced by
+ * {@linkcode encodeFilterOperation}) into the API filter shape, applying the same
+ * per-operator transforms as the legacy `advancedStringFilterCodec` decode direction
+ * (wildcard-wrapping `$like`, splitting `$in`/`$notIn` into arrays).
+ */
+function decodeAdvancedStringFilter(encoded: string): AdvancedStringFilter | undefined {
+	const splitOperation = splitEncodedFilterOperation(encoded);
+	if (splitOperation === null) {
+		return undefined;
+	}
+
+	const {operator, value} = splitOperation;
+	switch (operator) {
+		case '$eq':
+		case '$neq':
+		case '$exists':
+			return {[operator]: value};
+		case '$like':
+			return {[operator]: `*${value}*`};
+		case '$in':
+		case '$notIn':
+			return {[operator]: parseIds(value)};
+		default:
+			return undefined;
+	}
+}
+
+export {encodeFilterOperation, splitEncodedFilterOperation, decodeAdvancedStringFilter};
 export type {AdvancedStringFilterOperator, AdvancedStringFilter};
