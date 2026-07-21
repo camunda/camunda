@@ -66,8 +66,8 @@ public class URLRedirectFilter implements Filter {
      */
     if (requestURI.startsWith("/oauth2/")
         || requestURI.startsWith("/sso-callback")
-        || requestURI.equals("/login")
-        || requestURI.equals("/logout")) {
+        || "/login".equals(requestURI)
+        || "/logout".equals(requestURI)) {
       chain.doFilter(request, response);
       return;
     }

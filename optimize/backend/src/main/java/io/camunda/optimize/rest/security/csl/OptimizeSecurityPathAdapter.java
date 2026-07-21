@@ -14,16 +14,16 @@ import java.util.Set;
  * SPIKE (ADR-0036): Optimize's implementation of the CSL {@link SecurityPathPort}.
  *
  * <ul>
- *   <li>{@link #apiPaths()} = the bearer-only public API surface. Only these are claimed by the
- *       CSL OIDC API chain (bearer JWT). Everything else under {@code /api} is served by the
- *       catch-all webapp chain and authenticated from the session.
+ *   <li>{@link #apiPaths()} = the bearer-only public API surface. Only these are claimed by the CSL
+ *       OIDC API chain (bearer JWT). Everything else under {@code /api} is served by the catch-all
+ *       webapp chain and authenticated from the session.
  *   <li>{@link #unprotectedApiPaths()} = the public subset of {@link #apiPaths()} (the subset
  *       contract is kept). Empty for Optimize: the public API and ingestion endpoints are all
  *       protected.
  *   <li>{@link #unprotectedPaths()} = every public path outside the bearer surface. This is the
- *       bucket the order-0 unprotected chain actually matches, so the public endpoints under
- *       {@code /api} (readyz, ui-configuration, localization, external) go here too, not in
- *       {@link #unprotectedApiPaths()}.
+ *       bucket the order-0 unprotected chain actually matches, so the public endpoints under {@code
+ *       /api} (readyz, ui-configuration, localization, external) go here too, not in {@link
+ *       #unprotectedApiPaths()}.
  *   <li>{@link #webappPaths()} = {@code /**}. The webapp chain is the catch-all; with the CSL
  *       API-before-webapp ordering it sorts below the bearer API chain.
  * </ul>

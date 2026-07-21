@@ -7,58 +7,143 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import static io.camunda.optimize.service.db.DatabaseConstants.WEB_SESSION_INDEX_NAME;
+
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.query_dsl.MatchAllQuery;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
+import io.camunda.optimize.service.db.es.builders.OptimizeDeleteRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeGetRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
+import io.camunda.optimize.service.db.es.builders.OptimizeSearchRequestBuilderES;
+import io.camunda.optimize.service.db.es.reader.ElasticsearchReaderUtil;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import io.camunda.security.api.model.session.PersistentSession;
 import io.camunda.security.core.port.out.SessionStorePort;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.stereotype.Component;
 
 /**
- * SPIKE (ADR-0036): Optimize's {@link SessionStorePort} adapter, backed by Optimize's existing
- * Elasticsearch/OpenSearch store. This is the piece that replaces the stateless cookie: the CSL
- * webapp chain persists the server-side session here, so scaling stays affinity-free and logout is
- * a real store delete.
+ * SPIKE (ADR-0036): Elasticsearch-backed {@link SessionStorePort} for Optimize. This is what CSL's
+ * stateful webapp chain persists server-side sessions through, replacing the stateless cookie. It
+ * writes to the {@code web-session} index (see {@code WebSessionIndex}) and mirrors the
+ * terminated-user-session store's use of {@link OptimizeElasticsearchClient}.
  *
- * <p>STUB: the actual read/write to an Optimize session index is not implemented in this spike. The
- * shape mirrors OC's {@code SessionStoreAdapter}, which wraps a {@code PersistentWebSessionClient}
- * over the search-client layer. For Optimize the backing store is the same Elasticsearch cluster
- * Optimize already runs (and already uses today for {@code TerminatedSessionService}), so this
- * adapter should write a small session document to a dedicated Optimize index. The recommended
- * implementation reuses OC's resilience pattern (retry transient search failures on upsert).
- *
- * <p>Implementation task (see SPIKE-NOTES.md):
- *
- * <ul>
- *   <li>define an Optimize session index + descriptor,
- *   <li>map {@link PersistentSession} to/from the index document (id, timestamps, attributes),
- *   <li>wire this adapter as the {@code sessionStorePort} bean and import CSL's {@code
- *       WebSessionConfiguration} (which owns the repository/mapper/deletion-scheduler beans),
- *   <li>set {@code camunda.security.session.persistent.enabled=true}.
- * </ul>
+ * <p>Active only under Elasticsearch and when {@code optimize.security.csl.enabled=true}. CSL only
+ * calls it when {@code camunda.security.session.persistent.enabled=true}; otherwise CSL uses an
+ * in-memory session. An OpenSearch equivalent (mirroring the ES/OS reader/writer split) is a
+ * follow-up; this spike is ES-only.
  */
-public final class OptimizeSessionStoreAdapter implements SessionStorePort {
+@Component
+@Conditional(ElasticSearchCondition.class)
+@ConditionalOnProperty(name = "optimize.security.csl.enabled", havingValue = "true")
+public class OptimizeSessionStoreAdapter implements SessionStorePort {
 
-  // TODO(spike): inject Optimize's Elasticsearch/OpenSearch session client here.
+  // Page size for the getAll scroll; retrieveAllScrollResults pages through the rest.
+  private static final int SCROLL_PAGE_SIZE = 1000;
+
+  private final OptimizeElasticsearchClient esClient;
+  private final ConfigurationService configurationService;
+  private final ObjectMapper objectMapper;
+
+  public OptimizeSessionStoreAdapter(
+      final OptimizeElasticsearchClient esClient,
+      final ConfigurationService configurationService,
+      final ObjectMapper objectMapper) {
+    this.esClient = esClient;
+    this.configurationService = configurationService;
+    this.objectMapper = objectMapper;
+  }
 
   @Override
   public PersistentSession get(final String sessionId) {
-    throw new UnsupportedOperationException(
-        "SPIKE stub: back with Optimize's Elasticsearch session index");
+    try {
+      final var response =
+          esClient.get(
+              OptimizeGetRequestBuilderES.of(
+                  g -> g.optimizeIndex(esClient, WEB_SESSION_INDEX_NAME).id(sessionId)),
+              WebSessionDto.class);
+      return response.found() ? toPersistentSession(response.source()) : null;
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not read web session " + sessionId, e);
+    }
   }
 
   @Override
   public void upsert(final PersistentSession session) {
-    throw new UnsupportedOperationException(
-        "SPIKE stub: back with Optimize's Elasticsearch session index");
+    final WebSessionDto dto = toDto(session);
+    try {
+      esClient.index(
+          OptimizeIndexRequestBuilderES.of(
+              b ->
+                  b.optimizeIndex(esClient, WEB_SESSION_INDEX_NAME)
+                      .id(session.id())
+                      .refresh(Refresh.True)
+                      .document(dto)));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not persist web session " + session.id(), e);
+    }
   }
 
   @Override
   public void delete(final String sessionId) {
-    throw new UnsupportedOperationException(
-        "SPIKE stub: back with Optimize's Elasticsearch session index");
+    try {
+      esClient.delete(
+          OptimizeDeleteRequestBuilderES.of(
+              d -> d.optimizeIndex(esClient, WEB_SESSION_INDEX_NAME).id(sessionId)));
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not delete web session " + sessionId, e);
+    }
   }
 
   @Override
   public List<PersistentSession> getAll() {
-    throw new UnsupportedOperationException(
-        "SPIKE stub: back with Optimize's Elasticsearch session index");
+    final int scrollTimeout =
+        configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds();
+    final var searchRequest =
+        OptimizeSearchRequestBuilderES.of(
+            b ->
+                b.optimizeIndex(esClient, WEB_SESSION_INDEX_NAME)
+                    .size(SCROLL_PAGE_SIZE)
+                    .query(q -> q.matchAll(MatchAllQuery.of(m -> m)))
+                    .scroll(Time.of(t -> t.time(scrollTimeout + "s"))));
+    final SearchResponse<WebSessionDto> response;
+    try {
+      response = esClient.search(searchRequest, WebSessionDto.class);
+    } catch (final IOException e) {
+      throw new OptimizeRuntimeException("Could not read web sessions", e);
+    }
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
+            response, WebSessionDto.class, objectMapper, esClient, scrollTimeout)
+        .stream()
+        .map(this::toPersistentSession)
+        .toList();
+  }
+
+  private PersistentSession toPersistentSession(final WebSessionDto dto) {
+    return new PersistentSession(
+        dto.getId(),
+        dto.getCreationTime(),
+        dto.getLastAccessedTime(),
+        dto.getMaxInactiveIntervalInSeconds(),
+        dto.getAttributes() != null ? dto.getAttributes() : Map.of());
+  }
+
+  private WebSessionDto toDto(final PersistentSession session) {
+    return new WebSessionDto(
+        session.id(),
+        session.creationTime(),
+        session.lastAccessedTime(),
+        session.maxInactiveIntervalInSeconds(),
+        session.attributes());
   }
 }

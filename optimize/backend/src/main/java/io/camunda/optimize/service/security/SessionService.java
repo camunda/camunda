@@ -116,9 +116,9 @@ public class SessionService implements ConfigurationReloadable {
   /**
    * SPIKE (ADR-0036): extracts the user id from a CSL OIDC webapp session. When Optimize adopts
    * CSL's stateful webapp chain, an authenticated browser request carries an {@link
-   * OAuth2AuthenticationToken} in the {@link SecurityContextHolder} (principal name = the configured
-   * username claim, {@code sub} by default). Legacy runs never produce this token type, so this is
-   * inert unless CSL is active.
+   * OAuth2AuthenticationToken} in the {@link SecurityContextHolder} (principal name = the
+   * configured username claim, {@code sub} by default). Legacy runs never produce this token type,
+   * so this is inert unless CSL is active.
    */
   private static Optional<String> subjectFromCslWebappSession() {
     return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())

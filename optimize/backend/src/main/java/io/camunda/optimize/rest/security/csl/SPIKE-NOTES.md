@@ -23,8 +23,14 @@ and `@EnableWebSecurity`, so only one may be active. A single flag selects which
   `unprotectedPaths()` — the bucket the order-0 chain actually matches).
 - `OptimizeMembershipAdapter` — `MembershipPort`. Stub returning empty memberships (enough to log
   in; wire the groups-claim extraction for real authorization).
-- `OptimizeSessionStoreAdapter` — `SessionStorePort` backed by Optimize's Elasticsearch. Stub;
-  NOT registered as a bean (single-node manual testing uses in-memory `HttpSession`).
+- `OptimizeSessionStoreAdapter` + `WebSessionDto` — real Elasticsearch-backed `SessionStorePort`
+  (get/upsert/delete/getAll via `OptimizeElasticsearchClient`), a `@Component` active under ES +
+  `csl.enabled`. Backed by a new `web-session` index: `WebSessionIndex` / `WebSessionIndexES` in
+  `optimize-commons`, registered in `ElasticSearchSchemaManager.getAllNonDynamicMappings()` and
+  `DatabaseConstants.WEB_SESSION_INDEX_NAME`. `OptimizeCamundaSecurityConfig` imports CSL's
+  `WebSessionConfiguration` (self-gated on `session.persistent.enabled`, which the bridge sets
+  true). ES-only; an OpenSearch mirror (`WebSessionIndexOS` + `OpenSearchSchemaManager` entry + an
+  OS adapter) is the remaining follow-up.
 
 No custom webapp chain is needed: CSL now orders the API chain before the webapp chain (ADR-0036),
 so the stock webapp chain with a `/**` matcher is the catch-all below the bearer API chain.
@@ -104,7 +110,9 @@ Matters found while manually testing the spike against a local CCSM/Keycloak set
 
 ## Follow-ups (tracked in ADR-0036)
 
-1. Real `SessionStorePort` over Optimize's Elasticsearch + a session index; remove the old
+1. `SessionStorePort` over Optimize's Elasticsearch + `web-session` index — **done (ES-only)**.
+   Remaining: an OpenSearch mirror (`WebSessionIndexOS` + `OpenSearchSchemaManager` registration +
+   an OS-backed adapter, `@Conditional(OpenSearchCondition.class)`), and removing the old
    auth-storage index (the terminated-session store) on upgrade.
 2. Real `MembershipPort` (OIDC groups-claim extraction).
 3. Config backwards-compatibility layer: prototype present as
