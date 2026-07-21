@@ -48,8 +48,8 @@ const queryKeys = {
     ) => ['agentInstanceHistorySearch', agentInstanceKey, payload],
     latestAgentMessage: (agentInstanceKey: string) => [
       'agentInstanceHistorySearch',
-      'latestAgentMessage',
       agentInstanceKey,
+      'latestAgentMessage',
     ],
   },
   variables: {

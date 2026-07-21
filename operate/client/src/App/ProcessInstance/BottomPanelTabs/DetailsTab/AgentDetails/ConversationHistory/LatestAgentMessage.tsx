@@ -6,23 +6,36 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect, useRef} from 'react';
 import {SkeletonText} from '@carbon/react';
 import {useLatestAgentMessage} from 'modules/queries/agentInstances/useLatestAgentMessage';
 import {ConversationMessage} from '../ConversationMessage';
 import {StatusHint} from './styled';
+import type {AgentInstanceStatus} from '@camunda/camunda-api-zod-schemas/8.10';
+import {isActiveAgentInstanceStatus} from 'modules/queries/agentInstances/agentInstanceStatus';
 
 type LatestAgentMessageProps = {
   agentInstanceKey: string;
-  enablePeriodicRefetch: boolean;
+  agentInstanceStatus: AgentInstanceStatus;
 };
 
 const LatestAgentMessage: React.FC<LatestAgentMessageProps> = ({
   agentInstanceKey,
-  enablePeriodicRefetch,
+  agentInstanceStatus,
 }) => {
-  const {data, status} = useLatestAgentMessage(agentInstanceKey, {
-    enablePeriodicRefetch,
-  });
+  const {data, status, refetch, isEnabled} = useLatestAgentMessage(
+    agentInstanceKey,
+    {enablePeriodicRefetch: isActiveAgentInstanceStatus(agentInstanceStatus)},
+  );
+
+  const lastAgentStatus = useRef(agentInstanceStatus);
+  useEffect(() => {
+    // Trigger refetch to show up-to-date data faster once agent status changes are known.
+    if (isEnabled && lastAgentStatus.current !== agentInstanceStatus) {
+      refetch();
+    }
+    lastAgentStatus.current = agentInstanceStatus;
+  }, [agentInstanceStatus, isEnabled, refetch]);
 
   if (status === 'pending') {
     return (
