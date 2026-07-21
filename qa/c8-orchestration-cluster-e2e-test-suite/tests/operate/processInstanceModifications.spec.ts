@@ -155,10 +155,10 @@ test.describe('Process Instance Modifications', () => {
       ).toBeVisible();
 
       await expect(
-        operateProcessInstancePage.getEditVariableFieldSelector('test'),
+        operateProcessModificationModePage.getEditVariableFieldSelector('test'),
       ).toHaveValue('123');
       await expect(
-        operateProcessInstancePage.getEditVariableFieldSelector('foo'),
+        operateProcessModificationModePage.getEditVariableFieldSelector('foo'),
       ).toHaveValue('1');
     });
 
@@ -201,7 +201,8 @@ test.describe('Process Instance Modifications', () => {
     });
   });
 
-  // !Note: assert the code after the bug is fixed as it was discoverd during the test implementation
+  // Regression coverage for bug 42546 (fixed):
+  // https://github.com/camunda/camunda/issues/42546
   test('Should apply/remove add variable modifications', async ({
     page,
     operateProcessInstancePage,

@@ -97,8 +97,10 @@ test.describe('Operations', () => {
     });
   });
 
-  // !Note: assert the code after the bug is fixed as it was dicoverd during the test implementation
-  test('Retry and cancel single instance', async ({
+  // Skipped due to bug 42375: https://github.com/camunda/camunda/issues/42375
+  // Bug closed as "not planned": a cancel operation on a single instance is not
+  // added to the operations panel by design, so this test's assertion cannot pass.
+  test.skip('Retry and cancel single instance', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
