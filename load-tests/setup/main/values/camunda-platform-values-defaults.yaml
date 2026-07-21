@@ -88,6 +88,8 @@ identityKeycloak:
   postgresql:
     enabled: false
 
+  # This Keycloak external database depends on the CNPG cluster deployed by
+  # the load-test-setup Helm Chart.
   externalDatabase:
     # The name of the Service deployed by the CNPG Cluster from the
     # load-test-setup Helm Chart.
