@@ -1,0 +1,19 @@
+---
+# Source: load-test-setup/templates/keycloak/postgresql-keycloak-database.yaml
+# The PostgreSQL database to host Keycloak data
+# Reference: https://cloudnative-pg.io/docs/1.30/cloudnative-pg.v1#database
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: keycloak
+spec:
+  # The CNPG Cluster to manage the database in.
+  cluster:
+    name: postgresql-keycloak
+
+  # The name of the PostgreSQL database to create.
+  name: keycloak
+
+  # The name of the PostgreSQL user who will be the owner of the database.
+  # This should match the "DatabaseRole" configured in this folder.
+  owner: keycloak

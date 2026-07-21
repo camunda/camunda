@@ -1,0 +1,59 @@
+---
+# Source: load-test-setup/templates/keycloak/postgresql-keycloak.yaml
+# Configure a CNPG-managed PostgreSQL cluster for Keycloak itself.
+#
+# This is **NOT** the PostgreSQL cluster used by Camunda if it's configured to
+# use PostgreSQL as a secondary storage database!
+#
+# Reference: https://cloudnative-pg.io/docs/1.30/cloudnative-pg.v1
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-keycloak
+spec:
+  description: PostgreSQL cluster for Keycloak and Camunda Identity
+
+  instances: 1
+  imageName: europe-west1-docker.pkg.dev/camunda-benchmark/ghcrio/cloudnative-pg/postgresql:18.4
+
+  resources:
+    limits:
+      cpu: 150m
+      memory: 192Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+  storage:
+    size: 1Gi
+    storageClass: benchmark-ssd-zonal-v1
+
+  affinity:
+    nodeSelector:
+      topology.kubernetes.io/zone: "europe-west1-d"
+      component: benchmark-n2-standard-4
+
+    tolerations:
+      - effect: NoSchedule
+        key: nodepool
+        operator: Equal
+        value: n2-standard-4
+
+  postgresql:
+    # The PostgreSQL configuration flags.
+    parameters:
+      lock_timeout: 30s
+      statement_timeout: "0"
+      #log_statement: all
+      #log_connections: "on"
+      #log_disconnections: "on"
+
+  managed:
+    services:
+      # Only deploy the (mandatory) read-write `rw` Kubernetes service. We
+      # don't have a fancy enough PostgreSQL usage to need the other services,
+      # and it simplifies the deployed resources.
+      # Cf. https://cloudnative-pg.io/docs/1.30/service_management
+      disabledDefaultServices:
+        - ro # replica nodes, only for reading
+        - r  # any PostgreSQL node, only for reading

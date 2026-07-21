@@ -27,7 +27,7 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/configmap-env-vars: 783f7ba11c1a219d6c11983b5d022574df67781d8429480e6eca11c51577386c
+        checksum/configmap-env-vars: 4ab68cb8942d6eec70b9052e5696b95810e8f8263b7061ff8bb8006c56b4c25e
       labels:
         app.kubernetes.io/instance: c8-golden-stable-88-elasticsearch-stable
         app.kubernetes.io/managed-by: Helm
@@ -138,7 +138,9 @@ spec:
             - name: KC_BOOTSTRAP_ADMIN_PASSWORD_FILE
               value: /opt/bitnami/keycloak/secrets/identity-keycloak-admin-password
             - name: KEYCLOAK_DATABASE_PASSWORD_FILE
-              value: /opt/bitnami/keycloak/secrets/db-identity-keycloak-postgresql-user-password
+              value: /opt/bitnami/keycloak/secrets/db-password
+            - name: KEYCLOAK_DATABASE_USER_FILE
+              value: /opt/bitnami/keycloak/secrets/db-username
             - name: KC_HTTP_RELATIVE_PATH
               value: "/auth/"
             - name: KC_SPI_ADMIN_REALM
@@ -213,9 +215,11 @@ spec:
               - secret:
                   name: camunda-credentials
               - secret:
-                  name: camunda-credentials
+                  name: postgresql-keycloak-user
                   items:
-                    - key: identity-keycloak-postgresql-user-password
-                      path: db-identity-keycloak-postgresql-user-password
+                    - key: password
+                      path: db-password
+                    - key: username
+                      path: db-username
         - emptyDir: {}
           name: data-tmp

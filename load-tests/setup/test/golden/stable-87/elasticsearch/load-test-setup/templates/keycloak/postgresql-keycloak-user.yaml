@@ -1,0 +1,42 @@
+---
+# Source: load-test-setup/templates/keycloak/postgresql-keycloak-user.yaml
+# The Secret is used by:
+#
+#   1. The Keycloak deployment, to fetch the username/password to use when connecting to PostgreSQL
+#   2. The CNPG Operator to configure the password for the "keycloak" PostgreSQL role
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-keycloak-user
+  labels:
+    cnpg.io/reload: "true"
+type: kubernetes.io/basic-auth
+data:
+  username: a2V5Y2xvYWs=
+  password: QmlrZEZla284XlFhZ2k=
+---
+# Source: load-test-setup/templates/keycloak/postgresql-keycloak-user.yaml
+# Configure the PostgreSQL credentials for the Keycloak application itself.
+---
+# Source: load-test-setup/templates/keycloak/postgresql-keycloak-user.yaml
+# Configure the PostgreSQL role for Keycloak.
+# This is the PostgreSQL "user" used by Keycloak when connecting to the database.
+# Reference: https://cloudnative-pg.io/docs/1.30/cloudnative-pg.v1#databaserole
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: keycloak
+spec:
+  # The CNPG cluster to create this role in.
+  cluster:
+    name: postgresql-keycloak
+
+  name: keycloak
+  comment: The PostgreSQL user used by Keycloak
+
+  # Where to fetch the password for this PostgreSQL user.
+  passwordSecret:
+    name: postgresql-keycloak-user
+
+  # Can login to the PostgreSQL cluster
+  login: true
