@@ -10,7 +10,6 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.configuration.Aws;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
-import java.util.Map;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -20,43 +19,36 @@ import org.jspecify.annotations.NullMarked;
  * requires both {@code role-arn} and {@code web-identity-token-file}; the two modes are mutually
  * exclusive. An entirely empty section is valid and falls back to the AWS SDK default provider
  * chain. Failing fast here surfaces a half-configured identity at boot instead of as an
- * authentication error at request time.
+ * authentication error at request time. Tenants may share credentials — each tenant is validated in
+ * isolation.
  */
 @NullMarked
-class AwsCredentialsValidation implements CrossTenantValidation {
+final class AwsCredentialsValidation {
 
-  @Override
-  public void validate(final Map<String, Camunda> resolvedByTenant) {
-    resolvedByTenant.forEach(
-        (tenantId, camunda) -> {
-          final Aws aws = camunda.getAws();
-          final boolean partialStatic =
-              !aws.hasStaticCredentials()
-                  && (aws.getAccessKey() != null || aws.getSecretKey() != null);
-          final boolean partialWebIdentity =
-              !aws.hasWebIdentity()
-                  && (aws.getRoleArn() != null || aws.getWebIdentityTokenFile() != null);
-          if (partialStatic) {
-            throw new UnifiedConfigurationException(
-                String.format(
-                    "AWS static credentials of tenant '%s' are incomplete: both 'aws.access-key' "
-                        + "and 'aws.secret-key' must be set",
-                    tenantId));
-          }
-          if (partialWebIdentity) {
-            throw new UnifiedConfigurationException(
-                String.format(
-                    "AWS web identity of tenant '%s' is incomplete: both 'aws.role-arn' and "
-                        + "'aws.web-identity-token-file' must be set",
-                    tenantId));
-          }
-          if (aws.hasStaticCredentials() && aws.hasWebIdentity()) {
-            throw new UnifiedConfigurationException(
-                String.format(
-                    "AWS configuration of tenant '%s' declares both static credentials and web "
-                        + "identity; set only one of them",
-                    tenantId));
-          }
-        });
+  private AwsCredentialsValidation() {}
+
+  static void validate(final String tenantId, final Camunda camunda) {
+    final Aws aws = camunda.getAws();
+    if (aws.getAccessKey() != null ^ aws.getSecretKey() != null) {
+      throw new UnifiedConfigurationException(
+          String.format(
+              "AWS static credentials of tenant '%s' are incomplete: both 'aws.access-key' "
+                  + "and 'aws.secret-key' must be set",
+              tenantId));
+    }
+    if (aws.getRoleArn() != null ^ aws.getWebIdentityTokenFile() != null) {
+      throw new UnifiedConfigurationException(
+          String.format(
+              "AWS web identity of tenant '%s' is incomplete: both 'aws.role-arn' and "
+                  + "'aws.web-identity-token-file' must be set",
+              tenantId));
+    }
+    if (aws.hasStaticCredentials() && aws.hasWebIdentity()) {
+      throw new UnifiedConfigurationException(
+          String.format(
+              "AWS configuration of tenant '%s' declares both static credentials and web "
+                  + "identity; set only one of them",
+              tenantId));
+    }
   }
 }

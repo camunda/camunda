@@ -31,17 +31,16 @@ public final class AwsCredentialsProviders {
     if (aws == null) {
       return DefaultCredentialsProvider.builder().build();
     }
-    final boolean hasStaticCredentials = aws.getAccessKey() != null && aws.getSecretKey() != null;
-    final boolean hasWebIdentity =
-        aws.getRoleArn() != null && aws.getWebIdentityTokenFile() != null;
-    if ((aws.getAccessKey() != null || aws.getSecretKey() != null) && !hasStaticCredentials) {
+    if (aws.getAccessKey() != null ^ aws.getSecretKey() != null) {
       throw new IllegalArgumentException(
           "AWS static credentials are incomplete: both accessKey and secretKey must be set");
     }
-    if ((aws.getRoleArn() != null || aws.getWebIdentityTokenFile() != null) && !hasWebIdentity) {
+    if (aws.getRoleArn() != null ^ aws.getWebIdentityTokenFile() != null) {
       throw new IllegalArgumentException(
           "AWS web identity is incomplete: both roleArn and webIdentityTokenFile must be set");
     }
+    final boolean hasStaticCredentials = aws.getAccessKey() != null;
+    final boolean hasWebIdentity = aws.getRoleArn() != null;
     if (hasStaticCredentials && hasWebIdentity) {
       throw new IllegalArgumentException(
           "AWS configuration declares both static credentials and web identity; set only one");

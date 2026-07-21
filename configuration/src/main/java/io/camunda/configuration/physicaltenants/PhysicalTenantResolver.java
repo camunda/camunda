@@ -72,8 +72,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
           new SecondaryStorageIsolationValidation(),
           new RetentionPolicyIsolationValidation(),
           new SecondaryStorageTypeHomogeneityValidation(),
-          new DocumentStoreIsolationValidation(),
-          new AwsCredentialsValidation());
+          new DocumentStoreIsolationValidation());
 
   private final Map<String, Camunda> resolved;
 
@@ -112,6 +111,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
       resolvedPhysicalTenants.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
+    resolvedPhysicalTenants.forEach(AwsCredentialsValidation::validate);
     CROSS_TENANT_VALIDATIONS.forEach(v -> v.validate(resolvedPhysicalTenants));
     PhysicalTenantDocumentAssignedValidation.validate(
         environment, resolvedPhysicalTenants, physicalTenantIds);
