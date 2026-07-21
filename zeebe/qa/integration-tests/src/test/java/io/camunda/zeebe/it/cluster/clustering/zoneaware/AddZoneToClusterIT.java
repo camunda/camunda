@@ -49,8 +49,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 final class AddZoneToClusterIT {
 
   private static final int PARTITIONS_COUNT = 2;
-  @AutoClose
-  final DynamicAutoCloseable closeables = new DynamicAutoCloseable();
+  @AutoClose final DynamicAutoCloseable closeables = new DynamicAutoCloseable();
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("addZoneScenarios")
@@ -63,14 +62,15 @@ final class AddZoneToClusterIT {
 
       // when - start a broker in the new zone, add it to the topology, then add the zone to the
       // partition distribution
-      closeables.manage(addBrokerInZone(
-          cluster,
-          actuator,
-          scenario.clusterName(),
-          scenario.newZone(),
-          0,
-          3,
-          scenario.targetZones()));
+      closeables.manage(
+          addBrokerInZone(
+              cluster,
+              actuator,
+              scenario.clusterName(),
+              scenario.newZone(),
+              0,
+              3,
+              scenario.targetZones()));
 
       final var config =
           new PartitionDistributionConfig()
