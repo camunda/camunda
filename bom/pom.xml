@@ -42,6 +42,12 @@
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
 
     <plugin.version.flatten>1.6.0</plugin.version.flatten>
+    <!-- Default: do not swap the reactor POM for the flattened one. Overridden to true only under
+         the central-sonatype-publish profile, so pom-packaging modules publish a self-contained
+         (coordinates + metadata + resolved dependency versions) POM to Maven Central without
+         altering normal reactor builds. Defined here (same POM as the profile) so the profile
+         override wins; a definition in a child POM would shadow it. -->
+    <flatten.updatePomFile>false</flatten.updatePomFile>
     <plugin.version.javadoc>3.10.1</plugin.version.javadoc>
     <plugin.version.license>4.5</plugin.version.license>
     <plugin.version.spotless>3.2.1</plugin.version.spotless>
@@ -428,6 +434,9 @@
              which fails to deserialize Sonatype Central's new "warnings" response field.
              Remove once release-parent is bumped to >=4.1.0 (which pins 0.8.0). -->
         <plugin.version.central-publishing>0.8.0</plugin.version.central-publishing>
+        <!-- Publish the flattened POM for pom-packaging modules so Central can extract coordinates
+             and required metadata. Scoped to this publish profile to avoid altering normal builds. -->
+        <flatten.updatePomFile>true</flatten.updatePomFile>
       </properties>
       <build>
         <pluginManagement>
