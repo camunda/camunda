@@ -294,13 +294,13 @@ public final class ClusterConfigurationManagerService
   public void registerRequestValidator(
       final @Nullable String physicalTenantId,
       final ClusterConfigurationRequestValidator<?, ?> validator) {
-    validators.registerValidator(physicalTenantId, validator);
+    managerActor.run(() -> validators.registerValidator(physicalTenantId, validator));
   }
 
   public void removeRequestValidator(
       final @Nullable String physicalTenantId,
       final Class<? extends ClusterConfigurationManagementRequest> requestType) {
-    validators.deregisterValidator(physicalTenantId, requestType);
+    managerActor.run(() -> validators.deregisterValidator(physicalTenantId, requestType));
   }
 
   @Override

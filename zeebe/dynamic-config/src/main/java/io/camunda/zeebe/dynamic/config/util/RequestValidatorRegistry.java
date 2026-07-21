@@ -20,9 +20,7 @@ import org.jspecify.annotations.Nullable;
  * <p>Validation is optional: {@link #validateRequest(ClusterConfigurationManagementRequest)} is a
  * no-op for request types that have no registered validator applicable to their tenant, unless the
  * request declares {@link ClusterConfigurationManagementRequest#requiresValidation()}, in which
- * case a missing validator fails the request instead of silently skipping validation. Validators
- * may be registered and deregistered at runtime (e.g. when a broker enters or leaves recovery
- * mode), so the backing map is concurrent.
+ * case a missing validator fails the request instead of silently skipping validation.
  */
 public final class RequestValidatorRegistry {
 
