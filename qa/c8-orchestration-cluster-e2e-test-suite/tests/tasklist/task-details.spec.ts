@@ -14,7 +14,8 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {findUserTask, expectProcessState} from '@requestHelpers';
-import {buildUrl, jsonHeaders} from '../../utils/http';
+import {buildUrl, jsonHeaders} from 'utils/http';
+import {defaultAssertionOptions} from 'utils/constants';
 
 test.beforeAll(async () => {
   await deploy([
@@ -619,12 +620,17 @@ test.describe('task details page', () => {
     await expect(async () => {
       const res = await request.post(buildUrl('/process-instances/search'), {
         headers: jsonHeaders(),
-        data: {filter: {processDefinitionId: 'usertask_with_custom_headers'}},
+        data: {
+          filter: {
+            processDefinitionId: 'usertask_with_custom_headers',
+            state: 'ACTIVE',
+          },
+        },
       });
       const body = await res.json();
       expect(body.items.length).toBe(1);
       processInstanceKey = body.items[0].processInstanceKey;
-    }).toPass();
+    }).toPass(defaultAssertionOptions);
 
     const userTaskKey = await findUserTask(
       request,
