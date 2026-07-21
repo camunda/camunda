@@ -23,6 +23,7 @@ import {
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
 	type QueryUserTaskAuditLogsRequestBody,
+	type QueryAuditLogsRequestBody,
 	type UserTask,
 	type ProcessDefinition,
 	type AuditLog,
@@ -348,6 +349,14 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getDecisionInstance.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryAuditLogs: (body: QueryAuditLogsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryAuditLogs.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryAuditLogs.method,
+			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),
 };
