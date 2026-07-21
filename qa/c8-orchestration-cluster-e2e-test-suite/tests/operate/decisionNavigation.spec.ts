@@ -250,10 +250,21 @@ test.describe('Decision Navigation', () => {
       await waitForAssertion({
         assertion: async () => {
           await expect(decisionInstanceLink).toBeVisible({timeout: 10_000});
-          await decisionInstanceLink.click();
-          await expect(page).toHaveURL(/\/operate\/decisions\/[^/?]+/, {
-            timeout: 10_000,
-          });
+          // The decision instances list re-renders as Operate polls for live
+          // data, which can detach the anchor between mouse-down and the
+          // browser's default navigation and silently swallow the click (the
+          // row highlights on hover but the URL never changes). Re-clicking
+          // via the outer retry doesn't help because that path re-applies the
+          // name filter first, so every click lands in the middle of another
+          // filter-triggered re-render. Retry only the click here — no
+          // re-filtering between attempts — so once the list settles a click
+          // lands on a stable node and navigation actually happens.
+          await expect(async () => {
+            await decisionInstanceLink.click();
+            await expect(page).toHaveURL(/\/operate\/decisions\/[^/?]+/, {
+              timeout: 2_000,
+            });
+          }).toPass({timeout: 20_000});
           // The URL check alone isn't proof we're still there: Operate can
           // redirect back to the list right after this if the decision
           // instance isn't ready yet.

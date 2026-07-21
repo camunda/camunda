@@ -129,7 +129,13 @@ test.describe('Process Instance Batch Modification', () => {
 
     await test.step('Filter and verify modified instances', async () => {
       await operateOperationPanelPage.collapseOperationsPanel();
-      await operateDiagramPage.clickFlowNode('shipArticles');
+      // Filter by the target flow node via the filter-panel combobox instead
+      // of a diagram click: collapsing the operations panel re-lays-out the
+      // canvas, so a coordinate-based diagram click can land on empty space
+      // and leave the flow-node filter on 'checkPayment' (yielding 6 active +
+      // 4 canceled = 10 results instead of the 4 moved to shipArticles). The
+      // combobox selection is layout-independent and deterministic.
+      await operateFiltersPanelPage.selectFlowNode('Ship Articles');
       await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
       await waitForAssertion({
         assertion: async () => {
