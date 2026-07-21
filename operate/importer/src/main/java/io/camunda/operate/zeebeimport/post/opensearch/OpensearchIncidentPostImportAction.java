@@ -96,12 +96,16 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     final Map<Long, IncidentState> incidents2Process;
 
     // Force a refresh of the post-importer-queue write index before reading the batch so that all
-    // of its shards expose their acknowledged writes. The queue is written without routing, so a
-    // single partition's entries are scattered across all shards, which refresh on independent
-    // timers. Without this, a higher-position entry on an already-refreshed shard can be returned
-    // while a lower-position entry on a not-yet-refreshed shard is still invisible; the cursor
-    // would then advance past the lower entry and, because the lower bound is strict, never revisit
-    // it. See https://github.com/camunda/camunda/issues/56117.
+    // of its shards expose their acknowledged writes. New entries are written with routing by
+    // partition id, so a single partition's entries co-locate on one shard and cannot exhibit
+    // refresh skew. This refresh remains load-bearing for the unrouted tail — legacy documents
+    // predating this change, restored backups, and entries written by older brokers during a
+    // rolling upgrade — which are still scattered across shards that refresh on independent timers.
+    // Without it, for those unrouted entries a higher-position entry on an already-refreshed shard
+    // could be returned while a lower-position entry on a not-yet-refreshed shard is still
+    // invisible; the cursor would then advance past the lower entry and, because the lower bound is
+    // strict, never revisit it. See https://github.com/camunda/camunda/issues/56117. Expected to
+    // become removable once routed writes are the norm.
     refreshPostImporterQueueIndex();
 
     record Result(Long key, Long position, String intent) {}

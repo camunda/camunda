@@ -96,7 +96,12 @@ public class IncidentZeebeRecordProcessor {
             .setPartitionId(record.getPartitionId())
             .setProcessInstanceKey(recordValue.getProcessInstanceKey());
 
-    batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), postImporterQueueEntity);
+    // Route each entry to a single shard by partition id so that, within a partition, a search can
+    // never observe a higher position without also seeing all lower positions (see #56117)
+    batchRequest.addWithRouting(
+        postImporterQueueTemplate.getFullQualifiedName(),
+        postImporterQueueEntity,
+        String.valueOf(record.getPartitionId()));
   }
 
   private void persistIncident(
