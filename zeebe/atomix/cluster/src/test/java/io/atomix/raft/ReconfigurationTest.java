@@ -611,6 +611,34 @@ final class ReconfigurationTest {
     }
 
     /**
+     * The live scenario of <a href="https://github.com/camunda/camunda/issues/55856">#55856</a>:
+     * scale down from two members to zero. After the leader left, the remaining follower holds the
+     * single-member configuration, typically only as an uncommitted log entry. It must elect itself
+     * based on that configuration, commit it, and then be able to leave as well.
+     */
+    @Test
+    void lastMemberCanLeave(@TempDir final Path tmp) {
+      // given - a cluster with 2 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+      awaitLeader(m1, m2);
+      final var leader = getLeaderServer(List.of(m1, m2)).orElseThrow();
+      final var follower = getFollower(m1, m2).orElseThrow();
+
+      // when - the leader leaves first
+      leader.leave().join();
+
+      // then - the remaining follower elects itself and can leave as well
+      awaitLeader(follower);
+      assertThat(follower.leave()).succeedsWithin(Duration.ofSeconds(10));
+      assertThat(follower.cluster().getMembers()).isEmpty();
+    }
+
+    /**
      * Reproduces <a href="https://github.com/camunda/camunda/issues/55856">#55856</a>: when the
      * second-to-last member leaves, the remaining follower acks the new single-member configuration
      * entry but typically never learns that it committed, because the leaving leader steps down as
