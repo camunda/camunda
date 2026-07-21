@@ -26,6 +26,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -129,9 +130,15 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
         Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
     final var distributor = currentConfiguration.partitionDistributor();
-    final var newDistribution =
-        distributor.distributePartitions(brokers, allPartitions, replicationFactor).stream()
-            .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
+    final Map<PartitionId, PartitionMetadata> newDistribution;
+    try {
+      newDistribution =
+          // in rare cases the distributor might throw an exception
+          distributor.distributePartitions(brokers, allPartitions, replicationFactor).stream()
+              .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
+    } catch (final Exception e) {
+      return Either.left(e);
+    }
 
     for (final PartitionId partition : oldPartitions) {
       final var newMetadata = newDistribution.get(partition);
