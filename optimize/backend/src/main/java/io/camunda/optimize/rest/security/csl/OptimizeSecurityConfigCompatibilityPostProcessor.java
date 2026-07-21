@@ -66,6 +66,12 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     derived.put("camunda.security.authentication.method", "oidc");
     // Optimize's webapp chain is /**, so the CSL deny chain must be suppressed.
     derived.put("camunda.security.unhandled-paths-chain.enabled", "false");
+    // CSL requires a redirect-uri for the authorization-code login. The webapp chain's redirection
+    // endpoint is /sso-callback; Spring expands {baseUrl} (scheme://host:port + context path) at
+    // request time. The IdP client must allow this redirect URI. putIfAbsent so an explicit
+    // camunda.security.authentication.oidc.redirect-uri still wins.
+    derived.putIfAbsent(
+        "camunda.security.authentication.oidc.redirect-uri", "{baseUrl}/sso-callback");
 
     // --- OIDC / Identity (CCSM). Primary interface is the CAMUNDA_OPTIMIZE_IDENTITY_* env vars. ---
     mapIfPresent(env, derived, "CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL",

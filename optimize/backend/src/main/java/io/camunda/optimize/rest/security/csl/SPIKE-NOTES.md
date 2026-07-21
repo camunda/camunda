@@ -45,6 +45,11 @@ so the stock webapp chain with a `/**` matcher is the catch-all below the bearer
    `/api/ui-configuration`, `/actuator/**`, `/external/**` are reachable without auth;
    `GET /api/public/**` requires a bearer token.
 
+The OIDC login redirects to `{baseUrl}/sso-callback` (e.g. `http://localhost:8090/sso-callback`),
+so the IdP client (Keycloak/Identity `optimize` client) must allow that redirect URI. The legacy
+setup used `/api/authentication/callback`, so add `/sso-callback` to the client's valid redirect
+URIs before logging in.
+
 Single-node in-memory sessions are used unless a `SessionStorePort` bean is added and
 `camunda.security.session.persistent.enabled=true`.
 

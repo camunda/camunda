@@ -13,11 +13,12 @@ Legend: MAP = direct/semantic map applied by the bridge; OBSOLETE = no meaning u
 sessions/CSL, ignored with a deprecation warning; SAAS/NO-ANALOG = platform-managed, no CSL target;
 TRANSPORT = Spring/server config, not part of the auth bridge (unchanged).
 
-## Always set when CSL is enabled
+## Always set when CSL is enabled (defaults; explicit config still wins)
 | CSL property | Value |
 |---|---|
 | `camunda.security.authentication.method` | `oidc` |
 | `camunda.security.unhandled-paths-chain.enabled` | `false` (Optimize webapp chain is `/**`) |
+| `camunda.security.authentication.oidc.redirect-uri` | `{baseUrl}/sso-callback` (the IdP client must allow this redirect URI) |
 
 ## OIDC / CCSM (Camunda Identity)
 | Legacy (env var / key) | CSL property | Kind |
