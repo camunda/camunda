@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "d4bdbb11521f0c0f08a559642e4cd7bd634c7657",
-    "generatedAt": "2026-07-17T12:27:50.212Z",
+    "commit": "d0ddb9b54d6c3da32c402f9cb9498666373e32b6",
+    "generatedAt": "2026-07-21T12:54:50.672Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "2cea6d2ed57e10d0cef0314cf973064157fb60ac2115f311ec3154ab342edeaf"
+    "specSha256": "553ff63f5439366f1d39eae8f01606ed17f5ab86f3f2e9f669c1527aae2cfb2c"
   },
   "responses": [
     {
@@ -1167,6 +1167,7 @@
                     "PROCESS_DEFINITION",
                     "RESOURCE",
                     "ROLE",
+                    "SECRET",
                     "SYSTEM",
                     "TENANT",
                     "USER",
@@ -1268,6 +1269,7 @@
               "PROCESS_DEFINITION",
               "RESOURCE",
               "ROLE",
+              "SECRET",
               "SYSTEM",
               "TENANT",
               "USER",
@@ -1640,6 +1642,17 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1675,6 +1688,17 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1709,6 +1733,17 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
           {
             "name": "metadata",
             "type": "object"
@@ -1752,6 +1787,17 @@
                 {
                   "name": "isTruncated",
                   "type": "boolean"
+                },
+                {
+                  "name": "kind",
+                  "type": "string",
+                  "enumValues": [
+                    "JSON",
+                    "SECRET_REFERENCE"
+                  ],
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "0",
+                  "wrapper": true
                 },
                 {
                   "name": "metadata",
@@ -1820,6 +1866,17 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1855,6 +1912,17 @@
       "schema": {
         "required": [
           {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
+          {
             "name": "metadata",
             "type": "object"
           },
@@ -1889,6 +1957,17 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "kind",
+            "type": "string",
+            "enumValues": [
+              "JSON",
+              "SECRET_REFERENCE"
+            ],
+            "underlyingPrimitive": "string",
+            "rawRefName": "0",
+            "wrapper": true
+          },
           {
             "name": "metadata",
             "type": "object"
@@ -8345,6 +8424,17 @@
                           "leader",
                           "follower",
                           "inactive"
+                        ]
+                      },
+                      {
+                        "name": "state",
+                        "type": "string",
+                        "enumValues": [
+                          "unknown",
+                          "joining",
+                          "active",
+                          "leaving",
+                          "recovering"
                         ]
                       }
                     ],
