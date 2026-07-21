@@ -143,6 +143,33 @@ public class CreateClusterVariableTest extends ClientRestTest {
   }
 
   @Test
+  void shouldCreateTenantClusterVariableWithKind() {
+    // given
+    final ClusterVariableResult responseProto =
+        Instancio.create(ClusterVariableResult.class)
+            .scope(ClusterVariableScopeEnum.TENANT)
+            .kind(ClusterVariableKindEnum.SECRET_REFERENCE);
+    gatewayService.onCreateTenantClusterVariableRequest(TENANT_ID, responseProto);
+
+    // when
+    final io.camunda.client.api.response.CreateClusterVariableResponse response =
+        client
+            .newTenantScopedClusterVariableCreateRequest(TENANT_ID)
+            .create(VARIABLE_NAME, VARIABLE_VALUE)
+            .kind(io.camunda.client.api.search.enums.ClusterVariableKind.SECRET_REFERENCE)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getKind())
+        .isEqualTo(io.camunda.client.api.search.enums.ClusterVariableKind.SECRET_REFERENCE);
+    final io.camunda.client.protocol.rest.CreateClusterVariableRequest sentRequest =
+        gatewayService.getLastRequest(
+            io.camunda.client.protocol.rest.CreateClusterVariableRequest.class);
+    assertThat(sentRequest.getKind()).isEqualTo(ClusterVariableKindEnum.SECRET_REFERENCE);
+  }
+
+  @Test
   void shouldRaiseExceptionOnNullVariableName() {
     // when / then
     assertThatThrownBy(

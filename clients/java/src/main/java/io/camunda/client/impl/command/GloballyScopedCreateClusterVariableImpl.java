@@ -56,6 +56,7 @@ public class GloballyScopedCreateClusterVariableImpl
   @Override
   public GloballyScopedClusterVariableCreationCommandStep1 kind(
       final io.camunda.client.api.search.enums.ClusterVariableKind kind) {
+    ArgumentUtil.ensureNotNull("kind", kind);
     createVariableRequest.setKind(
         io.camunda.client.impl.util.EnumUtil.convert(
             kind, io.camunda.client.protocol.rest.ClusterVariableKindEnum.class));
