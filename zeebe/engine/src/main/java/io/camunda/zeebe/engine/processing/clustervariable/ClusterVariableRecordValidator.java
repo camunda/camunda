@@ -13,9 +13,13 @@ import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 
 public class ClusterVariableRecordValidator {
+
+  private static final String VARIABLE_NOT_FOUND_MSG =
+      "Invalid cluster variable name: '%s'. The variable does not exist in the scope '%s'";
 
   private final ClusterVariableState clusterVariableState;
   private final TenantState tenantState;
@@ -80,12 +84,40 @@ public class ClusterVariableRecordValidator {
     return Either.left(
         new Rejection(
             RejectionType.NOT_FOUND,
-            "Invalid cluster variable name: '%s'. The variable does not exist in the scope '%s'"
-                .formatted(
-                    record.getName(),
-                    record.getTenantId().isBlank()
-                        ? "GLOBAL"
-                        : "tenant: '%s'".formatted(record.getTenantId()))));
+            VARIABLE_NOT_FOUND_MSG.formatted(
+                record.getName(),
+                record.getTenantId().isBlank()
+                    ? "GLOBAL"
+                    : "tenant: '%s'".formatted(record.getTenantId()))));
+  }
+
+  public Either<Rejection, ClusterVariableRecord> loadExisting(
+      final ClusterVariableRecord command) {
+    final Optional<ClusterVariableRecord> stored;
+    if (command.isGloballyScoped()) {
+      stored =
+          clusterVariableState
+              .getGloballyScopedClusterVariable(command.getNameBuffer())
+              .map(i -> i.getRecord());
+    } else if (command.isTenantScoped()) {
+      stored =
+          clusterVariableState
+              .getTenantScopedClusterVariable(command.getNameBuffer(), command.getTenantId())
+              .map(i -> i.getRecord());
+    } else {
+      stored = Optional.empty();
+    }
+    if (stored.isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.NOT_FOUND,
+              VARIABLE_NOT_FOUND_MSG.formatted(
+                  command.getName(),
+                  command.getTenantId().isBlank()
+                      ? "GLOBAL"
+                      : "tenant: '%s'".formatted(command.getTenantId()))));
+    }
+    return Either.right(stored.get());
   }
 
   private boolean tenantScopedVariableExists(final ClusterVariableRecord clusterVariableRecord) {

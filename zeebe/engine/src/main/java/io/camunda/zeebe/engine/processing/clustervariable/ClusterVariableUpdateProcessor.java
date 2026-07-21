@@ -51,24 +51,23 @@ public class ClusterVariableUpdateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
-    final ClusterVariableRecord clusterVariableRecord = command.getValue();
+    final ClusterVariableRecord commandRecord = command.getValue();
     clusterVariableRecordValidator
-        .ensureValidScope(clusterVariableRecord)
-        .flatMap(clusterVariableRecordValidator::validateExistence)
+        .ensureValidScope(commandRecord)
+        .flatMap(clusterVariableRecordValidator::loadExisting)
+        .map(stored -> applyUpdate(stored, commandRecord))
         .flatMap(record -> isAuthorized(record, command))
         .ifRightOrLeft(
             record -> {
               final long key = keyGenerator.nextKey();
-              writers
-                  .state()
-                  .appendFollowUpEvent(key, ClusterVariableIntent.UPDATED, clusterVariableRecord);
+              writers.state().appendFollowUpEvent(key, ClusterVariableIntent.UPDATED, record);
               writers
                   .response()
                   .writeAcceptedResponseOnCommand(
-                      key, ClusterVariableIntent.UPDATED, clusterVariableRecord, command);
+                      key, ClusterVariableIntent.UPDATED, record, command);
               commandDistributionBehavior
                   .withKey(key)
-                  .inQueue(clusterVariableRecord.getName())
+                  .inQueue(record.getName())
                   .distribute(command);
             },
             rejection -> {
@@ -81,9 +80,10 @@ public class ClusterVariableUpdateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<ClusterVariableRecord> command) {
-    final var clusterVariableRecord = command.getValue();
+    final var commandRecord = command.getValue();
     clusterVariableRecordValidator
-        .validateExistence(clusterVariableRecord)
+        .loadExisting(commandRecord)
+        .map(stored -> applyUpdate(stored, commandRecord))
         .ifRightOrLeft(
             record ->
                 writers
@@ -92,6 +92,13 @@ public class ClusterVariableUpdateProcessor
             rejection ->
                 writers.rejection().appendRejection(command, rejection.type(), rejection.reason()));
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private ClusterVariableRecord applyUpdate(
+      final ClusterVariableRecord stored, final ClusterVariableRecord command) {
+    stored.setValue(command.getValueBuffer());
+    stored.setMetadata(command.getMetadataBuffer());
+    return stored;
   }
 
   private Either<Rejection, ClusterVariableRecord> isAuthorized(
