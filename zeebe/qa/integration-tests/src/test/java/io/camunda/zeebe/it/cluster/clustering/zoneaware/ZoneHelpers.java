@@ -22,6 +22,7 @@ import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.time.Duration;
 import java.util.List;
+import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 
 public class ZoneHelpers {
@@ -76,17 +77,25 @@ public class ZoneHelpers {
 
     final var startThread =
         Thread.ofVirtual().name("start-" + zone + "-" + nodeId).start(broker::start);
-    // Close the broker first to unblock the (potentially still blocked) start() call, then join the
-    // virtual thread so it does not leak beyond the test.
 
     final var added = actuator.addBroker(MemberId.from(zone, nodeId).toString());
-    Awaitility.await()
-        .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(added));
-    return () -> {
-      broker.close();
-      startThread.interrupt();
-      startThread.join(Duration.ofSeconds(30));
-    };
+    final AutoCloseable closeable =
+        () -> {
+          // Close the broker first to unblock the (potentially still blocked) start() call, then
+          // join the
+          // virtual thread so it does not leak beyond the test.
+          broker.close();
+          startThread.interrupt();
+          startThread.join(Duration.ofSeconds(30));
+        };
+    try {
+      Awaitility.await()
+          .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(added));
+    } catch (final Exception e) {
+      CloseHelper.close(closeable);
+    }
+
+    return closeable;
   }
 
   public static void assertZoneHostsPartitions(
