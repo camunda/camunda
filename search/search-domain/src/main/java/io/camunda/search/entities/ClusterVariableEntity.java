@@ -22,7 +22,8 @@ public record ClusterVariableEntity(
     @Nullable Boolean isPreview,
     ClusterVariableScope scope,
     @Nullable String tenantId,
-    @Nullable List<MetadataEntry> metadata)
+    @Nullable List<MetadataEntry> metadata,
+    @Nullable ClusterVariableKind kind)
     implements TenantOwnedEntity {
 
   public ClusterVariableEntity {
@@ -42,8 +43,9 @@ public record ClusterVariableEntity(
       final String fullValue,
       final Boolean isPreview,
       final ClusterVariableScope scope,
-      final String tenantId) {
-    this(id, name, value, fullValue, isPreview, scope, tenantId, new ArrayList<>());
+      final String tenantId,
+      final @Nullable ClusterVariableKind kind) {
+    this(id, name, value, fullValue, isPreview, scope, tenantId, new ArrayList<>(), kind);
   }
 
   @Override

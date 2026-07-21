@@ -21,6 +21,7 @@
       <arg column="IS_PREVIEW" javaType="boolean"/>
       <arg column="SCOPE" javaType="io.camunda.search.entities.ClusterVariableScope"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="KIND" javaType="io.camunda.search.entities.ClusterVariableKind"/>
     </constructor>
   </resultMap>
 
@@ -53,7 +54,8 @@
     VAR_FULL_VALUE,
     TENANT_ID,
     SCOPE,
-    IS_PREVIEW
+    IS_PREVIEW,
+    KIND
     FROM ${prefix}CLUSTER_VARIABLE cv
     <include refid="io.camunda.db.rdbms.sql.ClusterVariableMapper.searchFilter"/>
     ) filtered
@@ -71,7 +73,8 @@
     VAR_FULL_VALUE,
     TENANT_ID,
     SCOPE,
-    IS_PREVIEW
+    IS_PREVIEW,
+    KIND
     FROM ${prefix}CLUSTER_VARIABLE cv
     WHERE cv.CLUSTER_VARIABLE_ID = #{id}
   </select>
@@ -94,11 +97,11 @@
     INSERT INTO ${prefix}CLUSTER_VARIABLE (CLUSTER_VARIABLE_ID, VAR_NAME, TYPE, DOUBLE_VALUE,
                                            LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, IS_PREVIEW,
                                            TENANT_ID,
-                                           SCOPE)
+                                           SCOPE, KIND)
     VALUES (#{id}, #{name}, #{type}, #{doubleValue, jdbcType=DOUBLE},
             #{longValue, jdbcType=NUMERIC},
             #{value},
-            #{fullValue}, #{isPreview}, #{tenantId}, #{scope})
+            #{fullValue}, #{isPreview}, #{tenantId}, #{scope}, #{kind})
   </insert>
 
   <insert id="insertMetadata" parameterType="io.camunda.db.rdbms.write.domain.ClusterVariableDbModel">
@@ -231,6 +234,13 @@
               )
             </otherwise>
           </choose>
+        </foreach>
+      </if>
+
+      <if test="filter.kindOperations != null and !filter.kindOperations.isEmpty()">
+        <foreach collection="filter.kindOperations" item="operation">
+          AND KIND
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
     </where>

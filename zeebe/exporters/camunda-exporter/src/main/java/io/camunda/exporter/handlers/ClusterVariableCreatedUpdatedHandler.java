@@ -12,6 +12,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.util.ClusterVariableUtil;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity.MetadataEntry;
+import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableKind;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -75,6 +76,8 @@ public class ClusterVariableCreatedUpdatedHandler
     entity
         .setScope(ClusterVariableScope.fromProtocol(recordValue.getScope()))
         .setName(recordValue.getName());
+
+    entity.setKind(ClusterVariableKind.fromProtocol(recordValue.getKind()));
 
     if (ClusterVariableScope.TENANT.equals(entity.getScope())) {
       entity.setTenantId(recordValue.getTenantId());

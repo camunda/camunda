@@ -16,7 +16,8 @@ public enum ClusterVariableSearchColumn implements SearchColumn<ClusterVariableE
   VAR_FULL_VALUE("fullValue"),
   TENANT_ID("tenantId"),
   SCOPE("scope"),
-  IS_PREVIEW("isPreview");
+  IS_PREVIEW("isPreview"),
+  KIND("kind");
   private final String property;
 
   ClusterVariableSearchColumn(final String property) {

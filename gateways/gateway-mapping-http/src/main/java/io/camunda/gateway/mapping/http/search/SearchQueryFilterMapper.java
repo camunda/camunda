@@ -387,6 +387,7 @@ public class SearchQueryFilterMapper {
         .map(mapToStringOperations())
         .ifPresent(builder::tenantIdOperations);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+    ofNullable(filter.getKind()).map(mapToStringOperations()).ifPresent(builder::kindOperations);
 
     return builder.build();
   }

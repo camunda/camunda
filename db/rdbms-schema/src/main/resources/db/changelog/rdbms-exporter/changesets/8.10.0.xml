@@ -649,4 +649,15 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="add_cluster_variable_kind_column" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="${prefix}CLUSTER_VARIABLE" columnName="KIND"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="${prefix}CLUSTER_VARIABLE">
+      <column name="KIND" type="VARCHAR(255)" defaultValue="JSON"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

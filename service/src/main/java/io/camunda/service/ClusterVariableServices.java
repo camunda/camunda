@@ -24,10 +24,12 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteClusterVariableR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateClusterVariableRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jspecify.annotations.Nullable;
 
 public final class ClusterVariableServices
     extends SearchQueryService<
@@ -58,6 +60,7 @@ public final class ClusterVariableServices
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
             .setMetadata(toDirectBufferMetadata(request.metadata()))
+            .setKind(request.kind())
             .setGlobalScope(),
         authentication);
   }
@@ -69,6 +72,7 @@ public final class ClusterVariableServices
             .setName(request.name())
             .setValue(toDirectBufferValue(request.value()))
             .setMetadata(toDirectBufferMetadata(request.metadata()))
+            .setKind(request.kind())
             .setTenantScope(request.tenantId()),
         authentication);
   }
@@ -158,5 +162,9 @@ public final class ClusterVariableServices
   }
 
   public record ClusterVariableRequest(
-      String name, Object value, String tenantId, Map<String, Object> metadata) {}
+      String name,
+      Object value,
+      String tenantId,
+      Map<String, Object> metadata,
+      @Nullable ClusterVariableKind kind) {}
 }

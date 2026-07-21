@@ -26,6 +26,7 @@ import io.camunda.gateway.protocol.model.AuthorizationCreateResult;
 import io.camunda.gateway.protocol.model.BatchOperationCreatedResult;
 import io.camunda.gateway.protocol.model.BatchOperationTypeEnum;
 import io.camunda.gateway.protocol.model.BrokerInfo;
+import io.camunda.gateway.protocol.model.ClusterVariableKindEnum;
 import io.camunda.gateway.protocol.model.ClusterVariableResult;
 import io.camunda.gateway.protocol.model.ClusterVariableScopeEnum;
 import io.camunda.gateway.protocol.model.CreateProcessInstanceResult;
@@ -847,11 +848,17 @@ public final class ResponseMapper {
             : ClusterVariableScopeEnum.GLOBAL;
     final @Nullable String tenantId =
         clusterVariableRecord.isTenantScoped() ? clusterVariableRecord.getTenantId() : null;
+    final ClusterVariableKindEnum kind =
+        switch (clusterVariableRecord.getKind()) {
+          case SECRET_REFERENCE -> ClusterVariableKindEnum.SECRET_REFERENCE;
+          case JSON -> ClusterVariableKindEnum.JSON;
+        };
     return ClusterVariableResult.Builder.create()
         .name(clusterVariableRecord.getName())
         .scope(scope)
         .tenantId(tenantId)
         .metadata(clusterVariableRecord.getMetadata())
+        .kind(kind)
         .value(clusterVariableRecord.getValue())
         .build();
   }

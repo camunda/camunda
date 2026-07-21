@@ -28,14 +28,16 @@ import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.query.SearchWildcardQuery;
+import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.ClusterVariableFilter;
+import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MetadataValueFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import org.junit.jupiter.api.Test;
 
-public final class ClusterVariableFilterMetadataTransformerTest extends AbstractTransformerTest {
+public final class ClusterVariableFilterTransformerTest extends AbstractTransformerTest {
 
   @Test
   public void shouldQueryMetadataByExactKeyValue() {
@@ -256,6 +258,39 @@ public final class ClusterVariableFilterMetadataTransformerTest extends Abstract
     final var nestedQueries =
         bool.must().stream().filter(q -> q.queryOption() instanceof SearchNestedQuery).toList();
     assertThat(nestedQueries).hasSize(2);
+  }
+
+  @Test
+  void shouldTransformKindFilter() {
+    // given
+    final var filter = FilterBuilders.clusterVariable().kinds("JSON").build();
+
+    // when
+    final var query = transformQuery(filter);
+
+    // then
+    // single-value kinds() maps to EQ → SearchTermQuery, returned directly (no bool wrapper)
+    assertThat(query.queryOption()).isInstanceOf(SearchTermQuery.class);
+    final var termQuery = (SearchTermQuery) query.queryOption();
+    assertThat(termQuery.field()).isEqualTo(ClusterVariableIndex.KIND);
+    assertThat(termQuery.value().stringValue()).isEqualTo("JSON");
+  }
+
+  @Test
+  void shouldTransformMultipleKindFilter() {
+    // given
+    final var filter = FilterBuilders.clusterVariable().kinds("JSON", "SECRET_REFERENCE").build();
+
+    // when
+    final var query = transformQuery(filter);
+
+    // then
+    // multiple values → IN → SearchTermsQuery, returned directly (no bool wrapper)
+    assertThat(query.queryOption()).isInstanceOf(SearchTermsQuery.class);
+    final var terms = (SearchTermsQuery) query.queryOption();
+    assertThat(terms.field()).isEqualTo(ClusterVariableIndex.KIND);
+    assertThat(terms.values().stream().map(TypedValue::stringValue).toList())
+        .containsExactly("JSON", "SECRET_REFERENCE");
   }
 
   private SearchQuery transformMetadataQuery(final String key, final Operation<?>... operations) {

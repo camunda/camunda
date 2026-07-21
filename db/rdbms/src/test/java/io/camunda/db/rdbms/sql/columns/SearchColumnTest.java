@@ -20,6 +20,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.entities.BatchOperationType;
+import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
@@ -149,6 +150,11 @@ public class SearchColumnTest {
               List.of(
                   Tuple.of(ClusterVariableScope.GLOBAL, ClusterVariableScope.GLOBAL),
                   Tuple.of(ClusterVariableScope.GLOBAL, "GLOBAL"))),
+          Map.entry(
+              ClusterVariableKind.class,
+              List.of(
+                  Tuple.of(ClusterVariableKind.JSON, ClusterVariableKind.JSON),
+                  Tuple.of(ClusterVariableKind.JSON, "JSON"))),
           Map.entry(
               AuditLogActorType.class,
               List.of(
