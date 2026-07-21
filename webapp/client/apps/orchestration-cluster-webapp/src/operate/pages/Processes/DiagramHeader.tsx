@@ -10,10 +10,7 @@ import {useTranslation} from 'react-i18next';
 import {CopyButton} from '#/operate/shared/CopyButton/CopyButton';
 import {PanelHeader, Description, DescriptionTitle, DescriptionData} from './styled';
 import type {ProcessDefinitionSelection} from './DiagramPanel';
-
-function getProcessDefinitionName(definition: {name: string | null; processDefinitionId: string}) {
-	return definition.name ?? definition.processDefinitionId;
-}
+import {getProcessDefinitionName} from './getProcessDefinitionName';
 
 type Props = {
 	processDefinitionSelection: ProcessDefinitionSelection;

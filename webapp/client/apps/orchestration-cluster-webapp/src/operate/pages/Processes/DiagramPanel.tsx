@@ -17,6 +17,7 @@ import {DiagramHeader} from './DiagramHeader';
 import {useDiagramXml} from './useDiagramXml';
 import {useDiagramStatisticsOverlays} from './useDiagramStatisticsOverlays';
 import {getStatisticsFilter} from './getStatisticsFilter';
+import {getProcessDefinitionName} from './getProcessDefinitionName';
 import {Section} from './styled';
 
 type ProcessDefinitionSelection =
@@ -52,10 +53,6 @@ function StatisticsOverlays() {
 			/>
 		);
 	});
-}
-
-function getProcessDefinitionName(definition: Pick<ProcessDefinition, 'name' | 'processDefinitionId'>) {
-	return definition.name ?? definition.processDefinitionId;
 }
 
 type Props = {

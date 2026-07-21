@@ -9,7 +9,7 @@
 import type {BusinessObject, BusinessObjects, ElementType} from 'bpmn-js/lib/NavigatedViewer';
 import type {DiagramModel} from 'bpmn-moddle';
 import type {OverlayData} from '#/operate/shared/Diagram/overlayTypes';
-import {SUBPROCESS_WITH_INCIDENTS} from './badgePositions';
+import {SUBPROCESS_WITH_INCIDENTS_BADGE} from './badgePositions';
 
 function hasType({businessObject, types}: {businessObject: BusinessObject; types: ElementType[]}) {
 	return types.includes(businessObject.$type);
@@ -57,7 +57,7 @@ function getSubprocessOverlayFromIncidentElements(
 					payload: {elementState: 'incidents'},
 					type,
 					elementId: parent.id,
-					position: SUBPROCESS_WITH_INCIDENTS,
+					position: SUBPROCESS_WITH_INCIDENTS_BADGE,
 				});
 			}
 			current = parent;
