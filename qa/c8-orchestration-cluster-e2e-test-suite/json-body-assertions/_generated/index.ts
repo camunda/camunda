@@ -29,6 +29,16 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/agent-instances/{agentInstanceKey}/history': {
+    POST: {
+      '201': 1,
+    },
+  },
+  '/agent-instances/{agentInstanceKey}/history/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/audit-logs/search': {
     POST: {
       '200': 1,
@@ -292,6 +302,11 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/jobs/batch-update': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/jobs/statistics/global': {
     GET: {
       '200': 1,
@@ -385,6 +400,11 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/process-definitions/{processDefinitionKey}/variable-names/search': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/process-definitions/statistics/process-instances-by-version': {
     POST: {
       '200': 1,
@@ -420,7 +440,17 @@ export const RESPONSE_INDEX = {
       '200': 1,
     },
   },
+  '/process-instances/resumption': {
+    POST: {
+      '200': 1,
+    },
+  },
   '/process-instances/search': {
+    POST: {
+      '200': 1,
+    },
+  },
+  '/process-instances/suspension': {
     POST: {
       '200': 1,
     },
@@ -451,6 +481,11 @@ export const RESPONSE_INDEX = {
     },
   },
   '/process-instances/{processInstanceKey}/statistics/element-instances': {
+    GET: {
+      '200': 1,
+    },
+  },
+  '/process-instances/{processInstanceKey}/statistics/wait-states': {
     GET: {
       '200': 1,
     },
@@ -579,6 +614,16 @@ export const RESPONSE_INDEX = {
   '/topology': {
     GET: {
       '200': 1,
+    },
+  },
+  '/mode': {
+    PATCH: {
+      '200': 1,
+    },
+  },
+  '/restore': {
+    POST: {
+      '202': 1,
     },
   },
   '/users': {
