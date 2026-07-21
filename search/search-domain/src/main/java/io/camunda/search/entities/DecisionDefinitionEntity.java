@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -21,7 +22,9 @@ public record DecisionDefinitionEntity(
     Long decisionRequirementsKey,
     @Nullable String decisionRequirementsName,
     Integer decisionRequirementsVersion,
-    String tenantId)
+    String tenantId,
+    @Nullable String updatedBy,
+    @Nullable OffsetDateTime updatedAt)
     implements TenantOwnedEntity {
 
   public DecisionDefinitionEntity {
@@ -33,5 +36,45 @@ public record DecisionDefinitionEntity(
     Objects.requireNonNull(decisionRequirementsKey, "decisionRequirementsKey");
     Objects.requireNonNull(decisionRequirementsVersion, "decisionRequirementsVersion");
     Objects.requireNonNull(tenantId, "tenantId");
+  }
+
+  public DecisionDefinitionEntity(
+      final Long decisionDefinitionKey,
+      final String decisionDefinitionId,
+      final String name,
+      final Integer version,
+      final String decisionRequirementsId,
+      final Long decisionRequirementsKey,
+      final @Nullable String decisionRequirementsName,
+      final Integer decisionRequirementsVersion,
+      final String tenantId) {
+    this(
+        decisionDefinitionKey,
+        decisionDefinitionId,
+        name,
+        version,
+        decisionRequirementsId,
+        decisionRequirementsKey,
+        decisionRequirementsName,
+        decisionRequirementsVersion,
+        tenantId,
+        null,
+        null);
+  }
+
+  public DecisionDefinitionEntity withUpdateMetadata(
+      final @Nullable String newUpdatedBy, final @Nullable OffsetDateTime newUpdatedAt) {
+    return new DecisionDefinitionEntity(
+        decisionDefinitionKey,
+        decisionDefinitionId,
+        name,
+        version,
+        decisionRequirementsId,
+        decisionRequirementsKey,
+        decisionRequirementsName,
+        decisionRequirementsVersion,
+        tenantId,
+        newUpdatedBy,
+        newUpdatedAt);
   }
 }

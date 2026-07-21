@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -24,7 +25,9 @@ public record VariableEntity(
     // ES/OS handler only writes when rootProcessInstanceKey > 0 (absent for top-level instances).
     @Nullable Long rootProcessInstanceKey,
     String processDefinitionId,
-    String tenantId)
+    String tenantId,
+    @Nullable String updatedBy,
+    @Nullable OffsetDateTime updatedAt)
     implements TenantOwnedEntity {
 
   public VariableEntity {
@@ -36,5 +39,48 @@ public record VariableEntity(
     Objects.requireNonNull(processInstanceKey, "processInstanceKey");
     Objects.requireNonNull(processDefinitionId, "processDefinitionId");
     Objects.requireNonNull(tenantId, "tenantId");
+  }
+
+  public VariableEntity(
+      final Long variableKey,
+      final String name,
+      final String value,
+      final @Nullable String fullValue,
+      final Boolean isPreview,
+      final Long scopeKey,
+      final Long processInstanceKey,
+      final @Nullable Long rootProcessInstanceKey,
+      final String processDefinitionId,
+      final String tenantId) {
+    this(
+        variableKey,
+        name,
+        value,
+        fullValue,
+        isPreview,
+        scopeKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        tenantId,
+        null,
+        null);
+  }
+
+  public VariableEntity withUpdateMetadata(
+      final @Nullable String newUpdatedBy, final @Nullable OffsetDateTime newUpdatedAt) {
+    return new VariableEntity(
+        variableKey,
+        name,
+        value,
+        fullValue,
+        isPreview,
+        scopeKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        tenantId,
+        newUpdatedBy,
+        newUpdatedAt);
   }
 }

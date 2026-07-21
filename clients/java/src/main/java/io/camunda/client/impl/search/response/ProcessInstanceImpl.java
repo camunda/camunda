@@ -41,6 +41,8 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final String tenantId;
   private final Set<String> tags;
   private final String businessId;
+  private final String updatedBy;
+  private final OffsetDateTime updatedAt;
 
   public ProcessInstanceImpl(final ProcessInstanceResult item) {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
@@ -59,6 +61,8 @@ public class ProcessInstanceImpl implements ProcessInstance {
     tenantId = item.getTenantId();
     tags = item.getTags();
     businessId = item.getBusinessId();
+    updatedBy = item.getUpdatedBy();
+    updatedAt = ParseUtil.parseOffsetDateTimeOrNull(item.getUpdatedAt());
   }
 
   @Override
@@ -139,5 +143,15 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public String getBusinessId() {
     return businessId;
+  }
+
+  @Override
+  public String getUpdatedBy() {
+    return updatedBy;
+  }
+
+  @Override
+  public OffsetDateTime getUpdatedAt() {
+    return updatedAt;
   }
 }

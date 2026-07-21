@@ -45,7 +45,9 @@ public record UserTaskEntity(
     Integer processDefinitionVersion,
     Map<String, String> customHeaders,
     @Nullable Integer priority,
-    Set<String> tags)
+    Set<String> tags,
+    @Nullable String updatedBy,
+    @Nullable OffsetDateTime updatedAt)
     implements TenantOwnedEntity {
 
   public UserTaskEntity {
@@ -66,6 +68,62 @@ public record UserTaskEntity(
     candidateUsers = candidateUsers != null ? candidateUsers : new ArrayList<>();
     customHeaders = customHeaders != null ? customHeaders : new HashMap<>();
     tags = tags != null ? tags : new HashSet<>();
+  }
+
+  public UserTaskEntity(
+      final Long userTaskKey,
+      final String elementId,
+      final @Nullable String name,
+      final String processDefinitionId,
+      final @Nullable String processName,
+      final OffsetDateTime creationDate,
+      final @Nullable OffsetDateTime completionDate,
+      final @Nullable String assignee,
+      final UserTaskState state,
+      final @Nullable Long formKey,
+      final Long processDefinitionKey,
+      final Long processInstanceKey,
+      final @Nullable Long rootProcessInstanceKey,
+      final @Nullable String businessId,
+      final Long elementInstanceKey,
+      final String tenantId,
+      final @Nullable OffsetDateTime dueDate,
+      final @Nullable OffsetDateTime followUpDate,
+      final List<String> candidateGroups,
+      final List<String> candidateUsers,
+      final @Nullable String externalFormReference,
+      final Integer processDefinitionVersion,
+      final Map<String, String> customHeaders,
+      final @Nullable Integer priority,
+      final Set<String> tags) {
+    this(
+        userTaskKey,
+        elementId,
+        name,
+        processDefinitionId,
+        processName,
+        creationDate,
+        completionDate,
+        assignee,
+        state,
+        formKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        businessId,
+        elementInstanceKey,
+        tenantId,
+        dueDate,
+        followUpDate,
+        candidateGroups,
+        candidateUsers,
+        externalFormReference,
+        processDefinitionVersion,
+        customHeaders,
+        priority,
+        tags,
+        null,
+        null);
   }
 
   public UserTaskEntity withName(final String newName) {
@@ -94,7 +152,9 @@ public record UserTaskEntity(
         processDefinitionVersion,
         customHeaders,
         priority,
-        tags);
+        tags,
+        updatedBy,
+        updatedAt);
   }
 
   public UserTaskEntity withProcessName(final String newProcessName) {
@@ -123,7 +183,41 @@ public record UserTaskEntity(
         processDefinitionVersion,
         customHeaders,
         priority,
-        tags);
+        tags,
+        updatedBy,
+        updatedAt);
+  }
+
+  public UserTaskEntity withUpdateMetadata(
+      final @Nullable String newUpdatedBy, final @Nullable OffsetDateTime newUpdatedAt) {
+    return new UserTaskEntity(
+        userTaskKey,
+        elementId,
+        name,
+        processDefinitionId,
+        processName,
+        creationDate,
+        completionDate,
+        assignee,
+        state,
+        formKey,
+        processDefinitionKey,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        businessId,
+        elementInstanceKey,
+        tenantId,
+        dueDate,
+        followUpDate,
+        candidateGroups,
+        candidateUsers,
+        externalFormReference,
+        processDefinitionVersion,
+        customHeaders,
+        priority,
+        tags,
+        newUpdatedBy,
+        newUpdatedAt);
   }
 
   public boolean hasName() {

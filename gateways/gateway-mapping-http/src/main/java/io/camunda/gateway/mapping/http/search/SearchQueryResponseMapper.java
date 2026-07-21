@@ -982,6 +982,8 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(p.rootProcessInstanceKey()))
         .tags(p.tags())
         .businessId(emptyToNull(p.businessId()))
+        .updatedBy(p.updatedBy())
+        .updatedAt(formatDateOrNull(p.updatedAt()))
         .build();
   }
 
@@ -1229,6 +1231,8 @@ public final class SearchQueryResponseMapper {
         .name(d.name())
         .tenantId(d.tenantId())
         .version(d.version())
+        .updatedBy(d.updatedBy())
+        .updatedAt(formatDateOrNull(d.updatedAt()))
         .build();
   }
 
@@ -1280,6 +1284,8 @@ public final class SearchQueryResponseMapper {
         .rootProcessInstanceKey(keyToStringOrNull(t.rootProcessInstanceKey()))
         .jobKey(keyToStringOrNull(t.jobKey()))
         .tenantId(t.tenantId())
+        .updatedBy(t.updatedBy())
+        .updatedAt(formatDateOrNull(t.updatedAt()))
         .build();
   }
 
@@ -1379,6 +1385,8 @@ public final class SearchQueryResponseMapper {
         .followUpDate(formatDateOrNull(t.followUpDate()))
         .processDefinitionVersion(t.processDefinitionVersion())
         .formKey(keyToStringOrNull(t.formKey()))
+        .updatedBy(t.updatedBy())
+        .updatedAt(formatDateOrNull(t.updatedAt()))
         .build();
   }
 
@@ -1579,6 +1587,8 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
+        .updatedBy(variableEntity.updatedBy())
+        .updatedAt(formatDateOrNull(variableEntity.updatedAt()))
         .isTruncated(truncateValues && variableEntity.isPreview())
         .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .build();
@@ -1610,6 +1620,8 @@ public final class SearchQueryResponseMapper {
         .variableKey(keyToString(variableEntity.variableKey()))
         .scopeKey(keyToString(variableEntity.scopeKey()))
         .rootProcessInstanceKey(keyToStringOrNull(variableEntity.rootProcessInstanceKey()))
+        .updatedBy(variableEntity.updatedBy())
+        .updatedAt(formatDateOrNull(variableEntity.updatedAt()))
         .value(getFullValueIfPresent(variableEntity))
         .build();
   }

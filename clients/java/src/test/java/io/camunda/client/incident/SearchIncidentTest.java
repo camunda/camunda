@@ -51,6 +51,7 @@ public class SearchIncidentTest extends ClientRestTest {
             .processDefinitionKey("4")
             .jobKey("5")
             .rootProcessInstanceKey("6")
+            .updatedAt(OffsetDateTime.now().toString())
             .creationTime(OffsetDateTime.now().toString()));
 
     // when

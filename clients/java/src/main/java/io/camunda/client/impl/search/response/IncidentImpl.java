@@ -41,6 +41,8 @@ public class IncidentImpl implements Incident {
   private final IncidentState state;
   private final Long jobKey;
   private final String tenantId;
+  private final String updatedBy;
+  private final OffsetDateTime updatedAt;
 
   public IncidentImpl(final IncidentResult item) {
     incidentKey = ParseUtil.parseLongOrNull(item.getIncidentKey());
@@ -58,6 +60,8 @@ public class IncidentImpl implements Incident {
             .orElse(IncidentState.UNKNOWN_ENUM_VALUE);
     jobKey = ParseUtil.parseLongOrNull(item.getJobKey());
     tenantId = item.getTenantId();
+    updatedBy = item.getUpdatedBy();
+    updatedAt = ParseUtil.parseOffsetDateTimeOrNull(item.getUpdatedAt());
   }
 
   @Override
@@ -126,6 +130,16 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
+  public String getUpdatedBy() {
+    return updatedBy;
+  }
+
+  @Override
+  public OffsetDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         incidentKey,
@@ -140,7 +154,9 @@ public class IncidentImpl implements Incident {
         creationTime,
         state,
         jobKey,
-        tenantId);
+        tenantId,
+        updatedBy,
+        updatedAt);
   }
 
   @Override
@@ -164,6 +180,8 @@ public class IncidentImpl implements Incident {
         && Objects.equals(creationTime, incident.creationTime)
         && state == incident.state
         && Objects.equals(jobKey, incident.jobKey)
-        && Objects.equals(tenantId, incident.tenantId);
+        && Objects.equals(tenantId, incident.tenantId)
+        && Objects.equals(updatedBy, incident.updatedBy)
+        && Objects.equals(updatedAt, incident.updatedAt);
   }
 }

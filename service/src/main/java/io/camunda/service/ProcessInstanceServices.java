@@ -17,6 +17,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.clients.WaitStateSearchClient;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -93,6 +94,7 @@ public final class ProcessInstanceServices
   private final RequestRetryHandler requestRetryHandler;
   private final ExecutorService executor;
   private final int maxVariableNameLength;
+  private final UpdateMetadataEnricher updateMetadataEnricher;
   private final Cache<ProcessDefinitionIdentifier, RequestRetryHandler>
       definitionKeyToRetryHandler =
           Caffeine.newBuilder().maximumSize(MAX_CACHED_DEFINITIONS).build();
@@ -179,6 +181,61 @@ public final class ProcessInstanceServices
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final WaitStateSearchClient waitStateSearchClient,
       final IncidentServices incidentServices,
+      final AuditLogServices auditLogServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final int maxVariableNameLength) {
+    this(
+        physicalTenantId,
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        waitStateSearchClient,
+        incidentServices,
+        auditLogServices,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager()),
+        maxVariableNameLength);
+  }
+
+  public ProcessInstanceServices(
+      final String physicalTenantId,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
+      final IncidentServices incidentServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final RequestRetryHandler requestRetryHandler,
+      final int maxVariableNameLength) {
+    this(
+        physicalTenantId,
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        waitStateSearchClient,
+        incidentServices,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        requestRetryHandler,
+        maxVariableNameLength);
+  }
+
+  public ProcessInstanceServices(
+      final String physicalTenantId,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final WaitStateSearchClient waitStateSearchClient,
+      final IncidentServices incidentServices,
+      final AuditLogServices auditLogServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final RequestRetryHandler requestRetryHandler,
@@ -193,6 +250,7 @@ public final class ProcessInstanceServices
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.waitStateSearchClient = waitStateSearchClient;
     this.incidentServices = incidentServices;
+    updateMetadataEnricher = new UpdateMetadataEnricher(auditLogServices);
     this.requestRetryHandler = requestRetryHandler;
     executor = executorProvider.getExecutor();
     this.maxVariableNameLength = maxVariableNameLength;
@@ -201,13 +259,20 @@ public final class ProcessInstanceServices
   @Override
   public SearchQueryResult<ProcessInstanceEntity> search(
       final ProcessInstanceQuery query, final CamundaAuthentication authentication) {
-    return executeSearchRequest(
-        () ->
-            processInstanceSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
-                .searchProcessInstances(query));
+    final var result =
+        executeSearchRequest(
+            () ->
+                processInstanceSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                    .searchProcessInstances(query));
+    return updateMetadataEnricher.enrichPage(
+        result,
+        AuditLogEntityType.PROCESS_INSTANCE,
+        item -> item.processInstanceKey().toString(),
+        (item, metadata) -> item.withUpdateMetadata(metadata.updatedBy(), metadata.updatedAt()),
+        authentication);
   }
 
   public SearchQueryResult<ProcessInstanceEntity> search(
@@ -231,7 +296,7 @@ public final class ProcessInstanceServices
       final long processInstanceKey, final CamundaAuthentication authentication) {
     // Existence + authorization check: throws ServiceException(NOT_FOUND) / (FORBIDDEN) before
     // aggregating, since the aggregation alone cannot distinguish "not found" from "no results".
-    getByKey(processInstanceKey, authentication);
+    getByKeyRaw(processInstanceKey, authentication);
     return executeSearchRequest(
         () ->
             waitStateSearchClient
@@ -243,7 +308,7 @@ public final class ProcessInstanceServices
 
   public List<ProcessInstanceEntity> callHierarchy(
       final long processInstanceKey, final CamundaAuthentication authentication) {
-    final var rootInstance = getByKey(processInstanceKey, authentication);
+    final var rootInstance = getByKeyRaw(processInstanceKey, authentication);
 
     final var treePath = rootInstance.treePath();
     if (treePath == null || treePath.isBlank()) {
@@ -297,6 +362,16 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceEntity getByKey(
+      final Long processInstanceKey, final CamundaAuthentication authentication) {
+    return updateMetadataEnricher.enrichItem(
+        getByKeyRaw(processInstanceKey, authentication),
+        AuditLogEntityType.PROCESS_INSTANCE,
+        item -> item.processInstanceKey().toString(),
+        (item, metadata) -> item.withUpdateMetadata(metadata.updatedBy(), metadata.updatedAt()),
+        authentication);
+  }
+
+  private ProcessInstanceEntity getByKeyRaw(
       final Long processInstanceKey, final CamundaAuthentication authentication) {
     return getByKey(
         processInstanceKey,
@@ -601,7 +676,7 @@ public final class ProcessInstanceServices
       final long processInstanceKey,
       final IncidentQuery query,
       final CamundaAuthentication authentication) {
-    final var processInstance = getByKey(processInstanceKey, authentication);
+    final var processInstance = getByKeyRaw(processInstanceKey, authentication);
     final var treePath = processInstance.treePath();
 
     return incidentServices.search(

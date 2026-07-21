@@ -8,6 +8,15 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.query.AuditLogQuery;
+import io.camunda.security.core.authz.ResourceAccessChecks;
+import java.util.List;
 
-public interface AuditLogReader extends SearchEntityReader<AuditLogEntity, AuditLogQuery> {}
+public interface AuditLogReader extends SearchEntityReader<AuditLogEntity, AuditLogQuery> {
+
+  List<AuditLogEntity> searchLatestSuccessfulByEntityKeys(
+      AuditLogEntityType entityType,
+      List<String> entityKeys,
+      ResourceAccessChecks resourceAccessChecks);
+}

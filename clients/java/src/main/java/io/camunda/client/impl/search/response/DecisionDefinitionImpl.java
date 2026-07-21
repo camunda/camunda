@@ -16,7 +16,9 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.DecisionDefinition;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public final class DecisionDefinitionImpl implements DecisionDefinition {
@@ -30,6 +32,8 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
   private final String decisionRequirementsName;
   private final int decisionRequirementsVersion;
   private final String tenantId;
+  private final String updatedBy;
+  private final OffsetDateTime updatedAt;
 
   public DecisionDefinitionImpl(final DecisionDefinitionResult item) {
     this(
@@ -41,7 +45,9 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
         Long.parseLong(item.getDecisionRequirementsKey()),
         item.getDecisionRequirementsName(),
         item.getDecisionRequirementsVersion(),
-        item.getTenantId());
+        item.getTenantId(),
+        item.getUpdatedBy(),
+        ParseUtil.parseOffsetDateTimeOrNull(item.getUpdatedAt()));
   }
 
   public DecisionDefinitionImpl(
@@ -54,6 +60,32 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
       final String decisionRequirementsName,
       final int decisionRequirementsVersion,
       final String tenantId) {
+    this(
+        decisionDefinitionId,
+        name,
+        version,
+        decisionDefinitionKey,
+        decisionRequirementsId,
+        decisionRequirementsKey,
+        decisionRequirementsName,
+        decisionRequirementsVersion,
+        tenantId,
+        null,
+        null);
+  }
+
+  private DecisionDefinitionImpl(
+      final String decisionDefinitionId,
+      final String name,
+      final int version,
+      final long decisionDefinitionKey,
+      final String decisionRequirementsId,
+      final long decisionRequirementsKey,
+      final String decisionRequirementsName,
+      final int decisionRequirementsVersion,
+      final String tenantId,
+      final String updatedBy,
+      final OffsetDateTime updatedAt) {
     this.decisionDefinitionId = decisionDefinitionId;
     this.name = name;
     this.version = version;
@@ -63,6 +95,8 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
     this.decisionRequirementsName = decisionRequirementsName;
     this.decisionRequirementsVersion = decisionRequirementsVersion;
     this.tenantId = tenantId;
+    this.updatedBy = updatedBy;
+    this.updatedAt = updatedAt;
   }
 
   @Override
@@ -111,6 +145,16 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
   }
 
   @Override
+  public String getUpdatedBy() {
+    return updatedBy;
+  }
+
+  @Override
+  public OffsetDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hash(
         decisionDefinitionId,
@@ -121,7 +165,9 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
         decisionRequirementsKey,
         decisionRequirementsName,
         decisionRequirementsVersion,
-        tenantId);
+        tenantId,
+        updatedBy,
+        updatedAt);
   }
 
   @Override
@@ -141,7 +187,9 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
         && Objects.equals(name, that.name)
         && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
         && Objects.equals(decisionRequirementsName, that.decisionRequirementsName)
-        && Objects.equals(tenantId, that.tenantId);
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(updatedBy, that.updatedBy)
+        && Objects.equals(updatedAt, that.updatedAt);
   }
 
   @Override
@@ -170,6 +218,11 @@ public final class DecisionDefinitionImpl implements DecisionDefinition {
         + ", tenantId='"
         + tenantId
         + '\''
+        + ", updatedBy='"
+        + updatedBy
+        + '\''
+        + ", updatedAt="
+        + updatedAt
         + '}';
   }
 }

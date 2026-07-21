@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -87,6 +88,14 @@ public class UserTaskServiceTest {
             null);
 
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
+    when(auditLogServices.latestSuccessfulByEntityKeys(any(), any(), any())).thenReturn(Map.of());
+  }
+
+  private UserTaskEntity userTaskWithoutUpdateMetadata() {
+    return Instancio.of(UserTaskEntity.class)
+        .set(field(UserTaskEntity::updatedBy), null)
+        .set(field(UserTaskEntity::updatedAt), null)
+        .create();
   }
 
   @Nested
@@ -130,7 +139,7 @@ public class UserTaskServiceTest {
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any())).thenReturn(SearchQueryResult.of(variable));
+      when(variableServices.searchRaw(any(), any())).thenReturn(SearchQueryResult.of(variable));
 
       // when
       final SearchQueryResult<VariableEntity> searchQueryResult =
@@ -140,6 +149,41 @@ public class UserTaskServiceTest {
       // then
       assertThat(searchQueryResult.total()).isEqualTo(1);
       assertThat(searchQueryResult.items()).containsExactly(variable);
+    }
+
+    @Test
+    void shouldEnrichVariablesWithCallerAuthentication() {
+      final var entity = Instancio.create(UserTaskEntity.class);
+      final var flowNodeInstanceEntity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
+              .set(field(FlowNodeInstanceEntity::treePath), "1")
+              .create();
+      final var variable =
+          new VariableEntity(100L, "city", "Berlin", "Berlin", false, 1L, 1L, 1L, "proc", "t1");
+      final var auditLog = Instancio.create(AuditLogEntity.class);
+
+      when(client.getUserTask(entity.userTaskKey())).thenReturn(entity);
+      when(elementInstanceServices.getByKey(
+              entity.elementInstanceKey(), CamundaAuthentication.anonymous()))
+          .thenReturn(flowNodeInstanceEntity);
+      when(variableServices.searchRaw(any(), eq(CamundaAuthentication.anonymous())))
+          .thenReturn(SearchQueryResult.of(variable));
+      when(auditLogServices.latestSuccessfulByEntityKeys(
+              AuditLogEntityType.VARIABLE, List.of("100"), authentication))
+          .thenReturn(Map.of("100", auditLog));
+
+      final var result =
+          services.searchUserTaskVariables(
+              entity.userTaskKey(), variableSearchQuery().build(), authentication);
+
+      assertThat(result.items().getFirst().updatedBy()).isEqualTo(auditLog.actorId());
+      assertThat(result.items().getFirst().updatedAt()).isEqualTo(auditLog.timestamp());
+      verify(auditLogServices)
+          .latestSuccessfulByEntityKeys(
+              AuditLogEntityType.VARIABLE, List.of("100"), authentication);
+      verify(auditLogServices, never())
+          .latestSuccessfulByEntityKeys(eq(AuditLogEntityType.USER_TASK), any(), any());
     }
   }
 
@@ -164,7 +208,7 @@ public class UserTaskServiceTest {
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any()))
+      when(variableServices.searchRaw(any(), any()))
           .thenReturn(SearchQueryResult.of(outerVar, innerVar));
 
       // when
@@ -197,7 +241,7 @@ public class UserTaskServiceTest {
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any()))
+      when(variableServices.searchRaw(any(), any()))
           .thenReturn(SearchQueryResult.of(rootVar, midVar, leafVar));
 
       // when
@@ -232,7 +276,7 @@ public class UserTaskServiceTest {
       when(elementInstanceServices.getByKey(
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(any(), any()))
+      when(variableServices.searchRaw(any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when
@@ -272,7 +316,7 @@ public class UserTaskServiceTest {
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
       // Mock returns variables sorted by name ASC (like data layer would)
-      when(variableServices.search(any(), any()))
+      when(variableServices.searchRaw(any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when — sort by name ASC after deduplication
@@ -311,7 +355,7 @@ public class UserTaskServiceTest {
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
       // Mock returns variables sorted by value DESC (like data layer would)
-      when(variableServices.search(any(), any()))
+      when(variableServices.searchRaw(any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when — sort by value DESC after deduplication
@@ -351,7 +395,7 @@ public class UserTaskServiceTest {
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
       // Mock returns variables sorted by name ASC (like data layer would)
-      when(variableServices.search(any(), any()))
+      when(variableServices.searchRaw(any(), any()))
           .thenReturn(SearchQueryResult.of(b -> b.total(vars.size()).items(vars)));
 
       // when — sort by name ASC, then paginate from=1, size=2
@@ -369,6 +413,37 @@ public class UserTaskServiceTest {
       assertThat(result.items())
           .extracting(VariableEntity::name, VariableEntity::value)
           .containsExactly(tuple("b", "2-inner"), tuple("c", "3"));
+    }
+
+    @Test
+    void shouldEnrichOnlyFinalEffectiveVariablePage() {
+      final var entity = Instancio.create(UserTaskEntity.class);
+      final var flowNodeInstanceEntity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2")
+              .create();
+      final var outer = new VariableEntity(1L, "a", "outer", "outer", false, 1L, 1L, 1L, "p", "t");
+      final var inner = new VariableEntity(2L, "a", "inner", "inner", false, 2L, 1L, 1L, "p", "t");
+      final var second =
+          new VariableEntity(3L, "b", "second", "second", false, 2L, 1L, 1L, "p", "t");
+
+      when(client.getUserTask(entity.userTaskKey())).thenReturn(entity);
+      when(elementInstanceServices.getByKey(
+              entity.elementInstanceKey(), CamundaAuthentication.anonymous()))
+          .thenReturn(flowNodeInstanceEntity);
+      when(variableServices.searchRaw(any(), eq(CamundaAuthentication.anonymous())))
+          .thenReturn(SearchQueryResult.of(outer, inner, second));
+
+      final var result =
+          services.searchUserTaskEffectiveVariables(
+              entity.userTaskKey(),
+              VariableQuery.of(q -> q.page(p -> p.from(0).size(1))),
+              authentication);
+
+      assertThat(result.items()).containsExactly(inner);
+      verify(auditLogServices)
+          .latestSuccessfulByEntityKeys(AuditLogEntityType.VARIABLE, List.of("2"), authentication);
     }
 
     @Test
@@ -392,7 +467,7 @@ public class UserTaskServiceTest {
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
       // The search backend returns cursors, but the early-exit must strip them
-      when(variableServices.search(any(), any()))
+      when(variableServices.searchRaw(any(), any()))
           .thenReturn(new SearchQueryResult<>(2, false, vars, "start-cursor", "end-cursor"));
 
       // when
@@ -427,7 +502,7 @@ public class UserTaskServiceTest {
               eq(flowNodeInstanceEntity.flowNodeInstanceKey()), any()))
           .thenReturn(flowNodeInstanceEntity);
       // The search backend returns cursors, but the service should strip them
-      when(variableServices.search(any(), any()))
+      when(variableServices.searchRaw(any(), any()))
           .thenReturn(new SearchQueryResult<>(2, false, vars, "start-cursor", "end-cursor"));
 
       // when
@@ -486,6 +561,7 @@ public class UserTaskServiceTest {
 
       // then
       assertThat(searchQueryResult.items()).containsOnly(outputEntity);
+      verify(auditLogServices, never()).latestSuccessfulByEntityKeys(any(), any(), any());
     }
   }
 
@@ -507,6 +583,7 @@ public class UserTaskServiceTest {
       // then
       assertThat(result).isPresent();
       assertThat(result.get()).isEqualTo(form);
+      verify(auditLogServices, never()).latestSuccessfulByEntityKeys(any(), any(), any());
     }
 
     @Test
@@ -530,7 +607,7 @@ public class UserTaskServiceTest {
 
     @Test
     void shouldReturnUserTask() {
-      final var entity = Instancio.create(UserTaskEntity.class);
+      final var entity = userTaskWithoutUpdateMetadata();
 
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
 
@@ -612,7 +689,7 @@ public class UserTaskServiceTest {
 
     @Test
     void shouldReturnUserTask() {
-      final var entity = Instancio.create(UserTaskEntity.class);
+      final var entity = userTaskWithoutUpdateMetadata();
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
 
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);
@@ -623,7 +700,11 @@ public class UserTaskServiceTest {
     @Test
     void shouldReturnUserTaskWithCachedName() {
       final var entity =
-          Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::name), null).create();
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::name), null)
+              .set(field(UserTaskEntity::updatedBy), null)
+              .set(field(UserTaskEntity::updatedAt), null)
+              .create();
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
       when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
           .thenReturn(
@@ -638,7 +719,11 @@ public class UserTaskServiceTest {
     @Test
     void shouldReturnUserTaskWithProcessName() {
       final var entity =
-          Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::processName), null).create();
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::processName), null)
+              .set(field(UserTaskEntity::updatedBy), null)
+              .set(field(UserTaskEntity::updatedAt), null)
+              .create();
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
       when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
           .thenReturn(
@@ -653,7 +738,11 @@ public class UserTaskServiceTest {
     @Test
     void shouldReturnUserTaskWithElementIdAsDefaultName() {
       final var entity =
-          Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::name), null).create();
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::name), null)
+              .set(field(UserTaskEntity::updatedBy), null)
+              .set(field(UserTaskEntity::updatedAt), null)
+              .create();
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
 
       final var searchQueryResult = services.search(UserTaskQuery.of(q -> q), authentication);

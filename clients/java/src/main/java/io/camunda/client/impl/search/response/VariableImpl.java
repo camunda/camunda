@@ -21,6 +21,7 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.VariableResult;
 import io.camunda.client.protocol.rest.VariableSearchResult;
+import java.time.OffsetDateTime;
 
 public class VariableImpl implements Variable {
 
@@ -32,6 +33,8 @@ public class VariableImpl implements Variable {
   private final Long rootProcessInstanceKey;
   private final String tenantId;
   private final Boolean isTruncated;
+  private final String updatedBy;
+  private final OffsetDateTime updatedAt;
   @JsonIgnore private final JsonMapper jsonMapper;
 
   public VariableImpl(final VariableSearchResult item, final JsonMapper jsonMapper) {
@@ -43,6 +46,8 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = item.getIsTruncated();
+    updatedBy = item.getUpdatedBy();
+    updatedAt = ParseUtil.parseOffsetDateTimeOrNull(item.getUpdatedAt());
     this.jsonMapper = jsonMapper;
   }
 
@@ -55,6 +60,8 @@ public class VariableImpl implements Variable {
     rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = false;
+    updatedBy = item.getUpdatedBy();
+    updatedAt = ParseUtil.parseOffsetDateTimeOrNull(item.getUpdatedAt());
     this.jsonMapper = jsonMapper;
   }
 
@@ -96,6 +103,16 @@ public class VariableImpl implements Variable {
   @Override
   public Boolean isTruncated() {
     return isTruncated;
+  }
+
+  @Override
+  public String getUpdatedBy() {
+    return updatedBy;
+  }
+
+  @Override
+  public OffsetDateTime getUpdatedAt() {
+    return updatedAt;
   }
 
   @Override

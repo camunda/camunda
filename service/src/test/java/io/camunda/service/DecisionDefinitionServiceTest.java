@@ -85,11 +85,24 @@ public final class DecisionDefinitionServiceTest {
     when(decisionRequirementServices.getDecisionRequirementsXml(any(Long.class), any()))
         .thenReturn("<foo>bar</foo>");
 
+    final var auditLogServices = mock(AuditLogServices.class);
+    final var enrichedServices =
+        new DecisionDefinitionServices(
+            PHYSICAL_TENANT_ID,
+            mock(BrokerClient.class),
+            mock(SecurityContextProvider.class),
+            client,
+            decisionRequirementServices,
+            auditLogServices,
+            mock(ApiServicesExecutorProvider.class),
+            null);
+
     // when
-    final var xml = services.getDecisionDefinitionXml(42L, authentication);
+    final var xml = enrichedServices.getDecisionDefinitionXml(42L, authentication);
 
     // then
     assertThat(xml).isEqualTo("<foo>bar</foo>");
+    verify(auditLogServices, never()).latestSuccessfulByEntityKeys(any(), any(), any());
   }
 
   @Test

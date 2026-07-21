@@ -16,9 +16,16 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.response.Decision;
+import java.time.OffsetDateTime;
 
 public interface DecisionDefinition extends Decision {
   String getDecisionRequirementsName();
 
   int getDecisionRequirementsVersion();
+
+  /** Actor ID from the latest successful accessible audit log entry, or {@code null}. */
+  String getUpdatedBy();
+
+  /** Timestamp from the latest successful accessible audit log entry, or {@code null}. */
+  OffsetDateTime getUpdatedAt();
 }

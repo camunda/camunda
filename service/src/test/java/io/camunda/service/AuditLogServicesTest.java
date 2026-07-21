@@ -15,7 +15,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.AuditLogSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.query.AuditLogQuery;
@@ -28,6 +31,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -164,5 +168,59 @@ class AuditLogServicesTest {
     assertThat(exception.getMessage())
         .isEqualTo("Unauthorized to perform operation 'READ' on resource 'AUDIT_LOG'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+  }
+
+  @Test
+  void shouldMapLatestSuccessfulAuditLogsByEntityKey() {
+    final var latestLog = auditLog("latest", "1", "2026-07-21T11:00:00Z");
+    final var otherLog = auditLog("other", "2", "2026-07-21T10:30:00Z");
+    when(auditLogSearchClient.searchLatestSuccessfulByEntityKeys(any(), any()))
+        .thenReturn(List.of(latestLog, otherLog));
+
+    final var result =
+        auditLogServices.latestSuccessfulByEntityKeys(
+            AuditLogEntityType.VARIABLE, List.of("1", "2", "1"), authentication);
+
+    assertThat(result).containsEntry("1", latestLog).containsEntry("2", otherLog).hasSize(2);
+    verify(auditLogSearchClient)
+        .searchLatestSuccessfulByEntityKeys(AuditLogEntityType.VARIABLE, List.of("1", "2"));
+  }
+
+  @Test
+  void shouldReturnEmptyMetadataWhenAuditLogAccessIsDenied() {
+    when(auditLogSearchClient.searchLatestSuccessfulByEntityKeys(any(), any()))
+        .thenThrow(new ResourceAccessDeniedException(Authorizations.AUDIT_LOG_READ_AUTHORIZATION));
+
+    final var result =
+        auditLogServices.latestSuccessfulByEntityKeys(
+            AuditLogEntityType.INCIDENT, List.of("1"), authentication);
+
+    assertThat(result).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyMetadataWhenAuditLogSearchFails() {
+    when(auditLogSearchClient.searchLatestSuccessfulByEntityKeys(any(), any()))
+        .thenThrow(new CamundaSearchException("sensitive failure", Reason.SEARCH_SERVER_FAILED));
+
+    final var result =
+        auditLogServices.latestSuccessfulByEntityKeys(
+            AuditLogEntityType.INCIDENT, List.of("1"), authentication);
+
+    assertThat(result).isEmpty();
+  }
+
+  private AuditLogEntity auditLog(
+      final String auditLogKey, final String entityKey, final String timestamp) {
+    return new AuditLogEntity.Builder()
+        .auditLogKey(auditLogKey)
+        .entityKey(entityKey)
+        .entityType(AuditLogEntityType.VARIABLE)
+        .operationType(AuditLogEntity.AuditLogOperationType.UPDATE)
+        .timestamp(OffsetDateTime.parse(timestamp))
+        .actorId("demo")
+        .result(AuditLogEntity.AuditLogOperationResult.SUCCESS)
+        .category(AuditLogEntity.AuditLogOperationCategory.DEPLOYED_RESOURCES)
+        .build();
   }
 }

@@ -17,6 +17,7 @@ import io.camunda.search.clients.reader.SearchQueryStatisticsReader;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -124,6 +125,7 @@ import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.security.core.authz.ResourceAccessController;
 import io.camunda.security.core.authz.TenantCheck;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -270,6 +272,20 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
     return doSearchWithReader(requireScopedReaders().auditLogReader(), query);
+  }
+
+  @Override
+  public List<AuditLogEntity> searchLatestSuccessfulByEntityKeys(
+      final AuditLogEntityType entityType, final List<String> entityKeys) {
+    final var uniqueEntityKeys = List.copyOf(new LinkedHashSet<>(entityKeys));
+    if (uniqueEntityKeys.isEmpty()) {
+      return List.of();
+    }
+    return doReadWithResourceAccessController(
+        access ->
+            requireScopedReaders()
+                .auditLogReader()
+                .searchLatestSuccessfulByEntityKeys(entityType, uniqueEntityKeys, access));
   }
 
   @Override

@@ -12,6 +12,7 @@ import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAu
 import static io.camunda.service.authorization.Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -37,6 +38,7 @@ public final class DecisionDefinitionServices
 
   private final DecisionDefinitionSearchClient decisionDefinitionSearchClient;
   private final DecisionRequirementsServices decisionRequirementServices;
+  private final UpdateMetadataEnricher updateMetadataEnricher;
 
   public DecisionDefinitionServices(
       final String physicalTenantId,
@@ -44,6 +46,26 @@ public final class DecisionDefinitionServices
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
       final DecisionRequirementsServices decisionRequirementServices,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this(
+        physicalTenantId,
+        brokerClient,
+        securityContextProvider,
+        decisionDefinitionSearchClient,
+        decisionRequirementServices,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  public DecisionDefinitionServices(
+      final String physicalTenantId,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
+      final DecisionRequirementsServices decisionRequirementServices,
+      final AuditLogServices auditLogServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
@@ -54,18 +76,26 @@ public final class DecisionDefinitionServices
         brokerRequestAuthorizationConverter);
     this.decisionDefinitionSearchClient = decisionDefinitionSearchClient;
     this.decisionRequirementServices = decisionRequirementServices;
+    updateMetadataEnricher = new UpdateMetadataEnricher(auditLogServices);
   }
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> search(
       final DecisionDefinitionQuery query, final CamundaAuthentication authentication) {
-    return executeSearchRequest(
-        () ->
-            decisionDefinitionSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication, DECISION_DEFINITION_READ_AUTHORIZATION))
-                .searchDecisionDefinitions(query));
+    final var result =
+        executeSearchRequest(
+            () ->
+                decisionDefinitionSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication, DECISION_DEFINITION_READ_AUTHORIZATION))
+                    .searchDecisionDefinitions(query));
+    return updateMetadataEnricher.enrichPage(
+        result,
+        AuditLogEntityType.DECISION,
+        item -> item.decisionDefinitionKey().toString(),
+        (item, metadata) -> item.withUpdateMetadata(metadata.updatedBy(), metadata.updatedAt()),
+        authentication);
   }
 
   public SearchQueryResult<DecisionDefinitionEntity> search(
@@ -76,7 +106,7 @@ public final class DecisionDefinitionServices
 
   public String getDecisionDefinitionXml(
       final long decisionKey, final CamundaAuthentication authentication) {
-    return Optional.ofNullable(getByKey(decisionKey, authentication))
+    return Optional.ofNullable(getByKeyRaw(decisionKey, authentication))
         .map(DecisionDefinitionEntity::decisionRequirementsKey)
         .map(
             k ->
@@ -91,16 +121,28 @@ public final class DecisionDefinitionServices
 
   public DecisionDefinitionEntity getByKey(
       final long decisionKey, final CamundaAuthentication authentication) {
-    return executeSearchRequest(
-        () ->
-            decisionDefinitionSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication,
-                        withRequiredAuthorization(
-                            DECISION_DEFINITION_READ_AUTHORIZATION,
-                            DecisionDefinitionEntity::decisionDefinitionId)))
-                .getDecisionDefinition(decisionKey));
+    return updateMetadataEnricher.enrichItem(
+        getByKeyRaw(decisionKey, authentication),
+        AuditLogEntityType.DECISION,
+        item -> item.decisionDefinitionKey().toString(),
+        (item, metadata) -> item.withUpdateMetadata(metadata.updatedBy(), metadata.updatedAt()),
+        authentication);
+  }
+
+  private DecisionDefinitionEntity getByKeyRaw(
+      final long decisionKey, final CamundaAuthentication authentication) {
+    final var result =
+        executeSearchRequest(
+            () ->
+                decisionDefinitionSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication,
+                            withRequiredAuthorization(
+                                DECISION_DEFINITION_READ_AUTHORIZATION,
+                                DecisionDefinitionEntity::decisionDefinitionId)))
+                    .getDecisionDefinition(decisionKey));
+    return result;
   }
 
   public CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> evaluateDecision(

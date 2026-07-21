@@ -45,6 +45,7 @@ import io.camunda.search.entities.ClusterVariableEntity.MetadataEntry;
 import io.camunda.search.entities.ClusterVariableKind;
 import io.camunda.search.entities.ClusterVariableScope;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
+import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
@@ -76,10 +77,135 @@ import io.camunda.security.api.model.user.CamundaUserDTO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class SearchQueryResponseMapperTest {
+
+  private static final OffsetDateTime UPDATED_AT = OffsetDateTime.parse("2026-07-21T12:34:56Z");
+
+  @Test
+  void shouldMapUpdateMetadataForResponseEntities() {
+    final var processInstance =
+        new ProcessInstanceEntity(
+            1L,
+            null,
+            "process",
+            "Process",
+            1,
+            null,
+            2L,
+            null,
+            null,
+            UPDATED_AT,
+            null,
+            ProcessInstanceState.ACTIVE,
+            false,
+            "tenant",
+            null,
+            Set.of(),
+            null,
+            null,
+            "process-actor",
+            UPDATED_AT);
+    final var userTask =
+        new UserTaskEntity(
+            3L,
+            "task",
+            "Task",
+            "process",
+            "Process",
+            UPDATED_AT,
+            null,
+            null,
+            UserTaskState.CREATED,
+            null,
+            2L,
+            1L,
+            null,
+            null,
+            4L,
+            "tenant",
+            null,
+            null,
+            List.of(),
+            List.of(),
+            null,
+            1,
+            Map.of(),
+            50,
+            Set.of(),
+            "task-actor",
+            UPDATED_AT);
+    final var variable =
+        new VariableEntity(
+            5L,
+            "variable",
+            "value",
+            null,
+            false,
+            1L,
+            1L,
+            null,
+            "process",
+            "tenant",
+            "variable-actor",
+            UPDATED_AT);
+    final var incident =
+        new IncidentEntity(
+            6L,
+            2L,
+            "process",
+            1L,
+            null,
+            ErrorType.JOB_NO_RETRIES,
+            "error",
+            "task",
+            4L,
+            UPDATED_AT,
+            IncidentState.ACTIVE,
+            null,
+            "tenant",
+            "incident-actor",
+            UPDATED_AT);
+    final var decisionDefinition =
+        new DecisionDefinitionEntity(
+            7L,
+            "decision",
+            "Decision",
+            1,
+            "requirements",
+            8L,
+            "Requirements",
+            1,
+            "tenant",
+            "decision-actor",
+            UPDATED_AT);
+
+    assertThat(SearchQueryResponseMapper.toProcessInstance(processInstance))
+        .extracting("updatedBy", "updatedAt")
+        .containsExactly("process-actor", "2026-07-21T12:34:56.000Z");
+    assertThat(SearchQueryResponseMapper.toUserTask(userTask))
+        .extracting("updatedBy", "updatedAt")
+        .containsExactly("task-actor", "2026-07-21T12:34:56.000Z");
+    assertThat(SearchQueryResponseMapper.toVariableItem(variable))
+        .extracting("updatedBy", "updatedAt")
+        .containsExactly("variable-actor", "2026-07-21T12:34:56.000Z");
+    assertThat(
+            SearchQueryResponseMapper.toVariableSearchQueryResponse(
+                    new SearchQueryResult<>(1, false, List.of(variable), null, null), true)
+                .getItems()
+                .getFirst())
+        .extracting("updatedBy", "updatedAt")
+        .containsExactly("variable-actor", "2026-07-21T12:34:56.000Z");
+    assertThat(SearchQueryResponseMapper.toIncident(incident))
+        .extracting("updatedBy", "updatedAt")
+        .containsExactly("incident-actor", "2026-07-21T12:34:56.000Z");
+    assertThat(SearchQueryResponseMapper.toDecisionDefinition(decisionDefinition))
+        .extracting("updatedBy", "updatedAt")
+        .containsExactly("decision-actor", "2026-07-21T12:34:56.000Z");
+  }
 
   @Test
   void shouldConvertBatchOperationItemEntity() {

@@ -12,6 +12,7 @@ import static io.camunda.security.core.auth.RequiredAuthorization.withRequiredAu
 import static io.camunda.service.authorization.Authorizations.INCIDENT_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.IncidentSearchClient;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
@@ -36,12 +37,31 @@ public class IncidentServices
     extends SearchQueryService<IncidentServices, IncidentQuery, IncidentEntity> {
 
   private final IncidentSearchClient incidentSearchClient;
+  private final UpdateMetadataEnricher updateMetadataEnricher;
 
   public IncidentServices(
       final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final IncidentSearchClient incidentSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    this(
+        physicalTenantId,
+        brokerClient,
+        securityContextProvider,
+        incidentSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  public IncidentServices(
+      final String physicalTenantId,
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final IncidentSearchClient incidentSearchClient,
+      final AuditLogServices auditLogServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     super(
@@ -51,6 +71,7 @@ public class IncidentServices
         executorProvider,
         brokerRequestAuthorizationConverter);
     this.incidentSearchClient = incidentSearchClient;
+    updateMetadataEnricher = new UpdateMetadataEnricher(auditLogServices);
   }
 
   public SearchQueryResult<IncidentEntity> search(
@@ -62,25 +83,39 @@ public class IncidentServices
   @Override
   public SearchQueryResult<IncidentEntity> search(
       final IncidentQuery query, final CamundaAuthentication authentication) {
-    return executeSearchRequest(
-        () ->
-            incidentSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication, INCIDENT_READ_AUTHORIZATION))
-                .searchIncidents(query));
+    final var result =
+        executeSearchRequest(
+            () ->
+                incidentSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication, INCIDENT_READ_AUTHORIZATION))
+                    .searchIncidents(query));
+    return updateMetadataEnricher.enrichPage(
+        result,
+        AuditLogEntityType.INCIDENT,
+        item -> item.incidentKey().toString(),
+        (item, metadata) -> item.withUpdateMetadata(metadata.updatedBy(), metadata.updatedAt()),
+        authentication);
   }
 
   public IncidentEntity getByKey(final Long key, final CamundaAuthentication authentication) {
-    return executeSearchRequest(
-        () ->
-            incidentSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication,
-                        withRequiredAuthorization(
-                            INCIDENT_READ_AUTHORIZATION, IncidentEntity::processDefinitionId)))
-                .getIncident(key));
+    final var result =
+        executeSearchRequest(
+            () ->
+                incidentSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication,
+                            withRequiredAuthorization(
+                                INCIDENT_READ_AUTHORIZATION, IncidentEntity::processDefinitionId)))
+                    .getIncident(key));
+    return updateMetadataEnricher.enrichItem(
+        result,
+        AuditLogEntityType.INCIDENT,
+        item -> item.incidentKey().toString(),
+        (item, metadata) -> item.withUpdateMetadata(metadata.updatedBy(), metadata.updatedAt()),
+        authentication);
   }
 
   public CompletableFuture<IncidentRecord> resolveIncident(

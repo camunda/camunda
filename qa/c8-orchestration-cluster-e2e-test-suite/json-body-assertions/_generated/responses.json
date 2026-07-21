@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "92f58b73254fb9dacf2966f2e80252f2a4c497d9",
-    "generatedAt": "2026-07-21T13:47:32.155Z",
+    "commit": "local",
+    "generatedAt": "2026-07-21T19:06:04.378Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "553ff63f5439366f1d39eae8f01606ed17f5ab86f3f2e9f669c1527aae2cfb2c"
+    "specSha256": "a72d31ea31e804eab58607628646eb2b689f3770decada52ef92ee5a5d924ab2"
   },
   "responses": [
     {
@@ -2352,6 +2352,16 @@
                   "type": "string"
                 },
                 {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "version",
                   "type": "number"
                 }
@@ -2427,6 +2437,16 @@
           {
             "name": "tenantId",
             "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "version",
@@ -3814,6 +3834,16 @@
                 {
                   "name": "tenantId",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -4569,6 +4599,16 @@
                 {
                   "name": "tenantId",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -4689,6 +4729,16 @@
           {
             "name": "tenantId",
             "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           }
         ],
         "optional": []
@@ -6849,6 +6899,16 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "schema",
                   "wrapper": true
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -7003,6 +7063,16 @@
             "underlyingPrimitive": "string",
             "rawRefName": "schema",
             "wrapper": true
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           }
         ],
         "optional": []
@@ -7139,6 +7209,16 @@
                 {
                   "name": "tenantId",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -8392,6 +8472,10 @@
             "children": {
               "required": [
                 {
+                  "name": "brokerId",
+                  "type": "string"
+                },
+                {
                   "name": "host",
                   "type": "string"
                 },
@@ -8811,6 +8895,16 @@
                   "wrapper": true
                 },
                 {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "userTaskKey",
                   "type": "string"
                 }
@@ -8975,6 +9069,16 @@
             "underlyingPrimitive": "string",
             "rawRefName": "schema",
             "wrapper": true
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "userTaskKey",
@@ -9273,6 +9377,16 @@
                   "type": "string"
                 },
                 {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "value",
                   "type": "string"
                 },
@@ -9382,6 +9496,16 @@
                   "type": "string"
                 },
                 {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "value",
                   "type": "string"
                 },
@@ -9461,6 +9585,16 @@
                   "type": "string"
                 },
                 {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "value",
                   "type": "string"
                 },
@@ -9529,6 +9663,16 @@
           {
             "name": "tenantId",
             "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "value",

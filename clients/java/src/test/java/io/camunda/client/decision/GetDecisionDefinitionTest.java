@@ -21,6 +21,7 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
 import io.camunda.client.util.ClientRestTest;
+import java.time.OffsetDateTime;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +35,7 @@ public final class GetDecisionDefinitionTest extends ClientRestTest {
         decisionDefinitionKey,
         Instancio.create(DecisionDefinitionResult.class)
             .decisionDefinitionKey("1")
+            .updatedAt(OffsetDateTime.now().toString())
             .decisionRequirementsKey("3"));
 
     // when

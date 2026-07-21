@@ -10,15 +10,21 @@ package io.camunda.db.rdbms.read.service;
 import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.AuditLogAuthorizationFilter;
 import io.camunda.db.rdbms.read.domain.AuditLogDbQuery;
+import io.camunda.db.rdbms.read.domain.LatestAuditLogDbQuery;
 import io.camunda.db.rdbms.read.mapper.AuditLogEntityMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.columns.AuditLogSearchColumn;
 import io.camunda.search.clients.reader.AuditLogReader;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.core.authz.ResourceAccessChecks;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -28,6 +34,7 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
     implements AuditLogReader {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuditLogDbReader.class);
+  private static final int MAX_ENTITY_KEYS_PER_QUERY = 900;
 
   private final AuditLogMapper auditLogMapper;
 
@@ -77,6 +84,46 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
         () -> auditLogMapper.search(dbQuery).stream().map(AuditLogEntityMapper::toEntity).toList(),
         dbPage,
         dbSort);
+  }
+
+  @Override
+  public List<AuditLogEntity> searchLatestSuccessfulByEntityKeys(
+      final AuditLogEntityType entityType,
+      final List<String> entityKeys,
+      final ResourceAccessChecks resourceAccessChecks) {
+    if (entityKeys.isEmpty() || noResourceAccess(resourceAccessChecks)) {
+      return List.of();
+    }
+
+    final var uniqueEntityKeys = List.copyOf(new LinkedHashSet<>(entityKeys));
+    final var authorizationFilter =
+        AuditLogAuthorizationFilter.of(resourceAccessChecks.authorizationCheck());
+    final Map<String, AuditLogEntity> latestByEntityKey = new LinkedHashMap<>();
+
+    for (int fromIndex = 0;
+        fromIndex < uniqueEntityKeys.size();
+        fromIndex += MAX_ENTITY_KEYS_PER_QUERY) {
+      final var keyChunk =
+          uniqueEntityKeys.subList(
+              fromIndex, Math.min(fromIndex + MAX_ENTITY_KEYS_PER_QUERY, uniqueEntityKeys.size()));
+      final var query =
+          new LatestAuditLogDbQuery(
+              entityType,
+              keyChunk,
+              authorizationFilter,
+              resourceAccessChecks.tenantCheck().enabled(),
+              resourceAccessChecks.getAuthorizedTenantIds());
+
+      LOG.trace(
+          "[RDBMS DB] Search latest successful audit logs for entity type {} and keys {}",
+          entityType,
+          query.entityKeys());
+      auditLogMapper.searchLatestSuccessfulByEntityKeys(query).stream()
+          .map(AuditLogEntityMapper::toEntity)
+          .forEach(entity -> latestByEntityKey.put(entity.entityKey(), entity));
+    }
+
+    return uniqueEntityKeys.stream().map(latestByEntityKey::get).filter(Objects::nonNull).toList();
   }
 
   public SearchQueryResult<AuditLogEntity> search(final AuditLogQuery query) {

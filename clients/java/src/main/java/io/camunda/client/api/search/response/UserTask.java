@@ -112,4 +112,10 @@ public interface UserTask {
 
   /** Tags associated with the task */
   Set<String> getTags();
+
+  /** Actor ID from the latest successful accessible audit log entry, or {@code null}. */
+  String getUpdatedBy();
+
+  /** Timestamp from the latest successful accessible audit log entry, or {@code null}. */
+  OffsetDateTime getUpdatedAt();
 }

@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.AuditLogDbQuery;
+import io.camunda.db.rdbms.read.domain.LatestAuditLogDbQuery;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.domain.Copyable;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
@@ -25,6 +26,8 @@ public interface AuditLogMapper extends ProcessInstanceDependantMapper, HistoryC
   Long count(AuditLogDbQuery filter);
 
   List<AuditLogDbModel> search(AuditLogDbQuery filter);
+
+  List<AuditLogDbModel> searchLatestSuccessfulByEntityKeys(LatestAuditLogDbQuery query);
 
   int deleteProcessDefinitionRelatedData(List<Long> processDefinitionKeys, int limit);
 

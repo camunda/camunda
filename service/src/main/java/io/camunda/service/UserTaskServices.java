@@ -16,6 +16,7 @@ import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_BY_
 
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -75,6 +76,7 @@ public final class UserTaskServices
   private final VariableServices variableServices;
   private final ProcessCache processCache;
   private final AuditLogServices auditLogServices;
+  private final UpdateMetadataEnricher updateMetadataEnricher;
   private final int maxVariableNameLength;
 
   public UserTaskServices(
@@ -128,6 +130,7 @@ public final class UserTaskServices
     this.elementInstanceServices = elementInstanceServices;
     this.variableServices = variableServices;
     this.auditLogServices = auditLogServices;
+    updateMetadataEnricher = new UpdateMetadataEnricher(auditLogServices);
     this.processCache = processCache;
     this.maxVariableNameLength = maxVariableNameLength;
   }
@@ -135,9 +138,15 @@ public final class UserTaskServices
   @Override
   public SearchQueryResult<UserTaskEntity> search(
       final UserTaskQuery query, final CamundaAuthentication authentication) {
-    return search(
-        query,
-        securityContextProvider.provideSecurityContext(authentication, USER_TASK_AUTHORIZATIONS));
+    return updateMetadataEnricher.enrichPage(
+        search(
+            query,
+            securityContextProvider.provideSecurityContext(
+                authentication, USER_TASK_AUTHORIZATIONS)),
+        AuditLogEntityType.USER_TASK,
+        item -> item.userTaskKey().toString(),
+        (item, metadata) -> item.withUpdateMetadata(metadata.updatedBy(), metadata.updatedAt()),
+        authentication);
   }
 
   private SearchQueryResult<UserTaskEntity> search(
@@ -236,6 +245,16 @@ public final class UserTaskServices
 
   public UserTaskEntity getByKey(
       final long userTaskKey, final CamundaAuthentication authentication) {
+    return updateMetadataEnricher.enrichItem(
+        getByKeyRaw(userTaskKey, authentication),
+        AuditLogEntityType.USER_TASK,
+        item -> item.userTaskKey().toString(),
+        (item, metadata) -> item.withUpdateMetadata(metadata.updatedBy(), metadata.updatedAt()),
+        authentication);
+  }
+
+  private UserTaskEntity getByKeyRaw(
+      final long userTaskKey, final CamundaAuthentication authentication) {
     final var result =
         executeSearchRequest(
             () ->
@@ -251,7 +270,7 @@ public final class UserTaskServices
 
   public Optional<FormEntity> getUserTaskForm(
       final long userTaskKey, final CamundaAuthentication authentication) {
-    return Optional.ofNullable(getByKey(userTaskKey, authentication))
+    return Optional.ofNullable(getByKeyRaw(userTaskKey, authentication))
         .map(UserTaskEntity::formKey)
         .map(formKey -> formServices.getByKey(formKey, CamundaAuthentication.anonymous()));
   }
@@ -262,7 +281,7 @@ public final class UserTaskServices
       final CamundaAuthentication authentication) {
 
     // Fetch the user task by key
-    final var userTask = getByKey(userTaskKey, authentication);
+    final var userTask = getByKeyRaw(userTaskKey, authentication);
 
     // Retrieve the tree path for the flow node instance associated to the user task
     final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
@@ -282,10 +301,12 @@ public final class UserTaskServices
                     .page(variableQuery.page()));
 
     // Execute the search
-    return executeSearchRequest(
-        () ->
-            variableServices.search(
-                variableQueryWithTreePathFilter, CamundaAuthentication.anonymous()));
+    final var result =
+        executeSearchRequest(
+            () ->
+                variableServices.searchRaw(
+                    variableQueryWithTreePathFilter, CamundaAuthentication.anonymous()));
+    return enrichVariables(result, authentication);
   }
 
   public SearchQueryResult<VariableEntity> searchUserTaskEffectiveVariables(
@@ -293,7 +314,7 @@ public final class UserTaskServices
       final VariableQuery variableQuery,
       final CamundaAuthentication authentication) {
 
-    final var userTask = getByKey(userTaskKey, authentication);
+    final var userTask = getByKeyRaw(userTaskKey, authentication);
 
     final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
 
@@ -321,7 +342,7 @@ public final class UserTaskServices
 
     final var allVariables =
         executeSearchRequest(
-            () -> variableServices.search(unlimitedQuery, CamundaAuthentication.anonymous()));
+            () -> variableServices.searchRaw(unlimitedQuery, CamundaAuthentication.anonymous()));
 
     // Deduplicate variables by name, keeping the one from the innermost scope.
     // Since this is a sorted result set by the user's criteria, we iterate through
@@ -340,7 +361,18 @@ public final class UserTaskServices
     final List<VariableEntity> pageItems =
         from < total ? new ArrayList<>(dedupedVariables.subList(from, end)) : List.of();
 
-    return new SearchQueryResult<>(total, false, pageItems, null, null);
+    return enrichVariables(
+        new SearchQueryResult<>(total, false, pageItems, null, null), authentication);
+  }
+
+  private SearchQueryResult<VariableEntity> enrichVariables(
+      final SearchQueryResult<VariableEntity> result, final CamundaAuthentication authentication) {
+    return updateMetadataEnricher.enrichPage(
+        result,
+        AuditLogEntityType.VARIABLE,
+        item -> item.variableKey().toString(),
+        (item, metadata) -> item.withUpdateMetadata(metadata.updatedBy(), metadata.updatedAt()),
+        authentication);
   }
 
   /**
@@ -390,7 +422,7 @@ public final class UserTaskServices
       final long userTaskKey,
       final AuditLogQuery auditLogQuery,
       final CamundaAuthentication authentication) {
-    getByKey(userTaskKey, authentication); // Ensure user task exists and is accessible
+    getByKeyRaw(userTaskKey, authentication); // Ensure user task exists and is accessible
 
     // Create an audit log query with user task key filter
     final var auditLogWithUserTaskKeyFilter =

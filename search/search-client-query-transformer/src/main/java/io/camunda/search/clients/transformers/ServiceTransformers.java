@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers;
 
 import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.aggregation.AuditLogLatestSuccessfulAggregation;
 import io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation;
 import io.camunda.search.aggregation.GlobalJobStatisticsAggregation;
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation;
@@ -27,6 +28,7 @@ import io.camunda.search.aggregation.UsageMetricsTUAggregation;
 import io.camunda.search.aggregation.VariableNameAggregation;
 import io.camunda.search.aggregation.WaitStateStatisticsAggregation;
 import io.camunda.search.aggregation.result.AggregationResultBase;
+import io.camunda.search.aggregation.result.AuditLogLatestSuccessfulAggregationResult;
 import io.camunda.search.aggregation.result.DecisionDefinitionLatestVersionAggregationResult;
 import io.camunda.search.aggregation.result.GlobalJobStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResult;
@@ -50,6 +52,7 @@ import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.aggregation.AggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.AuditLogLatestSuccessfulAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.DecisionDefinitionLatestVersionAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.GlobalJobStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregationTransformer;
@@ -69,6 +72,7 @@ import io.camunda.search.clients.transformers.aggregation.UsageMetricsTUAggregat
 import io.camunda.search.clients.transformers.aggregation.VariableNameAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.WaitStateStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.AggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.AuditLogLatestSuccessfulAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.DecisionDefinitionLatestVersionAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.GlobalJobStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformer;
@@ -252,6 +256,7 @@ import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.filter.WaitStateStatisticsFilter;
 import io.camunda.search.query.AgentInstanceHistoryQuery;
 import io.camunda.search.query.AgentInstanceQuery;
+import io.camunda.search.query.AuditLogLatestSuccessfulQuery;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
@@ -470,6 +475,7 @@ public final class ServiceTransformers {
     Stream.of(
             AgentInstanceHistoryQuery.class,
             AgentInstanceQuery.class,
+            AuditLogLatestSuccessfulQuery.class,
             AuthorizationQuery.class,
             BatchOperationQuery.class,
             BatchOperationItemQuery.class,
@@ -762,6 +768,9 @@ public final class ServiceTransformers {
         ProcessInstanceFlowNodeStatisticsAggregation.class,
         new ProcessInstanceFlowNodeStatisticsAggregationTransformer());
     mappers.put(
+        AuditLogLatestSuccessfulAggregation.class,
+        new AuditLogLatestSuccessfulAggregationTransformer());
+    mappers.put(
         ProcessDefinitionLatestVersionAggregation.class,
         new ProcessDefinitionLatestVersionAggregationTransformer());
     mappers.put(UsageMetricsAggregation.class, new UsageMetricsAggregationTransformer());
@@ -806,6 +815,9 @@ public final class ServiceTransformers {
     mappers.put(
         ProcessInstanceFlowNodeStatisticsAggregationResult.class,
         new ProcessInstanceFlowNodeStatisticsAggregationResultTransformer());
+    mappers.put(
+        AuditLogLatestSuccessfulAggregationResult.class,
+        new AuditLogLatestSuccessfulAggregationResultTransformer());
     mappers.put(
         ProcessDefinitionLatestVersionAggregationResult.class,
         new ProcessDefinitionLatestVersionAggregationResultTransformer());

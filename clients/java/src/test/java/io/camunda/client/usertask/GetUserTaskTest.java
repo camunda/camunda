@@ -43,6 +43,7 @@ public class GetUserTaskTest extends ClientRestTest {
             .completionDate(OffsetDateTime.now().toString())
             .dueDate(OffsetDateTime.now().toString())
             .followUpDate(OffsetDateTime.now().toString())
+            .updatedAt(OffsetDateTime.now().toString())
             .rootProcessInstanceKey("6"));
 
     // when

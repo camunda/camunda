@@ -13,6 +13,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.entities.AgentInstanceEntity;
 import io.camunda.search.entities.AgentInstanceHistoryEntity;
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -409,6 +410,12 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public List<AuditLogEntity> searchLatestSuccessfulByEntityKeys(
+      final AuditLogEntityType entityType, final List<String> entityKeys) {
+    return List.of();
   }
 
   @Override

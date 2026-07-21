@@ -45,7 +45,9 @@ public record ProcessInstanceEntity(
     Set<String> tags,
     @Nullable String businessId,
     // not set by the primary handler; populated once the exporter/appliers for SUSPEND/RESUME land.
-    @Nullable OffsetDateTime suspendedDate)
+    @Nullable OffsetDateTime suspendedDate,
+    @Nullable String updatedBy,
+    @Nullable OffsetDateTime updatedAt)
     implements TenantOwnedEntity {
 
   public ProcessInstanceEntity {
@@ -55,6 +57,48 @@ public record ProcessInstanceEntity(
     // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
     // Immutable defaults (e.g. Set.of()) would cause UnsupportedOperationException at runtime.
     tags = tags != null ? tags : new HashSet<>();
+  }
+
+  public ProcessInstanceEntity(
+      final Long processInstanceKey,
+      final @Nullable Long rootProcessInstanceKey,
+      final @Nullable String processDefinitionId,
+      final @Nullable String processDefinitionName,
+      final @Nullable Integer processDefinitionVersion,
+      final @Nullable String processDefinitionVersionTag,
+      final @Nullable Long processDefinitionKey,
+      final @Nullable Long parentProcessInstanceKey,
+      final @Nullable Long parentFlowNodeInstanceKey,
+      final @Nullable OffsetDateTime startDate,
+      final @Nullable OffsetDateTime endDate,
+      final @Nullable ProcessInstanceState state,
+      final @Nullable Boolean hasIncident,
+      final String tenantId,
+      final @Nullable String treePath,
+      final Set<String> tags,
+      final @Nullable String businessId,
+      final @Nullable OffsetDateTime suspendedDate) {
+    this(
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        processDefinitionName,
+        processDefinitionVersion,
+        processDefinitionVersionTag,
+        processDefinitionKey,
+        parentProcessInstanceKey,
+        parentFlowNodeInstanceKey,
+        startDate,
+        endDate,
+        state,
+        hasIncident,
+        tenantId,
+        treePath,
+        tags,
+        businessId,
+        suspendedDate,
+        null,
+        null);
   }
 
   public ProcessInstanceEntity(
@@ -93,7 +137,34 @@ public record ProcessInstanceEntity(
         treePath,
         new HashSet<>(),
         businessId,
+        null,
+        null,
         null);
+  }
+
+  public ProcessInstanceEntity withUpdateMetadata(
+      final @Nullable String newUpdatedBy, final @Nullable OffsetDateTime newUpdatedAt) {
+    return new ProcessInstanceEntity(
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionId,
+        processDefinitionName,
+        processDefinitionVersion,
+        processDefinitionVersionTag,
+        processDefinitionKey,
+        parentProcessInstanceKey,
+        parentFlowNodeInstanceKey,
+        startDate,
+        endDate,
+        state,
+        hasIncident,
+        tenantId,
+        treePath,
+        tags,
+        businessId,
+        suspendedDate,
+        newUpdatedBy,
+        newUpdatedAt);
   }
 
   public enum ProcessInstanceState {

@@ -162,15 +162,27 @@ public class CamundaServicesConfiguration {
               final var form =
                   new FormServices(
                       tenantId, brokerClient, securityContextProvider, search, executor, converter);
-              final var incident =
-                  new IncidentServices(
-                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
-              final var variable =
-                  new VariableServices(
-                      tenantId, brokerClient, securityContextProvider, search, executor, converter);
               final var auditLog =
                   new AuditLogServices(
                       tenantId, brokerClient, securityContextProvider, search, executor, converter);
+              final var incident =
+                  new IncidentServices(
+                      tenantId,
+                      brokerClient,
+                      securityContextProvider,
+                      search,
+                      auditLog,
+                      executor,
+                      converter);
+              final var variable =
+                  new VariableServices(
+                      tenantId,
+                      brokerClient,
+                      securityContextProvider,
+                      search,
+                      auditLog,
+                      executor,
+                      converter);
               final var decisionRequirements =
                   new DecisionRequirementsServices(
                       tenantId, brokerClient, securityContextProvider, search, executor, converter);
@@ -207,6 +219,7 @@ public class CamundaServicesConfiguration {
                       search,
                       search,
                       incident,
+                      auditLog,
                       executor,
                       converter,
                       maxNameFieldLength);
@@ -292,6 +305,7 @@ public class CamundaServicesConfiguration {
                           securityContextProvider,
                           search,
                           decisionRequirements,
+                          auditLog,
                           executor,
                           converter))
                   .decisionInstanceServices(

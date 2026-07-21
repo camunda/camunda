@@ -301,6 +301,8 @@ components:
         - name
         - tenantId
         - version
+        - updatedBy
+        - updatedAt
       properties:
         decisionDefinitionId:
           allOf:
@@ -333,6 +335,20 @@ components:
         version:
           description: The assigned version of the decision definition.
           type: integer
+        updatedBy:
+          description: |
+            The actor ID from an accessible successful audit-log entry with the latest timestamp.
+            If multiple entries have that timestamp, which actor is returned is unspecified. This
+            is `null` if no such entry exists.
+          nullable: true
+          type: string
+        updatedAt:
+          description: |
+            The latest timestamp among accessible successful audit-log entries. This is `null` if
+            none exists.
+          nullable: true
+          type: string
+          format: date-time
       x-properties-added-in-version:
         - propertyName: decisionDefinitionId
           addedInVersion: "8.6"
@@ -352,6 +368,10 @@ components:
           addedInVersion: "8.6"
         - propertyName: version
           addedInVersion: "8.6"
+        - propertyName: updatedBy
+          addedInVersion: "8.10"
+        - propertyName: updatedAt
+          addedInVersion: "8.10"
 
     DecisionEvaluationInstruction:
       x-polymorphic-schema: true

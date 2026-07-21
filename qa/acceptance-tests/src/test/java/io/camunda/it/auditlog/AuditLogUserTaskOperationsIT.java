@@ -83,6 +83,41 @@ public class AuditLogUserTaskOperationsIT {
   }
 
   @Test
+  void shouldExposeLatestUserTaskAuditLogAsUpdateMetadata(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    final long userTaskKey = userTask.getUserTaskKey();
+    final var auditLog =
+        client
+            .newUserTaskAuditLogSearchRequest(userTaskKey)
+            .filter(f -> f.operationType(AuditLogOperationTypeEnum.COMPLETE))
+            .send()
+            .join()
+            .items()
+            .getFirst();
+
+    Awaitility.await("User task update metadata is exported")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () -> {
+              final var searchResult =
+                  client
+                      .newUserTaskSearchRequest()
+                      .filter(f -> f.userTaskKey(userTaskKey))
+                      .send()
+                      .join()
+                      .items()
+                      .getFirst();
+              final var detail = client.newUserTaskGetRequest(userTaskKey).send().join();
+
+              assertThat(searchResult.getUpdatedBy()).isEqualTo(auditLog.getActorId());
+              assertThat(searchResult.getUpdatedAt()).isEqualTo(auditLog.getTimestamp());
+              assertThat(detail.getUpdatedBy()).isEqualTo(auditLog.getActorId());
+              assertThat(detail.getUpdatedAt()).isEqualTo(auditLog.getTimestamp());
+            });
+  }
+
+  @Test
   void shouldSearchUserTaskAuditLogByKeyWithAssignOperation(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given

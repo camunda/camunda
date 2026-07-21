@@ -234,6 +234,8 @@ components:
         - variableKey
         - scopeKey
         - rootProcessInstanceKey
+        - updatedBy
+        - updatedAt
       properties:
         name:
           description: Name of this variable.
@@ -266,9 +268,27 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        updatedBy:
+          description: |
+            The actor ID from an accessible successful audit-log entry with the latest timestamp.
+            If multiple entries have that timestamp, which actor is returned is unspecified. This
+            is `null` if no such entry exists.
+          nullable: true
+          type: string
+        updatedAt:
+          description: |
+            The latest timestamp among accessible successful audit-log entries. This is `null` if
+            none exists.
+          nullable: true
+          type: string
+          format: date-time
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
+        - propertyName: updatedBy
+          addedInVersion: "8.10"
+        - propertyName: updatedAt
+          addedInVersion: "8.10"
 
     VariableValueFilterProperty:
       type: object

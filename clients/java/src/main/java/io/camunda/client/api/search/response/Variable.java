@@ -15,6 +15,8 @@
  */
 package io.camunda.client.api.search.response;
 
+import java.time.OffsetDateTime;
+
 public interface Variable {
   /* The key of the variable */
   Long getVariableKey();
@@ -47,6 +49,12 @@ public interface Variable {
 
   /* Check if the variable is truncated */
   Boolean isTruncated();
+
+  /** Actor ID from the latest successful accessible audit log entry, or {@code null}. */
+  String getUpdatedBy();
+
+  /** Timestamp from the latest successful accessible audit log entry, or {@code null}. */
+  OffsetDateTime getUpdatedAt();
 
   /**
    * Deserializes the variable's JSON value into the given type.

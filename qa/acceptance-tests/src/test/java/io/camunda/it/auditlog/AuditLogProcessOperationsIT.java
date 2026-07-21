@@ -44,6 +44,7 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -157,6 +158,27 @@ public class AuditLogProcessOperationsIT {
         processInstanceKey,
         processInstance.getProcessDefinitionKey(),
         SERVICE_TASKS_PROCESS_ID);
+
+    Awaitility.await("Process instance update metadata is exported")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(15))
+        .untilAsserted(
+            () -> {
+              final var searchResult =
+                  client
+                      .newProcessInstanceSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .send()
+                      .join()
+                      .items()
+                      .getFirst();
+              final var detail =
+                  client.newProcessInstanceGetRequest(processInstanceKey).send().join();
+
+              assertUpdateMetadata(
+                  searchResult.getUpdatedBy(), searchResult.getUpdatedAt(), auditLog);
+              assertUpdateMetadata(detail.getUpdatedBy(), detail.getUpdatedAt(), auditLog);
+            });
   }
 
   @Test
@@ -561,6 +583,27 @@ public class AuditLogProcessOperationsIT {
         processInstance.getProcessDefinitionKey(),
         SERVICE_TASKS_PROCESS_ID,
         "existingVar");
+
+    final long variableKey = Long.parseLong(auditLog.getEntityKey());
+    Awaitility.await("Variable update metadata is exported")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(15))
+        .untilAsserted(
+            () -> {
+              final var searchResult =
+                  client
+                      .newVariableSearchRequest()
+                      .filter(f -> f.variableKey(variableKey))
+                      .send()
+                      .join()
+                      .items()
+                      .getFirst();
+              final var detail = client.newVariableGetRequest(variableKey).send().join();
+
+              assertUpdateMetadata(
+                  searchResult.getUpdatedBy(), searchResult.getUpdatedAt(), auditLog);
+              assertUpdateMetadata(detail.getUpdatedBy(), detail.getUpdatedAt(), auditLog);
+            });
   }
 
   @Test
@@ -615,6 +658,28 @@ public class AuditLogProcessOperationsIT {
                       "variables set during job completion should not produce variable audit log entries"
                           + " because their source is not API")
                   .isEmpty();
+            });
+
+    Awaitility.await("Variable without an audit event is exported")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(15))
+        .untilAsserted(
+            () -> {
+              final var searchResult =
+                  client
+                      .newVariableSearchRequest()
+                      .filter(f -> f.processInstanceKey(processInstanceKey).name("jobOutputVar"))
+                      .send()
+                      .join()
+                      .items()
+                      .getFirst();
+              final var detail =
+                  client.newVariableGetRequest(searchResult.getVariableKey()).send().join();
+
+              assertThat(searchResult.getUpdatedBy()).isNull();
+              assertThat(searchResult.getUpdatedAt()).isNull();
+              assertThat(detail.getUpdatedBy()).isNull();
+              assertThat(detail.getUpdatedAt()).isNull();
             });
   }
 
@@ -711,6 +776,27 @@ public class AuditLogProcessOperationsIT {
         processInstanceKey,
         processInstance.getProcessDefinitionKey(),
         INCIDENT_PROCESS_ID);
+
+    Awaitility.await("Incident update metadata is exported")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(15))
+        .untilAsserted(
+            () -> {
+              final var searchResult =
+                  client
+                      .newIncidentSearchRequest()
+                      .filter(f -> f.incidentKey(incident.getIncidentKey()))
+                      .send()
+                      .join()
+                      .items()
+                      .getFirst();
+              final var detail =
+                  client.newIncidentGetRequest(incident.getIncidentKey()).send().join();
+
+              assertUpdateMetadata(
+                  searchResult.getUpdatedBy(), searchResult.getUpdatedAt(), auditLog);
+              assertUpdateMetadata(detail.getUpdatedBy(), detail.getUpdatedAt(), auditLog);
+            });
   }
 
   // ========================================================================================
@@ -721,13 +807,14 @@ public class AuditLogProcessOperationsIT {
   void shouldTrackStandaloneDecisionEvaluation(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // when - evaluate a decision
-    client
-        .newEvaluateDecisionCommand()
-        .decisionId(DECISION_ID)
-        .tenantId(TENANT_A)
-        .variables(Map.of("age", 25, "income", 30000))
-        .send()
-        .join();
+    final var evaluation =
+        client
+            .newEvaluateDecisionCommand()
+            .decisionId(DECISION_ID)
+            .tenantId(TENANT_A)
+            .variables(Map.of("age", 25, "income", 30000))
+            .send()
+            .join();
 
     // then - wait for audit log entry and verify
     final var auditLogItems =
@@ -737,6 +824,36 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = auditLogItems.getFirst();
     assertDecisionAuditLog(auditLog, AuditLogOperationTypeEnum.EVALUATE);
+
+    final long decisionDefinitionKey = evaluation.getDecisionKey();
+    final var decisionCreateAuditLog =
+        awaitAuditLogEntry(
+                client,
+                AuditLogEntityTypeEnum.DECISION,
+                AuditLogOperationTypeEnum.CREATE,
+                String.valueOf(decisionDefinitionKey))
+            .getFirst();
+    Awaitility.await("Decision definition update metadata is exported")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(15))
+        .untilAsserted(
+            () -> {
+              final var searchResult =
+                  client
+                      .newDecisionDefinitionSearchRequest()
+                      .filter(f -> f.decisionDefinitionKey(decisionDefinitionKey))
+                      .send()
+                      .join()
+                      .items()
+                      .getFirst();
+              final var detail =
+                  client.newDecisionDefinitionGetRequest(decisionDefinitionKey).send().join();
+
+              assertUpdateMetadata(
+                  searchResult.getUpdatedBy(), searchResult.getUpdatedAt(), decisionCreateAuditLog);
+              assertUpdateMetadata(
+                  detail.getUpdatedBy(), detail.getUpdatedAt(), decisionCreateAuditLog);
+            });
   }
 
   @Test
@@ -1287,5 +1404,11 @@ public class AuditLogProcessOperationsIT {
               return !auditLogItems.items().isEmpty() ? auditLogItems.items() : null;
             },
             Objects::nonNull);
+  }
+
+  private void assertUpdateMetadata(
+      final String updatedBy, final OffsetDateTime updatedAt, final AuditLogResult auditLog) {
+    assertThat(updatedBy).isEqualTo(auditLog.getActorId());
+    assertThat(updatedAt).isEqualTo(auditLog.getTimestamp());
   }
 }

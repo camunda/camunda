@@ -11,10 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableFilter.Builder;
@@ -111,5 +114,28 @@ public class VariableServiceTest {
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
+  }
+
+  @Test
+  void shouldPropagatePrimaryEntityLookupFailureWithoutAuditLookup() {
+    final var auditLogServices = mock(AuditLogServices.class);
+    services =
+        new VariableServices(
+            PHYSICAL_TENANT_ID,
+            mock(BrokerClient.class),
+            mock(SecurityContextProvider.class),
+            client,
+            auditLogServices,
+            mock(ApiServicesExecutorProvider.class),
+            null);
+    when(client.getVariable(1L))
+        .thenThrow(
+            new CamundaSearchException("primary search failed", Reason.SEARCH_SERVER_FAILED));
+
+    assertThatThrownBy(() -> services.getByKey(1L, authentication))
+        .isInstanceOfSatisfying(
+            ServiceException.class,
+            exception -> assertThat(exception.getStatus()).isEqualTo(Status.INTERNAL));
+    verifyNoInteractions(auditLogServices);
   }
 }

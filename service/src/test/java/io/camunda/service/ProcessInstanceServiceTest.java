@@ -60,6 +60,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRe
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
+import io.camunda.zeebe.gateway.validation.VariableNameLengthValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
@@ -97,6 +98,7 @@ public final class ProcessInstanceServiceTest {
   private SequenceFlowSearchClient sequenceFlowSearchClient;
   private WaitStateSearchClient waitStateSearchClient;
   private IncidentServices incidentServices;
+  private AuditLogServices auditLogServices;
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
   private RequiredAuthorization<BatchOperationCreationRecord> authorizationCheck;
@@ -115,6 +117,7 @@ public final class ProcessInstanceServiceTest {
             RequiredAuthorization.of(a -> a.processDefinition().updateProcessInstance()),
             "myProcess");
     incidentServices = mock(IncidentServices.class);
+    auditLogServices = mock(AuditLogServices.class);
     when(processInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(processInstanceSearchClient);
     when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
@@ -228,11 +231,13 @@ public final class ProcessInstanceServiceTest {
         .thenReturn(List.of(new WaitStateStatisticsEntity("task-a", 3L)));
 
     // when
-    final var result = services.waitStateStatistics(processInstanceKey, authentication);
+    final var result =
+        servicesWithUpdateMetadata().waitStateStatistics(processInstanceKey, authentication);
 
     // then
     assertThat(result).containsExactly(new WaitStateStatisticsEntity("task-a", 3L));
     verify(waitStateSearchClient).waitStateStatistics(processInstanceKey);
+    verifyNoInteractions(auditLogServices);
   }
 
   @Test
@@ -415,12 +420,15 @@ public final class ProcessInstanceServiceTest {
             new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
 
     // when
-    final var result = services.callHierarchy(childProcess.processInstanceKey(), authentication);
+    final var result =
+        servicesWithUpdateMetadata()
+            .callHierarchy(childProcess.processInstanceKey(), authentication);
 
     // then
     assertThat(result).hasSize(2);
     assertThat(result.get(0).processInstanceKey()).isEqualTo(123L); // Parent comes first
     assertThat(result.get(1).processInstanceKey()).isEqualTo(789L); // Child comes next
+    verifyNoInteractions(auditLogServices);
   }
 
   @Test
@@ -611,7 +619,8 @@ public final class ProcessInstanceServiceTest {
     when(incidentServices.search(any(IncidentQuery.class), any())).thenReturn(queryResult);
 
     // when
-    final var result = services.searchIncidents(processInstanceKey, query, authentication);
+    final var result =
+        servicesWithUpdateMetadata().searchIncidents(processInstanceKey, query, authentication);
 
     // then
     assertThat(result).isEqualTo(queryResult);
@@ -623,6 +632,22 @@ public final class ProcessInstanceServiceTest {
         .containsExactly(Operation.like(processInstance.treePath() + "*"));
     assertThat(incidentQuery.page()).isEqualTo(query.page());
     assertThat(incidentQuery.sort()).isEqualTo(query.sort());
+    verifyNoInteractions(auditLogServices);
+  }
+
+  private ProcessInstanceServices servicesWithUpdateMetadata() {
+    return new ProcessInstanceServices(
+        PHYSICAL_TENANT_ID,
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        waitStateSearchClient,
+        incidentServices,
+        auditLogServices,
+        executorProvider,
+        brokerRequestAuthorizationConverter,
+        VariableNameLengthValidator.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
 
   @Test

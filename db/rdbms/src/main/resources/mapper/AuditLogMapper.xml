@@ -72,60 +72,75 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.paging" />
   </select>
 
+  <select id="searchLatestSuccessfulByEntityKeys"
+    parameterType="io.camunda.db.rdbms.read.domain.LatestAuditLogDbQuery"
+    resultType="io.camunda.db.rdbms.write.domain.AuditLogDbModel"
+    statementType="PREPARED">
+    SELECT
+      AUDIT_LOG_KEY,
+      ENTITY_KEY,
+      ENTITY_TYPE,
+      OPERATION_TYPE,
+      ENTITY_VERSION,
+      ENTITY_VALUE_TYPE,
+      ENTITY_OPERATION_INTENT,
+      BATCH_OPERATION_KEY,
+      BATCH_OPERATION_TYPE,
+      TIMESTAMP,
+      ACTOR_TYPE,
+      ACTOR_ID,
+      AGENT_ELEMENT_ID,
+      TENANT_ID,
+      TENANT_SCOPE,
+      RESULT,
+      CATEGORY,
+      PROCESS_DEFINITION_ID,
+      DECISION_REQUIREMENTS_ID,
+      DECISION_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      PROCESS_INSTANCE_KEY,
+      ROOT_PROCESS_INSTANCE_KEY,
+      ELEMENT_INSTANCE_KEY,
+      JOB_KEY,
+      USER_TASK_KEY,
+      DECISION_REQUIREMENTS_KEY,
+      DECISION_DEFINITION_KEY,
+      DECISION_EVALUATION_KEY,
+      DEPLOYMENT_KEY,
+      FORM_KEY,
+      RESOURCE_KEY,
+      RELATED_ENTITY_TYPE,
+      RELATED_ENTITY_KEY,
+      ENTITY_DESCRIPTION,
+      PARTITION_ID,
+      HISTORY_CLEANUP_DATE,
+      INBOUND_CHANNEL_TYPE,
+      INBOUND_CHANNEL_TOOL_NAME
+    FROM (
+      SELECT audit_log.*,
+        ROW_NUMBER() OVER (
+          PARTITION BY ENTITY_KEY
+          <!-- Equal timestamps remain unordered: AUDIT_LOG_KEY is not numerically sortable. -->
+          ORDER BY TIMESTAMP DESC
+        ) AS ROW_NUM
+      FROM ${prefix}AUDIT_LOG audit_log
+      <where>
+        AND ENTITY_TYPE = #{entityType}
+        AND RESULT = 'SUCCESS'
+        AND ENTITY_KEY IN
+        <foreach collection="entityKeys" item="entityKey" open="(" separator="," close=")">
+          #{entityKey}
+        </foreach>
+        <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.latestTenantAuthorizationFilter" />
+        <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.resourceAuthorizationFilter" />
+      </where>
+    ) ranked
+    WHERE ROW_NUM = 1
+  </select>
+
   <sql id="searchFilter">
     <where>
-      <!-- tenant authorization filter -->
-      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
-        AND (TENANT_SCOPE = 'GLOBAL' OR TENANT_ID IN
-        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
-          #{tenantId}
-        </foreach>)
-      </if>
-      <!-- Deny all access when no authorizations are configured -->
-      <if test="authorizationFilter.authorizedCategories.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
-        AND 1 = 0
-      </if>
-      <!-- composite authorization filter (OR of all authorization checks) -->
-      <!-- Only apply this filter if there are any authorizations configured -->
-      <if test="!authorizationFilter.authorizedCategories.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
-        AND (
-          <trim prefixOverrides="OR">
-             <!-- AUDIT_LOG resource type: wildcard access to all categories -->
-            <if test="authorizationFilter.hasCategoryWildcard()">
-              OR CATEGORY IS NOT NULL
-            </if>
-            <!-- AUDIT_LOG resource type: specific authorized categories -->
-            <if test="!authorizationFilter.authorizedCategories.isEmpty() and !authorizationFilter.hasCategoryWildcard()">
-              OR CATEGORY IN
-              <foreach collection="authorizationFilter.authorizedCategories" item="category" open="(" separator="," close=")">
-                #{category}
-              </foreach>
-            </if>
-            <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: wildcard access -->
-            <if test="authorizationFilter.hasProcessInstanceWildcard()">
-              OR PROCESS_DEFINITION_ID IS NOT NULL
-            </if>
-            <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: specific process definition IDs -->
-            <if test="!authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and !authorizationFilter.hasProcessInstanceWildcard()">
-              OR PROCESS_DEFINITION_ID IN
-              <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance" item="processDefId" open="(" separator="," close=")">
-                #{processDefId}
-              </foreach>
-            </if>
-            <!-- PROCESS_DEFINITION + READ_USER_TASK: wildcard access -->
-            <if test="authorizationFilter.hasUserTaskWildcard()">
-              OR CATEGORY = 'USER_TASKS'
-            </if>
-            <!-- PROCESS_DEFINITION + READ_USER_TASK: specific process definition IDs -->
-            <if test="!authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty() and !authorizationFilter.hasUserTaskWildcard()">
-              OR (CATEGORY = 'USER_TASKS' AND PROCESS_DEFINITION_ID IN
-              <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForUserTask" item="processDefId" open="(" separator="," close=")">
-                #{processDefId}
-              </foreach>)
-            </if>
-          </trim>
-        )
-      </if>
+      <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.authorizationFilter" />
       <!-- basic filters -->
       <if test="filter.auditLogKeyOperations != null and !filter.auditLogKeyOperations.isEmpty()">
         <foreach collection="filter.auditLogKeyOperations" item="operation">
@@ -320,6 +335,76 @@
         </foreach>
       </if>
     </where>
+  </sql>
+
+  <sql id="authorizationFilter">
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND (TENANT_SCOPE = 'GLOBAL' OR TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>)
+    </if>
+    <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.resourceAuthorizationFilter" />
+  </sql>
+
+  <sql id="latestTenantAuthorizationFilter">
+    <if test="tenantCheckEnabled">
+      AND (TENANT_SCOPE = 'GLOBAL'
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        OR TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>)
+    </if>
+  </sql>
+
+  <sql id="resourceAuthorizationFilter">
+    <!-- Deny all access when no authorizations are configured -->
+    <if test="authorizationFilter.authorizedCategories.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
+      AND 1 = 0
+    </if>
+    <!-- composite authorization filter (OR of all authorization checks) -->
+    <!-- Only apply this filter if there are any authorizations configured -->
+    <if test="!authorizationFilter.authorizedCategories.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
+      AND (
+        <trim prefixOverrides="OR">
+           <!-- AUDIT_LOG resource type: wildcard access to all categories -->
+          <if test="authorizationFilter.hasCategoryWildcard()">
+            OR CATEGORY IS NOT NULL
+          </if>
+          <!-- AUDIT_LOG resource type: specific authorized categories -->
+          <if test="!authorizationFilter.authorizedCategories.isEmpty() and !authorizationFilter.hasCategoryWildcard()">
+            OR CATEGORY IN
+            <foreach collection="authorizationFilter.authorizedCategories" item="category" open="(" separator="," close=")">
+              #{category}
+            </foreach>
+          </if>
+          <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: wildcard access -->
+          <if test="authorizationFilter.hasProcessInstanceWildcard()">
+            OR PROCESS_DEFINITION_ID IS NOT NULL
+          </if>
+          <!-- PROCESS_DEFINITION + READ_PROCESS_INSTANCE: specific process definition IDs -->
+          <if test="!authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and !authorizationFilter.hasProcessInstanceWildcard()">
+            OR PROCESS_DEFINITION_ID IN
+            <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance" item="processDefId" open="(" separator="," close=")">
+              #{processDefId}
+            </foreach>
+          </if>
+          <!-- PROCESS_DEFINITION + READ_USER_TASK: wildcard access -->
+          <if test="authorizationFilter.hasUserTaskWildcard()">
+            OR CATEGORY = 'USER_TASKS'
+          </if>
+          <!-- PROCESS_DEFINITION + READ_USER_TASK: specific process definition IDs -->
+          <if test="!authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty() and !authorizationFilter.hasUserTaskWildcard()">
+            OR (CATEGORY = 'USER_TASKS' AND PROCESS_DEFINITION_ID IN
+            <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForUserTask" item="processDefId" open="(" separator="," close=")">
+              #{processDefId}
+            </foreach>)
+          </if>
+        </trim>
+      )
+    </if>
   </sql>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.queue.BatchInsertDto">
@@ -626,4 +711,3 @@
   </delete>
 
 </mapper>
-

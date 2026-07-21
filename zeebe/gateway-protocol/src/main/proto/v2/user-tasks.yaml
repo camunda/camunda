@@ -714,6 +714,8 @@ components:
         - followUpDate
         - processDefinitionVersion
         - formKey
+        - updatedBy
+        - updatedAt
       properties:
         name:
           nullable: true
@@ -828,6 +830,20 @@ components:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        updatedBy:
+          description: |
+            The actor ID from an accessible successful audit-log entry with the latest timestamp.
+            If multiple entries have that timestamp, which actor is returned is unspecified. This
+            is `null` if no such entry exists.
+          nullable: true
+          type: string
+        updatedAt:
+          description: |
+            The latest timestamp among accessible successful audit-log entries. This is `null` if
+            none exists.
+          nullable: true
+          type: string
+          format: date-time
       x-properties-added-in-version:
         - propertyName: name
           addedInVersion: "8.8"
@@ -879,6 +895,10 @@ components:
           addedInVersion: "8.6"
         - propertyName: tags
           addedInVersion: "8.9"
+        - propertyName: updatedBy
+          addedInVersion: "8.10"
+        - propertyName: updatedAt
+          addedInVersion: "8.10"
 
     UserTaskCompletionRequest:
       type: object

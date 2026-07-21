@@ -492,6 +492,8 @@ components:
         - rootProcessInstanceKey
         - jobKey
         - tenantId
+        - updatedBy
+        - updatedAt
       properties:
         processDefinitionId:
           allOf:
@@ -549,6 +551,20 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
+        updatedBy:
+          description: |
+            The actor ID from an accessible successful audit-log entry with the latest timestamp.
+            If multiple entries have that timestamp, which actor is returned is unspecified. This
+            is `null` if no such entry exists.
+          nullable: true
+          type: string
+        updatedAt:
+          description: |
+            The latest timestamp among accessible successful audit-log entries. This is `null` if
+            none exists.
+          nullable: true
+          type: string
+          format: date-time
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.6"
@@ -576,6 +592,10 @@ components:
           addedInVersion: "8.8"
         - propertyName: jobKey
           addedInVersion: "8.6"
+        - propertyName: updatedBy
+          addedInVersion: "8.10"
+        - propertyName: updatedAt
+          addedInVersion: "8.10"
 
     IncidentResolutionRequest:
       type: object
@@ -739,5 +759,3 @@ components:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
-
-

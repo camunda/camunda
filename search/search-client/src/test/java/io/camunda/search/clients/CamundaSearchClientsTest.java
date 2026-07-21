@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
@@ -15,9 +16,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.reader.AuditLogReader;
 import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
 import io.camunda.search.clients.reader.ProcessInstanceReader;
 import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.TenantAccessDeniedException;
@@ -26,6 +30,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.core.auth.SecurityContext;
 import io.camunda.security.core.authz.ResourceAccessChecks;
 import io.camunda.security.core.authz.ResourceAccessController;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +43,7 @@ class CamundaSearchClientsTest {
   private final ResourceAccessController resourceAccessController =
       mock(ResourceAccessController.class);
   private final ProcessInstanceReader processInstanceReader = mock(ProcessInstanceReader.class);
+  private final AuditLogReader auditLogReader = mock(AuditLogReader.class);
   private final ProcessDefinitionInstanceStatisticsReader
       processDefinitionInstanceStatisticsReader =
           mock(ProcessDefinitionInstanceStatisticsReader.class);
@@ -59,6 +65,38 @@ class CamundaSearchClientsTest {
               final Function<ResourceAccessChecks, Object> applier = invocation.getArgument(1);
               return applier.apply(ResourceAccessChecks.disabled());
             });
+  }
+
+  @Nested
+  class LatestSuccessfulAuditLogs {
+
+    @Test
+    void shouldPreserveResourceAccessChecks() {
+      final var expected = mock(AuditLogEntity.class);
+      when(readers.auditLogReader()).thenReturn(auditLogReader);
+      when(auditLogReader.searchLatestSuccessfulByEntityKeys(
+              AuditLogEntityType.USER_TASK, List.of("1", "2"), ResourceAccessChecks.disabled()))
+          .thenReturn(List.of(expected));
+
+      final var result =
+          camundaSearchClients.searchLatestSuccessfulByEntityKeys(
+              AuditLogEntityType.USER_TASK, List.of("1", "2", "1"));
+
+      assertThat(result).containsExactly(expected);
+      verify(auditLogReader)
+          .searchLatestSuccessfulByEntityKeys(
+              AuditLogEntityType.USER_TASK, List.of("1", "2"), ResourceAccessChecks.disabled());
+    }
+
+    @Test
+    void shouldReturnEmptyWithoutAccessControllerInteraction() {
+      assertThat(
+              camundaSearchClients.searchLatestSuccessfulByEntityKeys(
+                  AuditLogEntityType.USER_TASK, List.of()))
+          .isEmpty();
+      verifyNoInteractions(auditLogReader);
+      verifyNoInteractions(resourceAccessController);
+    }
   }
 
   @Nested

@@ -52,6 +52,8 @@ public class UserTaskImpl implements UserTask {
   private final Map<String, String> customHeaders;
   private final Integer priority;
   private final Set<String> tags;
+  private final String updatedBy;
+  private final OffsetDateTime updatedAt;
 
   public UserTaskImpl(final UserTaskResult item) {
     userTaskKey = ParseUtil.parseLongOrNull(item.getUserTaskKey());
@@ -79,6 +81,8 @@ public class UserTaskImpl implements UserTask {
     customHeaders = item.getCustomHeaders();
     priority = item.getPriority();
     tags = item.getTags();
+    updatedBy = item.getUpdatedBy();
+    updatedAt = ParseUtil.parseOffsetDateTimeOrNull(item.getUpdatedAt());
   }
 
   @Override
@@ -204,5 +208,15 @@ public class UserTaskImpl implements UserTask {
   @Override
   public Set<String> getTags() {
     return tags;
+  }
+
+  @Override
+  public String getUpdatedBy() {
+    return updatedBy;
+  }
+
+  @Override
+  public OffsetDateTime getUpdatedAt() {
+    return updatedAt;
   }
 }

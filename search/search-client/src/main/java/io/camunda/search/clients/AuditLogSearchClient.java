@@ -8,15 +8,20 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.entities.AuditLogEntity;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.core.auth.SecurityContext;
+import java.util.List;
 
 public interface AuditLogSearchClient {
 
   AuditLogEntity getAuditLog(final String id);
 
   SearchQueryResult<AuditLogEntity> searchAuditLogs(final AuditLogQuery query);
+
+  List<AuditLogEntity> searchLatestSuccessfulByEntityKeys(
+      AuditLogEntityType entityType, List<String> entityKeys);
 
   AuditLogSearchClient withSecurityContext(SecurityContext securityContext);
 }

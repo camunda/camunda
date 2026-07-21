@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.VariableResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
+import java.time.OffsetDateTime;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +37,7 @@ public class GetVariableTest extends ClientRestTest {
             .variableKey("1")
             .processInstanceKey("2")
             .scopeKey("3")
+            .updatedAt(OffsetDateTime.now().toString())
             .rootProcessInstanceKey("4"));
 
     // when
