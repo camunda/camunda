@@ -177,7 +177,8 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
             job -> completeJob(record, job),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  record, rejection.type(), rejection.reason());
             });
   }
 

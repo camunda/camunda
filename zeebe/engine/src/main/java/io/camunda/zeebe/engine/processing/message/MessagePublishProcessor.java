@@ -108,7 +108,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       if (isAuthorized.isLeft()) {
         final var rejection = isAuthorized.getLeft();
         rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-        responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+        responseWriter.writeRejectedResponseOnCommand(
+            command, rejection.type(), rejection.reason());
         return;
       }
     }
@@ -119,7 +120,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final var reason =
           "The message has not been routed to the right partition. This is probably a temporary issue, please retry in a few seconds";
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.INVALID_STATE, reason);
       return;
     }
     if (messageRecord.hasMessageId()
@@ -133,7 +134,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
               ALREADY_PUBLISHED_MESSAGE, bufferAsString(messageRecord.getMessageIdBuffer()));
 
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, rejectionReason);
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.ALREADY_EXISTS, rejectionReason);
     } else {
       handleNewMessage(command);

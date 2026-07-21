@@ -26,7 +26,7 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   }
 
   @Override
-  public void writeRejectionOnCommand(
+  public void writeRejectedResponseOnCommand(
       final TypedRecord<?> command, final RejectionType type, final String reason) {
     writeRejection(command, type, reason, command.getRequestId(), command.getRequestStreamId());
   }

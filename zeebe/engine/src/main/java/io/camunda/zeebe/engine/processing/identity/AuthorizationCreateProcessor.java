@@ -70,7 +70,8 @@ public class AuthorizationCreateProcessor
             authorizationRecord -> writeEventAndDistribute(command, command.getValue()),
             (rejection) -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectedResponseOnCommand(
+                  command, rejection.type(), rejection.reason());
             });
   }
 

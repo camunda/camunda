@@ -155,6 +155,6 @@ public class MarkPartitionBootstrappedProcessor
   private void rejectWith(
       final TypedRecord<ScaleRecord> command, final RejectionType type, final String reason) {
     rejectionWriter.appendRejection(command, type, reason);
-    responseWriter.writeRejectionOnCommand(command, type, reason);
+    responseWriter.writeRejectedResponseOnCommand(command, type, reason);
   }
 }
