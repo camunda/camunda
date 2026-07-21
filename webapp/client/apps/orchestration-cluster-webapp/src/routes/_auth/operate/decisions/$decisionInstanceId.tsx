@@ -8,8 +8,11 @@
 
 import {createFileRoute} from '@tanstack/react-router';
 import {t} from 'i18next';
-import {DecisionInstance} from '#/operate/pages/DecisionInstance/DecisionInstance';
+import {getClientConfig} from '#/shared/config/getClientConfig';
+import {DecisionInstance, DecisionInstanceShell} from '#/operate/pages/DecisionInstance/DecisionInstance';
+import {getHeaderColumns} from '#/operate/pages/DecisionInstance/headerColumns';
 import {decisionInstanceQuery} from '#/operate/pages/DecisionInstance/decisionInstance.queries';
+import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/InstanceHeaderSkeleton';
 
 export const Route = createFileRoute('/_auth/operate/decisions/$decisionInstanceId')({
 	loader: async ({context: {queryClient}, params: {decisionInstanceId}}) => {
@@ -33,6 +36,19 @@ export const Route = createFileRoute('/_auth/operate/decisions/$decisionInstance
 				]
 			: [],
 	}),
+	// Mirrors Header's own pending state (same `getHeaderColumns` + `InstanceHeaderSkeleton`) so
+	// navigation shows the same loading row legacy did, instead of a blank page while the loader awaits.
+	pendingComponent: () => (
+		<DecisionInstanceShell
+			header={
+				<InstanceHeaderSkeleton
+					headerColumns={getHeaderColumns(t, {
+						isMultiTenancyEnabled: getClientConfig().deployment.isMultiTenancyEnabled,
+					})}
+				/>
+			}
+		/>
+	),
 	component: function DecisionInstanceRoute() {
 		const {decisionInstanceId} = Route.useParams();
 		return <DecisionInstance decisionInstanceId={decisionInstanceId} />;

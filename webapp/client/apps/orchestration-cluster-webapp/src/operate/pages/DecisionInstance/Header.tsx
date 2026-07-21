@@ -10,7 +10,6 @@ import {Button, Link} from '@carbon/react';
 import {Link as RouterLink} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import type {TFunction} from 'i18next';
 import {tracking} from '#/shared/tracking';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {queries} from '#/shared/http/queries';
@@ -18,25 +17,7 @@ import {InstanceHeader, type Column} from '#/operate/shared/InstanceHeader/Insta
 import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/InstanceHeaderSkeleton';
 import {useDecisionInstance} from './decisionInstance.queries';
 import {formatEvaluationDate} from './utils';
-
-type HeaderColumn = {name: string; skeletonWidth: string};
-
-function getHeaderColumns(
-	t: TFunction,
-	options: {isMultiTenancyEnabled?: boolean; hasBusinessId?: boolean},
-): HeaderColumn[] {
-	const {isMultiTenancyEnabled = false, hasBusinessId = false} = options;
-	return [
-		{name: t('operate.decisionInstance.header.decisionInstanceKeyColumn'), skeletonWidth: '137px'},
-		{name: t('operate.decisionInstance.header.versionColumn'), skeletonWidth: '33px'},
-		...(hasBusinessId ? [{name: t('operate.decisionInstance.header.businessIdColumn'), skeletonWidth: '137px'}] : []),
-		...(isMultiTenancyEnabled
-			? [{name: t('operate.decisionInstance.header.tenantColumn'), skeletonWidth: '34px'}]
-			: []),
-		{name: t('operate.decisionInstance.header.evaluationDateColumn'), skeletonWidth: '143px'},
-		{name: t('operate.decisionInstance.header.processInstanceColumn'), skeletonWidth: '137px'},
-	];
-}
+import {getHeaderColumns} from './headerColumns';
 
 type Props = {
 	decisionEvaluationInstanceKey: string;

@@ -66,24 +66,42 @@ const DecisionInstance: React.FC<Props> = ({decisionInstanceId}) => {
 	}
 
 	return (
+		<DecisionInstanceShell
+			header={
+				<Header decisionEvaluationInstanceKey={decisionInstanceId} onOpenDrd={() => setDrdPanelState('minimized')} />
+			}
+			rightPanel={drdPanelState === 'minimized' ? <div /> : null}
+		/>
+	);
+};
+
+type ShellProps = {
+	header: React.ReactNode;
+	rightPanel?: React.ReactNode;
+};
+
+/**
+ * Shared page frame for both the loaded page and the route's `pendingComponent` - only the
+ * header slot differs (real `Header` vs `InstanceHeaderSkeleton`), so the shell (and its
+ * `VisuallyHiddenH1`/placeholder panels) is factored out to avoid drifting the two apart.
+ */
+const DecisionInstanceShell: React.FC<ShellProps> = ({header, rightPanel}) => {
+	const {t} = useTranslation();
+
+	return (
 		<>
 			<VisuallyHiddenH1>{t('operate.decisionInstance.title')}</VisuallyHiddenH1>
 			<Container>
 				<InstanceDetail
 					type="decision"
-					header={
-						<Header
-							decisionEvaluationInstanceKey={decisionInstanceId}
-							onOpenDrd={() => setDrdPanelState('minimized')}
-						/>
-					}
+					header={header}
 					topPanel={<div />}
 					bottomPanel={<div />}
-					rightPanel={drdPanelState === 'minimized' ? <div /> : null}
+					rightPanel={rightPanel}
 				/>
 			</Container>
 		</>
 	);
 };
 
-export {DecisionInstance};
+export {DecisionInstance, DecisionInstanceShell};
