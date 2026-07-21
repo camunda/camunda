@@ -54,7 +54,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
               .formatted(command.getValue().getUsername());
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.NOT_FOUND, rejectionMessage);
       return;
     }
 

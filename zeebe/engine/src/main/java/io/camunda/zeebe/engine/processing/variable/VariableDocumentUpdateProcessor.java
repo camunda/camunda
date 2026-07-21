@@ -91,7 +91,9 @@ public final class VariableDocumentUpdateProcessor
               "Expected document to be valid msgpack, but it could not be read: '%s'",
               e.getMessage());
       writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
-      writers.response().writeRejectedResponseOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
+      writers
+          .response()
+          .writeRejectedResponseOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
       return;
     }
 
