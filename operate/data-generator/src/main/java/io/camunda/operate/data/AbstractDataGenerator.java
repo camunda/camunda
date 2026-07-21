@@ -20,6 +20,7 @@ import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.core.auth.SecurityContext;
@@ -58,13 +59,6 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataGenerator.class);
 
-  /**
-   * Substrings of the transient ES/OS errors seen while the Operate schema is still being created
-   * by the async schema initializer.
-   */
-  private static final List<String> SCHEMA_NOT_READY_MARKERS =
-      List.of("index_not_found_exception", "no_shard_available_action_exception");
-
   private static final ObjectMapper VARIABLES_MAPPER = new ObjectMapper();
 
   @Autowired
@@ -84,8 +78,9 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   @Autowired(required = false)
   private SearchClientsProxy searchClientsProxy;
 
-  @Autowired(required = false)
-  private PhysicalTenantIds physicalTenantIds;
+  @Autowired PhysicalTenantIds physicalTenantIds;
+
+  @Autowired SchemaManagerContainer schemaManagerContainer;
 
   @PostConstruct
   private void startDataGenerator() {
@@ -124,17 +119,18 @@ public abstract class AbstractDataGenerator implements DataGenerator {
         () -> {
           Boolean zeebeDataCreated = null;
           while (zeebeDataCreated == null && !shutdown) {
+            if (!isSchemaReady()) {
+              LOGGER.debug("Operate schema is not ready yet, will retry.");
+              sleepFor(2000);
+              continue;
+            }
             try {
               zeebeDataCreated = createZeebeData(manuallyCalled);
             } catch (final Exception ex) {
-              if (isSchemaNotReady(ex)) {
-                LOGGER.debug("Operate schema is not ready yet, will retry: {}", ex.getMessage());
-              } else {
-                LOGGER.error(
-                    String.format(
-                        "Error occurred when creating demo data: %s. Retrying...", ex.getMessage()),
-                    ex);
-              }
+              LOGGER.error(
+                  String.format(
+                      "Error occurred when creating demo data: %s. Retrying...", ex.getMessage()),
+                  ex);
               sleepFor(2000);
             }
           }
@@ -222,14 +218,8 @@ public abstract class AbstractDataGenerator implements DataGenerator {
     return DEFAULT_TENANT_ID;
   }
 
-  boolean isSchemaNotReady(final Throwable ex) {
-    for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
-      final String message = cause.getMessage();
-      if (message != null && SCHEMA_NOT_READY_MARKERS.stream().anyMatch(message::contains)) {
-        return true;
-      }
-    }
-    return false;
+  boolean isSchemaReady() {
+    return knownPhysicalTenants().stream().allMatch(schemaManagerContainer::isInitialized);
   }
 
   protected Long deployProcess(
@@ -288,9 +278,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   private Set<String> knownPhysicalTenants() {
-    return physicalTenantIds == null
-        ? Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
-        : physicalTenantIds.known();
+    return physicalTenantIds.known();
   }
 
   private byte[] readClasspathResource(final String classpathResource) throws IOException {

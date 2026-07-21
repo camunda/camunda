@@ -19,7 +19,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.search.schema.SchemaManagerContainer;
 import io.camunda.security.api.context.CamundaAuthenticationProvider;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.service.ProcessInstanceServices;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +49,8 @@ class AbstractDataGeneratorTest {
   private final ResourceServices resourceServices = mock(ResourceServices.class);
   private final ProcessInstanceServices processInstanceServices =
       mock(ProcessInstanceServices.class);
+  private final PhysicalTenantIds physicalTenantIds = mock(PhysicalTenantIds.class);
+  private final SchemaManagerContainer schemaManagerContainer = mock(SchemaManagerContainer.class);
 
   private final CamundaAuthentication anonymousAuthentication = CamundaAuthentication.anonymous();
 
@@ -57,11 +62,15 @@ class AbstractDataGeneratorTest {
     generator.serviceRegistry = serviceRegistry;
     generator.authenticationProvider = authenticationProvider;
     generator.client = client;
+    generator.physicalTenantIds = physicalTenantIds;
+    generator.schemaManagerContainer = schemaManagerContainer;
 
     when(authenticationProvider.getAnonymousCamundaAuthentication())
         .thenReturn(anonymousAuthentication);
     when(serviceRegistry.resourceServices(anyString())).thenReturn(resourceServices);
     when(serviceRegistry.processInstanceServices(anyString())).thenReturn(processInstanceServices);
+    when(physicalTenantIds.known())
+        .thenReturn(Set.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID));
   }
 
   @Test
@@ -201,18 +210,19 @@ class AbstractDataGeneratorTest {
   }
 
   @Test
-  void shouldIdentifySchemaNotReadyMarkersForLogDemotion() {
+  void shouldReportSchemaReadyOnlyWhenAllKnownPhysicalTenantsAreInitialized() {
     // given
-    final Exception schemaNotReady = new RuntimeException("index_not_found_exception");
-    final Exception wrappedSchemaNotReady =
-        new RuntimeException(
-            "wrapper", new RuntimeException("no_shard_available_action_exception"));
-    final Exception unrelated = new RuntimeException("401 unauthorized");
+    when(physicalTenantIds.known()).thenReturn(Set.of("tenant1", "tenant2"));
+    when(schemaManagerContainer.isInitialized(anyString())).thenReturn(true);
 
     // when / then
-    assertThat(generator.isSchemaNotReady(schemaNotReady)).isTrue();
-    assertThat(generator.isSchemaNotReady(wrappedSchemaNotReady)).isTrue();
-    assertThat(generator.isSchemaNotReady(unrelated)).isFalse();
+    assertThat(generator.isSchemaReady()).isTrue();
+
+    // given
+    when(schemaManagerContainer.isInitialized("tenant2")).thenReturn(false);
+
+    // when / then
+    assertThat(generator.isSchemaReady()).isFalse();
   }
 
   private static final class TestDataGenerator extends AbstractDataGenerator {
