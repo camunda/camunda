@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.client.api;
 
 import io.atomix.cluster.BrokerMemberId;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import java.util.List;
 import java.util.Set;
@@ -47,6 +48,13 @@ public interface BrokerClusterState {
   @Nullable String getBrokerVersion(BrokerMemberId brokerId);
 
   @Nullable PartitionHealthStatus getPartitionHealth(BrokerMemberId brokerId, int partition);
+
+  /**
+   * @return the operational state of the given partition on the given broker, as known from the
+   *     cluster configuration. Returns {@link PartitionState.State#UNKNOWN} if the broker or
+   *     partition is not (yet) known in the cluster configuration.
+   */
+  PartitionState.State getPartitionState(BrokerMemberId brokerId, int partition);
 
   long getLastCompletedChangeId();
 

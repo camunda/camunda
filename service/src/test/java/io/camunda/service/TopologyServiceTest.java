@@ -18,11 +18,13 @@ import io.camunda.service.TopologyServices.ClusterStatus;
 import io.camunda.service.TopologyServices.Health;
 import io.camunda.service.TopologyServices.Partition;
 import io.camunda.service.TopologyServices.Role;
+import io.camunda.service.TopologyServices.State;
 import io.camunda.service.TopologyServices.Topology;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.List;
@@ -208,21 +210,21 @@ public class TopologyServiceTest {
                     0,
                     "localhost",
                     26501,
-                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY)),
+                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY, State.UNKNOWN)),
                     version),
                 new Broker(
                     zone,
                     1,
                     "localhost",
                     26502,
-                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY)),
+                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY, State.UNKNOWN)),
                     version),
                 new Broker(
                     zone,
                     2,
                     "localhost",
                     26503,
-                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY)),
+                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY, State.UNKNOWN)),
                     version)),
             "cluster-id",
             3,
@@ -236,6 +238,39 @@ public class TopologyServiceTest {
 
     // then
     Assertions.assertThat(topology).isEqualTo(expectedTopology);
+  }
+
+  @ParameterizedTest
+  @EnumSource(PartitionState.State.class)
+  public void shouldExposePartitionOperationalState(final PartitionState.State dynamicConfigState) {
+    // given
+    final var version = VersionUtil.getVersion();
+    when(topologyManager.getTopology(PHYSICAL_TENANT_ID))
+        .thenReturn(new TestBrokerClusterState(null, version, "cluster-id", dynamicConfigState));
+
+    // when
+    final var topology = services.getTopology().join();
+
+    // then
+    final var leaderPartitionState =
+        topology.brokers().stream()
+            .filter(broker -> broker.nodeIdx() == 0)
+            .findFirst()
+            .orElseThrow()
+            .partitions()
+            .getFirst()
+            .state();
+    Assertions.assertThat(leaderPartitionState).isEqualTo(expectedState(dynamicConfigState));
+  }
+
+  private static State expectedState(final PartitionState.State dynamicConfigState) {
+    return switch (dynamicConfigState) {
+      case UNKNOWN, BOOTSTRAPPING -> State.UNKNOWN;
+      case JOINING -> State.JOINING;
+      case ACTIVE -> State.ACTIVE;
+      case LEAVING -> State.LEAVING;
+      case RECOVERING -> State.RECOVERING;
+    };
   }
 
   @Test
@@ -261,8 +296,17 @@ public class TopologyServiceTest {
    * Topology stub which returns a static topology with 3 brokers, 1 partition, replication factor
    * 3, where 0 is the leader (healthy), 1 is the follower (healthy), and 2 is inactive (unhealthy).
    */
-  private record TestBrokerClusterState(@Nullable String zone, String version, String clusterId)
+  private record TestBrokerClusterState(
+      @Nullable String zone,
+      String version,
+      String clusterId,
+      PartitionState.State leaderPartitionState)
       implements BrokerClusterState {
+
+    TestBrokerClusterState(
+        final @Nullable String zone, final String version, final String clusterId) {
+      this(zone, version, clusterId, PartitionState.State.UNKNOWN);
+    }
 
     @Override
     public boolean isInitialized() {
@@ -336,6 +380,15 @@ public class TopologyServiceTest {
         case 2 -> PartitionHealthStatus.UNHEALTHY;
         default -> PartitionHealthStatus.NULL_VAL;
       };
+    }
+
+    @Override
+    public PartitionState.State getPartitionState(
+        final BrokerMemberId brokerId, final int partition) {
+      if (partition == 1 && brokerId.nodeIdx() == 0) {
+        return leaderPartitionState;
+      }
+      return PartitionState.State.UNKNOWN;
     }
 
     @Override

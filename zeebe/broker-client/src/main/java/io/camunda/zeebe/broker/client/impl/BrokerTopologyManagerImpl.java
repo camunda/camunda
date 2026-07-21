@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientTopologyImpl.ConfiguredClusterState;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
 import java.util.HashMap;
@@ -298,10 +299,13 @@ public final class BrokerTopologyManagerImpl extends Actor
       topologyListeners.forEach(BrokerTopologyListener::clusterIncarnationChanged);
     }
 
+    final var newPartitionStates = buildPartitionStates(clusterTopology);
+
     if (newClusterSize != oldTopology.getClusterSize()
         || newPartitionsCount != oldTopology.getPartitionsCount()
         || newReplicationFactor != oldTopology.getReplicationFactor()
-        || newLastChange != oldTopology.getLastCompletedChangeId()) {
+        || newLastChange != oldTopology.getLastCompletedChangeId()
+        || !newPartitionStates.equals(oldTopology.configuredClusterState().partitionStates())) {
       LOG.debug(
           "Updating topology with clusterSize {}, partitionsCount {} and replicationFactor {}",
           newClusterSize,
@@ -318,11 +322,30 @@ public final class BrokerTopologyManagerImpl extends Actor
               partitionIds,
               newLastChange,
               clusterId,
-              clusterTopology.incarnationNumber());
+              clusterTopology.incarnationNumber(),
+              newPartitionStates);
 
       return new BrokerClientTopologyImpl(oldTopology.liveClusterState(), newClusterInfo);
     }
 
     return oldTopology;
+  }
+
+  private static Map<BrokerMemberId, Map<Integer, PartitionState.State>> buildPartitionStates(
+      final ClusterConfiguration clusterTopology) {
+    final Map<BrokerMemberId, Map<Integer, PartitionState.State>> partitionStates = new HashMap<>();
+    clusterTopology
+        .members()
+        .forEach(
+            (memberId, memberState) -> {
+              final Map<Integer, PartitionState.State> statesForMember = new HashMap<>();
+              memberState
+                  .partitions()
+                  .forEach(
+                      (partitionId, partitionState) ->
+                          statesForMember.put(partitionId, partitionState.state()));
+              partitionStates.put(BrokerMemberId.from(memberId), Map.copyOf(statesForMember));
+            });
+    return Map.copyOf(partitionStates);
   }
 }
