@@ -7,8 +7,11 @@
  */
 package io.camunda.application.commons.secrets;
 
+import io.camunda.secretstore.InMemorySecretCache;
+import io.camunda.secretstore.SecretCache;
 import io.camunda.secretstore.SecretStore;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
 
 /**
@@ -17,14 +20,23 @@ import org.jspecify.annotations.NullMarked;
 @NullMarked
 public final class SecretStoreRegistry {
 
-  private final Map<String, SecretStore<?>> stores;
+  private final Map<String, SecretStore> stores;
+  private final Map<String, SecretCache> caches;
 
-  public SecretStoreRegistry(final Map<String, SecretStore<?>> stores) {
+  public SecretStoreRegistry(final Map<String, SecretStore> stores) {
     this.stores = stores;
+    this.caches =
+        stores.keySet().stream()
+            .collect(Collectors.toUnmodifiableMap(name -> name, name -> new InMemorySecretCache()));
   }
 
   /** Returns all configured secret stores, keyed by store ID. */
-  public Map<String, SecretStore<?>> getStores() {
+  public Map<String, SecretStore> getStores() {
     return stores;
+  }
+
+  /** Returns one cache per configured store, keyed by store ID. */
+  public Map<String, SecretCache> getCaches() {
+    return caches;
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.secretstore.file;
 
 import static io.camunda.secretstore.SecretErrorCode.ACCESS_DENIED;
+import static io.camunda.secretstore.SecretErrorCode.INVALID_REF;
 import static io.camunda.secretstore.SecretErrorCode.NOT_FOUND;
 import static io.camunda.secretstore.SecretErrorCode.UNREADABLE;
 import static java.util.stream.Collectors.toMap;
@@ -21,7 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * must be a restrictively-permissioned, single-tenant location — as a Kubernetes Secret {@code
  * tmpfs} mount is — so that only authorized processes can place entries in it.
  */
-public final class FileBasedSecretStore implements SecretStore<FileBasedSecretReference> {
+public final class FileBasedSecretStore implements SecretStore {
 
   private static final Logger LOG = LoggerFactory.getLogger(FileBasedSecretStore.class);
 
@@ -55,32 +56,31 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
   }
 
   @Override
-  public Map<FileBasedSecretReference, SecretResolutionResult> resolve(
-      final Set<FileBasedSecretReference> refs) {
-    if (refs.isEmpty()) {
+  public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
+    if (names.isEmpty()) {
       return Map.of();
     }
     requireDirectory();
-    LOG.debug("Resolving {} secret refs from '{}'", refs.size(), directory);
-    return refs.stream().collect(toMap(ref -> ref, this::resolveOne));
+    LOG.debug("Resolving {} secrets from '{}'", names.size(), directory);
+    return names.stream().collect(toMap(name -> name, this::resolveOne));
   }
 
   @Override
-  public Collection<FileBasedSecretReference> list() {
+  public List<String> list() {
     requireDirectory();
-    final var refs = new ArrayList<FileBasedSecretReference>();
+    final var refs = new ArrayList<String>();
     try (final DirectoryStream<Path> entries =
         Files.newDirectoryStream(directory, FileBasedSecretStore::isVisibleRegularFile)) {
       for (final Path entry : entries) {
         final var name = entry.getFileName().toString();
-        if (!FileBasedSecretReference.isValid(name)) {
+        if (!isValidSecretName(name)) {
           LOG.warn("Skipping file with invalid secret name '{}' in '{}'", name, directory);
           continue;
         }
         if (!isWithinDirectory(entry)) {
           continue;
         }
-        refs.add(new FileBasedSecretReference(name));
+        refs.add(name);
       }
     } catch (final IOException | SecurityException e) {
       throw new SecretStoreUnavailableException(
@@ -90,8 +90,10 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
     return refs;
   }
 
-  private SecretResolutionResult resolveOne(final FileBasedSecretReference ref) {
-    final var name = ref.name();
+  private SecretResolutionResult resolveOne(final String name) {
+    if (!isValidSecretName(name)) {
+      return new SecretResolutionResult.Failed(INVALID_REF, "Invalid secret name: " + name, null);
+    }
     // name is validated to a single path segment, so this is always a direct child.
     final var file = directory.resolve(name);
     try {
@@ -149,6 +151,16 @@ public final class FileBasedSecretStore implements SecretStore<FileBasedSecretRe
 
   private static boolean isVisibleRegularFile(final Path path) {
     return !isHidden(path.getFileName().toString()) && Files.isRegularFile(path);
+  }
+
+  private static boolean isValidSecretName(final String name) {
+    if (name.isBlank()) {
+      return false;
+    }
+    if (name.indexOf('/') >= 0 || name.indexOf('\\') >= 0) {
+      return false;
+    }
+    return !".".equals(name) && !"..".equals(name);
   }
 
   private static boolean isHidden(final String name) {
