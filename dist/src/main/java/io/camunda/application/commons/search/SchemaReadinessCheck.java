@@ -7,26 +7,26 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.cluster.PhysicalTenantAvailability;
+import io.camunda.cluster.SecondaryStorageAvailability;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
 
 /**
- * Reports the node as ready once at least one physical tenant is serviceable — a node stays ready
- * as long as it can serve at least one physical tenant, rather than requiring every tenant to be
- * initialized. No per-tenant detail is exposed on this probe.
+ * Reports the node as ready once at least one physical tenant's secondary storage is available — a
+ * node stays ready as long as it can serve at least one physical tenant, rather than requiring
+ * every tenant to be initialized. No per-tenant detail is exposed on this probe.
  */
 public class SchemaReadinessCheck implements HealthIndicator {
 
   public static final String SCHEMA_READINESS_CHECK = "schemaReadinessCheck";
-  private final PhysicalTenantAvailability physicalTenantAvailability;
+  private final SecondaryStorageAvailability secondaryStorageAvailability;
 
-  public SchemaReadinessCheck(final PhysicalTenantAvailability physicalTenantAvailability) {
-    this.physicalTenantAvailability = physicalTenantAvailability;
+  public SchemaReadinessCheck(final SecondaryStorageAvailability secondaryStorageAvailability) {
+    this.secondaryStorageAvailability = secondaryStorageAvailability;
   }
 
   @Override
   public Health health() {
-    return (physicalTenantAvailability.anyServiceable() ? Health.up() : Health.down()).build();
+    return (secondaryStorageAvailability.anyAvailable() ? Health.up() : Health.down()).build();
   }
 }

@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.pt;
 
-import io.camunda.cluster.PhysicalTenantAvailability;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.cluster.SecondaryStorageAvailability;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
@@ -18,43 +18,43 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Wires the {@link PhysicalTenantAvailability} consulted for request-time rejection and node
+ * Wires the {@link SecondaryStorageAvailability} consulted for request-time rejection and node
  * readiness, backed by the schema-initialization state of the configured secondary storage.
  */
 @NullMarked
 @Configuration(proxyBeanMethods = false)
-public class PhysicalTenantAvailabilityConfiguration {
+public class SecondaryStorageAvailabilityConfiguration {
 
   @Bean
   @ConditionalOnSecondaryStorageType({
     SecondaryStorageType.elasticsearch,
     SecondaryStorageType.opensearch
   })
-  public PhysicalTenantAvailability searchEnginePhysicalTenantAvailability(
+  public SecondaryStorageAvailability searchEngineSecondaryStorageAvailability(
       final PhysicalTenantIds physicalTenantIds,
       final SchemaManagerContainer schemaManagerContainer) {
-    return new SchemaInitializationPhysicalTenantAvailability(
+    return new SchemaInitializationSecondaryStorageAvailability(
         physicalTenantIds, schemaManagerContainer::isInitialized);
   }
 
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
-  public PhysicalTenantAvailability rdbmsPhysicalTenantAvailability(
+  public SecondaryStorageAvailability rdbmsSecondaryStorageAvailability(
       final PhysicalTenantIds physicalTenantIds,
       final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry) {
-    return new SchemaInitializationPhysicalTenantAvailability(
+    return new SchemaInitializationSecondaryStorageAvailability(
         physicalTenantIds, rdbmsSchemaManagerRegistry::isInitialized);
   }
 
   @Bean
   @ConditionalOnSecondaryStorageType(SecondaryStorageType.none)
-  public PhysicalTenantAvailability noSecondaryStoragePhysicalTenantAvailability() {
-    return PhysicalTenantAvailability.ALWAYS_SERVICEABLE;
+  public SecondaryStorageAvailability noSecondaryStorageAvailability() {
+    return SecondaryStorageAvailability.ALWAYS_AVAILABLE;
   }
 
   @Bean
-  public PhysicalTenantAvailabilityMetrics physicalTenantAvailabilityMetrics(
-      final PhysicalTenantIds physicalTenantIds, final PhysicalTenantAvailability availability) {
-    return new PhysicalTenantAvailabilityMetrics(physicalTenantIds, availability);
+  public SecondaryStorageAvailabilityMetrics secondaryStorageAvailabilityMetrics(
+      final PhysicalTenantIds physicalTenantIds, final SecondaryStorageAvailability availability) {
+    return new SecondaryStorageAvailabilityMetrics(physicalTenantIds, availability);
   }
 }

@@ -11,21 +11,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.cluster.PhysicalTenantAvailability;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.cluster.SecondaryStorageAvailability;
 import io.camunda.db.rdbms.RdbmsSchemaManagerRegistry;
 import io.camunda.search.schema.SchemaManagerContainer;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
-class PhysicalTenantAvailabilityConfigurationTest {
+class SecondaryStorageAvailabilityConfigurationTest {
 
   private static final String TENANT_A = "a";
 
   private ApplicationContextRunner baseRunner() {
     return new ApplicationContextRunner()
-        .withUserConfiguration(PhysicalTenantAvailabilityConfiguration.class)
+        .withUserConfiguration(SecondaryStorageAvailabilityConfiguration.class)
         .withBean(PhysicalTenantIds.class, () -> () -> Set.of(TENANT_A));
   }
 
@@ -41,10 +41,10 @@ class PhysicalTenantAvailabilityConfigurationTest {
         .withPropertyValues("camunda.data.secondary-storage.type=elasticsearch")
         .run(
             context -> {
-              assertThat(context).hasSingleBean(PhysicalTenantAvailability.class);
-              assertThat(context).hasSingleBean(PhysicalTenantAvailabilityMetrics.class);
-              final var availability = context.getBean(PhysicalTenantAvailability.class);
-              assertThat(availability.isServiceable(TENANT_A)).isTrue();
+              assertThat(context).hasSingleBean(SecondaryStorageAvailability.class);
+              assertThat(context).hasSingleBean(SecondaryStorageAvailabilityMetrics.class);
+              final var availability = context.getBean(SecondaryStorageAvailability.class);
+              assertThat(availability.isAvailable(TENANT_A)).isTrue();
             });
   }
 
@@ -60,10 +60,10 @@ class PhysicalTenantAvailabilityConfigurationTest {
         .withPropertyValues("camunda.data.secondary-storage.type=opensearch")
         .run(
             context -> {
-              assertThat(context).hasSingleBean(PhysicalTenantAvailability.class);
-              assertThat(context).hasSingleBean(PhysicalTenantAvailabilityMetrics.class);
-              final var availability = context.getBean(PhysicalTenantAvailability.class);
-              assertThat(availability.isServiceable(TENANT_A)).isTrue();
+              assertThat(context).hasSingleBean(SecondaryStorageAvailability.class);
+              assertThat(context).hasSingleBean(SecondaryStorageAvailabilityMetrics.class);
+              final var availability = context.getBean(SecondaryStorageAvailability.class);
+              assertThat(availability.isAvailable(TENANT_A)).isTrue();
             });
   }
 
@@ -79,23 +79,23 @@ class PhysicalTenantAvailabilityConfigurationTest {
         .withPropertyValues("camunda.data.secondary-storage.type=rdbms")
         .run(
             context -> {
-              assertThat(context).hasSingleBean(PhysicalTenantAvailability.class);
-              assertThat(context).hasSingleBean(PhysicalTenantAvailabilityMetrics.class);
-              final var availability = context.getBean(PhysicalTenantAvailability.class);
-              assertThat(availability.isServiceable(TENANT_A)).isTrue();
+              assertThat(context).hasSingleBean(SecondaryStorageAvailability.class);
+              assertThat(context).hasSingleBean(SecondaryStorageAvailabilityMetrics.class);
+              final var availability = context.getBean(SecondaryStorageAvailability.class);
+              assertThat(availability.isAvailable(TENANT_A)).isTrue();
             });
   }
 
   @Test
-  void shouldWireAlwaysServiceableAvailabilityWhenSecondaryStorageIsNone() {
+  void shouldWireAlwaysAvailableAvailabilityWhenSecondaryStorageIsNone() {
     baseRunner()
         .withPropertyValues("camunda.data.secondary-storage.type=none")
         .run(
             context -> {
-              assertThat(context).hasSingleBean(PhysicalTenantAvailability.class);
-              assertThat(context).hasSingleBean(PhysicalTenantAvailabilityMetrics.class);
-              assertThat(context.getBean(PhysicalTenantAvailability.class))
-                  .isSameAs(PhysicalTenantAvailability.ALWAYS_SERVICEABLE);
+              assertThat(context).hasSingleBean(SecondaryStorageAvailability.class);
+              assertThat(context).hasSingleBean(SecondaryStorageAvailabilityMetrics.class);
+              assertThat(context.getBean(SecondaryStorageAvailability.class))
+                  .isSameAs(SecondaryStorageAvailability.ALWAYS_AVAILABLE);
             });
   }
 }

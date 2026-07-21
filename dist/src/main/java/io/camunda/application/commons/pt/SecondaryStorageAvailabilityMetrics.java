@@ -7,8 +7,8 @@
  */
 package io.camunda.application.commons.pt;
 
-import io.camunda.cluster.PhysicalTenantAvailability;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.cluster.SecondaryStorageAvailability;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -16,24 +16,24 @@ import io.micrometer.core.instrument.binder.MeterBinder;
 import org.jspecify.annotations.NullMarked;
 
 /**
- * Registers a per-physical-tenant serviceability gauge, pulled from {@link
- * PhysicalTenantAvailability} on every scrape.
+ * Registers a per-physical-tenant secondary-storage-availability gauge, pulled from {@link
+ * SecondaryStorageAvailability} on every scrape.
  *
  * <p>This is a pull-based gauge, not a transition log: it only reports the current state, it does
- * not log or alert when a tenant flips between serviceable and degraded. Degraded-transition
- * logging is a deferred follow-up (https://github.com/camunda/camunda/issues/57025,
+ * not log or alert when a tenant flips between available and degraded. Degraded-transition logging
+ * is a deferred follow-up (https://github.com/camunda/camunda/issues/57025,
  * https://github.com/camunda/camunda/issues/54299).
  */
 @NullMarked
-public class PhysicalTenantAvailabilityMetrics implements MeterBinder {
+public class SecondaryStorageAvailabilityMetrics implements MeterBinder {
 
-  private static final String METRIC_NAME = "camunda.physical.tenant.serviceable";
+  private static final String METRIC_NAME = "camunda.physical.tenant.secondary.storage.available";
 
   private final PhysicalTenantIds physicalTenantIds;
-  private final PhysicalTenantAvailability availability;
+  private final SecondaryStorageAvailability availability;
 
-  public PhysicalTenantAvailabilityMetrics(
-      final PhysicalTenantIds physicalTenantIds, final PhysicalTenantAvailability availability) {
+  public SecondaryStorageAvailabilityMetrics(
+      final PhysicalTenantIds physicalTenantIds, final SecondaryStorageAvailability availability) {
     this.physicalTenantIds = physicalTenantIds;
     this.availability = availability;
   }
@@ -44,9 +44,10 @@ public class PhysicalTenantAvailabilityMetrics implements MeterBinder {
         .known()
         .forEach(
             physicalTenantId ->
-                Gauge.builder(
-                        METRIC_NAME, () -> availability.isServiceable(physicalTenantId) ? 1 : 0)
-                    .description("Whether the physical tenant is serviceable (1) or degraded (0)")
+                Gauge.builder(METRIC_NAME, () -> availability.isAvailable(physicalTenantId) ? 1 : 0)
+                    .description(
+                        "Whether the physical tenant's secondary storage is available (1) or"
+                            + " degraded (0)")
                     .tag(PartitionKeyNames.PHYSICAL_TENANT.asString(), physicalTenantId)
                     .register(registry));
   }

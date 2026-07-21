@@ -13,78 +13,78 @@ import io.camunda.cluster.PhysicalTenantIds;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
-class SchemaInitializationPhysicalTenantAvailabilityTest {
+class SchemaInitializationSecondaryStorageAvailabilityTest {
 
   private static final String TENANT_A = "tenanta";
   private static final String TENANT_B = "tenantb";
 
   @Test
-  void shouldDelegateServiceabilityToSchemaInitializedPredicate() {
+  void shouldDelegateAvailabilityToSchemaInitializedPredicate() {
     // given
     final var availability =
-        new SchemaInitializationPhysicalTenantAvailability(
+        new SchemaInitializationSecondaryStorageAvailability(
             () -> Set.of(TENANT_A), TENANT_A::equals);
 
     // when/then
-    assertThat(availability.isServiceable(TENANT_A)).isTrue();
-    assertThat(availability.isServiceable(TENANT_B)).isFalse();
+    assertThat(availability.isAvailable(TENANT_A)).isTrue();
+    assertThat(availability.isAvailable(TENANT_B)).isFalse();
   }
 
   @Test
-  void shouldReportUnknownTenantAsNotServiceable() {
+  void shouldReportUnknownTenantAsNotAvailable() {
     // given - mirrors the real schema-init predicates (SchemaManagerContainer,
     // RdbmsSchemaManagerRegistry), which are backed by a per-tenant map and report false for a
     // key they don't hold
     final var availability =
-        new SchemaInitializationPhysicalTenantAvailability(
+        new SchemaInitializationSecondaryStorageAvailability(
             () -> Set.of(TENANT_A), Set.of(TENANT_A)::contains);
 
     // when/then
-    assertThat(availability.isServiceable("unknown")).isFalse();
+    assertThat(availability.isAvailable("unknown")).isFalse();
   }
 
   @Test
-  void shouldReportNoTenantsServiceableWhenNoneAreInitialized() {
+  void shouldReportNoTenantsAvailableWhenNoneAreInitialized() {
     // given
     final var availability =
-        new SchemaInitializationPhysicalTenantAvailability(
+        new SchemaInitializationSecondaryStorageAvailability(
             () -> Set.of(TENANT_A, TENANT_B), tenantId -> false);
 
     // when/then
-    assertThat(availability.anyServiceable()).isFalse();
+    assertThat(availability.anyAvailable()).isFalse();
   }
 
   @Test
-  void shouldReportAnyServiceableWhenSomeTenantsAreInitialized() {
+  void shouldReportAnyAvailableWhenSomeTenantsAreInitialized() {
     // given
     final var availability =
-        new SchemaInitializationPhysicalTenantAvailability(
+        new SchemaInitializationSecondaryStorageAvailability(
             () -> Set.of(TENANT_A, TENANT_B), TENANT_A::equals);
 
     // when/then
-    assertThat(availability.anyServiceable()).isTrue();
+    assertThat(availability.anyAvailable()).isTrue();
   }
 
   @Test
-  void shouldReportAnyServiceableWhenAllTenantsAreInitialized() {
+  void shouldReportAnyAvailableWhenAllTenantsAreInitialized() {
     // given
     final var availability =
-        new SchemaInitializationPhysicalTenantAvailability(
+        new SchemaInitializationSecondaryStorageAvailability(
             () -> Set.of(TENANT_A, TENANT_B), tenantId -> true);
 
     // when/then
-    assertThat(availability.anyServiceable()).isTrue();
+    assertThat(availability.anyAvailable()).isTrue();
   }
 
   @Test
   void shouldReportDefaultTenantKnownFromPhysicalTenantIdsDefault() {
     // given
     final var availability =
-        new SchemaInitializationPhysicalTenantAvailability(
+        new SchemaInitializationSecondaryStorageAvailability(
             PhysicalTenantIds.DEFAULT, tenantId -> false);
 
     // when/then
-    assertThat(availability.isServiceable(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)).isFalse();
-    assertThat(availability.anyServiceable()).isFalse();
+    assertThat(availability.isAvailable(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)).isFalse();
+    assertThat(availability.anyAvailable()).isFalse();
   }
 }

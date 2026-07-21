@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-import io.camunda.cluster.PhysicalTenantAvailability;
-import io.camunda.service.exception.PhysicalTenantUnavailableException;
+import io.camunda.cluster.SecondaryStorageAvailability;
+import io.camunda.service.exception.SecondaryStorageDegradedException;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -56,7 +56,7 @@ class SecondaryStorageInterceptorTest {
 
     final var interceptor =
         new SecondaryStorageInterceptor(
-            "elasticsearch", PhysicalTenantAvailability.ALWAYS_SERVICEABLE);
+            "elasticsearch", SecondaryStorageAvailability.ALWAYS_AVAILABLE);
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
     assertThat(result).isTrue();
   }
@@ -65,7 +65,7 @@ class SecondaryStorageInterceptorTest {
   void shouldNotConsultAvailabilityWhenNoAnnotation() {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(false);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
-    final var availability = mock(PhysicalTenantAvailability.class);
+    final var availability = mock(SecondaryStorageAvailability.class);
 
     final var interceptor = new SecondaryStorageInterceptor("elasticsearch", availability);
     interceptor.preHandle(request, response, handlerMethod);
@@ -81,7 +81,7 @@ class SecondaryStorageInterceptorTest {
 
     final var interceptor =
         new SecondaryStorageInterceptor(
-            "elasticsearch", PhysicalTenantAvailability.ALWAYS_SERVICEABLE);
+            "elasticsearch", SecondaryStorageAvailability.ALWAYS_AVAILABLE);
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
     assertThat(result).isTrue();
   }
@@ -93,7 +93,7 @@ class SecondaryStorageInterceptorTest {
 
     final var interceptor =
         new SecondaryStorageInterceptor(
-            CAMUNDA_DATABASE_TYPE_NONE, PhysicalTenantAvailability.ALWAYS_SERVICEABLE);
+            CAMUNDA_DATABASE_TYPE_NONE, SecondaryStorageAvailability.ALWAYS_AVAILABLE);
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageUnavailableException.class);
   }
@@ -119,7 +119,7 @@ class SecondaryStorageInterceptorTest {
     final var interceptor =
         new SecondaryStorageInterceptor("elasticsearch", degraded(PHYSICAL_TENANT_ID));
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
-        .isInstanceOf(PhysicalTenantUnavailableException.class);
+        .isInstanceOf(SecondaryStorageDegradedException.class);
   }
 
   @Test
@@ -141,9 +141,9 @@ class SecondaryStorageInterceptorTest {
     RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(mockRequest));
   }
 
-  private static PhysicalTenantAvailability degraded(final String physicalTenantId) {
-    final var availability = mock(PhysicalTenantAvailability.class);
-    when(availability.isServiceable(physicalTenantId)).thenReturn(false);
+  private static SecondaryStorageAvailability degraded(final String physicalTenantId) {
+    final var availability = mock(SecondaryStorageAvailability.class);
+    when(availability.isAvailable(physicalTenantId)).thenReturn(false);
     return availability;
   }
 }

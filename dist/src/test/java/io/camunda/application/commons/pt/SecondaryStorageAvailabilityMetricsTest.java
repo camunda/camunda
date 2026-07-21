@@ -9,7 +9,7 @@ package io.camunda.application.commons.pt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.cluster.PhysicalTenantAvailability;
+import io.camunda.cluster.SecondaryStorageAvailability;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.HashSet;
@@ -17,30 +17,30 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PhysicalTenantAvailabilityMetricsTest {
+class SecondaryStorageAvailabilityMetricsTest {
 
-  private static final String METRIC_NAME = "camunda.physical.tenant.serviceable";
+  private static final String METRIC_NAME = "camunda.physical.tenant.secondary.storage.available";
   private static final String TENANT_A = "tenant-a";
   private static final String TENANT_B = "tenant-b";
 
   private SimpleMeterRegistry meterRegistry;
-  private Set<String> serviceableTenants;
-  private PhysicalTenantAvailability availability;
+  private Set<String> availableTenants;
+  private SecondaryStorageAvailability availability;
 
   @BeforeEach
   void setUp() {
     meterRegistry = new SimpleMeterRegistry();
-    serviceableTenants = new HashSet<>(Set.of(TENANT_A, TENANT_B));
+    availableTenants = new HashSet<>(Set.of(TENANT_A, TENANT_B));
     availability =
-        new PhysicalTenantAvailability() {
+        new SecondaryStorageAvailability() {
           @Override
-          public boolean isServiceable(final String physicalTenantId) {
-            return serviceableTenants.contains(physicalTenantId);
+          public boolean isAvailable(final String physicalTenantId) {
+            return availableTenants.contains(physicalTenantId);
           }
 
           @Override
-          public boolean anyServiceable() {
-            return !serviceableTenants.isEmpty();
+          public boolean anyAvailable() {
+            return !availableTenants.isEmpty();
           }
         };
   }
@@ -53,7 +53,7 @@ class PhysicalTenantAvailabilityMetricsTest {
   void shouldRegisterGaugeForEachKnownPhysicalTenant() {
     // given
     final var metrics =
-        new PhysicalTenantAvailabilityMetrics(() -> Set.of(TENANT_A, TENANT_B), availability);
+        new SecondaryStorageAvailabilityMetrics(() -> Set.of(TENANT_A, TENANT_B), availability);
 
     // when
     metrics.bindTo(meterRegistry);
@@ -64,10 +64,10 @@ class PhysicalTenantAvailabilityMetricsTest {
   }
 
   @Test
-  void shouldReportGaugeValueOneWhenTenantIsServiceable() {
+  void shouldReportGaugeValueOneWhenTenantIsAvailable() {
     // given
     final var metrics =
-        new PhysicalTenantAvailabilityMetrics(() -> Set.of(TENANT_A, TENANT_B), availability);
+        new SecondaryStorageAvailabilityMetrics(() -> Set.of(TENANT_A, TENANT_B), availability);
     metrics.bindTo(meterRegistry);
 
     // when/then
@@ -79,13 +79,13 @@ class PhysicalTenantAvailabilityMetricsTest {
   void shouldFlipGaugeValueToZeroWhenTenantBecomesDegraded() {
     // given
     final var metrics =
-        new PhysicalTenantAvailabilityMetrics(() -> Set.of(TENANT_A, TENANT_B), availability);
+        new SecondaryStorageAvailabilityMetrics(() -> Set.of(TENANT_A, TENANT_B), availability);
     metrics.bindTo(meterRegistry);
     assertThat(gauge(TENANT_A).value()).isEqualTo(1.0);
 
     // when - the gauge is pull-based, so mutating the underlying state must be reflected on the
     // next read without re-binding
-    serviceableTenants.remove(TENANT_A);
+    availableTenants.remove(TENANT_A);
 
     // then
     assertThat(gauge(TENANT_A).value()).isEqualTo(0.0);
@@ -93,16 +93,16 @@ class PhysicalTenantAvailabilityMetricsTest {
   }
 
   @Test
-  void shouldFlipGaugeValueBackToOneWhenTenantBecomesServiceableAgain() {
+  void shouldFlipGaugeValueBackToOneWhenTenantBecomesAvailableAgain() {
     // given
     final var metrics =
-        new PhysicalTenantAvailabilityMetrics(() -> Set.of(TENANT_A, TENANT_B), availability);
+        new SecondaryStorageAvailabilityMetrics(() -> Set.of(TENANT_A, TENANT_B), availability);
     metrics.bindTo(meterRegistry);
-    serviceableTenants.remove(TENANT_A);
+    availableTenants.remove(TENANT_A);
     assertThat(gauge(TENANT_A).value()).isEqualTo(0.0);
 
     // when
-    serviceableTenants.add(TENANT_A);
+    availableTenants.add(TENANT_A);
 
     // then
     assertThat(gauge(TENANT_A).value()).isEqualTo(1.0);
