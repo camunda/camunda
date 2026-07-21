@@ -34,7 +34,7 @@ const FilterMultiSelect: React.FC<Props> = ({name, titleText, items}) => {
 						id={name}
 						items={items}
 						selectedItems={selectedItems}
-						itemToString={(selectedItem) => spaceAndCapitalize(selectedItem)}
+						itemToString={(selectedItem) => (selectedItem ? spaceAndCapitalize(selectedItem) : '')}
 						label={t('operate.shared.filterMultiSelect.chooseOption')}
 						useTitleInItem={false}
 						titleText={titleText}

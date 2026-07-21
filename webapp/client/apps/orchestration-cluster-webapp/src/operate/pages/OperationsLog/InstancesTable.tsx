@@ -68,7 +68,9 @@ const InstancesTable: React.FC<Props> = ({search}) => {
 				)
 			: undefined;
 
-	const [sortField, sortOrder] = (search.sort ?? DEFAULT_SORT).split('+') as [AuditLogSortField, 'asc' | 'desc'];
+	const [rawSortField, rawSortOrder] = (search.sort ?? DEFAULT_SORT).split('+');
+	const sortField = (rawSortField ?? 'timestamp') as AuditLogSortField;
+	const sortOrder = (rawSortOrder ?? 'desc') as 'asc' | 'desc';
 
 	const requestFilter: NonNullable<QueryAuditLogsRequestBody['filter']> = {
 		category: {$neq: 'ADMIN'},
