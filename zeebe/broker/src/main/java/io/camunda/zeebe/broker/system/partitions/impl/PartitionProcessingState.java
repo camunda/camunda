@@ -18,7 +18,7 @@ import java.nio.file.StandardOpenOption;
 public class PartitionProcessingState {
 
   private static final String PERSISTED_PAUSE_STATE_FILENAME = ".processorPaused";
-  private static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
+  public static final String PERSISTED_EXPORTER_PAUSE_STATE_FILENAME = ".exporterPaused";
   private boolean isProcessingPaused;
   private ExporterPhase exporterPhase;
   private final RaftPartition raftPartition;

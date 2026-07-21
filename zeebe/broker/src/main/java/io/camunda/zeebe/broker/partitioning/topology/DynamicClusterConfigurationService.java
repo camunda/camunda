@@ -9,10 +9,13 @@ package io.camunda.zeebe.broker.partitioning.topology;
 
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.bootstrap.BrokerStartupContext;
+import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
+import io.camunda.zeebe.dynamic.config.StaticConfiguration;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
@@ -22,9 +25,13 @@ import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -249,8 +256,59 @@ public class DynamicClusterConfigurationService
         StaticConfigurationGenerator.getStaticConfiguration(
             brokerConfiguration, physicalTenantConfigs, localMember);
 
+    final var legacyExportingStates =
+        readLegacyExportingStates(
+            brokerConfiguration.getData().getDirectory(), staticConfiguration);
+
     return clusterConfigurationManagerService.start(
-        brokerStartupContext.getActorSchedulingService(), staticConfiguration);
+        brokerStartupContext.getActorSchedulingService(),
+        staticConfiguration,
+        legacyExportingStates);
+  }
+
+  /**
+   * Reads the legacy persisted {@code .exporterPaused} state for every partition owned by the local
+   * member, so it can be migrated into the dynamic cluster configuration. See {@link
+   * io.camunda.zeebe.dynamic.config.ExportingStateInitializer}.
+   */
+  private static Map<Integer, ExportingState> readLegacyExportingStates(
+      final String dataDirectory, final StaticConfiguration staticConfiguration) {
+    final var localMemberId = staticConfiguration.localMemberId();
+    final Map<Integer, ExportingState> legacyExportingStates = new HashMap<>();
+    for (final var partition : staticConfiguration.generatePartitionDistribution()) {
+      if (!partition.members().contains(localMemberId)) {
+        continue;
+      }
+      final var partitionDirectory =
+          RaftPartitionFactory.getPartitionDirectory(partition.id(), dataDirectory);
+      final var exporterPausedFile =
+          partitionDirectory.resolve(
+              PartitionProcessingState.PERSISTED_EXPORTER_PAUSE_STATE_FILENAME);
+      legacyExportingStates.put(
+          partition.id().number(), readLegacyExportingState(exporterPausedFile));
+    }
+    return legacyExportingStates;
+  }
+
+  private static ExportingState readLegacyExportingState(final Path exporterPausedFile) {
+    // Mirrors the file format written by PartitionProcessingState: an absent file means exporting,
+    // a blank file means paused (backwards compatibility), otherwise the file holds the phase name.
+    if (!Files.exists(exporterPausedFile)) {
+      return ExportingState.EXPORTING;
+    }
+    try {
+      final var content = Files.readString(exporterPausedFile, StandardCharsets.UTF_8).trim();
+      if (content.isBlank()) {
+        return ExportingState.PAUSED;
+      }
+      return switch (content) {
+        case "PAUSED" -> ExportingState.PAUSED;
+        case "SOFT_PAUSED" -> ExportingState.SOFT_PAUSED;
+        default -> ExportingState.EXPORTING;
+      };
+    } catch (final IOException e) {
+      return ExportingState.EXPORTING;
+    }
   }
 
   private ClusterConfigurationManagerService getClusterTopologyManagerService(
