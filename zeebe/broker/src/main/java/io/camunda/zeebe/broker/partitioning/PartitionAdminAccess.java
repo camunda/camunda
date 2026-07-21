@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
 
 public interface PartitionAdminAccess {
@@ -24,8 +25,9 @@ public interface PartitionAdminAccess {
       case EXPORTING -> resumeExporting();
       case SOFT_PAUSED -> softPauseExporting();
       case UNKNOWN ->
-          throw new IllegalArgumentException(
-              "Expected exporting state to be a valid value, but was " + exportingState);
+          CompletableActorFuture.completedExceptionally(
+              new IllegalArgumentException(
+                  "Expected exporting state to be a valid value, but was " + exportingState));
     };
   }
 
