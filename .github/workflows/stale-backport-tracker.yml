@@ -312,13 +312,7 @@ jobs:
           payload=$(printf '%s' "$STALE_DATA" | \
             .ci/scripts/stale-backport-scripts/format-slack-report.sh)
 
-          # Emit the blocks array as COMPACT single-line JSON. slack-github-action
-          # v4 enforces strict YAML 1.2 indentation, so a multi-line `toJSON(...)`
-          # value in the payload fails to parse ("deficient indentation"). A single
-          # compact line is valid YAML flow and parses cleanly.
-          # Extract strictly: abort if .blocks is missing or not an array, so a
-          # malformed formatter output fails here (visibly) instead of producing
-          # `blocks: null` and failing inside the continue-on-error Slack step.
+          # Compact single-line JSON: slack-github-action v4's strict YAML parser rejects multi-line toJSON() output.
           blocks=$(printf '%s' "$payload" | jq -ce '.blocks | select(type == "array")') || {
             echo "::error::format-slack-report.sh did not produce a .blocks array — aborting before posting an invalid Slack payload" >&2
             exit 1
