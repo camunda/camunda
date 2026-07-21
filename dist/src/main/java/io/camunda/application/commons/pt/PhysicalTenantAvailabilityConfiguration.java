@@ -49,4 +49,10 @@ public class PhysicalTenantAvailabilityConfiguration {
   public PhysicalTenantAvailability noSecondaryStoragePhysicalTenantAvailability() {
     return PhysicalTenantAvailability.ALWAYS_SERVICEABLE;
   }
+
+  @Bean
+  public PhysicalTenantAvailabilityMetrics physicalTenantAvailabilityMetrics(
+      final PhysicalTenantIds physicalTenantIds, final PhysicalTenantAvailability availability) {
+    return new PhysicalTenantAvailabilityMetrics(physicalTenantIds, availability);
+  }
 }
