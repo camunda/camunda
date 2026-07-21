@@ -114,15 +114,15 @@ Matters found while manually testing the spike against a local CCSM/Keycloak set
    also runs a `SecurityContextLogoutHandler` (invalidate the session, which deletes it from the
    `SessionStorePort`, and clear the context). IdP end-session (Keycloak logout via CSL's
    `oidcLogout`) is a follow-up — this is a local logout only.
-7. **`CCSMUserCache` cannot load users** (`WARN … Could not retrieve user because no user token
-   present`). It resolves users from Identity using `ccsmTokenService.getCurrentUserAuthToken()`,
-   which reads the user access token from the old Optimize cookie; under CSL that token lives in the
-   OIDC session's `OAuth2AuthorizedClient`, not a cookie. **Known regression, not yet fixed.** Fix
-   approach: bridge the "current user auth token" to the CSL access token (from the
-   `OAuth2AuthorizedClientService`/`OAuth2AuthorizedClientManager` keyed by the current
-   `OAuth2AuthenticationToken`, or the `OidcUser` token). This is the same host-side token/user
-   resolution rewiring called out in ADR-0036 and affects user display/search and any Identity call
-   that needs the user's token.
+7. **`CCSMUserCache` could not load users** (`WARN … Could not retrieve user because no user token
+   present`). `ccsmTokenService.getCurrentUserAuthToken()` read the user access token from the old
+   Optimize cookie; under CSL that token lives in the OIDC session's `OAuth2AuthorizedClient`.
+   Fixed: `getCurrentUserAuthToken()` now prefers the CSL access token (loaded from the injected
+   `OAuth2AuthorizedClientRepository` keyed by the current `OAuth2AuthenticationToken`) and falls
+   back to the cookie for the legacy setup. Same Keycloak access token the Identity SDK expects, so
+   user lookups work. The repository is injected as an optional `ObjectProvider` (absent in legacy
+   CCSM). This is the concrete instance of the host-side token/user-resolution rewiring called out
+   in ADR-0036; a production adoption should apply the same bridge wherever the user token is read.
 
 ## Follow-ups (tracked in ADR-0036)
 
