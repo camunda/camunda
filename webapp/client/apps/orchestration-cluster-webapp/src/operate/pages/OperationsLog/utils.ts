@@ -10,7 +10,8 @@ function formatToISO(dateString: string | undefined): string | undefined {
 	if (!dateString) {
 		return undefined;
 	}
-	return new Date(dateString).toISOString();
+	const date = new Date(dateString);
+	return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 }
 
 export {formatToISO};
