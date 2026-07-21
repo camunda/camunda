@@ -3,6 +3,7 @@
   "resourcePermissions": {
     "AUDIT_LOG": ["READ"],
     "AUTHORIZATION": ["CREATE", "DELETE", "READ", "UPDATE"],
+    "BACKUP": ["CREATE", "DELETE", "READ", "RESTORE"],
     "BATCH": [
       "CREATE",
       "CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE",
@@ -28,6 +29,7 @@
     ],
     "DECISION_REQUIREMENTS_DEFINITION": ["READ"],
     "DOCUMENT": ["CREATE", "DELETE", "READ"],
+    "EXPORTER": ["PAUSE"],
     "EXPRESSION": ["EVALUATE"],
     "GLOBAL_LISTENER": [
       "CREATE_TASK_LISTENER",

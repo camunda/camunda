@@ -18,6 +18,7 @@ import io.camunda.security.api.model.authz.PermissionType;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class AuthzModelMapperTest {
@@ -100,6 +101,8 @@ class AuthzModelMapperTest {
   }
 
   @Test
+  @Disabled(
+      "Blocked until a CSL release includes the BACKUP and EXPORTER resource types: https://github.com/camunda/camunda-security-library/pull/550, https://github.com/camunda/camunda-security-library/pull/549")
   void shouldMapEveryProtocolAuthorizationResourceTypeToCsl() {
     for (final io.camunda.zeebe.protocol.record.value.AuthorizationResourceType value :
         io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.values()) {
@@ -110,6 +113,8 @@ class AuthzModelMapperTest {
   }
 
   @Test
+  @Disabled(
+      "Blocked until a CSL release includes the PAUSE and RESTORE permission types: https://github.com/camunda/camunda-security-library/pull/550, https://github.com/camunda/camunda-security-library/pull/549")
   void shouldMapEveryProtocolPermissionTypeToCsl() {
     for (final io.camunda.zeebe.protocol.record.value.PermissionType value :
         io.camunda.zeebe.protocol.record.value.PermissionType.values()) {

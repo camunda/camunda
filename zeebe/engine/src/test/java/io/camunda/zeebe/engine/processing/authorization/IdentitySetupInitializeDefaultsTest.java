@@ -220,7 +220,19 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SECRET)
-                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.REVEAL));
+                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.REVEAL),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.BACKUP)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.CREATE,
+                        PermissionType.READ,
+                        PermissionType.DELETE,
+                        PermissionType.RESTORE),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.EXPORTER)
+                    .hasOnlyPermissionTypes(PermissionType.PAUSE));
   }
 
   @Test
@@ -332,6 +344,10 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.SECRET)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.BACKUP)
                     .hasOnlyPermissionTypes(PermissionType.READ));
   }
 
