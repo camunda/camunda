@@ -63,15 +63,15 @@ jobs:
         project:
         - name: c8run
           path: ./c8run
-          runner: gcp-core-4-longrunning
+          runner: ubicloud-standard-4
         - name: optimize
           path: ./optimize
-          runner: gcp-core-16-longrunning
+          runner: ublicloud-standard-16
           maven-config: |
             -DskipQaBuild=true
         - name: single-app
           path: ./
-          runner: gcp-core-16-longrunning
+          runner: ubicloud-standard-16
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
