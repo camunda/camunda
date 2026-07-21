@@ -12,7 +12,7 @@ import {
   apiPut,
   apiPost,
 } from "src/utility/api/request";
-import { SearchResponse } from "src/utility/api";
+import { PageSearchParams, SearchResponse } from "src/utility/api";
 
 export const MAPPING_RULES_ENDPOINT = "/mapping-rules";
 
@@ -34,7 +34,7 @@ type MappingRuleSearchParams = {
 
 export const searchMappingRule: ApiDefinition<
   SearchResponse<MappingRule>,
-  MappingRuleSearchParams | undefined
+  (MappingRuleSearchParams & Partial<PageSearchParams>) | undefined
 > = (params) => apiPost(`${MAPPING_RULES_ENDPOINT}/search`, params);
 
 export const createMappingRule: ApiDefinition<undefined, MappingRule> = (

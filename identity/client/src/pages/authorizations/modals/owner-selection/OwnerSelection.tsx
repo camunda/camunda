@@ -10,7 +10,11 @@ import { ComboBox, TextInputSkeleton } from "@carbon/react";
 import { type SearchResponse, useApi } from "src/utility/api";
 import { ApiDefinition } from "src/utility/api/request";
 import useTranslate from "src/utility/localization";
-import type { QueryPage } from "@camunda/camunda-api-zod-schemas/8.10";
+
+// handcrafted type for backport, as camunda-zod-api-schema are not available in 8.8
+type QueryPage = {
+  limit: number;
+};
 
 type OwnerSelectionProps<T> = {
   id: string;
