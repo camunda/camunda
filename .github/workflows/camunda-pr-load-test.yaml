@@ -39,15 +39,16 @@ jobs:
     outputs:
       sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
         with:
           branch: ${{ github.event.pull_request.head.ref }}
           max_length: 50  # reduced to account for load-test prefix "c8-" and potential suffixes for uniqueness
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
