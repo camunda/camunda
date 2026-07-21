@@ -11,8 +11,8 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -60,7 +61,7 @@ public final class BatchOperationCreationCreateProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final RoutingInfo routingInfo;
   private final BatchOperationMetrics metrics;
   private final BatchOperationState batchOperationState;
@@ -70,7 +71,7 @@ public final class BatchOperationCreationCreateProcessor
       final ProcessingState state,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final RoutingInfo routingInfo,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
@@ -79,7 +80,7 @@ public final class BatchOperationCreationCreateProcessor
     responseWriter = writers.response();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.routingInfo = routingInfo;
     this.metrics = metrics;
   }
@@ -180,23 +181,25 @@ public final class BatchOperationCreationCreateProcessor
       final RequiredAuthorization<?> authorization =
           MsgPackConverter.convertToObject(
               command.getValue().getAuthorizationCheckBuffer(), RequiredAuthorization.class);
-      final AuthorizationRequest authorizationRequest =
-          AuthorizationRequest.builder()
-              .command(command)
-              .resourceType(AuthzModelMapper.toProtocol(authorization.resourceType()))
-              .permissionType(AuthzModelMapper.toProtocol(authorization.permissionType()))
-              .addAllResourceIds(authorization.resourceIds())
-              .build();
-      return authCheckBehavior.isAuthorized(authorizationRequest);
+      return cslCheck.checkForDistributedCommand(
+          command,
+          authorization,
+          null,
+          AuthorizationRejectionMapper.forbidden(
+              authorization.permissionType(), authorization.resourceType()));
     }
     // first check for general CREATE_BATCH_OPERATION permission
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.BATCH)
-            .permissionType(PermissionType.CREATE)
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
+    final var isAuthorized =
+        cslCheck.check(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.BATCH))
+                        .permissionType(AuthzModelMapper.fromProtocol(PermissionType.CREATE))
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+            (Void) null,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.CREATE, AuthorizationResourceType.BATCH));
     if (isAuthorized.isLeft()) {
       // if that's not present, check for the BO type dependent permission
       final var permission =
@@ -216,12 +219,15 @@ public final class BatchOperationCreationCreateProcessor
                 PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE;
             case UPDATE_JOB -> PermissionType.CREATE_BATCH_OPERATION_UPDATE_JOB;
           };
-      return authCheckBehavior.isAuthorized(
-          AuthorizationRequest.builder()
-              .command(command)
-              .resourceType(AuthorizationResourceType.BATCH)
-              .permissionType(permission)
-              .build());
+      return cslCheck.check(
+          command,
+          RequiredAuthorization.of(
+              b ->
+                  b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.BATCH))
+                      .permissionType(AuthzModelMapper.fromProtocol(permission))
+                      .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+          (Void) null,
+          AuthorizationRejectionMapper.forbidden(permission, AuthorizationResourceType.BATCH));
     }
 
     return isAuthorized;

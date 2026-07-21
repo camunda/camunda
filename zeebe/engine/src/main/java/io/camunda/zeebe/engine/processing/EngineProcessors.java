@@ -454,7 +454,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         commandDistributionBehavior,
-        authCheckBehavior,
+        cslCheck,
         scheduledTaskStateFactory,
         searchClientsProxy,
         processingState,
@@ -484,7 +484,7 @@ public final class EngineProcessors {
         tenantMetrics);
 
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
-        typedRecordProcessors, writers, processingState, authCheckBehavior);
+        typedRecordProcessors, writers, processingState, cslCheck, permissionsBehavior);
     GlobalListenersProcessors.addGlobalListenersProcessors(
         keyGenerator,
         typedRecordProcessors,
@@ -520,7 +520,12 @@ public final class EngineProcessors {
         processingState);
 
     AgentHistoryProcessors.addAgentHistoryProcessors(
-        keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
+        keyGenerator,
+        typedRecordProcessors,
+        writers,
+        cslCheck,
+        permissionsBehavior,
+        processingState);
 
     SecretReferenceProcessors.addSecretReferenceProcessors(typedRecordProcessors);
 

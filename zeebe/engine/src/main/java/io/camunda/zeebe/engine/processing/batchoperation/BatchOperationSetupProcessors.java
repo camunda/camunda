@@ -27,7 +27,7 @@ import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperatio
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializationBehavior;
 import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationRetryPolicy;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -49,7 +49,7 @@ public final class BatchOperationSetupProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authorizationCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final SearchClientsProxy searchClientsProxy,
       final ProcessingState processingState,
@@ -115,7 +115,7 @@ public final class BatchOperationSetupProcessors {
                 processingState,
                 keyGenerator,
                 commandDistributionBehavior,
-                authorizationCheckBehavior,
+                cslCheck,
                 routingInfo,
                 batchOperationMetrics))
         .onCommand(
@@ -157,7 +157,7 @@ public final class BatchOperationSetupProcessors {
                 writers,
                 commandDistributionBehavior,
                 processingState,
-                authorizationCheckBehavior,
+                cslCheck,
                 keyGenerator,
                 batchOperationMetrics))
         .onCommand(
@@ -167,7 +167,7 @@ public final class BatchOperationSetupProcessors {
                 writers,
                 commandDistributionBehavior,
                 processingState,
-                authorizationCheckBehavior,
+                cslCheck,
                 keyGenerator,
                 batchOperationMetrics))
         .onCommand(
@@ -177,7 +177,7 @@ public final class BatchOperationSetupProcessors {
                 writers,
                 commandDistributionBehavior,
                 processingState,
-                authorizationCheckBehavior,
+                cslCheck,
                 keyGenerator,
                 batchOperationMetrics))
         .onCommand(

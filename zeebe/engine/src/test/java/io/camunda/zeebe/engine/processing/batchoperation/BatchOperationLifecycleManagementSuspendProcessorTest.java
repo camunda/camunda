@@ -10,8 +10,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -60,21 +59,15 @@ class BatchOperationLifecycleManagementSuspendProcessorTest {
     final var state = mock(ProcessingState.class);
     when(state.getBatchOperationState()).thenReturn(batchOperationState);
 
-    final var authCheckBehavior = mock(AuthorizationCheckBehavior.class);
-    when(authCheckBehavior.isAuthorizedOrInternalCommand(any(AuthorizationRequest.class)))
-        .thenReturn(Either.right(null));
+    final var cslCheck = mock(CslAuthorizationCheck.class);
+    when(cslCheck.check(any(), any(), any(), any())).thenReturn(Either.right(null));
 
     when(keyGenerator.nextKey()).thenReturn(1L);
 
     // Inject mocked writers
     processor =
         new BatchOperationLifecycleManagementSuspendProcessor(
-            writers,
-            null,
-            state,
-            authCheckBehavior,
-            keyGenerator,
-            mock(BatchOperationMetrics.class));
+            writers, null, state, cslCheck, keyGenerator, mock(BatchOperationMetrics.class));
   }
 
   @Test

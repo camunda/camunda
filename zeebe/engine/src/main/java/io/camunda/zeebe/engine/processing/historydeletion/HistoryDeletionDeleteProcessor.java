@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.historydeletion;
 
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -30,22 +30,27 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
 
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_EXISTS =
       "Expected to delete history for process instance with key '%d', but it is still active.";
+  private static final String NOT_FOUND_FOR_TENANT_MESSAGE =
+      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
+  private final PermissionsBehavior permissionsBehavior;
 
   public HistoryDeletionDeleteProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck,
+      final PermissionsBehavior permissionsBehavior) {
     elementInstanceState = processingState.getElementInstanceState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
+    this.permissionsBehavior = permissionsBehavior;
   }
 
   @Override
@@ -113,17 +118,19 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
       return Either.right(command.getValue());
     }
 
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(resourceType)
-            .permissionType(permissionType)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(resourceId)
-            .build();
-    return authCheckBehavior
-        .isAuthorizedOrInternalCommand(request)
-        .map(ignored -> command.getValue());
+    final var tenantId = command.getValue().getTenantId();
+    return cslCheck
+        .checkTenant(
+            command,
+            tenantId,
+            command.getValue(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                NOT_FOUND_FOR_TENANT_MESSAGE.formatted(permissionType, resourceType, tenantId)))
+        .flatMap(
+            value ->
+                permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+                    command, resourceType, permissionType, resourceId));
   }
 
   private void deleteDecisionRequirements(final TypedRecord<HistoryDeletionRecord> command) {

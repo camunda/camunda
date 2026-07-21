@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -25,7 +26,9 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -53,7 +56,7 @@ public final class BatchOperationLifecycleManagementCancelProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final BatchOperationState batchOperationState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
   private final BatchOperationMetrics metrics;
 
@@ -61,7 +64,7 @@ public final class BatchOperationLifecycleManagementCancelProcessor
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final KeyGenerator keyGenerator,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
@@ -69,7 +72,7 @@ public final class BatchOperationLifecycleManagementCancelProcessor
     rejectionWriter = writers.rejection();
     this.commandDistributionBehavior = commandDistributionBehavior;
     batchOperationState = processingState.getBatchOperationState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
     this.metrics = metrics;
   }
@@ -77,13 +80,17 @@ public final class BatchOperationLifecycleManagementCancelProcessor
   @Override
   public void processNewCommand(
       final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
-    final var request =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.BATCH)
-            .permissionType(PermissionType.UPDATE)
-            .build();
-    final var authorizationResult = authCheckBehavior.isAuthorizedOrInternalCommand(request);
+    final var authorizationResult =
+        cslCheck.check(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(AuthzModelMapper.fromProtocol(AuthorizationResourceType.BATCH))
+                        .permissionType(AuthzModelMapper.fromProtocol(PermissionType.UPDATE))
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE, AuthorizationResourceType.BATCH));
     if (authorizationResult.isLeft()) {
       final Rejection rejection = authorizationResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
