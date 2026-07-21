@@ -73,7 +73,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     final var record = command.getValue();
     final var isAuthorized =
         permissionsBehavior.isAuthorized(
-            command, AuthorizationResourceType.GROUP, PermissionType.UPDATE);
+            command, AuthorizationResourceType.GROUP, PermissionType.UPDATE, record.getGroupId());
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
