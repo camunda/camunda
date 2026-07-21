@@ -826,11 +826,9 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
           enablePolling,
         },
       );
-    }, [processInstance.processInstanceKey, enablePolling]);
 
-    useEffect(() => {
-      return elementInstancesTreeStore.reset;
-    }, []);
+      return elementInstancesTreeStore.stopPolling;
+    }, [processInstance.processInstanceKey, enablePolling]);
 
     const rootNodeData = elementInstancesTreeStore.state.nodes.get(
       processInstance.processInstanceKey,

@@ -56,4 +56,27 @@ describe('ExecutionCountToggle', () => {
 
     await waitFor(() => expect(screen.getByRole('switch')).toBeEnabled());
   });
+
+  it('should keep its toggled state after unmounting and remounting', async () => {
+    const {user, unmount} = render(<ExecutionCountToggle />, {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Execution count')).toBeEnabled();
+    });
+
+    await user.click(screen.getByLabelText('Execution count'));
+    expect(screen.getByLabelText('Execution count')).toBeChecked();
+
+    unmount();
+
+    mockFetchProcessDefinitionXml().withSuccess('');
+    render(<ExecutionCountToggle />, {wrapper: Wrapper});
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Execution count')).toBeEnabled();
+    });
+    expect(screen.getByLabelText('Execution count')).toBeChecked();
+  });
 });
