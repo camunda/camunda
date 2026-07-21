@@ -119,7 +119,7 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
             case PROCESSING -> new ExitRecoveryApplier(op.memberId(), modeChangeExecutor);
           };
       case final AwaitModeChangeOperation op ->
-          new AwaitModeChangeApplier(op.mode(), modeChangeExecutor);
+          new AwaitModeChangeApplier(op.memberId(), op.mode(), modeChangeExecutor);
     };
   }
 }
