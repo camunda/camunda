@@ -15,7 +15,7 @@ import org.jspecify.annotations.NullMarked;
  *
  * <p>Per ADR 001 D2 ({@code docs/adr/management/001-physical-tenant-health-status-topology.md}), a
  * physical tenant is <b>degraded</b> when its schema is not initialized or its secondary storage is
- * otherwise unusable. {@link #isReady(String)} is {@code true} exactly when the tenant is not
+ * otherwise unusable. {@link #isReady(String)} returns {@code false} when the tenant is known to be
  * degraded.
  *
  * <p>Ready means the tenant's secondary-storage schema has been initialized and the storage is
