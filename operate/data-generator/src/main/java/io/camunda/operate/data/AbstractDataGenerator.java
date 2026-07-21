@@ -72,15 +72,15 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   @Autowired CamundaAuthenticationProvider authenticationProvider;
 
+  @Autowired PhysicalTenantIds physicalTenantIds;
+
+  @Autowired SchemaManagerContainer schemaManagerContainer;
+
   @Autowired private CamundaSecurityLibraryProperties cslProperties;
   private boolean shutdown = false;
 
   @Autowired(required = false)
   private SearchClientsProxy searchClientsProxy;
-
-  @Autowired PhysicalTenantIds physicalTenantIds;
-
-  @Autowired SchemaManagerContainer schemaManagerContainer;
 
   @PostConstruct
   private void startDataGenerator() {
