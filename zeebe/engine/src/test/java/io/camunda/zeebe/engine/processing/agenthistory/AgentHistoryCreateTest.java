@@ -177,6 +177,93 @@ public class AgentHistoryCreateTest {
     assertThat(rejection.getRejectionReason()).contains(String.valueOf(secondElementInstanceKey));
   }
 
+  @Test
+  public void shouldSucceedWhenJobHasNoLease() {
+    // given — job activated without withLease(), so leaseToken is empty
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+    final var jobKey = activateJobForProcessInstance(processInstanceKey);
+
+    // when
+    final Record<AgentHistoryRecordValue> created =
+        ENGINE
+            .agentHistories()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withJobKey(jobKey)
+            .withElementInstanceKey(elementInstanceKey)
+            .withRole(AgentHistoryRole.USER)
+            .withJobLease("")
+            .create();
+
+    // then — lease check is skipped and history record was created
+    assertThat(created.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(created.getIntent()).isEqualTo(AgentHistoryIntent.CREATED);
+  }
+
+  @Test
+  public void shouldRejectWhenJobLeaseMismatch() {
+    // given — job activated with withLease(), but CREATE carries a stale/wrong lease string
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+    final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
+
+    // when
+    final Record<AgentHistoryRecordValue> rejection =
+        ENGINE
+            .agentHistories()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withJobKey(job.key())
+            .withElementInstanceKey(elementInstanceKey)
+            .withRole(AgentHistoryRole.USER)
+            .withJobLease("stale-lease-that-does-not-match")
+            .expectRejection()
+            .create();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to create agent history entry for job with key '%d', but the supplied lease does not match. The job may have been re-activated."
+                .formatted(job.key()));
+  }
+
+  @Test
+  public void shouldRejectWhenJobHasLeaseButCommandOmitsIt() {
+    // given — job activated with withLease(), but CREATE carries no lease (empty string)
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+    final var job = activateJobForProcessInstanceWithLease(processInstanceKey);
+
+    // when — empty string does not equal the stored token, so the lease check fires
+    final Record<AgentHistoryRecordValue> rejection =
+        ENGINE
+            .agentHistories()
+            .withAgentInstanceKey(agentInstanceKey)
+            .withJobKey(job.key())
+            .withElementInstanceKey(elementInstanceKey)
+            .withRole(AgentHistoryRole.USER)
+            .expectRejection()
+            .create();
+
+    // then
+    assertThat(rejection.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.NOT_FOUND);
+    assertThat(rejection.getRejectionReason())
+        .isEqualTo(
+            "Expected to create agent history entry for job with key '%d', but the supplied lease does not match. The job may have been re-activated."
+                .formatted(job.key()));
+  }
+
   // --- helpers ---
 
   private static Record<ProcessInstanceRecordValue> deployAndCreateProcessInstance() {
@@ -213,4 +300,23 @@ public class AgentHistoryCreateTest {
         .withDefinition("gpt-4o", "openai", "You are a helpful agent.")
         .create();
   }
+
+  private static ActivatedJob activateJobForProcessInstanceWithLease(
+      final long processInstanceKey) {
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final var batchRecord = ENGINE.jobs().withType(JOB_TYPE).withLease().activate();
+    final int jobIndex = batchRecord.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("expected activated job batch to contain job key %d", jobKey)
+        .isGreaterThanOrEqualTo(0);
+    final String leaseToken = batchRecord.getValue().getJobs().get(jobIndex).getLeaseToken();
+    return new ActivatedJob(jobKey, leaseToken);
+  }
+
+  private record ActivatedJob(long key, String leaseToken) {}
 }
