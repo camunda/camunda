@@ -29,6 +29,7 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
+import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -391,6 +392,27 @@ public final class ControllableRaftContexts {
       final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, nextEntry++);
       leaderRole.appendEntry(nextEntry, nextEntry, data, dataLossChecker);
     }
+  }
+
+  // Send a TimeoutNow from memberId (only when it is currently the leader) to another member,
+  // prompting an immediate leadership transfer. No-op when memberId is not a leader.
+  public void transferLeadership(final MemberId memberId) {
+    final var raftContext = getRaftContext(memberId);
+    if (raftContext == null || !(raftContext.getRaftRole() instanceof LeaderRole)) {
+      return;
+    }
+    final var target =
+        raftServers.keySet().stream()
+            .filter(id -> !id.equals(memberId))
+            .min(java.util.Comparator.comparing(MemberId::id))
+            .orElse(null);
+    if (target == null) {
+      return;
+    }
+    LOG.info("Transferring leadership from {} to {} via TimeoutNow", memberId.id(), target.id());
+    final var request =
+        TimeoutNowRequest.builder().withTerm(raftContext.getTerm()).withLeader(memberId).build();
+    raftContext.getProtocol().timeoutNow(target, request);
   }
 
   // Find current leader and execute an append request

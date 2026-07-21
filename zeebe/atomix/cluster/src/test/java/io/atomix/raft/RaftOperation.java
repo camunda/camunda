@@ -76,6 +76,13 @@ public final class RaftOperation {
     return operations;
   }
 
+  public static List<RaftOperation> getRaftOperationsWithTransfers() {
+    final List<RaftOperation> defaultRaftOperation = getDefaultRaftOperations();
+    defaultRaftOperation.add(
+        RaftOperation.of("Transfer leadership", ControllableRaftContexts::transferLeadership));
+    return defaultRaftOperation;
+  }
+
   public static List<RaftOperation> getDefaultRaftOperations() {
     final List<RaftOperation> defaultRaftOperation = new ArrayList<>();
     defaultRaftOperation.add(

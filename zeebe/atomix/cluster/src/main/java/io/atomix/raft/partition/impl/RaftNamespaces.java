@@ -40,6 +40,8 @@ import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.ReplicatableJournalRecord;
+import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VersionedAppendRequest;
@@ -98,6 +100,8 @@ public final class RaftNamespaces {
           .register(LeaveResponse.class)
           .register(ForceConfigureRequest.class)
           .register(ForceConfigureResponse.class)
+          .register(TimeoutNowRequest.class)
+          .register(TimeoutNowResponse.class)
           .name("RaftProtocol")
           .build();
 

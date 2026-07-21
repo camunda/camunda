@@ -21,6 +21,7 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.ElectionTimerFactory;
+import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
@@ -33,6 +34,9 @@ import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
+import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.protocol.TimeoutNowRequest;
+import io.atomix.raft.protocol.TimeoutNowResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -191,6 +195,31 @@ public final class FollowerRole extends ActiveRole {
   }
 
   @Override
+  public CompletableFuture<TimeoutNowResponse> onTimeoutNow(final TimeoutNowRequest request) {
+    logRequest(request);
+
+    if (!isTimeoutNowFromCurrentLeader(request.term(), request.leader())) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              TimeoutNowResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
+                  .build()));
+    }
+
+    log.info(
+        "Received TimeoutNow from leader {} in term {}, starting election immediately",
+        request.leader(),
+        request.term());
+
+    final var response =
+        logResponse(TimeoutNowResponse.builder().withStatus(RaftResponse.Status.OK).build());
+    raft.transition(RaftServer.Role.CANDIDATE);
+
+    return CompletableFuture.completedFuture(response);
+  }
+
+  @Override
   protected VoteResponse handleVote(final VoteRequest request) {
     // Reset the heartbeat timeout if we voted for another candidate.
     final VoteResponse response = super.handleVote(request);
@@ -198,6 +227,27 @@ public final class FollowerRole extends ActiveRole {
       onHeartbeatFromLeader();
     }
     return response;
+  }
+
+  /**
+   * Stricter than {@link #isRequestFromCurrentLeader}: a TimeoutNow campaigns immediately, so it
+   * must prove the sender is the established leader of the <em>current</em> term. A higher term is
+   * rejected here (rather than accepted, as append/install/configure do) so it cannot bypass the
+   * normal leader-establishment path.
+   */
+  private boolean isTimeoutNowFromCurrentLeader(final long term, final MemberId leader) {
+    final long currentTerm = raft.getTerm();
+    final RaftMember currentLeader = raft.getLeader();
+    if (term != currentTerm || currentLeader == null || !leader.equals(currentLeader.memberId())) {
+      log.debug(
+          "Ignoring TimeoutNow from {} in term {}: expected the current leader {} in term {}",
+          leader,
+          term,
+          currentLeader,
+          currentTerm);
+      return false;
+    }
+    return true;
   }
 
   private boolean isRequestFromCurrentLeader(final long term, final MemberId leader) {
