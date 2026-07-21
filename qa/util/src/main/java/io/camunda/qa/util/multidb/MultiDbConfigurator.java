@@ -133,8 +133,12 @@ public class MultiDbConfigurator {
     documentBasedDatabase.setUrl(url);
     documentBasedDatabase.setIndexPrefix(indexPrefix);
     documentBasedDatabase.getHistory().setPolicyName(indexPrefix + "-ilm");
-    documentBasedDatabase.setUsername(userName);
-    documentBasedDatabase.setPassword(userPassword);
+    if (userName != null && !userName.isBlank()) {
+      documentBasedDatabase.setUsername(userName);
+    }
+    if (userPassword != null && !userPassword.isBlank()) {
+      documentBasedDatabase.setPassword(userPassword);
+    }
     documentBasedDatabase.getHistory().setWaitPeriodBeforeArchiving(retentionEnabled ? "1s" : "1h");
     documentBasedDatabase.getHistory().setDelayBetweenRuns(Duration.ofMillis(1000));
     documentBasedDatabase.getHistory().setMaxDelayBetweenRuns(Duration.ofMillis(1000));
