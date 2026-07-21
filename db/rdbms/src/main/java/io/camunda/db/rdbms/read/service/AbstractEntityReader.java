@@ -135,11 +135,20 @@ abstract class AbstractEntityReader<T> {
 
       // add the comparator entry for the current sort column
       final var sorting = sort.orderings().get(i);
-      fieldEntries.add(
+      final var comparator =
           KeySetPaginationFieldEntry.of(sorting.column().name(), sortValues[i])
               .order(sorting.order())
               .isSearchAfter(isSearchAfter)
-              .build());
+              .build();
+
+      // a NO_MATCH comparator makes the whole OR-group unsatisfiable (e.g. nothing sorts after a
+      // trailing NULL in a DESC search-after). Dropping the group keeps the cursor advancing
+      // instead of re-matching every NULL row; the always-present unique key column guarantees at
+      // least one satisfiable group remains.
+      if (comparator.operator() == DbQueryPage.Operator.NO_MATCH) {
+        continue;
+      }
+      fieldEntries.add(comparator);
 
       keySetPagination.add(new KeySetPagination(fieldEntries));
     }
