@@ -1044,6 +1044,7 @@ jobs:
     outputs:
       ci-database-matrix: ${{ steps.db-versions.outputs.ci-database-matrix }}
       elasticsearch-8: ${{ steps.db-versions.outputs.elasticsearch-8 }}
+      opensearch-3: ${{ steps.db-versions.outputs.opensearch-3 }}
     steps:
       - uses: actions/checkout@v7
         timeout-minutes: 1
@@ -1142,6 +1143,13 @@ jobs:
             # Points the PT at a genuinely separate ES instance (db/docker-compose.yml's
             # elasticsearch-tenant service) instead of the default tenant's cluster.
             physical-tenant-elasticsearch-url: "http://localhost:9201"
+          - database-type: "opensearch"
+            database-name: "OS 3.x"
+            it-database-type: "os"
+            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+            # Points the PT at a genuinely separate OS instance (db/docker-compose.yml's
+            # opensearch-tenant service) instead of the default tenant's cluster.
+            physical-tenant-opensearch-url: "http://localhost:9201"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -1151,6 +1159,7 @@ jobs:
       it-database-type: "${{ matrix.it-database-type }}"
       physical-tenant: "tenanta"
       physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
+      physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
       # Scope to the tests that pass under physical-tenant mode; known gaps are excluded in the
       # physical-tenant profile.
       maven-profiles: "physical-tenant"
@@ -1176,6 +1185,11 @@ jobs:
             it-database-type: "es"
             database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
             physical-tenant-elasticsearch-url: "http://localhost:9201"
+          - database-type: "opensearch"
+            database-name: "OS 3.x"
+            it-database-type: "os"
+            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+            physical-tenant-opensearch-url: "http://localhost:9201"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -1185,6 +1199,7 @@ jobs:
       it-database-type: "${{ matrix.it-database-type }}"
       physical-tenant: "tenanta"
       physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
+      physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
       maven-profiles: "physical-tenant-identity"
       test-type: "physical-tenant-identity-tests"
       test-type-label: "Physical Tenant Acceptance Identity"
@@ -1208,6 +1223,11 @@ jobs:
             it-database-type: "es"
             database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
             physical-tenant-elasticsearch-url: "http://localhost:9201"
+          - database-type: "opensearch"
+            database-name: "OS 3.x"
+            it-database-type: "os"
+            database-image-version: "${{ needs.generate-db-versions.outputs.opensearch-3 }}"
+            physical-tenant-opensearch-url: "http://localhost:9201"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
@@ -1217,6 +1237,7 @@ jobs:
       it-database-type: "${{ matrix.it-database-type }}"
       physical-tenant: "tenanta"
       physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
+      physical-tenant-opensearch-url: "${{ matrix.physical-tenant-opensearch-url }}"
       maven-profiles: "physical-tenant-history"
       test-type: "physical-tenant-history-tests"
       test-type-label: "Physical Tenant Acceptance History"

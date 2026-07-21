@@ -43,6 +43,15 @@ on:
           separate Elasticsearch instance instead of reusing the default tenant's connection, by
           passing -Dtest.integration.camunda.physical-tenant.elasticsearch.url=<value>. Requires the
           "elasticsearch-tenant" docker-compose service to be running.
+      physical-tenant-opensearch-url:
+        required: false
+        type: string
+        default: ""
+        description: >-
+          When set (together with physical-tenant), the PT's secondary storage is pointed at this
+          separate OpenSearch instance instead of reusing the default tenant's connection, by
+          passing -Dtest.integration.camunda.physical-tenant.opensearch.url=<value>. Requires the
+          "opensearch-tenant" docker-compose service to be running.
       test-suite-name:
         required: false
         type: string
@@ -139,7 +148,7 @@ jobs:
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
         run: |
-          docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} ${{ inputs.physical-tenant-elasticsearch-url != '' && 'elasticsearch-tenant' || '' }} || {
+          docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} ${{ inputs.physical-tenant-elasticsearch-url != '' && 'elasticsearch-tenant' || '' }} ${{ inputs.physical-tenant-opensearch-url != '' && 'opensearch-tenant' || '' }} || {
             docker compose -f db/docker-compose.yml logs
             exit 1
           }
@@ -177,6 +186,7 @@ jobs:
           -D test.integration.camunda.database.fast-init=true
           ${{ inputs.physical-tenant != '' && format('-D test.integration.camunda.physical-tenant={0}', inputs.physical-tenant) || '' }}
           ${{ inputs.physical-tenant-elasticsearch-url != '' && format('-D test.integration.camunda.physical-tenant.elasticsearch.url={0}', inputs.physical-tenant-elasticsearch-url) || '' }}
+          ${{ inputs.physical-tenant-opensearch-url != '' && format('-D test.integration.camunda.physical-tenant.opensearch.url={0}', inputs.physical-tenant-opensearch-url) || '' }}
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,${{inputs.maven-profiles}}
           -pl 'qa/acceptance-tests'
           verify
