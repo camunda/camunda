@@ -438,6 +438,27 @@ describe('ElementInstanceLog — search flow', () => {
     modificationsStore.reset();
   });
 
+  it('renders the search input without the header when showHeader is false', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel showHeader={false} />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('searchbox', {name: 'Search instance history'}),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('End date')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Execution count')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', {name: 'Instance History'}),
+    ).not.toBeInTheDocument();
+  });
+
   it('hides the search input when modification mode is active', async () => {
     mockSearchElementInstances().withSuccess(mockElementInstances);
 

@@ -9,7 +9,7 @@
 import {ElementInstanceLog} from 'App/ProcessInstance/ElementInstanceLog';
 
 const InstanceHistoryTab: React.FC = () => {
-  return <ElementInstanceLog />;
+  return <ElementInstanceLog isPanel showHeader={false} />;
 };
 
 export {InstanceHistoryTab};
