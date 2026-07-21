@@ -1,0 +1,23 @@
+name: Release-notes PR-gate lint
+description: >
+  Validates that a PR links a tracked issue (or ticks the opt-out) using the
+  shared release-notes reference parser. Metadata-only; must run on
+  pull_request_target and must never check out the PR head.
+inputs:
+  token:
+    description: >
+      Token used to read issue/PR metadata (and, in later versions, to post the
+      sticky comment and sync the no-issue label). Reuses MONOREPO_RELEASE_APP.
+    required: true
+  enforce:
+    description: When 'true', a failing check exits non-zero. Warn-only otherwise.
+    required: false
+    default: 'false'
+outputs:
+  outcome:
+    description: pass | fail
+  code:
+    description: The PolicyCode explaining the outcome.
+runs:
+  using: node24
+  main: dist/index.js
