@@ -1611,7 +1611,7 @@ public class MultiTenancyIT {
           .withThrowableThat()
           .withMessageContaining("NOT_FOUND")
           .withMessageContaining(
-              "Expected to modify a process instance with key '%d', but no such process instance was found"
+              "Expected to modify process instance but no process instance found with key '%d'"
                   .formatted(processInstanceKey));
     }
   }
