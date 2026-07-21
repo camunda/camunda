@@ -9,7 +9,9 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -47,6 +49,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
   private final EngineSecurityConfig securityConfig;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final SideEffectWriter sideEffectWriter;
+  private final MembershipStateAdapter membershipStateAdapter;
 
   public GroupAddEntityProcessor(
       final ProcessingState processingState,
@@ -54,7 +58,8 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final MembershipStateAdapter membershipStateAdapter) {
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
     this.permissionsBehavior = permissionsBehavior;
@@ -65,7 +70,9 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
     this.securityConfig = securityConfig;
+    this.membershipStateAdapter = membershipStateAdapter;
   }
 
   @Override
@@ -117,6 +124,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_ADDED, record);
     responseWriter.writeAcceptedResponseOnCommand(
         groupKey, GroupIntent.ENTITY_ADDED, record, command);
+    invalidateMembershipCache();
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -135,9 +143,22 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
     } else {
       stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.ENTITY_ADDED, record);
+      invalidateMembershipCache();
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Flushes {@link MembershipStateAdapter}'s membership cache after a group-membership change, so a
+   * stale entry doesn't authorize (or reject) against outdated membership until its TTL expires.
+   */
+  private void invalidateMembershipCache() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          membershipStateAdapter.invalidateAll();
+          return true;
+        });
   }
 
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {

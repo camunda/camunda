@@ -418,7 +418,8 @@ public final class EngineProcessors {
         authCheckBehavior,
         securityConfig,
         cslCheck,
-        authorizationScopeStateAdapter);
+        authorizationScopeStateAdapter,
+        membershipStateAdapter);
 
     ScalingProcessors.addScalingProcessors(
         commandDistributionBehavior,
@@ -437,7 +438,8 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         securityConfig,
         authCheckBehavior,
-        authorizationScopeStateAdapter);
+        authorizationScopeStateAdapter,
+        membershipStateAdapter);
 
     IdentitySetupProcessors.addIdentitySetupProcessors(
         keyGenerator, typedRecordProcessors, writers, securityConfig, config);
@@ -538,7 +540,8 @@ public final class EngineProcessors {
       final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig,
       final CslAuthorizationCheck cslCheck,
-      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
+      final MembershipStateAdapter membershipStateAdapter) {
     AuthorizationProcessors.addAuthorizationProcessors(
         keyGenerator,
         typedRecordProcessors,
@@ -557,7 +560,8 @@ public final class EngineProcessors {
         keyGenerator,
         writers,
         commandDistributionBehavior,
-        securityConfig);
+        securityConfig,
+        membershipStateAdapter);
 
     RoleProcessors.addRoleProcessors(
         typedRecordProcessors,
@@ -566,7 +570,8 @@ public final class EngineProcessors {
         keyGenerator,
         writers,
         commandDistributionBehavior,
-        securityConfig);
+        securityConfig,
+        membershipStateAdapter);
 
     MappingRuleProcessors.addMappingRuleProcessors(
         typedRecordProcessors,

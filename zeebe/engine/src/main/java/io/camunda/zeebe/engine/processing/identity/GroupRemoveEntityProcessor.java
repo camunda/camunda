@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -42,13 +44,16 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final SideEffectWriter sideEffectWriter;
+  private final MembershipStateAdapter membershipStateAdapter;
 
   public GroupRemoveEntityProcessor(
       final ProcessingState processingState,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final MembershipStateAdapter membershipStateAdapter) {
     groupState = processingState.getGroupState();
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
@@ -57,7 +62,9 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.membershipStateAdapter = membershipStateAdapter;
   }
 
   @Override
@@ -108,6 +115,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.ENTITY_REMOVED, record);
     responseWriter.writeAcceptedResponseOnCommand(
         groupKey, GroupIntent.ENTITY_REMOVED, record, command);
+    invalidateMembershipCache();
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -123,6 +131,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     if (isEntityAssigned(record)) {
       stateWriter.appendFollowUpEvent(
           command.getKey(), GroupIntent.ENTITY_REMOVED, command.getValue());
+      invalidateMembershipCache();
     } else {
       final var errorMessage =
           ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getGroupKey());
@@ -130,6 +139,18 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Flushes {@link MembershipStateAdapter}'s membership cache after a group-membership change, so a
+   * stale entry doesn't authorize (or reject) against outdated membership until its TTL expires.
+   */
+  private void invalidateMembershipCache() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          membershipStateAdapter.invalidateAll();
+          return true;
+        });
   }
 
   private boolean isEntityAssigned(final GroupRecord record) {
