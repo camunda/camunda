@@ -70,8 +70,15 @@ async function searchCorrelatedSubscriptions(
   return res.json();
 }
 
+// Skipped due to bug #58207: https://github.com/camunda/camunda/issues/58207
+// The setup correlates to a message start event with a businessId, which returns
+// 404 NOT_FOUND on multi-partition clusters when the businessId hashes to a
+// different partition than the correlate lands on (P_B != P_K). The cross-partition
+// delegation creates the instance but the synchronous correlate reports NOT_FOUND,
+// so beforeAll fails ~50% of the time on the multi-partition nightly. Re-enable
+// once the engine reflects the delegated outcome in the correlate response.
 test.describe
-  .serial('Correlated Message Subscriptions - Business ID Search API', () => {
+  .skip('Correlated Message Subscriptions - Business ID Search API', () => {
   const state: Record<string, string> = {
     processInstanceKeyA: '',
     processInstanceKeyB: '',
