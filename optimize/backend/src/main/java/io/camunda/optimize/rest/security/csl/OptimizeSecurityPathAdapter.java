@@ -8,6 +8,7 @@
 package io.camunda.optimize.rest.security.csl;
 
 import io.camunda.security.core.port.out.SecurityPathPort;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -65,5 +66,17 @@ public final class OptimizeSecurityPathAdapter implements SecurityPathPort {
   @Override
   public Set<String> webComponentNames() {
     return Set.of("optimize");
+  }
+
+  /**
+   * SPIKE (ADR-0036): send a {@code post_logout_redirect_uri} back to Optimize's root after IdP
+   * logout so the user lands on the login flow again instead of the IdP's generic logged-out page.
+   * CSL expands this to {@code {baseUrl}/}; the unauthenticated root then triggers the webapp chain
+   * to redirect to the IdP login. The target must be registered as a valid post-logout redirect URI
+   * on the IdP client (Keycloak {@code optimize} client, provisioned from the Optimize root URL).
+   */
+  @Override
+  public Optional<String> postLogoutRedirectPath() {
+    return Optional.of("/");
   }
 }
