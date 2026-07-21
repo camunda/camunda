@@ -122,7 +122,7 @@ public class SearchEngineConnectPropertiesOverride {
       override.setPassword(database.getPassword());
     }
 
-    static void populateAws(final Aws aws, final AwsConfiguration target) {
+    public static void populateAws(final Aws aws, final AwsConfiguration target) {
       target.setAccessKey(aws.getAccessKey());
       target.setSecretKey(aws.getSecretKey());
       target.setSessionToken(aws.getSessionToken());

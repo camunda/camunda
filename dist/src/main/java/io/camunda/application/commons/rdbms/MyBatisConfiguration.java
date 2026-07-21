@@ -70,9 +70,7 @@ public class MyBatisConfiguration {
   @Bean
   public RdbmsDataSources rdbmsDataSources(final PhysicalTenantResolver physicalTenantResolver)
       throws IOException {
-    return RdbmsDataSources.of(
-        physicalTenantResolver.mapValues(
-            camunda -> camunda.getData().getSecondaryStorage().getRdbms()));
+    return RdbmsDataSources.of(physicalTenantResolver.getAll());
   }
 
   @Bean

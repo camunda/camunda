@@ -19,6 +19,12 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   /** If true, the database schema is automatically created and updated on application startup. */
   private boolean autoDdl = DEFAULT_AUTO_DDL;
 
+  /**
+   * If true, connections authenticate via AWS IAM database authentication (Aurora/RDS) using the
+   * identity from {@code camunda.aws} instead of {@code password}.
+   */
+  private boolean awsEnabled = false;
+
   /** The prefix to use for all database artifacts like tables, indexes etc. */
   private String prefix;
 
@@ -100,6 +106,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setAutoDdl(final boolean autoDdl) {
     this.autoDdl = autoDdl;
+  }
+
+  public boolean isAwsEnabled() {
+    return awsEnabled;
+  }
+
+  public void setAwsEnabled(final boolean awsEnabled) {
+    this.awsEnabled = awsEnabled;
   }
 
   public String getPrefix() {
