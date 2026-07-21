@@ -37,6 +37,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry.RequestValidator;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
@@ -67,61 +68,52 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> addMembers(
       final AddMembersRequest addMembersRequest) {
-    return handleRequest(
-        addMembersRequest.dryRun(), new AddMembersTransformer(addMembersRequest.members()));
+    return handleRequest(addMembersRequest, req -> new AddMembersTransformer(req.members()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> removeMembers(
       final RemoveMembersRequest removeMembersRequest) {
-    return handleRequest(
-        removeMembersRequest.dryRun(),
-        new RemoveMembersTransformer(removeMembersRequest.members()));
+    return handleRequest(removeMembersRequest, req -> new RemoveMembersTransformer(req.members()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> joinPartition(
       final JoinPartitionRequest joinPartitionRequest) {
     return handleRequest(
-        joinPartitionRequest.dryRun(),
-        ignore ->
-            Either.right(
-                List.of(
-                    new PartitionJoinOperation(
-                        joinPartitionRequest.memberId(),
-                        joinPartitionRequest.partitionId(),
-                        joinPartitionRequest.priority()))));
+        joinPartitionRequest,
+        req ->
+            configuration ->
+                Either.right(
+                    List.of(
+                        new PartitionJoinOperation(
+                            req.memberId(), req.partitionId(), req.priority()))));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> leavePartition(
       final LeavePartitionRequest leavePartitionRequest) {
-
     return handleRequest(
-        leavePartitionRequest.dryRun(),
-        ignore ->
-            Either.right(
-                List.of(
-                    new PartitionLeaveOperation(
-                        leavePartitionRequest.memberId(),
-                        leavePartitionRequest.partitionId(),
-                        1))));
+        leavePartitionRequest,
+        req ->
+            configuration ->
+                Either.right(
+                    List.of(new PartitionLeaveOperation(req.memberId(), req.partitionId(), 1))));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> reassignPartitions(
       final ReassignPartitionsRequest reassignPartitionsRequest) {
     return handleRequest(
-        reassignPartitionsRequest.dryRun(),
-        new PartitionReassignRequestTransformer(reassignPartitionsRequest.members()));
+        reassignPartitionsRequest, req -> new PartitionReassignRequestTransformer(req.members()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> scaleMembers(
       final BrokerScaleRequest scaleRequest) {
     return handleRequest(
-        scaleRequest.dryRun(),
-        new ScaleRequestTransformer(scaleRequest.members(), scaleRequest.newReplicationFactor()));
+        scaleRequest,
+        req -> new ScaleRequestTransformer(req.members(), req.newReplicationFactor()));
   }
 
   @Override
@@ -130,114 +122,103 @@ public final class ClusterConfigurationManagementRequestsHandler
     final Optional<Integer> optionalNewReplicationFactor =
         forceScaleDownRequest.newReplicationFactor();
     if (optionalNewReplicationFactor.isPresent()) {
-      final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
       final String errorMessage =
           String.format(
               "The replication factor cannot be changed to requested value '%s' during force scale down. It will be automatically changed based on which brokers are removed. Do not provide any replication factor in the request",
               optionalNewReplicationFactor.get());
-      failedFuture.completeExceptionally(new InvalidRequest(errorMessage));
-      return failedFuture;
+      return CompletableActorFuture.completedExceptionally(new InvalidRequest(errorMessage));
     }
 
     return handleRequest(
-        forceScaleDownRequest.dryRun(),
-        new ForceScaleDownRequestTransformer(forceScaleDownRequest.members(), localMemberId));
+        forceScaleDownRequest,
+        req -> new ForceScaleDownRequestTransformer(req.members(), localMemberId));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> scaleCluster(
       final ClusterScaleRequest clusterScaleRequest) {
-
     return handleRequest(
-        clusterScaleRequest.dryRun(),
-        new ClusterScaleRequestTransformer(
-            clusterScaleRequest.brokerCount(),
-            clusterScaleRequest.newPartitionCount(),
-            clusterScaleRequest.newReplicationFactor(),
-            clusterScaleRequest.zone()));
+        clusterScaleRequest,
+        req ->
+            new ClusterScaleRequestTransformer(
+                req.brokerCount(),
+                req.newPartitionCount(),
+                req.newReplicationFactor(),
+                req.zone()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
       final ClusterPatchRequest clusterPatchRequest) {
-
     return handleRequest(
-        clusterPatchRequest.dryRun(),
-        new ClusterPatchRequestTransformer(
-            clusterPatchRequest.membersToAdd(),
-            clusterPatchRequest.membersToRemove(),
-            clusterPatchRequest.newPartitionCount(),
-            clusterPatchRequest.newReplicationFactor()));
+        clusterPatchRequest,
+        req ->
+            new ClusterPatchRequestTransformer(
+                req.membersToAdd(),
+                req.membersToRemove(),
+                req.newPartitionCount(),
+                req.newReplicationFactor()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> updateRoutingState(
       final UpdateRoutingStateRequest updateRoutingStateRequest) {
     return handleRequest(
-        updateRoutingStateRequest.dryRun(),
-        new UpdateRoutingStateTransformer(updateRoutingStateRequest.routingState()));
+        updateRoutingStateRequest, req -> new UpdateRoutingStateTransformer(req.routingState()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> updatePartitionDistribution(
       final UpdatePartitionDistributorConfigRequest request) {
-    return handleRequest(
-        request.dryRun(), new UpdatePartitionDistributionTransformer(request.config()));
+    return handleRequest(request, req -> new UpdatePartitionDistributionTransformer(req.config()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> migrateZone(
       final ClusterZoneMigrationRequest zoneMigrationRequest) {
     return handleRequest(
-        zoneMigrationRequest.dryRun(),
-        new ZoneMigrationRequestTransformer(zoneMigrationRequest.zone()));
+        zoneMigrationRequest, req -> new ZoneMigrationRequestTransformer(req.zone()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> purge(final PurgeRequest purgeRequest) {
-
-    return handleRequest(purgeRequest.dryRun(), new PurgeRequestTransformer());
+    return handleRequest(purgeRequest, req -> new PurgeRequestTransformer());
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> forceRemoveBrokers(
       final ForceRemoveBrokersRequest forceRemoveBrokersRequest) {
     return handleRequest(
-        forceRemoveBrokersRequest.dryRun(),
-        new ForceRemoveBrokersRequestTransformer(
-            forceRemoveBrokersRequest.membersToRemove(), localMemberId));
+        forceRemoveBrokersRequest,
+        req -> new ForceRemoveBrokersRequestTransformer(req.membersToRemove(), localMemberId));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> disableExporter(
       final ExporterDisableRequest exporterDisableRequest) {
     return handleRequest(
-        exporterDisableRequest.dryRun(),
-        new ExporterDisableRequestTransformer(exporterDisableRequest.exporterId()));
+        exporterDisableRequest, req -> new ExporterDisableRequestTransformer(req.exporterId()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> deleteExporter(
       final ExporterDeleteRequest exporterDeleteRequest) {
     return handleRequest(
-        exporterDeleteRequest.dryRun(),
-        new ExporterDeleteRequestTransformer(exporterDeleteRequest.exporterId()));
+        exporterDeleteRequest, req -> new ExporterDeleteRequestTransformer(req.exporterId()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> enableExporter(
       final ExporterEnableRequest enableRequest) {
     return handleRequest(
-        enableRequest.dryRun(),
-        new ExporterEnableRequestTransformer(
-            enableRequest.exporterId(), enableRequest.initializeFrom()));
+        enableRequest,
+        req -> new ExporterEnableRequestTransformer(req.exporterId(), req.initializeFrom()));
   }
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> modeChange(
       final ModeChangeRequest modeChangeRequest) {
-    return handleRequest(
-        modeChangeRequest.dryRun(), new ModeChangeRequestTransformer(modeChangeRequest.mode()));
+    return handleRequest(modeChangeRequest, req -> new ModeChangeRequestTransformer(req.mode()));
   }
 
   @Override
@@ -253,48 +234,36 @@ public final class ClusterConfigurationManagementRequestsHandler
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> restore(final RestoreRequest request) {
-    return validated(
-        request,
-        validated -> {
-          final var validatedRequest = (RestoreRequest) validated;
-          return handleRequest(request.dryRun(), new RestoreRequestTransformer(validatedRequest));
-        });
+    return handleRequest(request, RestoreRequestTransformer::new);
   }
 
   /**
    * Runs the (optional, blocking) validator registered for the request type, on the same actor
    * thread that {@link io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry} is
-   * registered/deregistered on, before delegating to {@code onValid} with the request it produced.
-   * That request need not be the same concrete type as the input: a validator may rewrite it, so
-   * callers are responsible for casting to whatever type their validator is known to produce. A
-   * validation failure is mapped to a failed future carrying the validator's error message so it
-   * propagates to the caller.
+   * registered/deregistered on, before delegating to the coordinator with the {@link
+   * ConfigurationChangeRequest} produced by {@code transform} from the (possibly rewritten)
+   * request. A validation failure is mapped to a failed future carrying the validator's error
+   * message so it propagates to the caller.
    */
-  private ActorFuture<ClusterConfigurationChangeResponse> validated(
-      final ClusterConfigurationManagementRequest request,
-      final Function<
-              ClusterConfigurationManagementRequest,
-              ActorFuture<ClusterConfigurationChangeResponse>>
-          onValid) {
+  @SuppressWarnings("unchecked")
+  private <T extends ClusterConfigurationManagementRequest>
+      ActorFuture<ClusterConfigurationChangeResponse> handleRequest(
+          final T request, final Function<T, ConfigurationChangeRequest> transform) {
     return executor
         .call(() -> requestValidator.validate(request))
         .andThen(
             (validated, error) -> {
               if (error instanceof final IllegalArgumentException e) {
-                return failedFuture(new InvalidRequest(e.getMessage()));
+                return CompletableActorFuture.completedExceptionally(
+                    new InvalidRequest(e.getMessage()));
               }
               if (error != null) {
-                return failedFuture(error);
+                return CompletableActorFuture.completedExceptionally(error);
               }
-              return onValid.apply(validated);
+              final var validatedRequest = (T) validated;
+              return handleRequest(request.dryRun(), transform.apply(validatedRequest));
             },
             executor);
-  }
-
-  private ActorFuture<ClusterConfigurationChangeResponse> failedFuture(final Throwable error) {
-    final var failed = executor.<ClusterConfigurationChangeResponse>createFuture();
-    failed.completeExceptionally(error);
-    return failed;
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(

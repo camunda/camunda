@@ -137,25 +137,23 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
   }
 
   @Test
-  void shouldNotInvokeValidatorForAddMembers() {
-    // given a validator that would reject anything handed to it
+  void shouldInvokeValidatorForAddMembersToo() {
+    // given every request, not just restore, is routed through the registered validator by
+    // default, so a validator registered for another request type is never accidentally skipped
     final var request = new AddMembersRequest(Set.of(MemberId.from("1")), false);
     final var handler =
         handler(
             r -> {
-              throw new IllegalArgumentException("should never be called");
+              throw new IllegalArgumentException("members are not allowed right now");
             });
-    final var config = ClusterConfiguration.init();
-    when(coordinator.applyOperations(any()))
-        .thenReturn(
-            CompletableActorFuture.completed(
-                new ConfigurationChangeResult(config, config, 1L, List.of())));
 
     // when
-    final var result = handler.addMembers(request);
+    final var failure = failureOf(handler.addMembers(request));
 
-    // then addMembers is not routed through validation, only restore is
-    assertThat(failureOf(result)).isNull();
-    verify(coordinator).applyOperations(any());
+    // then the validator's error message is propagated to the caller as an invalid request
+    assertThat(failure)
+        .isInstanceOf(InvalidRequest.class)
+        .hasMessage("members are not allowed right now");
+    verifyNoInteractions(coordinator);
   }
 }
