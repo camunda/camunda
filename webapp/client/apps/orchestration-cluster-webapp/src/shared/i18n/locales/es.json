@@ -480,7 +480,61 @@
 				}
 			},
 			"decisions": {
-				"title": "Decisiones"
+				"title": "Decisiones",
+				"filters": {
+					"tenant": "Inquilino",
+					"decisionSection": "Decisión",
+					"name": "Nombre",
+					"searchByName": "Buscar por nombre de decisión",
+					"version": "Versión",
+					"selectVersion": "Seleccionar una versión de decisión",
+					"allVersions": "Todas las versiones",
+					"instancesStates": "Estados de instancias",
+					"evaluated": "Evaluada",
+					"failed": "Fallida",
+					"decisionInstanceKey": "Clave(s) de instancia de decisión",
+					"decisionInstanceKeyPlaceholder": "separadas por espacio o coma",
+					"processInstanceKey": "Clave de instancia de proceso",
+					"businessId": "ID de negocio",
+					"evaluationDateRange": "Rango de fechas de evaluación",
+					"evaluationDatePopoverTitle": "Filtrar decisiones por fecha de evaluación",
+					"removeFilter": "Eliminar filtro {{label}}"
+				},
+				"instancesTable": {
+					"title": "Instancias de decisión",
+					"name": "Nombre",
+					"decisionInstanceKey": "Clave de instancia de decisión",
+					"version": "Versión",
+					"businessId": "ID de negocio",
+					"tenant": "Inquilino",
+					"evaluationDate": "Fecha de evaluación",
+					"processInstanceKey": "Clave de instancia de proceso",
+					"none": "Ninguna",
+					"viewDecisionInstance": "Ver instancia de decisión {{key}}",
+					"viewProcessInstance": "Ver instancia de proceso {{key}}",
+					"emptyMessage": "No hay instancias que coincidan con este conjunto de filtros",
+					"emptyAdditionalInfo": "Para ver resultados, seleccione al menos un estado de instancia",
+					"selectAll": "Seleccionar todas las filas",
+					"selectRow": "Seleccionar fila {{key}}"
+				},
+				"toolbar": {
+					"delete": "Eliminar",
+					"discard": "Descartar",
+					"itemsSelected": "{{count}} elementos seleccionados",
+					"itemSelected": "{{count}} elemento seleccionado",
+					"selectAll": "Seleccionar todos los elementos",
+					"deleteModalHeading": "Aplicar operación",
+					"deleteModalCancel": "Cancelar",
+					"deleteModalBody": "{{count}} instancias seleccionadas para la operación de eliminación. Esto elimina permanentemente las instancias de decisión seleccionadas y su historial. Esta acción no se puede deshacer.",
+					"deleteModalBody_one": "{{count}} instancia seleccionada para la operación de eliminación. Esto elimina permanentemente las instancias de decisión seleccionadas y su historial. Esta acción no se puede deshacer.",
+					"deleteModalBody_other": "{{count}} instancias seleccionadas para la operación de eliminación. Esto elimina permanentemente las instancias de decisión seleccionadas y su historial. Esta acción no se puede deshacer.",
+					"deleteSuccessTitle": "La operación por lotes «{{operationType}}» se ha iniciado",
+					"deleteSuccessSubtitle": "Puede seguir su progreso en la página Operaciones por lotes",
+					"deleteSuccessActionLabel": "Ir a los detalles de la operación",
+					"deleteErrorTitle": "No se pudo crear la operación",
+					"forbiddenTitle": "No tiene permiso para realizar esta operación",
+					"forbiddenSubtitle": "Póngase en contacto con su administrador si necesita acceso."
+				}
 			},
 			"decisionInstance": {
 				"title": "Instancia de decisión de Operate",
