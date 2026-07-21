@@ -67,7 +67,8 @@ public class TopologyServiceTest {
     topologyManager = mock(BrokerTopologyManager.class);
     when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
     when(topologyManager.getTopology(PHYSICAL_TENANT_ID)).thenReturn(clusterState);
-    when(topologyManager.getClusterConfiguration()).thenReturn(ClusterConfiguration.uninitialized());
+    when(topologyManager.getClusterConfiguration())
+        .thenReturn(ClusterConfiguration.uninitialized());
     services =
         new TopologyServices(
             PHYSICAL_TENANT_ID,
@@ -215,21 +216,21 @@ public class TopologyServiceTest {
                     0,
                     "localhost",
                     26501,
-                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY, null)),
+                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY, State.UNKNOWN)),
                     version),
                 new Broker(
                     zone,
                     1,
                     "localhost",
                     26502,
-                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY, null)),
+                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY, State.UNKNOWN)),
                     version),
                 new Broker(
                     zone,
                     2,
                     "localhost",
                     26503,
-                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY, null)),
+                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY, State.UNKNOWN)),
                     version)),
             "cluster-id",
             3,

@@ -268,10 +268,8 @@ components:
         state:
           description: >
             Describes the current operational state of the partition within the cluster
-            configuration. May be null if the gateway has not yet received cluster
-            configuration data for this partition.
+            configuration.
           type: string
-          nullable: true
           example: active
           enum:
             - unknown

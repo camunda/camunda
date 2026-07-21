@@ -17,6 +17,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
@@ -169,35 +170,6 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
             });
   }
 
-  private void setState(
-      final BrokerMemberId brokerId,
-      final Integer partitionId,
-      final ClusterConfiguration clusterConfiguration,
-      final Partition.Builder partition) {
-    final var memberState = clusterConfiguration.members().get(brokerId.memberId());
-    if (memberState == null) {
-      return;
-    }
-
-    final var partitionState = memberState.getPartition(partitionId);
-    if (partitionState == null) {
-      return;
-    }
-
-    partition.state(mapState(partitionState.state()));
-  }
-
-  private static State mapState(
-      final io.camunda.zeebe.dynamic.config.state.PartitionState.State state) {
-    return switch (state) {
-      case UNKNOWN, BOOTSTRAPPING -> State.UNKNOWN;
-      case JOINING -> State.JOINING;
-      case ACTIVE -> State.ACTIVE;
-      case LEAVING -> State.LEAVING;
-      case RECOVERING -> State.RECOVERING;
-    };
-  }
-
   private boolean setRole(
       final BrokerMemberId brokerId,
       final Integer partitionId,
@@ -218,6 +190,36 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
     }
 
     return true;
+  }
+
+  private void setState(
+      final BrokerMemberId brokerId,
+      final Integer partitionId,
+      final ClusterConfiguration clusterConfiguration,
+      final Partition.Builder partition) {
+    final var memberState = clusterConfiguration.members().get(brokerId.memberId());
+    if (memberState == null) {
+      partition.state(State.UNKNOWN);
+      return;
+    }
+
+    final var partitionState = memberState.getPartition(partitionId);
+    if (partitionState == null) {
+      partition.state(State.UNKNOWN);
+      return;
+    }
+
+    partition.state(mapState(partitionState.state()));
+  }
+
+  private static State mapState(final PartitionState.State state) {
+    return switch (state) {
+      case UNKNOWN, BOOTSTRAPPING -> State.UNKNOWN;
+      case JOINING -> State.JOINING;
+      case ACTIVE -> State.ACTIVE;
+      case LEAVING -> State.LEAVING;
+      case RECOVERING -> State.RECOVERING;
+    };
   }
 
   public record Topology(
@@ -365,12 +367,12 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
     }
   }
 
-  public record Partition(Integer partitionId, Role role, Health health, @Nullable State state) {
+  public record Partition(Integer partitionId, Role role, Health health, State state) {
     static class Builder {
       Integer partitionId;
       Role role;
       Health health;
-      @Nullable State state;
+      State state;
 
       public static Builder create() {
         return new Builder();
@@ -391,7 +393,7 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
         return this;
       }
 
-      public Builder state(final @Nullable State state) {
+      public Builder state(final State state) {
         this.state = state;
         return this;
       }

@@ -67,7 +67,7 @@ public class TopologyControllerTest extends RestControllerTest {
                   "partitionId": 1,
                   "health": "healthy",
                   "role": "leader",
-                  "state": null
+                  "state": "unknown"
                 }
               ]
             },
@@ -81,7 +81,7 @@ public class TopologyControllerTest extends RestControllerTest {
                   "partitionId": 1,
                   "health": "healthy",
                   "role": "follower",
-                  "state": null
+                  "state": "unknown"
                 }
               ]
             },
@@ -95,7 +95,7 @@ public class TopologyControllerTest extends RestControllerTest {
                   "partitionId": 1,
                   "health": "unhealthy",
                   "role": "inactive",
-                  "state": null
+                  "state": "unknown"
                 }
               ]
             }
@@ -111,19 +111,19 @@ public class TopologyControllerTest extends RestControllerTest {
                     BrokerMemberId.from(0),
                     "localhost",
                     26501,
-                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY, null)),
+                    List.of(new Partition(1, Role.LEADER, Health.HEALTHY, State.UNKNOWN)),
                     version),
                 new Broker(
                     BrokerMemberId.from(1),
                     "localhost",
                     26502,
-                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY, null)),
+                    List.of(new Partition(1, Role.FOLLOWER, Health.HEALTHY, State.UNKNOWN)),
                     version),
                 new Broker(
                     BrokerMemberId.from(2),
                     "localhost",
                     26503,
-                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY, null)),
+                    List.of(new Partition(1, Role.INACTIVE, Health.UNHEALTHY, State.UNKNOWN)),
                     version)),
             "cluster-id",
             3,
