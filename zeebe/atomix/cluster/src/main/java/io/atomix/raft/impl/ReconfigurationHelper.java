@@ -219,7 +219,19 @@ public final class ReconfigurationHelper {
                     raftContext.getCluster().getVotingMembers().stream()
                         .map(RaftMember::memberId)
                         .findAny())
-            .orElseThrow();
+            .orElse(null);
+    if (receiver == null) {
+      // The local member is the last voting member left but has not elected itself leader yet, as
+      // when the second-to-last member just left. Fail with the same error a member without a
+      // known leader would respond with so that the caller retries after the election. Throwing
+      // here instead would crash the raft thread and permanently transition to inactive.
+      future.completeExceptionally(
+          new RaftError(
+                  RaftError.Type.NO_LEADER,
+                  "Cannot leave, no leader is known and there is no other voting member to receive the leave request. Retry after a leader is elected.")
+              .createException());
+      return;
+    }
     raftContext
         .getProtocol()
         .leave(receiver, LeaveRequest.builder().withLeavingMember(leaving).build())

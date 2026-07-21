@@ -632,9 +632,11 @@ final class ReconfigurationTest {
       // when - the leader leaves first
       leader.leave().join();
 
-      // then - the remaining follower elects itself and can leave as well
-      awaitLeader(follower);
-      assertThat(follower.leave()).succeedsWithin(Duration.ofSeconds(10));
+      // then - the remaining follower can leave as well. The first attempts may fail with
+      // NO_LEADER until the follower elected itself, but must not break the member - the caller
+      // retries, like the cluster configuration coordinator does.
+      Awaitility.await("the last member can leave")
+          .untilAsserted(() -> assertThat(follower.leave()).succeedsWithin(Duration.ofSeconds(2)));
       assertThat(follower.cluster().getMembers()).isEmpty();
     }
 
