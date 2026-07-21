@@ -23,6 +23,7 @@ import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
+import io.atomix.raft.storage.system.Configuration;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -227,6 +228,62 @@ final class ReconfigurationTest {
           .as("m2 can join when retrying after a failed first attempt")
           .succeedsWithin(Duration.ofSeconds(30));
       awaitLeader(m1, retriedM2);
+    }
+
+    /**
+     * Reproduces the restart aspect of <a
+     * href="https://github.com/camunda/camunda/issues/57389">#57389</a>: configurations take effect
+     * as soon as they are appended, so a leader that appended a joint configuration must still
+     * operate under it after a restart, even though the configuration is not yet committed and thus
+     * not persisted in the meta store. Forgetting it would allow electing a leader without the
+     * joining member's vote and losing a configuration that the joining member may already have
+     * received.
+     */
+    @Test
+    void jointConfigurationSurvivesLeaderRestart(@TempDir final Path tmp) {
+      // given - a single-member cluster that appended a joint configuration it cannot commit
+      // because replication to the joining member fails
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      m1.bootstrap(id1).join();
+      awaitLeader(m1);
+
+      protocolFactory.blockMessagesTo(id2);
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      assertThat(m2.join(id1, id2)).failsWithin(Duration.ofSeconds(30));
+      m2.shutdown().join();
+      assertThat(m1.getContext().getCluster().getConfiguration().requiresJointConsensus())
+          .as("m1 operates under the appended joint configuration")
+          .isTrue();
+
+      // when - m1 restarts before the joint configuration is committed. The bootstrap future can
+      // only complete once the server is ready, which requires a leader, so don't wait on it yet.
+      m1.shutdown().join();
+      final var restartedM1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      final var m1Started = restartedM1.bootstrap(id1);
+
+      // then - the joint configuration is recovered from the log and quorum still requires m2,
+      // so m1 cannot elect itself alone
+      Awaitility.await("the joint configuration is recovered from the log after restart")
+          .untilAsserted(
+              () ->
+                  assertThat(restartedM1.getContext().getCluster().getConfiguration())
+                      .isNotNull()
+                      .returns(true, Configuration::requiresJointConsensus));
+      Awaitility.await("m1 cannot become leader alone under the joint configuration")
+          .during(Duration.ofSeconds(2))
+          .until(() -> getLeader(restartedM1).isEmpty());
+
+      // and the join succeeds when retried once connectivity is restored
+      protocolFactory.heal(id2);
+      final var retriedM2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      assertThat(retriedM2.join(id1, id2))
+          .as("m2 can join when retrying after m1 restarted")
+          .succeedsWithin(Duration.ofSeconds(30));
+      awaitLeader(restartedM1, retriedM2);
+      assertThat(m1Started).succeedsWithin(Duration.ofSeconds(10));
     }
 
     @Test
@@ -551,6 +608,55 @@ final class ReconfigurationTest {
 
       // then - the committed configuration is empty
       assertThat(m1.cluster().getMembers()).isEmpty();
+    }
+
+    /**
+     * Reproduces <a href="https://github.com/camunda/camunda/issues/55856">#55856</a>: when the
+     * second-to-last member leaves, the remaining follower acks the new single-member configuration
+     * entry but typically never learns that it committed, because the leaving leader steps down as
+     * soon as the commit completes the leave. The follower then holds the configuration only as an
+     * uncommitted log entry. If it restarts before electing itself, it must recover that
+     * configuration from the log instead of reverting to the stored two-member configuration and
+     * waiting forever on a quorum that no longer exists.
+     */
+    @Test
+    void lastMemberCanLeaveAfterRestart(@TempDir final Path tmp) {
+      // given - a cluster with 2 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, StaticClusterMembershipService.of(id1, id2));
+      final var m2 = createServer(tmp, StaticClusterMembershipService.of(id2, id1));
+      CompletableFuture.allOf(m1.bootstrap(id1, id2), m2.bootstrap(id1, id2)).join();
+      awaitLeader(m1, m2);
+      final var leader = getLeaderServer(List.of(m1, m2)).orElseThrow();
+      final var follower = getFollower(m1, m2).orElseThrow();
+      final var followerId = MemberId.from(follower.name());
+
+      // when - the leader leaves and the follower restarts before it can elect itself and commit
+      // the new configuration. Block any straggler messages so the follower cannot learn that the
+      // new configuration is already committed.
+      leader.leave().join();
+      protocolFactory.blockMessagesTo(followerId);
+      follower.shutdown().join();
+      final var restarted = createServer(tmp, StaticClusterMembershipService.of(followerId));
+      final var started = restarted.bootstrap(id1, id2);
+
+      // then - the restarted follower recovers the single-member configuration from its log
+      // instead of the stored two-member configuration
+      Awaitility.await("the restarted follower recovers the configuration from the log")
+          .untilAsserted(
+              () ->
+                  assertThat(restarted.cluster().getMembers())
+                      .containsExactly(
+                          new DefaultRaftMember(followerId, Type.ACTIVE, Instant.now())));
+
+      // and it elects itself, becomes ready and can leave, scaling the partition down to zero
+      protocolFactory.heal(followerId);
+      awaitLeader(restarted);
+      assertThat(started).succeedsWithin(Duration.ofSeconds(10));
+      assertThat(restarted.leave()).succeedsWithin(Duration.ofSeconds(5));
+      assertThat(restarted.cluster().getMembers()).isEmpty();
     }
 
     @Test

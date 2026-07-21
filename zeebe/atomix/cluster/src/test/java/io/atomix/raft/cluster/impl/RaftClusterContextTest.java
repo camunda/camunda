@@ -18,6 +18,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogUncommittedReader;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.utils.concurrent.Scheduled;
@@ -748,9 +750,13 @@ final class RaftClusterContextTest {
         };
     final var raft = mock(RaftContext.class, withSettings().stubOnly());
     final var metaStore = mock(MetaStore.class, withSettings().stubOnly());
+    final var log = mock(RaftLog.class, withSettings().stubOnly());
+    final var reader = mock(RaftLogUncommittedReader.class, withSettings().stubOnly());
     when(raft.getThreadContext()).thenReturn(threadContext);
     when(metaStore.loadConfiguration()).thenReturn(configuration);
     when(raft.getMetaStore()).thenReturn(metaStore);
+    when(raft.getLog()).thenReturn(log);
+    when(log.openUncommittedReader()).thenReturn(reader);
     return raft;
   }
 }

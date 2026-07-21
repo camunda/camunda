@@ -46,9 +46,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Manages the persistent state of the Raft cluster from the perspective of a single server. */
 public final class RaftClusterContext implements RaftCluster, AutoCloseable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RaftClusterContext.class);
+
   private final RaftContext raft;
   private final DefaultRaftMember localMember;
   private final Map<MemberId, RaftMemberContext> remoteMemberContexts = new HashMap<>();
@@ -75,13 +79,17 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     raft.getThreadContext()
         .execute(
             () -> {
-              // If a configuration is stored, use the stored configuration, otherwise configure the
-              // server
-              // with the user provided configuration.
+              // Start from the stored configuration, which reflects the newest committed
+              // configuration, and apply any newer configuration entry from the log on top:
+              // configurations take effect as soon as they are appended, so an appended but not
+              // yet committed configuration must survive a restart. Only if neither source has a
+              // configuration, configure the server with the user provided configuration.
               final var storedConfiguration = raft.getMetaStore().loadConfiguration();
               if (storedConfiguration != null) {
                 updateConfiguration(storedConfiguration);
-              } else {
+              }
+              reloadConfigurationFromLog();
+              if (configuration == null) {
                 createInitialConfig(cluster);
               }
               raft.transition(localMember.getType());
@@ -302,10 +310,28 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    */
   public void reloadConfigurationFromLog() {
     raft.checkThread();
+    final var currentConfiguration = configuration;
+    if (currentConfiguration != null && currentConfiguration.force()) {
+      // A forced configuration is authoritative until a new leader appends the configuration that
+      // leaves the forced state. The log may still contain a stale, higher-index configuration
+      // entry from a reconfiguration that was in flight before the force - recovering it would
+      // resurrect exactly the configuration that the force configure was meant to replace. The
+      // force-leaving configuration is not needed from the log either, a leader will disseminate
+      // it via configure requests.
+      return;
+    }
     IndexedRaftLogEntry lastConfigurationEntry = null;
     // The reader needs to be uncommitted because the configuration entry might not be committed yet
     // on this node, but committed on the leader already.
     try (final var reader = raft.getLog().openUncommittedReader()) {
+      if (currentConfiguration != null) {
+        // Entries covered by the current configuration or the commit index can be skipped: the
+        // configuration guard ignores older indexes anyway, and a committed configuration entry is
+        // always persisted before the commit index that covers it, so it is already reflected in
+        // the current configuration. Without a current configuration (the join path and members
+        // without a meta store), the whole log has to be searched.
+        reader.seek(Math.max(currentConfiguration.index(), raft.getCommitIndex()) + 1);
+      }
       while (reader.hasNext()) {
         final var entry = reader.next();
         if (entry.entry() instanceof ConfigurationEntry) {
@@ -314,6 +340,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       }
       if (lastConfigurationEntry != null) {
         final var configurationEntry = (ConfigurationEntry) lastConfigurationEntry.entry();
+        LOGGER.info(
+            "Reloading configuration {} from log entry at index {}",
+            configurationEntry,
+            lastConfigurationEntry.index());
         configure(
             new Configuration(
                 lastConfigurationEntry.index(),
