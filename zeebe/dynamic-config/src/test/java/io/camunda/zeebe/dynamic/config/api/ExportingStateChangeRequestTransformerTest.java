@@ -38,7 +38,7 @@ final class ExportingStateChangeRequestTransformerTest {
   @Test
   void shouldGenerateOneOperationPerPartitionOwningMemberNotInTargetState() {
     // given — both members export, request pauses
-    final var transformer = new ExporterStateChangeRequestTransformer(ExportingState.PAUSED);
+    final var transformer = new ExportingStateChangeRequestTransformer(ExportingState.PAUSED);
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(id0, memberWith(ExportingState.EXPORTING, 1))
@@ -58,7 +58,7 @@ final class ExportingStateChangeRequestTransformerTest {
   @Test
   void shouldSkipMemberAlreadyFullyInTargetState() {
     // given — id0 exporting, id1 already paused
-    final var transformer = new ExporterStateChangeRequestTransformer(ExportingState.PAUSED);
+    final var transformer = new ExportingStateChangeRequestTransformer(ExportingState.PAUSED);
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(id0, memberWith(ExportingState.EXPORTING, 1))
@@ -85,7 +85,7 @@ final class ExportingStateChangeRequestTransformerTest {
             Map.of(
                 1, PartitionState.active(1, config),
                 2, PartitionState.active(1, exportingConfig)));
-    final var transformer = new ExporterStateChangeRequestTransformer(ExportingState.PAUSED);
+    final var transformer = new ExportingStateChangeRequestTransformer(ExportingState.PAUSED);
     final var clusterConfiguration = ClusterConfiguration.init().addMember(id0, member);
 
     // when
@@ -100,7 +100,7 @@ final class ExportingStateChangeRequestTransformerTest {
   @Test
   void shouldSkipMembersWithoutPartitions() {
     // given — id0 owns a partition, id1 owns none
-    final var transformer = new ExporterStateChangeRequestTransformer(ExportingState.PAUSED);
+    final var transformer = new ExportingStateChangeRequestTransformer(ExportingState.PAUSED);
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(id0, memberWith(ExportingState.EXPORTING, 1))
@@ -118,7 +118,7 @@ final class ExportingStateChangeRequestTransformerTest {
   @Test
   void shouldReturnEmptyPlanWhenAllMembersAlreadyInTargetState() {
     // given — everything already paused, request pauses again
-    final var transformer = new ExporterStateChangeRequestTransformer(ExportingState.PAUSED);
+    final var transformer = new ExportingStateChangeRequestTransformer(ExportingState.PAUSED);
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(id0, memberWith(ExportingState.PAUSED, 1))

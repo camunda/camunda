@@ -17,11 +17,11 @@ import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
-public final class ExporterStateChangeRequestTransformer implements ConfigurationChangeRequest {
+public final class ExportingStateChangeRequestTransformer implements ConfigurationChangeRequest {
 
   private final ExportingState targetState;
 
-  public ExporterStateChangeRequestTransformer(final ExportingState targetState) {
+  public ExportingStateChangeRequestTransformer(final ExportingState targetState) {
     this.targetState = targetState;
   }
 
