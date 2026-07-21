@@ -291,6 +291,7 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
     return switch (reason) {
       case WriteRateLimitExhausted -> FlowControlOutcome.WRITE_RATE_LIMIT_EXHAUSTED;
       case RequestLimitExhausted -> FlowControlOutcome.REQUEST_LIMIT_EXHAUSTED;
+      case PartitionPaused -> FlowControlOutcome.PARTITION_PAUSED;
     };
   }
 }

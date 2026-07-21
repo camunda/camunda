@@ -155,6 +155,13 @@ public final class ErrorResponseWriter implements BufferWriter {
                   "Failed to write client request to partition '%d', because the request limit is exhausted.",
                   partitionId));
       case INVALID_ARGUMENT -> raiseInternalError("due to invalid entry.", partitionId);
+      case PARTITION_PAUSED ->
+          // Map to the same retryable code as backpressure so clients retry through the transfer.
+          resourceExhausted(
+              String.format(
+                  "Failed to write client request to partition '%d', because it is paused for a"
+                      + " leadership transfer. Retry.",
+                  partitionId));
     };
   }
 

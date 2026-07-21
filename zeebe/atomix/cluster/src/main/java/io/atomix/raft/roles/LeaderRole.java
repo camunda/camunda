@@ -82,6 +82,16 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private ApplicationEntry lastZbEntry = null;
   private CompletableFuture<ReconfigureResponse> ongoingReconfigurationRequestFuture;
 
+  // --- Coordinated leadership transfer: paused mode ---
+  // The leader keeps its term and keeps replicating; the write freeze and processing pause are
+  // applied by the broker. This role only owns the watchdog that guarantees the partition is never
+  // left paused: if not resumed in time it steps down, which forces a role transition.
+  // rebalanceMetrics itself is partition-lifetime (owned by RaftContext, see there for why); this
+  // role only ever reads it via raft.getRebalanceMetrics().
+  private Scheduled transferPauseWatchdog;
+  private boolean transferPaused;
+  private long transferPauseStartMs;
+
   public LeaderRole(final RaftContext context) {
     super(context);
     appender = new LeaderAppender(this);
@@ -123,6 +133,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     return super.stop()
         .thenRun(appender::close)
+        // rebalanceMetrics is partition-lifetime (see RaftContext), not closed here; only the
+        // paused gauge is reset, since a role that has stopped being leader can no longer be
+        // mid-transfer-pause.
+        .thenRun(() -> raft.getRebalanceMetrics().setPartitionPaused(false))
         .thenRun(this::cancelTimers)
         .thenRun(this::stepDown);
   }
@@ -378,6 +392,92 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (appendTimer != null) {
       log.trace("Cancelling append timer");
       appendTimer.cancel();
+    }
+    // Paused mode always exits on a role transition (stop() runs when leadership is lost).
+    clearTransferPause();
+  }
+
+  /**
+   * Enters paused mode for a coordinated leadership transfer. Arms a watchdog on the Raft thread
+   * that steps this leader down if {@link #resumeFromTransfer()} is not called within {@code
+   * resumeTimeout}, so a partition is never left paused and unavailable. The leader keeps its term
+   * and keeps replicating existing entries; the broker applies the write freeze and processing
+   * pause. Idempotent while already paused (the watchdog is not re-armed). Must run on the Raft
+   * thread.
+   *
+   * @param resumeTimeout how long the partition may remain paused before the leader steps down
+   * @return the frozen last log index, captured on the Raft thread after every already-enqueued
+   *     append has been applied; this is the catch-up target the desired leader must reach
+   */
+  public long pauseForTransfer(final Duration resumeTimeout) {
+    return pauseForTransfer(resumeTimeout, System.currentTimeMillis());
+  }
+
+  /**
+   * As {@link #pauseForTransfer(Duration)}, but taking the instant the broker froze write admission
+   * (the first barrier step) so the pause-duration metric covers the whole availability window, not
+   * just from this arming step.
+   *
+   * @param pausedSinceMs epoch millis at which write admission was frozen
+   */
+  public long pauseForTransfer(final Duration resumeTimeout, final long pausedSinceMs) {
+    raft.checkThread();
+    if (transferPaused) {
+      // Idempotent: the watchdog is already armed. Report the current head so a repeat caller still
+      // gets a usable target.
+      return raft.getLog().getLastIndex();
+    }
+    transferPaused = true;
+    transferPauseStartMs = pausedSinceMs;
+    // The broker has frozen write admission and paused (and drained) the stream processor before
+    // this Raft-thread task runs, so by FIFO ordering every write admitted before the freeze has
+    // already been appended: the last index is the true frozen head.
+    final long targetIndex = raft.getLog().getLastIndex();
+    log.info("Pausing partition for leadership transfer; resume deadline in {}", resumeTimeout);
+    transferPauseWatchdog =
+        raft.getThreadContext().schedule(resumeTimeout, this::onTransferPauseDeadline);
+    // Both restrictions are now in place (writes frozen, processing paused): mark the partition
+    // paused for transfer.
+    raft.getRebalanceMetrics().setPartitionPaused(true);
+    return targetIndex;
+  }
+
+  /** Leaves paused mode after a coordinated leadership transfer. Must run on the Raft thread. */
+  public void resumeFromTransfer() {
+    raft.checkThread();
+    if (transferPaused) {
+      log.info("Resuming partition after leadership transfer");
+    }
+    clearTransferPause();
+  }
+
+  public boolean isTransferPaused() {
+    return transferPaused;
+  }
+
+  private void onTransferPauseDeadline() {
+    raft.checkThread();
+    if (!transferPaused || !isRunning()) {
+      return;
+    }
+    log.warn(
+        "Partition still paused after the resume deadline; stepping down to follower so services "
+            + "restart and a new leader can be elected");
+    clearTransferPause();
+    raft.transition(RaftServer.Role.FOLLOWER);
+  }
+
+  private void clearTransferPause() {
+    if (transferPauseWatchdog != null) {
+      transferPauseWatchdog.cancel();
+      transferPauseWatchdog = null;
+    }
+    if (transferPaused) {
+      transferPaused = false;
+      raft.getRebalanceMetrics().setPartitionPaused(false);
+      raft.getRebalanceMetrics()
+          .observePauseDuration(
+              Duration.ofMillis(System.currentTimeMillis() - transferPauseStartMs));
     }
   }
 

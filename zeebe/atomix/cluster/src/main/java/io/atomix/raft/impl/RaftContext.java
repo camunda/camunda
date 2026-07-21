@@ -38,6 +38,7 @@ import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.metrics.RaftServiceMetrics;
+import io.atomix.raft.metrics.RebalanceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.AppendResponse;
@@ -133,6 +134,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       new CopyOnWriteArraySet<>();
   private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
+  // Transfer/pause metrics are a partition-level concept, not a leader-term-level one: a
+  // successful coordinated leadership transfer steps this node down before its completion
+  // continuation records the transfer-duration metric, so a role-scoped instance would either
+  // record against meters already removed by the role stopping, or re-register orphaned ones.
+  // Owning it here, for the RaftContext's whole lifetime, keeps operational history across terms
+  // and sidesteps that race entirely; only the paused gauge is reset by the outgoing LeaderRole.
+  private final RebalanceMetrics rebalanceMetrics;
   private final RaftReplicationMetrics replicationMetrics;
   private final MetaStore meta;
   private final RaftLog raftLog;
@@ -193,6 +201,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     health = HealthReport.healthy(this);
 
     raftRoleMetrics = new RaftRoleMetrics(name, meterRegistry);
+    rebalanceMetrics = new RebalanceMetrics(name, meterRegistry);
 
     this.electionConfig = electionConfig;
     if (electionConfig.isPriorityElectionEnabled()) {
@@ -1127,6 +1136,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public RaftRoleMetrics getRaftRoleMetrics() {
     return raftRoleMetrics;
+  }
+
+  public RebalanceMetrics getRebalanceMetrics() {
+    return rebalanceMetrics;
   }
 
   /**

@@ -76,6 +76,8 @@ public interface LogStreamWriter {
     CLOSED,
     WRITE_LIMIT_EXHAUSTED,
     REQUEST_LIMIT_EXHAUSTED,
-    INVALID_ARGUMENT
+    INVALID_ARGUMENT,
+    /** The partition is paused for a coordinated leadership transfer; retry. */
+    PARTITION_PAUSED
   }
 }

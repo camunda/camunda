@@ -37,6 +37,7 @@ import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
+import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.roles.RaftRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
@@ -59,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -289,6 +291,54 @@ public class RaftPartitionServer implements HealthMonitorable {
     }
 
     return Optional.empty();
+  }
+
+  /**
+   * Pauses this partition for a coordinated leadership transfer if it is currently the leader. Runs
+   * on the Raft thread and arms a watchdog that steps the leader down if not resumed within {@code
+   * resumeTimeout}. The caller is responsible for freezing writes and pausing processing; this only
+   * guarantees the partition cannot be left paused forever.
+   *
+   * @param pausedSinceMs epoch millis at which the caller froze write admission, so the pause
+   *     metric covers the full availability window
+   * @return a future completing with the frozen last log index (the catch-up target) once the pause
+   *     is armed, or failing if this node is not the leader
+   */
+  public CompletableFuture<Long> pauseForTransfer(
+      final Duration resumeTimeout, final long pausedSinceMs) {
+    return runOnLeaderRole(leader -> leader.pauseForTransfer(resumeTimeout, pausedSinceMs));
+  }
+
+  /** Resumes this partition after a coordinated leadership transfer, if it is still the leader. */
+  public CompletableFuture<Void> resumeFromTransfer() {
+    return runOnLeaderRole(
+        leader -> {
+          leader.resumeFromTransfer();
+          return null;
+        });
+  }
+
+  private <T> CompletableFuture<T> runOnLeaderRole(final Function<LeaderRole, T> action) {
+    final var future = new CompletableFuture<T>();
+    server
+        .getContext()
+        .getThreadContext()
+        .execute(
+            () -> {
+              if (server.getContext().getRaftRole() instanceof final LeaderRole leader) {
+                try {
+                  future.complete(action.apply(leader));
+                } catch (final Exception e) {
+                  future.completeExceptionally(e);
+                }
+              } else {
+                future.completeExceptionally(
+                    new IllegalStateException(
+                        "Expected to pause/resume the partition for a leadership transfer, but this"
+                            + " node is not the leader"));
+              }
+            });
+    return future;
   }
 
   public Role getRole() {

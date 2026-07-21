@@ -13,17 +13,20 @@ import static org.mockito.ArgumentMatchers.eq;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetricsImpl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -344,6 +347,140 @@ final class SequencerTest {
     Assertions.assertThat(waitTimer).isNotNull();
     Assertions.assertThat(waitTimer.count()).isEqualTo(1);
     Assertions.assertThat(waitTimer.totalTime(TimeUnit.NANOSECONDS)).isGreaterThan(0);
+  }
+
+  @Test
+  void shouldRejectWritesWhilePausedForTransfer() {
+    // given
+    final var sequencer =
+        new Sequencer(
+            Mockito.mock(LogStorage.class),
+            1L,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(new SimpleMeterRegistry()),
+            new FlowControl(new LogStreamMetricsImpl(new SimpleMeterRegistry())));
+
+    // when
+    sequencer.pauseWrites();
+
+    // then
+    EitherAssert.assertThat(sequencer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()))
+        .isLeft()
+        .left()
+        .isEqualTo(WriteFailure.PARTITION_PAUSED);
+
+    // and — writes are admitted again after resuming
+    sequencer.resumeWrites();
+    EitherAssert.assertThat(sequencer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()))
+        .isRight();
+  }
+
+  @Test
+  void shouldDrainInFlightWriterBeforePauseCompletes() throws Exception {
+    // given — an append that blocks so the writer keeps holding the sequencer lock
+    final var blockingLatch = new CountDownLatch(1);
+    final var enteredAppendLatch = new CountDownLatch(1);
+    final var logStorage = Mockito.mock(LogStorage.class);
+    Mockito.doAnswer(
+            invocation -> {
+              enteredAppendLatch.countDown();
+              blockingLatch.await();
+              return null;
+            })
+        .when(logStorage)
+        .append(Mockito.anyLong(), Mockito.anyLong(), any(BufferWriter.class), any());
+    final var sequencer =
+        new Sequencer(
+            logStorage,
+            1L,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(new SimpleMeterRegistry()),
+            new FlowControl(new LogStreamMetricsImpl(new SimpleMeterRegistry())));
+    executor = Executors.newVirtualThreadPerTaskExecutor();
+
+    // a writer enters the critical section and holds the lock
+    executor.submit(() -> sequencer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()));
+    enteredAppendLatch.await();
+
+    // when — pauseWrites must not complete until the in-flight writer leaves the critical section
+    final var pauseReturned = new AtomicBoolean(false);
+    final var pauseThread =
+        new Thread(
+            () -> {
+              sequencer.pauseWrites();
+              pauseReturned.set(true);
+            });
+    pauseThread.start();
+    Awaitility.await("pause thread blocks on the sequencer lock held by the in-flight writer")
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> pauseThread.getState() == Thread.State.WAITING);
+    Assertions.assertThat(pauseReturned).isFalse();
+
+    // then — once the writer leaves, pause completes and subsequent writes are rejected
+    blockingLatch.countDown();
+    Awaitility.await("pause completes after the writer drains")
+        .atMost(Duration.ofSeconds(5))
+        .until(pauseReturned::get);
+    EitherAssert.assertThat(sequencer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()))
+        .isLeft()
+        .left()
+        .isEqualTo(WriteFailure.PARTITION_PAUSED);
+    pauseThread.join();
+  }
+
+  @Test
+  void shouldRejectWriterAdmittedBeforePauseButAcquiringLockAfter() throws Exception {
+    // given — an append that blocks so writer A keeps holding the sequencer lock
+    final var blockingLatch = new CountDownLatch(1);
+    final var enteredAppendLatch = new CountDownLatch(1);
+    final var logStorage = Mockito.mock(LogStorage.class);
+    Mockito.doAnswer(
+            invocation -> {
+              enteredAppendLatch.countDown();
+              blockingLatch.await();
+              return null;
+            })
+        .when(logStorage)
+        .append(Mockito.anyLong(), Mockito.anyLong(), any(BufferWriter.class), any());
+    final var flowControl = new FlowControl(new LogStreamMetricsImpl(new SimpleMeterRegistry()));
+    final var sequencer =
+        new Sequencer(
+            logStorage,
+            1L,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(new SimpleMeterRegistry()),
+            flowControl);
+    executor = Executors.newVirtualThreadPerTaskExecutor();
+
+    // writer A holds the lock inside the blocking append
+    executor.submit(() -> sequencer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()));
+    enteredAppendLatch.await();
+
+    // writer B passes tryAcquire (not yet paused), then blocks waiting for the lock
+    final var bResult = new CompletableFuture<Either<WriteFailure, Long>>();
+    final var bThread =
+        new Thread(
+            () ->
+                bResult.complete(
+                    sequencer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults())));
+    bThread.start();
+    Awaitility.await("writer B blocks on the sequencer lock")
+        .atMost(Duration.ofSeconds(5))
+        .until(() -> bThread.getState() == Thread.State.WAITING);
+
+    // when — the partition is frozen while B waits for the lock, then A releases it
+    flowControl.pause();
+    blockingLatch.countDown();
+
+    // then — B acquires the lock, rechecks paused, and is rejected instead of crossing the freeze
+    EitherAssert.assertThat(bResult.get(5, TimeUnit.SECONDS))
+        .isLeft()
+        .left()
+        .isEqualTo(WriteFailure.PARTITION_PAUSED);
+    bThread.join();
   }
 
   private Thread newWriterThread(

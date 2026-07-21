@@ -100,6 +100,13 @@ public final class FlowControl {
 
   private final RingBuffer inFlight;
 
+  // When paused for a coordinated leadership transfer the log is frozen: every write is
+  // rejected, including otherwise-always-allowed internal/inter-partition writes, so the leader's
+  // last log index stays fixed while the desired leader catches up. Rejected writers retry through
+  // the pause (clients via the retryable RESOURCE_EXHAUSTED mapping, inter-partition commands via
+  // command redistribution).
+  private volatile boolean paused;
+
   public FlowControl(final LogStreamMetrics metrics) {
     this(metrics, StabilizingAIMDLimit.newBuilder().build(), RateLimit.disabled(), 0);
   }
@@ -143,6 +150,11 @@ public final class FlowControl {
 
   private Either<Rejection, InFlightEntry> tryAcquireInternal(
       final WriteContext context, final List<LogAppendEntry> batchMetadata) {
+    if (paused) {
+      // Freeze the log during a leadership transfer: reject every write, even internal ones, so no
+      // new entry is appended while the desired leader catches up.
+      return Either.left(Rejection.PartitionPaused);
+    }
     Listener requestListener = null;
     var alwaysAllowed = false;
     switch (context) {
@@ -267,9 +279,28 @@ public final class FlowControl {
         new RateLimitThrottle(metrics, writeRateLimit, writeRateLimiter, exportingRate);
   }
 
+  /**
+   * Pauses write admission for a coordinated leadership transfer: every subsequent {@link
+   * #tryAcquire} is rejected with {@link Rejection#PartitionPaused} until {@link #resume()}. Safe
+   * to call repeatedly.
+   */
+  public void pause() {
+    paused = true;
+  }
+
+  /** Resumes write admission after a coordinated leadership transfer. Safe to call repeatedly. */
+  public void resume() {
+    paused = false;
+  }
+
+  public boolean isPaused() {
+    return paused;
+  }
+
   public enum Rejection {
     WriteRateLimitExhausted,
-    RequestLimitExhausted
+    RequestLimitExhausted,
+    PartitionPaused
   }
 
   /**

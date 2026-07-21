@@ -31,6 +31,7 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -239,6 +240,15 @@ public final class ZeebePartition extends Actor
   }
 
   private void onRoleChange(final Role newRole, final long newTerm) {
+    // The transfer pause state is split across the per-partition PartitionProcessingState (the
+    // transient flag) and the LogStream's write gate, both of which outlive role transitions. A
+    // transfer that ends by stepping down (e.g. the watchdog firing) must not leave either stuck
+    // paused, so clear both explicitly on every transition rather than relying on the components
+    // happening to be torn down and rebuilt unpaused.
+    context.setPausedForTransfer(false);
+    if (context.getLogStream() != null) {
+      context.getLogStream().resumeWrites();
+    }
     switch (newRole) {
       case LEADER:
         leaderTransition(newTerm);
@@ -460,6 +470,130 @@ public final class ZeebePartition extends Actor
             context.getStreamProcessor().resumeProcessing();
           }
         });
+  }
+
+  /**
+   * Pauses this partition for a coordinated leadership transfer: freezes writes (clients and
+   * inter-partition writers then retry through the pause), pauses processing so no follow-up
+   * commands are written, and arms the Raft-thread watchdog that steps the leader down if the pause
+   * outlives {@code resumeTimeout}. The Raft term is kept and existing entries keep replicating;
+   * exporting is left running. Invoked by the transfer-initiation flow on the current leader.
+   *
+   * <p>The returned future completes only once the pause barrier has fully settled, in order: write
+   * admission is frozen; the transfer pause is made visible to {@link
+   * PartitionContext#shouldProcess shouldProcess()} so a concurrent disk/admin resume cannot
+   * un-pause the partition; the stream processor confirms it is paused (which also drains the write
+   * it may have had in flight); and the Raft thread captures the frozen last log index and arms the
+   * watchdog. The captured index is returned so the caller can use it as the catch-up target for
+   * the desired leader.
+   */
+  public ActorFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
+    final CompletableActorFuture<Long> result = new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          LOG.info("Pausing partition {} for leadership transfer", context.getPartitionId());
+          // The availability impact begins here, when writes are frozen; capture it so the pause
+          // metric spans the whole barrier window, not just the Raft arming step.
+          final long pausedSinceMs = ActorClock.currentTimeMillis();
+          // 1. Freeze write admission and drain in-flight writers: acquiring the sequencer lock
+          //    ensures any writer already past tryAcquire but still waiting for the lock is
+          // rejected
+          //    on its under-lock recheck, so no entry can be appended past this point.
+          context.getLogStream().pauseWrites();
+          // Make the transfer pause a peer of the disk/admin pauses so shouldProcess() reflects it;
+          // otherwise a disk-recovery or operator resume mid-transfer would silently un-pause the
+          // partition (Bug A/B).
+          context.setPausedForTransfer(true);
+          final var streamProcessor = context.getStreamProcessor();
+          if (streamProcessor == null) {
+            // No processor installed to pause: capture the frozen head and arm the watchdog.
+            armRaftPause(resumeTimeout, pausedSinceMs, result);
+            return;
+          }
+          // 2. Await the processor confirming it is paused. When this completes the processor actor
+          //    has quiesced, so every write it submitted has already enqueued its Raft append task.
+          streamProcessor
+              .pauseProcessing()
+              .onComplete(
+                  (ignored, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(error);
+                    } else {
+                      armRaftPause(resumeTimeout, pausedSinceMs, result);
+                    }
+                  });
+        });
+    return result;
+  }
+
+  /**
+   * Runs on the Raft thread after every already-enqueued append (step 3, drained by the FlowControl
+   * freeze and the awaited processor pause), capturing the frozen last log index as the catch-up
+   * target (step 4) and arming the watchdog (step 5). Bounces the result back onto the partition
+   * actor before completing {@code result}.
+   */
+  private void armRaftPause(
+      final Duration resumeTimeout, final long pausedSinceMs, final ActorFuture<Long> result) {
+    context
+        .getRaftPartition()
+        .getServer()
+        .pauseForTransfer(resumeTimeout, pausedSinceMs)
+        .whenComplete(
+            (targetIndex, error) ->
+                actor.run(
+                    () -> {
+                      if (error != null) {
+                        result.completeExceptionally(error);
+                      } else {
+                        result.complete(targetIndex);
+                      }
+                    }));
+  }
+
+  /**
+   * Resumes this partition after a coordinated leadership transfer, undoing {@link
+   * #pauseForTransfer(Duration)}. Clears the transfer pause before re-checking {@link
+   * PartitionContext#shouldProcess shouldProcess()} so processing only resumes if no other pause
+   * (disk/admin) is still in effect. Idempotent and safe to call after a role transition (in which
+   * case the components have already been rebuilt unpaused).
+   */
+  public ActorFuture<Void> resumeFromTransfer() {
+    final CompletableActorFuture<Void> result = new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          LOG.info("Resuming partition {} after leadership transfer", context.getPartitionId());
+          // Initiate the Raft-thread resume (which disarms the pause watchdog and leaves paused
+          // mode) and resume write admission and processing locally. Complete only once BOTH the
+          // Raft resume and the stream-processor resume have settled, so the caller does not report
+          // the transfer result to the coordinator while either side is still paused.
+          final var raftResume = context.getRaftPartition().getServer().resumeFromTransfer();
+          context.getLogStream().resumeWrites();
+          context.setPausedForTransfer(false);
+          final ActorFuture<Void> processorResume;
+          if (context.getStreamProcessor() != null && context.shouldProcess()) {
+            processorResume = context.getStreamProcessor().resumeProcessing();
+          } else {
+            processorResume = CompletableActorFuture.completed(null);
+          }
+          raftResume.whenComplete(
+              (ignored, raftError) ->
+                  actor.run(
+                      () -> {
+                        if (raftError != null) {
+                          result.completeExceptionally(raftError);
+                          return;
+                        }
+                        processorResume.onComplete(
+                            (resumed, processorError) -> {
+                              if (processorError != null) {
+                                result.completeExceptionally(processorError);
+                              } else {
+                                result.complete(null);
+                              }
+                            });
+                      }));
+        });
+    return result;
   }
 
   public int getPartitionId() {
