@@ -60,6 +60,8 @@ final class ContainerState implements AutoCloseable {
   private static final Logger LOG = LoggerFactory.getLogger(ContainerState.class);
   private static final DockerImageName PREVIOUS_VERSION =
       DockerImageName.parse("camunda/camunda").withTag(VersionUtil.getPreviousVersion());
+  private static final DockerImageName CURRENT_VERSION =
+      DockerImageName.parse("camunda/camunda").withTag(currentVersionDockerTag());
 
   static {
     CONTAINER_START_RETRY_POLICY
@@ -84,12 +86,21 @@ final class ContainerState implements AutoCloseable {
 
   private DockerImageName brokerImage;
   private DockerImageName gatewayImage;
+  private DockerImageName newGatewayImage;
   private boolean withRemoteDebugging;
 
   private boolean isSpring;
   private TestStandaloneBroker springBroker;
   private Path extractedDataDir;
   private int partitionCount = PARTITION_COUNT;
+
+  private static String currentVersionDockerTag() {
+    final var version = VersionUtil.getSemanticVersion().orElseThrow();
+    if (version.isPreRelease()) {
+      return version.major() + "." + version.minor() + "-SNAPSHOT";
+    }
+    return version.toString();
+  }
 
   CamundaClient client() {
     return client;
@@ -112,6 +123,11 @@ final class ContainerState implements AutoCloseable {
 
   ContainerState withOldGateway() {
     gatewayImage = PREVIOUS_VERSION;
+    return this;
+  }
+
+  ContainerState withNewGateway() {
+    newGatewayImage = CURRENT_VERSION;
     return this;
   }
 
@@ -185,11 +201,13 @@ final class ContainerState implements AutoCloseable {
 
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.self().start());
 
-    if (gatewayImage == null) {
+    final var effectiveGatewayImage = gatewayImage != null ? gatewayImage : newGatewayImage;
+
+    if (effectiveGatewayImage == null) {
       grpcAddress = broker.getGrpcAddress();
     } else {
       gateway =
-          new GatewayContainer(gatewayImage)
+          new GatewayContainer(effectiveGatewayImage)
               .withUnifiedConfig(
                   cfg -> {
                     cfg.getCluster()
@@ -203,7 +221,7 @@ final class ContainerState implements AutoCloseable {
               .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, partitionCount))
               .withNetwork(network);
 
-      if (gatewayImage.equals(PREVIOUS_VERSION)) {
+      if (effectiveGatewayImage.equals(PREVIOUS_VERSION)) {
         // Gateway configuration is not part of the Unified config yet in 8.8.x
         gateway
             .withEnv(
@@ -476,5 +494,6 @@ final class ContainerState implements AutoCloseable {
 
     brokerImage = null;
     gatewayImage = null;
+    newGatewayImage = null;
   }
 }
