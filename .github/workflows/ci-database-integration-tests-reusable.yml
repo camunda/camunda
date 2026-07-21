@@ -93,7 +93,9 @@ env:
 
 jobs:
   integration-tests:
-    name: "${{ inputs.database-type }}"
+    # include the test-type label so matrix entries are distinguishable in the GHA sidebar, which
+    # only shows this leaf name (e.g. "Physical Tenant Acceptance History / elasticsearch")
+    name: "${{ inputs.test-type-label }} / ${{ inputs.database-type }}"
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
