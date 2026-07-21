@@ -25,7 +25,7 @@ public class AwsConfiguration {
   }
 
   public void setAccessKey(final String accessKey) {
-    this.accessKey = accessKey;
+    this.accessKey = blankToNull(accessKey);
   }
 
   public String getSecretKey() {
@@ -33,7 +33,7 @@ public class AwsConfiguration {
   }
 
   public void setSecretKey(final String secretKey) {
-    this.secretKey = secretKey;
+    this.secretKey = blankToNull(secretKey);
   }
 
   public String getSessionToken() {
@@ -41,7 +41,7 @@ public class AwsConfiguration {
   }
 
   public void setSessionToken(final String sessionToken) {
-    this.sessionToken = sessionToken;
+    this.sessionToken = blankToNull(sessionToken);
   }
 
   public String getRoleArn() {
@@ -49,7 +49,7 @@ public class AwsConfiguration {
   }
 
   public void setRoleArn(final String roleArn) {
-    this.roleArn = roleArn;
+    this.roleArn = blankToNull(roleArn);
   }
 
   public String getWebIdentityTokenFile() {
@@ -57,7 +57,7 @@ public class AwsConfiguration {
   }
 
   public void setWebIdentityTokenFile(final String webIdentityTokenFile) {
-    this.webIdentityTokenFile = webIdentityTokenFile;
+    this.webIdentityTokenFile = blankToNull(webIdentityTokenFile);
   }
 
   public String getRegion() {
@@ -65,6 +65,14 @@ public class AwsConfiguration {
   }
 
   public void setRegion(final String region) {
-    this.region = region;
+    this.region = blankToNull(region);
+  }
+
+  /**
+   * Blank values (e.g. an env var that is set but empty) mean "unset"; null is the single
+   * representation downstream.
+   */
+  private static String blankToNull(final String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

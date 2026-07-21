@@ -125,6 +125,36 @@ class PhysicalTenantAwsTest {
   }
 
   @Test
+  void shouldTreatBlankValuesAsUnset() {
+    // given an all-blank section, as produced by set-but-empty env vars
+    setProperties(
+        Map.of(
+            "camunda.aws.access-key", "",
+            "camunda.aws.secret-key", " ",
+            "camunda.aws.region", ""));
+
+    // when
+    final Aws aws = newResolver().forPhysicalTenant("default").getAws();
+
+    // then the section is empty and falls back to the SDK default chains
+    assertThat(aws.getAccessKey()).isNull();
+    assertThat(aws.getSecretKey()).isNull();
+    assertThat(aws.getRegion()).isNull();
+    assertThat(aws.hasStaticCredentials()).isFalse();
+  }
+
+  @Test
+  void shouldRejectBlankSecretKeyNextToRealAccessKey() {
+    // given
+    setProperties(Map.of("camunda.aws.access-key", "key", "camunda.aws.secret-key", ""));
+
+    // when / then blank counts as unset, so this is a half-configured identity
+    assertThatThrownBy(this::newResolver)
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("aws.secret-key");
+  }
+
+  @Test
   void shouldRejectPartialStaticCredentials() {
     // given
     setProperties(Map.of("camunda.physical-tenants.tenanta.aws.access-key", "key-only"), "tenanta");

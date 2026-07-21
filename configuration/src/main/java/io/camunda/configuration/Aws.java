@@ -23,10 +23,10 @@ import org.jspecify.annotations.Nullable;
  *   <li>{@code camunda.aws.region}
  * </ul>
  *
- * <p>When no field is set, the AWS SDK default credentials provider chain is used, preserving the
- * previous environment-based behavior. AWS configuration is overridable per physical tenant via
- * {@code camunda.physical-tenants.<id>.aws.*}; a tenant that declares no {@code aws} block inherits
- * the root block.
+ * <p>Blank values are treated as unset. When no field is set, the AWS SDK default credentials
+ * provider chain is used, preserving the previous environment-based behavior. AWS configuration is
+ * overridable per physical tenant via {@code camunda.physical-tenants.<id>.aws.*}; a tenant that
+ * declares no {@code aws} block inherits the root block.
  */
 @NullMarked
 public class Aws {
@@ -68,7 +68,7 @@ public class Aws {
   }
 
   public void setAccessKey(final @Nullable String accessKey) {
-    this.accessKey = accessKey;
+    this.accessKey = blankToNull(accessKey);
   }
 
   public @Nullable String getSecretKey() {
@@ -76,7 +76,7 @@ public class Aws {
   }
 
   public void setSecretKey(final @Nullable String secretKey) {
-    this.secretKey = secretKey;
+    this.secretKey = blankToNull(secretKey);
   }
 
   public @Nullable String getSessionToken() {
@@ -84,7 +84,7 @@ public class Aws {
   }
 
   public void setSessionToken(final @Nullable String sessionToken) {
-    this.sessionToken = sessionToken;
+    this.sessionToken = blankToNull(sessionToken);
   }
 
   public @Nullable String getRoleArn() {
@@ -92,7 +92,7 @@ public class Aws {
   }
 
   public void setRoleArn(final @Nullable String roleArn) {
-    this.roleArn = roleArn;
+    this.roleArn = blankToNull(roleArn);
   }
 
   public @Nullable String getWebIdentityTokenFile() {
@@ -100,7 +100,7 @@ public class Aws {
   }
 
   public void setWebIdentityTokenFile(final @Nullable String webIdentityTokenFile) {
-    this.webIdentityTokenFile = webIdentityTokenFile;
+    this.webIdentityTokenFile = blankToNull(webIdentityTokenFile);
   }
 
   public @Nullable String getRegion() {
@@ -108,6 +108,14 @@ public class Aws {
   }
 
   public void setRegion(final @Nullable String region) {
-    this.region = region;
+    this.region = blankToNull(region);
+  }
+
+  /**
+   * Blank values (e.g. an env var that is set but empty) mean "unset"; null is the single
+   * representation downstream.
+   */
+  private static @Nullable String blankToNull(final @Nullable String value) {
+    return value == null || value.isBlank() ? null : value;
   }
 }

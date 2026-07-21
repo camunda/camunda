@@ -74,6 +74,21 @@ class AwsCredentialsProvidersTest {
   }
 
   @Test
+  void shouldFallBackToDefaultChainWhenAllValuesAreBlank() {
+    // given blank values, as produced by set-but-empty env vars
+    final var aws = new AwsConfiguration();
+    aws.setAccessKey("");
+    aws.setSecretKey(" ");
+    aws.setRoleArn("");
+    aws.setWebIdentityTokenFile("");
+    aws.setRegion("");
+
+    // when / then blank counts as unset
+    assertThat(AwsCredentialsProviders.from(aws)).isInstanceOf(DefaultCredentialsProvider.class);
+    assertThat(aws.getRegion()).isNull();
+  }
+
+  @Test
   void shouldRejectPartialStaticCredentials() {
     // given
     final var aws = new AwsConfiguration();
