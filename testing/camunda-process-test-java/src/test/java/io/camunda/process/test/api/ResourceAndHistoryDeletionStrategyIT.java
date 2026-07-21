@@ -61,12 +61,13 @@ public class ResourceAndHistoryDeletionStrategyIT {
 
     final String testCaseProcessId = "test-case-process";
     final DeploymentEvent testCaseDeployment = deployProcess(testCaseProcessId);
-    client
-        .newCreateInstanceCommand()
-        .bpmnProcessId(testCaseProcessId)
-        .latestVersion()
-        .send()
-        .join();
+    final ProcessInstanceEvent testCaseProcessInstance =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(testCaseProcessId)
+            .latestVersion()
+            .send()
+            .join();
 
     final ResourceAndHistoryDeletionStrategy strategy = new ResourceAndHistoryDeletionStrategy();
 
@@ -105,11 +106,15 @@ public class ResourceAndHistoryDeletionStrategyIT {
 
     assertThat(client.newProcessInstanceSearchRequest().send().join().items())
         .extracting(ProcessInstance::getProcessInstanceKey)
+        .describedAs("Expected test-case process instances to be deleted")
+        .doesNotContain(testCaseProcessInstance.getProcessInstanceKey())
         .describedAs("Expected preexisting process instances to remain")
         .contains(preexistingProcessInstance.getProcessInstanceKey());
 
     assertThat(client.newProcessDefinitionSearchRequest().send().join().items())
         .extracting(ProcessDefinition::getProcessDefinitionId)
+        .describedAs("Expected test-case process definitions to be deleted")
+        .doesNotContain(testCaseProcessId)
         .describedAs("Expected preexisting process definitions to remain")
         .contains(preexistingProcessId);
   }
