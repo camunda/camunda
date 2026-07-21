@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
@@ -56,6 +57,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final AuthorizationScopeStateAdapter authorizationScopeStateAdapter;
+  private final MembershipStateAdapter membershipStateAdapter;
   private final SideEffectWriter sideEffectWriter;
 
   public TenantDeleteProcessor(
@@ -65,7 +67,8 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
+      final MembershipStateAdapter membershipStateAdapter) {
     tenantState = state.getTenantState();
     authorizationState = state.getAuthorizationState();
     userState = state.getUserState();
@@ -79,6 +82,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
     this.authorizationScopeStateAdapter = authorizationScopeStateAdapter;
+    this.membershipStateAdapter = membershipStateAdapter;
   }
 
   @Override
@@ -160,10 +164,11 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   /**
-   * Flushes both authorization caches after a tenant is deleted. Deleting a tenant removes its
+   * Flushes all authorization caches after a tenant is deleted. Deleting a tenant removes its
    * memberships (stale in {@link AuthorizationCheckBehavior}'s legacy cache, used by non-migrated
-   * domains) and its authorization grants (stale in the {@link AuthorizationScopeStateAdapter}
-   * scope cache), so both must be invalidated.
+   * domains, and in {@link MembershipStateAdapter}'s cache, used by CSL-migrated domains) and its
+   * authorization grants (stale in the {@link AuthorizationScopeStateAdapter} scope cache), so all
+   * three must be invalidated.
    */
   private void invalidateAuthorizationCaches() {
     sideEffectWriter.appendSideEffect(
@@ -174,6 +179,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
             LOG.warn("Failed to clear legacy authorization cache after tenant delete", e);
           }
           authorizationScopeStateAdapter.invalidateAll();
+          membershipStateAdapter.invalidateAll();
           return true;
         });
   }

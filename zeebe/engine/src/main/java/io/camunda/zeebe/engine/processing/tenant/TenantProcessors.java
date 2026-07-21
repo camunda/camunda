@@ -85,6 +85,7 @@ public class TenantProcessors {
                 writers,
                 commandDistributionBehavior,
                 authCheckBehavior,
-                authorizationScopeStateAdapter));
+                authorizationScopeStateAdapter,
+                membershipStateAdapter));
   }
 }
