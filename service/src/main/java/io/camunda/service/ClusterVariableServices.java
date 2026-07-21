@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteClusterVariableR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateClusterVariableRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableKind;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
@@ -165,5 +166,5 @@ public final class ClusterVariableServices
       Object value,
       String tenantId,
       Map<String, Object> metadata,
-      io.camunda.zeebe.protocol.record.value.@Nullable ClusterVariableKind kind) {}
+      @Nullable ClusterVariableKind kind) {}
 }

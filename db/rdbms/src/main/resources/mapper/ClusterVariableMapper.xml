@@ -21,10 +21,6 @@
       <arg column="IS_PREVIEW" javaType="boolean"/>
       <arg column="SCOPE" javaType="io.camunda.search.entities.ClusterVariableScope"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <!-- no METADATA column yet; queries select a literal NULL and the entity defaults it to an
-       empty list. We use the ObjectTypeHandler because no other typeHandler can map NULL to List -->
-      <arg column="METADATA" javaType="java.util.List"
-        typeHandler="org.apache.ibatis.type.ObjectTypeHandler"/>
       <arg column="KIND" javaType="io.camunda.search.entities.ClusterVariableKind"/>
     </constructor>
   </resultMap>
@@ -59,7 +55,6 @@
     TENANT_ID,
     SCOPE,
     IS_PREVIEW,
-    NULL AS METADATA,
     KIND
     FROM ${prefix}CLUSTER_VARIABLE cv
     <include refid="io.camunda.db.rdbms.sql.ClusterVariableMapper.searchFilter"/>
@@ -79,7 +74,6 @@
     TENANT_ID,
     SCOPE,
     IS_PREVIEW,
-    NULL AS METADATA,
     KIND
     FROM ${prefix}CLUSTER_VARIABLE cv
     WHERE cv.CLUSTER_VARIABLE_ID = #{id}
