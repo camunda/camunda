@@ -197,6 +197,21 @@
       <artifactId>spring-boot-jackson</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -299,6 +314,23 @@
               </arguments>
               <classpathScope>provided</classpathScope>
               <includePluginDependencies>true</includePluginDependencies>
+            </configuration>
+          </execution>
+          <!-- Generates the actuator OpenAPI spec bundled into the packaged jar. Bound to
+               prepare-package (not test/integration-test) so it isn't skipped by -DskipTests,
+               which release builds pass. -->
+          <execution>
+            <id>generate-actuator-openapi</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <phase>prepare-package</phase>
+            <configuration>
+              <mainClass>io.camunda.client.spring.actuator.openapi.ActuatorOpenApiGenerator</mainClass>
+              <arguments>
+                <argument>${project.build.outputDirectory}</argument>
+              </arguments>
+              <classpathScope>test</classpathScope>
             </configuration>
           </execution>
         </executions>
