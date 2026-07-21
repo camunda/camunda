@@ -93,7 +93,7 @@ public final class DbJobState implements JobState, MutableJobState {
   private long nextBackOffDueDate;
 
   /** In-memory, per-partition memory that the legacy JOB_ACTIVATABLE CF is globally drained. */
-  private boolean isLegacyCfDrained = false;
+  private volatile boolean isLegacyCfDrained = false;
 
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
