@@ -55,7 +55,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
           RejectionType.ALREADY_EXISTS,
           "Expected to create user with username %s, but a user with this username already exists"
               .formatted(user.getUsername()));
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command,
           RejectionType.ALREADY_EXISTS,
           "Expected to create user with username %s, but a user with this username already exists"
@@ -67,7 +67,8 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     command.getValue().setUserKey(key);
 
     stateWriter.appendFollowUpEvent(key, UserIntent.CREATED, command.getValue());
-    responseWriter.writeEventOnCommand(key, UserIntent.CREATED, command.getValue(), command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        key, UserIntent.CREATED, command.getValue(), command);
 
     distributionBehavior
         .withKey(key)

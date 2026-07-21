@@ -56,7 +56,7 @@ public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskReco
             persistedRecord -> claimUserTask(command, persistedRecord),
             violation -> {
               rejectionWriter.appendRejection(command, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   command, violation.getLeft(), violation.getRight());
             });
   }
@@ -70,7 +70,7 @@ public class UserTaskClaimProcessor implements TypedRecordProcessor<UserTaskReco
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-    responseWriter.writeEventOnCommand(
+    responseWriter.writeAcceptedResponseOnCommand(
         userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
   }
 

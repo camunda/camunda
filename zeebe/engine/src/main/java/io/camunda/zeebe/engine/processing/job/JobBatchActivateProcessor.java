@@ -134,7 +134,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     }
 
     rejectionWriter.appendRejection(record, rejectionType, rejectionReason);
-    responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
+    responseWriter.writeRejectedResponseOnCommand(record, rejectionType, rejectionReason);
   }
 
   private void activateJobBatch(
@@ -143,7 +143,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final long jobBatchKey,
       final Map<JobKind, Integer> activatedJobsCountPerJobKind) {
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
-    responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
+    responseWriter.writeAcceptedResponseOnCommand(
+        jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
     activatedJobsCountPerJobKind.forEach(
         (jobKind, count) ->
             jobMetrics.countJobEvent(JobAction.ACTIVATED, jobKind, value.getType(), count));

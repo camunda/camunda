@@ -54,7 +54,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
               .formatted(command.getValue().getUsername());
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
+      responseWriter.writeRejectedResponseOnCommand(
+          command, RejectionType.NOT_FOUND, rejectionMessage);
       return;
     }
 
@@ -62,7 +63,7 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
 
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, UserIntent.UPDATED, updatedUser);
-    responseWriter.writeEventOnCommand(key, UserIntent.UPDATED, updatedUser, command);
+    responseWriter.writeAcceptedResponseOnCommand(key, UserIntent.UPDATED, updatedUser, command);
 
     distributionBehavior.withKey(key).unordered().distribute(command);
   }

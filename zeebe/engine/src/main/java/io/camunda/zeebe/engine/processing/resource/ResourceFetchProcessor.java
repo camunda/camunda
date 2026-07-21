@@ -45,7 +45,8 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
       if (optionalResource.isPresent()) {
         final var record = asResourceRecord(optionalResource.get());
         stateWriter.appendFollowUpEvent(resourceKey, ResourceIntent.FETCHED, record);
-        responseWriter.writeEventOnCommand(resourceKey, ResourceIntent.FETCHED, record, command);
+        responseWriter.writeAcceptedResponseOnCommand(
+            resourceKey, ResourceIntent.FETCHED, record, command);
         return;
       }
     }
@@ -57,7 +58,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
       final TypedRecord<ResourceRecord> command, final Throwable error) {
     if (error instanceof final NoSuchResourceException exception) {
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
-      responseWriter.writeRejectionOnCommand(
+      responseWriter.writeRejectedResponseOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
     }

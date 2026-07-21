@@ -73,7 +73,7 @@ public class DecisionEvaluationEvaluteProcessor
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),
                   evaluationRecordTuple.getRight());
-              responseWriter.writeEventOnCommand(
+              responseWriter.writeAcceptedResponseOnCommand(
                   evaluationRecordKey,
                   evaluationRecordTuple.getLeft(),
                   evaluationRecordTuple.getRight(),
@@ -81,7 +81,7 @@ public class DecisionEvaluationEvaluteProcessor
             },
             failure -> {
               final String reason = failure.getMessage();
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   command, RejectionType.INVALID_ARGUMENT, reason);
               rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
             });

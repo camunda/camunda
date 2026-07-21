@@ -149,7 +149,7 @@ public final class MessageSubscriptionCorrelateProcessor
 
       stateWriter.appendFollowUpEvent(
           messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
-      responseWriter.writeResponse(
+      responseWriter.writeAcceptedResponse(
           record.getValue().getMessageKey(),
           MessageCorrelationIntent.CORRELATED,
           messageCorrelationRecord,

@@ -15,21 +15,21 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public interface TypedResponseWriter {
 
-  void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
+  void writeRejectedResponseOnCommand(TypedRecord<?> command, RejectionType type, String reason);
 
-  void writeRejection(
+  void writeRejectedResponseOnCommand(
       final TypedRecord<?> command,
       final RejectionType type,
       final String reason,
       final long requestId,
       final int requestStreamId);
 
-  void writeEvent(TypedRecord<?> event);
+  void writeAcceptedResponse(TypedRecord<?> event);
 
-  void writeEventOnCommand(
+  void writeAcceptedResponseOnCommand(
       long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
 
-  void writeResponse(
+  void writeAcceptedResponse(
       long eventKey,
       Intent eventState,
       UnpackedObject eventValue,

@@ -46,7 +46,7 @@ public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserT
             persistedRecord -> updateUserTask(command, persistedRecord),
             violation -> {
               rejectionWriter.appendRejection(command, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   command, violation.getLeft(), violation.getRight());
             });
   }
@@ -62,6 +62,7 @@ public final class UserTaskUpdateProcessor implements TypedRecordProcessor<UserT
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, updateRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, updateRecord);
-    responseWriter.writeEventOnCommand(userTaskKey, UserTaskIntent.UPDATED, updateRecord, command);
+    responseWriter.writeAcceptedResponseOnCommand(
+        userTaskKey, UserTaskIntent.UPDATED, updateRecord, command);
   }
 }

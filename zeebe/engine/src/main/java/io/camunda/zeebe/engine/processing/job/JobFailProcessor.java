@@ -99,7 +99,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
             ok -> failJob(record),
             violation -> {
               rejectionWriter.appendRejection(record, violation.getLeft(), violation.getRight());
-              responseWriter.writeRejectionOnCommand(
+              responseWriter.writeRejectedResponseOnCommand(
                   record, violation.getLeft(), violation.getRight());
             });
   }
@@ -114,7 +114,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     if (failedJob == null) {
       final String errorMessage = String.format(NO_JOB_FOUND_MESSAGE, jobKey);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectedResponseOnCommand(record, RejectionType.NOT_FOUND, errorMessage);
       return;
     }
 
@@ -134,7 +134,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
           });
     }
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.FAILED, failedJob);
-    responseWriter.writeEventOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
+    responseWriter.writeAcceptedResponseOnCommand(jobKey, JobIntent.FAILED, failedJob, record);
     jobMetrics.countJobEvent(JobAction.FAILED, failedJob.getJobKind(), failedJob.getType());
 
     setFailedVariables(failedJob);
