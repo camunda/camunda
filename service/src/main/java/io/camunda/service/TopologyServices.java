@@ -138,7 +138,7 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
       final Broker.Builder broker,
       final BrokerMemberId brokerId,
       final BrokerClusterState topology,
-      final @Nullable ClusterConfiguration clusterConfiguration) {
+      final ClusterConfiguration clusterConfiguration) {
     topology
         .getPartitions()
         .forEach(
@@ -172,12 +172,8 @@ public final class TopologyServices extends PhysicalTenantScopedApiServices<Topo
   private void setState(
       final BrokerMemberId brokerId,
       final Integer partitionId,
-      final @Nullable ClusterConfiguration clusterConfiguration,
+      final ClusterConfiguration clusterConfiguration,
       final Partition.Builder partition) {
-    if (clusterConfiguration == null) {
-      return;
-    }
-
     final var memberState = clusterConfiguration.members().get(brokerId.memberId());
     if (memberState == null) {
       return;
