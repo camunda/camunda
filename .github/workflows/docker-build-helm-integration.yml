@@ -121,6 +121,11 @@ jobs:
     # preflight failures pass through here would defeat the entire rationale.
     permissions: { }
     steps:
+      - name: Checkout (for observe-build-status)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
       - name: Verify required org secrets are set
         id: check-secrets
         env:
@@ -216,9 +221,6 @@ jobs:
 
       # Same CI Health observability hook every other job in this workflow
       # uses. Without it the Monorepo CI Health linter flags this job.
-      - name: Checkout (for observe-build-status)
-        if: always()
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Observe build status
         if: always()
         continue-on-error: true
