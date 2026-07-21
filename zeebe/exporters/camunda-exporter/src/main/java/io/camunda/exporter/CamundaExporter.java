@@ -52,6 +52,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
@@ -90,6 +91,7 @@ public class CamundaExporter implements Exporter {
   private ClientAdapter clientAdapter;
   private ExporterBatchWriter writer;
   private long lastPosition = -1;
+  private final TargetIndexLocator indexLocator;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
   private CamundaBackgroundTaskManager taskManager;
@@ -104,16 +106,21 @@ public class CamundaExporter implements Exporter {
 
   public CamundaExporter() {
     // the metadata will be initialized on open
-    this(new DefaultExporterResourceProvider(), null);
+    this(new TargetIndexLocator(), new DefaultExporterResourceProvider(), null);
   }
 
   @VisibleForTesting
-  public CamundaExporter(final ExporterResourceProvider provider) {
-    this(provider, null);
+  public CamundaExporter(
+      final TargetIndexLocator indexLocator, final ExporterResourceProvider provider) {
+    this(indexLocator, provider, null);
   }
 
   @VisibleForTesting
-  public CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
+  public CamundaExporter(
+      final TargetIndexLocator indexLocator,
+      final ExporterResourceProvider provider,
+      final ExporterMetadata metadata) {
+    this.indexLocator = indexLocator;
     this.provider = provider;
     this.metadata = metadata;
   }
@@ -332,7 +339,7 @@ public class CamundaExporter implements Exporter {
 
   private ExporterBatchWriter createBatchWriter() {
     final var builder =
-        ExporterBatchWriter.Builder.begin(metrics)
+        ExporterBatchWriter.Builder.begin(indexLocator, metrics)
             .withCustomErrorHandlers(provider.getCustomErrorHandlers());
     provider.getExportHandlers().forEach(builder::withHandler);
     return builder.build();

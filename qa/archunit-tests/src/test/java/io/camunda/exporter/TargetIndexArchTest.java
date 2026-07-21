@@ -15,16 +15,16 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
 import io.camunda.exporter.index.TargetIndex;
-import io.camunda.exporter.store.ExporterBatchWriter;
+import io.camunda.exporter.index.TargetIndexLocator;
 
 @AnalyzeClasses(packages = "io.camunda.exporter", importOptions = DoNotIncludeTestsOrTestJars.class)
 public class TargetIndexArchTest {
   @ArchTest
-  static final ArchRule TARGET_INDEXES_SHOULD_ONLY_BE_CREATED_BY_BATCH_WRITER =
+  static final ArchRule TARGET_INDEXES_SHOULD_ONLY_BE_CREATED_BY_TARGET_INDEX_LOCATOR =
       ArchRuleDefinition.methods()
           .that()
           .areDeclaredInClassesThat()
-          .resideInAPackage("io.camunda.exporter.index..")
+          .areAssignableTo(TargetIndex.class)
           .and()
           .haveNameNotMatching("^(name).*")
           .should()
@@ -33,7 +33,7 @@ public class TargetIndexArchTest {
           .areAssignableTo(
               DescribedPredicate.or(
                   Predicates.assignableTo(TargetIndex.class),
-                  Predicates.assignableTo(ExporterBatchWriter.class)))
+                  Predicates.assignableTo(TargetIndexLocator.class)))
           .because(
-              "TargetIndex instances should only be created by the ExporterBatchWriter to ensure that all writes are sent to the correct index.");
+              "TargetIndex instances should only be created by the TargetIndexLocator to ensure that all writes are sent to the correct index.");
 }
