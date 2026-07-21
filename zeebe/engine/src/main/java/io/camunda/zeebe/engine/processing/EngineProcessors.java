@@ -403,12 +403,7 @@ public final class EngineProcessors {
         permissionsBehavior);
 
     ClockProcessors.addClockProcessors(
-        typedRecordProcessors,
-        writers,
-        keyGenerator,
-        clock,
-        commandDistributionBehavior,
-        authCheckBehavior);
+        typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior, cslCheck);
 
     addIdentityProcessors(
         keyGenerator,
@@ -476,7 +471,7 @@ public final class EngineProcessors {
         processingState.getTenantState(),
         writers,
         commandDistributionBehavior,
-        authCheckBehavior,
+        cslCheck,
         config);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
@@ -497,7 +492,7 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         config,
         processingState,
-        authCheckBehavior);
+        cslCheck);
 
     ExpressionProcessors.addProcessors(
         keyGenerator,
