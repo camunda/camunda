@@ -303,7 +303,7 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertBadRequest(res, 'Sort field must not be null.');
+      await assertBadRequest(res, /page\.limit/i, 'INVALID_ARGUMENT');
     }).toPass(defaultAssertionOptions);
   });
 

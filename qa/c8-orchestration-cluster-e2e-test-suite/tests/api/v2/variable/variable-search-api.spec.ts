@@ -245,12 +245,12 @@ test.describe.parallel('Search Variables API Tests', () => {
         headers: jsonHeaders(),
         data: {
           page: {
-            limit: 0,
+            limit: -1,
           },
         },
       });
 
-      await assertBadRequest(res, /page.from|page.limit/);
+      await assertBadRequest(res, /page\.(from|limit)/i, 'INVALID_ARGUMENT');
     }).toPass(defaultAssertionOptions);
   });
 });

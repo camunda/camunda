@@ -168,7 +168,7 @@ test.describe.parallel('Search Batch Operation Tests', () => {
         },
       });
 
-      await assertBadRequest(res, /page\.(from|limit)/i);
+      await assertBadRequest(res, /page\.(from|limit)/i, 'INVALID_ARGUMENT');
     }).toPass(defaultAssertionOptions);
   });
 

@@ -173,7 +173,7 @@ test.describe.parallel('Process Definition Search API', () => {
         },
       },
     });
-    await assertBadRequest(res, 'limit must be a positive number');
+    await assertBadRequest(res, /page\.limit/i, 'INVALID_ARGUMENT');
   });
 
   test('Search Process Definitions - with sorting', async ({request}) => {
