@@ -11,18 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.cluster.SecondaryStorageAvailability;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Status;
 
 class SchemaReadinessCheckTest {
 
   @Test
-  void shouldBeUpWhenAtLeastOnePhysicalTenantIsAvailable() {
+  void shouldBeUpWhenAtLeastOnePhysicalTenantIsReady() {
     // given
-    final var availability = mock(SecondaryStorageAvailability.class);
-    when(availability.anyAvailable()).thenReturn(true);
-    final var readinessCheck = new SchemaReadinessCheck(availability);
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.anyReady()).thenReturn(true);
+    final var readinessCheck = new SchemaReadinessCheck(readiness);
 
     // when
     final var health = readinessCheck.health();
@@ -32,11 +32,11 @@ class SchemaReadinessCheckTest {
   }
 
   @Test
-  void shouldBeDownWhenNoPhysicalTenantIsAvailable() {
+  void shouldBeDownWhenNoPhysicalTenantIsReady() {
     // given
-    final var availability = mock(SecondaryStorageAvailability.class);
-    when(availability.anyAvailable()).thenReturn(false);
-    final var readinessCheck = new SchemaReadinessCheck(availability);
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.anyReady()).thenReturn(false);
+    final var readinessCheck = new SchemaReadinessCheck(readiness);
 
     // when
     final var health = readinessCheck.health();

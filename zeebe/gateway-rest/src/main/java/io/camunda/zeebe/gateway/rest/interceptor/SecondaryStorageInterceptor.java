@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.interceptor;
 
 import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
 
-import io.camunda.cluster.SecondaryStorageAvailability;
+import io.camunda.cluster.SecondaryStorageReadiness;
 import io.camunda.service.exception.SecondaryStorageDegradedException;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.spring.utils.PhysicalTenantContext;
@@ -23,7 +23,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
- * Interceptor that validates secondary storage availability for endpoints requiring it, i.e. marked
+ * Interceptor that validates secondary storage readiness for endpoints requiring it, i.e. marked
  * with {@link RequiresSecondaryStorage}.
  *
  * <ul>
@@ -31,20 +31,20 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *       none).
  *   <li>HTTP 503 Service Unavailable when secondary storage is configured but the request's
  *       physical tenant's secondary storage is currently degraded (see {@link
- *       SecondaryStorageAvailability}).
+ *       SecondaryStorageReadiness}).
  * </ul>
  */
 @Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
   private final boolean secondaryStorageDisabled;
-  private final SecondaryStorageAvailability secondaryStorageAvailability;
+  private final SecondaryStorageReadiness secondaryStorageReadiness;
 
   public SecondaryStorageInterceptor(
       @Value("${camunda.database.type:elasticsearch}") final String databaseType,
-      final SecondaryStorageAvailability secondaryStorageAvailability) {
+      final SecondaryStorageReadiness secondaryStorageReadiness) {
     secondaryStorageDisabled = CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseType);
-    this.secondaryStorageAvailability = secondaryStorageAvailability;
+    this.secondaryStorageReadiness = secondaryStorageReadiness;
   }
 
   @Override
@@ -53,7 +53,7 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
     if (handler instanceof final HandlerMethod handlerMethod
         && requiresSecondaryStorage(handlerMethod)) {
-      validateSecondaryStorageAvailable(request);
+      validateSecondaryStorageReady(request);
     }
 
     return true;
@@ -64,18 +64,18 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
         || handlerMethod.getBeanType().isAnnotationPresent(RequiresSecondaryStorage.class);
   }
 
-  private void validateSecondaryStorageAvailable(final HttpServletRequest request) {
+  private void validateSecondaryStorageReady(final HttpServletRequest request) {
     if (secondaryStorageDisabled) {
       throw new SecondaryStorageUnavailableException();
     }
     // Only checked on the initial dispatch: CompletableFuture-returning controllers resume on an
     // ASYNC re-dispatch, at which point the result is already computed and must not be rejected a
-    // second time based on the (possibly since-changed) availability state.
+    // second time based on the (possibly since-changed) readiness state.
     if (request.getDispatcherType() != DispatcherType.REQUEST) {
       return;
     }
     final String physicalTenantId = PhysicalTenantContext.current();
-    if (!secondaryStorageAvailability.isAvailable(physicalTenantId)) {
+    if (!secondaryStorageReadiness.isReady(physicalTenantId)) {
       throw new SecondaryStorageDegradedException(physicalTenantId);
     }
   }
