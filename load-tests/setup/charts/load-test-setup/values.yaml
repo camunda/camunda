@@ -146,6 +146,15 @@ keycloak:
     # -- Enable the PostgreSQL cluster for Keycloak.
     enabled: true
 
+    # -- The name of the CNPG Cluster resource deployed for Keycloak.
+    clusterName: postgresql-keycloak
+
+    # -- The name of the PostgreSQL database created for Keycloak.
+    databaseName: keycloak
+
+    # -- The name of the PostgreSQL user Keycloak uses to connect to its database.
+    databaseUser: keycloak
+
     # -- The PostgreSQL CNPG image to be used when creating a CNPG-based
     # PostgreSQL cluster.
     image:

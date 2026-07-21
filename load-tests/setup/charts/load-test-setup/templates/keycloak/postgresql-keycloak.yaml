@@ -9,7 +9,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: postgresql-keycloak
+  name: {{ .Values.keycloak.postgresql.clusterName }}
 spec:
   description: PostgreSQL cluster for Keycloak and Camunda Identity
 
