@@ -40,7 +40,11 @@ so the stock webapp chain with a `/**` matcher is the catch-all below the bearer
 3. Set `optimize.security.csl.enabled=true` plus the `camunda.security.*` config in
    `application-csl-spike.yaml` (OIDC issuer/client for your IdP, `method=oidc`,
    `unhandled-paths-chain.enabled=false`).
-4. Start Optimize against an OIDC provider (Identity/Keycloak for CCSM, Auth0 for CCSaaS) and
+4. Build the frontend so the SPA is served: `cd optimize/client && yarn build` (Vite, outputs
+   `dist/`), then rebuild `optimize-backend` so `../client/dist` is copied to the `webapp`
+   classpath. Without it, `GET /` returns `NoResourceFoundException` (no `index.html`) after login.
+   This is unrelated to CSL; a plain backend run does not build the SPA.
+5. Start Optimize against an OIDC provider (Identity/Keycloak for CCSM, Auth0 for CCSaaS) and
    verify: `GET /` redirects to the IdP; after login the app loads; `GET /api/readyz`,
    `/api/ui-configuration`, `/actuator/**`, `/external/**` are reachable without auth;
    `GET /api/public/**` requires a bearer token.
