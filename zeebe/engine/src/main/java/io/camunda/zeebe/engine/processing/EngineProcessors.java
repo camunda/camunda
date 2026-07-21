@@ -512,7 +512,12 @@ public final class EngineProcessors {
         clock);
 
     AgentInstanceProcessors.addAgentInstanceProcessors(
-        keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
+        keyGenerator,
+        typedRecordProcessors,
+        writers,
+        cslCheck,
+        permissionsBehavior,
+        processingState);
 
     AgentHistoryProcessors.addAgentHistoryProcessors(
         keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
