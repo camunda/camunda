@@ -50,6 +50,11 @@ so the IdP client (Keycloak/Identity `optimize` client) must allow that redirect
 setup used `/api/authentication/callback`, so add `/sso-callback` to the client's valid redirect
 URIs before logging in.
 
+Note: Optimize's `URLRedirectFilter` (SPA routing) runs before the security chain and redirects
+unknown paths to `/#`. It is patched to pass the CSL security endpoints (`/oauth2/**`,
+`/sso-callback`, `/login`, `/logout`) through to Spring Security; without that, OIDC login
+initiation and the callback get bounced to `/#` in a redirect loop.
+
 Single-node in-memory sessions are used unless a `SessionStorePort` bean is added and
 `camunda.security.session.persistent.enabled=true`.
 
