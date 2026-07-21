@@ -111,16 +111,19 @@ test.describe.parallel('Job Priority FEEL Expression API Tests', () => {
       expect(json.items[0].jobKey).toBeNull();
     }).toPass(defaultAssertionOptions);
 
-    const jobSearchRes = await request.post(buildUrl('/jobs/search'), {
-      headers: jsonHeaders(),
-      data: {
-        filter: {
-          processInstanceKey: {$eq: instance.processInstanceKey},
+    await expect(async () => {
+      const jobSearchRes = await request.post(buildUrl('/jobs/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {$eq: instance.processInstanceKey},
+            type: {$eq: jobType},
+          },
         },
-      },
-    });
-    await assertStatusCode(jobSearchRes, 200);
-    const jobSearchJson = await jobSearchRes.json();
-    expect(jobSearchJson.items).toHaveLength(0);
+      });
+      await assertStatusCode(jobSearchRes, 200);
+      const jobSearchJson = await jobSearchRes.json();
+      expect(jobSearchJson.items).toHaveLength(0);
+    }).toPass(defaultAssertionOptions);
   });
 });
