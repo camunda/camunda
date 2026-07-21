@@ -89,6 +89,9 @@ jobs:
     # automatically -- bump it manually if a caller raises duration-seconds. Largest known
     # caller today: camunda-daily-load-tests.yml's profile-grpc/profile-rest jobs pass
     # duration-seconds: '1800' (30 min), i.e. up to 90 minutes of profiling alone per pod.
+    # If the job timeout is increased, make sure to also increase the Teleport
+    # "certificate-ttl" below to keep it roughly greater or equal to the job
+    # timeout.
     timeout-minutes: 120
     if: ${{ inputs.pod == '' }}
     permissions:
@@ -121,6 +124,12 @@ jobs:
           proxy: camunda.teleport.sh:443
           token: ${{ env.TELEPORT_JOIN_TOKEN }}
           kubernetes-cluster: ${{ env.CLUSTER }}
+          # The Teleport certificate for Kubernetes TTL should be roughly
+          # greater or equal to the configured job "timeout-minutes" value: if
+          # the TTL is lower, the certificate can expire will the job is still
+          # running and the subsequent connections to Kubernetes (via Teleport)
+          # will fail with a "certificate expired" error.
+          certificate-ttl: 2h # defaults to 1h
 
       - name: Set right namespace
         run: |
