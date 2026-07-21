@@ -11,17 +11,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.cluster.PhysicalTenantAvailability;
+import io.camunda.cluster.SecondaryStorageAvailability;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Status;
 
 class SchemaReadinessCheckTest {
 
   @Test
-  void shouldBeUpWhenAtLeastOnePhysicalTenantIsServiceable() {
+  void shouldBeUpWhenAtLeastOnePhysicalTenantIsAvailable() {
     // given
-    final var availability = mock(PhysicalTenantAvailability.class);
-    when(availability.anyServiceable()).thenReturn(true);
+    final var availability = mock(SecondaryStorageAvailability.class);
+    when(availability.anyAvailable()).thenReturn(true);
     final var readinessCheck = new SchemaReadinessCheck(availability);
 
     // when
@@ -32,10 +32,10 @@ class SchemaReadinessCheckTest {
   }
 
   @Test
-  void shouldBeDownWhenNoPhysicalTenantIsServiceable() {
+  void shouldBeDownWhenNoPhysicalTenantIsAvailable() {
     // given
-    final var availability = mock(PhysicalTenantAvailability.class);
-    when(availability.anyServiceable()).thenReturn(false);
+    final var availability = mock(SecondaryStorageAvailability.class);
+    when(availability.anyAvailable()).thenReturn(false);
     final var readinessCheck = new SchemaReadinessCheck(availability);
 
     // when

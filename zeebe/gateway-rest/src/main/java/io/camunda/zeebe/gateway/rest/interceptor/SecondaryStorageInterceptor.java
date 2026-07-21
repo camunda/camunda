@@ -9,8 +9,8 @@ package io.camunda.zeebe.gateway.rest.interceptor;
 
 import static io.camunda.spring.utils.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
 
-import io.camunda.cluster.PhysicalTenantAvailability;
-import io.camunda.service.exception.PhysicalTenantUnavailableException;
+import io.camunda.cluster.SecondaryStorageAvailability;
+import io.camunda.service.exception.SecondaryStorageDegradedException;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
@@ -30,20 +30,21 @@ import org.springframework.web.servlet.HandlerInterceptor;
  *   <li>HTTP 403 Forbidden when secondary storage is not configured at all (camunda.database.type =
  *       none).
  *   <li>HTTP 503 Service Unavailable when secondary storage is configured but the request's
- *       physical tenant is currently degraded (see {@link PhysicalTenantAvailability}).
+ *       physical tenant's secondary storage is currently degraded (see {@link
+ *       SecondaryStorageAvailability}).
  * </ul>
  */
 @Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
   private final boolean secondaryStorageDisabled;
-  private final PhysicalTenantAvailability physicalTenantAvailability;
+  private final SecondaryStorageAvailability secondaryStorageAvailability;
 
   public SecondaryStorageInterceptor(
       @Value("${camunda.database.type:elasticsearch}") final String databaseType,
-      final PhysicalTenantAvailability physicalTenantAvailability) {
+      final SecondaryStorageAvailability secondaryStorageAvailability) {
     secondaryStorageDisabled = CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(databaseType);
-    this.physicalTenantAvailability = physicalTenantAvailability;
+    this.secondaryStorageAvailability = secondaryStorageAvailability;
   }
 
   @Override
@@ -74,8 +75,8 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
       return;
     }
     final String physicalTenantId = PhysicalTenantContext.current();
-    if (!physicalTenantAvailability.isServiceable(physicalTenantId)) {
-      throw new PhysicalTenantUnavailableException(physicalTenantId);
+    if (!secondaryStorageAvailability.isAvailable(physicalTenantId)) {
+      throw new SecondaryStorageDegradedException(physicalTenantId);
     }
   }
 }

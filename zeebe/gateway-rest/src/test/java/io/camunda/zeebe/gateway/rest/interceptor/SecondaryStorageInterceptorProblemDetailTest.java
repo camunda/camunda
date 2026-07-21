@@ -14,9 +14,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.cluster.PhysicalTenantAvailability;
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.service.exception.PhysicalTenantUnavailableException;
+import io.camunda.cluster.SecondaryStorageAvailability;
+import io.camunda.service.exception.SecondaryStorageDegradedException;
 import io.camunda.zeebe.gateway.rest.GlobalControllerExceptionHandler;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import org.junit.jupiter.api.Test;
@@ -36,9 +36,8 @@ class SecondaryStorageInterceptorProblemDetailTest {
   @Test
   void shouldReturnServiceUnavailableProblemDetailWhenPhysicalTenantDegraded() throws Exception {
     // given
-    final var availability = mock(PhysicalTenantAvailability.class);
-    when(availability.isServiceable(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID))
-        .thenReturn(false);
+    final var availability = mock(SecondaryStorageAvailability.class);
+    when(availability.isAvailable(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)).thenReturn(false);
     final var interceptor = new SecondaryStorageInterceptor("elasticsearch", availability);
     final MockMvc mockMvc =
         MockMvcBuilders.standaloneSetup(new TestController())
@@ -55,7 +54,7 @@ class SecondaryStorageInterceptorProblemDetailTest {
         .andExpect(
             jsonPath("$.detail")
                 .value(
-                    PhysicalTenantUnavailableException.PHYSICAL_TENANT_DEGRADED_MESSAGE.formatted(
+                    SecondaryStorageDegradedException.SECONDARY_STORAGE_DEGRADED_MESSAGE.formatted(
                         PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)));
   }
 

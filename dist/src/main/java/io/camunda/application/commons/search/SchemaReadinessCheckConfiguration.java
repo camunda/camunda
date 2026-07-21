@@ -8,7 +8,7 @@
 package io.camunda.application.commons.search;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
-import io.camunda.cluster.PhysicalTenantAvailability;
+import io.camunda.cluster.SecondaryStorageAvailability;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,7 +26,7 @@ public class SchemaReadinessCheckConfiguration {
   @Bean
   @Qualifier(SchemaReadinessCheck.SCHEMA_READINESS_CHECK)
   public SchemaReadinessCheck schemaReadinessCheck(
-      final PhysicalTenantAvailability physicalTenantAvailability) {
-    return new SchemaReadinessCheck(physicalTenantAvailability);
+      final SecondaryStorageAvailability secondaryStorageAvailability) {
+    return new SchemaReadinessCheck(secondaryStorageAvailability);
   }
 }
