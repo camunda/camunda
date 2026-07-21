@@ -20,7 +20,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterStateChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
@@ -1458,7 +1458,7 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encodeExporterStateChangeRequest(final ExporterStateChangeRequest request) {
+  public byte[] encodeExporterStateChangeRequest(final ExportingStateChangeRequest request) {
     return Requests.ExporterStateChangeRequest.newBuilder()
         .setState(encodeExportingState(request.state()))
         .setDryRun(request.dryRun())
@@ -1467,10 +1467,10 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public ExporterStateChangeRequest decodeExporterStateChangeRequest(final byte[] encodedRequest) {
+  public ExportingStateChangeRequest decodeExporterStateChangeRequest(final byte[] encodedRequest) {
     try {
       final var request = Requests.ExporterStateChangeRequest.parseFrom(encodedRequest);
-      return new ExporterStateChangeRequest(
+      return new ExportingStateChangeRequest(
           decodeExportingState(request.getState()), request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);

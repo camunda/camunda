@@ -21,7 +21,7 @@ import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-final class ExporterStateChangeRequestTransformerTest {
+final class ExportingStateChangeRequestTransformerTest {
 
   private final MemberId id0 = MemberId.from("0");
   private final MemberId id1 = MemberId.from("1");

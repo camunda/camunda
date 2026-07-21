@@ -131,7 +131,7 @@ public sealed interface ClusterConfigurationManagementRequest {
   record ExporterEnableRequest(String exporterId, Optional<String> initializeFrom, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record ExporterStateChangeRequest(ExportingState state, boolean dryRun)
+  record ExportingStateChangeRequest(ExportingState state, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record CancelChangeRequest(long changeId) implements ClusterConfigurationManagementRequest {

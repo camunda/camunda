@@ -19,6 +19,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
@@ -155,8 +156,7 @@ final class ProtoBufSerializerTest {
   void shouldEncodeAndDecodeExporterStateChangeRequest() {
     // given
     final var request =
-        new io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
-            .ExporterStateChangeRequest(
+        new ExportingStateChangeRequest(
             io.camunda.zeebe.dynamic.config.state.ExportingState.SOFT_PAUSED, false);
 
     // when
