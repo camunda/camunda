@@ -188,6 +188,14 @@ jobs:
         - deployment:
             run: false
     steps:
+      # Sparse-checkout .github so local composite actions (npm-ci-with-retry,
+      # observe-build-status) resolve.
+      - name: Check out .github for local actions
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Install Teleport
         uses: teleport-actions/setup@b638ff596557cc3959eb6b5287d5e58e0c8ac6a6 # v1.1.1
         with:
@@ -268,13 +276,6 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
           owner: camunda
           repositories: c8-cross-component-e2e-tests
-
-      # Sparse-checkout .github so local composite actions (npm-ci-with-retry,
-      # observe-build-status) resolve.
-      - name: Check out .github for local actions
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          sparse-checkout: .github
 
       - name: Checkout Smoke Tests
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -413,6 +414,12 @@ jobs:
       actions: read
       contents: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Import secrets
         id: secrets
         uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
@@ -471,10 +478,6 @@ jobs:
                 }
               ]
             }
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true

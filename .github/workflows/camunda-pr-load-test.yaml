@@ -52,6 +52,12 @@ jobs:
       sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
       storage-type: ${{ inputs.secondary-storage-type }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - id: sanitize-author
         name: Sanitize author name
         uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
@@ -78,11 +84,6 @@ jobs:
           AUTHOR: ${{ steps.sanitize-author.outputs.branch_name }}
           DB_TYPE: ${{ steps.sanitize-db-type.outputs.branch_name }}
 
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          sparse-checkout: .github
-          persist-credentials: false
       - name: Observe build status
         if: always()
         continue-on-error: true

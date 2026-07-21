@@ -92,6 +92,12 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Determine action type and extract data
         id: extract-data
         env:
@@ -284,10 +290,6 @@ jobs:
             echo "⚠️ Slack notification failed but workflow continues"
             echo "::warning::Failed to notify #top-monorepo-release about ${{ steps.extract-data.outputs.action_type }} on ${{ steps.extract-data.outputs.branch_name }}"
           fi
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true

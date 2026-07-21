@@ -71,6 +71,12 @@ jobs:
       slack_base_text: ${{ steps.slack.outputs.base_text }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - name: Import Vault secrets
         id: secrets
         uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c
@@ -609,10 +615,6 @@ jobs:
             /tmp/failed_runs.json
           retention-days: 14
           if-no-files-found: warn
-      - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true
