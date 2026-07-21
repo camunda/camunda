@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
+import io.camunda.client.protocol.rest.ClusterVariableKindEnum;
 import io.camunda.client.protocol.rest.ClusterVariableSearchQueryRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
@@ -192,17 +194,15 @@ public class SearchClusterVariableTest extends ClientRestTest {
     // when
     client
         .newClusterVariableSearchRequest()
-        .filter(
-            f -> f.kind(io.camunda.client.api.search.enums.ClusterVariableKind.SECRET_REFERENCE))
+        .filter(f -> f.kind(ClusterVariableKind.SECRET_REFERENCE))
         .send()
         .join();
 
     // then
-    final io.camunda.client.protocol.rest.ClusterVariableSearchQueryRequest request =
-        gatewayService.getLastRequest(
-            io.camunda.client.protocol.rest.ClusterVariableSearchQueryRequest.class);
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
     assertThat(request.getFilter().getKind().get$Eq())
-        .isEqualTo(io.camunda.client.protocol.rest.ClusterVariableKindEnum.SECRET_REFERENCE);
+        .isEqualTo(ClusterVariableKindEnum.SECRET_REFERENCE);
   }
 
   @Test

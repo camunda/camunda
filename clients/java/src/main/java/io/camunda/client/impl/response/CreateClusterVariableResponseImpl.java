@@ -16,6 +16,7 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.CreateClusterVariableResponse;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
@@ -26,7 +27,7 @@ public class CreateClusterVariableResponseImpl implements CreateClusterVariableR
   private String value;
   private ClusterVariableScope scope;
   private String tenantId;
-  private io.camunda.client.api.search.enums.ClusterVariableKind kind;
+  private ClusterVariableKind kind;
 
   public CreateClusterVariableResponse setResponse(
       final ClusterVariableResult clusterVariableResult) {
@@ -34,10 +35,7 @@ public class CreateClusterVariableResponseImpl implements CreateClusterVariableR
     value = clusterVariableResult.getValue();
     tenantId = clusterVariableResult.getTenantId();
     scope = EnumUtil.convert(clusterVariableResult.getScope(), ClusterVariableScope.class);
-    kind =
-        EnumUtil.convert(
-            clusterVariableResult.getKind(),
-            io.camunda.client.api.search.enums.ClusterVariableKind.class);
+    kind = EnumUtil.convert(clusterVariableResult.getKind(), ClusterVariableKind.class);
     return this;
   }
 
@@ -62,7 +60,7 @@ public class CreateClusterVariableResponseImpl implements CreateClusterVariableR
   }
 
   @Override
-  public io.camunda.client.api.search.enums.ClusterVariableKind getKind() {
+  public ClusterVariableKind getKind() {
     return kind;
   }
 }

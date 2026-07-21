@@ -16,6 +16,7 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateClusterVariableResponse;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 
 /**
  * Represents a request to create a globally-scoped cluster variable.
@@ -57,6 +58,5 @@ public interface GloballyScopedClusterVariableCreationCommandStep1
    * @param kind the kind (JSON or SECRET_REFERENCE)
    * @return this builder for method chaining
    */
-  GloballyScopedClusterVariableCreationCommandStep1 kind(
-      io.camunda.client.api.search.enums.ClusterVariableKind kind);
+  GloballyScopedClusterVariableCreationCommandStep1 kind(ClusterVariableKind kind);
 }

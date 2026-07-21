@@ -16,6 +16,7 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateClusterVariableResponse;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 
 /**
  * Represents a request to create a tenant-scoped cluster variable.
@@ -57,6 +58,5 @@ public interface TenantScopedClusterVariableCreationCommandStep1
    * @param kind the kind (JSON or SECRET_REFERENCE)
    * @return this builder for method chaining
    */
-  TenantScopedClusterVariableCreationCommandStep1 kind(
-      io.camunda.client.api.search.enums.ClusterVariableKind kind);
+  TenantScopedClusterVariableCreationCommandStep1 kind(ClusterVariableKind kind);
 }
