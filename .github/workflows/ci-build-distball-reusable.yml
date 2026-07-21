@@ -1,0 +1,136 @@
+# description: This is a reusable workflow used to build the distball once and share it with
+#   callers, replacing a per-consumer reactor build. See #52693 and #56931.
+# type: CI
+# owner: @camunda/engineering-operations
+
+name: Build distball reusable
+
+on:
+  workflow_call:
+    inputs:
+      skip-artifact-upload:
+        required: false
+        type: boolean
+        default: false
+        description: >-
+          When true, skip uploading the distball/m2 tarball to the GitHub artifact API.
+          Only ci.yml's docker-checks job consumes that artifact; standalone callers with no
+          such consumer should set this to true to skip the unused upload.
+
+env:
+  GCS_BUILD_CACHE_BUCKET: camunda-monorepo-ci-artifacts
+
+jobs:
+  build-distball:
+    name: "Build / Distribution Tarball"
+    # Transport differs by runner: docker-checks (GitHub-hosted, ci.yml only) uses the GHA
+    # artifact API; self-hosted gcp-perf consumers (integration-tests, and the reusable
+    # database/webapp-UT workflows) use GCS, since the artifact API is throughput-capped on
+    # self-hosted runners.
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    steps:
+      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        timeout-minutes: 1
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: build-shared
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Log distball size
+        run: ls -lh "${{ steps.build-zeebe.outputs.distball }}"
+      # build-zeebe installs this run's io.camunda SNAPSHOTs into ~/.m2; consumers
+      # resolve them via `mvn verify`, but the GHA Maven cache never propagates
+      # locally-installed SNAPSHOTs between jobs, so archive them for the consumers.
+      - name: Archive local Maven SNAPSHOT artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          # `installed/` is the split-local-repository partition holding only artifacts this
+          # reactor installed (see maven resolver split local repository), so archive the whole
+          # tree rather than filtering to io/camunda -- robust if the group id ever changes.
+          # Drop the distro assemblies (shipped as the distball), sources/javadoc and
+          # bookkeeping to ~halve the payload.
+          tar \
+            --exclude='*.tar.gz' \
+            --exclude='*-sources.jar' \
+            --exclude='*-javadoc.jar' \
+            --exclude='*.lastUpdated' \
+            --exclude='_remote.repositories' \
+            --exclude='*.repositories' \
+            -cf m2-installed.tar -C "${HOME}/.m2/repository/installed" .
+          ls -lh m2-installed.tar
+      # docker-checks (GitHub-hosted, ci.yml only) consumes these via the artifact API.
+      - name: Upload distball (artifact)
+        if: ${{ !inputs.skip-artifact-upload }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: distball-${{ github.run_id }}
+          path: ${{ steps.build-zeebe.outputs.distball }}
+          retention-days: 1
+          compression-level: 0  # tarball is already gzipped
+          if-no-files-found: error
+      - name: Upload local Maven SNAPSHOT artifacts (artifact)
+        if: ${{ !inputs.skip-artifact-upload }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: m2-installed-${{ github.run_id }}
+          path: m2-installed.tar
+          retention-days: 1
+          compression-level: 6
+          if-no-files-found: error
+      # integration-tests' gcp-perf shards consume these from GCS (ingress is free).
+      # Authenticate here (not via setup-build) so the WIF/OIDC token is fresh: the
+      # build-zeebe step above can run ~15 min, close to the OIDC token lifetime.
+      - uses: ./.github/actions/gcs-build-cache-auth
+        with:
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Upload distball to GCS
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        # SA lacks storage.buckets.get, so gcloud's parallel-composite precheck fails; disable it.
+        env:
+          CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 2
+          shell: bash
+          command: |
+            set -euo pipefail
+            gcloud storage cp "${{ steps.build-zeebe.outputs.distball }}" \
+              "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/$(basename "${{ steps.build-zeebe.outputs.distball }}")"
+      - name: Upload SNAPSHOTs to GCS
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        env:
+          CLOUDSDK_STORAGE_PARALLEL_COMPOSITE_UPLOAD_ENABLED: "False"
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 10
+          timeout_minutes: 1
+          shell: bash
+          command: |
+            set -euo pipefail
+            gcloud storage cp m2-installed.tar \
+              "gs://${GCS_BUILD_CACHE_BUCKET}/${GITHUB_RUN_ID}/m2-installed.tar"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
