@@ -30,16 +30,15 @@ const PROJECT_NAME = 'analytics-isolated';
 // targeting only the isolated services with --no-deps. DATABASE just needs
 // any valid value to satisfy that validation; the isolated services don't
 // use it themselves.
-const COMPOSE_ENV = {...process.env, DATABASE: process.env.DATABASE ?? 'elasticsearch'};
+const COMPOSE_ENV = {
+  ...process.env,
+  DATABASE: process.env.DATABASE ?? 'elasticsearch',
+};
 
 function composeCommand(args: string[]): string {
-  return [
-    'docker compose',
-    ...COMPOSE_FILES,
-    '-p',
-    PROJECT_NAME,
-    ...args,
-  ].join(' ');
+  return ['docker compose', ...COMPOSE_FILES, '-p', PROJECT_NAME, ...args].join(
+    ' ',
+  );
 }
 
 /**

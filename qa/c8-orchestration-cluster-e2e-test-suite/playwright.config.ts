@@ -197,7 +197,9 @@ const normalProjects = [
     // project so specs never run concurrently with each other and each
     // test's container lifecycle stays isolated from every other project.
     name: 'analytics-exporter-isolated',
-    testMatch: ['tests/api/v2/analytics-exporter/analytics-exporter-isolated/*.spec.ts'],
+    testMatch: [
+      'tests/api/v2/analytics-exporter/analytics-exporter-isolated/*.spec.ts',
+    ],
     use: devices['Desktop Chrome'],
     workers: 1,
     fullyParallel: false,
