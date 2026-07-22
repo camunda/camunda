@@ -28,9 +28,9 @@ import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -279,7 +279,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       cluster.awaitCompleteTopology();
       // Pin the actuator to a surviving zoneB broker -- availableGateway() may resolve to a
       // zoneA broker, which is closed below and would take the actuator connection down with it.
-      final var actuator = ClusterActuator.of(cluster.brokers().get(MemberId.from("zoneB", 0)));
+      final var actuator = ClusterActuator.of(cluster.brokers().get(MemberId.from(ZONES[1], 0)));
 
       // when
       // 1. stop both zoneA brokers (incl. coordinator zoneA_0)
@@ -302,16 +302,16 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           actuator.patchPartitionDistribution(
               new PartitionDistributionConfig()
                   .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
-                  .zones(List.of(new ZoneSpec().name("zoneB").numberOfReplicas(2).priority(10))),
+                  .zones(List.of(new ZoneSpec().name(ZONES[1]).numberOfReplicas(2).priority(10))),
               false);
       assertChangeDone(actuator, zoneBOnlyResponse);
 
       // 3. add 2 new brokers to zoneB (zoneB_2, zoneB_3)
-      final var targetZones = List.of(new Zone("zoneB", 4, 4, 10));
-      final var brokersToAdd = List.of(MemberId.from("zoneB", 2), MemberId.from("zoneB", 3));
+      final var targetZones = List.of(new Zone(ZONES[1], 4, 4, 10));
+      final var brokersToAdd = brokersInZone(ZONES[1], 2, 3);
       final var zoneBBrokers = new HashMap<MemberId, TestStandaloneBroker>();
       cluster.brokers().entrySet().stream()
-          .filter(e -> e.getKey().isInZone("zoneB"))
+          .filter(e -> e.getKey().isInZone(ZONES[1]))
           .forEach(e -> zoneBBrokers.put(e.getKey(), e.getValue()));
       brokersToAdd.forEach(
           id -> {
@@ -332,7 +332,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       final var config =
           new PartitionDistributionConfig()
               .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
-              .zones(List.of(new ZoneSpec().name("zoneB").numberOfReplicas(4).priority(10)));
+              .zones(List.of(new ZoneSpec().name(ZONES[1]).numberOfReplicas(4).priority(10)));
       final var response = actuator.patchPartitionDistribution(config, false);
 
       // then -- recovery applied; RF=4 all in zoneB
@@ -341,8 +341,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       final var finalTopology = actuator.getTopology();
       assertThat(finalTopology.getPartitionDistribution()).isEqualTo(config);
 
-      final var expectedMemberIds =
-          IntStream.range(0, 4).mapToObj(i -> MemberId.from("zoneB", i)).toList();
+      final var expectedMemberIds = brokersInZone(ZONES[1], 0, 1, 2, 3);
 
       // all zoneB brokers present in the final topology, each hosting both partitions (RF=4)
       assertThat(finalTopology.getBrokers())
@@ -380,5 +379,9 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("Members without a zone cannot be added to a zone-aware cluster");
     }
+  }
+
+  private static List<MemberId> brokersInZone(final String zone, final int... ids) {
+    return Arrays.stream(ids).mapToObj(id -> MemberId.from(zone, id)).toList();
   }
 }
