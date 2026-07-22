@@ -20,7 +20,6 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import java.time.Duration;
 import java.util.List;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
@@ -49,7 +48,7 @@ public class ZoneHelpers {
    * {@link TestStandaloneBroker#start()} runs on a virtual thread because it only returns once the
    * broker has joined the topology (i.e. after {@code addBroker}).
    */
-  public static AutoCloseable addBrokerInZone(
+  public static TestStandaloneBroker addBrokerInZone(
       final TestCluster cluster,
       final ClusterActuator actuator,
       final String clusterName,
@@ -79,24 +78,14 @@ public class ZoneHelpers {
         Thread.ofVirtual().name("start-" + zone + "-" + nodeId).start(broker::start);
 
     final var added = actuator.addBroker(MemberId.from(zone, nodeId).toString());
-    final AutoCloseable closeable =
-        () -> {
-          // Close the broker first to unblock the (potentially still blocked) start() call, then
-          // join the
-          // virtual thread so it does not leak beyond the test.
-          broker.close();
-          startThread.interrupt();
-          startThread.join(Duration.ofSeconds(30));
-        };
     try {
       Awaitility.await()
           .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(added));
     } catch (final Exception e) {
-      CloseHelper.close(closeable);
+      CloseHelper.close(broker);
     }
-    cluster.brokers().put(broker.nodeId(), broker);
 
-    return closeable;
+    return broker;
   }
 
   public static void assertZoneHostsPartitions(
