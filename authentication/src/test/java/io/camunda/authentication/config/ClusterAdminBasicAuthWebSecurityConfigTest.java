@@ -108,6 +108,21 @@ public class ClusterAdminBasicAuthWebSecurityConfigTest extends AbstractWebSecur
   }
 
   @Test
+  public void shouldRejectWrongPasswordOnPublicStatusEndpoint() {
+    // when — the public status endpoint is hit with a wrong password
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .headers(basicAuth(CLUSTER_ADMIN_USER, "wrong-password"))
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
+            .exchange();
+
+    // then — permitAll only waives a missing credential; a bad one is still rejected by the Basic
+    // auth filter before the authorization decision is reached
+    assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
   public void shouldRequireCredentialsForSiblingOfPublicStatusEndpoint() {
     // when — a sibling of the public path (trailing slash) is hit with no credentials
     final MvcTestResult result =

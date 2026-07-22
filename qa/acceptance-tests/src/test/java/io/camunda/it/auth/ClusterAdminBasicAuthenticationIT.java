@@ -122,6 +122,17 @@ public class ClusterAdminBasicAuthenticationIT {
   }
 
   @Test
+  void shouldRejectWrongPasswordOnPublicStatusEndpoint() throws Exception {
+    // when — the public status endpoint is hit with a wrong password
+    final HttpResponse<String> response =
+        send(clusterUri(PATH_CLUSTER_STATUS), basicAuth(CLUSTER_ADMIN_USER, "wrong-password"));
+
+    // then — permitAll only waives a missing credential; a bad one is still rejected by the Basic
+    // auth filter before the authorization decision is reached, matching /v2/status
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  @Test
   void shouldRejectClusterAdminCredentialsOnRegularV2Endpoint() throws Exception {
     // when — cluster-admin credentials presented to the regular /v2 API
     final HttpResponse<String> response =

@@ -161,6 +161,16 @@ public class ClusterAdminOidcAuthenticationIT {
   }
 
   @Test
+  void shouldRejectMalformedTokenOnPublicStatusEndpoint() throws Exception {
+    // when — the public status endpoint is hit with a malformed bearer token
+    final HttpResponse<String> response = get(statusUri(), "Bearer not-a-valid-jwt");
+
+    // then — permitAll only waives a missing token; a bad one is still rejected by the bearer
+    // filter before the authorization decision is reached, matching /v2/status
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  }
+
+  @Test
   void shouldRejectMissingToken() throws Exception {
     // when
     final HttpResponse<String> response = get(clusterUri(), null);
