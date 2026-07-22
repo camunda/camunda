@@ -85,7 +85,9 @@ public enum AuthorizationResourceType {
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   USER_TASK(
       PermissionType.READ, PermissionType.UPDATE, PermissionType.CLAIM, PermissionType.COMPLETE),
-  SECRET(PermissionType.READ, PermissionType.REVEAL);
+  SECRET(PermissionType.READ, PermissionType.REVEAL),
+  BACKUP(PermissionType.CREATE, PermissionType.READ, PermissionType.DELETE, PermissionType.RESTORE),
+  EXPORTER(PermissionType.PAUSE);
 
   private final Set<PermissionType> supportedPermissionTypes;
 
