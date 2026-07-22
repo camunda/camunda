@@ -60,6 +60,7 @@ public interface MutableJobState extends JobState {
   @Deprecated
   void yield(long key, JobRecord updatedValue);
 
+  /** Makes the job activatable; silently does nothing if the job no longer exists. */
   void makeActivatable(long key);
 
   /**
