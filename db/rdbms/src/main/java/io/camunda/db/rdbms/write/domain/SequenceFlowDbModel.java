@@ -65,6 +65,8 @@ public record SequenceFlowDbModel(
 
   // partitionId is broker-partition metadata, not part of this entity's identity -- two
   // otherwise-identical flow records must remain equal regardless of which partition wrote them.
+  // toString() is overridden to match, so it doesn't print a field the type deliberately excludes
+  // from identity.
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -91,6 +93,18 @@ public record SequenceFlowDbModel(
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(tenantId, that.tenantId);
+  }
+
+  @Override
+  public String toString() {
+    return "SequenceFlowDbModel[flowNodeId=%s, processInstanceKey=%d, rootProcessInstanceKey=%d, processDefinitionKey=%d, processDefinitionId=%s, tenantId=%s]"
+        .formatted(
+            flowNodeId,
+            processInstanceKey,
+            rootProcessInstanceKey,
+            processDefinitionKey,
+            processDefinitionId,
+            tenantId);
   }
 
   public static class Builder implements ObjectBuilder<SequenceFlowDbModel> {
