@@ -23,7 +23,6 @@
 {{- $clientIP := printf "ClientIP(`%s`)" (join "`, `" $sourceRanges) -}}
 {{- $host := include "ingress.domain" $ -}}
 {{- $backends := list
-    (dict "path" .Values.camundaPlatform.console.contextPath "name" (include "console.fullname" $camundaPlatform) "port" .Values.camundaPlatform.console.service.port)
     (dict "path" .Values.camundaPlatform.orchestration.contextPath "name" (printf "%s-gateway" (include "orchestration.fullname" $camundaPlatform)) "port" .Values.camundaPlatform.orchestration.service.httpPort)
     (dict "path" (include "identity.keycloak.contextPath" $camundaPlatform) "name" (include "identity.keycloak.service" $camundaPlatform) "port" (include "identity.keycloak.port" $camundaPlatform | int))
     (dict "path" .Values.camundaPlatform.identity.contextPath "name" (include "identity.fullname" $camundaPlatform) "port" .Values.camundaPlatform.identity.service.port)
