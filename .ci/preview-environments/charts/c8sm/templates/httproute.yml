@@ -45,7 +45,7 @@ spec:
   hostnames:
   - {{ include "ingress.domain" $ | quote }}
   rules:
-  # app-root: redirect "/" to Web Modeler.
+  # app-root: redirect "/" to Console.
   - matches:
     - path:
         type: Exact
@@ -56,12 +56,12 @@ spec:
         statusCode: 302
         path:
           type: ReplaceFullPath
-          replaceFullPath: {{ .Values.camundaPlatform.webModeler.contextPath | quote }}
-  # Orchestration (REST gateway)
+          replaceFullPath: {{ .Values.camundaPlatform.console.contextPath | quote }}
+  # Console
   - matches:
     - path:
         type: PathPrefix
-        value: {{ .Values.camundaPlatform.orchestration.contextPath | quote }}
+        value: {{ .Values.camundaPlatform.console.contextPath | quote }}
     # Vouch + error-pages filter set, anchored here and reused by every other
     # authenticated rule below via the *authFilters alias.
     filters: &authFilters
@@ -77,6 +77,15 @@ spec:
         kind: Middleware
         name: {{ $errorsMiddleware }}
     {{- end }}
+    backendRefs:
+    - name: {{ template "console.fullname" $camundaPlatform }}
+      port: {{ .Values.camundaPlatform.console.service.port }}
+  # Orchestration (REST gateway)
+  - matches:
+    - path:
+        type: PathPrefix
+        value: {{ .Values.camundaPlatform.orchestration.contextPath | quote }}
+    filters: *authFilters
     backendRefs:
     - name: {{ template "orchestration.fullname" $camundaPlatform }}-gateway
       port: {{ .Values.camundaPlatform.orchestration.service.httpPort }}
