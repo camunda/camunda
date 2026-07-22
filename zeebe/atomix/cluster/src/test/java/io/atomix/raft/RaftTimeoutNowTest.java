@@ -18,6 +18,7 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftNamespaces;
 import io.atomix.raft.protocol.PollRequest;
@@ -47,7 +48,7 @@ public class RaftTimeoutNowTest {
     final var target = raftRule.getFollower().orElseThrow();
     final var leaderId = memberId(leader);
     final var targetId = memberId(target);
-    final long term = target.getContext().getTerm();
+    final long term = leader.getContext().getTerm();
 
     final var targetProtocol = (TestRaftServerProtocol) target.getContext().getProtocol();
     final LongAdder pollCount = new LongAdder();
@@ -78,6 +79,34 @@ public class RaftTimeoutNowTest {
   public void shouldRejectTimeoutNowThatIsNotFromCurrentLeader() throws Exception {
     // given
     raftRule.appendEntries(10);
+    final var followers = raftRule.getServers().stream().filter(RaftServer::isFollower).toList();
+    assertThat(followers).hasSize(2);
+    final var source = followers.get(0);
+    final var target = followers.get(1);
+    final var targetId = memberId(target);
+    final long term = target.getContext().getTerm();
+    final var knownLeaderBefore = knownLeaderId(target);
+
+    // when
+    final var response =
+        source
+            .getContext()
+            .getProtocol()
+            .timeoutNow(targetId, timeoutNow(term, MemberId.from("not-the-leader")))
+            .get(5, TimeUnit.SECONDS);
+
+    // then
+    assertThat(response.status()).isEqualTo(Status.ERROR);
+    assertThat(response.error().type()).isEqualTo(Type.ILLEGAL_MEMBER_STATE);
+    assertThat(target.getRole()).isEqualTo(Role.FOLLOWER);
+    assertThat(target.getContext().getTerm()).isEqualTo(term);
+    assertThat(knownLeaderId(target)).isEqualTo(knownLeaderBefore);
+  }
+
+  @Test
+  public void shouldRejectTimeoutNowFromUnknownMember() throws Exception {
+    // given
+    raftRule.appendEntries(10);
     final var leader = raftRule.getLeader().orElseThrow();
     final var target = raftRule.getFollower().orElseThrow();
     final var targetId = memberId(target);
@@ -94,6 +123,7 @@ public class RaftTimeoutNowTest {
 
     // then
     assertThat(response.status()).isEqualTo(Status.ERROR);
+    assertThat(response.error().type()).isEqualTo(RaftError.Type.ILLEGAL_MEMBER_STATE);
     assertThat(target.getRole()).isEqualTo(Role.FOLLOWER);
     assertThat(target.getContext().getTerm()).isEqualTo(term);
     assertThat(knownLeaderId(target)).isEqualTo(knownLeaderBefore);
