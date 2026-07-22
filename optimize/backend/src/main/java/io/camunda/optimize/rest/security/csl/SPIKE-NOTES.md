@@ -126,6 +126,33 @@ Found while manually testing against a local CCSM/Keycloak setup
    `sessionStorage` and echoes it on state-changing requests. Public `/external` share GETs are exempt.
 5. Chain-level boot test (below).
 
+## CCSaaS (cloud) parity — what the `cloud` profile did that CSL must still cover
+
+The spike is validated for CCSM. Comparing the legacy `CCSaaSSecurityConfigurerAdapter`, these
+SaaS-only concerns still need bringing across (mapping detail in `CONFIG-COMPAT.md`):
+
+- **Cluster-ID sub-path.** Serve Optimize under `server.servlet.context-path=/<clusterId>`
+  (Optimize's `container.contextPath`); Spring strips it before matching and `{baseUrl}` includes it,
+  so CSL's login/callback/post-logout URLs carry the prefix natively. Replaces the legacy
+  `CCSaasRequestAdjustmentFilter` clusterId stripping + `AddClusterIdSubPathToRedirect...`. The
+  `/external/api` -> `/api/external` rewrite + static-share serving stay as a small host filter.
+- **Org membership + role gate and cluster-ID claim validation.** CSL owns the config
+  (`camunda.security.saas.*` needs org-id + cluster-id, `...oidc.organization-id`) but ships no
+  org/cluster checks. The host supplies them as `OAuth2TokenValidator<Jwt>` by overriding CSL's
+  `TokenValidatorFactory` bean (this is how OC does it) — port Optimize's `RoleValidator`,
+  `CustomClaimValidator` (clusterId), and the `hasAccess` org-membership gate there.
+- **User-id migration on login.** Legacy migrated stored ownership when the token's
+  `https://camunda.com/originalUserId` differs from the subject. CSL has no login-success hook; a CSL
+  SPI is planned (see ADR-0036) that Optimize implements to call `UserIdMigrationService`.
+- **Auth0 config bridging.** `CONFIG-COMPAT.md` now maps the full `auth.cloud.*` set. The values come
+  from Optimize's `environment-config.yaml` (not env vars), so the `EnvironmentPostProcessor` must
+  load that source before it can bridge them (follow-up); until then set `camunda.security.*` directly.
+- **Obsolete under CSL (do not port):** the cookie-based auth-request repo, split access-token cookie,
+  `AuthenticationCookieFilter`, and self-signed session token — all replaced by CSL server sessions.
+- **Independent (keep):** the cloud-console M2M clients (`CCSaaSM2MTokenProvider`, `CCSaaS*Client`,
+  `CCSaaSUserCache`) use M2M tokens, not the login chain. Verify `CCSaaSUserCache` resolves users via
+  the M2M token (not the session token) so it does not regress like `CCSMUserCache` finding 9.
+
 ## Test blind spot to close (important)
 
 Optimize's auth tests are almost all unit tests of helpers/filters; none boots the real

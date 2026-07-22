@@ -60,13 +60,37 @@ TRANSPORT = Spring/server config, not part of the auth bridge (unchanged).
 | `security.responseHeaders.X-XSS-Protection` | none (CSL does not emit this deprecated header) | OBSOLETE |
 
 ## CCSaaS / Auth0 (SaaS)
-| Legacy | CSL property | Kind |
+
+CSL owns SaaS org/cluster config via `camunda.security.saas.*` (requires BOTH `organization-id` and
+`cluster-id`) plus `...oidc.organization-id`. It does NOT ship the org/cluster claim checks: those
+are host-supplied `OAuth2TokenValidator<Jwt>` beans plugged in by overriding CSL's
+`TokenValidatorFactory` bean (CSL ships only timestamp/issuer/audience validators). The cluster
+sub-path (`/<clusterId>`) is handled by running Optimize under
+`server.servlet.context-path=/<clusterId>` (Optimize's `container.contextPath`), so CSL's generated
+login/callback/post-logout URLs and its matchers carry the prefix natively — this replaces the
+legacy `CCSaasRequestAdjustmentFilter` clusterId stripping + `AddClusterIdSubPathToRedirect...`
+entry point. The Optimize-specific `/external/api` -> `/api/external` rewrite and static-share
+serving remain host concerns (a small filter), unrelated to clusterId.
+
+| Legacy (`CloudAuthConfiguration`, `auth.cloud.*`) | CSL target | Kind |
 |---|---|---|
-| `security.auth.cloud.clientId` / `clientSecret` / `customDomain` | Auth0 `...oidc.*` registration (client-id/secret, issuer-uri) | MAP (TODO) |
-| `security.auth.cloud.audience` | `...oidc.audiences` | MAP (TODO) |
-| `security.auth.cloud.userIdAttributeName` | `...oidc.username-claim` | MAP (TODO) |
-| `security.auth.cloud.organizationId` | `...oidc.organization-id` | MAP (TODO) |
-| `m2mClient.*`, `users.cloud.accountsUrl`, `organizationClaimName` | none | SAAS/NO-ANALOG |
+| `clientId` / `clientSecret` | `...oidc.client-id` / `client-secret` | MAP |
+| `domain` / `customDomain` | `...oidc.issuer-uri` (Auth0 domain) | MAP |
+| `tokenUrl` | `...oidc.token-uri` | MAP |
+| `audience` | `...oidc.audiences` | MAP |
+| `userAccessTokenAudience` | webapp access-token audience (host validator) | HOST-VALIDATOR |
+| `userIdAttributeName` | `...oidc.username-claim` | MAP |
+| `organizationId` | `camunda.security.saas.organization-id` (+ `...oidc.organization-id`) | MAP |
+| `clusterId` | `camunda.security.saas.cluster-id`; also `server.servlet.context-path=/<clusterId>` | MAP |
+| `organizationClaimName` + org-membership gate (`hasAccess`) + allowed org roles | host org validator (via `TokenValidatorFactory` override / login authorization) | HOST-VALIDATOR |
+| `https://camunda.com/clusterId` claim (webapp + public API) | host clusterId-claim validator | HOST-VALIDATOR |
+| `https://camunda.com/originalUserId` claim -> user-id migration | login-success hook (planned CSL SPI, ADR-0036) | HOST-HOOK |
+| `m2mClient.*`, `users.cloud.accountsUrl` | none (cloud-console M2M clients, independent of the login chain) | SAAS/NO-ANALOG |
+
+**Sourcing note:** unlike the CCSM `CAMUNDA_OPTIMIZE_IDENTITY_*` env vars, these cloud values live in
+Optimize's `environment-config.yaml` (`ConfigurationService`), which the `EnvironmentPostProcessor`
+does not see. Bridging them needs the EPP to load Optimize's YAML config source (follow-up); until
+then, set the `camunda.security.*` / `camunda.security.saas.*` values directly for cloud.
 
 ## Transport (not part of the auth bridge)
 `container.ports.*`, `container.keystore.*`, `container.enableSniCheck`, `container.contextPath`,
