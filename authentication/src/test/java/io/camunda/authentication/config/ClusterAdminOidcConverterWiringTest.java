@@ -44,7 +44,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
-      "camunda.security.authentication.oidc.redirect-uri=redirect.example.com",
+      "camunda.security.authentication.oidc.redirect-uri=https://redirect.example.com",
       "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
       "camunda.security.authentication.oidc.token-uri=token.example.com",
       "camunda.security.authentication.oidc.jwk-set-uri=jwks.example.com"

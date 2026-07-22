@@ -70,7 +70,7 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
   private static final String CLIENT_AUTHENTICATOR_TYPE = "client-secret";
   private static final String USER_ID_CLAIM_NAME = "sub";
   private static final String EXAMPLE_CLIENT_ID = "example";
-  private static final String EXAMPLE_REDIRECT_URI = "example.com";
+  private static final String EXAMPLE_REDIRECT_URI = "https://example.com";
   private static final String ADMIN_ROLE = "admin";
   private static final String USERS_KEY = "users";
   private static final String USERNAME = "zeebe-service-account";

@@ -95,7 +95,7 @@ public class ClusterAdminOidcAuthenticationIT {
         c -> {
           c.getAuthentication().getOidc().setIssuerUri(issuerUri);
           c.getAuthentication().getOidc().setClientId("example");
-          c.getAuthentication().getOidc().setRedirectUri("example.com");
+          c.getAuthentication().getOidc().setRedirectUri("https://example.com");
         });
     BROKER.start();
 
