@@ -122,7 +122,10 @@ const FilteredElementInstancesList: React.FC<Props> = observer(
           processInstanceKey,
           $or: [{elementName: {$like: pattern}}, {elementId: {$like: pattern}}],
         },
-        sort: [{field: 'startDate', order: sortOrder}],
+        sort: [
+          {field: 'startDate', order: sortOrder},
+          {field: 'elementInstanceKey', order: sortOrder},
+        ],
       };
     }, [searchText, processInstanceKey, sortOrder]);
 
