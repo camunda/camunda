@@ -14,11 +14,11 @@ import type { PolicyDecision, ResolvedRef } from '../types';
  * Cross-repo refs and backport markers never satisfy the requirement on their own.
  */
 export function decide(refs: readonly ResolvedRef[], optOut: boolean): PolicyDecision {
-  const sameRepo = refs.filter((r) => !r.crossRepo && r.kind !== 'backport');
+  const sameRepo = refs.filter((ref) => !ref.crossRepo && ref.kind !== 'backport');
 
-  const prRefs = sameRepo.filter((r) => r.target === 'pullRequest');
+  const prRefs = sameRepo.filter((ref) => ref.target === 'pullRequest');
   if (prRefs.length > 0) {
-    const list = prRefs.map((r) => `#${r.number}`).join(', ');
+    const list = prRefs.map((ref) => `#${ref.number}`).join(', ');
     return {
       outcome: 'fail',
       code: 'pr-ref-in-section',
@@ -33,10 +33,10 @@ export function decide(refs: readonly ResolvedRef[], optOut: boolean): PolicyDec
     return { outcome: 'pass', code: 'opt-out', reasons: ['Opt-out checkbox ticked: no linked issue required.'] };
   }
 
-  const liveIssues = sameRepo.filter((r) => r.target === 'issue');
+  const liveIssues = sameRepo.filter((ref) => ref.target === 'issue');
   if (liveIssues.length > 0) {
-    const closing = liveIssues.some((r) => r.kind === 'closing');
-    const list = liveIssues.map((r) => `#${r.number}`).join(', ');
+    const closing = liveIssues.some((ref) => ref.kind === 'closing');
+    const list = liveIssues.map((ref) => `#${ref.number}`).join(', ');
     return {
       outcome: 'pass',
       code: closing ? 'section-closing' : 'section-contributor',
@@ -44,8 +44,8 @@ export function decide(refs: readonly ResolvedRef[], optOut: boolean): PolicyDec
     };
   }
 
-  const dead = sameRepo.filter((r) => r.target === 'missing').map((r) => `#${r.number}`);
-  const crossRepo = refs.filter((r) => r.crossRepo).map((r) => r.raw);
+  const dead = sameRepo.filter((ref) => ref.target === 'missing').map((ref) => `#${ref.number}`);
+  const crossRepo = refs.filter((ref) => ref.crossRepo).map((ref) => ref.raw);
   const reasons = [
     'No linked issue found in the "Related issues" section, and the opt-out checkbox is not ticked.',
     'Add a closing keyword with the tracked issue (e.g. "closes #1234"), or tick the opt-out checkbox.',
