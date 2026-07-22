@@ -14,6 +14,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.configuration.Camunda;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.container.ExtendedConfigurationBuilder;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.util.ContextOverrideInitializer;
@@ -40,6 +41,7 @@ import org.springframework.boot.Banner.Mode;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.http.client.ReactorResourceFactory;
 
 public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
@@ -220,6 +222,12 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
    */
   @Override
   public T withUnifiedConfig(final Consumer<Camunda> modifier) {
+    // Unified-config getters such as SecondaryStorage#getType() validate against legacy
+    // properties read from the Environment statically pinned in UnifiedConfigurationHelper.
+    // In the test JVM that static still points at the Environment of whichever embedded test
+    // application booted last, so a previous test's legacy values would leak into this
+    // configuration. Re-pin a clean Environment before evaluating the modifier.
+    new UnifiedConfigurationHelper(new StandardEnvironment());
     modifier.accept(unifiedConfig);
     return self();
   }
