@@ -177,14 +177,26 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public String host() {
-    // camunda.cluster.network.host controls the address the broker *binds* to (defaulting to
-    // 0.0.0.0, i.e. bind-any, when unset - see NetworkCfg.DEFAULT_HOST). That is not a valid
-    // target for clients: TestApplication#host() must return an address that is actually
-    // connectable (e.g. by the actuator/monitoring HTTP client used to probe health/ready/startup),
-    // so fall back to the same "localhost" default as TestApplication#host() instead of the
-    // bind-any address.
+    // camunda.cluster.network.host controls the address the broker *binds* to, and defaults to a
+    // wildcard/bind-any address (e.g. 0.0.0.0) when left unset or explicitly configured as such.
+    // That is not a valid target for clients: TestApplication#host() must return an address that
+    // is actually connectable (e.g. by the actuator/monitoring HTTP client used to probe
+    // health/ready/startup), so fall back to the same "localhost" default as
+    // TestApplication#host() instead of any bind-any address.
     final var host = unifiedConfig.getCluster().getNetwork().getHost();
-    return host != null ? host : "localhost";
+    return isWildcardAddress(host) ? "localhost" : host;
+  }
+
+  /**
+   * Returns true if the given host is blank, or a wildcard/bind-any address (e.g. {@code 0.0.0.0}
+   * or {@code ::}) that a client cannot connect to.
+   */
+  private static boolean isWildcardAddress(final String host) {
+    return host == null
+        || host.isBlank()
+        || host.equals("0.0.0.0")
+        || host.equals("::")
+        || host.equals("0:0:0:0:0:0:0:0");
   }
 
   @Override
