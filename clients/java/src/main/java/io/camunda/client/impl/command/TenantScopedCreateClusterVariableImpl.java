@@ -19,9 +19,12 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.response.CreateClusterVariableResponse;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateClusterVariableResponseImpl;
+import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.ClusterVariableKindEnum;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.CreateClusterVariableRequest;
 import java.time.Duration;
@@ -53,6 +56,13 @@ public class TenantScopedCreateClusterVariableImpl
     ArgumentUtil.ensureNotNullNorEmpty("name", name);
     ArgumentUtil.ensureNotNull("value", value);
     createVariableRequest.name(name).value(value);
+    return this;
+  }
+
+  @Override
+  public TenantScopedClusterVariableCreationCommandStep1 kind(final ClusterVariableKind kind) {
+    ArgumentUtil.ensureNotNull("kind", kind);
+    createVariableRequest.setKind(EnumUtil.convert(kind, ClusterVariableKindEnum.class));
     return this;
   }
 

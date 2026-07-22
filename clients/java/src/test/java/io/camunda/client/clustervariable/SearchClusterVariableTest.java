@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
+import io.camunda.client.protocol.rest.ClusterVariableKindEnum;
 import io.camunda.client.protocol.rest.ClusterVariableSearchQueryRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
@@ -185,6 +187,22 @@ public class SearchClusterVariableTest extends ClientRestTest {
     final ClusterVariableSearchQueryRequest request =
         gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
     assertThat(request.getFilter().getIsTruncated()).isEqualTo(true);
+  }
+
+  @Test
+  void shouldFilterClusterVariablesByKind() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.kind(ClusterVariableKind.SECRET_REFERENCE))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getKind().get$Eq())
+        .isEqualTo(ClusterVariableKindEnum.SECRET_REFERENCE);
   }
 
   @Test

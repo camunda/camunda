@@ -21,8 +21,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.CreateClusterVariableResponse;
+import io.camunda.client.api.search.enums.ClusterVariableKind;
+import io.camunda.client.protocol.rest.ClusterVariableKindEnum;
 import io.camunda.client.protocol.rest.ClusterVariableResult;
 import io.camunda.client.protocol.rest.ClusterVariableScopeEnum;
+import io.camunda.client.protocol.rest.CreateClusterVariableRequest;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
@@ -112,6 +116,56 @@ public class CreateClusterVariableTest extends ClientRestTest {
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
+  }
+
+  @Test
+  void shouldCreateGlobalClusterVariableWithKind() {
+    // given
+    final ClusterVariableResult responseProto =
+        Instancio.create(ClusterVariableResult.class)
+            .scope(ClusterVariableScopeEnum.GLOBAL)
+            .kind(ClusterVariableKindEnum.SECRET_REFERENCE);
+    gatewayService.onCreateGlobalClusterVariableRequest(responseProto);
+
+    // when
+    final CreateClusterVariableResponse response =
+        client
+            .newGloballyScopedClusterVariableCreateRequest()
+            .create(VARIABLE_NAME, VARIABLE_VALUE)
+            .kind(ClusterVariableKind.SECRET_REFERENCE)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getKind()).isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
+    final CreateClusterVariableRequest sentRequest =
+        gatewayService.getLastRequest(CreateClusterVariableRequest.class);
+    assertThat(sentRequest.getKind()).isEqualTo(ClusterVariableKindEnum.SECRET_REFERENCE);
+  }
+
+  @Test
+  void shouldCreateTenantClusterVariableWithKind() {
+    // given
+    final ClusterVariableResult responseProto =
+        Instancio.create(ClusterVariableResult.class)
+            .scope(ClusterVariableScopeEnum.TENANT)
+            .kind(ClusterVariableKindEnum.SECRET_REFERENCE);
+    gatewayService.onCreateTenantClusterVariableRequest(TENANT_ID, responseProto);
+
+    // when
+    final CreateClusterVariableResponse response =
+        client
+            .newTenantScopedClusterVariableCreateRequest(TENANT_ID)
+            .create(VARIABLE_NAME, VARIABLE_VALUE)
+            .kind(ClusterVariableKind.SECRET_REFERENCE)
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getKind()).isEqualTo(ClusterVariableKind.SECRET_REFERENCE);
+    final CreateClusterVariableRequest sentRequest =
+        gatewayService.getLastRequest(CreateClusterVariableRequest.class);
+    assertThat(sentRequest.getKind()).isEqualTo(ClusterVariableKindEnum.SECRET_REFERENCE);
   }
 
   @Test
