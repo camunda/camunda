@@ -39,4 +39,9 @@ ADR for that domain is written.
   path, remapping `camunda.client.*` to `camunda.clients.default.*`, with a
   `defaultCamundaClient` `@Primary` bean plus a `camundaClient` alias for
   backward compatibility (camunda/camunda#57344).
+- `storage/001-remove-numeric-key-from-identity-entity-filters.md` — drop the
+  internal numeric `key` filter fields from `UserFilter`, `GroupFilter`,
+  `TenantFilter`, and `MappingRuleFilter`; Identity entities are filtered by their
+  business string IDs only, with `AuthorizationFilter.authorizationKey` and sort
+  fields explicitly out of scope (camunda/camunda#41657).
 
