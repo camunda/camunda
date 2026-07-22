@@ -6,7 +6,7 @@ metadata:
   namespace: keycloak-operator
   name: c8-golden-stable-88-opensearch-stable
 spec:
-  image: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/camunda/keycloak:quay-optimized-26.6.4
+  image: "europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/camunda/keycloak:quay-optimized-26.6.4"
 
   imagePullSecrets:
     # Required if the image is stored on Harbor.
@@ -30,8 +30,8 @@ spec:
 
   http:
     httpEnabled: true
-    # Use port 18080 to avoid conflict with Zeebe Gateway on port 8080 during
-    # port-forwarding.
+    # Use a non-default port to avoid conflict with Zeebe Gateway on port 8080
+    # during port-forwarding.
     httpPort: 18080
     serviceName: "c8-golden-stable-88-opensearch-stable"
 
@@ -57,3 +57,23 @@ spec:
     requests:
       cpu: "1"
       memory: 1Gi
+
+  scheduling:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                - key: component
+                  operator: In
+                  values:
+                    - "benchmark-n2-standard-4"
+                - key: topology.kubernetes.io/zone
+                  operator: In
+                  values:
+                    - "europe-west1-c"
+    tolerations:
+      - effect: NoSchedule
+        key: nodepool
+        operator: Equal
+        value: n2-standard-4
