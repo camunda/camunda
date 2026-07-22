@@ -1613,6 +1613,7 @@
       "agenticFailureRateByVersionDescription": "Percentage of completed agentic process instances that encountered a resolved incident, broken down by process definition version.",
       "agenticKpiToolCallsName": "Total tool calls",
       "agenticKpiToolCallsDescription": "Total number of tool calls made by agents in completed agentic process instances in the selected period.",
+      "agenticKpiToolCallsFootnote": "A sustained rise in tool calls without a matching rise in executions can signal looping or inefficient tool use. Investigate the processes and flow nodes driving the increase.",
       "agenticToolCallsHeatmapName": "Tool calls per flow node",
       "agenticToolCallsHeatmapDescription": "Total tool calls made per flow node across completed agentic process instances, shown as a heat map overlay on the process diagram.",
       "agenticDurationHeatmapName": "Duration per flow node",

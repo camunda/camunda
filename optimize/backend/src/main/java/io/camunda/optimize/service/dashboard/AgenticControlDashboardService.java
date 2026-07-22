@@ -109,6 +109,9 @@ public class AgenticControlDashboardService {
       "agenticFailureRateByVersionDescription";
   public static final String KPI_TOOL_CALLS_NAME = "agenticKpiToolCallsName";
   public static final String KPI_TOOL_CALLS_DESCRIPTION = "agenticKpiToolCallsDescription";
+  public static final String KPI_TOOL_CALLS_FOOTNOTE = "agenticKpiToolCallsFootnote";
+  public static final String KPI_TOOL_CALLS_FOOTNOTE_KEY =
+      "agenticControl.report." + KPI_TOOL_CALLS_FOOTNOTE;
 
   public static final String TOOL_CALLS_HEATMAP_NAME = "agenticToolCallsHeatmapName";
   public static final String TOOL_CALLS_HEATMAP_DESCRIPTION = "agenticToolCallsHeatmapDescription";
@@ -723,7 +726,11 @@ public class AgenticControlDashboardService {
         KPI_TOOL_CALLS_REPORT_ID,
         new PositionDto(0, 6),
         new DimensionDto(18, 2),
-        Map.of(TILE_CONFIG_SECTION, TILE_SECTION_RELIABILITY_AND_TOOL_CALLS));
+        Map.of(
+            TILE_CONFIG_SECTION,
+            TILE_SECTION_RELIABILITY_AND_TOOL_CALLS,
+            TILE_CONFIG_FOOTNOTE,
+            KPI_TOOL_CALLS_FOOTNOTE_KEY));
   }
 
   // Per-flow-node tool-call counts rendered as a process diagram heat map. Only visible when a

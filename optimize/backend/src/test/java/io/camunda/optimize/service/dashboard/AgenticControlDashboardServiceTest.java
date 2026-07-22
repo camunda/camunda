@@ -854,7 +854,12 @@ public class AgenticControlDashboardServiceTest {
 
     final DashboardReportTileDto toolCallsTile = toolCallsTiles.getFirst();
     assertThat(toolCallsTile.getConfiguration())
-        .isEqualTo(Map.of("section", "reliabilityAndToolCalls"));
+        .isEqualTo(
+            Map.of(
+                "section",
+                "reliabilityAndToolCalls",
+                "footnote",
+                AgenticControlDashboardService.KPI_TOOL_CALLS_FOOTNOTE_KEY));
     assertThat(toolCallsTile.getDimensions().getWidth()).isEqualTo(18);
     assertThat(toolCallsTile.getDimensions().getHeight()).isEqualTo(2);
   }
