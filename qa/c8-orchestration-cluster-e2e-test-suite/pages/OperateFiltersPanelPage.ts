@@ -205,8 +205,12 @@ export class OperateFiltersPanelPage {
   }
 
   async openVariableFilterModal() {
-    await this.openVariableFilterModalButton.click();
-    await expect(this.variableFilterDialog).toBeVisible();
+    // The modal can fail to open on the first click under load; retry the
+    // click until the dialog is actually present.
+    await expect(async () => {
+      await this.openVariableFilterModalButton.click();
+      await expect(this.variableFilterDialog).toBeVisible({timeout: 5_000});
+    }).toPass({timeout: 30_000});
   }
 
   async fillSingleConditionInline(name: string, value: string) {
