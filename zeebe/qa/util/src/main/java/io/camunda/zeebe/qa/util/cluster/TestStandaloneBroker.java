@@ -177,8 +177,14 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   @Override
   public String host() {
+    // camunda.cluster.network.host controls the address the broker *binds* to (defaulting to
+    // 0.0.0.0, i.e. bind-any, when unset - see NetworkCfg.DEFAULT_HOST). That is not a valid
+    // target for clients: TestApplication#host() must return an address that is actually
+    // connectable (e.g. by the actuator/monitoring HTTP client used to probe health/ready/startup),
+    // so fall back to the same "localhost" default as TestApplication#host() instead of the
+    // bind-any address.
     final var host = unifiedConfig.getCluster().getNetwork().getHost();
-    return host != null ? host : "0.0.0.0";
+    return host != null ? host : "localhost";
   }
 
   @Override
