@@ -38,6 +38,23 @@ export async function getProcessDefinitionKey(
   return json.processDefinitionKey;
 }
 
+export async function createProcessInstanceWithBusinessId(
+  request: APIRequestContext,
+  processDefinitionId: string,
+  businessId: string,
+): Promise<string> {
+  const res = await request.post(buildUrl('/process-instances'), {
+    headers: jsonHeaders(),
+    data: {processDefinitionId, businessId},
+  });
+  await assertStatusCode(res, 200);
+  await validateResponse(
+    {path: '/process-instances', method: 'POST', status: '200'},
+    res,
+  );
+  return String((await res.json()).processInstanceKey);
+}
+
 export async function createCancellationBatch(
   request: APIRequestContext,
   numberOfInstances = 3,
