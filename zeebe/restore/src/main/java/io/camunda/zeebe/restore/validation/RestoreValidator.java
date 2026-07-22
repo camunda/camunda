@@ -18,7 +18,6 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
-import io.camunda.zeebe.restore.BackupNotFoundException;
 import io.camunda.zeebe.restore.RestorePointResolver;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
 import io.camunda.zeebe.util.Either;
@@ -169,10 +168,9 @@ public final class RestoreValidator
                   statuses.stream()
                       .anyMatch(status -> status.statusCode() == BackupStatusCode.COMPLETED);
               if (!exists) {
-                throw new IllegalStateException(
+                throw new IllegalArgumentException(
                     "No completed backup found for partition %d with backup id %d"
-                        .formatted(partitionId, backupId),
-                    new BackupNotFoundException(backupId));
+                        .formatted(partitionId, backupId));
               }
             });
   }

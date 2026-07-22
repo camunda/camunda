@@ -15,11 +15,11 @@ import io.camunda.configuration.Camunda;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.restore.BackupNotFoundException;
 import java.time.Duration;
 import java.util.Objects;
 import org.awaitility.Awaitility;
@@ -42,7 +42,8 @@ public interface RestoreAcceptance {
   default void shouldFailForNonExistingBackup() {
     // then -- restore application exits with an error code
     assertThatCode(() -> restoreBackup(1234))
-        .hasRootCauseExactlyInstanceOf(BackupNotFoundException.class);
+        .hasMessageContaining("No completed backup found for partition 1 with backup id 1234")
+        .isInstanceOf(InvalidRequest.class);
   }
 
   private void takeBackup(final long backupId) {

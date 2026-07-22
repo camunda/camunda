@@ -363,10 +363,9 @@ final class RestoreValidatorResolverTest {
           new RestoreRequest("default", List.of(42L), null, null, "rdbms", false, false);
 
       // when / then
-      assertThatExceptionOfType(IllegalStateException.class)
-          .isThrownBy(() -> validator.validate(request))
-          .withMessageContaining("No completed backup found for partition")
-          .withMessageContaining("backup id 42");
+      final var result = validator.validate(request);
+      assertThat(assertInvalid(result))
+          .hasMessageContaining("No completed backup found for partition");
     }
   }
 }
