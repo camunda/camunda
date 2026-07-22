@@ -58,7 +58,6 @@ jobs:
           python3 -m pip install -q --disable-pip-version-check boto3==1.42.50 opensearch-py==3.1.0
       - name: Delete old aws opensearch indices
         env:
-          OPENSEARCH_URL: ${{ env.OPENSEARCH_URL }}
           DRY_RUN: "false"
           AGE_HOURS: "2"
         run: python3 .github/scripts/clean-up-aws-opensearch-indices.py
