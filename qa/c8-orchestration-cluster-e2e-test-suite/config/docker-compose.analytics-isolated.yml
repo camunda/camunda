@@ -35,13 +35,10 @@ x-camunda-analytics-isolated-base-env: &camunda-analytics-isolated-base-env
   CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
   CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
   CAMUNDA_LICENSE_KEY: ${CAMUNDA_LICENSE_KEY:-local-test-license-key}
-  # In-memory H2, matching dist/src/main/resources/application-rdbmsH2.yaml
-  # (the repo's own local-dev H2 reference config) — AUTO_DDL=true is
-  # required so the schema gets created; without it startup fails since
-  # no tables pre-exist for a fresh in-memory database. Confirmed live that
-  # the camunda/camunda:SNAPSHOT image's actual default secondary storage is
-  # elasticsearch, not H2 — omitting this override makes the broker retry
-  # forever trying to reach a nonexistent ES host.
+  # H2 in-memory storage — must be explicit. camunda/camunda:SNAPSHOT's real
+  # default is Elasticsearch, not H2; omitting this makes the broker hang
+  # forever retrying a nonexistent ES host. AUTO_DDL=true creates the schema
+  # (no tables pre-exist in a fresh in-memory DB).
   CAMUNDA_DATA_SECONDARY_STORAGE_TYPE: rdbms
   CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL: jdbc:h2:mem:camunda
   CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME: sa
