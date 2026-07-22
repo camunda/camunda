@@ -134,7 +134,7 @@ public final class BpmnProcessors {
         bpmnBehaviors,
         processEngineMetrics,
         config,
-        permissionsBehavior);
+        cslCheck);
     addProcessInstanceModificationStreamProcessors(
         typedRecordProcessors, processingState, writers, bpmnBehaviors, cslCheck);
     addProcessInstanceMigrationStreamProcessors(
@@ -289,7 +289,7 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final ProcessEngineMetrics metrics,
       final EngineConfiguration config,
-      final PermissionsBehavior permissionsBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     final MutableElementInstanceState elementInstanceState =
         processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
@@ -299,7 +299,7 @@ public final class BpmnProcessors {
             processingState.getProcessState(),
             elementInstanceState,
             processingState.getBannedInstanceState(),
-            permissionsBehavior,
+            cslCheck,
             bpmnBehaviors,
             config.isBusinessIdUniquenessEnabled());
     final ProcessInstanceCreationCreateProcessor createProcessor =

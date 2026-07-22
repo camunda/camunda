@@ -7,18 +7,23 @@
  */
 package io.camunda.zeebe.engine.processing.expression;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ResolvedInstance;
 import io.camunda.zeebe.engine.processing.expression.ExpressionValidator.ValidatedCommand;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -26,9 +31,12 @@ import io.camunda.zeebe.util.Either;
 
 public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<ExpressionRecord> {
 
+  private static final String ERROR_MESSAGE_NOT_FOUND_FOR_TENANT =
+      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
+
   private final ExpressionBehavior expressionBehavior;
   private final ExpressionValidator validator;
-  private final PermissionsBehavior permissionsBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -39,13 +47,13 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
       final Writers writers,
       final ExpressionBehavior expressionBehavior,
       final ExpressionValidator validator,
-      final PermissionsBehavior permissionsBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.expressionBehavior = expressionBehavior;
     this.validator = validator;
-    this.permissionsBehavior = permissionsBehavior;
+    this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
   }
 
@@ -87,8 +95,27 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
 
   private Either<Rejection, ExpressionRecord> checkCanEvaluateExpression(
       final TypedRecord<ExpressionRecord> command, final String tenantId) {
-    return permissionsBehavior.isAuthorized(
-        command, AuthorizationResourceType.EXPRESSION, PermissionType.EVALUATE);
+    return cslCheck
+        .check(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(AuthorizationResourceType.EXPRESSION))
+                        .permissionType(AuthzModelMapper.fromProtocol(PermissionType.EVALUATE))
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.EVALUATE, AuthorizationResourceType.EXPRESSION),
+            AuthorizationRejectionMapper::toBareRejection)
+        .flatMap(
+            v ->
+                checkTenantIfPresent(
+                    command,
+                    tenantId,
+                    v,
+                    PermissionType.EVALUATE,
+                    AuthorizationResourceType.EXPRESSION));
   }
 
   private Either<Rejection, ExpressionRecord> checkCanReadInstanceIfScoped(
@@ -105,11 +132,46 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
       final TypedRecord<ExpressionRecord> command,
       final String tenantId,
       final String bpmnProcessId) {
-    return permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+    return cslCheck
+        .check(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.READ_PROCESS_INSTANCE))
+                        .resourceId(bpmnProcessId)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.READ_PROCESS_INSTANCE, AuthorizationResourceType.PROCESS_DEFINITION))
+        .flatMap(
+            v ->
+                checkTenantIfPresent(
+                    command,
+                    tenantId,
+                    v,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    AuthorizationResourceType.PROCESS_DEFINITION));
+  }
+
+  private Either<Rejection, ExpressionRecord> checkTenantIfPresent(
+      final TypedRecord<ExpressionRecord> command,
+      final String tenantId,
+      final ExpressionRecord value,
+      final PermissionType permissionType,
+      final AuthorizationResourceType resourceType) {
+    if (tenantId.isBlank()) {
+      return Either.right(value);
+    }
+    return cslCheck.checkTenant(
         command,
-        AuthorizationResourceType.PROCESS_DEFINITION,
-        PermissionType.READ_PROCESS_INSTANCE,
-        bpmnProcessId);
+        tenantId,
+        value,
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            ERROR_MESSAGE_NOT_FOUND_FOR_TENANT.formatted(permissionType, resourceType, tenantId)));
   }
 
   private void rejectCommand(

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
@@ -17,7 +18,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableValidationException;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -57,6 +60,8 @@ public class ProcessInstanceCreationHelper {
       "Expected to create instance of process with none start event, but there is no such event";
   private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
       "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition '%s'";
+  private static final String ERROR_MESSAGE_PROCESS_NOT_FOUND =
+      "Expected to create an instance of process with key '%d', but no such process was found";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
           BpmnElementType.START_EVENT,
@@ -65,7 +70,7 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
   private static final int MAX_REPORTED_INVALID_ELEMENT_IDS = 5;
-  private final PermissionsBehavior permissionsBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
@@ -77,13 +82,13 @@ public class ProcessInstanceCreationHelper {
       final ProcessState processState,
       final ElementInstanceState elementInstanceState,
       final BannedInstanceState bannedInstanceState,
-      final PermissionsBehavior permissionsBehavior,
+      final CslAuthorizationCheck cslCheck,
       final BpmnBehaviors bpmnBehaviors,
       final boolean businessIdUniquenessEnabled) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
-    this.permissionsBehavior = permissionsBehavior;
+    this.cslCheck = cslCheck;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
@@ -192,13 +197,23 @@ public class ProcessInstanceCreationHelper {
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final DeployedProcess deployedProcess) {
     final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
-    return permissionsBehavior
-        .isAuthorizedWithResourceIdentifiers(
-            command,
-            AuthorizationResourceType.PROCESS_DEFINITION,
-            PermissionType.CREATE_PROCESS_INSTANCE,
-            processId)
-        .map(__ -> deployedProcess);
+    return cslCheck.checkAuthorizationAndTenant(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(
+                        AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROCESS_DEFINITION))
+                    .permissionType(
+                        AuthzModelMapper.fromProtocol(PermissionType.CREATE_PROCESS_INSTANCE))
+                    .resourceId(processId)),
+        deployedProcess,
+        AuthorizationRejectionMapper.forbidden(
+            PermissionType.CREATE_PROCESS_INSTANCE, AuthorizationResourceType.PROCESS_DEFINITION),
+        command.getValue().getTenantId(),
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            ERROR_MESSAGE_PROCESS_NOT_FOUND.formatted(
+                command.getValue().getProcessDefinitionKey())));
   }
 
   public Either<Rejection, DeployedProcess> validateCommand(

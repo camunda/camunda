@@ -338,7 +338,7 @@ public final class EngineProcessors {
             processEngineMetrics);
 
     addDecisionProcessors(
-        typedRecordProcessors, decisionBehavior, writers, processingState, permissionsBehavior);
+        typedRecordProcessors, decisionBehavior, writers, processingState, cslCheck);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -506,7 +506,7 @@ public final class EngineProcessors {
         bpmnBehaviors.expressionBehavior(),
         bpmnBehaviors.expressionLanguage(),
         processingState.getElementInstanceState(),
-        permissionsBehavior);
+        cslCheck);
 
     JobMetricsProcessors.addJobMetricsProcessors(
         typedRecordProcessors,
@@ -791,11 +791,11 @@ public final class EngineProcessors {
       final DecisionBehavior decisionBehavior,
       final Writers writers,
       final MutableProcessingState processingState,
-      final PermissionsBehavior permissionsBehavior) {
+      final CslAuthorizationCheck cslCheck) {
 
     final DecisionEvaluationEvaluateProcessor decisionEvaluationEvaluateProcessor =
         new DecisionEvaluationEvaluateProcessor(
-            decisionBehavior, processingState.getKeyGenerator(), writers, permissionsBehavior);
+            decisionBehavior, processingState.getKeyGenerator(), writers, cslCheck);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
