@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.Cluste
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
@@ -251,8 +252,8 @@ public interface ClusterConfigurationInitializer {
   /**
    * Initializes configuration by sending sync requests to other members. If any of them returns a
    * valid configuration, it will be initialized. Uninitialized or failed responses are retried
-   * until the bootstrap timeout, after which the coordinator may fall back to static
-   * initialization.
+   * until the bootstrap timeout, after which this initializer completes with an uninitialized
+   * configuration, letting the caller's initializer chain decide how to proceed.
    */
   class SyncInitializer
       implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
@@ -267,6 +268,7 @@ public interface ClusterConfigurationInitializer {
     private final Set<MemberId> uninitializedMembers = new HashSet<>();
     private final Set<MemberId> requestsInFlight = new HashSet<>();
     private boolean retryScheduled;
+    private ScheduledTimer bootstrapTimeoutTimer;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester;
 
@@ -310,9 +312,10 @@ public interface ClusterConfigurationInitializer {
             "Querying members {} before initializing ClusterConfiguration",
             knownMembersToSync.get());
         clusterConfigurationUpdateNotifier.addUpdateListener(this);
-        executor.schedule(
-            bootstrapTimeout,
-            () -> completeAsUninitialized("sync timeout (%s)".formatted(bootstrapTimeout)));
+        bootstrapTimeoutTimer =
+            executor.schedule(
+                bootstrapTimeout,
+                () -> completeAsUninitialized("sync timeout (%s)".formatted(bootstrapTimeout)));
         refreshAndSync();
       }
       return initialized;
@@ -388,7 +391,15 @@ public interface ClusterConfigurationInitializer {
             "No initialized cluster configuration: {}. Falling back to static initialization.",
             cause);
         initialized.complete(ClusterConfiguration.uninitialized());
+        cancelBootstrapTimeout();
         clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+      }
+    }
+
+    private void cancelBootstrapTimeout() {
+      if (bootstrapTimeoutTimer != null) {
+        bootstrapTimeoutTimer.cancel();
+        bootstrapTimeoutTimer = null;
       }
     }
 
@@ -405,6 +416,7 @@ public interface ClusterConfigurationInitializer {
             }
             if (!clusterConfiguration.isUninitialized()) {
               initialized.complete(clusterConfiguration);
+              cancelBootstrapTimeout();
               clusterConfigurationUpdateNotifier.removeUpdateListener(this);
             }
           });
