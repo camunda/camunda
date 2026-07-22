@@ -178,10 +178,7 @@ final class LeaderAppender {
     // counted towards the size of the batch.
     // If there exists an entry in the log with size >= MAX_BATCH_SIZE the logic ensures that
     // entry will be sent in a batch of size one
-    int size = 0;
-    // Exact on-disk journal size of this request, tracked separately from the approximate wire
-    // size used for the batch cap so the lag accounting matches bytesUntilEnd() and never drifts.
-    long journalBytes = 0;
+    long size = 0;
 
     // Iterate through the log until the last index or the end of the log is reached.
     while (hasMoreEntries(member)) {
@@ -189,15 +186,14 @@ final class LeaderAppender {
       final IndexedRaftLogEntry entry = member.nextEntry();
       final var replicatableRecord = entry.getReplicatableJournalRecord();
       entries.add(replicatableRecord);
-      size += replicatableRecord.approximateSize();
-      journalBytes += entry.size();
+      size += entry.size();
       if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {
         break;
       }
     }
 
     // Add the entries to the request builder and build the request.
-    return new SizedAppendRequest(builder.withEntries(entries).build(), journalBytes);
+    return new SizedAppendRequest(builder.withEntries(entries).build(), size);
   }
 
   /** Connects to the member and sends a commit message. */
@@ -229,7 +225,7 @@ final class LeaderAppender {
 
                 if (error == null) {
                   LOGGER.trace("Received {} from {}", response, member.getMember().memberId());
-                  handleAppendResponse(member, request, response, appendWatermark, timestamp);
+                  handleAppendResponse(member, sizedRequest, response, appendWatermark, timestamp);
                 } else {
                   handleAppendResponseFailure(member, request, error);
                 }
@@ -713,21 +709,21 @@ final class LeaderAppender {
 
   private void handleAppendResponse(
       final RaftMemberContext member,
-      final VersionedAppendRequest request,
+      final SizedAppendRequest sizedRequest,
       final AppendResponse response,
       final long appendWatermark,
       final long timestamp) {
     if (response.status() == RaftResponse.Status.OK) {
-      handleAppendResponseOk(member, request, response, appendWatermark);
+      handleAppendResponseOk(member, sizedRequest, response, appendWatermark);
     } else {
-      handleAppendResponseError(member, request, response);
+      handleAppendResponseError(member, sizedRequest, response);
     }
     recordHeartbeat(member, timestamp);
   }
 
   private void handleAppendResponseOk(
       final RaftMemberContext member,
-      final VersionedAppendRequest request,
+      final SizedAppendRequest sizedRequest,
       final AppendResponse response,
       final long appendWatermark) {
     // Reset the member failure count and update the member's availability status if necessary.
@@ -740,10 +736,11 @@ final class LeaderAppender {
       member.appendSucceeded();
       member.acknowledgeInFlightAppends(appendWatermark);
       updateMatchIndex(member, response);
+
+      final var request = sizedRequest.request();
       metrics.observeAppend(
-          member.getMember().memberId().id(),
-          request.entries().size(),
-          request.entries().stream().mapToInt(ReplicatableJournalRecord::approximateSize).sum());
+          member.getMember().memberId().id(), request.entries().size(), sizedRequest.size());
+
       observeReplicationLag(member);
 
       commitEntries();
@@ -844,7 +841,7 @@ final class LeaderAppender {
 
   private void handleAppendResponseError(
       final RaftMemberContext member,
-      final VersionedAppendRequest request,
+      final SizedAppendRequest sizedRequest,
       final AppendResponse response) {
     // If we've received a greater term, update the term and transition back to follower.
     if (response.term() > raft.getTerm()) {
@@ -868,7 +865,7 @@ final class LeaderAppender {
       if (failures <= 3 || failures % 100 == 0) {
         LOGGER.warn(
             "{} to {} failed: {}",
-            request,
+            sizedRequest.request(),
             member.getMember().memberId(),
             response.error() != null ? response.error() : "");
       }
