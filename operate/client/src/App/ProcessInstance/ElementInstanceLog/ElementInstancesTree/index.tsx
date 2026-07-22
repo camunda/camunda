@@ -506,7 +506,10 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
         {
           filter: {elementInstanceScopeKey: scopeKey},
           page: {limit: 1, from: 0},
-          sort: [{field: 'startDate', order: sortOrder}],
+          sort: [
+            {field: 'startDate', order: sortOrder},
+            {field: 'elementInstanceKey', order: sortOrder},
+          ],
         },
         {enabled: false},
       );

@@ -140,7 +140,10 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: 0},
-        sort: [{field: 'startDate', order: this.sortOrder}],
+        sort: [
+          {field: 'startDate', order: this.sortOrder},
+          {field: 'elementInstanceKey', order: this.sortOrder},
+        ],
       },
       controller.signal,
     );
@@ -248,7 +251,10 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: nextWindowStart},
-        sort: [{field: 'startDate', order: this.sortOrder}],
+        sort: [
+          {field: 'startDate', order: this.sortOrder},
+          {field: 'elementInstanceKey', order: this.sortOrder},
+        ],
       },
       controller.signal,
     );
@@ -303,7 +309,10 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: prevWindowStart},
-        sort: [{field: 'startDate', order: this.sortOrder}],
+        sort: [
+          {field: 'startDate', order: this.sortOrder},
+          {field: 'elementInstanceKey', order: this.sortOrder},
+        ],
       },
       controller.signal,
     );
@@ -461,7 +470,10 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
                 limit: PAGE_SIZE * 2,
                 from: requestedWindowStart,
               },
-              sort: [{field: 'startDate', order: this.sortOrder}],
+              sort: [
+                {field: 'startDate', order: this.sortOrder},
+                {field: 'elementInstanceKey', order: this.sortOrder},
+              ],
             },
             signal,
           );
