@@ -63,18 +63,21 @@ jobs:
         project:
         - name: c8run
           path: ./c8run
-          runner: ubicloud-standard-4
+          runner: ubicloud-standard-4-arm
+          fossa_cli_arch: linux_arm64
         - name: optimize
           path: ./optimize
-          runner: ublicloud-standard-16
+          runner: ubicloud-standard-16-arm
           maven-config: |
             -DskipQaBuild=true
+          fossa_cli_arch: linux_arm64
         - name: single-app
           path: ./
-          runner: ubicloud-standard-16
+          runner: ubicloud-standard-16-arm
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
+          fossa_cli_arch: linux_arm64
     steps:
     - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
     - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -112,7 +115,9 @@ jobs:
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
 
     - name: Setup fossa-cli
-      uses: camunda/infra-global-github-actions/fossa/setup@fc4fa13813cbc1835129967f10a12f24aa7a393c
+      uses: camunda/infra-global-github-actions/fossa/setup@fossa-arm64
+      with:
+        arch: ${{ matrix.project.fossa_cli_arch }}
 
     - name: Get context info
       id: info
