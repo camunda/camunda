@@ -9,13 +9,11 @@
 import { FC, useCallback, useEffect, useState } from "react";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import useTranslate from "src/utility/localization";
-import { roleQueries } from "src/utility/api/roles/queries";
 import { tenantMutations } from "src/utility/api/tenants/mutations";
-import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import styled from "styled-components";
-import DropdownSearch from "src/components/form/DropdownSearch";
+import RoleSearchDropdown from "src/components/form/RoleSearchDropdown";
 import FormModal from "src/components/modal/FormModal";
 import type { Role, Tenant } from "@camunda/camunda-api-zod-schemas/8.10";
 
@@ -32,22 +30,6 @@ const AssignRolesModal: FC<
   const { t, Translate } = useTranslate("tenants");
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
   const [loadingAssignRole, setLoadingAssignRole] = useState(false);
-
-  const [search, setSearch] = useState<Record<string, unknown>>({});
-  const handleSearchChange = (search: string) => {
-    if (search === "") {
-      setSearch({});
-      return;
-    }
-    setSearch({ filter: { name: search } });
-  };
-
-  const {
-    data: roleSearchResults,
-    isLoading: loading,
-    refetch: reload,
-    error,
-  } = useQuery(roleQueries.search(search));
 
   const qc = useQueryClient();
   const { mutateAsync: callAssignRole } = useMutation(
@@ -127,27 +109,14 @@ const AssignRolesModal: FC<
           ))}
         </SelectedRoles>
       )}
-      <DropdownSearch
+      <RoleSearchDropdown
         autoFocus
-        items={roleSearchResults?.items || []}
-        itemTitle={({ roleId }) => roleId}
-        itemSubTitle={({ name }) => name}
         placeholder={t("searchByRoleId")}
         onSelect={onSelectRole}
-        onChange={handleSearchChange}
         filter={unassignedFilter}
+        errorTitle={t("rolesCouldNotLoad")}
+        retryLabel={t("retry")}
       />
-      {!loading && error && (
-        <TranslatedErrorInlineNotification
-          title={t("rolesCouldNotLoad")}
-          actionButton={{
-            label: t("retry"),
-            onClick: () => {
-              void reload();
-            },
-          }}
-        />
-      )}
     </FormModal>
   );
 };
