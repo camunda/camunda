@@ -63,16 +63,20 @@ public class StandaloneOperate {
     return Map.of(
         // disable default health indicators:
         // https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health-indicators
-        "management.health.defaults.enabled", "false",
+        "management.health.defaults.enabled",
+        "false",
 
         // enable Kubernetes health groups:
         // https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-kubernetes-probes
-        "management.endpoint.health.probes.enabled", "true",
+        "management.endpoint.health.probes.enabled",
+        "true",
 
         // enable health check and metrics endpoints
-        "management.endpoints.web.exposure.include", "health, prometheus, loggers, backups",
+        "management.endpoints.web.exposure.include",
+        "health, prometheus, loggers, backups",
 
         // add custom check to standard readiness check
-        "management.endpoint.health.group.readiness.include", "readinessState,indicesCheck");
+        "management.endpoint.health.group.readiness.include",
+        "readinessState,schemaReadinessCheck");
   }
 }

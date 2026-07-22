@@ -162,12 +162,6 @@ public class HealthConfigurationInitializer
                 || activeProfiles.contains(Profile.BROKER.getId()))) {
           healthIndicators.add(SchemaReadinessCheck.SCHEMA_READINESS_CHECK);
         }
-        if (activeProfiles.contains(Profile.OPERATE.getId())) {
-          healthIndicators.add("indicesCheck");
-        }
-        if (activeProfiles.contains(Profile.TASKLIST.getId())) {
-          healthIndicators.add("searchEngineCheck");
-        }
       }
     }
 

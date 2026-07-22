@@ -48,10 +48,16 @@ public class SearchEngineDatabaseConfiguration {
           final Broker broker, // if present, then it will ensure that the broker is started first
       @Autowired(required = false) final BrokerCfg brokerCfg) {
     final boolean isGatewayEnabled = brokerCfg == null || brokerCfg.getGateway().isEnable();
+    final boolean healthCheckEnabled =
+        searchEngineConfigurationsByTenant
+            .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+            .schemaManager()
+            .isHealthCheckEnabled();
     return new SearchEngineSchemaInitializer(
         searchEngineConfigurationsByTenant,
         physicalTenantScopedIndexDescriptors,
         meterRegistry,
-        isGatewayEnabled);
+        isGatewayEnabled,
+        healthCheckEnabled);
   }
 }

@@ -16,6 +16,7 @@ public class SchemaManagerConfiguration {
   private SchemaManagerRetryConfiguration retry = new SchemaManagerRetryConfiguration();
   private boolean versionCheckRestrictionEnabled = true;
   private boolean performCleanup = false;
+  private boolean healthCheckEnabled = true;
 
   public boolean isCreateSchema() {
     return isCreateSchema;
@@ -47,6 +48,14 @@ public class SchemaManagerConfiguration {
 
   public void setPerformCleanup(final boolean performCleanup) {
     this.performCleanup = performCleanup;
+  }
+
+  public boolean isHealthCheckEnabled() {
+    return healthCheckEnabled;
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
   }
 
   public static class SchemaManagerRetryConfiguration extends RetryConfiguration {
