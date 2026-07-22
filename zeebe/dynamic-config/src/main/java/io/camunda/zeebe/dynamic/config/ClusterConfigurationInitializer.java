@@ -388,7 +388,8 @@ public interface ClusterConfigurationInitializer {
     private void completeAsUninitialized(final String cause) {
       if (!initialized.isDone()) {
         LOGGER.debug(
-            "No initialized cluster configuration: {}. Falling back to static initialization.",
+            "No initialized cluster configuration found: {}. Completing as uninitialized; "
+                + "the initializer chain will decide how to proceed.",
             cause);
         initialized.complete(ClusterConfiguration.uninitialized());
         cancelBootstrapTimeout();
