@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.impl.probes.health;
 
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
@@ -16,25 +15,25 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.function.Supplier;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.health.contributor.Status;
 
 public class ClusterAwarenessHealthIndicatorTest {
 
   @Test
-  public void shouldRejectNullInConstructor() {
+  public void shouldRejectNullSupplierInConstructor() {
     // when + then
     assertThatThrownBy(() -> new ClusterAwarenessHealthIndicator(null))
         .isInstanceOf(NullPointerException.class);
   }
 
   @Test
-  public void shouldReportDownIfSupplierReturnsEmpty() {
+  public void shouldReportDownIfSupplierReturnsEmptyMap() {
     // given
-    final Supplier<Optional<BrokerClusterState>> stateSupplier = () -> Optional.empty();
-    final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(stateSupplier);
+    final Supplier<Map<String, BrokerClusterState>> statesSupplier = Map::of;
+    final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(statesSupplier);
 
     // when
     final var actualHealth = sutHealthIndicator.health();
@@ -45,14 +44,36 @@ public class ClusterAwarenessHealthIndicatorTest {
   }
 
   @Test
-  public void shouldReportUpIfListOfBrokersIsNotEmpty() {
+  public void shouldReportDownIfNoGroupHasBrokers() {
     // given
-    final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
+    final BrokerClusterState defaultState = mock(BrokerClusterState.class);
+    when(defaultState.getBrokers()).thenReturn(List.of());
+    final BrokerClusterState secondState = mock(BrokerClusterState.class);
+    when(secondState.getBrokers()).thenReturn(List.of());
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
-    final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(stateSupplier);
+    final Supplier<Map<String, BrokerClusterState>> statesSupplier =
+        () -> Map.of("default", defaultState, "tenant-b", secondState);
+    final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(statesSupplier);
+
+    // when
+    final var actualHealth = sutHealthIndicator.health();
+
+    // then
+    assertThat(actualHealth).isNotNull();
+    assertThat(actualHealth.getStatus()).isEqualTo(Status.DOWN);
+  }
+
+  @Test
+  public void shouldReportUpIfAnyGroupHasBrokers() {
+    // given
+    final BrokerClusterState defaultState = mock(BrokerClusterState.class);
+    when(defaultState.getBrokers()).thenReturn(List.of());
+    final BrokerClusterState secondState = mock(BrokerClusterState.class);
+    when(secondState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
+
+    final Supplier<Map<String, BrokerClusterState>> statesSupplier =
+        () -> Map.of("default", defaultState, "tenant-b", secondState);
+    final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(statesSupplier);
 
     // when
     final var actualHealth = sutHealthIndicator.health();
@@ -60,23 +81,26 @@ public class ClusterAwarenessHealthIndicatorTest {
     // then
     assertThat(actualHealth).isNotNull();
     assertThat(actualHealth.getStatus()).isEqualTo(Status.UP);
+    assertThat(actualHealth.getDetails())
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of("default", Map.of("brokers", 0), "tenant-b", Map.of("brokers", 1)));
   }
 
   @Test
-  public void shouldReportDownIfListOfBrokersIsEmpty() {
+  public void shouldReportUpIfSingleGroupHasBrokers() {
     // given
-    final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
-    when(mockClusterState.getBrokers()).thenReturn(emptyList());
+    final BrokerClusterState defaultState = mock(BrokerClusterState.class);
+    when(defaultState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
-    final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(stateSupplier);
+    final Supplier<Map<String, BrokerClusterState>> statesSupplier =
+        () -> Map.of("default", defaultState);
+    final var sutHealthIndicator = new ClusterAwarenessHealthIndicator(statesSupplier);
 
     // when
     final var actualHealth = sutHealthIndicator.health();
 
     // then
     assertThat(actualHealth).isNotNull();
-    assertThat(actualHealth.getStatus()).isEqualTo(Status.DOWN);
+    assertThat(actualHealth.getStatus()).isEqualTo(Status.UP);
   }
 }

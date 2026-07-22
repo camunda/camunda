@@ -30,6 +30,6 @@ public class PartitionLeaderAwarenessHealthIndicatorAutoConfiguration {
   public PartitionLeaderAwarenessHealthIndicator gatewayPartitionLeaderAwarenessHealthIndicator(
       final SpringGatewayBridge gatewayBridge) {
     // Here we effectively chain two suppliers to decouple their creation in time.
-    return new PartitionLeaderAwarenessHealthIndicator(gatewayBridge::getClusterState);
+    return new PartitionLeaderAwarenessHealthIndicator(gatewayBridge::getClusterStates);
   }
 }

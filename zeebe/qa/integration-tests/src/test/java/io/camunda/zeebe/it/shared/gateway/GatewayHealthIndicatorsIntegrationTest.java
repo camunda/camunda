@@ -22,7 +22,7 @@ import io.camunda.zeebe.gateway.impl.probes.health.PartitionLeaderAwarenessHealt
 import io.camunda.zeebe.gateway.impl.probes.health.StartedHealthIndicator;
 import io.camunda.zeebe.it.shared.gateway.GatewayHealthIndicatorsIntegrationTest.Config;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.function.Supplier;
 import org.junit.After;
 import org.junit.Test;
@@ -51,7 +51,7 @@ public class GatewayHealthIndicatorsIntegrationTest {
   @After
   public void tearDown() {
     // reset suppliers
-    springGatewayBridge.registerClusterStateSupplier(null);
+    springGatewayBridge.registerClusterStatesSupplier(null);
     springGatewayBridge.registerGatewayStatusSupplier(null);
   }
 
@@ -92,13 +92,13 @@ public class GatewayHealthIndicatorsIntegrationTest {
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> statesSupplier =
+        () -> Map.of("default", mockClusterState);
 
     // when
     final Health actualHealthBeforeRegisteringStatusSupplier =
         clusterAwarenessHealthIndicator.health();
-    springGatewayBridge.registerClusterStateSupplier(stateSupplier);
+    springGatewayBridge.registerClusterStatesSupplier(statesSupplier);
     final Health actualHealthAfterRegisteringStatusSupplier =
         clusterAwarenessHealthIndicator.health();
 
@@ -121,13 +121,13 @@ public class GatewayHealthIndicatorsIntegrationTest {
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
     when(mockClusterState.getLeaderForPartition(1)).thenReturn(BrokerMemberId.from(42));
 
-    final Supplier<Optional<BrokerClusterState>> stateSupplier =
-        () -> Optional.of(mockClusterState);
+    final Supplier<Map<String, BrokerClusterState>> statesSupplier =
+        () -> Map.of("default", mockClusterState);
 
     // when
     final Health actualHealthBeforeRegisteringStatusSupplier =
         partitionLeaderAwarenessHealthIndicator.health();
-    springGatewayBridge.registerClusterStateSupplier(stateSupplier);
+    springGatewayBridge.registerClusterStatesSupplier(statesSupplier);
     final Health actualHealthAfterRegisteringStatusSupplier =
         partitionLeaderAwarenessHealthIndicator.health();
 

@@ -18,41 +18,66 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.health.contributor.HealthIndicator;
+import org.springframework.boot.health.contributor.Status;
 
 /**
  * The cluster health indicator signals if there are still any healthy partition available, if not
- * then is set as down as no processing is happening. In the details also indicates the health
- * status of all partitions.
+ * then is set as down as no processing is happening. It aggregates across all partition groups
+ * (physical tenants): UP when every physical tenant is fully healthy, DOWN when no physical tenant
+ * can process work, DEGRADED otherwise. The details report, per physical tenant, its status and the
+ * health status of all its partitions.
  */
 public class ClusterHealthIndicator implements HealthIndicator {
 
-  private final Supplier<Optional<BrokerClusterState>> clusterStateSupplier;
+  private static final Status DEGRADED = new Status("DEGRADED");
 
-  public ClusterHealthIndicator(final Supplier<Optional<BrokerClusterState>> clusterStateSupplier) {
-    this.clusterStateSupplier = requireNonNull(clusterStateSupplier);
+  private final Supplier<Map<String, BrokerClusterState>> clusterStatesSupplier;
+
+  public ClusterHealthIndicator(
+      final Supplier<Map<String, BrokerClusterState>> clusterStatesSupplier) {
+    this.clusterStatesSupplier = requireNonNull(clusterStatesSupplier);
   }
 
   @Override
   public Health health() {
-    final var optClusterState = clusterStateSupplier.get();
-
-    if (optClusterState.isEmpty()) {
+    final var clusterStates = clusterStatesSupplier.get();
+    if (clusterStates.isEmpty()) {
       return Health.down().build();
-    } else {
-      if (optClusterState.get().getBrokers().isEmpty()) {
-        return Health.down().build();
-      } else {
-        if (!optClusterState.get().getPartitions().isEmpty()) {
-          final List<Integer> partitions = optClusterState.get().getPartitions();
-
-          final Map<String, PartitionHealthStatus> partitionDetails =
-              getPartitionsHealthStatus(partitions, optClusterState.get());
-          return getStatus(partitions.size(), partitionDetails);
-        } else {
-          return Health.down().build();
-        }
-      }
     }
+
+    var allUp = true;
+    var allDown = true;
+    final var details = new HashMap<String, Object>();
+    for (final var entry : clusterStates.entrySet()) {
+      final var groupHealth = groupHealth(entry.getValue());
+      allUp &= Status.UP.equals(groupHealth.getStatus());
+      allDown &= Status.DOWN.equals(groupHealth.getStatus());
+      details.put(
+          entry.getKey(),
+          Map.of(
+              "status", groupHealth.getStatus().getCode(),
+              "partitions", groupHealth.getDetails()));
+    }
+
+    final Health.Builder health;
+    if (allUp) {
+      health = Health.up();
+    } else if (allDown) {
+      health = Health.down();
+    } else {
+      health = Health.status(DEGRADED);
+    }
+    return health.withDetails(details).build();
+  }
+
+  private Health groupHealth(final BrokerClusterState clusterState) {
+    if (clusterState.getBrokers().isEmpty() || clusterState.getPartitions().isEmpty()) {
+      return Health.down().build();
+    }
+    final List<Integer> partitions = clusterState.getPartitions();
+    final Map<String, PartitionHealthStatus> partitionDetails =
+        getPartitionsHealthStatus(partitions, clusterState);
+    return getStatus(partitions.size(), partitionDetails);
   }
 
   Map<String, PartitionHealthStatus> getPartitionsHealthStatus(
@@ -87,7 +112,7 @@ public class ClusterHealthIndicator implements HealthIndicator {
     } else if (hasOnlyHealthyPartitions) {
       return Health.up().withDetails(partitionDetails).build();
     } else {
-      return Health.status("DEGRADED").withDetails(partitionDetails).build();
+      return Health.status(DEGRADED).withDetails(partitionDetails).build();
     }
   }
 }
