@@ -66,9 +66,9 @@ class SecretsTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.secrets.stores.aws-secrets-manager.aws-prod.region=eu-west-1",
-        "camunda.secrets.stores.aws-secrets-manager.aws-prod.path-prefix=camunda/",
-        "camunda.secrets.stores.aws-secrets-manager.aws-minimal.path-prefix=team/"
+        "camunda.secrets.stores.aws.aws-prod.region=eu-west-1",
+        "camunda.secrets.stores.aws.aws-prod.path-prefix=camunda/",
+        "camunda.secrets.stores.aws.aws-minimal.path-prefix=team/"
       })
   class WithAwsSecretsManagerStoreConfigured {
     private final UnifiedConfiguration unifiedConfiguration;
@@ -80,12 +80,12 @@ class SecretsTest {
 
     @Test
     void shouldBindAwsSecretsManagerStoreProperties() {
-      // given the camunda.secrets.stores.aws-secrets-manager.aws-prod.* properties are set
+      // given the camunda.secrets.stores.aws.aws-prod.* properties are set
       // when the unified configuration is bound
       final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
 
       // then the named store is present and its fields are bound
-      assertThat(secrets.getStores().getAwsSecretsManager().get("aws-prod"))
+      assertThat(secrets.getStores().getAws().get("aws-prod"))
           .satisfies(
               store -> {
                 assertThat(store.getRegion()).isEqualTo("eu-west-1");
@@ -100,7 +100,7 @@ class SecretsTest {
       final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
 
       // then batching defaults to off, with the standard AWS batch size as an inert default
-      assertThat(secrets.getStores().getAwsSecretsManager().get("aws-prod"))
+      assertThat(secrets.getStores().getAws().get("aws-prod"))
           .satisfies(
               store -> {
                 assertThat(store.isBatchEnabled()).isFalse();
@@ -115,19 +115,17 @@ class SecretsTest {
       final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
 
       // then it defaults to the flat one-secret-per-reference mode
-      assertThat(secrets.getStores().getAwsSecretsManager().get("aws-prod").getContainerSecretId())
-          .isNull();
+      assertThat(secrets.getStores().getAws().get("aws-prod").getContainerSecretId()).isNull();
     }
 
     @Test
     void shouldBindMultipleStoresKeyedById() {
-      // given two aws-secrets-manager stores are configured (see @TestPropertySource)
+      // given two aws stores are configured (see @TestPropertySource)
       // when the unified configuration is bound
       final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
 
       // then both store ids are present
-      assertThat(secrets.getStores().getAwsSecretsManager())
-          .containsKeys("aws-prod", "aws-minimal");
+      assertThat(secrets.getStores().getAws()).containsKeys("aws-prod", "aws-minimal");
     }
 
     @Test
@@ -137,7 +135,7 @@ class SecretsTest {
       final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
 
       // then region is null and path-prefix is still bound
-      assertThat(secrets.getStores().getAwsSecretsManager().get("aws-minimal"))
+      assertThat(secrets.getStores().getAws().get("aws-minimal"))
           .satisfies(
               store -> {
                 assertThat(store.getRegion()).isNull();
@@ -149,8 +147,8 @@ class SecretsTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.secrets.stores.aws-secrets-manager.batched.batch-enabled=true",
-        "camunda.secrets.stores.aws-secrets-manager.batched.batch-size=5"
+        "camunda.secrets.stores.aws.batched.batch-enabled=true",
+        "camunda.secrets.stores.aws.batched.batch-size=5"
       })
   class WithBatchingConfigured {
     private final UnifiedConfiguration unifiedConfiguration;
@@ -166,7 +164,7 @@ class SecretsTest {
       final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
 
       // then both are bound onto the named store
-      assertThat(secrets.getStores().getAwsSecretsManager().get("batched"))
+      assertThat(secrets.getStores().getAws().get("batched"))
           .satisfies(
               store -> {
                 assertThat(store.isBatchEnabled()).isTrue();
@@ -177,9 +175,7 @@ class SecretsTest {
 
   @Nested
   @TestPropertySource(
-      properties = {
-        "camunda.secrets.stores.aws-secrets-manager.bundled.container-secret-id=app-config"
-      })
+      properties = {"camunda.secrets.stores.aws.bundled.container-secret-id=app-config"})
   class WithContainerSecretIdConfigured {
     private final UnifiedConfiguration unifiedConfiguration;
 
@@ -194,7 +190,7 @@ class SecretsTest {
       final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
 
       // then it is bound onto the named store
-      assertThat(secrets.getStores().getAwsSecretsManager().get("bundled").getContainerSecretId())
+      assertThat(secrets.getStores().getAws().get("bundled").getContainerSecretId())
           .isEqualTo("app-config");
     }
   }
@@ -202,8 +198,8 @@ class SecretsTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.secrets.stores.aws-secrets-manager.conflicted.batch-enabled=true",
-        "camunda.secrets.stores.aws-secrets-manager.conflicted.container-secret-id=app-config"
+        "camunda.secrets.stores.aws.conflicted.batch-enabled=true",
+        "camunda.secrets.stores.aws.conflicted.container-secret-id=app-config"
       })
   class WithBatchingAndContainerSecretIdBothConfigured {
     private final UnifiedConfiguration unifiedConfiguration;
@@ -221,13 +217,12 @@ class SecretsTest {
       final Secrets.Stores stores = secrets.getStores();
 
       // then reading the store map throws, since the combination is contradictory
-      assertThatThrownBy(stores::getAwsSecretsManager).isInstanceOf(IllegalArgumentException.class);
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
     }
   }
 
   @Nested
-  @TestPropertySource(
-      properties = {"camunda.secrets.stores.aws-secrets-manager.oversized.batch-size=50"})
+  @TestPropertySource(properties = {"camunda.secrets.stores.aws.oversized.batch-size=50"})
   class WithBatchSizeOutOfRange {
     private final UnifiedConfiguration unifiedConfiguration;
 
@@ -243,7 +238,28 @@ class SecretsTest {
       final Secrets.Stores stores = secrets.getStores();
 
       // then reading the store map throws
-      assertThatThrownBy(stores::getAwsSecretsManager).isInstanceOf(IllegalArgumentException.class);
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(properties = {"camunda.secrets.stores.aws.blank.container-secret-id= "})
+  class WithBlankContainerSecretId {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankContainerSecretId(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankContainerSecretId() {
+      // given container-secret-id is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getAws).isInstanceOf(IllegalArgumentException.class);
     }
   }
 
@@ -262,8 +278,8 @@ class SecretsTest {
       // when the unified configuration is bound
       final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
 
-      // then the aws-secrets-manager map is empty
-      assertThat(secrets.getStores().getAwsSecretsManager()).isEmpty();
+      // then the aws map is empty
+      assertThat(secrets.getStores().getAws()).isEmpty();
     }
   }
 }
