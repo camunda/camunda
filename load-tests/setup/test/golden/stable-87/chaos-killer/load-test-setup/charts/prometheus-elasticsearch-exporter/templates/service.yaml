@@ -1,0 +1,23 @@
+---
+# Source: load-test-setup/charts/prometheus-elasticsearch-exporter/templates/service.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: prom-els-exporter
+  labels:
+
+    app.kubernetes.io/name: prometheus-elasticsearch-exporter
+    app.kubernetes.io/instance: load-test-setup
+
+    app.kubernetes.io/managed-by: Helm
+    camunda.io/created-by: golden-test
+    camunda.io/purpose: load-test
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 9108
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: prometheus-elasticsearch-exporter
+    app.kubernetes.io/instance: load-test-setup
