@@ -38,8 +38,12 @@ public final class SecretReferenceResolutionRequestedApplier
       // stop a waiting job from being collected by a long poll again until it is reactivated once
       // its secrets resolve. The job stays in state ACTIVATABLE and is only removed from the
       // activatable index. A concurrent priority update re-inserts it there (see
-      // DbJobState#updateJobPriority), but the next activation removes it again and re-requests
-      // resolution, so the parking self-heals.
+      // DbJobState#updateJobPriority). If the secret is still uncached at the next activation,
+      // the job is parked again and the parking self-heals. If the secret got cached by then, the
+      // job activates normally while its waiting entries remain in the SecretReferenceState, so
+      // the reactivation flow (see #57852) must only make a job activatable again if it still
+      // exists and is in state ACTIVATABLE, and must remove the waiting entries of every job
+      // regardless.
       final JobRecord job = jobState.getJob(jobKey);
       if (job != null) {
         jobState.makeJobNotActivatable(jobKey, job);
