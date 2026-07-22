@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.OversizedJob;
@@ -162,6 +163,124 @@ final class JobSecretInjectorTest {
       assertThat(jobKeysOf(batch)).containsExactly(100L, 101L);
       assertThat(preparation.values()).isEmpty();
       assertThat(preparation.pendingJobs()).isEmpty();
+      assertThat(preparation.missingSecrets()).isEmpty();
+    }
+
+    @Test
+    void shouldReportNoMissingSecretsWhenAllCached() {
+      // given
+      final var injector = injector(Map.of("token", "t"));
+      final var batch =
+          batchWith(job(Map.of("auth", "camunda.secrets.token"), ref("token", "/auth")));
+
+      // when
+      final var preparation = injector.removeJobsWithUncachedSecrets(batch);
+
+      // then
+      assertThat(preparation.missingSecrets()).isEmpty();
+    }
+
+    @Test
+    void shouldGroupMissingSecretByReferenceWithWaitingJobKeys() {
+      // given - two jobs waiting for the same uncached secret, one for a different uncached secret
+      final var injector = injector(Map.of());
+      final var batch =
+          batchWith(
+              job(Map.of("a", "camunda.secrets.token"), ref("token", "/a")),
+              job(Map.of("b", "camunda.secrets.token"), ref("token", "/b")),
+              job(Map.of("c", "camunda.secrets.other"), ref("other", "/c")));
+
+      // when
+      final var preparation = injector.removeJobsWithUncachedSecrets(batch);
+
+      // then - one entry per reference, carrying the keys of the jobs that await it
+      assertThat(preparation.missingSecrets())
+          .containsOnly(
+              entry(new SecretReference(STORE_ID, "token"), List.of(100L, 101L)),
+              entry(new SecretReference(STORE_ID, "other"), List.of(102L)));
+      assertThat(jobKeysOf(batch)).isEmpty();
+    }
+
+    @Test
+    void shouldReportOnlyUncachedReferencesOfRemovedJob() {
+      // given - a job with one cached and one uncached reference
+      final var injector = injector(Map.of("token", "t"));
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("auth", "camunda.secrets.token", "key", "camunda.secrets.apiKey"),
+                  ref("token", "/auth"),
+                  ref("apiKey", "/key")));
+
+      // when
+      final var preparation = injector.removeJobsWithUncachedSecrets(batch);
+
+      // then - only the uncached reference is requested
+      assertThat(preparation.missingSecrets())
+          .containsExactly(entry(new SecretReference(STORE_ID, "apiKey"), List.of(100L)));
+    }
+
+    @Test
+    void shouldReportJobKeyOnceForReferenceRepeatedWithinAJob() {
+      // given - one job referencing the same uncached secret at two paths
+      final var injector = injector(Map.of());
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("a", "camunda.secrets.token", "b", "camunda.secrets.token"),
+                  ref("token", "/a"),
+                  ref("token", "/b")));
+
+      // when
+      final var preparation = injector.removeJobsWithUncachedSecrets(batch);
+
+      // then - the job key appears once for the shared reference, not once per path
+      assertThat(preparation.missingSecrets())
+          .containsExactly(entry(new SecretReference(STORE_ID, "token"), List.of(100L)));
+    }
+
+    @Test
+    void shouldReportEachUncachedReferenceOfASingleJobWithItsKey() {
+      // given - one job waiting on two distinct uncached secrets
+      final var injector = injector(Map.of());
+      final var batch =
+          batchWith(
+              job(
+                  Map.of("a", "camunda.secrets.token", "b", "camunda.secrets.apiKey"),
+                  ref("token", "/a"),
+                  ref("apiKey", "/b")));
+
+      // when
+      final var preparation = injector.removeJobsWithUncachedSecrets(batch);
+
+      // then - one entry per reference, each carrying the job's key
+      assertThat(preparation.missingSecrets())
+          .containsOnly(
+              entry(new SecretReference(STORE_ID, "token"), List.of(100L)),
+              entry(new SecretReference(STORE_ID, "apiKey"), List.of(100L)));
+    }
+
+    @Test
+    void shouldReportAllReferencesMissingWhenResolverThrows() {
+      // given
+      final SecretResolver throwingResolver =
+          references -> {
+            throw new IllegalStateException("resolver is broken");
+          };
+      final var batch =
+          batchWith(
+              job(Map.of("auth", "camunda.secrets.token"), ref("token", "/auth")),
+              job(Map.of("key", "camunda.secrets.apiKey"), ref("apiKey", "/key")));
+
+      // when
+      final var preparation =
+          new JobSecretInjector(throwingResolver).removeJobsWithUncachedSecrets(batch);
+
+      // then - every reference is requested for background resolution
+      assertThat(preparation.missingSecrets())
+          .containsOnly(
+              entry(new SecretReference(STORE_ID, "token"), List.of(100L)),
+              entry(new SecretReference(STORE_ID, "apiKey"), List.of(101L)));
     }
   }
 

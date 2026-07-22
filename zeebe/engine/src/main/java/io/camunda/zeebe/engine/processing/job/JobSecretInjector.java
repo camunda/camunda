@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobSecretReference;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -75,9 +76,10 @@ public final class JobSecretInjector {
   /**
    * Removes every job with a secret reference that has no cached value from the batch (together
    * with its job key), so those jobs are not activated. Must run before the ACTIVATED event is
-   * appended; the removed jobs stay activatable. If the cache lookup fails, every job with secret
-   * references is removed. Returns the preparation for {@link #injectSecretValues}: the cached
-   * values and the surviving jobs with secret references, materialized once.
+   * appended. If the cache lookup fails, every job with secret references is removed. Returns the
+   * preparation for {@link #injectSecretValues} and the caller's {@code RESOLUTION_REQUESTED}
+   * requests: the cached values, the surviving jobs with secret references materialized once, and
+   * the uncached references grouped with the keys of the removed jobs that await them.
    */
   public Preparation removeJobsWithUncachedSecrets(final JobBatchRecord batch) {
     final List<PendingJob> candidates = collectPendingJobs(batch);
@@ -86,18 +88,19 @@ public final class JobSecretInjector {
     }
     final Map<SecretReference, String> values = resolve(referencesOf(candidates));
 
-    // TODO(https://github.com/camunda/camunda/issues/57846): instead of leaving the removed jobs
-    //  activatable (which can make a long poll collect them again right away), append an event
-    //  that marks them as waiting for secret resolution (e.g. WAITING_FOR_SECRET_RESOLUTION) and
-    //  request the background resolution of their secrets.
     final List<PendingJob> pendingJobs = new ArrayList<>(candidates.size());
     final List<Integer> uncachedJobs = new ArrayList<>();
+    final Map<SecretReference, List<Long>> missingSecrets = new LinkedHashMap<>();
     for (final PendingJob candidate : candidates) {
-      if (hasUncachedReference(candidate, values)) {
-        uncachedJobs.add(candidate.index());
-      } else {
+      final List<SecretReference> uncached = uncachedReferences(candidate, values);
+      if (uncached.isEmpty()) {
         // only the removed jobs before a surviving job shift its index to the left
         pendingJobs.add(candidate.atIndex(candidate.index() - uncachedJobs.size()));
+      } else {
+        uncachedJobs.add(candidate.index());
+        for (final SecretReference reference : uncached) {
+          missingSecrets.computeIfAbsent(reference, k -> new ArrayList<>()).add(candidate.jobKey());
+        }
       }
     }
     // remove in descending index order so the remaining indices stay valid
@@ -106,7 +109,7 @@ public final class JobSecretInjector {
       batch.jobs().remove(uncachedIndex);
       batch.jobKeys().remove(uncachedIndex);
     }
-    return new Preparation(values, pendingJobs);
+    return new Preparation(values, pendingJobs, missingSecrets);
   }
 
   /**
@@ -158,14 +161,17 @@ public final class JobSecretInjector {
     }
   }
 
-  private static boolean hasUncachedReference(
+  /** Returns the job's distinct references without a cached value, in first-seen order. */
+  private static List<SecretReference> uncachedReferences(
       final PendingJob pendingJob, final Map<SecretReference, String> values) {
+    final List<SecretReference> uncached = new ArrayList<>();
     for (final Secret secret : pendingJob.secrets()) {
-      if (!values.containsKey(secret.reference())) {
-        return true;
+      final SecretReference reference = secret.reference();
+      if (!values.containsKey(reference) && !uncached.contains(reference)) {
+        uncached.add(reference);
       }
     }
-    return false;
+    return uncached;
   }
 
   /**
@@ -262,7 +268,8 @@ public final class JobSecretInjector {
     int index = 0;
     for (final JobRecord job : batch.jobs()) {
       if (job.hasSecretReferences()) {
-        pendingJobs.add(new PendingJob(index, job, secretsOf(job)));
+        final long jobKey = batch.jobKeys().get(index).getValue();
+        pendingJobs.add(new PendingJob(index, jobKey, job, secretsOf(job)));
       }
       index++;
     }
@@ -302,18 +309,23 @@ public final class JobSecretInjector {
   private record Secret(SecretReference reference, String path, String placeholder) {}
 
   /**
-   * The preparation of an activation batch for {@link #injectSecretValues}: the cached secret
-   * values and the surviving jobs with secret references, each with its secrets materialized once
-   * by {@link #removeJobsWithUncachedSecrets}.
+   * The preparation of an activation batch produced by {@link #removeJobsWithUncachedSecrets}: the
+   * cached secret values, the surviving jobs with secret references (each with its secrets
+   * materialized once) for {@link #injectSecretValues}, and the uncached references of the removed
+   * jobs grouped with the keys of the jobs that await them, for the caller to request their
+   * background resolution.
    */
-  public record Preparation(Map<SecretReference, String> values, List<PendingJob> pendingJobs) {
-    static final Preparation NONE = new Preparation(Map.of(), List.of());
+  public record Preparation(
+      Map<SecretReference, String> values,
+      List<PendingJob> pendingJobs,
+      Map<SecretReference, List<Long>> missingSecrets) {
+    static final Preparation NONE = new Preparation(Map.of(), List.of(), Map.of());
   }
 
-  /** A job with secret references: its index in the batch, the job, and its secrets. */
-  record PendingJob(int index, JobRecord job, List<Secret> secrets) {
+  /** A job with secret references: its index in the batch, its key, the job, and its secrets. */
+  record PendingJob(int index, long jobKey, JobRecord job, List<Secret> secrets) {
     private PendingJob atIndex(final int index) {
-      return new PendingJob(index, job, secrets);
+      return new PendingJob(index, jobKey, job, secrets);
     }
   }
 
