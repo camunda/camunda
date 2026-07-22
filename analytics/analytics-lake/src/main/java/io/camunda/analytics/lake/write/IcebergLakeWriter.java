@@ -412,14 +412,17 @@ public final class IcebergLakeWriter implements LakeWriter {
 
     final AppendFiles append = table.newAppend();
     // Re-stamp every partition this table has ever seen (see class javadoc) -- not just the one
-    // advancing now -- so the new snapshot's summary remains a complete map. Both carry-forward
-    // prefixes must be re-stamped together (see FRONTIER_PROPERTY_PREFIX's javadoc): this legacy
-    // flush path shares instancesTable/activitiesTable with DirectCommitSink, so a commit here that
-    // only forwarded lake.offset.* would silently wipe every frontier stamp DirectCommitSink had
-    // already landed on the same table.
+    // advancing now -- so the new snapshot's summary remains a complete map. All three
+    // carry-forward prefixes must be re-stamped together (see FRONTIER_PROPERTY_PREFIX's and
+    // ZBPOS_PROPERTY_PREFIX's javadoc): this legacy flush path shares instancesTable/
+    // activitiesTable with DirectCommitSink, so a commit here that only forwarded lake.offset.*
+    // would silently wipe every frontier or origin-position dedup watermark stamp DirectCommitSink
+    // had already landed on the same table.
     priorSummary.forEach(
         (key, value) -> {
-          if (key.startsWith(OFFSET_PROPERTY_PREFIX) || key.startsWith(FRONTIER_PROPERTY_PREFIX)) {
+          if (key.startsWith(OFFSET_PROPERTY_PREFIX)
+              || key.startsWith(FRONTIER_PROPERTY_PREFIX)
+              || key.startsWith(ZBPOS_PROPERTY_PREFIX)) {
             append.set(key, value);
           }
         });

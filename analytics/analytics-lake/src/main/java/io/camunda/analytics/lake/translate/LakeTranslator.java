@@ -68,6 +68,19 @@ import org.slf4j.LoggerFactory;
  * caller's Event Bridge offset still advances), never even reaching the {@link RecordType#EVENT}
  * check below it. An equal position is a duplicate, dropped the same way as a lower one.
  *
+ * <p><b>The watermark only advances once the record is actually consumed.</b> The dedup check
+ * itself is pure (no mutation); the watermark for the record's partition is raised to its position
+ * only after folding the record has run and is about to report success back to the caller. This
+ * split matters because of {@link #onRecord}'s own backpressure contract (see this class's
+ * "Backpressure" section below): a row-emitting record can make {@code onRecord} return {@code
+ * false} on ring backpressure, and the caller then retries the exact same record later. If the
+ * watermark had already advanced past that record's position on the first (failed) attempt, the
+ * retry would see its own position at-or-below the watermark and get dropped as a "duplicate" —
+ * silently losing a row that was never actually appended. Advancing only on paths that return
+ * {@code true} (folded successfully, ignored by design, or dropped by the dedup check itself — all
+ * of which must not re-admit the same position on a later rewind) keeps a backpressure retry
+ * indistinguishable from the record's first attempt.
+ *
  * <p>A plain per-partition high watermark (rather than a full seen-set of positions) suffices
  * because positions within one Zeebe partition arrive in order except for exactly this one failure
  * mode — a rewind back to an already-passed position, never a genuinely new position arriving out
@@ -166,18 +179,46 @@ public final class LakeTranslator {
 
   /**
    * @return {@code false} if a row append hit backpressure (ring full) — the caller must retry this
-   *     same {@code zr} later instead of advancing past it (see class javadoc); {@code true}
-   *     otherwise, including when the record needed no row append at all, or was dropped by the
-   *     origin-position dedup gate below
+   *     same {@code zr} later instead of advancing past it (see class javadoc); the origin-position
+   *     dedup watermark is deliberately NOT advanced on this path, so the retry is admitted exactly
+   *     like the record's first attempt. {@code true} otherwise, including when the record needed
+   *     no row append at all, or was dropped by the origin-position dedup gate below — every {@code
+   *     true} path advances the watermark past this record's position (see class javadoc's
+   *     "Origin-position dedup" section for why that must include the dropped-by-type/ignored paths
+   *     too, not just a successful fold)
    */
   public boolean onRecord(final ZeebeRecord zr) {
     final Record<?> record = zr.record();
-    if (isDuplicateOrRewound(record)) {
+    final int zeebePartitionId = record.getPartitionId();
+    final long position = record.getPosition();
+    if (isDuplicateOrRewound(zeebePartitionId, position)) {
       // See class javadoc's "Origin-position dedup" section: a redelivered (or otherwise
       // already-folded) Zeebe position is dropped before any state mutation or row emission, but
       // still counts as successfully consumed -- the caller's Event Bridge offset still advances.
+      // No watermark write here: the check above already read it, and it is already at or above
+      // this position.
       return true;
     }
+    final boolean consumed = fold(record);
+    if (consumed) {
+      // Only now, once the record has actually been folded (or determined to need no folding) and
+      // is about to report success -- never on the return-false backpressure path, or a retry of
+      // this same record would be misread as a duplicate of itself. See class javadoc for why this
+      // ordering is load-bearing.
+      advanceWatermark(zeebePartitionId, position);
+    }
+    return consumed;
+  }
+
+  /**
+   * The actual record fold, run only once {@link #onRecord} has confirmed {@code record}'s origin
+   * position is not a duplicate. Pulled out of {@link #onRecord} so the watermark advance there can
+   * sit strictly after this returns, gated on its result.
+   *
+   * @return {@code false} if a row append hit backpressure (ring full); {@code true} otherwise —
+   *     see {@link #onRecord}'s own javadoc for the full contract
+   */
+  private boolean fold(final Record<?> record) {
     if (record.getRecordType() != RecordType.EVENT) {
       return true;
     }
@@ -191,23 +232,29 @@ public final class LakeTranslator {
   }
 
   /**
-   * The origin-position dedup gate itself — see class javadoc's "Origin-position dedup" section.
-   * Runs before any state mutation or row emission for {@code record}.
+   * The origin-position dedup gate's read side — see class javadoc's "Origin-position dedup"
+   * section. Pure: grows {@link #zeebeWatermarks} to admit {@code zeebePartitionId} if needed, but
+   * never writes a watermark value itself (see {@link #advanceWatermark} for that half) — {@link
+   * #onRecord} must be able to call this before running {@code record}'s fold and only commit the
+   * new watermark value after the fold succeeds.
    *
-   * @return {@code true} if {@code record}'s Zeebe origin position is at or below the watermark
-   *     already recorded for its partition (a duplicate or an already-passed rewind) and must be
-   *     dropped entirely; {@code false} if it is new and the watermark has been advanced to admit
-   *     it
+   * @return {@code true} if {@code position} is at or below the watermark already recorded for
+   *     {@code zeebePartitionId} (a duplicate or an already-passed rewind) and must be dropped
+   *     entirely; {@code false} if it is new
    */
-  private boolean isDuplicateOrRewound(final Record<?> record) {
-    final int zeebePartitionId = record.getPartitionId();
-    final long position = record.getPosition();
+  private boolean isDuplicateOrRewound(final int zeebePartitionId, final long position) {
     ensureWatermarkCapacity(zeebePartitionId);
-    if (position <= zeebeWatermarks[zeebePartitionId]) {
-      return true;
-    }
+    return position <= zeebeWatermarks[zeebePartitionId];
+  }
+
+  /**
+   * The origin-position dedup gate's write side — see {@link #isDuplicateOrRewound} for the read
+   * side and class javadoc for why the two are split. Assumes {@code zeebePartitionId} has already
+   * been admitted by {@link #isDuplicateOrRewound} in the same {@link #onRecord} call (so capacity
+   * is already ensured) and that {@code position} is strictly greater than the current watermark.
+   */
+  private void advanceWatermark(final int zeebePartitionId, final long position) {
     zeebeWatermarks[zeebePartitionId] = position;
-    return false;
   }
 
   /**

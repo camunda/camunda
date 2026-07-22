@@ -172,6 +172,48 @@ class LakeTranslatorTest {
     assertThat(state.getInstance(8L)).isNull();
   }
 
+  @Test
+  void shouldNotLoseRowOnBackpressureRetryAndStillDropGenuineDuplicateAfterward() {
+    // given: an instance already open, and an appender that reports backpressure once before
+    // accepting -- simulating the ring being full at the exact moment the completion record
+    // (which emits the instances row) first arrives
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final FlakyRowAppender instanceAppender = new FlakyRowAppender(1);
+    final LakeTranslator translator =
+        new LakeTranslator(state, instanceAppender, new CountingRowAppender());
+    translator.onRecord(activateRoot(1L, 100L, 1, 10L));
+
+    final ZeebeRecord completion = completeRoot(1L, 150L, 1, 11L);
+
+    // when: the first attempt hits backpressure
+    final boolean firstAttempt = translator.onRecord(completion);
+
+    // then: onRecord reports backpressure, no row was appended, the instance is still open, and
+    // -- the bug this test guards against -- the watermark must NOT have advanced past this
+    // record's position on the failed attempt
+    assertThat(firstAttempt).isFalse();
+    assertThat(instanceAppender.rowsAppended).isZero();
+    assertThat(state.getInstance(1L)).isNotNull();
+    assertThat(translator.watermarkSnapshot()).containsEntry(1, 10L);
+
+    // when: the caller retries the exact same record and the ring now has room
+    final boolean retryAttempt = translator.onRecord(completion);
+
+    // then: the retry is admitted (not misread as a duplicate of itself), the row is emitted
+    // exactly once, and the watermark now sits at the record's own position
+    assertThat(retryAttempt).isTrue();
+    assertThat(instanceAppender.rowsAppended).isEqualTo(1);
+    assertThat(state.getInstance(1L)).isNull();
+    assertThat(translator.watermarkSnapshot()).containsEntry(1, 11L);
+
+    // when: a genuinely redelivered duplicate of that same position arrives afterward
+    translator.onRecord(activateRoot(2L, 200L, 1, 11L));
+
+    // then: it is still dropped -- the fix does not weaken the dedup gate itself
+    assertThat(state.getInstance(2L)).isNull();
+    assertThat(instanceAppender.rowsAppended).isEqualTo(1);
+  }
+
   // ---- record construction ------------------------------------------------------------------
 
   private static ZeebeRecord activateRoot(
@@ -241,6 +283,60 @@ class LakeTranslatorTest {
 
     @Override
     public boolean begin() {
+      return true;
+    }
+
+    @Override
+    public RowAppender putLong(final int column, final long value) {
+      return this;
+    }
+
+    @Override
+    public RowAppender putInt(final int column, final int value) {
+      return this;
+    }
+
+    @Override
+    public RowAppender putDict(final int column, final CharSequence value) {
+      return this;
+    }
+
+    @Override
+    public RowAppender putBinary(
+        final int column, final byte[] src, final int offset, final int len) {
+      return this;
+    }
+
+    @Override
+    public RowAppender putNull(final int column) {
+      return this;
+    }
+
+    @Override
+    public void endRow() {
+      rowsAppended++;
+    }
+  }
+
+  /**
+   * Reports backpressure ({@code begin()} returns {@code false}) exactly {@code
+   * beginFailuresRemaining} times before accepting every subsequent row -- simulates a ring that is
+   * full at the exact moment a row-emitting record first arrives, then has room on retry.
+   */
+  private static final class FlakyRowAppender implements RowAppender {
+    private int beginFailuresRemaining;
+    private int rowsAppended;
+
+    FlakyRowAppender(final int beginFailuresRemaining) {
+      this.beginFailuresRemaining = beginFailuresRemaining;
+    }
+
+    @Override
+    public boolean begin() {
+      if (beginFailuresRemaining > 0) {
+        beginFailuresRemaining--;
+        return false;
+      }
       return true;
     }
 

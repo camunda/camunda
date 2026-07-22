@@ -109,6 +109,24 @@ class IcebergLakeWriterCompactionTest {
       assertThat(zeebeWatermarkOf(instancesTable, zeebePartitionId))
           .isEqualTo(stampedZeebeWatermark);
 
+      // and: one more legacy buffered flush() lands on the SAME table -- this is the hardening
+      // this test closes: IcebergLakeWriter#flushTable's own carry-forward (a different commit
+      // site than DirectCommitSink's or LakeCompactor's) must re-stamp lake.zbpos.z* (and
+      // lake.frontier.p*) exactly like it already does for lake.offset.p*, or this ordinary
+      // legacy flush -- not just a maintenance pass -- would silently wipe both stamps the moment
+      // it landed its own snapshot.
+      writer.append(instanceRow(BATCH_COUNT));
+      writer.append(activityRow(BATCH_COUNT));
+      writer.flush(PARTITION, BATCH_COUNT);
+      assertThat(writer.committedOffset(PARTITION)).isEqualTo(BATCH_COUNT);
+      assertThat(frontierOf(instancesTable, frontierPartition)).isEqualTo(stampedFrontierMs);
+      assertThat(zeebeWatermarkOf(instancesTable, zeebePartitionId))
+          .isEqualTo(stampedZeebeWatermark);
+
+      final long committedOffsetBeforeCompaction = writer.committedOffset(PARTITION);
+      final long instanceRowsBeforeCompaction = rowCount(instancesTable, duckdb);
+      final long activityRowsBeforeCompaction = rowCount(activitiesTable, duckdb);
+
       // when a compaction pass runs
       final LakeCompactor compactor = new LakeCompactor(writer);
       final LakeCompactor.CompactionReport report = compactor.compactIfNeeded();
@@ -122,8 +140,8 @@ class IcebergLakeWriterCompactionTest {
       assertThat(activityFilesAfter).isBetween(1, 2);
 
       // and every row is still present -- compaction rewrote, it never dropped or duplicated rows
-      assertThat(rowCount(instancesTable, duckdb)).isEqualTo(instanceRowsBefore);
-      assertThat(rowCount(activitiesTable, duckdb)).isEqualTo(activityRowsBefore);
+      assertThat(rowCount(instancesTable, duckdb)).isEqualTo(instanceRowsBeforeCompaction);
+      assertThat(rowCount(activitiesTable, duckdb)).isEqualTo(activityRowsBeforeCompaction);
 
       // and snapshot history was trimmed to the configured retention
       assertThat(snapshotCount(instancesTable)).isLessThanOrEqualTo(3);
@@ -131,7 +149,7 @@ class IcebergLakeWriterCompactionTest {
 
       // and -- the critical assertion -- the durable offset survived compaction unchanged; a
       // regression here would silently force a full replay from scratch on the next restart
-      assertThat(writer.committedOffset(PARTITION)).isEqualTo(committedOffsetBefore);
+      assertThat(writer.committedOffset(PARTITION)).isEqualTo(committedOffsetBeforeCompaction);
 
       // and -- Fix 1's own critical assertion -- the frontier stamp survived compaction too, not
       // just the offset
