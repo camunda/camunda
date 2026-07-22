@@ -119,7 +119,7 @@ public final class RestoreValidator
   }
 
   private Map<Integer, long[]> resolveBackups(final RestoreRequest request) {
-    if (RANGE_AVAILABLE_TYPES.contains(request.databaseType())) {
+    if (RANGE_AVAILABLE_TYPES.contains(request.databaseType().toLowerCase())) {
       return resolveRdbmsBackups(request);
     }
     return Map.of();
@@ -150,40 +150,31 @@ public final class RestoreValidator
     final Instant instantTo = parseTimestamp(request.to(), "to");
     final Instant instantFrom = parseTimestamp(request.from(), "from");
     if (exportedPositionSupplier == null) {
-      return loadMetadataForAllPartitions(partitionCount)
-          .thenApply(
-              metadataByPartition ->
-                  RestorePointResolver.resolve(metadataByPartition, instantFrom, instantTo, null))
-          .join();
+      final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
+      return RestorePointResolver.resolve(metadataByPartition, instantFrom, instantTo, null);
     }
-    return exportedPositions(exportedPositionSupplier, partitionCount)
-        .thenCombine(
-            loadMetadataForAllPartitions(partitionCount),
-            (exportedPositions, metadataByPartition) -> {
-              LOG.info("Exported positions for all partitions: {}", exportedPositions);
-              return RestorePointResolver.resolve(
-                  metadataByPartition, instantFrom, instantTo, exportedPositions);
-            })
-        .join();
+    final var exportedPositions = exportedPositions(exportedPositionSupplier, partitionCount);
+    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
+    LOG.info("Exported positions for all partitions: {}", exportedPositions);
+    return RestorePointResolver.resolve(
+        metadataByPartition, instantFrom, instantTo, exportedPositions);
   }
 
-  private CompletableFuture<Map<Integer, Long>> exportedPositions(
+  private Map<Integer, Long> exportedPositions(
       final IntFunction<Long> positionSupplier, final int partitionCount) {
-    return FuturesUtil.parTraverse(
-            IntStream.rangeClosed(1, partitionCount).boxed().toList(),
-            partition ->
-                CompletableFuture.supplyAsync(
-                    () -> {
-                      final var position = positionSupplier.apply(partition);
-                      if (position == null) {
-                        throw new IllegalArgumentException(
-                            "No exported position found for partition " + partition + " in RDBMS");
-                      }
-
-                      return Map.entry(partition, position);
-                    }))
-        .thenApply(
-            s -> s.stream().collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue)));
+    return IntStream.rangeClosed(1, partitionCount)
+        .boxed()
+        .collect(
+            Collectors.toUnmodifiableMap(
+                partition -> partition,
+                partition -> {
+                  final var position = positionSupplier.apply(partition);
+                  if (position == null) {
+                    throw new IllegalArgumentException(
+                        "No exported position found for partition " + partition + " in RDBMS");
+                  }
+                  return position;
+                }));
   }
 
   private CompletableFuture<List<BackupMetadata>> loadMetadataForAllPartitions(
