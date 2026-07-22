@@ -98,7 +98,6 @@ jobs:
           python3 -m pip install -q --disable-pip-version-check boto3==1.42.50 opensearch-py==3.1.0
       - name: Verify cluster is running the expected OpenSearch version
         env:
-          OPENSEARCH_URL: ${{ env.OPENSEARCH_URL }}
           EXPECTED_OPENSEARCH_VERSION: ${{ inputs.opensearch-version }}
         run: python3 .github/scripts/verify-aws-opensearch-version.py
       - name: Observe build status
