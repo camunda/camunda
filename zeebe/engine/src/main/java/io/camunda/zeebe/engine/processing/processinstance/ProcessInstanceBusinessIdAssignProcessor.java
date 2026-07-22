@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -45,20 +47,17 @@ public class ProcessInstanceBusinessIdAssignProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final CslAuthorizationCheck cslCheck;
-  private final PermissionsBehavior permissionsBehavior;
   private final ProcessInstanceBusinessIdAssignmentBehavior assignmentBehavior;
 
   public ProcessInstanceBusinessIdAssignProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CslAuthorizationCheck cslCheck,
-      final PermissionsBehavior permissionsBehavior,
       final boolean businessIdUniquenessEnabled) {
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
     this.cslCheck = cslCheck;
-    this.permissionsBehavior = permissionsBehavior;
     assignmentBehavior =
         new ProcessInstanceBusinessIdAssignmentBehavior(
             writers.state(), businessIdUniquenessEnabled);
@@ -108,22 +107,25 @@ public class ProcessInstanceBusinessIdAssignProcessor
       final TypedRecord<ProcessInstanceBusinessIdRecord> command,
       final ProcessInstanceRecord processInstanceRecord) {
     final var isAuthorized =
-        cslCheck
-            .checkTenant(
-                command,
-                processInstanceRecord.getTenantId(),
-                processInstanceRecord,
-                new Rejection(
-                    RejectionType.NOT_FOUND,
-                    ERROR_NOT_FOUND_FOR_TENANT.formatted(
-                        processInstanceRecord.getProcessInstanceKey())))
-            .flatMap(
-                recordValue ->
-                    permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-                        command,
-                        AuthorizationResourceType.PROCESS_DEFINITION,
-                        PermissionType.UPDATE_PROCESS_INSTANCE,
-                        processInstanceRecord.getBpmnProcessId()));
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(processInstanceRecord.getBpmnProcessId())),
+            processInstanceRecord,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            processInstanceRecord.getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_NOT_FOUND_FOR_TENANT.formatted(
+                    processInstanceRecord.getProcessInstanceKey())));
     if (isAuthorized.isRight()) {
       return true;
     }

@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.agenthistory;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -37,14 +39,12 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
   private final AgentInstanceState agentInstanceState;
   private final JobState jobState;
   private final CslAuthorizationCheck cslCheck;
-  private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
 
   public AgentHistoryCreateProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CslAuthorizationCheck cslCheck,
-      final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -52,7 +52,6 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
     agentInstanceState = processingState.getAgentInstanceState();
     jobState = processingState.getJobState();
     this.cslCheck = cslCheck;
-    this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
   }
 
@@ -72,21 +71,24 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
 
     final var bpmnProcessId = agentInstanceRecord.getBpmnProcessId();
     final var isAuthorized =
-        cslCheck
-            .checkTenant(
-                command,
-                agentInstanceRecord.getTenantId(),
-                command.getValue(),
-                new Rejection(
-                    RejectionType.NOT_FOUND,
-                    ERROR_MSG_AGENT_INSTANCE_NOT_FOUND.formatted(agentInstanceKey)))
-            .flatMap(
-                value ->
-                    permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-                        command,
-                        AuthorizationResourceType.PROCESS_DEFINITION,
-                        PermissionType.UPDATE_PROCESS_INSTANCE,
-                        bpmnProcessId));
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(bpmnProcessId)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            agentInstanceRecord.getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MSG_AGENT_INSTANCE_NOT_FOUND.formatted(agentInstanceKey)));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());

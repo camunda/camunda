@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.agentinstance;
 
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -25,17 +24,15 @@ public final class AgentInstanceProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final CslAuthorizationCheck cslCheck,
-      final PermissionsBehavior permissionsBehavior,
       final ProcessingState processingState) {
     typedRecordProcessors.onCommand(
         ValueType.AGENT_INSTANCE,
         AgentInstanceIntent.CREATE,
-        new AgentInstanceCreateProcessor(
-            writers, processingState, cslCheck, permissionsBehavior, keyGenerator));
+        new AgentInstanceCreateProcessor(writers, processingState, cslCheck, keyGenerator));
     typedRecordProcessors.onCommand(
         ValueType.AGENT_INSTANCE,
         AgentInstanceIntent.UPDATE,
-        new AgentInstanceUpdateProcessor(writers, processingState, cslCheck, permissionsBehavior));
+        new AgentInstanceUpdateProcessor(writers, processingState, cslCheck));
     typedRecordProcessors.onCommand(
         ValueType.AGENT_INSTANCE,
         AgentInstanceIntent.COMPLETE,

@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.historydeletion;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -38,19 +40,16 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
   private final CslAuthorizationCheck cslCheck;
-  private final PermissionsBehavior permissionsBehavior;
 
   public HistoryDeletionDeleteProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck,
-      final PermissionsBehavior permissionsBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     elementInstanceState = processingState.getElementInstanceState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
-    this.permissionsBehavior = permissionsBehavior;
   }
 
   @Override
@@ -119,18 +118,19 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
     }
 
     final var tenantId = command.getValue().getTenantId();
-    return cslCheck
-        .checkTenant(
-            command,
-            tenantId,
-            command.getValue(),
-            new Rejection(
-                RejectionType.NOT_FOUND,
-                NOT_FOUND_FOR_TENANT_MESSAGE.formatted(permissionType, resourceType, tenantId)))
-        .flatMap(
-            value ->
-                permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-                    command, resourceType, permissionType, resourceId));
+    return cslCheck.checkAuthorizationAndTenant(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(AuthzModelMapper.fromProtocol(resourceType))
+                    .permissionType(AuthzModelMapper.fromProtocol(permissionType))
+                    .resourceId(resourceId)),
+        command.getValue(),
+        AuthorizationRejectionMapper.forbidden(permissionType, resourceType),
+        tenantId,
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            NOT_FOUND_FOR_TENANT_MESSAGE.formatted(permissionType, resourceType, tenantId)));
   }
 
   private void deleteDecisionRequirements(final TypedRecord<HistoryDeletionRecord> command) {

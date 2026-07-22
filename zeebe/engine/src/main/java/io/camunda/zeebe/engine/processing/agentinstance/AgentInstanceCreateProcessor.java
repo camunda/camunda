@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.agentinstance;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -54,14 +56,12 @@ public final class AgentInstanceCreateProcessor
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final CslAuthorizationCheck cslCheck;
-  private final PermissionsBehavior permissionsBehavior;
   private final KeyGenerator keyGenerator;
 
   public AgentInstanceCreateProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CslAuthorizationCheck cslCheck,
-      final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -69,7 +69,6 @@ public final class AgentInstanceCreateProcessor
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     this.cslCheck = cslCheck;
-    this.permissionsBehavior = permissionsBehavior;
     this.keyGenerator = keyGenerator;
   }
 
@@ -89,21 +88,24 @@ public final class AgentInstanceCreateProcessor
 
     final var elementInstanceValue = elementInstance.getValue();
     final var isAuthorized =
-        cslCheck
-            .checkTenant(
-                command,
-                elementInstanceValue.getTenantId(),
-                command.getValue(),
-                new Rejection(
-                    RejectionType.NOT_FOUND,
-                    ERROR_MSG_ELEMENT_INSTANCE_NOT_FOUND.formatted(elementInstanceKey)))
-            .flatMap(
-                value ->
-                    permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-                        command,
-                        AuthorizationResourceType.PROCESS_DEFINITION,
-                        PermissionType.UPDATE_PROCESS_INSTANCE,
-                        elementInstanceValue.getBpmnProcessId()));
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(elementInstanceValue.getBpmnProcessId())),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            elementInstanceValue.getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MSG_ELEMENT_INSTANCE_NOT_FOUND.formatted(elementInstanceKey)));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());

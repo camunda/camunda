@@ -118,18 +118,24 @@ public class ClusterVariableDeleteProcessor
 
   private Either<Rejection, ClusterVariableRecord> checkAuthorizationForTenantScope(
       final TypedRecord<ClusterVariableRecord> command, final ClusterVariableRecord record) {
-    return cslCheck
-        .checkTenant(
-            command,
-            record.getTenantId(),
-            record,
-            new Rejection(
-                RejectionType.NOT_FOUND,
-                NOT_FOUND_FOR_TENANT_MESSAGE.formatted(
-                    PermissionType.DELETE,
-                    AuthorizationResourceType.CLUSTER_VARIABLE,
-                    record.getTenantId())))
-        .flatMap(unused -> checkPermission(command, record));
+    return cslCheck.checkAuthorizationAndTenant(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(
+                        AuthzModelMapper.fromProtocol(AuthorizationResourceType.CLUSTER_VARIABLE))
+                    .permissionType(AuthzModelMapper.fromProtocol(PermissionType.DELETE))
+                    .resourceId(record.getName())),
+        record,
+        AuthorizationRejectionMapper.forbidden(
+            PermissionType.DELETE, AuthorizationResourceType.CLUSTER_VARIABLE),
+        record.getTenantId(),
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            NOT_FOUND_FOR_TENANT_MESSAGE.formatted(
+                PermissionType.DELETE,
+                AuthorizationResourceType.CLUSTER_VARIABLE,
+                record.getTenantId())));
   }
 
   private Either<Rejection, ClusterVariableRecord> checkPermission(

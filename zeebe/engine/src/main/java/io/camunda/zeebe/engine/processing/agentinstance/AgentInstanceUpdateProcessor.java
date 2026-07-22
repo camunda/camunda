@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.agentinstance;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceMe
 import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceRecordValue.AgentInstanceToolValue;
 import io.camunda.zeebe.protocol.record.value.AgentInstanceStatus;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -81,20 +83,17 @@ public final class AgentInstanceUpdateProcessor
   private final AgentInstanceState agentInstanceState;
   private final ElementInstanceState elementInstanceState;
   private final CslAuthorizationCheck cslCheck;
-  private final PermissionsBehavior permissionsBehavior;
 
   public AgentInstanceUpdateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final CslAuthorizationCheck cslCheck,
-      final PermissionsBehavior permissionsBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
     elementInstanceState = processingState.getElementInstanceState();
     this.cslCheck = cslCheck;
-    this.permissionsBehavior = permissionsBehavior;
   }
 
   @Override
@@ -110,20 +109,23 @@ public final class AgentInstanceUpdateProcessor
     }
 
     final var isAuthorized =
-        cslCheck
-            .checkTenant(
-                command,
-                current.getTenantId(),
-                command.getValue(),
-                new Rejection(
-                    RejectionType.NOT_FOUND, ERROR_MSG_NOT_FOUND.formatted(agentInstanceKey)))
-            .flatMap(
-                value ->
-                    permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-                        command,
-                        AuthorizationResourceType.PROCESS_DEFINITION,
-                        PermissionType.UPDATE_PROCESS_INSTANCE,
-                        current.getBpmnProcessId()));
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(current.getBpmnProcessId())),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            current.getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND, ERROR_MSG_NOT_FOUND.formatted(agentInstanceKey)));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());

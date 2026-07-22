@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -17,7 +18,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.common.BannedInstanceCommandCheck;
 import io.camunda.zeebe.engine.processing.common.ValidationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -64,7 +66,6 @@ public final class VariableDocumentUpdateProcessor
   private final Writers writers;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final CslAuthorizationCheck cslCheck;
-  private final PermissionsBehavior permissionsBehavior;
   private final BannedInstanceCommandCheck bannedInstanceCheck;
 
   public VariableDocumentUpdateProcessor(
@@ -74,8 +75,7 @@ public final class VariableDocumentUpdateProcessor
       final Writers writers,
       final MutableUserTaskState userTaskState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final CslAuthorizationCheck cslCheck,
-      final PermissionsBehavior permissionsBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     elementInstanceState = processingState.getElementInstanceState();
     this.userTaskState = userTaskState;
     processState = processingState.getProcessState();
@@ -87,7 +87,6 @@ public final class VariableDocumentUpdateProcessor
     this.writers = writers;
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.cslCheck = cslCheck;
-    this.permissionsBehavior = permissionsBehavior;
     bannedInstanceCheck = new BannedInstanceCommandCheck(processingState.getBannedInstanceState());
   }
 
@@ -115,22 +114,24 @@ public final class VariableDocumentUpdateProcessor
     }
 
     final var isAuthorized =
-        cslCheck
-            .checkTenant(
-                record,
-                scope.getValue().getTenantId(),
-                record.getValue(),
-                new Rejection(
-                    RejectionType.NOT_FOUND,
-                    ERROR_MESSAGE_SCOPE_NOT_FOUND.formatted(
-                        scope.getValue().getProcessInstanceKey())))
-            .flatMap(
-                recordValue ->
-                    permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-                        record,
-                        AuthorizationResourceType.PROCESS_DEFINITION,
-                        PermissionType.UPDATE_PROCESS_INSTANCE,
-                        scope.getValue().getBpmnProcessId()));
+        cslCheck.checkAuthorizationAndTenant(
+            record,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(scope.getValue().getBpmnProcessId())),
+            record.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            scope.getValue().getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MESSAGE_SCOPE_NOT_FOUND.formatted(scope.getValue().getProcessInstanceKey())));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       writers.rejection().appendRejection(record, rejection.type(), rejection.reason());

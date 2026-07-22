@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -43,20 +45,17 @@ public final class ProcessInstanceSuspendProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final CslAuthorizationCheck cslCheck;
-  private final PermissionsBehavior permissionsBehavior;
   private final AsyncRequestState asyncRequestState;
 
   public ProcessInstanceSuspendProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final CslAuthorizationCheck cslCheck,
-      final PermissionsBehavior permissionsBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.cslCheck = cslCheck;
-    this.permissionsBehavior = permissionsBehavior;
     asyncRequestState = processingState.getAsyncRequestState();
   }
 
@@ -85,22 +84,25 @@ public final class ProcessInstanceSuspendProcessor
     }
 
     final var isAuthorized =
-        cslCheck
-            .checkTenant(
-                command,
-                elementInstance.getValue().getTenantId(),
-                elementInstance.getValue(),
-                new Rejection(
-                    RejectionType.NOT_FOUND,
-                    PROCESS_NOT_FOUND_MESSAGE.formatted(
-                        elementInstance.getValue().getProcessInstanceKey())))
-            .flatMap(
-                recordValue ->
-                    permissionsBehavior.isAuthorizedWithResourceIdentifiers(
-                        command,
-                        AuthorizationResourceType.PROCESS_DEFINITION,
-                        PermissionType.SUSPEND_PROCESS_INSTANCE,
-                        elementInstance.getValue().getBpmnProcessId()));
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.SUSPEND_PROCESS_INSTANCE))
+                        .resourceId(elementInstance.getValue().getBpmnProcessId())),
+            elementInstance.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.SUSPEND_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            elementInstance.getValue().getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                PROCESS_NOT_FOUND_MESSAGE.formatted(
+                    elementInstance.getValue().getProcessInstanceKey())));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       enrichRejectionCommand(command, elementInstance.getValue());

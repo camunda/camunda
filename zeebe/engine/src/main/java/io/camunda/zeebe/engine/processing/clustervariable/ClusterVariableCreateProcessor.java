@@ -119,18 +119,24 @@ public class ClusterVariableCreateProcessor
 
   private Either<Rejection, ClusterVariableRecord> checkAuthorizationForTenantScope(
       final TypedRecord<ClusterVariableRecord> command, final ClusterVariableRecord record) {
-    return cslCheck
-        .checkTenant(
-            command,
-            record.getTenantId(),
-            record,
-            new Rejection(
-                RejectionType.FORBIDDEN,
-                FORBIDDEN_FOR_TENANT_MESSAGE.formatted(
-                    PermissionType.CREATE,
-                    AuthorizationResourceType.CLUSTER_VARIABLE,
-                    record.getTenantId())))
-        .flatMap(unused -> checkPermission(command, record));
+    return cslCheck.checkAuthorizationAndTenant(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(
+                        AuthzModelMapper.fromProtocol(AuthorizationResourceType.CLUSTER_VARIABLE))
+                    .permissionType(AuthzModelMapper.fromProtocol(PermissionType.CREATE))
+                    .resourceId(record.getName())),
+        record,
+        AuthorizationRejectionMapper.forbidden(
+            PermissionType.CREATE, AuthorizationResourceType.CLUSTER_VARIABLE),
+        record.getTenantId(),
+        new Rejection(
+            RejectionType.FORBIDDEN,
+            FORBIDDEN_FOR_TENANT_MESSAGE.formatted(
+                PermissionType.CREATE,
+                AuthorizationResourceType.CLUSTER_VARIABLE,
+                record.getTenantId())));
   }
 
   private Either<Rejection, ClusterVariableRecord> checkPermission(

@@ -324,7 +324,6 @@ public final class EngineProcessors {
             clock,
             config,
             asyncRequestBehavior,
-            permissionsBehavior,
             cslCheck,
             transientProcessMessageSubscriptionState,
             processEngineMetrics);
@@ -474,7 +473,7 @@ public final class EngineProcessors {
         tenantMetrics);
 
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
-        typedRecordProcessors, writers, processingState, cslCheck, permissionsBehavior);
+        typedRecordProcessors, writers, processingState, cslCheck);
     GlobalListenersProcessors.addGlobalListenersProcessors(
         keyGenerator,
         typedRecordProcessors,
@@ -502,20 +501,10 @@ public final class EngineProcessors {
         clock);
 
     AgentInstanceProcessors.addAgentInstanceProcessors(
-        keyGenerator,
-        typedRecordProcessors,
-        writers,
-        cslCheck,
-        permissionsBehavior,
-        processingState);
+        keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     AgentHistoryProcessors.addAgentHistoryProcessors(
-        keyGenerator,
-        typedRecordProcessors,
-        writers,
-        cslCheck,
-        permissionsBehavior,
-        processingState);
+        keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     SecretReferenceProcessors.addSecretReferenceProcessors(typedRecordProcessors);
 
@@ -640,7 +629,6 @@ public final class EngineProcessors {
       final InstantSource clock,
       final EngineConfiguration config,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final PermissionsBehavior permissionsBehavior,
       final CslAuthorizationCheck cslCheck,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ProcessEngineMetrics processEngineMetrics) {
@@ -658,7 +646,6 @@ public final class EngineProcessors {
         clock,
         config,
         asyncRequestBehavior,
-        permissionsBehavior,
         cslCheck,
         transientProcessMessageSubscriptionState,
         processEngineMetrics);
