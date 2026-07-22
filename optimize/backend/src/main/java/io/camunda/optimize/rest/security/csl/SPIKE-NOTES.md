@@ -5,199 +5,140 @@ dropping the custom stateless JWT-cookie stack. See ADR-0036 in camunda-security
 
 ## Single switch: legacy vs CSL (no collision)
 
-The legacy Optimize security config and the CSL config both register `SecurityFilterChain` beans
-and `@EnableWebSecurity`, so only one may be active. A single flag selects which:
+Both the legacy config and the CSL config register `SecurityFilterChain` beans + `@EnableWebSecurity`,
+so only one may be active. One flag selects which:
 
-- `optimize.security.csl.enabled=false` (default, absent) -> legacy setup runs
-  (`CCSMSecurityConfigurerAdapter` / `CCSaaSSecurityConfigurerAdapter`). Existing deployments are
+- `optimize.security.csl.enabled=false` (default/absent) -> legacy setup runs
+  (`CCSMSecurityConfigurerAdapter` / `CCSaaSSecurityConfigurerAdapter`); existing deployments
   unaffected.
-- `optimize.security.csl.enabled=true` -> the legacy adapters back off (they carry the inverse
-  `@ConditionalOnProperty`) and `OptimizeCamundaSecurityConfig` activates the CSL chains.
+- `optimize.security.csl.enabled=true` -> legacy adapters back off (inverse `@ConditionalOnProperty`)
+  and `OptimizeCamundaSecurityConfig` activates the CSL chains.
+
+No custom webapp chain is needed: CSL orders the API chain before the webapp chain (ADR-0036), so the
+stock webapp chain with a `/**` matcher is the catch-all below the bearer API chain.
 
 ## What this prototype contains
 
-- `OptimizeCamundaSecurityConfig` — opt-in wiring. Imports the CSL umbrella
-  `CamundaSecurityAutoConfiguration` and provides the SPI beans. Gated on the flag above.
-- `OptimizeSecurityPathAdapter` — `SecurityPathPort` with the agreed path split (`/**` webapp
-  catch-all, bearer-only `apiPaths()`, empty `unprotectedApiPaths()`, everything else public in
-  `unprotectedPaths()` — the bucket the order-0 chain actually matches).
-- `OptimizeMembershipAdapter` — `MembershipPort`. Stub returning empty memberships (enough to log
-  in; wire the groups-claim extraction for real authorization).
-- `OptimizeSessionStoreAdapter` + `WebSessionDto` — real Elasticsearch-backed `SessionStorePort`
-  (get/upsert/delete/getAll via `OptimizeElasticsearchClient`), a `@Component` active under ES +
-  `csl.enabled`. Backed by a new `web-session` index: `WebSessionIndex` / `WebSessionIndexES` in
-  `optimize-commons`, registered in `ElasticSearchSchemaManager.getAllNonDynamicMappings()` and
-  `DatabaseConstants.WEB_SESSION_INDEX_NAME`. `OptimizeCamundaSecurityConfig` imports CSL's
-  `WebSessionConfiguration` (self-gated on `session.persistent.enabled`, which the bridge sets
-  true). ES-only; an OpenSearch mirror (`WebSessionIndexOS` + `OpenSearchSchemaManager` entry + an
-  OS adapter) is the remaining follow-up.
-
-No custom webapp chain is needed: CSL now orders the API chain before the webapp chain (ADR-0036),
-so the stock webapp chain with a `/**` matcher is the catch-all below the bearer API chain.
+- `OptimizeCamundaSecurityConfig` — opt-in wiring: imports the CSL umbrella
+  `CamundaSecurityAutoConfiguration`, provides the SPI beans, gated on the flag.
+- `OptimizeSecurityPathAdapter` — `SecurityPathPort`: `/**` webapp catch-all, bearer-only
+  `apiPaths()`, empty `unprotectedApiPaths()`, everything else public in `unprotectedPaths()` (the
+  bucket the order-0 chain matches). `postLogoutRedirectPath()="/"` (see finding 6).
+- `OptimizeOidcAuthenticationEntryPoint` — `OidcAuthenticationEntryPoint` SPI: 401 for `/api/**`
+  XHR, 302-to-IdP for navigations (see finding 8).
+- `OptimizeMembershipAdapter` — `MembershipPort` stub (empty memberships; enough to log in). Real
+  groups-claim extraction is a follow-up.
+- `OptimizeSessionStoreAdapter` + `WebSessionDto` — Elasticsearch-backed `SessionStorePort`
+  (get/upsert/delete/getAll via `OptimizeElasticsearchClient`), `@Component` under ES + `csl.enabled`.
+  Backed by a new `web-session` index (`WebSessionIndex`/`WebSessionIndexES` in `optimize-commons`,
+  registered in `ElasticSearchSchemaManager.getAllNonDynamicMappings()` + `DatabaseConstants`).
+  `OptimizeCamundaSecurityConfig` imports CSL's `WebSessionConfiguration` (self-gated on
+  `session.persistent.enabled`, set by the bridge). ES-only; OpenSearch mirror is a follow-up.
+- `OptimizeSecurityConfigCompatibilityPostProcessor` — `EnvironmentPostProcessor` (registered in
+  `META-INF/spring.factories`) bridging legacy Optimize auth config to `camunda.security.*` at low
+  precedence. Full mapping in `CONFIG-COMPAT.md`.
 
 ## How to run / manually test
 
-1. Build the CSL spike branch (`camunda-security-library`, branch
-   `spike/csl-optimize-webapp-support`) with `mvn install` to publish the local `0.1.0-SNAPSHOT`
-   build that contains the deny-chain toggle and the API/webapp order split.
-2. `version.camunda-security-library` in `parent/pom.xml` is already pinned to `0.1.0-SNAPSHOT`,
-   so no further change is needed — the local install from step 1 resolves.
-3. Set `optimize.security.csl.enabled=true`. The compat bridge sets the `camunda.security.*`
-   defaults (`method=oidc`, `unhandled-paths-chain.enabled=false`, `oidc.redirect-uri`) and maps
-   the existing `CAMUNDA_OPTIMIZE_IDENTITY_*` env vars to the OIDC client config, so no extra
-   `camunda.security.*` config is required. See `CONFIG-COMPAT.md` for the full mapping.
-4. Build the frontend so the SPA is served: `cd optimize/client && yarn build` (Vite, outputs
-   `dist/`), then rebuild `optimize-backend` so `../client/dist` is copied to the `webapp`
-   classpath. Without it, `GET /` returns `NoResourceFoundException` (no `index.html`) after login.
-   This is unrelated to CSL; a plain backend run does not build the SPA.
-5. Start Optimize against an OIDC provider (Identity/Keycloak for CCSM, Auth0 for CCSaaS) and
-   verify: `GET /` redirects to the IdP; after login the app loads; `GET /api/readyz`,
-   `/api/ui-configuration`, `/actuator/**`, `/external/**` are reachable without auth;
-   `GET /api/public/**` requires a bearer token.
+1. `mvn install` the CSL spike branch (`camunda-security-library`, `spike/csl-optimize-webapp-support`)
+   to publish local `0.1.0-SNAPSHOT` (deny-chain toggle + API/webapp order split). `parent/pom.xml`
+   already pins `version.camunda-security-library` to it.
+2. Set `optimize.security.csl.enabled=true`. The compat bridge sets the `camunda.security.*` defaults
+   (`method=oidc`, `unhandled-paths-chain.enabled=false`, `oidc.redirect-uri`) and maps the existing
+   `CAMUNDA_OPTIMIZE_IDENTITY_*` env vars, so no extra `camunda.security.*` config is needed.
+3. Build the SPA: `cd optimize/client && yarn build`, then rebuild `optimize-backend` so
+   `../client/dist` lands on the `webapp` classpath. Without it, `GET /` -> `NoResourceFoundException`
+   after login (unrelated to CSL).
+4. Start against an OIDC provider (Identity/Keycloak for CCSM, Auth0 for CCSaaS) and verify: `GET /`
+   redirects to the IdP; after login the app loads; `/api/readyz`, `/api/ui-configuration`,
+   `/actuator/**`, `/external/**` are reachable without auth; `/api/public/**` needs a bearer token.
 
-The OIDC callback reuses Optimize's existing path `{baseUrl}/api/authentication/callback`, which the
-Identity-provisioned Keycloak `optimize` client already registers as a valid redirect URI, so no
-IdP client change is needed. CSL derives its redirection-endpoint listener path from
-`camunda.security.authentication.oidc.redirect-uri` (ADR-0036), so the sent `redirect_uri` and the
-listener stay aligned on `/api/authentication/callback`.
-
-Note: Optimize's `URLRedirectFilter` (SPA routing) runs before the security chain and redirects
-unknown paths to `/#`. It is patched to pass the CSL login-initiation endpoints (`/oauth2/**`,
-`/sso-callback`, `/login`, `/logout`) through to Spring Security; the callback
-`/api/authentication/callback` already passes because `/api` is in the filter's allow-list. Without
-that passthrough, OIDC login initiation gets bounced to `/#` in a redirect loop.
-
-Single-node in-memory sessions are used unless a `SessionStorePort` bean is added and
-`camunda.security.session.persistent.enabled=true`.
+The OIDC callback reuses Optimize's `{baseUrl}/api/authentication/callback`, already registered on
+the Identity-provisioned Keycloak `optimize` client, so no IdP change is needed; CSL derives its
+redirection-endpoint listener path from `oidc.redirect-uri` (ADR-0036) to keep them aligned.
+`URLRedirectFilter` (SPA routing, runs before security) is patched to pass `/oauth2/**`,
+`/sso-callback`, `/login`, `/logout` through; without that, OIDC login initiation loops to `/#`.
+Single-node in-memory sessions are used unless a `SessionStorePort` bean is present and
+`session.persistent.enabled=true` (the bridge sets it true).
 
 ## Status
 
-- Compiles against the released CSL API (all host code uses stable CSL SPIs). Correct RUNTIME
-  behavior needs the CSL spike build from step 1 (the toggle + order split are behavioral, not new
-  API). Not yet booted end to end in this spike.
-- The `SessionStorePort` (Elasticsearch) and `MembershipPort` (groups claim) are stubs.
-- Legacy security code is not deleted, only switched off by the flag, so the two can be compared.
+- Compiles against the released CSL API; correct runtime needs the CSL spike build above (the toggle
+  + order split are behavioral, not new API).
+- `SessionStorePort` (Elasticsearch) done; `MembershipPort` is a stub.
+- Legacy security code is switched off by the flag, not deleted, so the two can be compared.
 
 ## Testing findings (running log)
 
-Matters found while manually testing the spike against a local CCSM/Keycloak setup
+Found while manually testing against a local CCSM/Keycloak setup
 (`optimize/docker-compose.ccsm-without-optimize.yml`), and how each was addressed:
 
 1. **Config bridge not loading.** The `EnvironmentPostProcessor` was registered via the
-   auto-configuration `...EnvironmentPostProcessor.imports` file, which Spring Boot does not read
-   for EPPs. It never ran, so `method`/`unhandled-paths-chain.enabled` stayed unset and two `/**`
-   chains (basic-auth webapp via `matchIfMissing` + deny chain) collided at startup. Fixed by
-   registering the bridge in `META-INF/spring.factories`.
-2. **Missing OIDC redirect-uri.** CSL's authorization-code `ClientRegistration` requires a
-   redirect-uri; startup failed with `redirectUri cannot be empty`. The bridge now sets it.
-3. **Redirect loop via `URLRedirectFilter`.** Optimize's SPA-routing filter runs before the
-   security chain and bounced `/oauth2/authorization/**` to `/#` (confirmed by HAR: the `/#` 302
-   carried no CSL security headers). Fixed by passing the CSL login-initiation endpoints through.
-4. **`redirect_uri` mismatch with the pre-provisioned IdP client.** Identity registers the Keycloak
-   `optimize` client with the legacy callback `/api/authentication/callback`, but CSL used
-   `/sso-callback`. Rather than force operators to change their IdP client, CSL was made to derive
-   its redirection-endpoint path from the configured `redirect-uri` (CSL spike, ADR-0036), and the
-   bridge points Optimize at `{baseUrl}/api/authentication/callback`.
-
-5. **Session-authenticated API calls 401'd** (`Could not extract request user!`), causing the SPA
-   to loop (`/api/identity/current/user`, `/api/process/overview`). Optimize's
-   `SessionService.getRequestUserOrFailNotAuthorized` resolved the user only from a bearer
-   `JwtAuthenticationToken` or the legacy `X-Optimize-Authorization` cookie; under CSL the browser
-   is authenticated via the OIDC session (`OAuth2AuthenticationToken` in the `SecurityContext`).
-   Added a branch that resolves the user id (principal name = `sub`) from that token. Broader
-   follow-up: other user-resolution sites in Optimize (and the `MembershipPort` stub) likely need
-   the same CSL-principal bridge for full functionality.
-
-6. **Logout did nothing, then logged the user straight back in.** The SPA called Optimize's `GET
-   /api/authentication/logout`, which ran only the legacy cookie cleanup (revoke refresh token,
-   delete `X-Optimize-Authorization`) and never touched the CSL server session. A first fix added a
-   `SecurityContextLogoutHandler` to that endpoint, but that only invalidates the *local* session —
-   the Keycloak SSO session stayed alive, so the next `/oauth2/authorization/oidc` hop silently
-   re-authenticated. Legacy CCSM had ended the IdP session by revoking the refresh token at
-   Keycloak's logout endpoint; under CSL there is no refresh-token cookie, so that path was a no-op.
-   Fixed by aligning with OC: the SPA (`Logout.js`) now POSTs CSL's server-side `/logout` (CSRF
-   header from the request wrapper). For fetch/XHR CSL responds `200 {"url": <IdP end-session URL>}`
-   (or `204` when the IdP publishes no `end_session_endpoint`); the frontend navigates the browser
-   to that URL, which ends the Keycloak SSO session and returns to the CSL-configured
-   `post_logout_redirect_uri`. This invalidates the server session (removed from the
-   `SessionStorePort`) *and* the IdP session. Optimize's `URLRedirectFilter` already passes `/logout`
-   through to Spring Security. The legacy `GET /api/authentication/logout` endpoint stays for the
-   flag-off path.
-7. **`CCSMUserCache` could not load users** (`WARN … Could not retrieve user because no user token
-   present`). `ccsmTokenService.getCurrentUserAuthToken()` read the user access token from the old
-   Optimize cookie; under CSL that token lives in the OIDC session's `OAuth2AuthorizedClient`.
-   Fixed: `getCurrentUserAuthToken()` now prefers the CSL access token (loaded from the injected
-   `OAuth2AuthorizedClientRepository` keyed by the current `OAuth2AuthenticationToken`) and falls
-   back to the cookie for the legacy setup. Same Keycloak access token the Identity SDK expects, so
-   user lookups work. The repository is injected as an optional `ObjectProvider` (absent in legacy
-   CCSM). This is the concrete instance of the host-side token/user-resolution rewiring called out
-   in ADR-0036; a production adoption should apply the same bridge wherever the user token is read.
-8. **After logout the SPA hung on a spinner.** Once the session was gone, the SPA's XHR calls
-   (`/api/token`, `/api/dashboard/management`, `/api/process/overview`) were answered by the webapp
-   chain with `302 -> /oauth2/authorization/oidc -> Keycloak`; the browser followed that redirect
-   cross-origin as a `fetch`, CORS blocked it (`OPTIONS 405`, `GET` status 0), so the frontend's
-   `PrivateRoute` 401 handler never fired. CSL's default OIDC entry point returns 401 only for
-   requests carrying an `Authorization` header (bearer); Optimize's cookie-session XHR has none.
-   Fixed host-side via CSL's `OidcAuthenticationEntryPoint` SPI:
-   `OptimizeOidcAuthenticationEntryPoint` returns 401 for `/api/**` (the SPA's XHR surface) and keeps
-   the 302-to-IdP redirect for real navigations. This restores Optimize's legacy contract (API ->
-   401 -> `PrivateRoute` reloads -> navigation -> login). Worth feeding back to CSL: its default
-   entry point could content-negotiate (XHR / `Sec-Fetch-Dest: empty` -> 401) so cookie-session SPAs
-   work without a host override.
-9. **`CCSMUserCache` user *search* returned 403 from Identity — root cause was a Keycloak
-   provisioning gap, not a CSL regression.** Under CSL, `getUserById`/`search` use the user's OIDC
-   session access token (the `getCurrentUserAuthToken` bridge from #7), exactly as legacy used the
-   user's cookie token. Identity's user API authorizes the `read:users` client role on
-   `camunda-identity-resource-server`; the `Optimize` realm role is a composite that grants it, and
-   the demo user is meant to receive `Optimize` (compose `KEYCLOAK_USERS_0_ROLES_1=Optimize`). In the
-   local Keycloak the seed never landed: `demo` had only `Default user role` (and the compose's
-   `KEYCLOAK_USERS_0_ROLES_0=Identity` references a realm role that does not exist — it is
-   `ManagementIdentity`). So the token carried no `read:users`, no `permissions.*`, and no Identity
-   audience, and Identity 403'd. A client-credentials token for the `optimize` client failed the same
-   way (its service account also had only `Default user role`). Any build — legacy or CSL — would
-   403 with this user/Keycloak. Fixed by granting `demo` the `Optimize` realm role in Keycloak and
-   re-logging in; the `camunda-identity` default scope's audience-resolve + `permissions.${client_id}`
-   mappers (with `fullScopeAllowed=true`) then put the permissions and Identity audience in the token
-   and search works. No Optimize code change was needed. The temporary `SPIKE-DEBUG` claim-decode log
-   used to diagnose this has been removed.
+   auto-configuration `.imports` file (which Boot does not read for EPPs), so it never ran and two
+   `/**` chains collided at startup. Fixed by registering it in `META-INF/spring.factories`.
+2. **Missing OIDC redirect-uri** (`redirectUri cannot be empty`). The bridge now sets it.
+3. **Redirect loop via `URLRedirectFilter`.** It bounced `/oauth2/authorization/**` to `/#` before
+   security ran. Fixed by passing the CSL login-initiation endpoints through.
+4. **`redirect_uri` mismatch.** Identity registers the `optimize` client with
+   `/api/authentication/callback`, but CSL used `/sso-callback`. CSL now derives its
+   redirection-endpoint path from the configured `redirect-uri`; the bridge points Optimize at
+   `{baseUrl}/api/authentication/callback` (no IdP change).
+5. **Session API calls 401'd** (SPA loop). `SessionService` resolved the user only from a bearer JWT
+   or the legacy cookie; added a branch resolving the user id from the OIDC session's
+   `OAuth2AuthenticationToken`.
+6. **Logout did nothing, then re-logged the user in.** The legacy `GET /api/authentication/logout`
+   only cleaned cookies; a local `SecurityContextLogoutHandler` still left the Keycloak SSO session
+   alive (legacy killed it by revoking the refresh token, which does not exist under CSL). Fixed by
+   aligning with OC: `Logout.js` POSTs CSL's `/logout` (CSRF header from the request wrapper); for
+   fetch/XHR CSL returns `200 {"url": <IdP end-session URL>}` (or `204`), the frontend navigates
+   there, ending the SSO session and returning to the `post_logout_redirect_uri`
+   (`postLogoutRedirectPath()="/"` -> login). Server session + IdP session both terminated.
+7. **`CCSMUserCache` had no user token.** `getCurrentUserAuthToken()` read the legacy cookie; under
+   CSL the token lives in the OIDC session's `OAuth2AuthorizedClient`. Fixed to prefer that (loaded
+   from an optional `OAuth2AuthorizedClientRepository` keyed by the `OAuth2AuthenticationToken`),
+   falling back to the cookie for legacy.
+8. **SPA hung on a spinner after logout.** Unauthenticated `/api/**` XHR got a `302 -> IdP` the
+   cross-origin `fetch` could not follow (CORS), so `PrivateRoute`'s 401 handler never fired. CSL's
+   default entry point returns 401 only for `Authorization`-header (bearer) requests. Fixed with
+   `OptimizeOidcAuthenticationEntryPoint`: 401 for `/api/**`, 302 for navigations. (Feedback for CSL:
+   its default could content-negotiate `Sec-Fetch-Dest: empty` -> 401 so cookie-session SPAs work
+   without a host override.)
+9. **User search 403 from Identity — a Keycloak provisioning gap, not a CSL regression.** Under CSL,
+   the cache uses the user's OIDC token (finding 7), as legacy used the cookie token. Identity's user
+   API needs the `read:users` client role on `camunda-identity-resource-server`, granted by the
+   `Optimize` composite realm role. In the local Keycloak the seed never assigned it — `demo` had only
+   `Default user role` (and the compose's `KEYCLOAK_USERS_0_ROLES_0=Identity` names a non-existent
+   role; it is `ManagementIdentity`) — so the token carried no permissions/audience and Identity 403'd
+   (a client-credentials `optimize` token failed the same way). Fixed by granting `demo` the
+   `Optimize` realm role and re-logging in; the `camunda-identity` default scope's audience-resolve +
+   `permissions.${client_id}` mappers (`fullScopeAllowed=true`) then populate the token. No code change.
 
 ## Follow-ups (tracked in ADR-0036)
 
-1. `SessionStorePort` over Optimize's Elasticsearch + `web-session` index — **done (ES-only)**.
-   Remaining: an OpenSearch mirror (`WebSessionIndexOS` + `OpenSearchSchemaManager` registration +
-   an OS-backed adapter, `@Conditional(OpenSearchCondition.class)`), and removing the old
-   auth-storage index (the terminated-session store) on upgrade.
+1. `SessionStorePort`: ES done. Remaining: OpenSearch mirror (`WebSessionIndexOS` +
+   `OpenSearchSchemaManager` registration + OS adapter), and removing the old terminated-session index
+   on upgrade.
 2. Real `MembershipPort` (OIDC groups-claim extraction).
-3. Config backwards-compatibility layer: prototype present as
-   `OptimizeSecurityConfigCompatibilityPostProcessor` (a Spring `EnvironmentPostProcessor`,
-   registered in `META-INF/spring.factories`, mirroring OC's
-   `PersistentWebSessionPropertiesPostProcessor`). It bridges Optimize's existing auth config to
-   `camunda.security.*` at low precedence so operators are not forced to migrate. The full
-   key-by-key mapping is in `CONFIG-COMPAT.md`; the skeleton implements the representative OIDC /
-   API / HSTS keys and deprecation warnings, with the remaining rows marked TODO (and the
-   `environment-config.yaml`-only path, vs env vars, as a follow-up).
-4. CSRF: enabled for alignment with OC (`camunda.security.csrf.enabled=true`). The frontend part is
-   done in this spike — `optimize/client/src/modules/request.ts` now reads the `X-CSRF-TOKEN`
-   response header into `sessionStorage` and sends it back on POST/PUT/PATCH/DELETE, mirroring
-   Operate/Tasklist (single central wrapper, ~half a day incl. tests in `request.test.ts`). Public
-   `/external` share endpoints are anonymous GETs and are CSRF-exempt via `unprotectedPaths()`.
-5. Chain-level boot test (see below).
+3. Config back-compat: prototype present (`OptimizeSecurityConfigCompatibilityPostProcessor`). Full
+   mapping in `CONFIG-COMPAT.md`; representative OIDC/API/HSTS keys implemented, remaining rows TODO
+   (plus the `environment-config.yaml`-only path, vs env vars).
+4. CSRF: enabled for OC alignment. Frontend done — `request.ts` reads `X-CSRF-TOKEN` into
+   `sessionStorage` and echoes it on state-changing requests. Public `/external` share GETs are exempt.
+5. Chain-level boot test (below).
 
 ## Test blind spot to close (important)
 
-Optimize's current auth tests are almost all pure unit tests of helper services and individual
-filters. No test boots the real `SecurityFilterChain` beans and drives HTTP through the assembled
-chain (the one adapter IT builds the adapter with `null` collaborators and reflects a decoder
-method). This is why the Spring Boot 4.0 / Spring Security 7 wiring break passed CI.
+Optimize's auth tests are almost all unit tests of helpers/filters; none boots the real
+`SecurityFilterChain` beans and drives HTTP through the assembled chain. That is why the Spring Boot
+4.0 / Spring Security 7 wiring break passed CI.
 
-Add a chain-level boot test (`@SpringBootTest(webEnvironment = RANDOM_PORT)` or MockMvc importing
-the real security beans) asserting, against the assembled chain:
+Add a chain-level boot test (`@SpringBootTest(webEnvironment = RANDOM_PORT)` or MockMvc with the real
+security beans) asserting, against the assembled chain:
 
 1. Unauthenticated `GET /` -> 302 to the IdP authorize URL.
-2. `GET /api/public/**` with no/invalid/wrong-audience bearer -> 401; with a valid bearer -> 2xx.
-3. Unauthenticated `GET /api/...` (non-public API served by the catch-all) -> 302; with a valid
-   session -> reaches the handler.
-4. Each permitAll path (`/api/readyz`, `/api/ui-configuration`, `/api/localization`,
-   `/actuator/**`, `/external/**`, static) reachable without auth -> 2xx.
-5. A request with a valid session reaches a protected endpoint (proves the SecurityContext is
-   populated in-chain).
+2. `GET /api/public/**` with no/invalid/wrong-audience bearer -> 401; valid bearer -> 2xx.
+3. Unauthenticated `GET /api/...` (non-public, served by the catch-all) -> 302; valid session ->
+   reaches the handler.
+4. Each permitAll path (`/api/readyz`, `/api/ui-configuration`, `/api/localization`, `/actuator/**`,
+   `/external/**`, static) reachable without auth -> 2xx.
+5. A valid session reaches a protected endpoint (proves the SecurityContext is populated in-chain).
