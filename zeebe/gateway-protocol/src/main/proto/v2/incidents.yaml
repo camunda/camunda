@@ -549,6 +549,15 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
+        updatedBy:
+          description: The actor ID from the latest accessible successful audit log entry for this incident.
+          type: string
+          nullable: true
+        updatedAt:
+          description: The timestamp of the latest accessible successful audit log entry for this incident.
+          type: string
+          format: date-time
+          nullable: true
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.6"
@@ -576,6 +585,10 @@ components:
           addedInVersion: "8.8"
         - propertyName: jobKey
           addedInVersion: "8.6"
+        - propertyName: updatedBy
+          addedInVersion: "8.10"
+        - propertyName: updatedAt
+          addedInVersion: "8.10"
 
     IncidentResolutionRequest:
       type: object
@@ -739,5 +752,3 @@ components:
           $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
       required:
         - field
-
-

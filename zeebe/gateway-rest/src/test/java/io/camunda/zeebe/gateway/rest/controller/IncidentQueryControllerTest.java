@@ -69,7 +69,9 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "creationTime": "2024-05-23T23:05:00.000Z",
                       "state": "ACTIVE",
                       "jobKey": "101",
-                      "tenantId": "tenantId"
+                      "tenantId": "tenantId",
+                      "updatedBy": null,
+                      "updatedAt": null
                   }
               ],
               "page": {
@@ -116,9 +118,11 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                           "elementId": "elementId",
                           "elementInstanceKey": "17",
                           "creationTime": "2024-05-23T23:05:00.000Z",
-                          "state": "ACTIVE",
-                          "jobKey": "101",
-                          "tenantId": "tenantId"
+                           "state": "ACTIVE",
+                           "jobKey": "101",
+                           "tenantId": "tenantId",
+                           "updatedBy": null,
+                           "updatedAt": null
                       }
           """;
 

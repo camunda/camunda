@@ -828,6 +828,15 @@ components:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        updatedBy:
+          description: The actor ID from the latest accessible successful audit log entry for this user task.
+          type: string
+          nullable: true
+        updatedAt:
+          description: The timestamp of the latest accessible successful audit log entry for this user task.
+          type: string
+          format: date-time
+          nullable: true
       x-properties-added-in-version:
         - propertyName: name
           addedInVersion: "8.8"
@@ -879,6 +888,10 @@ components:
           addedInVersion: "8.6"
         - propertyName: tags
           addedInVersion: "8.9"
+        - propertyName: updatedBy
+          addedInVersion: "8.10"
+        - propertyName: updatedAt
+          addedInVersion: "8.10"
 
     UserTaskCompletionRequest:
       type: object

@@ -333,6 +333,15 @@ components:
         version:
           description: The assigned version of the decision definition.
           type: integer
+        updatedBy:
+          description: The actor ID from the latest accessible successful audit log entry for this decision definition.
+          type: string
+          nullable: true
+        updatedAt:
+          description: The timestamp of the latest accessible successful audit log entry for this decision definition.
+          type: string
+          format: date-time
+          nullable: true
       x-properties-added-in-version:
         - propertyName: decisionDefinitionId
           addedInVersion: "8.6"
@@ -352,6 +361,10 @@ components:
           addedInVersion: "8.6"
         - propertyName: version
           addedInVersion: "8.6"
+        - propertyName: updatedBy
+          addedInVersion: "8.10"
+        - propertyName: updatedAt
+          addedInVersion: "8.10"
 
     DecisionEvaluationInstruction:
       x-polymorphic-schema: true

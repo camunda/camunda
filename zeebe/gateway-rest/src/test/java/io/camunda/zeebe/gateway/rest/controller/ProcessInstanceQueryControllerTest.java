@@ -112,7 +112,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "hasIncident": false,
             "tenantId": "tenant",
             "tags": ["tag1", "tag2"],
-            "businessId": "biz-id"
+            "businessId": "biz-id",
+            "updatedBy": null,
+            "updatedAt": null
           }
           """;
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -135,7 +137,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "hasIncident": false,
                   "tenantId": "tenant",
                   "tags": ["tag1", "tag2"],
-                  "businessId": "biz-id"
+                  "businessId": "biz-id",
+                  "updatedBy": null,
+                  "updatedAt": null
                 }
               ],
               "page": {
@@ -185,7 +189,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "creationTime": "2024-01-02T00:00:00.000Z",
                   "state": "ACTIVE",
                   "jobKey": "567",
-                  "tenantId": "tenantId"
+                  "tenantId": "tenantId",
+                  "updatedBy": null,
+                  "updatedAt": null
                 }
               ],
               "page": {
@@ -792,7 +798,9 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "hasIncident": false,
               "tenantId": "tenant",
               "tags": [],
-              "businessId": null
+              "businessId": null,
+              "updatedBy": null,
+              "updatedAt": null
             }
             """;
 

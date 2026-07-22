@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.DECISION;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -80,12 +82,21 @@ public class DecisionDefinitionController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
     try {
-      return ResponseEntity.ok(
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var response =
           SearchQueryResponseMapper.toDecisionDefinition(
               serviceRegistry
                   .decisionDefinitionServices(physicalTenantId)
-                  .getByKey(
-                      decisionDefinitionKey, authenticationProvider.getCamundaAuthentication())));
+                  .getByKey(decisionDefinitionKey, authentication));
+      UpdateMetadataMapper.addUpdateMetadata(
+          response,
+          DecisionDefinitionResult::getDecisionDefinitionKey,
+          DECISION,
+          serviceRegistry.auditLogServices(physicalTenantId),
+          authentication,
+          DecisionDefinitionResult::setUpdatedBy,
+          DecisionDefinitionResult::setUpdatedAt);
+      return ResponseEntity.ok(response);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -116,11 +127,19 @@ public class DecisionDefinitionController {
     final var decisionDefinitionServices =
         serviceRegistry.decisionDefinitionServices(physicalTenantId);
     try {
-      final var result =
-          decisionDefinitionServices.search(
-              query, authenticationProvider.getCamundaAuthentication());
-      return ResponseEntity.ok(
-          SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = decisionDefinitionServices.search(query, authentication);
+      final var response =
+          SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result);
+      UpdateMetadataMapper.addUpdateMetadata(
+          response.getItems(),
+          DecisionDefinitionResult::getDecisionDefinitionKey,
+          DECISION,
+          serviceRegistry.auditLogServices(physicalTenantId),
+          authentication,
+          DecisionDefinitionResult::setUpdatedBy,
+          DecisionDefinitionResult::setUpdatedAt);
+      return ResponseEntity.ok(response);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

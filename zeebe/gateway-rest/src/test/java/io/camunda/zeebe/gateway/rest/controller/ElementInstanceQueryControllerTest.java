@@ -188,7 +188,9 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
             "creationTime": "2023-05-17T00:00:00.000Z",
             "state": "ACTIVE",
             "jobKey": "99",
-            "tenantId": "tenant1"
+            "tenantId": "tenant1",
+            "updatedBy": null,
+            "updatedAt": null
           }
         ],
         "page": {
@@ -221,7 +223,9 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                   "creationTime": "2024-01-02T00:00:00.000Z",
                   "state": "ACTIVE",
                   "jobKey": "567",
-                  "tenantId": "tenantId"
+                  "tenantId": "tenantId",
+                  "updatedBy": null,
+                  "updatedAt": null
                 }
               ],
               "page": {

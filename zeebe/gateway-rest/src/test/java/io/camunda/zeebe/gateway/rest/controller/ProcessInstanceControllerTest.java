@@ -3008,7 +3008,9 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "processInstanceKey": "2251799814751255",
                 "rootProcessInstanceKey": "3751799814751237",
                 "elementInstanceKey": "2251799814751258",
-                "jobKey": "1"
+                "jobKey": "1",
+                "updatedBy": null,
+                "updatedAt": null
             }
         ],
         "page": {

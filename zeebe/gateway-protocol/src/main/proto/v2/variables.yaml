@@ -266,9 +266,22 @@ components:
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
+        updatedBy:
+          description: The actor ID from the latest accessible successful audit log entry for this variable.
+          type: string
+          nullable: true
+        updatedAt:
+          description: The timestamp of the latest accessible successful audit log entry for this variable.
+          type: string
+          format: date-time
+          nullable: true
       x-properties-added-in-version:
         - propertyName: rootProcessInstanceKey
           addedInVersion: "8.9"
+        - propertyName: updatedBy
+          addedInVersion: "8.10"
+        - propertyName: updatedAt
+          addedInVersion: "8.10"
 
     VariableValueFilterProperty:
       type: object
