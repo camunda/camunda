@@ -1213,7 +1213,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         ramp-up: 0 # Type: Duration, Env: CAMUNDA_PROCESSING_FLOWCONTROL_WRITE_RAMPUP
         throttle: # Type: io.camunda.configuration.Throttle
           # When exporting is a bottleneck, the write rate is throttled to keep the backlog at this value.
-          acceptable-backlog: 100000 # Type: Integer, Env: CAMUNDA_PROCESSING_FLOWCONTROL_WRITE_THROTTLE_ACCEPTABLEBACKLOG
+          acceptable-backlog: 50000 # Type: Integer, Env: CAMUNDA_PROCESSING_FLOWCONTROL_WRITE_THROTTLE_ACCEPTABLEBACKLOG
           # Enable throttling. If enabled, throttle the write rate based on exporting backlog
           enabled: false # Type: Boolean, Env: CAMUNDA_PROCESSING_FLOWCONTROL_WRITE_THROTTLE_ENABLED
           # Even when exporting is fully blocked, always allow this many writes per second
