@@ -124,10 +124,7 @@ public class SchemaManager implements CloseableSilently {
     this.schemaValidator = schemaValidator;
     retryDecorator =
         new RetryDecorator(config.schemaManager().getRetry())
-            .withRetryOnException(
-                e ->
-                    !(e instanceof IncompatibleVersionException
-                        || e instanceof IncompatibleClusterIdException));
+            .withRetryOnException(e -> !(e instanceof IncompatibleVersionException));
     this.schemaManagerMetrics = schemaManagerMetrics;
     schemaMetadataStore =
         new SchemaMetadataStore(

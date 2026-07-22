@@ -141,12 +141,14 @@ public class CamundaExporter implements Exporter {
       searchEngineClient = clientAdapter.getSearchEngineClient();
 
       try (final var schemaManager = createSchemaManager()) {
+        if (!schemaManager.isSchemaReadyForUse()) {
+          throw new ExporterException("Schema is not ready for use");
+        }
+        // the metadata index validateClusterId() reads/writes is only guaranteed to exist once
+        // isSchemaReadyForUse() returns true, so this must run after that check
         if (!clusterIdValidated) {
           schemaManager.validateClusterId();
           clusterIdValidated = true;
-        }
-        if (!schemaManager.isSchemaReadyForUse()) {
-          throw new ExporterException("Schema is not ready for use");
         }
       }
 
