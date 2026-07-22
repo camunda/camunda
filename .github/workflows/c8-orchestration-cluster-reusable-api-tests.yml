@@ -218,8 +218,9 @@ jobs:
       # parity) each manage their own standalone, throwaway broker/collector/
       # Loki/Prometheus via utils/dockerComposeControl.ts — separate from the
       # shared stack started above, so they run as their own project rather
-      # than under api-tests. Gated to main only: this project doesn't exist
-      # yet on stable/8.7, 8.8, 8.9 until backported.
+      # than under api-tests. Gated to main only, permanently: the analytics
+      # exporter's config/behavior differs enough on stable/8.7, 8.8, 8.9 that
+      # this isolated setup doesn't carry over as-is — not backporting.
       - name: Run analytics-exporter isolated tests
         if: inputs.branch == 'main'
         shell: bash
