@@ -17,7 +17,7 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
-import io.camunda.process.test.impl.cleanup.CleanupStrategyResolver;
+import io.camunda.process.test.impl.cleanup.DefaultCleanupStrategyFactory;
 import io.camunda.process.test.impl.deployment.DeploymentCollector;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +29,7 @@ public class CamundaProcessTestCleanupConfiguration {
   public CleanupStrategy cleanupStrategy(
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
     final DataDeletionMode dataDeletionMode = runtimeConfiguration.getDataDeletionMode();
-    return CleanupStrategyResolver.resolve(dataDeletionMode);
+    return DefaultCleanupStrategyFactory.resolve(dataDeletionMode);
   }
 
   @Bean

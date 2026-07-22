@@ -31,6 +31,8 @@ import io.camunda.process.test.api.judge.JudgeConfig;
 import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.api.similarity.SemanticSimilarityConfig;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.impl.cleanup.CleanupStrategy;
+import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
@@ -80,6 +82,8 @@ public class JunitExtensionTest {
   @Mock private CamundaManagementClient camundaManagementClient;
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
   @Mock private CamundaProcessTestContainerProvider containerProvider;
+  @Mock private CleanupStrategyFactory cleanupStrategyFactory;
+  @Mock private CleanupStrategy cleanupStrategy;
 
   @Mock private ExtensionContext extensionContext;
   @Mock private TestInstances testInstances;
@@ -394,6 +398,12 @@ public class JunitExtensionTest {
   @Nested
   class AfterEachTests {
 
+    @BeforeEach
+    void configureMocks() {
+      when(camundaRuntimeBuilder.getCleanupStrategyFactory()).thenReturn(cleanupStrategyFactory);
+      when(cleanupStrategyFactory.create(any())).thenReturn(cleanupStrategy);
+    }
+
     @Test
     void shouldPrintResultIfTestFailed() throws Exception {
       // given
@@ -446,7 +456,7 @@ public class JunitExtensionTest {
     }
 
     @Test
-    void shouldPurgeCluster() throws Exception {
+    void shouldCleanupData() throws Exception {
       // given
       final CamundaProcessTestExtension extension =
           new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
@@ -460,7 +470,7 @@ public class JunitExtensionTest {
       extension.afterEach(extensionContext);
 
       // then
-      verify(camundaManagementClient).purgeCluster();
+      verify(cleanupStrategy).cleanup(any(), any(), any(), any());
     }
 
     @Test
@@ -498,25 +508,6 @@ public class JunitExtensionTest {
 
       // then
       verify(camundaManagementClient, never()).resetTime();
-    }
-
-    @Test
-    void shouldSkipDataDeletionIfDisabled() throws Exception {
-      // given
-      final CamundaProcessTestExtension extension =
-          new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
-              .withDataDeletionMode(DataDeletionMode.NONE);
-
-      // when
-      extension.beforeAll(extensionContext);
-      extension.beforeEach(extensionContext);
-
-      setManagementClientDummy(extension);
-
-      extension.afterEach(extensionContext);
-
-      // then
-      verify(camundaManagementClient, never()).purgeCluster();
     }
 
     private void setManagementClientDummy(final CamundaProcessTestExtension extension) {

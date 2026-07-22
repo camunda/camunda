@@ -26,7 +26,7 @@ import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
-import io.camunda.process.test.impl.cleanup.CleanupStrategyResolver;
+import io.camunda.process.test.impl.cleanup.CleanupStrategyFactory;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
@@ -449,8 +449,11 @@ public class CamundaProcessTestExtension
   }
 
   private void deleteRuntimeData() {
+    final CleanupStrategyFactory cleanupStrategyFactory =
+        runtimeBuilder.getCleanupStrategyFactory();
+    final CleanupStrategy cleanupStrategy = cleanupStrategyFactory.create(dataDeletionMode);
+
     try {
-      final CleanupStrategy cleanupStrategy = CleanupStrategyResolver.resolve(dataDeletionMode);
       cleanupStrategy.cleanup(
           camundaManagementClient,
           () -> runtime.getCamundaClientBuilderFactory().get().build(),
