@@ -15,6 +15,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {ExecutionCountToggle} from './ExecutionCountToggle';
+import {SortOrderToggle} from './SortOrderToggle';
 import {ElementInstancesTree} from './ElementInstancesTree';
 import {FilteredElementInstancesList} from './FilteredElementInstancesList';
 import {SearchForm, SEARCH_PARAM_KEY} from './SearchForm';
@@ -43,6 +44,7 @@ const Layout: React.FC<LayoutProps> = observer(
           <PanelHeader title="Instance History" size="sm">
             {!modificationsStore.isModificationModeEnabled && (
               <Stack orientation="horizontal" gap={5}>
+                <SortOrderToggle />
                 <TimeStampPill />
                 <ExecutionCountToggle />
               </Stack>
