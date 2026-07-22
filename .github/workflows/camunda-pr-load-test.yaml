@@ -53,6 +53,12 @@ jobs:
       sanitized-name: ${{ steps.compute-namespace.outputs.namespace }}
       storage-type: ${{ inputs.secondary-storage-type }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+
       - id: sanitize-author
         name: Sanitize author name
         uses: camunda/infra-global-github-actions/sanitize-branch-name@f7e888c5b7d9220bb4a549306c1cbaf798670d0e # sanitize-branch-name: v1.0.0
@@ -75,10 +81,6 @@ jobs:
           pr_number="${{ github.event.pull_request.number }}"
           echo "namespace=c8-${author}-pr-${pr_number}-${db_type}" >> "$GITHUB_OUTPUT"
 
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          sparse-checkout: .github
       - name: Observe build status
         if: always()
         continue-on-error: true

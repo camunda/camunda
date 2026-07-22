@@ -37,6 +37,15 @@ jobs:
     timeout-minutes: 20
     steps:
     #########################################################################
+    # Checkout the specified workflow_call ref when provided; for pull_request
+    # runs, an empty inputs.ref lets checkout fall back to the event ref
+    - name: Checkout
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      with:
+        ref: ${{ inputs.ref }}
+        persist-credentials: false
+
+    #########################################################################
     # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
     - id: sanitize
       if: inputs.app-name == ''
@@ -72,14 +81,6 @@ jobs:
         vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
         vault-url: ${{ secrets.VAULT_ADDR }}
-
-    #########################################################################
-    # Checkout the specified workflow_call ref when provided; for pull_request
-    # runs, an empty inputs.ref lets checkout fall back to the event ref
-    - name: Checkout
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      with:
-        ref: ${{ inputs.ref }}
 
     #########################################################################
     # Tear down preview environment
