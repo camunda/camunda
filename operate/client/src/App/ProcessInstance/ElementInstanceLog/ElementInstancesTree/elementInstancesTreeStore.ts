@@ -430,6 +430,18 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     return nodeData.items.some((item) => item.state === 'ACTIVE');
   };
 
+  private isScopeActive = (scopeKey: string): boolean => {
+    for (const nodeData of this.state.nodes.values()) {
+      const scope = nodeData.items.find(
+        (item) => item.elementInstanceKey === scopeKey,
+      );
+      if (scope !== undefined) {
+        return scope.state === 'ACTIVE';
+      }
+    }
+    return false;
+  };
+
   pollExpandedNodes = async () => {
     if (document.visibilityState === 'hidden') {
       return;
@@ -450,7 +462,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       if (scopeKey === this.state.rootScopeKey) {
         return true;
       }
-      return this.hasRunningChildren(scopeKey);
+      return this.isScopeActive(scopeKey) || this.hasRunningChildren(scopeKey);
     });
 
     try {
