@@ -247,8 +247,7 @@
 
     <dependency>
       <groupId>org.msgpack</groupId>
-      <artifactId>msgpack-core</artifactId>
-      <scope>test</scope>
+      <artifactId>jackson-dataformat-msgpack</artifactId>
     </dependency>
 
     <dependency>
