@@ -11,7 +11,7 @@ import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import io.camunda.optimize.service.db.schema.index.WebSessionIndex;
 import java.io.IOException;
 
-/** SPIKE (ADR-0036): Elasticsearch binding of {@link WebSessionIndex}. */
+/** SPIKE (ADR-0038): Elasticsearch binding of {@link WebSessionIndex}. */
 public class WebSessionIndexES extends WebSessionIndex<IndexSettings.Builder> {
 
   @Override

@@ -20,7 +20,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Component;
 
 /**
- * SPIKE (ADR-0036): login-success hook for the CSL OIDC webapp chain.
+ * SPIKE (ADR-0038): login-success hook for the CSL OIDC webapp chain.
  *
  * <p>The legacy {@code CCSaaSSecurityConfigurerAdapter} ran SaaS user-id migration inside its
  * OAuth2 login success handler. Under CSL the success handler belongs to the library, so Optimize

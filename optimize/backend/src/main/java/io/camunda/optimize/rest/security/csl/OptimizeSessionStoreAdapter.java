@@ -33,7 +33,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 /**
- * SPIKE (ADR-0036): Elasticsearch-backed {@link SessionStorePort} for Optimize. This is what CSL's
+ * SPIKE (ADR-0038): Elasticsearch-backed {@link SessionStorePort} for Optimize. This is what CSL's
  * stateful webapp chain persists server-side sessions through, replacing the stateless cookie. It
  * writes to the {@code web-session} index (see {@code WebSessionIndex}) and mirrors the
  * terminated-user-session store's use of {@link OptimizeElasticsearchClient}.

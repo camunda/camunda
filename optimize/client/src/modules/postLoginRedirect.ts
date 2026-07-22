@@ -7,7 +7,7 @@
  */
 
 /**
- * SPIKE (ADR-0036): preserve the current SPA route across a logout/session-expiry -> login cycle.
+ * SPIKE (ADR-0038): preserve the current SPA route across a logout/session-expiry -> login cycle.
  *
  * Optimize is a hash-routed SPA, so the active route lives in `window.location.hash` and is never
  * sent to the server (not in the Referer, and dropped when the fetch-based logout navigates to the

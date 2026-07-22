@@ -18,7 +18,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
 /**
- * SPIKE (ADR-0036): backward-compatibility bridge for operators.
+ * SPIKE (ADR-0038): backward-compatibility bridge for operators.
  *
  * <p>Reads Optimize's existing auth/security configuration and emits the equivalent {@code
  * camunda.security.*} properties so operators are not forced to migrate their config when Optimize
@@ -75,7 +75,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // existing callback path so the pre-provisioned Identity client (which already registers
     // /api/authentication/callback) needs no change (the cloud block below overrides this to
     // /sso-callback for Auth0). CSL derives its redirection-endpoint listener path from this value
-    // (ADR-0036), so the sent redirect_uri and the listener stay aligned. Spring expands {baseUrl}
+    // (ADR-0038), so the sent redirect_uri and the listener stay aligned. Spring expands {baseUrl}
     // (scheme://host:port + context path) at request time. putIfAbsent so an explicit
     // camunda.security.authentication.oidc.redirect-uri still wins.
     derived.putIfAbsent(

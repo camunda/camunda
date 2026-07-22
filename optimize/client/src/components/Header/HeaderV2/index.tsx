@@ -82,7 +82,7 @@ function HeaderV2Body({noActions, isCloud}: {noActions?: boolean; isCloud: boole
     timezone,
     logoutHidden,
     onLogout: () => {
-      // SPIKE (ADR-0036): remember the current route so re-login returns here.
+      // SPIKE (ADR-0038): remember the current route so re-login returns here.
       storePostLoginRedirect();
       history.replace('/logout');
     },

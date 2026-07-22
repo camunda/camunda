@@ -12,7 +12,7 @@ import io.camunda.optimize.service.db.DatabaseConstants;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 
 /**
- * SPIKE (ADR-0036): index backing the persistent web sessions of the CSL stateful webapp chain.
+ * SPIKE (ADR-0038): index backing the persistent web sessions of the CSL stateful webapp chain.
  * Mirrors the terminated-user-session index. Fields map to CSL's {@code PersistentSession} (id,
  * epoch-millis timestamps, max inactive interval seconds, and the serialized attribute map). The
  * attribute map has dynamic keys, so it is stored as a disabled object (kept in _source, not

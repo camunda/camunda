@@ -1,4 +1,4 @@
-# Config backward-compatibility mapping (ADR-0036)
+# Config backward-compatibility mapping (ADR-0038)
 
 How Optimize's existing auth/security config maps to CSL `camunda.security.*`, so operators are not
 forced to migrate. Implemented by `OptimizeSecurityConfigCompatibilityPostProcessor`
@@ -18,7 +18,7 @@ TRANSPORT = Spring/server config, not part of the auth bridge (unchanged).
 |---|---|
 | `camunda.security.authentication.method` | `oidc` |
 | `camunda.security.authentication.catch-all-unhandled-paths-enabled` | `false` (Optimize webapp chain is `/**`) |
-| `camunda.security.authentication.oidc.redirect-uri` | `{baseUrl}/api/authentication/callback` (Optimize's existing callback; CSL derives its listener path from this, ADR-0036, so the pre-provisioned IdP client needs no change) |
+| `camunda.security.authentication.oidc.redirect-uri` | `{baseUrl}/api/authentication/callback` (Optimize's existing callback; CSL derives its listener path from this, ADR-0038, so the pre-provisioned IdP client needs no change) |
 
 ## OIDC / CCSM (Camunda Identity)
 | Legacy (env var / key) | CSL property | Kind |

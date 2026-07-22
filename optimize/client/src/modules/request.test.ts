@@ -226,7 +226,7 @@ describe('request', () => {
   });
 });
 
-describe('CSRF (ADR-0036)', () => {
+describe('CSRF (ADR-0038)', () => {
   beforeEach(() => {
     fetch.mockClear();
     sessionStorage.clear();

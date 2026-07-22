@@ -58,7 +58,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
-// SPIKE (ADR-0036): backs off when the CSL security setup is active
+// SPIKE (ADR-0038): backs off when the CSL security setup is active
 // (optimize.security.csl.enabled=true) so the two do not register colliding chains. Default
 // (property absent/false) keeps the legacy setup, so existing deployments are unaffected.
 @Configuration

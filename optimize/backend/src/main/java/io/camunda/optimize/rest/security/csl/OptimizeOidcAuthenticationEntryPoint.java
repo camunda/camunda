@@ -19,7 +19,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 /**
- * SPIKE (ADR-0036): entry point for the CSL OIDC webapp chain that restores Optimize's legacy "API
+ * SPIKE (ADR-0038): entry point for the CSL OIDC webapp chain that restores Optimize's legacy "API
  * returns 401, navigation redirects to login" contract.
  *
  * <p>CSL's built-in default only distinguishes bearer API calls (an {@code Authorization} header

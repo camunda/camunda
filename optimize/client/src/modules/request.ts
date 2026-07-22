@@ -29,7 +29,7 @@ export interface ErrorResponse extends Response {
 
 const handlers: Handler[] = [];
 
-// SPIKE (ADR-0036): CSRF token handling for the CSL security chains, mirroring Operate/Tasklist.
+// SPIKE (ADR-0038): CSRF token handling for the CSL security chains, mirroring Operate/Tasklist.
 // The server issues the token in the `X-CSRF-TOKEN` response header on authenticated responses; we
 // stash it and echo it back as a request header on state-changing requests. Public `/external`
 // share endpoints are anonymous GETs and are CSRF-exempt on the backend, so they need nothing here.

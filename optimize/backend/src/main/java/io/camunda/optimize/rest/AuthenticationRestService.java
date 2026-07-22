@@ -53,7 +53,7 @@ public class AuthenticationRestService {
   @GetMapping(path = LOGOUT)
   public void logoutUser(final HttpServletRequest request, final HttpServletResponse response) {
     authenticationService.logout(request.getCookies(), response);
-    // SPIKE (ADR-0036): under CSL the user is authenticated via a server-side session, so the
+    // SPIKE (ADR-0038): under CSL the user is authenticated via a server-side session, so the
     // legacy cookie cleanup above does not actually log them out. Invalidate the session (which
     // removes it from the SessionStorePort) and clear the SecurityContext. No-op in the legacy
     // stateless setup, where there is no session to invalidate. IdP end-session (Keycloak logout)

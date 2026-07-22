@@ -20,7 +20,7 @@ export function PrivateRoute({component: Component, ...rest}) {
   useEffect(() => {
     const handleResponse = async (response) => {
       if (response.status === 401) {
-        // SPIKE (ADR-0036): stash the current route so the user returns here after re-login.
+        // SPIKE (ADR-0038): stash the current route so the user returns here after re-login.
         storePostLoginRedirect();
         // reload to reinitialize the login flow on timeout
         window.location.reload();

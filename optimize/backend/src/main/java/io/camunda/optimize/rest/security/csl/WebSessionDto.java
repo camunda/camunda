@@ -10,7 +10,7 @@ package io.camunda.optimize.rest.security.csl;
 import java.util.Map;
 
 /**
- * SPIKE (ADR-0036): persisted representation of a CSL web session in the {@code web-session} index.
+ * SPIKE (ADR-0038): persisted representation of a CSL web session in the {@code web-session} index.
  * Mirrors CSL's {@code PersistentSession}. Jackson serializes each {@code byte[]} attribute value
  * as Base64, so {@code attributes} round-trips as a JSON object stored in the (non-indexed)
  * attributes field. A no-arg constructor is required for deserialization.

@@ -79,7 +79,7 @@ public class CCSMTokenService {
   private final AuthCookieService authCookieService;
   private final ConfigurationService configurationService;
   private final Identity identity;
-  // SPIKE (ADR-0036): present only under the CSL OIDC webapp chain; absent (null) in the legacy
+  // SPIKE (ADR-0038): present only under the CSL OIDC webapp chain; absent (null) in the legacy
   // CCSM setup, where token resolution falls back to the Optimize auth cookie.
   private final ObjectProvider<OAuth2AuthorizedClientRepository> authorizedClientRepositoryProvider;
 
@@ -316,7 +316,7 @@ public class CCSMTokenService {
     if (request == null) {
       return Optional.empty();
     }
-    // SPIKE (ADR-0036): under CSL the user's access token lives in the OIDC session's authorized
+    // SPIKE (ADR-0038): under CSL the user's access token lives in the OIDC session's authorized
     // client, not the legacy Optimize auth cookie. Prefer it; fall back to the cookie so the legacy
     // CCSM setup keeps working. This is the same Keycloak access token the Identity SDK expects.
     return cslSessionAccessToken(request).or(() -> AuthCookieService.getAuthCookieToken(request));

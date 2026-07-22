@@ -12,7 +12,7 @@ import io.camunda.security.core.port.out.MembershipQuery;
 import java.util.List;
 
 /**
- * SPIKE (ADR-0036): Optimize's {@link MembershipPort}. CSL calls this lazily to resolve a
+ * SPIKE (ADR-0038): Optimize's {@link MembershipPort}. CSL calls this lazily to resolve a
  * principal's mapping rules, groups, roles, and tenants from the OIDC token claims.
  *
  * <p>STUB: this spike returns the groups from the OIDC {@code groups} claim only and leaves roles,

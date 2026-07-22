@@ -31,7 +31,7 @@ public class AccountsUserAccessTokenProvider {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(AccountsUserAccessTokenProvider.class);
 
-  // SPIKE (ADR-0036): optional so this stays inert in the legacy CCSaaS setup, where the user's
+  // SPIKE (ADR-0038): optional so this stays inert in the legacy CCSaaS setup, where the user's
   // access token comes from the X-Optimize-Authorization cookie and no OAuth2 authorized-client
   // repository is registered. Present only under CSL.
   private final ObjectProvider<OAuth2AuthorizedClientRepository> authorizedClientRepositoryProvider;
@@ -46,7 +46,7 @@ public class AccountsUserAccessTokenProvider {
     if (authentication instanceof final JwtAuthenticationToken jwt) {
       return Optional.ofNullable(jwt.getToken().getTokenValue());
     }
-    // SPIKE (ADR-0036): under CSL the browser is authenticated via the OIDC webapp session, whose
+    // SPIKE (ADR-0038): under CSL the browser is authenticated via the OIDC webapp session, whose
     // access token lives in the OAuth2AuthorizedClient rather than a bearer JwtAuthenticationToken
     // or the (now removed) service-token cookie. This mirrors
     // CCSMTokenService#cslSessionAccessToken.

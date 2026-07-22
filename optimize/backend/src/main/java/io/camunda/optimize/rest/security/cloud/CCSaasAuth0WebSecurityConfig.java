@@ -23,7 +23,7 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
-// SPIKE (ADR-0036): backs off under CSL so it does not publish the legacy Auth0
+// SPIKE (ADR-0038): backs off under CSL so it does not publish the legacy Auth0
 // ClientRegistrationRepository. Otherwise CSL adopts that legacy registration via
 // @ConditionalOnMissingBean and its {baseUrl}/sso-callback?uuid redirect wins over the
 // camunda.security.authentication.oidc.* config.

@@ -17,7 +17,7 @@ export function Logout({mightFail, history}) {
   useEffect(() => {
     (async () => {
       await mightFail(
-        // SPIKE (ADR-0036): log out via CSL's server-side /logout endpoint (aligned with OC).
+        // SPIKE (ADR-0038): log out via CSL's server-side /logout endpoint (aligned with OC).
         // For fetch/XHR it responds 200 {"url": <IdP end-session URL>} (or 204 when the IdP has
         // no end-session endpoint). We navigate the browser to that URL ourselves, because a 302
         // from fetch cannot drive a cross-origin top-level navigation. This both invalidates the

@@ -81,7 +81,7 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.util.UriComponentsBuilder;
 
-// SPIKE (ADR-0036): backs off when the CSL security setup is active
+// SPIKE (ADR-0038): backs off when the CSL security setup is active
 // (optimize.security.csl.enabled=true). Default keeps the legacy setup.
 @Configuration
 @EnableWebSecurity

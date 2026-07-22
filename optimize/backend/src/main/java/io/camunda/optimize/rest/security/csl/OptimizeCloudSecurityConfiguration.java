@@ -26,7 +26,7 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 /**
- * SPIKE (ADR-0036): CCSaaS-specific security wiring for the CSL adoption. Active only under the
+ * SPIKE (ADR-0038): CCSaaS-specific security wiring for the CSL adoption. Active only under the
  * cloud profile with CSL enabled. Brings back the SaaS org/cluster validation the legacy {@code
  * CCSaaSSecurityConfigurerAdapter} performed, using CSL's documented host extension points:
  *

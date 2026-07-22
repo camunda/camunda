@@ -1,7 +1,7 @@
-# Spike: adopt CSL for Optimize (ADR-0036)
+# Spike: adopt CSL for Optimize (ADR-0038)
 
 Prototype for adopting the Camunda Security Library (CSL) stateful OIDC webapp chain in Optimize,
-dropping the custom stateless JWT-cookie stack. See ADR-0036 in camunda-security-library.
+dropping the custom stateless JWT-cookie stack. See ADR-0038 in camunda-security-library.
 
 ## Single switch: legacy vs CSL (no collision)
 
@@ -14,7 +14,7 @@ so only one may be active. One flag selects which:
 - `optimize.security.csl.enabled=true` -> legacy adapters back off (inverse `@ConditionalOnProperty`)
   and `OptimizeCamundaSecurityConfig` activates the CSL chains.
 
-No custom webapp chain is needed: CSL orders the API chain before the webapp chain (ADR-0036), so the
+No custom webapp chain is needed: CSL orders the API chain before the webapp chain (ADR-0038), so the
 stock webapp chain with a `/**` matcher is the catch-all below the bearer API chain.
 
 ## What this prototype contains
@@ -55,7 +55,7 @@ stock webapp chain with a `/**` matcher is the catch-all below the bearer API ch
 
 The OIDC callback reuses Optimize's `{baseUrl}/api/authentication/callback`, already registered on
 the Identity-provisioned Keycloak `optimize` client, so no IdP change is needed; CSL derives its
-redirection-endpoint listener path from `oidc.redirect-uri` (ADR-0036) to keep them aligned.
+redirection-endpoint listener path from `oidc.redirect-uri` (ADR-0038) to keep them aligned.
 `URLRedirectFilter` (SPA routing, runs before security) is patched to pass `/oauth2/**`,
 `/sso-callback`, `/login`, `/logout` through; without that, OIDC login initiation loops to `/#`.
 Single-node in-memory sessions are used unless a `SessionStorePort` bean is present and
@@ -150,7 +150,7 @@ Found while manually testing against a local CCSM/Keycloak setup
     reproducing the legacy `?audience=` behaviour. (Auth0 uses `audience`, not the RFC 8707
     `resource` param, so `...oidc.resource` would not work here.)
 
-## Follow-ups (tracked in ADR-0036)
+## Follow-ups (tracked in ADR-0038)
 
 1. `SessionStorePort`: ES done. Remaining: OpenSearch mirror (`WebSessionIndexOS` +
    `OpenSearchSchemaManager` registration + OS adapter), and removing the old terminated-session index

@@ -21,14 +21,14 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 
 /**
- * SPIKE (ADR-0036): opt-in configuration that adopts CSL for Optimize.
+ * SPIKE (ADR-0038): opt-in configuration that adopts CSL for Optimize.
  *
  * <p>Activated by {@code optimize.security.csl.enabled=true}. The legacy adapters ({@code
  * CCSMSecurityConfigurerAdapter} / {@code CCSaaSSecurityConfigurerAdapter}) carry the inverse
  * condition, so exactly one security setup is active. This makes the spike manually testable by
  * flipping a single flag.
  *
- * <p>Because CSL now gives the API and webapp chains distinct orders (API before webapp, ADR-0036),
+ * <p>Because CSL now gives the API and webapp chains distinct orders (API before webapp, ADR-0038),
  * Optimize can use the umbrella {@code CamundaSecurityAutoConfiguration} directly and return {@code
  * /**} from {@link SecurityPathPort#webappPaths()}: the stock webapp chain becomes the catch-all
  * that sorts below the bearer API chain. No custom webapp chain bean is needed.

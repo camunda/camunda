@@ -75,7 +75,7 @@ export default function useUserMenu(optimizeVersion: string, timezone: string) {
       label: t('navigation.logout').toString(),
       kind: 'ghost',
       onClick: () => {
-        // SPIKE (ADR-0036): remember the current route so re-login returns here.
+        // SPIKE (ADR-0038): remember the current route so re-login returns here.
         storePostLoginRedirect();
         history.replace('/logout');
       },

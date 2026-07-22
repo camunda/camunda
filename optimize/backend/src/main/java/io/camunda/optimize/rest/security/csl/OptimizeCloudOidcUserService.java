@@ -20,7 +20,7 @@ import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 /**
- * SPIKE (ADR-0036): CCSaaS webapp login gate, wired into CSL's OIDC webapp chain through its {@code
+ * SPIKE (ADR-0038): CCSaaS webapp login gate, wired into CSL's OIDC webapp chain through its {@code
  * ObjectProvider<OidcUserService>} hook ({@code userInfoEndpoint().oidcUserService(...)}).
  *
  * <p>Replaces the legacy {@code CCSaaSSecurityConfigurerAdapter} {@code hasAccess} organization
