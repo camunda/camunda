@@ -231,6 +231,22 @@ it('should hide share, edit and delete buttons for instant preview report', () =
   expect(node.find('.tool-button.delete-button')).not.toExist();
 });
 
+it('should hide share, edit and delete buttons for agentic control report', () => {
+  const node = shallow(
+    <ReportView
+      report={{
+        ...report,
+        data: {agenticControlReport: true},
+        result: {type: 'number', measures: [{data: 12}]},
+      }}
+    />
+  );
+
+  expect(node.find('ShareEntity')).not.toExist();
+  expect(node.find('.tool-button.edit-button')).not.toExist();
+  expect(node.find('.tool-button.delete-button')).not.toExist();
+});
+
 it('should hide bottom raw data panel for table reports', () => {
   const node = shallow(<ReportView report={report} />);
 
