@@ -65,19 +65,15 @@ RUN --mount=type=cache,target=/root/.jattach,rw \
     mv jattach /jattach
 
 ### Extract camunda from distball ###
+# Use eclipse-temurin JDK (not JRE) so `jar` is available for repacking JARs,
+# avoiding a runtime dependency on external package servers for (un)zip.
 # hadolint ignore=DL3006,DL3007
-FROM ubuntu:noble AS distball
+FROM eclipse-temurin:25-jdk-noble AS distball
 
 # hadolint ignore=DL3002
 USER root
 WORKDIR /camunda
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
-# Install tools before COPY so this layer is cached independently of the distball
-# hadolint ignore=DL3008
-RUN apt-get update -qq && \
-    apt-get install -y --no-install-recommends unzip zip && \
-    rm -rf /var/lib/apt/lists/*
 
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} camunda.tar.gz
@@ -101,14 +97,14 @@ RUN \
     ROCKSDB_JAR=$(find camunda-zeebe/lib -name 'rocksdbjni-*.jar' | head -1) && \
     UNPACK=$(mktemp -d) && \
     # Unpack, remove all native libs except the one we need, validate, repack
-    unzip -q "$ROCKSDB_JAR" -d "$UNPACK" && \
+    ( cd "$UNPACK" && jar xf "$OLDPWD/$ROCKSDB_JAR" ) && \
     find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) \
       ! -name "librocksdbjni-${ROCKSDB_ARCH}.so" -delete && \
     # Verify only shared lib is left
     count=$(find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) | wc -l) && \
     [ "$count" -eq 1 ] || { echo "Expected exactly 1 native lib, found $count" >&2; exit 1; } && \
     rm "$ROCKSDB_JAR" && \
-    ( cd "$UNPACK" && zip -qr "$OLDPWD/$ROCKSDB_JAR" . ) && \
+    ( cd "$UNPACK" && jar cMf "$OLDPWD/$ROCKSDB_JAR" . ) && \
     rm -rf "$UNPACK"
 
 
