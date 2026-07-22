@@ -731,28 +731,6 @@ final class RaftClusterContextTest {
   }
 
   @Test
-  void shouldNotRevertToStoredConfigurationOnReset() {
-    // given -- a member with a stored configuration and a newer appended configuration
-    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
-    final var otherMember = new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now());
-    final var storedConfiguration =
-        new Configuration(1, 1, Instant.now().toEpochMilli(), List.of(localMember, otherMember));
-    final var raft = raftWithStoredConfiguration(storedConfiguration);
-    final var context = new RaftClusterContext(localMember.memberId(), raft);
-    context.bootstrap(List.of()).join();
-
-    final var appendedConfiguration =
-        new Configuration(2, 1, Instant.now().toEpochMilli(), List.of(localMember));
-    context.configure(appendedConfiguration);
-
-    // when -- resetting to the stored configuration, as happens on term changes
-    context.reset();
-
-    // then -- the newer configuration is retained
-    assertThat(context.getConfiguration()).isEqualTo(appendedConfiguration);
-  }
-
-  @Test
   void shouldRecoverAppendedConfigurationFromLogOnBootstrap() {
     // given -- a stored configuration and a newer configuration entry in the log
     final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());

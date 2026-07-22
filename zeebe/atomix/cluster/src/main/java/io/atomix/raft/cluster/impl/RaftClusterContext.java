@@ -291,26 +291,6 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
   }
 
   /**
-   * Resets the cluster state to the persisted state.
-   *
-   * <p>This cannot revert an appended-but-uncommitted configuration: the stored configuration is
-   * applied through {@link #configure(Configuration)}, which ignores configurations with an index
-   * at or below the current one, and the stored index never exceeds the in-memory index because
-   * configurations are persisted on commit only. That guard is what makes calling this on term
-   * changes safe - a member must keep operating under the newest configuration in its log,
-   * committed or not.
-   *
-   * @return The cluster state.
-   */
-  public RaftClusterContext reset() {
-    final var storedConfiguration = raft.getMetaStore().loadConfiguration();
-    if (storedConfiguration != null) {
-      configure(storedConfiguration);
-    }
-    return this;
-  }
-
-  /**
    * Applies the newest configuration entry from the log if it is newer than the current
    * configuration. Configurations take effect as soon as they are appended, so the newest
    * configuration entry in the log is authoritative, whether it is committed or not.
