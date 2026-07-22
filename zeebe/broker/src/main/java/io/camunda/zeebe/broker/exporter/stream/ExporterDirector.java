@@ -99,6 +99,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
   private final ConcurrentHashMap<String, HealthReport> exporterHealthReports =
       new ConcurrentHashMap<>();
   private ActorSchedulingService actorSchedulingService;
+  private final Map<String, PendingContainer> pendingByExporterId = new HashMap<>();
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -316,17 +317,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
             },
             this::isClosed);
   }
-
-  /**
-   * Bundles a freshly-created container together with the reader (if any, i.e. in {@link
-   * ExporterMode#ACTIVE}) and the flag that tracks whether {@link ExporterActor} has begun its own
-   * read loop. The reader/flag are handed off to the new {@link ExporterActor} by {@link
-   * #scheduleExporterActor}, which then owns them for the rest of the exporter's lifetime.
-   */
-  private record PendingContainer(
-      ExporterContainer container,
-      @Nullable LogStreamReader reader,
-      AtomicBoolean hasStartedExporting) {}
 
   private PendingContainer createContainer(
       final ExporterDescriptor descriptor, final ExporterInitializationInfo initializationInfo) {
@@ -628,8 +618,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
     return containers.stream().anyMatch(container -> container.getId().equals(exporterId));
   }
 
-  private final Map<String, PendingContainer> pendingByExporterId = new HashMap<>();
-
   private void initContainers() throws Exception {
     for (final var entry : initialDescriptors.entrySet()) {
       final var pending = createContainer(entry.getKey(), entry.getValue());
@@ -821,4 +809,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable {
    * @param initializeFrom the id of the exporter to initialize the metadata of the exporter from
    */
   public record ExporterInitializationInfo(long metadataVersion, String initializeFrom) {}
+
+  /**
+   * Bundles a freshly-created container together with the reader (if any, i.e. in {@link
+   * ExporterMode#ACTIVE}) and the flag that tracks whether {@link ExporterActor} has begun its own
+   * read loop. The reader/flag are handed off to the new {@link ExporterActor} by {@link
+   * #scheduleExporterActor}, which then owns them for the rest of the exporter's lifetime.
+   */
+  private record PendingContainer(
+      ExporterContainer container,
+      @Nullable LogStreamReader reader,
+      AtomicBoolean hasStartedExporting) {}
 }
