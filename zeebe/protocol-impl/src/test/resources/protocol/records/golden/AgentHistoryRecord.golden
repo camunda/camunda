@@ -35,6 +35,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", -1L);
+  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
@@ -66,12 +67,13 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
 
   public AgentHistoryRecord() {
-    super(24);
+    super(25);
     declareProperty(agentHistoryKeyProp)
         .declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(tenantIdProp)
@@ -374,6 +376,16 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
 
   public AgentHistoryRecord setBpmnProcessId(final String bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public AgentHistoryRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 

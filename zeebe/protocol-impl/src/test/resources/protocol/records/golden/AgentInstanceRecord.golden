@@ -49,6 +49,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", -1L);
+  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
@@ -76,13 +77,14 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("history", AgentHistoryRecord::new);
 
   public AgentInstanceRecord() {
-    super(21);
+    super(22);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementInstanceKeysProp)
         .declareProperty(elementIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processDefinitionVersionProp)
@@ -322,6 +324,16 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
 
   public AgentInstanceRecord addElementInstanceKey(final long elementInstanceKey) {
     elementInstanceKeysProp.add().setValue(elementInstanceKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 
