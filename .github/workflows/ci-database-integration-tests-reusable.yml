@@ -59,10 +59,10 @@ on:
         default: false
         description: >-
           When true, restore the io.camunda SNAPSHOTs from the run-scoped GCS
-          artifact produced by ci.yml's build-distball job instead of running a
-          local build-zeebe reactor. Only safe when called from a run that has a
-          build-distball job (i.e. ci.yml). Standalone callers must leave this
-          false so the build-zeebe fallback runs. See #52693.
+          artifact produced by a build-distball job (ci-build-distball-reusable.yml)
+          elsewhere in the same run, instead of running a local build-zeebe reactor.
+          Leave false if the calling run has no build-distball job, so the
+          build-zeebe fallback runs. See #52693 and #56931.
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"
@@ -117,12 +117,12 @@ jobs:
             docker compose -f db/docker-compose.yml logs
             exit 1
           }
-      # When called from ci.yml (use-shared-distball=true) restore the io.camunda SNAPSHOTs
-      # that build-distball installed + archived to GCS, instead of re-running the ~2 min
-      # reactor in each of the ~15 database/history/identity matrix entries. gcp-perf runners
+      # When use-shared-distball is true, restore the io.camunda SNAPSHOTs that a
+      # build-distball job elsewhere in the same run installed + archived to GCS,
+      # instead of re-running the ~2 min reactor in each matrix entry. gcp-perf runners
       # pull from GCS (same-region, non-billable); the GHA artifact API is throughput-capped
       # on self-hosted runners. github.run_id is stable across nested workflow_call, so it
-      # addresses the same run-scoped prefix build-distball wrote. See #52693.
+      # addresses the same run-scoped prefix build-distball wrote. See #52693 and #56931.
       # (gcloud is authenticated by setup-build's gcs-build-cache-auth above.)
       - if: ${{ inputs.use-shared-distball }}
         uses: ./.github/actions/restore-shared-m2

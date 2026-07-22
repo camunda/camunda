@@ -36,13 +36,76 @@ jobs:
         id: db-versions
         uses: ./.github/actions/read-db-versions
 
+  # Builds the distball once and shares it with every matrix shard below via GCS,
+  # replacing a per-shard reactor build (~18 shards). See #56931.
+  # This job block is duplicated verbatim in zeebe-rdbms-integration-tests.yml --
+  # GHA has no way to share a job stanza across workflow files. Keep both in sync.
+  build-distball:
+    permissions:
+      contents: read
+      id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
+    uses: ./.github/workflows/ci-build-distball-reusable.yml
+    secrets: inherit
+    with:
+      skip-artifact-upload: true  # no docker-checks-style GH-artifact consumer in this workflow
+
+  # If build-distball fails/is cancelled, every matrix job below is skipped by its
+  # needs: dependency (not failed), so their own send-slack-notification never runs.
+  # Without this job that failure would be silent on scheduled runs.
+  notify-build-distball-failure:
+    name: "Send slack notification on build-distball fail"
+    needs: build-distball
+    if: always() && (needs.build-distball.result == 'failure' || needs.build-distball.result == 'cancelled') && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
+      - name: Send notification
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        with:
+          webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            text: "Scheduled Search Integration Tests shared build (build-distball) on ${{ github.ref_name }} failed or was cancelled — all matrix shards were skipped"
+            blocks:
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "Scheduled *Search Integration Tests* shared build (`build-distball`) on *${{ github.ref_name }}* FAILED or WAS CANCELLED — every matrix shard was skipped as a result\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      # Send metrics about CI health
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          sparse-checkout: .github
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "notify-build-distball-failure"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   search-integration-tests:
     name: "Search ${{ matrix.database-name }}"
-    needs: [ generate-db-versions ]
+    needs: [ generate-db-versions, build-distball ]
     permissions:
       actions: write
       contents: read
-      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required at startup even though this caller leaves use-shared-distball=false
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required to restore the shared distball from GCS
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.es-os-matrix) }}
@@ -55,14 +118,15 @@ jobs:
       database-name: ${{ matrix.database-name }}
       it-database-type: ${{ matrix.it-database-type }}
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      use-shared-distball: true
 
   search-history-tests:
     name: "Search History Tests / ${{ matrix.database-name }}"
-    needs: [ generate-db-versions ]
+    needs: [ generate-db-versions, build-distball ]
     permissions:
       actions: write
       contents: read
-      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required at startup even though this caller leaves use-shared-distball=false
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required to restore the shared distball from GCS
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.es-os-matrix) }}
@@ -79,14 +143,15 @@ jobs:
       test-type-label: "History"
       runs-on: "gcp-perf-core-8-default"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      use-shared-distball: true
 
   search-identity-tests:
     name: "Search Identity Tests / ${{ matrix.database-name }}"
-    needs: [ generate-db-versions ]
+    needs: [ generate-db-versions, build-distball ]
     permissions:
       actions: write
       contents: read
-      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required at startup even though this caller leaves use-shared-distball=false
+      id-token: write  # ci-database-integration-tests-reusable declares it (WIF); required to restore the shared distball from GCS
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.generate-db-versions.outputs.es-os-matrix) }}
@@ -102,3 +167,4 @@ jobs:
       test-type: "identity-tests"
       test-type-label: "Identity"
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
+      use-shared-distball: true
