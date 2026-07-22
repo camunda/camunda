@@ -1003,6 +1003,11 @@
         <artifactId>camunda-secret-store-file</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-secret-store-aws</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <!-- Camunda Process Testing modules -->
 
