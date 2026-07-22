@@ -171,9 +171,3 @@ gone.
   hadoop-client-runtime (also shaded) rather than reverting to exclusions. Long-term this whole
   block dies when iceberg-parquet adopts ParquetConfiguration (watch release notes).
 
-11. **Multi-writer-safe data file names.** File names are `<seq>.parquet` with the sequence
-    clock-seeded per process — unique only under the current single-process deployment. Two app
-    instances (consumer group scale-out) write the same tables from different machines: clock skew
-    and partition-ownership handover both break clock-seeded uniqueness. Before multi-node, add a
-    per-writer component to the name (short random suffix or fenced writer id, the standard
-    Iceberg-writer approach). See IcebergParquetEncoderFactory's naming javadoc.

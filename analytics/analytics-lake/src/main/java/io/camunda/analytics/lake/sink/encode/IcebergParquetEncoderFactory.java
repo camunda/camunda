@@ -12,6 +12,7 @@ import io.camunda.analytics.lake.sink.FileSink;
 import io.camunda.analytics.lake.sink.TableSchema;
 import java.time.LocalDate;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.io.OutputFile;
@@ -30,13 +31,15 @@ import org.apache.iceberg.io.OutputFile;
  * so the day folder is always the real calendar day, never a "mixed" sentinel: every file this
  * factory opens carries exactly one family day (see {@link DayRouter}'s javadoc).
  *
- * <p>The sequence is zero-padded (sortable listings) and seeded from the factory's creation time in
- * epoch milliseconds rather than starting at zero: a factory only lives as long as its process, and
- * a restarted process must never re-mint a name an earlier run already committed — the encoder's
- * output file refuses to overwrite, so a colliding name would fail the pipeline. A forward-moving
- * clock makes every run's sequences disjoint without any directory scan or random id in the name.
- * Uniqueness is only needed within one table's directory (single writer per table; {@link FileSink}
- * owns that namespace).
+ * <p>Name uniqueness must hold across every writer that ever touches the table's directory — a
+ * restarted process (which must never re-mint a name an earlier run committed: the encoder's output
+ * file refuses to overwrite, so a collision fails the pipeline) and, once the app scales out,
+ * <em>concurrent</em> processes on different machines each owning different source partitions but
+ * writing the same tables. Neither counters nor clocks can guarantee that (restarts reset counters;
+ * machines skew clocks), so each factory mints a random {@code writerId} at construction and every
+ * file carries it: {@code <sequence>-<writerId>.parquet}. The zero-padded sequence keeps one
+ * writer's files sortable and reproducible in tests; the writer id carries all the uniqueness — the
+ * same reason every standard Iceberg writer embeds a UUID in its file names.
  */
 public final class IcebergParquetEncoderFactory implements BatchEncoder.Factory {
 
@@ -47,8 +50,11 @@ public final class IcebergParquetEncoderFactory implements BatchEncoder.Factory 
   private final int targetRowGroupRows;
   private final Set<String> bloomFilterColumns;
   private final String compressionCodec;
-  // Seeded from wall clock, not zero -- see the class javadoc's naming section for why.
-  private final AtomicLong fileSequence = new AtomicLong(System.currentTimeMillis());
+  private final AtomicLong fileSequence = new AtomicLong();
+  // Random per factory instance -- carries ALL the cross-writer/cross-restart uniqueness; see the
+  // class javadoc's naming section.
+  private final String writerId =
+      "%012x".formatted(ThreadLocalRandom.current().nextLong() & 0xFFFFFFFFFFFFL);
 
   public IcebergParquetEncoderFactory(
       final Schema icebergSchema,
@@ -75,7 +81,7 @@ public final class IcebergParquetEncoderFactory implements BatchEncoder.Factory 
 
   @Override
   public BatchEncoder newFile(final TableSchema schema, final long epochDay) {
-    final String fileName = "%014d.parquet".formatted(fileSequence.incrementAndGet());
+    final String fileName = "%08d-%s.parquet".formatted(fileSequence.incrementAndGet(), writerId);
     final String relativePath = "day=" + LocalDate.ofEpochDay(epochDay) + "/" + fileName;
     final OutputFile outputFile = fileSink.newOutputFile(schema, relativePath);
     return new IcebergParquetEncoder(
