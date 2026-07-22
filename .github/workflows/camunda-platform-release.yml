@@ -226,7 +226,7 @@ jobs:
           # User property: waitMaxTime
           # Assign the amount of seconds that the plugin will wait for a deployment
           # state. Can not be less than Constants.WAIT_MAX_TIME_DEFAULT_VALUE.
-          CENTRAL_WAIT_MAX_TIME: "3600"
+          CENTRAL_WAIT_MAX_TIME: "10800"
         run: |
           # Perform a maven release
           # https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html
