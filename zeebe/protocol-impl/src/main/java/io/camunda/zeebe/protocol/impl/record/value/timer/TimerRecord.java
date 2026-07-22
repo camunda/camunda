@@ -34,13 +34,14 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", -1L);
+  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(
           new StringValue("elementType"), BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public TimerRecord() {
-    super(10);
+    super(11);
     declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(dueDateProp)
@@ -49,6 +50,7 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(elementTypeProp);
   }
@@ -155,6 +157,16 @@ public final class TimerRecord extends UnifiedRecordValue implements TimerRecord
 
   public TimerRecord setElementType(final BpmnElementType elementType) {
     elementTypeProp.setValue(elementType);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public TimerRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 }

@@ -85,6 +85,11 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
     return null; // not used in Optimize
   }
 
+  @Override
+  public int getStorageOrdinalKey() {
+    return -1; // not used in Optimize
+  }
+
   public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
   }

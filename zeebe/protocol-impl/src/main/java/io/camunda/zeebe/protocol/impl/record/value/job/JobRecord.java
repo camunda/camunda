@@ -100,6 +100,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringValue("isUserTaskMigration");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue PRIORITY_KEY = new StringValue(PRIORITY);
   private static final StringValue LEASE_TOKEN_KEY = new StringValue("leaseToken");
@@ -149,6 +150,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new BooleanProperty(IS_JOB_TO_USERTASK_MIGRATION_KEY, false);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, EMPTY_STRING);
   private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, 0);
   private final StringProperty leaseTokenProp = new StringProperty(LEASE_TOKEN_KEY, EMPTY_STRING);
@@ -156,7 +159,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new ArrayProperty<>(SECRET_REFERENCES_KEY, JobSecretReference::new);
 
   public JobRecord() {
-    super(30);
+    super(31);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -183,6 +186,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(tagsProp)
         .declareProperty(isJobToUserTaskMigrationProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(priorityProp)
         .declareProperty(businessIdProp)
         .declareProperty(leaseTokenProp)
@@ -217,6 +221,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
     setTags(record.getTags());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
     priorityProp.setValue(record.getPriority());
     businessIdProp.setValue(record.getBusinessIdBuffer());
     leaseTokenProp.setValue(record.getLeaseTokenBuffer());
@@ -261,9 +266,23 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return bufferAsString(typeProp.getValue());
   }
 
+  public JobRecord setType(final String type) {
+    typeProp.setValue(type);
+    return this;
+  }
+
+  public JobRecord setType(final DirectBuffer buf) {
+    return setType(buf, 0, buf.capacity());
+  }
+
   @Override
   public Map<String, String> getCustomHeaders() {
     return MsgPackConverter.convertToStringMap(customHeadersProp.getValue());
+  }
+
+  public JobRecord setCustomHeaders(final DirectBuffer buffer) {
+    customHeadersProp.setValue(buffer, 0, buffer.capacity());
+    return this;
   }
 
   @Override
@@ -271,9 +290,23 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return bufferAsString(workerProp.getValue());
   }
 
+  public JobRecord setWorker(final String worker) {
+    workerProp.setValue(worker);
+    return this;
+  }
+
+  public JobRecord setWorker(final DirectBuffer worker) {
+    return setWorker(worker, 0, worker.capacity());
+  }
+
   @Override
   public int getRetries() {
     return retriesProp.getValue();
+  }
+
+  public JobRecord setRetries(final int retries) {
+    retriesProp.setValue(retries);
+    return this;
   }
 
   @Override
@@ -281,9 +314,19 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return priorityProp.getValue();
   }
 
+  public JobRecord setPriority(final int priority) {
+    priorityProp.setValue(priority);
+    return this;
+  }
+
   @Override
   public long getRetryBackoff() {
     return retryBackoffProp.getValue();
+  }
+
+  public JobRecord setRetryBackoff(final long retryBackoff) {
+    retryBackoffProp.setValue(retryBackoff);
+    return this;
   }
 
   @Override
@@ -291,9 +334,19 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return recurringTimeProp.getValue();
   }
 
+  public JobRecord setRecurringTime(final long recurringTime) {
+    recurringTimeProp.setValue(recurringTime);
+    return this;
+  }
+
   @Override
   public long getDeadline() {
     return deadlineProp.getValue();
+  }
+
+  public JobRecord setDeadline(final long val) {
+    deadlineProp.setValue(val);
+    return this;
   }
 
   @Override
@@ -301,9 +354,23 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return timeoutProp.getValue();
   }
 
+  public JobRecord setTimeout(final long val) {
+    timeoutProp.setValue(val);
+    return this;
+  }
+
   @Override
   public String getErrorMessage() {
     return bufferAsString(errorMessageProp.getValue());
+  }
+
+  public JobRecord setErrorMessage(final String errorMessage) {
+    errorMessageProp.setValue(errorMessage);
+    return this;
+  }
+
+  public JobRecord setErrorMessage(final DirectBuffer buf) {
+    return setErrorMessage(buf, 0, buf.capacity());
   }
 
   @Override
@@ -311,9 +378,23 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return bufferAsString(errorCodeProp.getValue());
   }
 
+  public JobRecord setErrorCode(final DirectBuffer errorCode) {
+    errorCodeProp.setValue(errorCode);
+    return this;
+  }
+
   @Override
   public String getElementId() {
     return bufferAsString(elementIdProp.getValue());
+  }
+
+  public JobRecord setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
+    return this;
+  }
+
+  public JobRecord setElementId(final DirectBuffer elementId) {
+    return setElementId(elementId, 0, elementId.capacity());
   }
 
   @Override
@@ -321,9 +402,19 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return elementTypeProp.getValue();
   }
 
+  public JobRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
+    return this;
+  }
+
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
+  }
+
+  public JobRecord setElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
   }
 
   @Override
@@ -331,14 +422,54 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return rootProcessInstanceKeyProp.getValue();
   }
 
+  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProp.getValue());
+  }
+
+  public JobRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public JobRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public String getLeaseToken() {
+    return bufferAsString(leaseTokenProp.getValue());
+  }
+
   @Override
   public String getBpmnProcessId() {
     return bufferAsString(bpmnProcessIdProp.getValue());
   }
 
+  public JobRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public JobRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
   @Override
   public int getProcessDefinitionVersion() {
     return processDefinitionVersionProp.getValue();
+  }
+
+  public JobRecord setProcessDefinitionVersion(final int version) {
+    processDefinitionVersionProp.setValue(version);
+    return this;
   }
 
   @Override
@@ -410,6 +541,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   @Override
+  public boolean isJobToUserTaskMigration() {
+    return isJobToUserTaskMigrationProp.getValue();
+  }
+
+  @Override
   public List<JobSecretReferenceValue> getSecretReferences() {
     // detach copies so the returned list stays valid if this record is reused or reset later
     return secretReferencesProp.stream()
@@ -431,6 +567,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
               addSecretReference(
                   reference.getStoreId(), reference.getSecretReference(), reference.getPath()));
     }
+    return this;
+  }
+
+  public JobRecord setLeaseToken(final String leaseToken) {
+    leaseTokenProp.setValue(leaseToken);
     return this;
   }
 
@@ -463,54 +604,9 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
-  @Override
-  public boolean isJobToUserTaskMigration() {
-    return isJobToUserTaskMigrationProp.getValue();
-  }
-
-  public JobRecord setProcessDefinitionVersion(final int version) {
-    processDefinitionVersionProp.setValue(version);
-    return this;
-  }
-
-  public JobRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  public JobRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  public JobRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
-    return this;
-  }
-
-  @Override
-  public String getBusinessId() {
-    return bufferAsString(businessIdProp.getValue());
-  }
-
-  public JobRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  public JobRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
     return businessIdProp.getValue();
-  }
-
-  @Override
-  public String getLeaseToken() {
-    return bufferAsString(leaseTokenProp.getValue());
   }
 
   @JsonIgnore
@@ -518,100 +614,19 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return !getLeaseToken().isEmpty();
   }
 
-  public JobRecord setLeaseToken(final String leaseToken) {
-    leaseTokenProp.setValue(leaseToken);
-    return this;
-  }
-
   @JsonIgnore
   public DirectBuffer getLeaseTokenBuffer() {
     return leaseTokenProp.getValue();
   }
 
-  public JobRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public JobRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
-  }
-
-  public JobRecord setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
-    return this;
-  }
-
-  public JobRecord setElementId(final String elementId) {
-    elementIdProp.setValue(elementId);
-    return this;
-  }
-
-  public JobRecord setElementId(final DirectBuffer elementId) {
-    return setElementId(elementId, 0, elementId.capacity());
-  }
-
-  public JobRecord setErrorCode(final DirectBuffer errorCode) {
-    errorCodeProp.setValue(errorCode);
-    return this;
-  }
-
-  public JobRecord setErrorMessage(final String errorMessage) {
-    errorMessageProp.setValue(errorMessage);
-    return this;
-  }
-
-  public JobRecord setErrorMessage(final DirectBuffer buf) {
-    return setErrorMessage(buf, 0, buf.capacity());
-  }
-
-  public JobRecord setTimeout(final long val) {
-    timeoutProp.setValue(val);
-    return this;
-  }
-
-  public JobRecord setDeadline(final long val) {
-    deadlineProp.setValue(val);
-    return this;
-  }
-
-  public JobRecord setRecurringTime(final long recurringTime) {
-    recurringTimeProp.setValue(recurringTime);
-    return this;
-  }
-
-  public JobRecord setRetryBackoff(final long retryBackoff) {
-    retryBackoffProp.setValue(retryBackoff);
-    return this;
-  }
-
-  public JobRecord setPriority(final int priority) {
-    priorityProp.setValue(priority);
-    return this;
-  }
-
-  public JobRecord setRetries(final int retries) {
-    retriesProp.setValue(retries);
-    return this;
-  }
-
-  public JobRecord setWorker(final String worker) {
-    workerProp.setValue(worker);
-    return this;
-  }
-
-  public JobRecord setWorker(final DirectBuffer worker) {
-    return setWorker(worker, 0, worker.capacity());
-  }
-
-  public JobRecord setCustomHeaders(final DirectBuffer buffer) {
-    customHeadersProp.setValue(buffer, 0, buffer.capacity());
-    return this;
-  }
-
-  public JobRecord setType(final String type) {
-    typeProp.setValue(type);
-    return this;
-  }
-
-  public JobRecord setType(final DirectBuffer buf) {
-    return setType(buf, 0, buf.capacity());
   }
 
   public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {

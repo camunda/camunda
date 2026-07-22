@@ -69,6 +69,9 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   }
 
   public UserRecord setName(final String name) {
+    if (name == null) {
+      return this;
+    }
     nameProp.setValue(name);
     return this;
   }
@@ -84,6 +87,9 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
   }
 
   public UserRecord setEmail(final String email) {
+    if (email == null) {
+      return this;
+    }
     emailProp.setValue(email);
     return this;
   }

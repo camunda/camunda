@@ -716,6 +716,7 @@ final class JsonSerializableToJsonTest {
               final var elementInstancePath = List.of(List.of(101L, 102L), List.of(103L, 104L));
               final var processDefinitionPath = List.of(101L, 102L);
               final var callingElementPath = List.of(12345, 67890);
+              final int storageOrdinalKey = 5;
               return new IncidentRecord()
                   .setElementInstanceKey(elementInstanceKey)
                   .setProcessDefinitionKey(processDefinitionKey)
@@ -728,7 +729,8 @@ final class JsonSerializableToJsonTest {
                   .setVariableScopeKey(elementInstanceKey)
                   .setElementInstancePath(elementInstancePath)
                   .setProcessDefinitionPath(processDefinitionPath)
-                  .setCallingElementPath(callingElementPath);
+                  .setCallingElementPath(callingElementPath)
+                  .setStorageOrdinalKey(storageOrdinalKey);
             },
         """
                 {
@@ -745,7 +747,8 @@ final class JsonSerializableToJsonTest {
                   "elementInstancePath":[[101, 102], [103, 104]],
                   "processDefinitionPath": [101, 102],
                   "callingElementPath": [12345, 67890],
-                  "rootProcessInstanceKey": 101
+                  "rootProcessInstanceKey": 101,
+                  "storageOrdinalKey": 5
                 }
                 """
       },
@@ -772,7 +775,8 @@ final class JsonSerializableToJsonTest {
                   "elementInstancePath":[],
                   "processDefinitionPath":[],
                   "callingElementPath":[],
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0
                 }
                 """
       },
@@ -808,6 +812,7 @@ final class JsonSerializableToJsonTest {
               final int processDefinitionVersion = 12;
               final int processInstanceKey = 1234;
               final int rootProcessInstanceKey = 4321;
+              final int storageOrdinalKey = 7;
               final String activityId = "activity";
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
@@ -858,6 +863,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionVersion(processDefinitionVersion)
                   .setProcessInstanceKey(processInstanceKey)
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinalKey(storageOrdinalKey)
                   .setElementId(wrapString(activityId))
                   .setElementType(BpmnElementType.SERVICE_TASK)
                   .setElementInstanceKey(activityInstanceKey)
@@ -907,6 +913,7 @@ final class JsonSerializableToJsonTest {
                       "timeout": -1,
                       "tenantId": "<default>",
                       "rootProcessInstanceKey": 4321,
+                      "storageOrdinalKey": 7,
                       "changedAttributes": ["bar", "foo"],
                       "tags": ["tag1", "tag2"],
                       "jobToUserTaskMigration": true,
@@ -1003,6 +1010,7 @@ final class JsonSerializableToJsonTest {
               final int processDefinitionVersion = 12;
               final int processInstanceKey = 1234;
               final int rootProcessInstanceKey = 4321;
+              final int storageOrdinalKey = 7;
               final String elementId = "activity";
               final BpmnElementType elementType = BpmnElementType.SERVICE_TASK;
               final int activityInstanceKey = 123;
@@ -1065,6 +1073,7 @@ final class JsonSerializableToJsonTest {
                       .setResult(result)
                       .setTags(Set.of("tag1", "tag2"))
                       .setRootProcessInstanceKey(rootProcessInstanceKey)
+                      .setStorageOrdinalKey(storageOrdinalKey)
                       .setIsJobToUserTaskMigration(true)
                       .setPriority(42)
                       .setBusinessId("biz-42")
@@ -1105,6 +1114,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": 14,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 4321,
+                  "storageOrdinalKey": 7,
                   "tags": ["tag1", "tag2"],
                   "jobToUserTaskMigration": true,
                   "changedAttributes": ["bar", "foo"],
@@ -1191,6 +1201,7 @@ final class JsonSerializableToJsonTest {
                   "timeout": -1,
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "tags": [],
                   "jobToUserTaskMigration": false,
                   "changedAttributes": [],
@@ -1256,6 +1267,7 @@ final class JsonSerializableToJsonTest {
                   "customHeaders": {},
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "tags": [],
                   "jobToUserTaskMigration": false,
                   "changedAttributes": [],
@@ -1453,6 +1465,7 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 6L;
               final String correlationKey = "key";
               final long messageKey = 3L;
+              final int storageOrdinalKey = 8;
 
               return new MessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1466,6 +1479,7 @@ final class JsonSerializableToJsonTest {
                   .setBusinessId("biz-42")
                   .setElementId("catch-1")
                   .setRootProcessInstanceKey(99L)
+                  .setStorageOrdinalKey(storageOrdinalKey)
                   .setElementType(BpmnElementType.RECEIVE_TASK);
             },
         """
@@ -1485,6 +1499,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "biz-42",
                   "elementId": "catch-1",
                   "rootProcessInstanceKey": 99,
+                  "storageOrdinalKey": 8,
                   "elementType": "RECEIVE_TASK"
                 }
                 """
@@ -1519,6 +1534,7 @@ final class JsonSerializableToJsonTest {
                   "businessId": "",
                   "elementId": "",
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "elementType": "UNSPECIFIED"
                 }
                 """
@@ -1542,6 +1558,7 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 444;
               final String correlationKey = "key";
               final long rootProcessInstanceKey = 5678L;
+              final int storageOrdinalKey = 8;
 
               return new ProcessMessageSubscriptionRecord()
                   .setElementInstanceKey(elementInstanceKey)
@@ -1556,6 +1573,7 @@ final class JsonSerializableToJsonTest {
                   .setElementId(wrapString("A"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
                   .setBusinessId("biz-42")
+                  .setStorageOrdinalKey(storageOrdinalKey)
                   .setElementType(BpmnElementType.RECEIVE_TASK);
             },
         """
@@ -1575,6 +1593,7 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 5678,
                   "businessId": "biz-42",
+                  "storageOrdinalKey": 8,
                   "elementType": "RECEIVE_TASK"
                 }
                 """
@@ -1611,6 +1630,7 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
                   "businessId": "",
+                  "storageOrdinalKey": 0,
                   "elementType": "UNSPECIFIED"
                 }
                 """
@@ -1631,6 +1651,7 @@ final class JsonSerializableToJsonTest {
               final int elementInstanceKey = 567;
               final String handlerNodeId = "node1";
               final int repetitions = 3;
+              final int storageOrdinalKey = 4;
 
               return new TimerRecord()
                   .setDueDate(dueDate)
@@ -1638,7 +1659,8 @@ final class JsonSerializableToJsonTest {
                   .setTargetElementId(wrapString(handlerNodeId))
                   .setRepetitions(repetitions)
                   .setProcessInstanceKey(processInstanceKey)
-                  .setProcessDefinitionKey(processDefinitionKey);
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setStorageOrdinalKey(storageOrdinalKey);
             },
         """
                 {
@@ -1652,6 +1674,7 @@ final class JsonSerializableToJsonTest {
                   "rootProcessInstanceKey": -1,
                   "bpmnProcessId": "",
                   "elementId": "node1",
+                  "storageOrdinalKey": 4,
                   "elementType": "UNSPECIFIED"
                 }
                 """
@@ -1673,6 +1696,7 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 4;
               final String bpmnProcessId = "process";
               final long rootProcessInstanceKey = 5;
+              final int storageOrdinalKey = 6;
               final VariableSourceRecord source = VariableSourceRecord.api();
 
               return new VariableRecord()
@@ -1683,7 +1707,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setSource(source)
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinalKey(storageOrdinalKey);
             },
         """
                 {
@@ -1695,6 +1720,7 @@ final class JsonSerializableToJsonTest {
                   "value": "1",
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 5,
+                  "storageOrdinalKey": 6,
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
@@ -1715,6 +1741,7 @@ final class JsonSerializableToJsonTest {
               final long processDefinitionKey = 4;
               final String bpmnProcessId = "process";
               final long rootProcessInstanceKey = 5;
+              final int storageOrdinalKey = 6;
               final VariableSourceRecord source = VariableSourceRecord.api();
 
               return new VariableRecord()
@@ -1726,7 +1753,8 @@ final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setSource(source)
                   .setTenantId("tenant-test")
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinalKey(storageOrdinalKey);
             },
         """
                 {
@@ -1738,6 +1766,7 @@ final class JsonSerializableToJsonTest {
                   "value": "1",
                   "tenantId": "tenant-test",
                   "rootProcessInstanceKey": 5,
+                  "storageOrdinalKey": 6,
                   "elementInstanceKey": 3,
                   "source": {
                     "type":"API"
@@ -1812,6 +1841,7 @@ final class JsonSerializableToJsonTest {
               final int version = 1;
               final long instanceKey = 2L;
               final long rootProcessInstanceKey = 3L;
+              final int storageOrdinalKey = 6;
               final String businessId = "business-id-456";
 
               return new ProcessInstanceCreationRecord()
@@ -1827,6 +1857,7 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(instanceKey)
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinalKey(storageOrdinalKey)
                   .setBusinessId(businessId);
             },
         """
@@ -1848,6 +1879,7 @@ final class JsonSerializableToJsonTest {
                   "runtimeInstructions": [],
                   "tags": ["tag1", "tag2"],
                   "rootProcessInstanceKey": 3,
+                  "storageOrdinalKey": 6,
                   "businessId": "business-id-456",
                   "elementInstanceKey": -1
                 }
@@ -1874,6 +1906,7 @@ final class JsonSerializableToJsonTest {
                   "runtimeInstructions": [],
                   "tags": [],
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "businessId": "",
                   "elementInstanceKey": -1
                 }
@@ -1895,6 +1928,7 @@ final class JsonSerializableToJsonTest {
               final var ancestorScopeKey = 3L;
               final var variableInstructionElementId = "sub-process";
               final var rootProcessInstanceKey = 4L;
+              final var storageOrdinalKey = 6;
               final var processDefinitionKey = 5L;
               final var bpmnProcessId = "bpmnProcessId";
 
@@ -1925,6 +1959,7 @@ final class JsonSerializableToJsonTest {
                                   .setElementId(variableInstructionElementId))
                           .addAncestorScopeKeys(Set.of(key, ancestorScopeKey)))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinalKey(storageOrdinalKey)
                   .setProcessDefinitionKey(processDefinitionKey)
                   .setBpmnProcessId(bpmnProcessId);
             },
@@ -1963,6 +1998,7 @@ final class JsonSerializableToJsonTest {
                   "ancestorScopeKeys": [1,3],
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 4,
+                  "storageOrdinalKey": 6,
                   "processDefinitionKey": 5,
                   "bpmnProcessId": "bpmnProcessId",
                   "elementInstanceKey": -1
@@ -1988,6 +2024,7 @@ final class JsonSerializableToJsonTest {
                   "ancestorScopeKeys": [],
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "processDefinitionKey": -1,
                   "bpmnProcessId": "",
                   "elementInstanceKey": -1
@@ -2015,6 +2052,7 @@ final class JsonSerializableToJsonTest {
               final var processDefinitionPath = List.of(101L, 102L);
               final var callingElementPath = List.of(12345, 67890);
               final var rootProcessInstanceKey = 9999L;
+              final var storageOrdinalKey = 6;
               final var businessId = "business-id-123";
 
               return new ProcessInstanceRecord()
@@ -2033,6 +2071,7 @@ final class JsonSerializableToJsonTest {
                   .setCallingElementPath(callingElementPath)
                   .setTags(Set.of("tag1", "tag2"))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setStorageOrdinalKey(storageOrdinalKey)
                   .setBusinessId(businessId);
             },
         """
@@ -2053,6 +2092,7 @@ final class JsonSerializableToJsonTest {
                   "callingElementPath": [12345, 67890],
                   "tags": ["tag1", "tag2"],
                   "rootProcessInstanceKey": 9999,
+                  "storageOrdinalKey": 6,
                   "businessId": "business-id-123",
                   "elementInstanceKey": -1
                 }
@@ -2085,6 +2125,7 @@ final class JsonSerializableToJsonTest {
                   "callingElementPath": [],
                   "tags": [],
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "businessId": "",
                   "elementInstanceKey": -1
                 }
@@ -2888,6 +2929,7 @@ final class JsonSerializableToJsonTest {
                   "elementInstanceKey": 5678,
                   "valueType": "PROCESS_INSTANCE",
                   "intent": "ACTIVATE_ELEMENT",
+                  "storageOrdinalKey": 0,
                   "commandValue": {
                     "bpmnProcessId": "",
                     "version": -1,
@@ -2905,6 +2947,7 @@ final class JsonSerializableToJsonTest {
                     "callingElementPath": [],
                     "tags": [],
                     "rootProcessInstanceKey": -1,
+                    "storageOrdinalKey": 0,
                     "businessId": "",
                     "elementInstanceKey": -1
                   }
@@ -2929,6 +2972,7 @@ final class JsonSerializableToJsonTest {
                   "elementInstanceKey": -1,
                   "valueType": "NULL_VAL",
                   "intent": "UNKNOWN",
+                  "storageOrdinalKey": 0,
                   "commandValue": null
                 }
                 """
@@ -2947,14 +2991,16 @@ final class JsonSerializableToJsonTest {
                     .setProcessInstanceKey(123L)
                     .setProcessDefinitionKey(234L)
                     .setBatchElementInstanceKey(456L)
-                    .setIndex(10L),
+                    .setIndex(10L)
+                    .setStorageOrdinalKey(9),
         """
                 {
                   "processInstanceKey": 123,
                   "processDefinitionKey": 234,
                   "batchElementInstanceKey": 456,
                   "index": 10,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinalKey": 9
                 }
                 """
       },
@@ -2977,7 +3023,8 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionKey": -1,
                   "batchElementInstanceKey": 456,
                   "index": -1,
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "storageOrdinalKey": 0
                 }
                 """
       },
@@ -3016,6 +3063,7 @@ final class JsonSerializableToJsonTest {
                     .setDeniedReason("Reason to deny lifecycle transition")
                     .setListenersConfigKey(42L)
                     .setRootProcessInstanceKey(4321L)
+                    .setStorageOrdinalKey(7)
                     .setBusinessId("order-4711"),
         """
                 {
@@ -3048,6 +3096,7 @@ final class JsonSerializableToJsonTest {
                   "deniedReason": "Reason to deny lifecycle transition",
                   "listenersConfigKey": 42,
                   "rootProcessInstanceKey": 4321,
+                  "storageOrdinalKey": 7,
                   "businessId": "order-4711"
                 }
                 """
@@ -3088,6 +3137,7 @@ final class JsonSerializableToJsonTest {
                   "deniedReason": "",
                   "listenersConfigKey": -1,
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "businessId": ""
                 }
                 """
@@ -3133,6 +3183,7 @@ final class JsonSerializableToJsonTest {
                   "deniedReason": "",
                   "listenersConfigKey": -1,
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "businessId": ""
                 }
                 """
@@ -3162,6 +3213,7 @@ final class JsonSerializableToJsonTest {
                         new ProcessInstanceMigrationMappingInstruction()
                             .setTargetElementId("targetId3"))
                     .setRootProcessInstanceKey(321L)
+                    .setStorageOrdinalKey(6)
                     .setProcessDefinitionKey(234L)
                     .setBpmnProcessId("bpmnProcessId"),
         """
@@ -3180,6 +3232,7 @@ final class JsonSerializableToJsonTest {
                     "targetElementId": "targetId3"
                   }],
                   "rootProcessInstanceKey": 321,
+                  "storageOrdinalKey": 6,
                   "processDefinitionKey": 234,
                   "bpmnProcessId": "bpmnProcessId",
                   "elementInstanceKey": -1
@@ -3206,6 +3259,7 @@ final class JsonSerializableToJsonTest {
                   "targetProcessDefinitionKey": 456,
                   "mappingInstructions": [],
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "processDefinitionKey": -1,
                   "bpmnProcessId": "",
                   "elementInstanceKey": -1
@@ -3235,6 +3289,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 123,
                   "businessId": "order-42",
                   "rootProcessInstanceKey": 321,
+                  "storageOrdinalKey": 0,
                   "processDefinitionKey": 234,
                   "bpmnProcessId": "bpmnProcessId",
                   "elementInstanceKey": -1
@@ -3257,6 +3312,7 @@ final class JsonSerializableToJsonTest {
                   "processInstanceKey": 123,
                   "businessId": "",
                   "rootProcessInstanceKey": -1,
+                  "storageOrdinalKey": 0,
                   "processDefinitionKey": -1,
                   "bpmnProcessId": "",
                   "elementInstanceKey": -1
@@ -3343,6 +3399,7 @@ final class JsonSerializableToJsonTest {
               final long messageKey = 2L;
               final long requestId = 3L;
               final int requestStreamId = 4;
+              final int storageOrdinalKey = 6;
 
               return new MessageCorrelationRecord()
                   .setCorrelationKey(correlationKey)
@@ -3354,7 +3411,8 @@ final class JsonSerializableToJsonTest {
                   .setRequestId(requestId)
                   .setRequestStreamId(requestStreamId)
                   .setProcessDefinitionKey(5L)
-                  .setBusinessId("biz-42");
+                  .setBusinessId("biz-42")
+                  .setStorageOrdinalKey(storageOrdinalKey);
             },
         """
                 {
@@ -3369,7 +3427,8 @@ final class JsonSerializableToJsonTest {
                   "requestId": 3,
                   "requestStreamId": 4,
                   "processDefinitionKey": 5,
-                  "businessId": "biz-42"
+                  "businessId": "biz-42",
+                  "storageOrdinalKey": 6
                 }
                 """
       },
@@ -3614,7 +3673,8 @@ final class JsonSerializableToJsonTest {
                   "requestId": -1,
                   "requestStreamId": -1,
                   "processDefinitionKey": -1,
-                  "businessId": ""
+                  "businessId": "",
+                  "storageOrdinalKey": 0
                 }
                 """
       },
@@ -4507,13 +4567,15 @@ final class JsonSerializableToJsonTest {
                     .setProcessInstanceKey(12345L)
                     .setProcessDefinitionKey(6L)
                     .setTenantId("tenant_1")
-                    .setElementId("element_1"),
+                    .setElementId("element_1")
+                    .setStorageOrdinalKey(3),
         """
       {
         "tenantId": "tenant_1",
         "elementId": "element_1",
         "processInstanceKey": 12345,
-        "processDefinitionKey": 6
+        "processDefinitionKey": 6,
+        "storageOrdinalKey": 3
       }
       """
       },
@@ -4528,7 +4590,8 @@ final class JsonSerializableToJsonTest {
         "tenantId": "",
         "elementId": "",
         "processInstanceKey": -1,
-        "processDefinitionKey": -1
+        "processDefinitionKey": -1,
+        "storageOrdinalKey": 0
       }
       """
       },
@@ -4597,6 +4660,7 @@ final class JsonSerializableToJsonTest {
                     .setVariableEvents(List.of("CREATED", "UPDATED"))
                     .setInterrupting(true)
                     .setRootProcessInstanceKey(999L)
+                    .setStorageOrdinalKey(7)
                     .setElementType(BpmnElementType.INTERMEDIATE_CATCH_EVENT),
         """
                 {
@@ -4612,6 +4676,7 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId":"process-1",
                   "processDefinitionKey":456,
                   "rootProcessInstanceKey":999,
+                  "storageOrdinalKey":7,
                   "elementType":"INTERMEDIATE_CATCH_EVENT"
                 }
                 """
@@ -4639,6 +4704,7 @@ final class JsonSerializableToJsonTest {
                   "bpmnProcessId":"",
                   "processDefinitionKey":-1,
                   "rootProcessInstanceKey":-1,
+                  "storageOrdinalKey":0,
                   "elementType":"UNSPECIFIED"
                 }
                 """
@@ -5075,7 +5141,8 @@ final class JsonSerializableToJsonTest {
                               new AgentInstanceTool()
                                   .setName("MCP_ocr___scan_document")
                                   .setElementId("MCP_ocr")))
-                      .setChangedAttributes(List.of("status", "metrics"));
+                      .setChangedAttributes(List.of("status", "metrics"))
+                      .setStorageOrdinalKey(11);
               record
                   .getDefinition()
                   .setModel("gpt-4o")
@@ -5116,7 +5183,8 @@ final class JsonSerializableToJsonTest {
             { "name": "extract_line_items", "description": "", "elementId": "extract-line-items-task" },
             { "name": "MCP_ocr___scan_document", "description": "", "elementId": "MCP_ocr" }
           ],
-          "changedAttributes": ["status", "metrics"]
+          "changedAttributes": ["status", "metrics"],
+          "storageOrdinalKey": 11
         }
         """
       },
@@ -5141,7 +5209,8 @@ final class JsonSerializableToJsonTest {
           "limits": { "maxTokens": -1, "maxModelCalls": -1, "maxToolCalls": -1 },
           "metrics": { "inputTokens": 0, "outputTokens": 0, "modelCalls": 0, "toolCalls": 0 },
           "tools": [],
-          "changedAttributes": []
+          "changedAttributes": [],
+          "storageOrdinalKey": 0
         }
         """
       },
@@ -5162,7 +5231,8 @@ final class JsonSerializableToJsonTest {
                       .setLoopIteration(3)
                       .setRole(AgentHistoryRole.ASSISTANT)
                       .setProducedAt(1748860800000L)
-                      .setBpmnProcessId("process");
+                      .setBpmnProcessId("process")
+                      .setStorageOrdinalKey(10);
               record.addContent(
                   new AgentHistoryMessageContent()
                       .setContentType(AgentHistoryContentType.TEXT)
@@ -5257,7 +5327,8 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "process",
-          "processDefinitionKey": -1
+          "processDefinitionKey": -1,
+          "storageOrdinalKey": 10
         }
         """
       },
@@ -5340,7 +5411,8 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
-          "processDefinitionKey": -1
+          "processDefinitionKey": -1,
+          "storageOrdinalKey": 0
         }
         """
       },
@@ -5364,7 +5436,8 @@ final class JsonSerializableToJsonTest {
           "processInstanceKey": -1,
           "rootProcessInstanceKey": -1,
           "bpmnProcessId": "",
-          "processDefinitionKey": -1
+          "processDefinitionKey": -1,
+          "storageOrdinalKey": 0
         }
         """
       },
