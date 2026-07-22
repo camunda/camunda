@@ -94,7 +94,7 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
    */
   public ZoneAwarePartitionDistributor(final List<ZoneSpec> zoneSpecs) {
     this.zoneSpecs = List.copyOf(zoneSpecs);
-    this.zoneSpecsByPriority =
+    zoneSpecsByPriority =
         zoneSpecs.stream().sorted(Comparator.comparingInt(ZoneSpec::priority).reversed()).toList();
     if (this.zoneSpecs.size() == 1) {
       LOG.warn(
@@ -197,7 +197,6 @@ public final class ZoneAwarePartitionDistributor implements PartitionDistributor
   }
 
   private void validateReplicaSum(final int replicationFactor) {
-
     final var totalReplicas = zoneSpecs.stream().mapToInt(ZoneSpec::numberOfReplicas).sum();
     if (totalReplicas != replicationFactor) {
       throw new IllegalStateException(

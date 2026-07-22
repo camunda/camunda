@@ -94,6 +94,7 @@ public class ZoneHelpers {
     } catch (final Exception e) {
       CloseHelper.close(closeable);
     }
+    cluster.brokers().put(broker.nodeId(), broker);
 
     return closeable;
   }

@@ -16,6 +16,7 @@ import feign.FeignException;
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Zone;
 import io.camunda.zeebe.management.cluster.BrokerId;
+import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.Operation;
@@ -26,8 +27,8 @@ import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import java.time.Duration;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -280,26 +281,43 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
       // when
       // 1. stop both zoneA brokers (incl. coordinator zoneA_0)
-      cluster.brokers().get(MemberId.from("zoneA", 0)).close();
-      cluster.brokers().get(MemberId.from("zoneA", 1)).close();
+      final var brokersToRemove = List.of(MemberId.from("zoneA", 0), MemberId.from("zoneA", 1));
+      brokersToRemove.forEach(b -> cluster.brokers().get(b).close());
 
       // 2. force-remove both zoneA brokers; remaining member set = zoneB only
-      final var remaining =
-          List.<BrokerId>of(
-              new BrokerId.String(MemberId.from("zoneB", 0).toString()),
-              new BrokerId.String(MemberId.from("zoneB", 1).toString()));
-      final var removed = actuator.scaleByBrokerIds(remaining, false, true);
-      Awaitility.await()
-          .atMost(Duration.ofSeconds(60))
-          .untilAsserted(
-              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(removed));
+      final var removed =
+          actuator.patchCluster(
+              new ClusterConfigPatchRequest()
+                  .brokers(
+                      new ClusterConfigPatchRequestBrokers()
+                          .remove(brokersToRemove.stream().map(BrokerId::of).toList())),
+              false,
+              true);
+
+      assertChangeDone(actuator, removed);
+
+      final var zoneBOnlyResponse =
+          actuator.patchPartitionDistribution(
+              new PartitionDistributionConfig()
+                  .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
+                  .zones(List.of(new ZoneSpec().name("zoneB").numberOfReplicas(2).priority(10))),
+              false);
+      assertChangeDone(actuator, zoneBOnlyResponse);
 
       // 3. add 2 new brokers to zoneB (zoneB_2, zoneB_3)
       final var targetZones = List.of(new Zone("zoneB", 4, 4, 10));
-      closeables.manage(
-          addBrokerInZone(cluster, actuator, DEFAULT_CLUSTER_NAME, "zoneB", 2, 3, targetZones));
-      closeables.manage(
-          addBrokerInZone(cluster, actuator, DEFAULT_CLUSTER_NAME, "zoneB", 3, 4, targetZones));
+      final var brokersToAdd = List.of(MemberId.from("zoneB", 2), MemberId.from("zoneB", 3));
+      brokersToAdd.forEach(
+          id ->
+              closeables.manage(
+                  addBrokerInZone(
+                      cluster,
+                      actuator,
+                      DEFAULT_CLUSTER_NAME,
+                      id.zone(),
+                      id.nodeIdx(),
+                      4,
+                      targetZones)));
 
       // 4. reconfigure partition distribution: RF=4 all in zoneB, no zoneA
       final var config =
@@ -309,11 +327,31 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       final var response = actuator.patchPartitionDistribution(config, false);
 
       // then -- recovery applied; RF=4 all in zoneB
-      Awaitility.await()
-          .atMost(Duration.ofSeconds(60))
-          .untilAsserted(
-              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
-      assertThat(actuator.getTopology().getPartitionDistribution()).isEqualTo(config);
+      assertChangeDone(actuator, response);
+
+      cluster.awaitHealthyTopology();
+      final var finalTopology = actuator.getTopology();
+      assertThat(finalTopology.getPartitionDistribution()).isEqualTo(config);
+
+      final var expectedMemberIds =
+          IntStream.range(0, 4).mapToObj(i -> MemberId.from("zoneB", i)).toList();
+
+      // all zoneB brokers present in the final topology, each hosting both partitions (RF=4)
+      assertThat(finalTopology.getBrokers())
+          .describedAs("all zoneB brokers present in final topology")
+          .extracting(BrokerState::getId)
+          .containsExactlyInAnyOrder(
+              expectedMemberIds.stream().map(BrokerId::of).toList().toArray(new BrokerId[0]));
+      assertThat(finalTopology.getBrokers())
+          .allSatisfy(
+              broker ->
+                  assertThat(broker.getPartitions())
+                      .describedAs("broker %s has all partitions", broker.getId())
+                      .hasSize(2));
+      for (final var id : expectedMemberIds) {
+        Awaitility.await()
+            .untilAsserted(() -> TestCluster.assertHealthyTopology(cluster.brokers().get(id)));
+      }
     }
   }
 
