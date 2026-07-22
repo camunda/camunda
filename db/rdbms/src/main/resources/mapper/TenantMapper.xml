@@ -133,10 +133,12 @@
   </sql>
 
   <resultMap id="tenantResultMap" type="io.camunda.db.rdbms.write.domain.TenantDbModel">
-    <id column="TENANT_ID" property="tenantId"/>
-    <result column="TENANT_KEY" property="tenantKey"/>
-    <result column="NAME" property="name"/>
-    <result column="DESCRIPTION" property="description"/>
+    <constructor>
+      <idArg name="tenantId" column="TENANT_ID" javaType="java.lang.String"/>
+      <arg name="tenantKey" column="TENANT_KEY" javaType="java.lang.Long"/>
+      <arg name="name" column="NAME" javaType="java.lang.String"/>
+      <arg name="description" column="DESCRIPTION" javaType="java.lang.String"/>
+    </constructor>
   </resultMap>
 
   <resultMap id="tenantMemberResultMap" type="io.camunda.db.rdbms.write.domain.TenantMemberDbModel">
