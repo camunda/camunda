@@ -154,13 +154,12 @@ test.describe('Process Instance Modifications', () => {
         operateProcessInstancePage.getVariableTestId('foo'),
       ).toBeVisible();
 
-      // Skipped due to bug 42546: https://github.com/camunda/camunda/issues/42546
-      // await expect(
-      //   operateProcessInstancePage.getEditVariableFieldSelector('test'),
-      // ).toHaveValue('123');
-      // await expect(
-      //   operateProcessInstancePage.getEditVariableFieldSelector('foo'),
-      // ).toHaveValue('1');
+      await expect(
+        operateProcessModificationModePage.getEditVariableFieldSelector('test'),
+      ).toHaveValue('123');
+      await expect(
+        operateProcessModificationModePage.getEditVariableFieldSelector('foo'),
+      ).toHaveValue('1');
     });
 
     await test.step('Undo again and verify all modifications removed', async () => {
@@ -202,10 +201,9 @@ test.describe('Process Instance Modifications', () => {
     });
   });
 
-  // Skipped due to bug 42546: https://github.com/camunda/camunda/issues/42546
-  // !Note: assert the code after the bug is fixed as it was discoverd during the test implementation
-  // eslint-disable-next-line playwright/no-skipped-test
-  test.skip('Should apply/remove add variable modifications', async ({
+  // Regression coverage for bug 42546 (fixed):
+  // https://github.com/camunda/camunda/issues/42546
+  test('Should apply/remove add variable modifications', async ({
     page,
     operateProcessInstancePage,
     operateProcessModificationModePage,

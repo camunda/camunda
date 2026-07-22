@@ -277,6 +277,12 @@ class OperateProcessesPage {
     });
   }
 
+  getInstanceOperationSpinner(processInstanceKey: string): Locator {
+    return this.page.getByTitle(
+      `Instance ${processInstanceKey} has scheduled Operations`,
+    );
+  }
+
   getCancelInstanceButton(processInstanceKey: string): Locator {
     return this.page.getByRole('button', {
       name: `Cancel Instance ${processInstanceKey}`,
