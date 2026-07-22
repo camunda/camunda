@@ -9,82 +9,26 @@ package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.util.ObjectBuilder;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
-public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
+public record AuthorizationDbModel(
+    Long authorizationKey,
+    String ownerId,
+    String ownerType,
+    String resourceType,
+    Short resourceMatcher,
+    String resourceId,
+    String resourcePropertyName,
+    Set<PermissionType> permissionTypes)
+    implements DbModel<AuthorizationDbModel> {
 
-  private Long authorizationKey;
-  private String ownerId;
-  private String ownerType;
-  private String resourceType;
-  private Short resourceMatcher;
-  private String resourceId;
-  private String resourcePropertyName;
-  private Set<PermissionType> permissionTypes;
-
-  public Long authorizationKey() {
-    return authorizationKey;
-  }
-
-  public void authorizationKey(final Long authorizationKey) {
-    this.authorizationKey = authorizationKey;
-  }
-
-  public String ownerId() {
-    return ownerId;
-  }
-
-  public void ownerId(final String ownerId) {
-    this.ownerId = ownerId;
-  }
-
-  public String ownerType() {
-    return ownerType;
-  }
-
-  public void ownerType(final String ownerType) {
-    this.ownerType = ownerType;
-  }
-
-  public String resourceType() {
-    return resourceType;
-  }
-
-  public void resourceType(final String resourceType) {
-    this.resourceType = resourceType;
-  }
-
-  public Short resourceMatcher() {
-    return resourceMatcher;
-  }
-
-  public void resourceMatcher(final Short resourceMatcher) {
-    this.resourceMatcher = resourceMatcher;
-  }
-
-  public String resourceId() {
-    return resourceId;
-  }
-
-  public void resourceId(final String resourceId) {
-    this.resourceId = resourceId;
-  }
-
-  public String resourcePropertyName() {
-    return resourcePropertyName;
-  }
-
-  public void resourcePropertyName(final String resourcePropertyName) {
-    this.resourcePropertyName = resourcePropertyName;
-  }
-
-  public Set<PermissionType> permissionTypes() {
-    return permissionTypes;
-  }
-
-  public void permissionTypes(final Set<PermissionType> permissionTypes) {
-    this.permissionTypes = permissionTypes;
+  public AuthorizationDbModel {
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. Set.of()) would cause UnsupportedOperationException at runtime.
+    permissionTypes = permissionTypes != null ? permissionTypes : new HashSet<>();
   }
 
   @Override
@@ -160,16 +104,15 @@ public class AuthorizationDbModel implements DbModel<AuthorizationDbModel> {
 
     @Override
     public AuthorizationDbModel build() {
-      final AuthorizationDbModel model = new AuthorizationDbModel();
-      model.authorizationKey(authorizationKey);
-      model.ownerId(ownerId);
-      model.ownerType(ownerType);
-      model.resourceMatcher(resourceMatcher);
-      model.resourceId(resourceId);
-      model.resourcePropertyName(resourcePropertyName);
-      model.resourceType(resourceType);
-      model.permissionTypes(permissionTypes);
-      return model;
+      return new AuthorizationDbModel(
+          authorizationKey,
+          ownerId,
+          ownerType,
+          resourceType,
+          resourceMatcher,
+          resourceId,
+          resourcePropertyName,
+          permissionTypes);
     }
   }
 }
