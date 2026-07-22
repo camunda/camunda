@@ -1635,18 +1635,35 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Read Zeebe unit tests matrix outputs
+      # cloudposse/github-action-matrix-outputs-read downloads the run's ENTIRE
+      # artifact set on every invocation (no `name:` filter). With 6 matrix jobs
+      # to read, calling it 6x re-downloaded that same growing pool 6x. Download
+      # once here, then reuse the composite action's own extraction logic
+      # (find + jq) locally per matrix-step-name below — no repeat network cost.
+      - name: Download matrix output artifacts
         if: steps.bypass.outputs.present != 'true'
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
-        id: zeebe-matrix-read
-        with:
-          matrix-step-name: zeebe-unit-tests
-      - name: Read Integration tests matrix outputs
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+
+      - name: Setup jq
         if: steps.bypass.outputs.present != 'true'
-        uses: cloudposse/github-action-matrix-outputs-read@33cac12fa9282a7230a418d859b93fdbc4f27b5a # 1.0.0
-        id: integration-matrix-read
+        uses: dcarbone/install-jq-action@4fcb5062d7ce9bc4382d1a352d19ba3ba2c317c1 # v4.0.1
         with:
-          matrix-step-name: integration-tests
+          version: 1.8.2
+          force: 'true'
+
+      - name: Read matrix outputs
+        if: steps.bypass.outputs.present != 'true'
+        id: matrix-read
+        shell: bash
+        run: |
+          for pair in \
+            "zeebe:zeebe-unit-tests" \
+            "integration:integration-tests"; do
+            output_name="${pair%%:*}"
+            artifact_name="${pair#*:}"
+            result="$(find . -maxdepth 2 -name "${artifact_name}" -exec cat {} \; | jq -c --slurp 'map(to_entries | map(.key as $matrix_key | .value | map_values({($matrix_key): .}))) | flatten | reduce .[] as $item ({}; . * $item)')"
+            echo "${output_name}=${result}" >> "$GITHUB_OUTPUT"
+          done
 
       - name: Collect flaky test results
         if: steps.bypass.outputs.present != 'true'
@@ -1666,9 +1683,9 @@ jobs:
           docker-checks-result: ${{ needs.docker-checks.result }}
           docker-checks-flaky: ${{ needs.docker-checks.outputs.flakyTests }}
           zeebe-tests-result: ${{ needs.zeebe-unit-tests.result }}
-          zeebe-matrix-output-result: ${{ steps.zeebe-matrix-read.outputs.result }}
+          zeebe-matrix-output-result: ${{ steps.matrix-read.outputs.zeebe }}
           integration-tests-result: ${{ needs.integration-tests.result }}
-          integration-matrix-output-result: ${{ steps.integration-matrix-read.outputs.result }}
+          integration-matrix-output-result: ${{ steps.matrix-read.outputs.integration }}
 
       - name: Check if there are flaky tests to analyze
         if: steps.bypass.outputs.present != 'true'
