@@ -8,24 +8,28 @@
   <resultMap id="BatchOperationResultMap"
     type="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
     <constructor>
-      <idArg column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
-      <arg column="STATE"
+      <idArg name="batchOperationKey" column="BATCH_OPERATION_KEY" javaType="java.lang.String"/>
+      <arg name="state" column="STATE"
         javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationState"/>
-      <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
-      <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
-      <arg column="ACTOR_TYPE"
+      <arg name="operationType" column="OPERATION_TYPE"
+        javaType="io.camunda.search.entities.BatchOperationType"/>
+      <arg name="startDate" column="START_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg name="endDate" column="END_DATE" javaType="java.time.OffsetDateTime"/>
+      <arg name="actorType" column="ACTOR_TYPE"
         javaType="io.camunda.search.entities.AuditLogEntity$AuditLogActorType"/>
-      <arg column="ACTOR_ID" javaType="java.lang.String"/>
-      <arg column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
-      <arg column="OPERATIONS_FAILED_COUNT" javaType="int"/>
-      <arg column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
+      <arg name="actorId" column="ACTOR_ID" javaType="java.lang.String"/>
+      <arg name="operationsTotalCount" column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
+      <arg name="operationsFailedCount" column="OPERATIONS_FAILED_COUNT" javaType="int"/>
+      <arg name="operationsCompletedCount" column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
     </constructor>
     <collection property="errors"
-      ofType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel$BatchOperationErrorDbModel">
-      <result property="partitionId" column="PARTITION_ID"/>
-      <result property="type" column="TYPE"/>
-      <result property="message" column="MESSAGE"/>
+      ofType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel$BatchOperationErrorDbModel"
+      javaType="java.util.List">
+      <constructor>
+        <arg name="partitionId" column="PARTITION_ID" javaType="java.lang.Integer"/>
+        <arg name="type" column="TYPE" javaType="java.lang.String"/>
+        <arg name="message" column="MESSAGE" javaType="java.lang.String"/>
+      </constructor>
     </collection>
   </resultMap>
 
