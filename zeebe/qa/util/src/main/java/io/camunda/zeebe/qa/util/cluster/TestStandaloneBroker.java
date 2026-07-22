@@ -194,9 +194,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private static boolean isWildcardAddress(final String host) {
     return host == null
         || host.isBlank()
-        || host.equals("0.0.0.0")
-        || host.equals("::")
-        || host.equals("0:0:0:0:0:0:0:0");
+        || "0.0.0.0".equals(host)
+        || "::".equals(host)
+        || "0:0:0:0:0:0:0:0".equals(host);
   }
 
   @Override
