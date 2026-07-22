@@ -14,8 +14,7 @@ type OptionalFilter =
   | 'Business ID'
   | 'Evaluation Date Range';
 
-export type AdvancedStringFilterOperator =
-  'equals' | 'does not equal' | 'contains' | 'is one of' | 'is not one of';
+export type AdvancedStringFilterOperator = 'equals' | 'contains' | 'is one of';
 
 interface SearchParams {
   evaluated?: string;
@@ -145,6 +144,8 @@ class OperateDecisionsPage {
   }
 
   async fillBusinessIdFilter(value: string): Promise<void> {
+    await expect(this.businessIdFilter).toBeVisible();
+    await expect(this.businessIdFilter).toBeEnabled();
     await this.businessIdFilter.click();
     await this.businessIdFilter.fill('');
     await this.businessIdFilter.pressSequentially(value);

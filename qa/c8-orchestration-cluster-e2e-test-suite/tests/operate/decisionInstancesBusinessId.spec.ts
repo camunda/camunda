@@ -8,7 +8,6 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {randomUUID} from 'crypto';
 import {deploy} from 'utils/zeebeClient';
 import {jsonHeaders} from 'utils/http';
 import {captureScreenshot, captureFailureVideo} from '@setup';
@@ -18,10 +17,11 @@ import {
   type AdvancedStringFilterOperator,
 } from '@pages/OperateDecisionsPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
+import {extendedAssertionOptions, uniqueBusinessId} from 'utils/constants';
 
 const DMN_PROCESS_ID = 'mammalAnimalProcess';
 
-const runPrefix = `ui-dec-bizid-${randomUUID().slice(0, 8)}`;
+const runPrefix = uniqueBusinessId('ui-dec-bizid');
 const BUSINESS_ID_A = `${runPrefix}-aaa`;
 const BUSINESS_ID_B = `${runPrefix}-zzz`;
 
@@ -38,6 +38,8 @@ async function startDmnProcessWithBusinessId(
     },
   });
   expect(res.status()).toBe(200);
+  const json = await res.json();
+  expect(json.processInstanceKey).toBeTruthy();
 }
 
 async function applyBusinessIdFilter(
@@ -169,7 +171,7 @@ test.describe('Decision Instances - Business ID', () => {
         operateDecisionsPage.decisionInstancesList
           .getByRole('row')
           .filter({hasText: runPrefix}),
-      ).toHaveCount(0);
+      ).toHaveCount(0, {timeout: extendedAssertionOptions.timeout});
     });
   });
 
