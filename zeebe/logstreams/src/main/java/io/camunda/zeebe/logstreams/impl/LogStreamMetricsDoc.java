@@ -448,6 +448,29 @@ public enum LogStreamMetricsDoc implements ExtendedMeterDocumentation {
     public KeyName[] getAdditionalKeyNames() {
       return PartitionKeyNames.values();
     }
+  },
+
+  /** How far behind exporting is */
+  EXPORTING_BACKLOG {
+    @Override
+    public String getDescription() {
+      return "How far behind exporting is";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.flow.control.exporting.backlog";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
+    }
+
+    @Override
+    public KeyName[] getAdditionalKeyNames() {
+      return PartitionKeyNames.values();
+    }
   };
 
   /** Tags/labels associated with the {@link #RECORD_APPENDED} metric. */

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.logstreams.impl;
 
 import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.COMMIT_LATENCY;
+import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.EXPORTING_BACKLOG;
 import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.EXPORTING_RATE;
 import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FLOW_CONTROL_OUTCOME;
 import static io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.INFLIGHT_APPENDS;
@@ -58,6 +59,7 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
   private final AtomicLong lastCommitted = new AtomicLong();
   private final AtomicLong lastWritten = new AtomicLong();
   private final AtomicLong exportingRate = new AtomicLong();
+  private final AtomicLong exportingBacklog = new AtomicLong();
   private final AtomicLong writeRateMaxLimit = new AtomicLong();
   private final AtomicLong writeRateLimit = new AtomicLong();
   private final AtomicLong partitionLoad = new AtomicLong();
@@ -90,6 +92,7 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
     registerGauge(LAST_COMMITTED_POSITION, lastCommitted);
     registerGauge(LAST_WRITTEN_POSITION, lastWritten);
     registerGauge(EXPORTING_RATE, exportingRate);
+    registerGauge(EXPORTING_BACKLOG, exportingBacklog);
     registerGauge(PARTITION_LOAD, partitionLoad, LogStreamMetricsImpl::longToDouble, null);
   }
 
@@ -232,6 +235,11 @@ public final class LogStreamMetricsImpl implements LogStreamMetrics {
   @Override
   public void deregisterWriteRateMetrics() {
     registeredWriteRateMeters.forEach(registry::remove);
+  }
+
+  @Override
+  public void setExportingBacklog(final long value) {
+    exportingBacklog.set(value);
   }
 
   private Counter registerRecordAppendedCounter(

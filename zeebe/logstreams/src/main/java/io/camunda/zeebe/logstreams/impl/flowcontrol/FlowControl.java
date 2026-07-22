@@ -218,9 +218,12 @@ public final class FlowControl {
   }
 
   private void updateWriteRateThrottle() {
-    if (writeRateThrottle != null && lastWrittenPosition != -1 && lastExportedPosition != -1) {
-      writeRateThrottle.update(
-          ActorClock.currentTimeMillis(), lastWrittenPosition - lastExportedPosition);
+    if (lastWrittenPosition != -1 && lastExportedPosition != -1) {
+      final long backlog = lastWrittenPosition - lastExportedPosition;
+      metrics.setExportingBacklog(backlog);
+      if (writeRateThrottle != null) {
+        writeRateThrottle.update(ActorClock.currentTimeMillis(), backlog);
+      }
     }
   }
 
