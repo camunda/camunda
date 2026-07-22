@@ -108,10 +108,6 @@ public class ClusterVariableFilterImpl
     if (metadata != null && !metadata.isEmpty()) {
       metadata.forEach(
           (key, value) -> {
-            if (value == null) {
-              throw new IllegalArgumentException(
-                  "Metadata value cannot be null for key '" + key + "'");
-            }
             metadata(key, b -> b.eq(value));
           });
     }

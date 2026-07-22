@@ -16,7 +16,6 @@
 package io.camunda.client.clustervariable;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
@@ -253,20 +252,6 @@ public class SearchClusterVariableTest extends ClientRestTest {
     final ClusterVariableSearchQueryRequest request =
         gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
     assertThat(request.getFilter().getMetadata().get("count").get$Eq()).isEqualTo(42);
-  }
-
-  @Test
-  void shouldRejectNullMetadataValueInMap() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newClusterVariableSearchRequest()
-                    .filter(f -> f.metadata(Collections.singletonMap("env", null)))
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("env");
   }
 
   @Test
