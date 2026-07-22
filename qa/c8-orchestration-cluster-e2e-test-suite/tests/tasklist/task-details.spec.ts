@@ -628,7 +628,10 @@ test.describe('task details page', () => {
         },
       });
       const body = await res.json();
-      expect(body.items.length).toBe(1);
+      // beforeAll seeds one instance per worker, so several identical active
+      // instances can coexist on the shared cluster. Pick any one and drive
+      // that specific instance below instead of assuming a global count of one.
+      expect(body.items.length).toBeGreaterThan(0);
       processInstanceKey = body.items[0].processInstanceKey;
     }).toPass(defaultAssertionOptions);
 
@@ -646,7 +649,9 @@ test.describe('task details page', () => {
       TaskHeaderTest: 'TaskHeaderValue',
     });
 
-    await taskPanelPage.openTask('Task with custom headers');
+    // Open the exact task tracked above by key; opening by name would pick an
+    // arbitrary matching task when several instances are active.
+    await taskPanelPage.goToTaskDetails(userTaskKey);
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await taskDetailsPage.clickCompleteTaskButton();
