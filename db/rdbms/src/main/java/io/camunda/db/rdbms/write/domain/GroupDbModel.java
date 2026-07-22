@@ -38,7 +38,15 @@ public record GroupDbModel(
   @Override
   public GroupDbModel copy(
       final Function<ObjectBuilder<GroupDbModel>, ObjectBuilder<GroupDbModel>> copyFunction) {
-    return copyFunction.apply(new Builder().groupKey(groupKey).name(name).members(members)).build();
+    return copyFunction
+        .apply(
+            new Builder()
+                .groupKey(groupKey)
+                .groupId(groupId)
+                .name(name)
+                .description(description)
+                .members(members))
+        .build();
   }
 
   public static class Builder implements ObjectBuilder<GroupDbModel> {

@@ -34,7 +34,15 @@ public record RoleDbModel(
   @Override
   public RoleDbModel copy(
       final Function<ObjectBuilder<RoleDbModel>, ObjectBuilder<RoleDbModel>> copyFunction) {
-    return copyFunction.apply(new Builder().roleKey(roleKey).name(name).members(members)).build();
+    return copyFunction
+        .apply(
+            new Builder()
+                .roleKey(roleKey)
+                .roleId(roleId)
+                .name(name)
+                .description(description)
+                .members(members))
+        .build();
   }
 
   public static class Builder implements ObjectBuilder<RoleDbModel> {

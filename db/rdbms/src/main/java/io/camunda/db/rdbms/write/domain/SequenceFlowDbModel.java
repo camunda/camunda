@@ -59,7 +59,8 @@ public record SequenceFlowDbModel(
                 .rootProcessInstanceKey(rootProcessInstanceKey)
                 .processDefinitionKey(processDefinitionKey)
                 .processDefinitionId(processDefinitionId)
-                .tenantId(tenantId))
+                .tenantId(tenantId)
+                .partitionId(partitionId))
         .build();
   }
 
