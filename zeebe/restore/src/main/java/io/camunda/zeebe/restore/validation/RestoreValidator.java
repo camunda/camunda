@@ -9,7 +9,6 @@ package io.camunda.zeebe.restore.validation;
 
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.util.Either;
@@ -40,7 +39,7 @@ public final class RestoreValidator
   }
 
   @Override
-  public @NonNull Either<ClusterConfigurationRequestFailedException, RestoreRequest> validate(
+  public @NonNull Either<Exception, RestoreRequest> validate(
       final @NonNull RestoreRequest request) {
     if (backupStore == null) {
       return Either.left(

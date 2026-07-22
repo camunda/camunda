@@ -10,14 +10,10 @@ package io.camunda.zeebe.dynamic.config.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.cluster.PhysicalTenantIds;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Test;
 
 final class RequestValidatorRegistryTest {
@@ -27,7 +23,14 @@ final class RequestValidatorRegistryTest {
   private final RequestValidatorRegistry registry = new RequestValidatorRegistry();
 
   private static RestoreRequest restoreRequest() {
-    return new RestoreRequest(List.of(1L), null, null, "elasticsearch", false, false);
+    return new RestoreRequest(
+        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+        List.of(1L),
+        null,
+        null,
+        "elasticsearch",
+        false,
+        false);
   }
 
   private static ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest> validator(
@@ -39,72 +42,68 @@ final class RequestValidatorRegistryTest {
       }
 
       @Override
-      public Either<ClusterConfigurationRequestFailedException, RestoreRequest> validate(
-          final @NonNull RestoreRequest request) {
+      public Either<Exception, RestoreRequest> validate(final RestoreRequest request) {
         return Either.right(rewrittenTo);
       }
     };
   }
 
   @Test
-  void shouldReturnRequestUnchangedWhenNoValidatorRegistered() {
-    // given
-    final var request = new PurgeRequest(false);
-
+  void shouldReturnEmptyWhenNoValidatorRegistered() {
     // when
-    final var result = registry.validateRequest(request);
+    final var result =
+        registry.getValidator(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, RestoreRequest.class);
 
     // then
-    assertThat(result.get()).isSameAs(request);
+    assertThat(result).isEmpty();
   }
 
   @Test
-  void shouldUseValidatorRegisteredForMatchingRequestTypeAndTenant() {
+  void shouldReturnValidatorRegisteredForMatchingRequestTypeAndTenant() {
     // given
-    final var request = restoreRequest();
     final var rewritten = restoreRequest();
     registry.registerValidator(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, validator(rewritten));
 
     // when
-    final var result = registry.validateRequest(request);
+    final var result =
+        registry.getValidator(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, RestoreRequest.class);
 
     // then
-    assertThat(result.get()).isSameAs(rewritten);
+    assertThat(result).isPresent();
+    assertThat(result.get().validate(restoreRequest()).get()).isSameAs(rewritten);
   }
 
   @Test
-  void shouldNotUseValidatorRegisteredForADifferentTenant() {
-    // given a validator registered for a different tenant than the request's
-    final var request = restoreRequest();
+  void shouldNotReturnValidatorRegisteredForADifferentTenant() {
+    // given a validator registered for a different tenant than the one being looked up
     registry.registerValidator(OTHER_TENANT, validator(restoreRequest()));
 
-    // when validating a request for the default tenant, no validator matches, and the request
-    // requires validation
-    final var result = registry.validateRequest(request);
+    // when
+    final var result =
+        registry.getValidator(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, RestoreRequest.class);
 
     // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class);
+    assertThat(result).isEmpty();
   }
 
   @Test
-  void shouldUseWildcardValidatorWhenNoTenantSpecificValidatorIsRegistered() {
+  void shouldFallBackToWildcardValidatorWhenNoTenantSpecificValidatorIsRegistered() {
     // given a validator registered with a null tenant, applicable to every tenant
-    final var request = restoreRequest();
     final var rewritten = restoreRequest();
     registry.registerValidator(null, validator(rewritten));
 
     // when
-    final var result = registry.validateRequest(request);
+    final var result =
+        registry.getValidator(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, RestoreRequest.class);
 
     // then
-    assertThat(result.get()).isSameAs(rewritten);
+    assertThat(result).isPresent();
+    assertThat(result.get().validate(restoreRequest()).get()).isSameAs(rewritten);
   }
 
   @Test
   void shouldPreferTenantSpecificValidatorOverWildcard() {
     // given both a wildcard and a tenant-specific validator are registered
-    final var request = restoreRequest();
     final var rewrittenByWildcard = restoreRequest();
     final var rewrittenByTenantSpecific = restoreRequest();
     registry.registerValidator(null, validator(rewrittenByWildcard));
@@ -112,23 +111,11 @@ final class RequestValidatorRegistryTest {
         PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, validator(rewrittenByTenantSpecific));
 
     // when
-    final var result = registry.validateRequest(request);
+    final var result =
+        registry.getValidator(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, RestoreRequest.class);
 
     // then
-    assertThat(result.get()).isSameAs(rewrittenByTenantSpecific);
-  }
-
-  @Test
-  void shouldThrowWhenValidationRequiredButNoValidatorRegistered() {
-    // given a request type that requires validation, with nothing registered for it
-    final var request = restoreRequest();
-
-    // when
-    final var result = registry.validateRequest(request);
-
-    // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class);
+    assertThat(result.get().validate(restoreRequest()).get()).isSameAs(rewrittenByTenantSpecific);
   }
 
   @Test
@@ -136,16 +123,16 @@ final class RequestValidatorRegistryTest {
     // given
     registry.registerValidator(
         PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, validator(restoreRequest()));
+
+    // when
     registry.deregisterValidator(
         PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, RestoreRequest.class);
 
-    // when validating after deregistration, no validator matches, and the request requires
-    // validation
-    final var result = registry.validateRequest(restoreRequest());
-
     // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class);
+    assertThat(
+            registry.getValidator(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, RestoreRequest.class))
+        .isEmpty();
   }
 
   @Test
@@ -161,7 +148,27 @@ final class RequestValidatorRegistryTest {
     registry.deregisterValidator(null, RestoreRequest.class);
 
     // then the tenant-specific validator is unaffected
-    assertThat(registry.validateRequest(restoreRequest()).get())
+    assertThat(
+            registry
+                .getValidator(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, RestoreRequest.class)
+                .get()
+                .validate(restoreRequest())
+                .get())
         .isSameAs(rewrittenByTenantSpecific);
+  }
+
+  @Test
+  void shouldReturnAllValidatorsRegisteredForARequestTypeAcrossTenants() {
+    // given
+    final var wildcard = validator(restoreRequest());
+    final var tenantSpecific = validator(restoreRequest());
+    registry.registerValidator(null, wildcard);
+    registry.registerValidator(OTHER_TENANT, tenantSpecific);
+
+    // when
+    final var result = registry.validatorsForRequest(RestoreRequest.class);
+
+    // then
+    assertThat(result).containsExactlyInAnyOrder(wildcard, tenantSpecific);
   }
 }

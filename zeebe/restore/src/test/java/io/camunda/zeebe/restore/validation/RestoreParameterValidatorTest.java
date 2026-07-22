@@ -40,7 +40,8 @@ final class RestoreParameterValidatorTest {
       final @Nullable String to,
       final String databaseType,
       final boolean continuousBackups) {
-    return new RestoreRequest(backupIds, from, to, databaseType, continuousBackups, false);
+    return new RestoreRequest(
+        "default", backupIds, from, to, databaseType, continuousBackups, false);
   }
 
   @Test

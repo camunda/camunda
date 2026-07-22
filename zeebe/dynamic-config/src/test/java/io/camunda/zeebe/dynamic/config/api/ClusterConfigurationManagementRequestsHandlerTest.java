@@ -11,25 +11,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeResult;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
-import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry.RequestValidator;
+import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
-import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 final class ClusterConfigurationManagementRequestsHandlerTest {
@@ -39,118 +33,54 @@ final class ClusterConfigurationManagementRequestsHandlerTest {
   private final TestConcurrencyControl executor = new TestConcurrencyControl();
   private final ConfigurationChangeCoordinator coordinator =
       mock(ConfigurationChangeCoordinator.class);
+  private final ClusterConfigurationManagementRequestsHandler handler =
+      new ClusterConfigurationManagementRequestsHandler(
+          coordinator, LOCAL_MEMBER, executor, new RequestValidatorRegistry());
 
-  private ClusterConfigurationManagementRequestsHandler handler(final RequestValidator validator) {
-    return new ClusterConfigurationManagementRequestsHandler(
-        coordinator, LOCAL_MEMBER, executor, validator);
-  }
-
-  private static RestoreRequest restoreRequest() {
-    return new RestoreRequest(List.of(1L), null, null, "elasticsearch", false, false);
-  }
-
-  private static Throwable failureOf(final ActorFuture<?> future) {
-    final var error = new AtomicReference<Throwable>();
-    future.onComplete((ignored, throwable) -> error.set(throwable));
-    return error.get();
+  private static RestoreRequest restoreRequest(final boolean dryRun) {
+    return new RestoreRequest(
+        PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+        List.of(1L),
+        null,
+        null,
+        "elasticsearch",
+        false,
+        dryRun);
   }
 
   @Test
-  void shouldPropagateValidationMessageAsInvalidRequest() {
+  void shouldApplyOperationsWhenNotDryRun() {
     // given
-    final var handler =
-        handler(
-            request ->
-                Either.left(new InvalidRequest("backupId and time range are mutually exclusive")));
-
-    // when
-    final var failure = failureOf(handler.restore(restoreRequest()));
-
-    // then the validator's error message is propagated to the caller as an invalid request
-    assertThat(failure)
-        .isInstanceOf(InvalidRequest.class)
-        .hasMessage("backupId and time range are mutually exclusive");
-    // and the request never reaches the coordinator
-    verifyNoInteractions(coordinator);
-  }
-
-  @Test
-  void shouldPropagateNonArgumentValidationExceptionUnwrapped() {
-    // given
-    final var exception = new IllegalStateException("backup store unavailable");
-    final var handler =
-        handler(
-            request -> {
-              throw exception;
-            });
-
-    // when
-    final var failure = failureOf(handler.restore(restoreRequest()));
-
-    // then the original exception is propagated as-is
-    assertThat(failure).isSameAs(exception);
-    verifyNoInteractions(coordinator);
-  }
-
-  @Test
-  void shouldProceedWithNoValidation() {
-    // given a no-op validator (validation is completely optional)
     final var config = ClusterConfiguration.init();
     when(coordinator.applyOperations(any()))
         .thenReturn(
             CompletableActorFuture.completed(
                 new ConfigurationChangeResult(config, config, 1L, List.of())));
-    final var handler = handler(request -> Either.right(request));
 
     // when
     final ActorFuture<ClusterConfigurationChangeResponse> result =
-        handler.restore(restoreRequest());
+        handler.restore(restoreRequest(false));
 
-    // then the request is handled normally
-    assertThat(failureOf(result)).isNull();
-    assertThat(Objects.requireNonNull(result.join()).changeId()).isOne();
+    // then
+    assertThat(result.join().changeId()).isOne();
     verify(coordinator).applyOperations(any());
   }
 
   @Test
-  void shouldReceiveTheOriginalRequestInstanceForValidation() {
+  void shouldSimulateOperationsWhenDryRun() {
     // given
-    final var request = restoreRequest();
-    final var received = new AtomicReference<ClusterConfigurationManagementRequest>();
-    final var handler =
-        handler(
-            r -> {
-              received.set(r);
-              return Either.right(r);
-            });
-    when(coordinator.applyOperations(any()))
+    final var config = ClusterConfiguration.init();
+    when(coordinator.simulateOperations(any()))
         .thenReturn(
             CompletableActorFuture.completed(
-                new ConfigurationChangeResult(
-                    ClusterConfiguration.init(), ClusterConfiguration.init(), 1L, List.of())));
+                new ConfigurationChangeResult(config, config, 1L, List.of())));
 
     // when
-    handler.restore(request);
+    final ActorFuture<ClusterConfigurationChangeResponse> result =
+        handler.restore(restoreRequest(true));
 
-    // then the exact request instance is handed to the validator
-    assertThat(received.get()).isSameAs(request);
-  }
-
-  @Test
-  void shouldInvokeValidatorForAddMembersToo() {
-    // given every request, not just restore, is routed through the registered validator by
-    // default, so a validator registered for another request type is never accidentally skipped
-    final var request = new AddMembersRequest(Set.of(MemberId.from("1")), false);
-    final var handler =
-        handler(r -> Either.left(new InvalidRequest("members are not allowed right now")));
-
-    // when
-    final var failure = failureOf(handler.addMembers(request));
-
-    // then the validator's error message is propagated to the caller as an invalid request
-    assertThat(failure)
-        .isInstanceOf(InvalidRequest.class)
-        .hasMessage("members are not allowed right now");
-    verifyNoInteractions(coordinator);
+    // then
+    assertThat(result.join().changeId()).isOne();
+    verify(coordinator).simulateOperations(any());
   }
 }

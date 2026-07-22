@@ -39,8 +39,7 @@ public interface ClusterConfigurationRequestValidator<
    *
    * @param request the request to validate; guaranteed to be an instance of {@link #requestType()}
    * @return an {@link Either.Right} with the value to use downstream, or an {@link Either.Left}
-   *     with the exception to propagate if the request is invalid — typically {@link
-   *     ClusterConfigurationRequestFailedException.InvalidRequest}
+   *     with the exception to propagate if the request is invalid
    */
-  Either<ClusterConfigurationRequestFailedException, R> validate(T request);
+  Either<Exception, R> validate(T request);
 }

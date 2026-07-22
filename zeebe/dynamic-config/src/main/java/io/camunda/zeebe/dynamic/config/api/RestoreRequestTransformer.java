@@ -9,10 +9,12 @@ package io.camunda.zeebe.dynamic.config.api;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InternalError;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
@@ -29,9 +31,12 @@ import java.util.List;
 public final class RestoreRequestTransformer implements ConfigurationChangeRequest {
 
   private final RestoreRequest request;
+  private final RequestValidatorRegistry registry;
 
-  public RestoreRequestTransformer(final RestoreRequest request) {
+  public RestoreRequestTransformer(
+      final RestoreRequest request, final RequestValidatorRegistry registry) {
     this.request = request;
+    this.registry = registry;
   }
 
   @Override
@@ -43,6 +48,16 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
       return Either.left(
           new ConcurrentModificationException(
               "Restore is only allowed while the cluster is in recovery mode."));
+    }
+
+    final var validator = registry.getValidator(request.physicalTenantId(), RestoreRequest.class);
+    if (validator.isEmpty()) {
+      return Either.left(new InternalError("A validator is required but not present"));
+    }
+    final var res = validator.get().validate(request);
+
+    if (res.isLeft()) {
+      return Either.left(res.getLeft());
     }
     // Restore sequence steps will be generated
     return Either.right(List.of());

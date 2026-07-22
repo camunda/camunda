@@ -14,6 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
@@ -47,6 +48,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -105,15 +107,27 @@ final class ClusterConfigurationManagementApiTest {
                 () -> recordingCoordinator.getClusterConfiguration().join()),
             new ProtoBufSerializer());
 
+    final var validatorRegistry = new RequestValidatorRegistry();
+    validatorRegistry.registerValidator(
+        null,
+        new ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest>() {
+          @Override
+          public Class<RestoreRequest> requestType() {
+            return RestoreRequest.class;
+          }
+
+          @Override
+          public Either<Exception, RestoreRequest> validate(final RestoreRequest request) {
+            return Either.right(request);
+          }
+        });
+
     requestServer =
         new ClusterConfigurationRequestServer(
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                recordingCoordinator,
-                id0,
-                new TestConcurrencyControl(),
-                request -> Either.right(request)));
+                recordingCoordinator, id0, new TestConcurrencyControl(), validatorRegistry));
 
     requestServer.start();
   }
@@ -547,7 +561,14 @@ final class ClusterConfigurationManagementApiTest {
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
     final var request =
-        new RestoreRequest(List.of(100L, 101L), null, null, "elasticsearch", false, false);
+        new RestoreRequest(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            List.of(100L, 101L),
+            null,
+            null,
+            "elasticsearch",
+            false,
+            false);
 
     // when
     final var result = clientApi.restore(request).join();
@@ -561,7 +582,14 @@ final class ClusterConfigurationManagementApiTest {
     // given
     recordingCoordinator.setCurrentTopology(initialTopology); // member is ACTIVE
     final var request =
-        new RestoreRequest(List.of(100L), null, null, "elasticsearch", false, false);
+        new RestoreRequest(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            List.of(100L),
+            null,
+            null,
+            "elasticsearch",
+            false,
+            false);
 
     // when
     final var result = clientApi.restore(request).join();
