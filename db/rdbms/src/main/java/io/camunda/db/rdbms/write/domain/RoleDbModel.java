@@ -23,6 +23,14 @@ public record RoleDbModel(
     members = members != null ? members : new ArrayList<>();
   }
 
+  // Used by roleResultMap's <constructor>, which never supplies members -- it's populated
+  // separately by the sibling <collection> element, which requires (and only works with) an
+  // exact-arity constructor match; MyBatis does not default missing constructor args to null.
+  public RoleDbModel(
+      final Long roleKey, final String roleId, final String name, final String description) {
+    this(roleKey, roleId, name, description, null);
+  }
+
   @Override
   public RoleDbModel copy(
       final Function<ObjectBuilder<RoleDbModel>, ObjectBuilder<RoleDbModel>> copyFunction) {

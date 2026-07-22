@@ -31,6 +31,29 @@ public record AuthorizationDbModel(
     permissionTypes = permissionTypes != null ? permissionTypes : new HashSet<>();
   }
 
+  // Used by authorizationResultMap's <constructor>, which never supplies permissionTypes -- it's
+  // populated separately by the sibling <collection> element, which requires (and only works
+  // with) an exact-arity constructor match; MyBatis does not default missing constructor args to
+  // null.
+  public AuthorizationDbModel(
+      final Long authorizationKey,
+      final String ownerId,
+      final String ownerType,
+      final String resourceType,
+      final Short resourceMatcher,
+      final String resourceId,
+      final String resourcePropertyName) {
+    this(
+        authorizationKey,
+        ownerId,
+        ownerType,
+        resourceType,
+        resourceMatcher,
+        resourceId,
+        resourcePropertyName,
+        null);
+  }
+
   @Override
   public AuthorizationDbModel copy(
       final Function<ObjectBuilder<AuthorizationDbModel>, ObjectBuilder<AuthorizationDbModel>>
