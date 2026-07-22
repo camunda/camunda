@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.clusteradmin;
 
-import static io.camunda.authentication.clusteradmin.ClusterAdminSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY;
+import static io.camunda.authentication.clusteradmin.ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;

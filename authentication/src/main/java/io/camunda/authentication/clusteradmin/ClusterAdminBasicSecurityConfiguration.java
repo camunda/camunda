@@ -60,7 +60,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  */
 @Configuration
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-public class ClusterAdminSecurityConfiguration {
+public class ClusterAdminBasicSecurityConfiguration {
 
   /**
    * Marker authority assigned to every cluster-admin principal. The chain does not check it
@@ -81,7 +81,7 @@ public class ClusterAdminSecurityConfiguration {
   static final String CLUSTER_ADMIN_API_PATTERN = "/cluster/v2/**";
 
   private static final Logger LOG =
-      LoggerFactory.getLogger(ClusterAdminSecurityConfiguration.class);
+      LoggerFactory.getLogger(ClusterAdminBasicSecurityConfiguration.class);
 
   @Bean
   @Order(ORDER_API)

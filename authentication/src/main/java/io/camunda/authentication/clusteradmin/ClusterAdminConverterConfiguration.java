@@ -17,8 +17,8 @@ import org.springframework.security.core.Authentication;
 /**
  * Registers {@link ClusterAdminAuthenticationConverter} method-agnostically, so it is present for
  * whichever cluster-admin chain is active — the Basic chain ({@link
- * ClusterAdminSecurityConfiguration}, {@code @ConditionalOnAuthenticationMethod(BASIC)}) or the
- * OIDC chain ({@link ClusterAdminOidcSecurityConfiguration},
+ * ClusterAdminBasicSecurityConfiguration}, {@code @ConditionalOnAuthenticationMethod(BASIC)}) or
+ * the OIDC chain ({@link ClusterAdminOidcSecurityConfiguration},
  * {@code @ConditionalOnAuthenticationMethod(OIDC)}).
  *
  * <p>Registers this converter for OIDC too.
@@ -27,7 +27,7 @@ import org.springframework.security.core.Authentication;
  * membership converter and inherit memberships from a colliding DB principal.
  *
  * <p>This converter only handles principals with {@link
- * ClusterAdminSecurityConfiguration#CLUSTER_ADMIN_AUTHORITY}, so it is inactive when the
+ * ClusterAdminBasicSecurityConfiguration#CLUSTER_ADMIN_AUTHORITY}, so it is inactive when the
  * cluster-admin chain is disabled.
  */
 @Configuration

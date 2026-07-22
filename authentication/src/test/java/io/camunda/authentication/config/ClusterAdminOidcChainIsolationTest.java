@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.clusteradmin.ClusterAdminSecurityConfiguration;
+import io.camunda.authentication.clusteradmin.ClusterAdminBasicSecurityConfiguration;
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
@@ -66,7 +66,7 @@ public class ClusterAdminOidcChainIsolationTest extends AbstractWebSecurityConfi
             null,
             List.of(
                 new SimpleGrantedAuthority(
-                    ClusterAdminSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY))));
+                    ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY))));
     final MockHttpSession session = new MockHttpSession();
     session.setAttribute(
         HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
