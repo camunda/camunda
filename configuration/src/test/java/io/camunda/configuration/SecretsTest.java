@@ -248,6 +248,28 @@ class SecretsTest {
   }
 
   @Nested
+  @TestPropertySource(
+      properties = {"camunda.secrets.stores.aws-secrets-manager.blank.container-secret-id= "})
+  class WithBlankContainerSecretId {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithBlankContainerSecretId(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldRejectBlankContainerSecretId() {
+      // given container-secret-id is set to a blank string (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+      final Secrets.Stores stores = secrets.getStores();
+
+      // then reading the store map throws
+      assertThatThrownBy(stores::getAwsSecretsManager).isInstanceOf(IllegalArgumentException.class);
+    }
+  }
+
+  @Nested
   class WithoutAwsSecretsManagerStoreConfigured {
     private final UnifiedConfiguration unifiedConfiguration;
 

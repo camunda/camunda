@@ -126,8 +126,12 @@ public class Secrets {
 
     /**
      * Opt-in: instead of one AWS secret per reference, treat every reference as a JSON key inside
-     * this one named secret (e.g. {@code app-config}, a JSON object of key-value pairs). Mutually
-     * exclusive with {@link #batchEnabled}, since only this single secret is ever fetched.
+     * this one named secret (e.g. {@code app-config}). Mutually exclusive with {@link
+     * #batchEnabled}, since only this single secret is ever fetched.
+     *
+     * <p>The named secret's string value must be a flat JSON object mapping each reference name to
+     * a JSON string value (e.g. {@code {"db-password": "s3cr3t"}}); nested objects/arrays are not
+     * supported, and a non-object value makes the store unusable.
      */
     private @Nullable String containerSecretId;
 
@@ -172,10 +176,10 @@ public class Secrets {
     }
 
     /**
-     * @throws IllegalArgumentException if batch-size is outside the 1..20 range AWS accepts, or if
-     *     both batch-enabled and container-secret-id are set (the two are contradictory: batching
-     *     fetches multiple distinct secrets in one call, while a container secret id means only one
-     *     secret is ever fetched)
+     * @throws IllegalArgumentException if batch-size is outside the 1..20 range AWS accepts, if
+     *     container-secret-id is blank, or if both batch-enabled and container-secret-id are set
+     *     (the two are contradictory: batching fetches multiple distinct secrets in one call, while
+     *     a container secret id means only one secret is ever fetched)
      */
     void validate(final String storeId) {
       if (batchSize < 1 || batchSize > 20) {
@@ -184,6 +188,12 @@ public class Secrets {
                 + storeId
                 + ".batch-size must be between 1 and 20, but was "
                 + batchSize);
+      }
+      if (containerSecretId != null && containerSecretId.isBlank()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.aws-secrets-manager."
+                + storeId
+                + ".container-secret-id must not be blank");
       }
       if (batchEnabled && containerSecretId != null) {
         throw new IllegalArgumentException(
