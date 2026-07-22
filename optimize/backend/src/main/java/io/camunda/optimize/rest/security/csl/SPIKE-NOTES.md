@@ -112,6 +112,17 @@ Found while manually testing against a local CCSM/Keycloak setup
    (a client-credentials `optimize` token failed the same way). Fixed by granting `demo` the
    `Optimize` realm role and re-logging in; the `camunda-identity` default scope's audience-resolve +
    `permissions.${client_id}` mappers (`fullScopeAllowed=true`) then populate the token. No code change.
+10. **Cloud login sent the legacy `{baseUrl}/sso-callback?uuid` redirect_uri (with the context path),
+    ignoring `camunda.security.*`.** `CCSaasAuth0WebSecurityConfig` publishes the Auth0
+    `ClientRegistrationRepository`, but unlike the two security adapters it was not gated on
+    `csl.enabled`. So under CSL it stayed active, and CSL adopted its legacy registration via
+    `@ConditionalOnMissingBean` — so the configured `oidc.redirect-uri` never applied, and Spring's
+    `{baseUrl}` (= scheme+host+port+**context path**) put the clusterId into the callback path once
+    the context path was set. Fixed by adding the inverse `@ConditionalOnProperty(csl.enabled=false)`
+    to `CCSaasAuth0WebSecurityConfig` so it backs off under CSL and CSL builds the registration from
+    `camunda.security.authentication.oidc.*`. Lesson: audit every host bean that supplies a
+    `ClientRegistrationRepository` / `OAuth2AuthorizedClientService` for the CSL back-off condition,
+    not just the `SecurityFilterChain` adapters.
 
 ## Follow-ups (tracked in ADR-0036)
 
