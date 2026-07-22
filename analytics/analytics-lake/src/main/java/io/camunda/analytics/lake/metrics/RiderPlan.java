@@ -17,10 +17,17 @@ package io.camunda.analytics.lake.metrics;
  * @param measureColumnIndexes raw-schema column index of each declared measure, in declared order
  * @param windowMicros the window duration in microseconds; {@code 0} means {@code NONE} (no window
  *     dimension — every record folds into one all-time group per dims)
+ * @param windowSourceColumn raw-schema column index of the epoch-microseconds column each row's
+ *     window slot derives from (the declared source, defaulting to the raw schema's familyDaySource
+ *     column); {@code -1} when unwindowed
  * @param runPrefixLength number of leading dims (in declared order) that are also a prefix of the
  *     raw schema's own sort-key order — a rider can detect a run of consecutive rows sharing this
  *     prefix directly off the raw schema's sort order without a dictionary lookup; the remaining
  *     dims (if any) need dict-indexed (hash-table) accumulation instead
  */
 public record RiderPlan(
-    int[] dimColumnIndexes, int[] measureColumnIndexes, long windowMicros, int runPrefixLength) {}
+    int[] dimColumnIndexes,
+    int[] measureColumnIndexes,
+    long windowMicros,
+    int windowSourceColumn,
+    int runPrefixLength) {}

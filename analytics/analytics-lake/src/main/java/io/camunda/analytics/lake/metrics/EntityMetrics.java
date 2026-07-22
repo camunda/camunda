@@ -51,6 +51,7 @@ public final class EntityMetrics {
     private final TableSchema rawSchema;
     private List<String> dims = List.of();
     private Duration window; // null == NONE
+    private String windowSource; // null == default to the raw schema's familyDaySource column
     private final Map<String, List<Algebra>> measures = new LinkedHashMap<>();
 
     private Builder(final String entityName, final TableSchema rawSchema) {
@@ -64,9 +65,26 @@ public final class EntityMetrics {
       return this;
     }
 
-    /** Window duration for time-bucketed metrics; omit for a single all-time group per dims. */
+    /**
+     * Window duration for time-bucketed metrics; omit for a single all-time group per dims. The
+     * slot is derived from the raw schema's own familyDaySource column — use {@link
+     * #window(Duration, String)} when the semantically right event time is a different column (e.g.
+     * an activity's {@code ended_at} rather than the partition day's source).
+     */
     public Builder window(final Duration window) {
       this.window = window;
+      return this;
+    }
+
+    /**
+     * Window duration plus the raw column supplying each row's event time (epoch microseconds, i.e.
+     * a {@code LONG} column — typically a {@code TIMESTAMPTZ}-logical one). Which column assigns
+     * the slot changes what a stored partial row <em>means</em>, so it is part of the declaration
+     * fingerprint.
+     */
+    public Builder window(final Duration window, final String sourceColumn) {
+      this.window = window;
+      windowSource = sourceColumn;
       return this;
     }
 
@@ -198,12 +216,61 @@ public final class EntityMetrics {
       }
 
       final long windowMicros = window == null ? 0L : window.toNanos() / 1000L;
+      final int windowSourceColumn = resolveWindowSource();
       final int runPrefixLength = computeRunPrefixLength(dimColumnIndexes);
       final RiderPlan riderPlan =
-          new RiderPlan(dimColumnIndexes, measureColumnIndexes, windowMicros, runPrefixLength);
+          new RiderPlan(
+              dimColumnIndexes,
+              measureColumnIndexes,
+              windowMicros,
+              windowSourceColumn,
+              runPrefixLength);
 
       return new CompiledEntityMetrics(
           entityName, rawSchema, dims, windowMicros, measureDeclarations, riderPlan);
+    }
+
+    /**
+     * The raw column each row's window slot derives from: the explicitly named one (validated to be
+     * a {@code LONG} epoch-microseconds column), else the raw schema's own familyDaySource column;
+     * {@code -1} when the declaration is unwindowed.
+     */
+    private int resolveWindowSource() {
+      if (window == null) {
+        if (windowSource != null) {
+          throw new IllegalArgumentException(
+              "entity '"
+                  + entityName
+                  + "': a window source column ('"
+                  + windowSource
+                  + "') was named but no window duration was declared");
+        }
+        return -1;
+      }
+      if (windowSource == null) {
+        return rawSchema.familyDayColumn();
+      }
+      final int rawIndex = columnIndex(windowSource);
+      if (rawIndex < 0) {
+        throw new IllegalArgumentException(
+            "entity '"
+                + entityName
+                + "': window source column '"
+                + windowSource
+                + "' not found in raw schema '"
+                + rawSchema.table()
+                + "'");
+      }
+      if (rawSchema.columns().get(rawIndex).type() != ColumnType.LONG) {
+        throw new IllegalArgumentException(
+            "entity '"
+                + entityName
+                + "': window source column '"
+                + windowSource
+                + "' must be a LONG epoch-microseconds column, got "
+                + rawSchema.columns().get(rawIndex).type());
+      }
+      return rawIndex;
     }
 
     private int columnIndex(final String name) {

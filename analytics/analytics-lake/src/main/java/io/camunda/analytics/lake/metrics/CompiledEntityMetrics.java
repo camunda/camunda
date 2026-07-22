@@ -72,6 +72,26 @@ public final class CompiledEntityMetrics {
     return riderPlan;
   }
 
+  /** The declared entity name (also the prefix of both generated partials table names). */
+  public String entityName() {
+    return entityName;
+  }
+
+  /** The raw table schema this declaration folds from. */
+  public TableSchema rawSchema() {
+    return rawSchema;
+  }
+
+  /** Declared dim column names, in declaration order (the generated schemas' dim order). */
+  public List<String> dims() {
+    return dims;
+  }
+
+  /** Declared measures with their algebras, in declaration order. */
+  List<MeasureDeclaration> measures() {
+    return measures;
+  }
+
   /** The wide {@code <entity>_metrics} partials schema — see this class's own javadoc. */
   public TableSchema metricsSchema() {
     final List<TableSchema.Column> columns = new ArrayList<>();
@@ -163,6 +183,14 @@ public final class CompiledEntityMetrics {
     canonical.append(entityName).append('|');
     canonical.append(String.join(",", dims.stream().sorted().toList())).append('|');
     canonical.append(windowMicros).append('|');
+    // Which raw column assigns the slot changes what a row means (same duration, different slot),
+    // so the window source is part of the fingerprint; "-" when unwindowed.
+    canonical
+        .append(
+            riderPlan.windowSourceColumn() < 0
+                ? "-"
+                : rawSchema.columns().get(riderPlan.windowSourceColumn()).name())
+        .append('|');
     final List<String> measureSchemePairs = new ArrayList<>();
     for (final MeasureDeclaration measure : measures) {
       for (final Algebra algebra : measure.algebras()) {
