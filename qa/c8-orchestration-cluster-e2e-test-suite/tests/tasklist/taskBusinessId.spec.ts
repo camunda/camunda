@@ -8,17 +8,17 @@
 
 import {expect} from '@playwright/test';
 import {publicTest as test} from 'fixtures';
-import {randomUUID} from 'crypto';
 import {deploy, cancelProcessInstance} from 'utils/zeebeClient';
 import {jsonHeaders} from 'utils/http';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {clearAllProcessInstances} from '@requestHelpers';
+import {uniqueBusinessId} from 'utils/constants';
 
 const USER_TASK_PROCESS_ID = 'user_task_api_test_process';
 
-const BUSINESS_ID = `ui-task-bizid-${randomUUID().slice(0, 8)}`;
+const BUSINESS_ID = uniqueBusinessId('ui-task-bizid');
 
 let instanceKey: string | undefined;
 
@@ -46,9 +46,16 @@ test.beforeAll(async ({request}) => {
 });
 
 test.afterAll(async () => {
-  if (instanceKey) {
-    await cancelProcessInstance(instanceKey);
-  }
+  const keys = [instanceKey].filter((key): key is string => Boolean(key));
+  await Promise.allSettled(
+    keys.map(async (key) => {
+      try {
+        await cancelProcessInstance(key);
+      } catch (error) {
+        console.warn(`Failed to cancel process instance ${key}:`, error);
+      }
+    }),
+  );
 });
 
 test.describe('Tasklist - Business ID', () => {
