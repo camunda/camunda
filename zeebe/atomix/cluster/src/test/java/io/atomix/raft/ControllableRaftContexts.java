@@ -17,6 +17,7 @@ package io.atomix.raft;
 
 import static io.atomix.raft.impl.RaftContext.State.READY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -394,25 +395,36 @@ public final class ControllableRaftContexts {
     }
   }
 
-  // Send a TimeoutNow from memberId (only when it is currently the leader) to another member,
-  // prompting an immediate leadership transfer. No-op when memberId is not a leader.
-  public void transferLeadership(final MemberId memberId) {
-    final var raftContext = getRaftContext(memberId);
-    if (raftContext == null || !(raftContext.getRaftRole() instanceof LeaderRole)) {
+  /**
+   * Send a TimeoutNow to the given member (only when it is not currently the leader), prompting an
+   * immediate leadership transfer.
+   *
+   * @param to The member to which leadership should be transferred.
+   */
+  public void transferLeadershipTo(final MemberId to) {
+    final var raftContext = getRaftContext(to);
+    if (raftContext.getRaftRole() instanceof LeaderRole) {
+      LOG.info("Not transferring leadership to {}: already leader", to.id());
       return;
     }
-    final var target =
-        raftServers.keySet().stream()
-            .filter(id -> !id.equals(memberId))
-            .min(java.util.Comparator.comparing(MemberId::id))
+
+    final MemberId from =
+        raftServers.entrySet().stream()
+            .filter(entry -> entry.getValue().isLeader())
+            .map(Entry::getKey)
+            .findFirst()
             .orElse(null);
-    if (target == null) {
+
+    if (from == null) {
+      LOG.info("Not transferring leadership to {}: no current leader", to);
       return;
     }
-    LOG.info("Transferring leadership from {} to {} via TimeoutNow", memberId.id(), target.id());
-    final var request =
-        TimeoutNowRequest.builder().withTerm(raftContext.getTerm()).withLeader(memberId).build();
-    raftContext.getProtocol().timeoutNow(target, request);
+
+    final var leader = getRaftContext(from);
+    LOG.info("Transferring leadership from {} to {} via TimeoutNow", from.id(), to.id());
+    getServerProtocol(from)
+        .timeoutNow(
+            to, TimeoutNowRequest.builder().withTerm(leader.getTerm()).withLeader(from).build());
   }
 
   // Find current leader and execute an append request

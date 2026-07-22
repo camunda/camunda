@@ -79,7 +79,7 @@ public final class RaftOperation {
   public static List<RaftOperation> getRaftOperationsWithTransfers() {
     final List<RaftOperation> defaultRaftOperation = getDefaultRaftOperations();
     defaultRaftOperation.add(
-        RaftOperation.of("Transfer leadership", ControllableRaftContexts::transferLeadership));
+        RaftOperation.of("Transfer leadership", ControllableRaftContexts::transferLeadershipTo));
     return defaultRaftOperation;
   }
 
@@ -103,6 +103,8 @@ public final class RaftOperation {
         RaftOperation.of(
             "Drop next message",
             (raftContexts, m) -> raftContexts.getServerProtocol(m).dropNextMessage()));
+    defaultRaftOperation.add(
+        RaftOperation.of("Transfer leadership", ControllableRaftContexts::transferLeadershipTo));
     return defaultRaftOperation;
   }
 }
