@@ -33,16 +33,12 @@ public record BatchOperationDbModel(
     implements Copyable<BatchOperationDbModel> {
 
   public BatchOperationDbModel {
-    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
-    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
-    // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
+    // Must stay mutable: MyBatis appends to this via <collection> after construction.
     errors = errors != null ? errors : new ArrayList<>();
   }
 
-  // Used by BatchOperationResultMap's <constructor>, which never supplies errors -- it's
-  // populated separately by the sibling <collection> element, which requires (and only works
-  // with) an exact-arity constructor match; MyBatis does not default missing constructor args to
-  // null.
+  // Matches BatchOperationResultMap's <constructor>, which omits errors -- populated separately
+  // via the sibling <collection> element.
   public BatchOperationDbModel(
       final String batchOperationKey,
       final BatchOperationState state,

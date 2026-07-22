@@ -23,9 +23,8 @@ public record SequenceFlowDbModel(
 
   private static final String ID_PATTERN = "%s_%s";
 
-  // Used by the search resultMap, which never returns PARTITION_ID (write-only, insert-only
-  // column) -- mirrors the previous no-arg-constructor-plus-setters behavior where an unset int
-  // field defaulted to 0.
+  // Matches the search resultMap's <constructor>, which omits PARTITION_ID (write-only, never
+  // read back).
   public SequenceFlowDbModel(
       final String flowNodeId,
       final Long processInstanceKey,

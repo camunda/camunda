@@ -17,15 +17,12 @@ public record RoleDbModel(
     implements DbModel<RoleDbModel> {
 
   public RoleDbModel {
-    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
-    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
-    // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
+    // Must stay mutable: MyBatis appends to this via <collection> after construction.
     members = members != null ? members : new ArrayList<>();
   }
 
-  // Used by roleResultMap's <constructor>, which never supplies members -- it's populated
-  // separately by the sibling <collection> element, which requires (and only works with) an
-  // exact-arity constructor match; MyBatis does not default missing constructor args to null.
+  // Matches roleResultMap's <constructor>, which omits members -- populated separately via the
+  // sibling <collection> element.
   public RoleDbModel(
       final Long roleKey, final String roleId, final String name, final String description) {
     this(roleKey, roleId, name, description, null);

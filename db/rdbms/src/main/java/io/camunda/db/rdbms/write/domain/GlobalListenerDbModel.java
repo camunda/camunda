@@ -26,15 +26,12 @@ public record GlobalListenerDbModel(
     List<String> eventTypes) {
 
   public GlobalListenerDbModel {
-    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
-    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
-    // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
+    // Must stay mutable: MyBatis appends to this via <collection> after construction.
     eventTypes = eventTypes != null ? eventTypes : new ArrayList<>();
   }
 
-  // Used by searchResultMap's <constructor>, which never supplies eventTypes -- it's populated
-  // separately by the sibling <collection> element, which requires (and only works with) an
-  // exact-arity constructor match; MyBatis does not default missing constructor args to null.
+  // Matches searchResultMap's <constructor>, which omits eventTypes -- populated separately via
+  // the sibling <collection> element.
   public GlobalListenerDbModel(
       final String id,
       final String listenerId,

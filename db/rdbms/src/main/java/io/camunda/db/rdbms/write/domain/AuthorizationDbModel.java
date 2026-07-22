@@ -25,16 +25,12 @@ public record AuthorizationDbModel(
     implements DbModel<AuthorizationDbModel> {
 
   public AuthorizationDbModel {
-    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
-    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
-    // Immutable defaults (e.g. Set.of()) would cause UnsupportedOperationException at runtime.
+    // Must stay mutable: MyBatis appends to this via <collection> after construction.
     permissionTypes = permissionTypes != null ? permissionTypes : new HashSet<>();
   }
 
-  // Used by authorizationResultMap's <constructor>, which never supplies permissionTypes -- it's
-  // populated separately by the sibling <collection> element, which requires (and only works
-  // with) an exact-arity constructor match; MyBatis does not default missing constructor args to
-  // null.
+  // Matches authorizationResultMap's <constructor>, which omits permissionTypes -- populated
+  // separately via the sibling <collection> element.
   public AuthorizationDbModel(
       final Long authorizationKey,
       final String ownerId,
