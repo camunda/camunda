@@ -1098,9 +1098,8 @@ final class LeaderAppender {
   }
 
   /**
-   * An append request together with the exact journal-byte size of the entries it carries, so the
-   * byte count computed at build time can be assigned a cumulative position when the request is
-   * sent. Empty heartbeat requests have {@code 0} size and retain the current position.
+   * An append request together with the exact journal-byte size of the entries it carries. Empty
+   * heartbeat requests have {@code 0} size and retain the current position.
    */
   private record SizedAppendRequest(VersionedAppendRequest request, long size) {}
 
