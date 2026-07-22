@@ -20,6 +20,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public final class ExportingServices extends PhysicalTenantScopedApiServices<ExportingServices> {
 
@@ -31,7 +32,7 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
       final String physicalTenantId,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ExportingRequestBroadcaster exportingControlService,
+      final ExportingRequestBroadcaster exportingRequestBroadcaster,
       final AuthorizationChecker authorizationChecker,
       final AuthorizationsConfiguration authorizationsConfig,
       final ApiServicesExecutorProvider executorProvider,
@@ -42,29 +43,36 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
         securityContextProvider,
         executorProvider,
         brokerRequestAuthorizationConverter);
-    exportingRequestBroadcaster = exportingControlService;
+    this.exportingRequestBroadcaster = exportingRequestBroadcaster;
     this.authorizationChecker = authorizationChecker;
     this.authorizationsConfig = authorizationsConfig;
   }
 
   public CompletableFuture<Void> pauseExporting(
       final boolean soft, final CamundaAuthentication authentication) {
-    if (!hasSystemUpdatePermission(authentication)) {
-      return CompletableFuture.failedFuture(
-          ErrorMapper.createForbiddenException(
-              RequiredAuthorization.of(a -> a.system().permissionType(PermissionType.UPDATE))));
-    }
-
-    try {
-      return soft
-          ? exportingRequestBroadcaster.softPauseExporting(getPhysicalTenantId())
-          : exportingRequestBroadcaster.pauseExporting(getPhysicalTenantId());
-    } catch (final RuntimeException e) {
-      return CompletableFuture.failedFuture(ErrorMapper.mapError(e));
-    }
+    return withSystemUpdatePermission(
+        authentication,
+        () ->
+            soft
+                ? exportingRequestBroadcaster.softPauseExporting(getPhysicalTenantId())
+                : exportingRequestBroadcaster.pauseExporting(getPhysicalTenantId()));
   }
 
   public CompletableFuture<Void> resumeExporting(final CamundaAuthentication authentication) {
+    return withSystemUpdatePermission(
+        authentication, () -> exportingRequestBroadcaster.resumeExporting(getPhysicalTenantId()));
+  }
+
+  /**
+   * Runs {@code action} only if the caller holds the {@code SYSTEM/UPDATE} permission, mapping
+   * failures from both the synchronous and asynchronous phases to {@link
+   * io.camunda.service.exception.ServiceException} so they surface with the correct status. The
+   * broadcaster validates topology synchronously (throwing before it returns a future) but
+   * dispatches the broker requests asynchronously, so the returned future may also complete
+   * exceptionally — both paths must be mapped.
+   */
+  private CompletableFuture<Void> withSystemUpdatePermission(
+      final CamundaAuthentication authentication, final Supplier<CompletableFuture<Void>> action) {
     if (!hasSystemUpdatePermission(authentication)) {
       return CompletableFuture.failedFuture(
           ErrorMapper.createForbiddenException(
@@ -72,7 +80,9 @@ public final class ExportingServices extends PhysicalTenantScopedApiServices<Exp
     }
 
     try {
-      return exportingRequestBroadcaster.resumeExporting(getPhysicalTenantId());
+      return action
+          .get()
+          .exceptionallyCompose(e -> CompletableFuture.failedFuture(ErrorMapper.mapError(e)));
     } catch (final RuntimeException e) {
       return CompletableFuture.failedFuture(ErrorMapper.mapError(e));
     }
