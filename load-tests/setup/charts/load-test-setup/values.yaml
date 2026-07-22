@@ -135,3 +135,55 @@ elasticsearch:
     operator: Equal
     value: n2-standard-8
 
+
+# -- Configure the Keycloak deployment.
+# Note: Keycloak itself is not yet deployed via this mechanism ; only the PostgreSQL
+# cluster used by Keycloak is currently configurable.
+keycloak:
+
+  # -- Configure the PostgreSQL cluster to be used by Keycloak.
+  postgresql:
+    # -- Enable the PostgreSQL cluster for Keycloak.
+    enabled: true
+
+    # -- The name of the CNPG Cluster resource deployed for Keycloak.
+    clusterName: postgresql-keycloak
+
+    # -- The name of the PostgreSQL database created for Keycloak.
+    databaseName: keycloak
+
+    # -- The name of the PostgreSQL user Keycloak uses to connect to its database.
+    databaseUser: keycloak
+
+    # -- The PostgreSQL CNPG image to be used when creating a CNPG-based
+    # PostgreSQL cluster.
+    image:
+      registry: europe-west1-docker.pkg.dev/camunda-benchmark
+      repository: ghcrio/cloudnative-pg/postgresql
+      tag: "18.4"
+
+    # -- CPU and memory resource requests and limits for the PostgreSQL cluster.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 150m
+        memory: 192Mi
+
+    # -- Persistent storage configuration for the PostgreSQL cluster.
+    storage:
+      size: 1Gi
+      storageClass: benchmark-ssd-zonal-v1
+
+    # -- Node selector labels for PostgreSQL pod scheduling
+    # The top-level `topologyZone` value is also applied as `topology.kubernetes.io/zone`.
+    nodeSelector:
+      component: benchmark-n2-standard-4
+
+    # -- Tolerations applied to PostgreSQL pods.
+    tolerations:
+      - key: nodepool
+        operator: Equal
+        value: n2-standard-4
+        effect: NoSchedule

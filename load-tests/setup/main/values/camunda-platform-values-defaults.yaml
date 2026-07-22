@@ -83,8 +83,23 @@ identityKeycloak:
     # https://www.keycloak.org/server/logging#_console
     - name: KC_LOG_CONSOLE_OUTPUT
       value: json
+
+  # Disable the built-in PostgreSQL deployed by the Keycloak Helm Chart as we deploy our own.
   postgresql:
-    fullnameOverride: keycloak-postgresql # we override the names for simplicity of the deployment
+    enabled: false
+
+  # This Keycloak external database depends on the CNPG cluster deployed by
+  # the load-test-setup Helm Chart.
+  externalDatabase:
+    # The name of the Service deployed by the CNPG Cluster from the
+    # load-test-setup Helm Chart.
+    host: postgresql-keycloak-rw
+    database: keycloak
+
+    # Secret deployed via the load-test-setup Helm Chart.
+    existingSecret: postgresql-keycloak-user
+    existingSecretUserKey: username
+    existingSecretPasswordKey: password
 
 connectors:
   enabled: true

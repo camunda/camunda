@@ -1,0 +1,79 @@
+{{- if .Values.keycloak.postgresql.enabled -}}
+---
+# Configure a CNPG-managed PostgreSQL cluster for Keycloak itself.
+#
+# This is **NOT** the PostgreSQL cluster used by Camunda if it's configured to
+# use PostgreSQL as a secondary storage database!
+#
+# Reference: https://cloudnative-pg.io/docs/1.30/cloudnative-pg.v1
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.keycloak.postgresql.clusterName }}
+spec:
+  description: PostgreSQL cluster for Keycloak and Camunda Identity
+
+  instances: 1
+  {{- with .Values.keycloak.postgresql.image }}
+  imageName: {{ .registry }}/{{ .repository }}:{{ .tag }}
+  {{- end }}
+
+  resources:
+    {{- toYaml .Values.keycloak.postgresql.resources | nindent 4 }}
+
+  storage:
+    {{- toYaml .Values.keycloak.postgresql.storage | nindent 4 }}
+
+  affinity:
+    nodeSelector:
+      topology.kubernetes.io/zone: "{{ .Values.topologyZone }}"
+      {{- toYaml .Values.keycloak.postgresql.nodeSelector | nindent 6 }}
+
+    tolerations:
+      {{- toYaml .Values.keycloak.postgresql.tolerations | nindent 6 }}
+
+  postgresql:
+    # The PostgreSQL configuration flags.
+    parameters:
+      lock_timeout: 30s
+      statement_timeout: "0"
+      #log_statement: all
+      #log_connections: "on"
+      #log_disconnections: "on"
+
+  # Initialize the Keycloak PostgreSQL cluster with:
+  #
+  # 1. A dedicated user
+  # 2. A dedicated database, owned by the user created in 1.
+  # 3. The password comes from the specified Kubernetes Secret
+  #
+  # The dedicated user will also be used by Keycloak to connect into this
+  # PostgeSQL cluster.
+  #
+  # In this cluster, this "bootstrap/initdb" method is preferred over the
+  # dedicated `Database`/`DatabaseRole` custom resources, as:
+  #
+  # 1. We only create a single database role + database ; we don't need to
+  #    manage multiple databases.
+  # 2. It's faster to provision the PostgeSQL cluster: this bootstrap method is
+  #    done very early during the cluster creation, whereas the custom resource
+  #    requires the CNPG Operator to trigger reconciliations.
+  #
+  # Reference: https://cloudnative-pg.io/docs/1.30/bootstrap#bootstrap-an-empty-cluster-initdb
+  bootstrap:
+    initdb:
+      database: {{ .Values.keycloak.postgresql.databaseName }}
+      owner: {{ .Values.keycloak.postgresql.databaseUser }}
+      secret:
+        name: {{ include "load-test-setup.keycloak.postgresql.secret-name" . }}
+
+  managed:
+    services:
+      # Only deploy the (mandatory) read-write `rw` Kubernetes service. We
+      # don't have a fancy enough PostgreSQL usage to need the other services,
+      # and it simplifies the deployed resources.
+      # Cf. https://cloudnative-pg.io/docs/1.30/service_management
+      disabledDefaultServices:
+        - ro # replica nodes, only for reading
+        - r  # any PostgreSQL node, only for reading
+{{- end -}}
