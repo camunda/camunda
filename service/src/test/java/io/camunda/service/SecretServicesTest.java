@@ -210,13 +210,53 @@ public class SecretServicesTest {
                 authentication)
             .join();
 
-    // then all are INVALID_REF and none is ever authorized (they must not reach the resource-id
+    // then all are INVALID_REFERENCE and none is ever authorized (they must not reach the
+    // resource-id
     // check or, later, a store lookup) — no authorization query is even issued for the batch
     assertThat(resolution.resolved()).isEmpty();
     assertThat(resolution.errors())
         .extracting(SecretServices.SecretResolutionError::code)
-        .containsOnly(SecretErrorCode.INVALID_REF);
+        .containsOnly(SecretErrorCode.INVALID_REFERENCE);
     verify(authorizationChecker, never()).retrieveAuthorizedAuthorizationScopes(any(), any());
+  }
+
+  @Test
+  void shouldRejectReferenceExceedingMaxLengthAsInvalid() {
+    // given authorization would otherwise pass for every reference
+    authorizationsConfig.setEnabled(true);
+
+    // when a reference is one character longer than MAX_REFERENCE_LENGTH
+    final var reference = referenceOfLength(SecretServices.MAX_REFERENCE_LENGTH + 1);
+    final var resolution = services.resolve(List.of(reference), authentication).join();
+
+    // then it is INVALID_REFERENCE, consistent with every other malformed reference, and no
+    // authorization query is issued
+    assertThat(resolution.resolved()).isEmpty();
+    assertThat(resolution.errors()).hasSize(1);
+    assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.INVALID_REFERENCE);
+    verify(authorizationChecker, never()).retrieveAuthorizedAuthorizationScopes(any(), any());
+  }
+
+  @Test
+  void shouldAcceptReferenceAtMaxLength() {
+    // given authorization passes and the reference is exactly at MAX_REFERENCE_LENGTH
+    authorizationsConfig.setEnabled(true);
+    final var reference = referenceOfLength(SecretServices.MAX_REFERENCE_LENGTH);
+    grantReveal(reference);
+
+    // when
+    final var resolution = services.resolve(List.of(reference), authentication).join();
+
+    // then the boundary is inclusive: NOT_FOUND (mock backend doesn't know it), not
+    // INVALID_REFERENCE
+    assertThat(resolution.resolved()).isEmpty();
+    assertThat(resolution.errors()).hasSize(1);
+    assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.NOT_FOUND);
+  }
+
+  private static String referenceOfLength(final int totalLength) {
+    final var prefix = "camunda.secrets.";
+    return prefix + "a".repeat(totalLength - prefix.length());
   }
 
   @Test
@@ -228,11 +268,11 @@ public class SecretServicesTest {
     final var resolution =
         services.resolve(List.of("not.a.secret", "camunda.secrets.a.b"), authentication).join();
 
-    // then both are INVALID_REF and no authorization query is issued for the batch
+    // then both are INVALID_REFERENCE and no authorization query is issued for the batch
     assertThat(resolution.resolved()).isEmpty();
     assertThat(resolution.errors())
         .extracting(SecretServices.SecretResolutionError::code)
-        .containsOnly(SecretErrorCode.INVALID_REF);
+        .containsOnly(SecretErrorCode.INVALID_REFERENCE);
     verify(authorizationChecker, never()).retrieveAuthorizedAuthorizationScopes(any(), any());
   }
 
@@ -272,19 +312,20 @@ public class SecretServicesTest {
   }
 
   @Test
-  void shouldRefuseToRevealWhenAuthorizationIsDisabled() {
-    // given authorization is disabled cluster-wide. Unlike other domains, secrets must never be
-    // revealed without an explicit, checked grant, so this is a deny rather than an open-allow.
+  void shouldAllowRevealWhenAuthorizationIsDisabled() {
+    // given authorization is disabled cluster-wide. Matches DocumentServices#hasDocumentPermission:
+    // a deny-all here would make the endpoint unusable in authorization-disabled setups (e.g.
+    // C8Run's default), which the epic this endpoint serves explicitly targets.
     authorizationsConfig.setEnabled(false);
 
     // when
     final var resolution = services.resolve(List.of("camunda.secrets.a"), authentication).join();
 
-    // then the reference is denied and the checker (which cannot be trusted while disabled) is
+    // then the reference is resolved and the checker (which cannot be trusted while disabled) is
     // never consulted
-    assertThat(resolution.resolved()).isEmpty();
-    assertThat(resolution.errors()).hasSize(1);
-    assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
+    assertThat(resolution.errors()).isEmpty();
+    assertThat(resolution.resolved()).hasSize(1);
+    assertThat(resolution.resolved().get(0).reference()).isEqualTo("camunda.secrets.a");
     verify(authorizationChecker, never()).retrieveAuthorizedAuthorizationScopes(any(), any());
   }
 

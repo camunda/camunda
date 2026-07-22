@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +42,19 @@ import org.slf4j.LoggerFactory;
  * wiring — that lands with #56561 / #57199. The sibling {@code SECRET:READ} list endpoint (#56568)
  * reuses this authorization/validation shape.
  */
+@NullMarked
 public class SecretServices extends PhysicalTenantScopedApiServices<SecretServices> {
+
+  /**
+   * Bounds the length of a single reference string. Each reference is used as an authorization
+   * resource id and (once a real store is wired) a store lookup key, so an unbounded string must
+   * not reach either. Enforced here (rather than only at the request-validation layer) so an
+   * over-long reference is reported as a per-reference {@link SecretErrorCode#INVALID_REFERENCE}
+   * like every other malformed reference, instead of failing the whole batch. Mirrored by the
+   * {@code maxLength: 256} on {@code SecretResolveRequest.references} items in {@code
+   * secrets.yaml}; kept in sync by {@code SecretRequestValidatorSpecSyncTest}.
+   */
+  public static final int MAX_REFERENCE_LENGTH = 256;
 
   private static final Logger LOG = LoggerFactory.getLogger(SecretServices.class);
 
@@ -105,7 +118,9 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
         } else {
           errors.add(
               new SecretResolutionError(
-                  reference, SecretErrorCode.INVALID_REF, "The secret reference is malformed."));
+                  reference,
+                  SecretErrorCode.INVALID_REFERENCE,
+                  "The secret reference is malformed."));
         }
       }
       if (validReferences.isEmpty()) {
@@ -158,11 +173,12 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    */
   private Set<String> resolveAuthorizedReferences(
       final List<String> validReferences, final CamundaAuthentication authentication) {
-    // Unlike other domains, secrets are refused rather than opened up when authorization is
-    // disabled cluster-wide: a secret value must never be revealed without an explicit, checked
-    // grant.
+    // Matches DocumentServices#hasDocumentPermission: when authorization is disabled
+    // cluster-wide, every reference is treated as authorized rather than denied. A deny-all here
+    // would make the endpoint unusable in authorization-disabled setups (e.g. C8Run's default),
+    // which the epic this endpoint serves explicitly targets.
     if (!authorizationsConfig.isEnabled()) {
-      return Set.of();
+      return new LinkedHashSet<>(validReferences);
     }
     final var authorizedScopes =
         authorizationChecker.retrieveAuthorizedAuthorizationScopes(
@@ -182,7 +198,9 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   }
 
   private static boolean isValidReference(final String reference) {
-    if (reference == null || !reference.startsWith(REFERENCE_PREFIX)) {
+    if (reference == null
+        || reference.length() > MAX_REFERENCE_LENGTH
+        || !reference.startsWith(REFERENCE_PREFIX)) {
       return false;
     }
     final var name = reference.substring(REFERENCE_PREFIX.length());
@@ -222,6 +240,6 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   public enum SecretErrorCode {
     NOT_FOUND,
     ACCESS_DENIED,
-    INVALID_REF
+    INVALID_REFERENCE
   }
 }

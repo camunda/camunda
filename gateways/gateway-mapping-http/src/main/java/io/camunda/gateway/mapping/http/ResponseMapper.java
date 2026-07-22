@@ -700,7 +700,7 @@ public final class ResponseMapper {
     return switch (code) {
       case NOT_FOUND -> SecretErrorCode.NOT_FOUND;
       case ACCESS_DENIED -> SecretErrorCode.ACCESS_DENIED;
-      case INVALID_REF -> SecretErrorCode.INVALID_REF;
+      case INVALID_REFERENCE -> SecretErrorCode.INVALID_REFERENCE;
     };
   }
 

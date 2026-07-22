@@ -8,7 +8,6 @@
 package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
 import io.camunda.gateway.protocol.model.SecretResolveRequest;
@@ -30,14 +29,6 @@ public final class SecretRequestValidator {
    */
   public static final int MAX_BATCH_SIZE = 20;
 
-  /**
-   * Bounds the length of a single reference string. Each reference is used as an authorization
-   * resource id and (once a real store is wired) a store lookup key, so an unbounded string must
-   * not reach either. Matches the length cap sibling validators use for similarly-purposed fields
-   * (see {@link RequestValidator#validateBusinessId}).
-   */
-  public static final int MAX_REFERENCE_LENGTH = 256;
-
   private SecretRequestValidator() {}
 
   public static Optional<ProblemDetail> validateSecretResolveRequest(
@@ -56,12 +47,6 @@ public final class SecretRequestValidator {
           }
           if (references.stream().anyMatch(Objects::isNull)) {
             violations.add("The references list must not contain null entries.");
-            return;
-          }
-          if (references.stream()
-              .anyMatch(reference -> reference.length() > MAX_REFERENCE_LENGTH)) {
-            violations.add(
-                ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("reference", MAX_REFERENCE_LENGTH));
           }
         });
   }

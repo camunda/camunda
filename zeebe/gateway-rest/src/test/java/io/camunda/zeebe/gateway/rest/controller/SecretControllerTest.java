@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.gateway.mapping.http.validator.SecretRequestValidator.MAX_BATCH_SIZE;
-import static io.camunda.gateway.mapping.http.validator.SecretRequestValidator.MAX_REFERENCE_LENGTH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -218,44 +217,6 @@ public class SecretControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectReferenceExceedingMaxLength() {
-    // given a single reference one character longer than the maximum
-    final var reference = referenceOfLength(MAX_REFERENCE_LENGTH + 1);
-
-    // when / then the request is rejected before reaching the service
-    webClient
-        .post()
-        .uri(RESOLVE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{ \"references\": [\"" + reference + "\"] }")
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isBadRequest();
-    verifyNoInteractions(secretServices);
-  }
-
-  @Test
-  void shouldAcceptReferenceAtMaxLength() {
-    // given a single reference exactly at the maximum length
-    when(secretServices.resolve(any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(new SecretResolution(List.of(), List.of())));
-    final var reference = referenceOfLength(MAX_REFERENCE_LENGTH);
-
-    // when / then the boundary is inclusive and the request reaches the service
-    webClient
-        .post()
-        .uri(RESOLVE_URL)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue("{ \"references\": [\"" + reference + "\"] }")
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isOk();
-    verify(secretServices).resolve(any(), any());
-  }
-
-  @Test
   void shouldRejectNullReferences() {
     // given a request whose references are explicitly null (bypasses the model's @NotNull because
     // the controller does not run @Valid)
@@ -311,10 +272,5 @@ public class SecretControllerTest extends RestControllerTest {
     return IntStream.rangeClosed(1, count)
         .mapToObj(i -> "\"camunda.secrets.s" + i + "\"")
         .collect(Collectors.joining(","));
-  }
-
-  private static String referenceOfLength(final int totalLength) {
-    final var prefix = "camunda.secrets.";
-    return prefix + "a".repeat(totalLength - prefix.length());
   }
 }

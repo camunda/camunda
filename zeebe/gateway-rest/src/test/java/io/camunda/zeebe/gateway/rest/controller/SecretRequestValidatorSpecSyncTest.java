@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.mapping.http.validator.SecretRequestValidator;
+import io.camunda.service.SecretServices;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -18,11 +19,11 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 
 /**
- * {@link SecretRequestValidator#MAX_BATCH_SIZE} and {@link
- * SecretRequestValidator#MAX_REFERENCE_LENGTH} are the only real enforcement of the {@code
- * maxItems}/{@code maxLength} declared on {@code SecretResolveRequest.references} in {@code
- * secrets.yaml}: the generated request model does not emit array-size or length constraints, so
- * nothing else fails the build if the two drift apart. This test is that guard.
+ * {@link SecretRequestValidator#MAX_BATCH_SIZE} and {@link SecretServices#MAX_REFERENCE_LENGTH} are
+ * the only real enforcement of the {@code maxItems}/{@code maxLength} declared on {@code
+ * SecretResolveRequest.references} in {@code secrets.yaml}: the generated request model does not
+ * emit array-size or length constraints, so nothing else fails the build if the two drift apart.
+ * This test is that guard.
  *
  * <p>Reads {@code secrets.yaml} as plain text (it is bundled onto this module's classpath by the
  * {@code zeebe-gateway-protocol} dependency) rather than through an OpenAPI parser: the file is a
@@ -47,8 +48,8 @@ class SecretRequestValidatorSpecSyncTest {
     // given the maxLength declared on each references item in secrets.yaml
     final var maxLength = extractIntValue("maxLength");
 
-    // then the validator's cap matches it exactly
-    assertThat(maxLength).isEqualTo(SecretRequestValidator.MAX_REFERENCE_LENGTH);
+    // then the service's cap matches it exactly
+    assertThat(maxLength).isEqualTo(SecretServices.MAX_REFERENCE_LENGTH);
   }
 
   private static int extractIntValue(final String yamlKey) {

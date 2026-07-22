@@ -60,6 +60,8 @@ class SecretAuthorizationIT {
   // Resolvable by the mock backend (see SecretServices#MOCK_RESOLVABLE_REFERENCES).
   private static final String GRANTED_REFERENCE = "camunda.secrets.token";
   private static final String OTHER_REFERENCE = "camunda.secrets.a";
+  // Not in SecretServices#MOCK_RESOLVABLE_REFERENCES, so a wildcard-authorized lookup misses.
+  private static final String UNKNOWN_REFERENCE = "camunda.secrets.doesnotexist";
 
   private static final String REVEAL_USER = "revealUser";
   private static final String WILDCARD_USER = "wildcardUser";
@@ -139,6 +141,22 @@ class SecretAuthorizationIT {
     final var body = read(response.body());
     assertThat(references(body.get("resolved"))).containsExactly(OTHER_REFERENCE);
     assertThat(body.get("errors")).isEmpty();
+  }
+
+  @Test
+  void shouldReportNotFoundForAuthorizedUnknownReference(
+      @Authenticated(WILDCARD_USER) final CamundaClient client) throws Exception {
+    // when a wildcard-authorized user resolves a reference the mock backend does not know
+    final var response = resolve(client, WILDCARD_USER, List.of(UNKNOWN_REFERENCE));
+
+    // then it is NOT_FOUND rather than ACCESS_DENIED, exercising the third error code through the
+    // full stack (authorization granted, mock lookup misses)
+    assertThat(response.statusCode()).isEqualTo(200);
+    final var body = read(response.body());
+    assertThat(body.get("resolved")).isEmpty();
+    assertThat(body.get("errors")).hasSize(1);
+    assertThat(body.get("errors").get(0).get("reference").asText()).isEqualTo(UNKNOWN_REFERENCE);
+    assertThat(body.get("errors").get(0).get("code").asText()).isEqualTo("NOT_FOUND");
   }
 
   @Test
