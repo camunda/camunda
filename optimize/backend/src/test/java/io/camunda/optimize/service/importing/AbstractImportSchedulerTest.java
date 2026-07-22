@@ -414,7 +414,11 @@ class AbstractImportSchedulerTest {
 
   private ImportMediator readyMediator() {
     final ImportMediator mediator = mock(ImportMediator.class);
-    when(mediator.canImport()).thenReturn(true);
+    // lenient: stopImportScheduling() shutdownNow()s the executor, which cancels any
+    // not-yet-started mediator task. On a CPU-starved runner, a mediator's task may never reach
+    // its canImport() check before teardown — whether that happens is an unasserted timing race,
+    // not something every test using this helper cares about.
+    lenient().when(mediator.canImport()).thenReturn(true);
     return mediator;
   }
 }
