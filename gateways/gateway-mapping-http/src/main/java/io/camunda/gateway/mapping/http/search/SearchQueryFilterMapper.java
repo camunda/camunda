@@ -29,6 +29,7 @@ import io.camunda.gateway.mapping.http.converters.AuditLogResultConverter;
 import io.camunda.gateway.mapping.http.converters.BatchOperationTypeConverter;
 import io.camunda.gateway.mapping.http.converters.DecisionInstanceStateConverter;
 import io.camunda.gateway.mapping.http.converters.ProcessInstanceStateConverter;
+import io.camunda.gateway.mapping.http.mapper.ClusterVariableMapper;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
@@ -371,14 +372,16 @@ public class SearchQueryFilterMapper {
     return Either.right(builder.build());
   }
 
-  static ClusterVariableFilter toClusterVariableFilter(
+  static Either<List<String>, ClusterVariableFilter> toClusterVariableFilter(
       final @Nullable ClusterVariableSearchQueryFilterRequest filter) {
 
+    final var builder = FilterBuilders.clusterVariable();
+
     if (filter == null) {
-      return FilterBuilders.clusterVariable().build();
+      return Either.right(builder.build());
     }
 
-    final var builder = FilterBuilders.clusterVariable();
+    final List<String> validationErrors = new ArrayList<>();
 
     ofNullable(filter.getName()).map(mapToStringOperations()).ifPresent(builder::nameOperations);
     ofNullable(filter.getValue()).map(mapToStringOperations()).ifPresent(builder::valueOperations);
@@ -387,9 +390,14 @@ public class SearchQueryFilterMapper {
         .map(mapToStringOperations())
         .ifPresent(builder::tenantIdOperations);
     ofNullable(filter.getIsTruncated()).ifPresent(builder::isTruncated);
+    ofNullable(filter.getMetadata())
+        .map(metadata -> ClusterVariableMapper.toMetadataValueFilters(metadata, validationErrors))
+        .ifPresent(builder::metadataOperations);
     ofNullable(filter.getKind()).map(mapToStringOperations()).ifPresent(builder::kindOperations);
 
-    return builder.build();
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
   }
 
   static BatchOperationFilter toBatchOperationFilter(

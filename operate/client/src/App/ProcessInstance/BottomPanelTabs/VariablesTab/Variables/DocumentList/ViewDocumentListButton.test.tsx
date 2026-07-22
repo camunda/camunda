@@ -293,4 +293,66 @@ describe('<ViewDocumentListButton />', () => {
     expect(fileNameEl.textContent).not.toContain('original-middle');
     expect(fileNameEl.textContent).not.toBe(longFileName);
   });
+
+  it('should mark an expired document row and disable its preview and download buttons', async () => {
+    const documentsWithExpired: DocumentInfo[] = [
+      {
+        link: '/v2/documents/active',
+        fileName: 'active.png',
+        type: 'image',
+        contentType: 'image/png',
+        size: 1024,
+        isExpired: false,
+      },
+      {
+        link: '/v2/documents/expired',
+        fileName: 'expired.png',
+        type: 'image',
+        contentType: 'image/png',
+        size: 2048,
+        isExpired: true,
+      },
+    ];
+
+    const {user} = render(
+      <ViewDocumentListButton
+        documents={documentsWithExpired}
+        isLowerBound={false}
+        variableKey={VARIABLE_KEY}
+        variableName="files"
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    await user.click(
+      screen.getByLabelText('View documents for variable files'),
+    );
+
+    const dialog = within(screen.getByRole('dialog'));
+
+    const expiredItem = within(
+      dialog.getByRole('listitem', {name: 'expired.png'}),
+    );
+    expect(expiredItem.getByText('Expired')).toBeInTheDocument();
+    expect(
+      expiredItem.getByLabelText('Preview document for variable files'),
+    ).toBeDisabled();
+    expect(
+      expiredItem.getByLabelText('Download document for variable files'),
+    ).toBeDisabled();
+
+    const activeItem = within(
+      dialog.getByRole('listitem', {name: 'active.png'}),
+    );
+    expect(activeItem.queryByText('Expired')).not.toBeInTheDocument();
+    expect(
+      activeItem.getByLabelText('Preview document for variable files'),
+    ).toBeEnabled();
+    const activeDownloadLink = activeItem.getByLabelText(
+      'Download document for variable files',
+    );
+    expect(activeDownloadLink).toBeEnabled();
+    expect(activeDownloadLink).toHaveAttribute('href', '/v2/documents/active');
+    expect(activeDownloadLink).toHaveAttribute('download', 'active.png');
+  });
 });

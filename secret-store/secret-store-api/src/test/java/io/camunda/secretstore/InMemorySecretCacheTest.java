@@ -19,12 +19,12 @@ import org.junit.jupiter.api.Test;
 
 final class InMemorySecretCacheTest {
 
-  private final SecretCache<TestSecretReference> cache = new InMemorySecretCache<>();
+  private final SecretCache cache = new InMemorySecretCache();
 
   @Test
   void shouldReturnEmptyWhenReferenceNotCached() {
     // given
-    final var reference = new TestSecretReference("token");
+    final var reference = "token";
 
     // when
     final Optional<String> value = cache.get(reference);
@@ -36,7 +36,7 @@ final class InMemorySecretCacheTest {
   @Test
   void shouldReturnValueAfterPut() {
     // given
-    final var reference = new TestSecretReference("token");
+    final var reference = "token";
     cache.put(reference, "secret-value");
 
     // when
@@ -49,10 +49,10 @@ final class InMemorySecretCacheTest {
   @Test
   void shouldReturnValueForEqualReference() {
     // given a reference is looked up by value, not identity
-    cache.put(new TestSecretReference("token"), "secret-value");
+    cache.put("token", "secret-value");
 
     // when
-    final Optional<String> value = cache.get(new TestSecretReference("token"));
+    final Optional<String> value = cache.get("token");
 
     // then
     assertThat(value).contains("secret-value");
@@ -61,7 +61,7 @@ final class InMemorySecretCacheTest {
   @Test
   void shouldOverwriteValueOnSecondPut() {
     // given
-    final var reference = new TestSecretReference("token");
+    final var reference = "token";
     cache.put(reference, "old-value");
 
     // when
@@ -74,19 +74,19 @@ final class InMemorySecretCacheTest {
   @Test
   void shouldIsolateDistinctReferences() {
     // given
-    cache.put(new TestSecretReference("token"), "token-value");
-    cache.put(new TestSecretReference("apiKey"), "api-key-value");
+    cache.put("token", "token-value");
+    cache.put("apiKey", "api-key-value");
 
     // when / then
-    assertThat(cache.get(new TestSecretReference("token"))).contains("token-value");
-    assertThat(cache.get(new TestSecretReference("apiKey"))).contains("api-key-value");
-    assertThat(cache.get(new TestSecretReference("unknown"))).isEmpty();
+    assertThat(cache.get("token")).contains("token-value");
+    assertThat(cache.get("apiKey")).contains("api-key-value");
+    assertThat(cache.get("unknown")).isEmpty();
   }
 
   @Test
   void shouldRejectNullValue() {
     // given
-    final var reference = new TestSecretReference("token");
+    final var reference = "token";
 
     // when / then — a resolved value is never null; the cache guards against it
     assertThatThrownBy(() -> cache.put(reference, null)).isInstanceOf(NullPointerException.class);
@@ -110,9 +110,7 @@ final class InMemorySecretCacheTest {
                       try {
                         start.await();
                         for (int i = 0; i < entriesPerThread; i++) {
-                          cache.put(
-                              new TestSecretReference("secret-" + t + "-" + i),
-                              "value-" + t + "-" + i);
+                          cache.put("secret-" + t + "-" + i, "value-" + t + "-" + i);
                         }
                       } catch (final InterruptedException e) {
                         Thread.currentThread().interrupt();
@@ -128,11 +126,8 @@ final class InMemorySecretCacheTest {
     assertThat(finished).isTrue();
     for (int t = 0; t < threads; t++) {
       for (int i = 0; i < entriesPerThread; i++) {
-        assertThat(cache.get(new TestSecretReference("secret-" + t + "-" + i)))
-            .contains("value-" + t + "-" + i);
+        assertThat(cache.get("secret-" + t + "-" + i)).contains("value-" + t + "-" + i);
       }
     }
   }
-
-  private record TestSecretReference(String name) implements SecretReference {}
 }

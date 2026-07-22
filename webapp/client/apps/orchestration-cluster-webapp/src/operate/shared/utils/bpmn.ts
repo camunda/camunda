@@ -5,6 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.exceptions;
 
-public class NoSuchIndexException extends Exception {}
+import {BpmnModdle} from 'bpmn-moddle';
+
+const moddle = new BpmnModdle();
+
+function parseDiagramXML(xml: string) {
+	return moddle.fromXML(xml, 'bpmn:Definitions');
+}
+
+export {parseDiagramXML};

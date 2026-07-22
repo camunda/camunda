@@ -18,14 +18,11 @@ class NoopSecretStoreTest {
 
   @Test
   void shouldReturnNotFoundForEveryRef() {
-    // given
-    final var ref = new NoopSecretReference();
-
     // when
-    final var result = store.resolve(Set.of(ref));
+    final var result = store.resolve(Set.of("my-secret"));
 
-    // then — every ref gets a Failed(NOT_FOUND) result
-    assertThat(result).containsOnlyKeys(ref);
+    // then — every name gets a Failed(NOT_FOUND) result
+    assertThat(result).containsOnlyKeys("my-secret");
     assertThat(result.values())
         .allSatisfy(
             r -> {

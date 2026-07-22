@@ -12,6 +12,7 @@ import {
 	type QueryProcessDefinitionsRequestBody,
 	type GetProcessDefinitionInstanceStatisticsRequestBody,
 	type GetProcessDefinitionInstanceVersionStatisticsRequestBody,
+	type GetProcessDefinitionStatisticsRequestBody,
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryBatchOperationsRequestBody,
@@ -164,6 +165,25 @@ const endpoints = {
 			method: unifiedAPIEndpoints.getProcessDefinitionXml.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
+
+	getProcessDefinitionStatistics: ({
+		processDefinitionKey,
+		...body
+	}: Pick<ProcessDefinition, 'processDefinitionKey'> & GetProcessDefinitionStatisticsRequestBody) =>
+		new Request(
+			getFullURL(
+				unifiedAPIEndpoints.getProcessDefinitionStatistics.getUrl({
+					processDefinitionKey,
+					statisticName: 'element-instances',
+				}),
+			),
+			{
+				...BASE_REQUEST_OPTIONS,
+				method: unifiedAPIEndpoints.getProcessDefinitionStatistics.method,
+				body: JSON.stringify(body),
+				headers: {'Content-Type': 'application/json'},
+			},
+		),
 
 	assignTask: ({userTaskKey, ...body}: Pick<UserTask, 'userTaskKey'> & AssignTaskRequestBody) =>
 		new Request(getFullURL(unifiedAPIEndpoints.assignTask.getUrl({userTaskKey})), {

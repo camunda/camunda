@@ -9,7 +9,6 @@ package io.camunda.secretstore;
 
 import static java.util.stream.Collectors.toMap;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,22 +16,21 @@ import org.jspecify.annotations.NullMarked;
 
 /** A no-op secret store returned when no store is configured for a physical tenant. */
 @NullMarked
-public final class NoopSecretStore implements SecretStore<NoopSecretReference> {
+public final class NoopSecretStore implements SecretStore {
 
   @Override
-  public Map<NoopSecretReference, SecretResolutionResult> resolve(
-      final Set<NoopSecretReference> refs) {
-    return refs.stream()
+  public Map<String, SecretResolutionResult> resolve(final Set<String> names) {
+    return names.stream()
         .collect(
             toMap(
-                ref -> ref,
-                ref ->
+                name -> name,
+                name ->
                     new SecretResolutionResult.Failed(
                         SecretErrorCode.NOT_FOUND, "No secret store configured", null)));
   }
 
   @Override
-  public Collection<NoopSecretReference> list() {
+  public List<String> list() {
     return List.of();
   }
 }

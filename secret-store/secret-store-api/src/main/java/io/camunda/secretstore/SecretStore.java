@@ -7,7 +7,7 @@
  */
 package io.camunda.secretstore;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,12 +15,12 @@ import java.util.Set;
  * Implementations must be thread-safe: {@link #resolve} and {@link #list} may be called
  * concurrently from multiple threads.
  */
-public interface SecretStore<T extends SecretReference> extends AutoCloseable {
+public interface SecretStore extends AutoCloseable {
 
   /**
-   * Resolves a set of secret references in a single call.
+   * Resolves a set of secret names in a single call.
    *
-   * <p>Returns a result for <em>every</em> ref in the input set. Per-secret failures (e.g. secret
+   * <p>Returns a result for <em>every</em> name in the input set. Per-secret failures (e.g. secret
    * not found, access denied) are reported as {@link SecretResolutionResult.Failed}.
    *
    * <p>Implementations must be thread-safe.
@@ -28,17 +28,17 @@ public interface SecretStore<T extends SecretReference> extends AutoCloseable {
    * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
    *     is malformed
    */
-  Map<T, SecretResolutionResult> resolve(Set<T> refs);
+  Map<String, SecretResolutionResult> resolve(Set<String> names);
 
   /**
-   * Lists all secret references known to this store.
+   * Lists all secret names known to this store.
    *
    * <p>Implementations must be thread-safe.
    *
    * @throws SecretStoreUnavailableException if the backing store cannot be accessed or its content
    *     is malformed
    */
-  Collection<T> list();
+  List<String> list();
 
   @Override
   default void close() {}

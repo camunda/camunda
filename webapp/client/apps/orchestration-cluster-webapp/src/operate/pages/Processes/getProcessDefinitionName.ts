@@ -5,6 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.secretstore;
 
-public interface SecretReference {}
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.10';
+
+function getProcessDefinitionName(definition: Pick<ProcessDefinition, 'name' | 'processDefinitionId'>) {
+	return definition.name ?? definition.processDefinitionId;
+}
+
+export {getProcessDefinitionName};

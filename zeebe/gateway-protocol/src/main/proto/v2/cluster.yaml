@@ -206,16 +206,35 @@ components:
       type: object
       required:
         - nodeId
+        - brokerId
         - host
         - port
         - partitions
         - version
       properties:
         nodeId:
-          description: The unique (within a cluster) node ID for the broker.
+          description: >
+            The node ID for the broker. The uniqueness of this identifier depends
+            if the cluster is zone-aware or not.
+            - non zone-aware: (default) nodeId is unique across the cluster
+            - zone-aware:  (opt-in) nodeId is unique only within its zone.
+            If you are migrating to a zone aware cluster, you must use `brokerId` instead.
+            This property is deprecated, as it's been replaced by `brokerId`.
+
           type: integer
           format: int32
+          deprecated: true
           example: 0
+
+        brokerId:
+          description: >
+            The unique (within a cluster) broker identifier. When the cluster
+            is not zoned, then it's a string that represents the nodeId (an integer).
+            When the cluster is zoned, instead, it's of the form "$zoneName_$nodeId",
+            providing uniqueness even across zones.
+          type: string
+          example: "eu-west-1_0"
+
         host:
           description: The hostname for reaching the broker.
           type: string
@@ -234,6 +253,10 @@ components:
           description: The broker version.
           type: string
           example: 8.8.0
+      x-properties-added-in-version:
+        - propertyName: "brokerId"
+          addedInVersion: "8.10"
+
 
     Partition:
       description: Provides information on a partition within a broker node.

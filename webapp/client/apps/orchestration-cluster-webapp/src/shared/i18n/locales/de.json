@@ -465,6 +465,18 @@
 					"removeFilter": "Filter {{label}} entfernen",
 					"startDatePopoverTitle": "Instanzen nach Startdatum filtern",
 					"endDatePopoverTitle": "Instanzen nach Enddatum filtern"
+				},
+				"diagramHeader": {
+					"title": "Prozess",
+					"processName": "Prozessname",
+					"processId": "Prozess-ID",
+					"versionTag": "Versions-Tag"
+				},
+				"diagramPanel": {
+					"multipleVersionsSelected": "Für den Prozess \"{{name}}\" ist mehr als eine Version ausgewählt",
+					"selectSingleVersion": "Um ein Diagramm zu sehen, wählen Sie eine einzelne Version aus",
+					"noProcessSelected": "Es ist kein Prozess ausgewählt",
+					"selectProcessInFilters": "Um ein Diagramm zu sehen, wählen Sie einen Prozess im Filterbereich aus"
 				}
 			},
 			"decisions": {

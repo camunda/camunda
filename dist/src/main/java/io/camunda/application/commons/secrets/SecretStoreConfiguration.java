@@ -46,7 +46,7 @@ public class SecretStoreConfiguration {
                         + fileStores.size()
                         + " secret stores configured, but only one is supported at this time");
               }
-              final Map<String, SecretStore<?>> stores = new LinkedHashMap<>();
+              final Map<String, SecretStore> stores = new LinkedHashMap<>();
               fileStores.forEach(
                   (storeId, fileStore) -> {
                     final var path = fileStore.getPath();

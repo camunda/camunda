@@ -118,6 +118,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                   List.of(
                       BrokerInfo.Builder.create()
                           .nodeId(0)
+                          .brokerId("0")
                           .host("localhost")
                           .port(26501)
                           .partitions(
@@ -132,6 +133,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                           .build(),
                       BrokerInfo.Builder.create()
                           .nodeId(1)
+                          .brokerId("1")
                           .host("localhost")
                           .port(26502)
                           .partitions(
@@ -146,6 +148,7 @@ class ClusterToolsTest extends OperationalToolsTest {
                           .build(),
                       BrokerInfo.Builder.create()
                           .nodeId(2)
+                          .brokerId("2")
                           .host("localhost")
                           .port(26503)
                           .partitions(
