@@ -52,9 +52,9 @@ public final class RaftMemberContext {
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
   private IndexedRaftLogEntry currentEntry;
-  private volatile long snapshotReplicationLag;
+  private long snapshotReplicationLag;
   private long snapshotChunkBytesInFlight;
-  private volatile long logReplicationLag;
+  private long logReplicationLag;
   private long sentAppendWatermark;
   private long acknowledgedAppendWatermark;
 
