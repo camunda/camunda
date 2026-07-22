@@ -26,7 +26,9 @@ import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
@@ -269,7 +271,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Test
-  @Timeout(3 * 60) // 6 broker JVMs total over the run; override the class-level 2-min timeout
+  @Timeout(2 * 60)
   @SuppressWarnings("resource")
   void shouldRecoverZoneAwareClusterAfterZoneFailover() {
     // given -- zoneA x2, zoneB x2, RF=4 (2 replicas/zone), 2 partitions
@@ -307,17 +309,24 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // 3. add 2 new brokers to zoneB (zoneB_2, zoneB_3)
       final var targetZones = List.of(new Zone("zoneB", 4, 4, 10));
       final var brokersToAdd = List.of(MemberId.from("zoneB", 2), MemberId.from("zoneB", 3));
+      final var zoneBBrokers = new HashMap<MemberId, TestStandaloneBroker>();
+      cluster.brokers().entrySet().stream()
+          .filter(e -> e.getKey().isInZone("zoneB"))
+          .forEach(e -> zoneBBrokers.put(e.getKey(), e.getValue()));
       brokersToAdd.forEach(
-          id ->
-              closeables.manage(
-                  addBrokerInZone(
-                      cluster,
-                      actuator,
-                      DEFAULT_CLUSTER_NAME,
-                      id.zone(),
-                      id.nodeIdx(),
-                      4,
-                      targetZones)));
+          id -> {
+            final var broker =
+                closeables.manage(
+                    addBrokerInZone(
+                        cluster,
+                        actuator,
+                        DEFAULT_CLUSTER_NAME,
+                        id.zone(),
+                        id.nodeIdx(),
+                        4,
+                        targetZones));
+            zoneBBrokers.put(id, broker);
+          });
 
       // 4. reconfigure partition distribution: RF=4 all in zoneB, no zoneA
       final var config =
@@ -329,7 +338,6 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // then -- recovery applied; RF=4 all in zoneB
       assertChangeDone(actuator, response);
 
-      cluster.awaitHealthyTopology();
       final var finalTopology = actuator.getTopology();
       assertThat(finalTopology.getPartitionDistribution()).isEqualTo(config);
 
@@ -350,7 +358,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                       .hasSize(2));
       for (final var id : expectedMemberIds) {
         Awaitility.await()
-            .untilAsserted(() -> TestCluster.assertHealthyTopology(cluster.brokers().get(id)));
+            .untilAsserted(() -> TestCluster.assertHealthyTopology(zoneBBrokers.get(id)));
       }
     }
   }
