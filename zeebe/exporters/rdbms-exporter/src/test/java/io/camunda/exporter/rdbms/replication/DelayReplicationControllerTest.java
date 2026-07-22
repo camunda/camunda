@@ -233,6 +233,8 @@ class DelayReplicationControllerTest {
     assertThat(capacity).isGreaterThan(DelayReplicationController.DEFAULT_QUEUE_CAPACITY);
     assertThat(capacity)
         .isEqualTo(
-            (int) (twelveHours.toSeconds() * DelayReplicationController.ESTIMATED_MAX_FLUSHES_PER_SECOND));
+            (int)
+                (twelveHours.toSeconds()
+                    * DelayReplicationController.ESTIMATED_MAX_FLUSHES_PER_SECOND));
   }
 }
