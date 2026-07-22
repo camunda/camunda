@@ -20,10 +20,15 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Aggregates per-partition drain reports on the aggregating partition and re-issues the delete once
- * every partition has drained. A follower forwards its report here; the aggregating partition
- * clears each reporting partition from {@link ProcessDeleteDrainState} and, when the set empties,
- * re-issues the ordinary (now instance-free) resource deletion.
+ * Aggregates per-partition drain reports on the deployment partition. Physical removal already
+ * happened locally on each reporting partition (see {@code BpmnProcessDeletionBehavior}); this
+ * processor only tracks which partitions have reported.
+ *
+ * <p>A non-deployment partition forwards its {@link ProcessIntent#DELETE_COMPLETE} report here via
+ * unordered distribution. The deployment partition clears each reporting partition from {@link
+ * ProcessDeleteDrainState} by emitting {@link ProcessIntent#DELETE_COMPLETED}, and once none remain
+ * emits {@link ProcessIntent#FULLY_DELETED} — a NOOP-applier marker signalling the definition is
+ * gone cluster-wide. It does not re-issue the resource deletion.
  */
 @ExcludeAuthorizationCheck
 public final class ProcessDeleteCompleteProcessor
@@ -79,11 +84,11 @@ public final class ProcessDeleteCompleteProcessor
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessIntent.DELETE_COMPLETED, process);
 
     if (!processDeleteDrainState.hasDrainingPartition(processDefinitionKey)) {
-      startPhysicalDelete(command, process);
+      signalFullyDeleted(command, process);
     }
   }
 
-  private void startPhysicalDelete(
+  private void signalFullyDeleted(
       final TypedRecord<ProcessRecord> command, final ProcessRecord process) {
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessIntent.FULLY_DELETED, process);
 
