@@ -105,6 +105,11 @@ public class PartitionLeaderAwarenessHealthIndicatorTest {
     // then
     assertThat(actualHealth).isNotNull();
     assertThat(actualHealth.getStatus()).isEqualTo(Status.UP);
+    assertThat(actualHealth.getDetails())
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                "default", Map.of("partitions", 1, "partitionsWithLeader", 0L),
+                "tenant-b", Map.of("partitions", 1, "partitionsWithLeader", 1L)));
   }
 
   @Test

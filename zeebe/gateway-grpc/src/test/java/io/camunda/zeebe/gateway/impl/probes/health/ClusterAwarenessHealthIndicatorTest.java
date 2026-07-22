@@ -81,6 +81,9 @@ public class ClusterAwarenessHealthIndicatorTest {
     // then
     assertThat(actualHealth).isNotNull();
     assertThat(actualHealth.getStatus()).isEqualTo(Status.UP);
+    assertThat(actualHealth.getDetails())
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of("default", Map.of("brokers", 0), "tenant-b", Map.of("brokers", 1)));
   }
 
   @Test

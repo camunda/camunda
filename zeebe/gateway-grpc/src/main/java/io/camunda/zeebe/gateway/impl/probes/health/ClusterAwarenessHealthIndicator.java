@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.springframework.boot.health.contributor.Health;
@@ -20,7 +21,8 @@ import org.springframework.boot.health.contributor.HealthIndicator;
  * aggregates across all partition groups (physical tenants): the indicator reports UP as soon as
  * any physical tenant has a known broker, so that a gateway serving multiple physical tenants stays
  * ready even if only some of them are reachable. If the gateway is not aware of any nodes in any
- * physical tenant this indicates a potential network topology problem.
+ * physical tenant this indicates a potential network topology problem. The details report the
+ * number of known brokers per physical tenant.
  */
 public class ClusterAwarenessHealthIndicator implements HealthIndicator {
 
@@ -35,13 +37,15 @@ public class ClusterAwarenessHealthIndicator implements HealthIndicator {
   public Health health() {
     final var clusterStates = clusterStatesSupplier.get();
 
-    final var hasKnownBroker =
-        clusterStates.values().stream().anyMatch(state -> !state.getBrokers().isEmpty());
-
-    if (hasKnownBroker) {
-      return Health.up().build();
-    } else {
-      return Health.down().build();
+    var hasKnownBroker = false;
+    final var details = new HashMap<String, Object>();
+    for (final var entry : clusterStates.entrySet()) {
+      final var brokers = entry.getValue().getBrokers().size();
+      hasKnownBroker |= brokers > 0;
+      details.put(entry.getKey(), Map.of("brokers", brokers));
     }
+
+    final var health = hasKnownBroker ? Health.up() : Health.down();
+    return health.withDetails(details).build();
   }
 }
