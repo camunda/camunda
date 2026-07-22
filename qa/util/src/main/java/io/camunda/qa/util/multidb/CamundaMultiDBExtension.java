@@ -789,6 +789,7 @@ public class CamundaMultiDBExtension
             false);
         final var expectedDescriptors = new IndexDescriptors(testPrefix, false).all();
         setupHelper = new OpenSearchSetupHelper(DEFAULT_OS_URL, expectedDescriptors);
+        ptSetupHelper = physicalTenantSetupHelper();
       }
       case RDBMS_H2 ->
           multiDbConfigurator.configureRDBMSSupport(
