@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.ToLongFunction;
 import org.apache.iceberg.AppendFiles;
@@ -126,6 +128,24 @@ public final class IcebergLakeWriter implements LakeWriter {
    * constant to get both right.
    */
   public static final String FRONTIER_PROPERTY_PREFIX = "lake.frontier.p";
+
+  /**
+   * Prefix of the snapshot summary property {@code
+   * io.camunda.analytics.lake.sink.pipeline.DirectCommitSink} uses to stamp the origin-position
+   * dedup watermark {@code io.camunda.analytics.lake.translate.LakeTranslator} keeps per Zeebe
+   * partition — see that class's own "Origin-position dedup" javadoc section for what the watermark
+   * protects against. Unlike {@link #OFFSET_PROPERTY_PREFIX}/{@link #FRONTIER_PROPERTY_PREFIX}, the
+   * suffix here is a Zeebe {@code partitionId}, not an Event Bridge source partition id: the same
+   * Zeebe partition's records can in principle reach these tables through more than one Event
+   * Bridge source partition over the process's lifetime, so the watermark this prefix stamps is
+   * keyed by where the records actually originated, not by which source partition happened to carry
+   * them. Lives here, next to the other two prefixes, for the same reason {@link
+   * #FRONTIER_PROPERTY_PREFIX} does: every commit that re-stamps one carry-forward property must
+   * re-stamp all three, or a commit that only knew about two of them would silently wipe the third
+   * the moment it landed a snapshot — see {@link #OFFSET_PROPERTY_PREFIX}'s own javadoc for the bug
+   * class this guards against.
+   */
+  public static final String ZBPOS_PROPERTY_PREFIX = "lake.zbpos.z";
 
   private static final String INSTANCES_STAGING_TABLE = "staging_instances";
   private static final String ACTIVITIES_STAGING_TABLE = "staging_activities";
@@ -392,14 +412,17 @@ public final class IcebergLakeWriter implements LakeWriter {
 
     final AppendFiles append = table.newAppend();
     // Re-stamp every partition this table has ever seen (see class javadoc) -- not just the one
-    // advancing now -- so the new snapshot's summary remains a complete map. Both carry-forward
-    // prefixes must be re-stamped together (see FRONTIER_PROPERTY_PREFIX's javadoc): this legacy
-    // flush path shares instancesTable/activitiesTable with DirectCommitSink, so a commit here that
-    // only forwarded lake.offset.* would silently wipe every frontier stamp DirectCommitSink had
-    // already landed on the same table.
+    // advancing now -- so the new snapshot's summary remains a complete map. All three
+    // carry-forward prefixes must be re-stamped together (see FRONTIER_PROPERTY_PREFIX's and
+    // ZBPOS_PROPERTY_PREFIX's javadoc): this legacy flush path shares instancesTable/
+    // activitiesTable with DirectCommitSink, so a commit here that only forwarded lake.offset.*
+    // would silently wipe every frontier or origin-position dedup watermark stamp DirectCommitSink
+    // had already landed on the same table.
     priorSummary.forEach(
         (key, value) -> {
-          if (key.startsWith(OFFSET_PROPERTY_PREFIX) || key.startsWith(FRONTIER_PROPERTY_PREFIX)) {
+          if (key.startsWith(OFFSET_PROPERTY_PREFIX)
+              || key.startsWith(FRONTIER_PROPERTY_PREFIX)
+              || key.startsWith(ZBPOS_PROPERTY_PREFIX)) {
             append.set(key, value);
           }
         });
@@ -568,6 +591,67 @@ public final class IcebergLakeWriter implements LakeWriter {
   private static long offsetOf(final Map<String, String> summary, final int partition) {
     final String value = summary.get(OFFSET_PROPERTY_PREFIX + partition);
     return value == null ? -1L : Long.parseLong(value);
+  }
+
+  /**
+   * The durable origin-position dedup watermark for Zeebe partition {@code zeebePartitionId},
+   * mirroring {@link #committedOffset(int)}'s own MIN-across-tables rule (see this class's
+   * "Exactly-once via per-table offset stamping" javadoc): each table's own current-snapshot {@code
+   * lake.zbpos.z*} stamp is read independently and the minimum of the two is returned, so a
+   * partition whose stamp is missing (or lower) on one table pulls the seeded watermark down to
+   * match — any record above that value must fold again, because its row was never guaranteed
+   * durable on both tables. Callers seed a fresh {@code LakeTranslator} with this value at startup
+   * (see {@code LakeTranslator#seedWatermark}'s javadoc); this method never reads any in-memory
+   * translator state, only the tables' own durable stamps.
+   *
+   * @return the min of the two tables' stamped watermark for {@code zeebePartitionId}, or {@code
+   *     -1} if neither table has ever stamped one
+   */
+  public long committedZeebeWatermark(final int zeebePartitionId) {
+    return Math.min(
+        currentZeebeWatermarkOf(instancesTable, zeebePartitionId),
+        currentZeebeWatermarkOf(activitiesTable, zeebePartitionId));
+  }
+
+  private static long currentZeebeWatermarkOf(final Table table, final int zeebePartitionId) {
+    table.refresh();
+    final Snapshot snapshot = table.currentSnapshot();
+    if (snapshot == null) {
+      return -1L;
+    }
+    final String value = snapshot.summary().get(ZBPOS_PROPERTY_PREFIX + zeebePartitionId);
+    return value == null ? -1L : Long.parseLong(value);
+  }
+
+  /**
+   * Every Zeebe partition id either raw table's current snapshot has ever stamped a {@code
+   * lake.zbpos.z*} watermark for — the set a caller must enumerate to seed every known partition's
+   * {@code LakeTranslator} watermark at startup via {@link #committedZeebeWatermark(int)} (see its
+   * own javadoc); a partition never yet stamped on either table is correctly absent, since {@link
+   * #committedZeebeWatermark(int)} would return {@code -1} for it anyway.
+   */
+  public Set<Integer> stampedZeebePartitionIds() {
+    final Set<Integer> ids = new TreeSet<>();
+    collectZeebePartitionIds(instancesTable, ids);
+    collectZeebePartitionIds(activitiesTable, ids);
+    return ids;
+  }
+
+  private static void collectZeebePartitionIds(final Table table, final Set<Integer> out) {
+    table.refresh();
+    final Snapshot snapshot = table.currentSnapshot();
+    if (snapshot == null) {
+      return;
+    }
+    snapshot
+        .summary()
+        .keySet()
+        .forEach(
+            key -> {
+              if (key.startsWith(ZBPOS_PROPERTY_PREFIX)) {
+                out.add(Integer.parseInt(key.substring(ZBPOS_PROPERTY_PREFIX.length())));
+              }
+            });
   }
 
   @Override

@@ -14,6 +14,7 @@ import io.camunda.analytics.lake.sink.Descriptor;
 import io.camunda.analytics.lake.sink.pipeline.DirectCommitSink;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -140,6 +141,6 @@ class LakeCompactorConcurrencyTest {
    * IcebergLakeWriter}'s own "no rows this flush" path already relies on).
    */
   private static Descriptor descriptorFor(final int partition, final long offset) {
-    return new Descriptor("instances", partition, List.of(), offset, offset, offset);
+    return new Descriptor("instances", partition, List.of(), offset, offset, offset, Map.of());
   }
 }

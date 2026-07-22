@@ -136,7 +136,8 @@ final class FlushLoop implements Runnable {
               files,
               snapshot.firstOffset(),
               snapshot.lastOffset(),
-              snapshot.frontierMs());
+              snapshot.frontierMs(),
+              snapshot.zeebeWatermarks());
       descriptorSink.accept(descriptor);
       metrics.descriptorAccepted();
       // only now: the commit succeeded, so the segment that triggered this window can be recycled.

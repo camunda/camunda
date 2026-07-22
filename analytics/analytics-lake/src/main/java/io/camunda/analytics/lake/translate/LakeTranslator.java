@@ -24,6 +24,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,48 @@ import org.slf4j.LoggerFactory;
  *
  * <p>The translator never flushes or triggers the L0 sink pipelines — the app loop owns flush (and
  * thus offset-commit) policy via {@code SinkPipeline#onPollTick}.
+ *
+ * <h2>Origin-position dedup</h2>
+ *
+ * <p>The Event Bridge's Zeebe exporter is at-least-once, not exactly-once: after a failover it can
+ * re-export a tail of records that were already exported before the failover, under brand new Event
+ * Bridge offsets — so the per-table offset stamp {@code IcebergLakeWriter}/{@code DirectCommitSink}
+ * already carry (keyed by Event Bridge <em>source</em> partition) cannot catch this; only a
+ * record's own Zeebe origin coordinates can. {@link #onRecord} therefore checks {@code
+ * record.getPartitionId()}/{@code record.getPosition()} — the Zeebe partition and log position the
+ * record actually came from, not the Event Bridge envelope's own {@code partitionId}/{@code offset}
+ * (see {@code ZeebeRecord}'s own javadoc for the distinction) — against a per-Zeebe- partition high
+ * watermark, <b>before</b> any state mutation or row emission: a position at or below the watermark
+ * for its partition is dropped entirely (treated as successfully consumed, not backpressure — the
+ * caller's Event Bridge offset still advances), never even reaching the {@link RecordType#EVENT}
+ * check below it. An equal position is a duplicate, dropped the same way as a lower one.
+ *
+ * <p><b>The watermark only advances once the record is actually consumed.</b> The dedup check
+ * itself is pure (no mutation); the watermark for the record's partition is raised to its position
+ * only after folding the record has run and is about to report success back to the caller. This
+ * split matters because of {@link #onRecord}'s own backpressure contract (see this class's
+ * "Backpressure" section below): a row-emitting record can make {@code onRecord} return {@code
+ * false} on ring backpressure, and the caller then retries the exact same record later. If the
+ * watermark had already advanced past that record's position on the first (failed) attempt, the
+ * retry would see its own position at-or-below the watermark and get dropped as a "duplicate" —
+ * silently losing a row that was never actually appended. Advancing only on paths that return
+ * {@code true} (folded successfully, ignored by design, or dropped by the dedup check itself — all
+ * of which must not re-admit the same position on a later rewind) keeps a backpressure retry
+ * indistinguishable from the record's first attempt.
+ *
+ * <p>A plain per-partition high watermark (rather than a full seen-set of positions) suffices
+ * because positions within one Zeebe partition arrive in order except for exactly this one failure
+ * mode — a rewind back to an already-passed position, never a genuinely new position arriving out
+ * of order. So "highest position folded so far" is always enough to recognize a rewind's entire
+ * redelivered tail as duplicate, with no need to remember individual positions.
+ *
+ * <p><b>Restart rule:</b> the watermark is seeded at startup (see {@link #seedWatermark}) from the
+ * durable {@code lake.zbpos.z*} stamp the lake tables themselves carry (see {@code
+ * IcebergLakeWriter#committedZeebeWatermark}'s javadoc for the min-across-tables cut rule), never
+ * from this translator's own {@link TranslatorState} — that state tracks only currently open
+ * entities, not a record of what has already been folded. Any record whose position lands above the
+ * seeded watermark folds again on replay; that is correct, not a gap, because its row was never
+ * made durable.
  *
  * <h2>Millis in, micros at the wire</h2>
  *
@@ -94,6 +138,16 @@ public final class LakeTranslator {
 
   private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
 
+  /**
+   * Sentinel for "no record has folded yet for this Zeebe partition" in {@link #zeebeWatermarks}.
+   */
+  private static final long NO_WATERMARK = -1L;
+
+  /**
+   * Initial length of {@link #zeebeWatermarks}; grows rarely, see {@link #ensureWatermarkCapacity}.
+   */
+  private static final int INITIAL_WATERMARK_CAPACITY = 4;
+
   private static final Logger LOG = LoggerFactory.getLogger(LakeTranslator.class);
 
   private final TranslatorState state;
@@ -105,6 +159,14 @@ public final class LakeTranslator {
   // than allocating a fresh StringBuilder per completed instance.
   private final StringBuilder varsJsonScratch = new StringBuilder(256);
 
+  /**
+   * Highest Zeebe {@code position} folded so far, per Zeebe {@code partitionId} — see class
+   * javadoc's "Origin-position dedup" section. Index = partitionId; grows (rarely — partition ids
+   * are small, dense integers) via {@link #ensureWatermarkCapacity}. Poll thread only, like every
+   * other field on this class.
+   */
+  private long[] zeebeWatermarks;
+
   public LakeTranslator(
       final TranslatorState state,
       final RowAppender instanceAppender,
@@ -112,15 +174,51 @@ public final class LakeTranslator {
     this.state = state;
     this.instanceAppender = instanceAppender;
     this.activityAppender = activityAppender;
+    zeebeWatermarks = newWatermarkArray(INITIAL_WATERMARK_CAPACITY);
   }
 
   /**
    * @return {@code false} if a row append hit backpressure (ring full) — the caller must retry this
-   *     same {@code zr} later instead of advancing past it (see class javadoc); {@code true}
-   *     otherwise, including when the record needed no row append at all
+   *     same {@code zr} later instead of advancing past it (see class javadoc); the origin-position
+   *     dedup watermark is deliberately NOT advanced on this path, so the retry is admitted exactly
+   *     like the record's first attempt. {@code true} otherwise, including when the record needed
+   *     no row append at all, or was dropped by the origin-position dedup gate below — every {@code
+   *     true} path advances the watermark past this record's position (see class javadoc's
+   *     "Origin-position dedup" section for why that must include the dropped-by-type/ignored paths
+   *     too, not just a successful fold)
    */
   public boolean onRecord(final ZeebeRecord zr) {
     final Record<?> record = zr.record();
+    final int zeebePartitionId = record.getPartitionId();
+    final long position = record.getPosition();
+    if (isDuplicateOrRewound(zeebePartitionId, position)) {
+      // See class javadoc's "Origin-position dedup" section: a redelivered (or otherwise
+      // already-folded) Zeebe position is dropped before any state mutation or row emission, but
+      // still counts as successfully consumed -- the caller's Event Bridge offset still advances.
+      // No watermark write here: the check above already read it, and it is already at or above
+      // this position.
+      return true;
+    }
+    final boolean consumed = fold(record);
+    if (consumed) {
+      // Only now, once the record has actually been folded (or determined to need no folding) and
+      // is about to report success -- never on the return-false backpressure path, or a retry of
+      // this same record would be misread as a duplicate of itself. See class javadoc for why this
+      // ordering is load-bearing.
+      advanceWatermark(zeebePartitionId, position);
+    }
+    return consumed;
+  }
+
+  /**
+   * The actual record fold, run only once {@link #onRecord} has confirmed {@code record}'s origin
+   * position is not a duplicate. Pulled out of {@link #onRecord} so the watermark advance there can
+   * sit strictly after this returns, gated on its result.
+   *
+   * @return {@code false} if a row append hit backpressure (ring full); {@code true} otherwise —
+   *     see {@link #onRecord}'s own javadoc for the full contract
+   */
+  private boolean fold(final Record<?> record) {
     if (record.getRecordType() != RecordType.EVENT) {
       return true;
     }
@@ -131,6 +229,88 @@ public final class LakeTranslator {
       onVariable(record);
     }
     return true;
+  }
+
+  /**
+   * The origin-position dedup gate's read side — see class javadoc's "Origin-position dedup"
+   * section. Pure: grows {@link #zeebeWatermarks} to admit {@code zeebePartitionId} if needed, but
+   * never writes a watermark value itself (see {@link #advanceWatermark} for that half) — {@link
+   * #onRecord} must be able to call this before running {@code record}'s fold and only commit the
+   * new watermark value after the fold succeeds.
+   *
+   * @return {@code true} if {@code position} is at or below the watermark already recorded for
+   *     {@code zeebePartitionId} (a duplicate or an already-passed rewind) and must be dropped
+   *     entirely; {@code false} if it is new
+   */
+  private boolean isDuplicateOrRewound(final int zeebePartitionId, final long position) {
+    ensureWatermarkCapacity(zeebePartitionId);
+    return position <= zeebeWatermarks[zeebePartitionId];
+  }
+
+  /**
+   * The origin-position dedup gate's write side — see {@link #isDuplicateOrRewound} for the read
+   * side and class javadoc for why the two are split. Assumes {@code zeebePartitionId} has already
+   * been admitted by {@link #isDuplicateOrRewound} in the same {@link #onRecord} call (so capacity
+   * is already ensured) and that {@code position} is strictly greater than the current watermark.
+   */
+  private void advanceWatermark(final int zeebePartitionId, final long position) {
+    zeebeWatermarks[zeebePartitionId] = position;
+  }
+
+  /**
+   * An immutable point-in-time copy of every Zeebe partition's dedup watermark this translator has
+   * observed so far, keyed by {@code partitionId}. Intended to be called once per poll-loop tick
+   * (see {@code LakePocApp}'s per-partition {@code onPollTick} wiring and {@code
+   * io.camunda.analytics.lake.sink.pipeline.SealSnapshot}'s own capture of it), never once per
+   * record — the allocation here is bounded by poll frequency, the same budget the seal snapshot's
+   * own offset/frontier capture already spends.
+   */
+  public Map<Integer, Long> watermarkSnapshot() {
+    final Map<Integer, Long> snapshot = new LinkedHashMap<>();
+    for (int partitionId = 0; partitionId < zeebeWatermarks.length; partitionId++) {
+      final long watermark = zeebeWatermarks[partitionId];
+      if (watermark != NO_WATERMARK) {
+        snapshot.put(partitionId, watermark);
+      }
+    }
+    return Map.copyOf(snapshot);
+  }
+
+  /**
+   * Seeds this translator's watermark for Zeebe partition {@code zeebePartitionId} at process
+   * startup, from the durable {@code lake.zbpos.z*} stamp {@code IcebergLakeWriter} reports for it
+   * (see {@code IcebergLakeWriter#committedZeebeWatermark}'s javadoc for the min-across-tables cut
+   * rule) — never from this translator's own {@link TranslatorState}, which holds only currently
+   * open entities, not a record of what has already folded (see class javadoc's "Restart rule").
+   * Must be called before this translator processes its first record for {@code zeebePartitionId}:
+   * seeding a translator that has already folded live records for that partition would let the
+   * watermark regress and reopen the dedup window the gate exists to close, so this only ever
+   * raises the watermark (never lowers it).
+   */
+  public void seedWatermark(final int zeebePartitionId, final long position) {
+    ensureWatermarkCapacity(zeebePartitionId);
+    zeebeWatermarks[zeebePartitionId] = Math.max(zeebeWatermarks[zeebePartitionId], position);
+  }
+
+  /**
+   * Grows {@link #zeebeWatermarks} (rarely — partition ids are small, dense integers) to admit
+   * index {@code zeebePartitionId}, doubling capacity (or exactly enough, whichever is larger); new
+   * slots default to {@link #NO_WATERMARK}, matching every existing slot's own initial value.
+   */
+  private void ensureWatermarkCapacity(final int zeebePartitionId) {
+    if (zeebePartitionId < zeebeWatermarks.length) {
+      return;
+    }
+    final long[] grown =
+        newWatermarkArray(Math.max(zeebePartitionId + 1, zeebeWatermarks.length * 2));
+    System.arraycopy(zeebeWatermarks, 0, grown, 0, zeebeWatermarks.length);
+    zeebeWatermarks = grown;
+  }
+
+  private static long[] newWatermarkArray(final int length) {
+    final long[] array = new long[length];
+    Arrays.fill(array, NO_WATERMARK);
+    return array;
   }
 
   private boolean onProcessInstance(final Record<?> record) {

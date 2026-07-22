@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.iceberg.FileScanTask;
 import org.apache.iceberg.Snapshot;
@@ -84,17 +85,47 @@ class IcebergLakeWriterCompactionTest {
       assertThat(activityRowsBefore).isEqualTo(BATCH_COUNT);
       assertThat(committedOffsetBefore).isEqualTo(BATCH_COUNT - 1);
 
-      // and: simulate a frontier stamp DirectCommitSink would have already landed on this same
-      // table for a different partition -- this is the property Fix 1 guards: every restamp site
-      // in write/ must carry lake.frontier.p* forward exactly like it already does for
-      // lake.offset.p*, or a maintenance commit (like the compaction below) silently wipes it.
+      // and: simulate a frontier stamp AND a zbpos (origin-position dedup watermark) stamp
+      // DirectCommitSink would have already landed on this same table for a different partition --
+      // this is the property every restamp site in write/ must carry forward exactly like it
+      // already does for lake.offset.p*, or a maintenance commit (like the compaction below)
+      // silently wipes it.
       final int frontierPartition = PARTITION + 1;
       final long stampedFrontierMs = 123_456_789L;
+      final int zeebePartitionId = 7;
+      final long stampedZeebeWatermark = 555_555L;
       final DirectCommitSink sink =
           new DirectCommitSink(instancesTable, writer.commitLock(instancesTable));
       sink.accept(
-          new Descriptor("instances", frontierPartition, List.of(), 0L, 0L, stampedFrontierMs));
+          new Descriptor(
+              "instances",
+              frontierPartition,
+              List.of(),
+              0L,
+              0L,
+              stampedFrontierMs,
+              Map.of(zeebePartitionId, stampedZeebeWatermark)));
       assertThat(frontierOf(instancesTable, frontierPartition)).isEqualTo(stampedFrontierMs);
+      assertThat(zeebeWatermarkOf(instancesTable, zeebePartitionId))
+          .isEqualTo(stampedZeebeWatermark);
+
+      // and: one more legacy buffered flush() lands on the SAME table -- this is the hardening
+      // this test closes: IcebergLakeWriter#flushTable's own carry-forward (a different commit
+      // site than DirectCommitSink's or LakeCompactor's) must re-stamp lake.zbpos.z* (and
+      // lake.frontier.p*) exactly like it already does for lake.offset.p*, or this ordinary
+      // legacy flush -- not just a maintenance pass -- would silently wipe both stamps the moment
+      // it landed its own snapshot.
+      writer.append(instanceRow(BATCH_COUNT));
+      writer.append(activityRow(BATCH_COUNT));
+      writer.flush(PARTITION, BATCH_COUNT);
+      assertThat(writer.committedOffset(PARTITION)).isEqualTo(BATCH_COUNT);
+      assertThat(frontierOf(instancesTable, frontierPartition)).isEqualTo(stampedFrontierMs);
+      assertThat(zeebeWatermarkOf(instancesTable, zeebePartitionId))
+          .isEqualTo(stampedZeebeWatermark);
+
+      final long committedOffsetBeforeCompaction = writer.committedOffset(PARTITION);
+      final long instanceRowsBeforeCompaction = rowCount(instancesTable, duckdb);
+      final long activityRowsBeforeCompaction = rowCount(activitiesTable, duckdb);
 
       // when a compaction pass runs
       final LakeCompactor compactor = new LakeCompactor(writer);
@@ -109,8 +140,8 @@ class IcebergLakeWriterCompactionTest {
       assertThat(activityFilesAfter).isBetween(1, 2);
 
       // and every row is still present -- compaction rewrote, it never dropped or duplicated rows
-      assertThat(rowCount(instancesTable, duckdb)).isEqualTo(instanceRowsBefore);
-      assertThat(rowCount(activitiesTable, duckdb)).isEqualTo(activityRowsBefore);
+      assertThat(rowCount(instancesTable, duckdb)).isEqualTo(instanceRowsBeforeCompaction);
+      assertThat(rowCount(activitiesTable, duckdb)).isEqualTo(activityRowsBeforeCompaction);
 
       // and snapshot history was trimmed to the configured retention
       assertThat(snapshotCount(instancesTable)).isLessThanOrEqualTo(3);
@@ -118,11 +149,17 @@ class IcebergLakeWriterCompactionTest {
 
       // and -- the critical assertion -- the durable offset survived compaction unchanged; a
       // regression here would silently force a full replay from scratch on the next restart
-      assertThat(writer.committedOffset(PARTITION)).isEqualTo(committedOffsetBefore);
+      assertThat(writer.committedOffset(PARTITION)).isEqualTo(committedOffsetBeforeCompaction);
 
       // and -- Fix 1's own critical assertion -- the frontier stamp survived compaction too, not
       // just the offset
       assertThat(frontierOf(instancesTable, frontierPartition)).isEqualTo(stampedFrontierMs);
+
+      // and -- the zbpos (origin-position dedup watermark) stamp survived the same maintenance
+      // commit path: LakeCompactor's own carry-forward must re-apply all three prefixes together,
+      // not just the two offset/frontier already covered above
+      assertThat(zeebeWatermarkOf(instancesTable, zeebePartitionId))
+          .isEqualTo(stampedZeebeWatermark);
     } finally {
       writer.close();
     }
@@ -183,6 +220,23 @@ class IcebergLakeWriterCompactionTest {
     }
     final String value =
         snapshot.summary().get(DirectCommitSink.FRONTIER_PROPERTY_PREFIX + partition);
+    return value == null ? null : Long.parseLong(value);
+  }
+
+  /**
+   * The current snapshot's {@code lake.zbpos.z<zeebePartitionId>} stamp, or {@code null}. Reads
+   * this one table directly (unlike {@link IcebergLakeWriter#committedZeebeWatermark(int)}'s own
+   * MIN-across-tables rule) — the same single-table convention {@link #frontierOf} already uses,
+   * since this test only ever stamps the instances table.
+   */
+  private static Long zeebeWatermarkOf(final Table table, final int zeebePartitionId) {
+    table.refresh();
+    final Snapshot snapshot = table.currentSnapshot();
+    if (snapshot == null) {
+      return null;
+    }
+    final String value =
+        snapshot.summary().get(DirectCommitSink.ZBPOS_PROPERTY_PREFIX + zeebePartitionId);
     return value == null ? null : Long.parseLong(value);
   }
 

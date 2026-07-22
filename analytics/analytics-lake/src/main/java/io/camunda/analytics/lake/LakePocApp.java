@@ -420,12 +420,35 @@ public final class LakePocApp {
           partition -> {
             final PartitionPipelines pipelines =
                 buildPartitionPipelines(partition, tp, rawConsumer, state, wiring);
+            // Runs exactly once, before this fresh translator ever sees a record -- see
+            // #seedWatermarks' own javadoc for why reseeding an already-running translator would
+            // be wrong.
+            seedWatermarks(writer, pipelines);
             pipelines.start();
             return pipelines;
           });
     }
     consumer.seek(positions);
     LOG.info("Resuming partitions at {}", positions);
+  }
+
+  /**
+   * Seeds {@code pipelines}' translator origin-position dedup watermarks from every {@code
+   * lake.zbpos.z*} stamp durable on either raw table, using the same MIN-across-tables cut rule the
+   * offset seek above uses (see {@link IcebergLakeWriter#committedZeebeWatermark(int)}'s own
+   * javadoc). Must run exactly once, right after a partition's pipelines are first built — never on
+   * a later reassignment of an already-running partition: reseeding a live translator from a
+   * possibly-stale durable stamp would let the watermark regress and reopen the dedup window the
+   * gate exists to close (see {@code LakeTranslator#seedWatermark}'s own javadoc).
+   */
+  private static void seedWatermarks(
+      final IcebergLakeWriter writer, final PartitionPipelines pipelines) {
+    for (final int zeebePartitionId : writer.stampedZeebePartitionIds()) {
+      final long watermark = writer.committedZeebeWatermark(zeebePartitionId);
+      if (watermark >= 0) {
+        pipelines.seedWatermark(zeebePartitionId, watermark);
+      }
+    }
   }
 
   private static PartitionPipelines buildPartitionPipelines(
@@ -563,8 +586,17 @@ public final class LakePocApp {
     }
 
     void onPollTick(final long lastOffset, final long frontierMs) {
-      instancesPipeline.onPollTick(lastOffset, frontierMs);
-      activitiesPipeline.onPollTick(lastOffset, frontierMs);
+      // One immutable snapshot per tick (see LakeTranslator#watermarkSnapshot's own javadoc for
+      // the allocation budget), shared by both tables' pipelines -- they always cover the exact
+      // same set of folded Zeebe records for this owned partition.
+      final Map<Integer, Long> watermarks = translator.watermarkSnapshot();
+      instancesPipeline.onPollTick(lastOffset, frontierMs, watermarks);
+      activitiesPipeline.onPollTick(lastOffset, frontierMs, watermarks);
+    }
+
+    /** See {@code LakePocApp#seedWatermarks}. */
+    void seedWatermark(final int zeebePartitionId, final long position) {
+      translator.seedWatermark(zeebePartitionId, position);
     }
 
     boolean isFailed() {

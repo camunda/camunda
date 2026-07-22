@@ -191,7 +191,7 @@ class SinkIntegrationTest {
           feed(
               translator0,
               offsets0,
-              List.of(instance(1L, DAY_A_START_MS), instance(2L, DAY_A_START_MS + 100)));
+              List.of(instance(1L, DAY_A_START_MS, 0), instance(2L, DAY_A_START_MS + 100, 0)));
       clock.advance(FLUSH_INTERVAL_MS + 1);
       pipelines0.onPollTick(lastOffset0, DAY_A_START_MS);
 
@@ -202,15 +202,15 @@ class SinkIntegrationTest {
               translator0,
               offsets0,
               List.of(
-                  instance(3L, DAY_A_START_MS + 200),
-                  instance(4L, DAY_B_START_MS),
-                  instance(5L, DAY_B_START_MS + 100)));
+                  instance(3L, DAY_A_START_MS + 200, 0),
+                  instance(4L, DAY_B_START_MS, 0),
+                  instance(5L, DAY_B_START_MS + 100, 0)));
       clock.advance(FLUSH_INTERVAL_MS + 1);
       pipelines0.onPollTick(lastOffset0, DAY_B_START_MS);
 
       // partition 1: instance 6 (day A), same two tables
       final long lastOffset1 =
-          feed(translator1, offsets1, List.of(instance(6L, DAY_A_START_MS + 300)));
+          feed(translator1, offsets1, List.of(instance(6L, DAY_A_START_MS + 300, 1)));
       clock.advance(FLUSH_INTERVAL_MS + 1);
       pipelines1.onPollTick(lastOffset1, DAY_A_START_MS);
 
@@ -285,11 +285,11 @@ class SinkIntegrationTest {
               replayTranslator0,
               replayOffsets0,
               List.of(
-                  instance(1L, DAY_A_START_MS),
-                  instance(2L, DAY_A_START_MS + 100),
-                  instance(3L, DAY_A_START_MS + 200),
-                  instance(4L, DAY_B_START_MS),
-                  instance(5L, DAY_B_START_MS + 100)));
+                  instance(1L, DAY_A_START_MS, 0),
+                  instance(2L, DAY_A_START_MS + 100, 0),
+                  instance(3L, DAY_A_START_MS + 200, 0),
+                  instance(4L, DAY_B_START_MS, 0),
+                  instance(5L, DAY_B_START_MS + 100, 0)));
       replayClock.advance(FLUSH_INTERVAL_MS + 1);
       replayPipelines0.onPollTick(replayLastOffset, DAY_B_START_MS);
       replayPipelines0.close();
@@ -355,9 +355,9 @@ class SinkIntegrationTest {
               translator,
               offsets,
               List.of(
-                  instance(101L, DAY_A_START_MS),
-                  instance(102L, DAY_B_START_MS),
-                  instance(103L, DAY_C_START_MS)));
+                  instance(101L, DAY_A_START_MS, 0),
+                  instance(102L, DAY_B_START_MS, 0),
+                  instance(103L, DAY_C_START_MS, 0)));
       clock.advance(FLUSH_INTERVAL_MS + 1);
       pipelines.onPollTick(lastOffset, DAY_C_START_MS);
       pipelines.close();
@@ -401,11 +401,19 @@ class SinkIntegrationTest {
 
   /**
    * One finished instance's full lifecycle: root activation, one variable, 2 elements, root end.
+   * {@code zeebePartitionId} feeds every record's Zeebe origin {@code partitionId} (the origin-
+   * position dedup gate's own key — see {@code LakeTranslator}'s "Origin-position dedup" javadoc
+   * section); each record's Zeebe {@code position} is derived from {@code instanceKey} (base {@code
+   * instanceKey * 1000}, one of the 7 lifecycle records per {@code +0..+6} offset) so positions
+   * strictly increase across instances fed to the same Zeebe partition in ascending {@code
+   * instanceKey} order, exactly like a real Zeebe log never would repeat or rewind outside of the
+   * redelivery scenario the gate exists to catch.
    */
   private static List<ZeebeRecord> instanceRecordsWithoutOffsets(
-      final long instanceKey, final long startMs) {
+      final long instanceKey, final long startMs, final int zeebePartitionId) {
     final long elementA = instanceKey * 100 + 1;
     final long elementB = instanceKey * 100 + 2;
+    final long position = instanceKey * 1000;
     final List<ZeebeRecord> records = new ArrayList<>();
     records.add(
         processInstanceRecord(
@@ -414,8 +422,10 @@ class SinkIntegrationTest {
             startMs,
             BpmnElementType.PROCESS,
             "",
-            ProcessInstanceIntent.ELEMENT_ACTIVATED));
-    records.add(variableRecord(instanceKey, startMs + 1));
+            ProcessInstanceIntent.ELEMENT_ACTIVATED,
+            zeebePartitionId,
+            position));
+    records.add(variableRecord(instanceKey, startMs + 1, zeebePartitionId, position + 1));
     records.add(
         processInstanceRecord(
             instanceKey,
@@ -423,7 +433,9 @@ class SinkIntegrationTest {
             startMs + 10,
             BpmnElementType.SERVICE_TASK,
             "task-a",
-            ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            ProcessInstanceIntent.ELEMENT_ACTIVATED,
+            zeebePartitionId,
+            position + 2));
     records.add(
         processInstanceRecord(
             instanceKey,
@@ -431,7 +443,9 @@ class SinkIntegrationTest {
             startMs + 20,
             BpmnElementType.SERVICE_TASK,
             "task-a",
-            ProcessInstanceIntent.ELEMENT_COMPLETED));
+            ProcessInstanceIntent.ELEMENT_COMPLETED,
+            zeebePartitionId,
+            position + 3));
     records.add(
         processInstanceRecord(
             instanceKey,
@@ -439,7 +453,9 @@ class SinkIntegrationTest {
             startMs + 30,
             BpmnElementType.SERVICE_TASK,
             "task-b",
-            ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            ProcessInstanceIntent.ELEMENT_ACTIVATED,
+            zeebePartitionId,
+            position + 4));
     records.add(
         processInstanceRecord(
             instanceKey,
@@ -447,7 +463,9 @@ class SinkIntegrationTest {
             startMs + 40,
             BpmnElementType.SERVICE_TASK,
             "task-b",
-            ProcessInstanceIntent.ELEMENT_COMPLETED));
+            ProcessInstanceIntent.ELEMENT_COMPLETED,
+            zeebePartitionId,
+            position + 5));
     records.add(
         processInstanceRecord(
             instanceKey,
@@ -455,22 +473,30 @@ class SinkIntegrationTest {
             startMs + 50,
             BpmnElementType.PROCESS,
             "",
-            ProcessInstanceIntent.ELEMENT_COMPLETED));
+            ProcessInstanceIntent.ELEMENT_COMPLETED,
+            zeebePartitionId,
+            position + 6));
     return records;
   }
 
-  /** A named "raw" lifecycle (offsets stamped in later, per partition, in feed order). */
-  private static List<ZeebeRecord> instance(final long instanceKey, final long startMs) {
-    return instanceRecordsWithoutOffsets(instanceKey, startMs);
+  /**
+   * A named "raw" lifecycle (Event Bridge offsets stamped in later, per partition, in feed order —
+   * see {@link #feed}; {@code zeebePartitionId} is this lifecycle's Zeebe origin partition,
+   * distinct from the Event Bridge source partition {@link #feed} stamps).
+   */
+  private static List<ZeebeRecord> instance(
+      final long instanceKey, final long startMs, final int zeebePartitionId) {
+    return instanceRecordsWithoutOffsets(instanceKey, startMs, zeebePartitionId);
   }
 
   /**
    * Feeds every record of every {@code lifecycles} entry through {@code translator}, stamping
-   * sequential offsets as it goes (which of the two {@link OffsetCounter}s/{@code translator}s the
-   * caller passes in is what actually determines the source partition a batch belongs to in this
-   * test — the {@code ZeebeRecord}'s own {@code partitionId} field is never read by {@link
-   * LakeTranslator}, so it is left at its {@link #processInstanceRecord} placeholder value).
-   * Retries (spin-wait) on backpressure, matching what a real poll loop must do.
+   * sequential Event Bridge offsets as it goes (which of the two {@link OffsetCounter}s/{@code
+   * translator}s the caller passes in is what actually determines the Event Bridge source partition
+   * a batch belongs to in this test). Each record's own Zeebe origin {@code partitionId}/{@code
+   * position} — set by {@link #instance} — is left untouched here; {@link LakeTranslator}'s
+   * origin-position dedup gate reads those, not this method's Event Bridge offset. Retries
+   * (spin-wait) on backpressure, matching what a real poll loop must do.
    *
    * @return the last stamped offset (the batch's {@code lastProcessedOffset} for {@code
    *     onPollTick})
@@ -501,7 +527,9 @@ class SinkIntegrationTest {
       final long timestamp,
       final BpmnElementType elementType,
       final String elementId,
-      final ProcessInstanceIntent intent) {
+      final ProcessInstanceIntent intent,
+      final int zeebePartitionId,
+      final long position) {
     final ProcessInstanceRecordValue value =
         ImmutableProcessInstanceRecordValue.builder()
             .withBpmnProcessId(PROCESS_ID)
@@ -519,14 +547,22 @@ class SinkIntegrationTest {
             .withIntent(intent)
             .withKey(elementInstanceKey)
             .withTimestamp(timestamp)
+            .withPartitionId(zeebePartitionId)
+            .withPosition(position)
             .withValue(value)
             .build();
-    // partitionId/offset are placeholders: LakeTranslator never reads ZeebeRecord#partitionId(),
-    // and feed() replaces the offset with a real, sequential one as it stamps each record.
+    // The ZeebeRecord envelope's own partitionId/offset are placeholders here: feed() replaces the
+    // offset with a real, sequential Event Bridge offset as it stamps each record, and its
+    // partitionId is never read by LakeTranslator (only the wrapped Zeebe protocol record's own
+    // getPartitionId()/getPosition(), set above, feed the origin-position dedup gate).
     return new ZeebeRecord(TOPIC, 0, 0L, record);
   }
 
-  private static ZeebeRecord variableRecord(final long processInstanceKey, final long timestamp) {
+  private static ZeebeRecord variableRecord(
+      final long processInstanceKey,
+      final long timestamp,
+      final int zeebePartitionId,
+      final long position) {
     final VariableRecordValue value =
         ImmutableVariableRecordValue.builder()
             .withName("x")
@@ -544,6 +580,8 @@ class SinkIntegrationTest {
             .withIntent(VariableIntent.CREATED)
             .withKey(processInstanceKey)
             .withTimestamp(timestamp)
+            .withPartitionId(zeebePartitionId)
+            .withPosition(position)
             .withValue(value)
             .build();
     return new ZeebeRecord(TOPIC, 0, 0L, record);
