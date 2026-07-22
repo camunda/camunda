@@ -10,6 +10,7 @@ package io.camunda.analytics.lake.write;
 import io.camunda.analytics.lake.LakeConfig;
 import io.camunda.analytics.lake.model.ActivityRow;
 import io.camunda.analytics.lake.model.InstanceRow;
+import io.camunda.analytics.lake.sink.TableSchema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -42,6 +43,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.jdbc.JdbcCatalog;
 import org.apache.iceberg.mapping.MappingUtil;
 import org.apache.iceberg.mapping.NameMappingParser;
+import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.duckdb.DuckDBAppender;
 import org.duckdb.DuckDBConnection;
@@ -146,6 +148,13 @@ public final class IcebergLakeWriter implements LakeWriter {
    * class this guards against.
    */
   public static final String ZBPOS_PROPERTY_PREFIX = "lake.zbpos.z";
+
+  /**
+   * Table property carrying the declaration fingerprint a generated partials table was created
+   * under — the guard that stops rows produced under a changed declaration from silently merging
+   * with incompatible stored partials (see {@link #partialsTableOrCreate}).
+   */
+  public static final String FINGERPRINT_PROPERTY = "lake.decl.fingerprint";
 
   private static final String INSTANCES_STAGING_TABLE = "staging_instances";
   private static final String ACTIVITIES_STAGING_TABLE = "staging_activities";
@@ -254,6 +263,7 @@ public final class IcebergLakeWriter implements LakeWriter {
   private static final Logger LOG = LoggerFactory.getLogger(IcebergLakeWriter.class);
 
   private final JdbcCatalog catalog;
+  private final String jdbcUrl;
   private final Table instancesTable;
   private final Table activitiesTable;
   private final Connection duckdb;
@@ -282,13 +292,12 @@ public final class IcebergLakeWriter implements LakeWriter {
     // which is a small connection pool over java.sql.DriverManager — nothing custom needed for a
     // local H2 file database.
     catalog = new JdbcCatalog(properties -> new LocalFileIO(), null, true);
-    final String h2Url =
-        "jdbc:h2:file:" + config.warehouseDir().toAbsolutePath().resolve("catalog");
+    jdbcUrl = "jdbc:h2:file:" + config.warehouseDir().toAbsolutePath().resolve("catalog");
     final String warehouseLocation = warehouseFileUri(config.warehouseDir());
     catalog.initialize(
         "lake",
         Map.of(
-            CatalogProperties.URI, h2Url,
+            CatalogProperties.URI, jdbcUrl,
             CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation));
 
     final Namespace namespace = Namespace.of("lake");
@@ -338,6 +347,80 @@ public final class IcebergLakeWriter implements LakeWriter {
         Map.of(
             TableProperties.DEFAULT_NAME_MAPPING,
             NameMappingParser.toJson(MappingUtil.create(schema))));
+  }
+
+  /**
+   * Loads or creates a <em>generated partials</em> table (a {@code _metrics}/{@code _hist} table
+   * from {@code io.camunda.analytics.lake.metrics.CompiledEntityMetrics}): {@code days(...)}
+   * partitioned on the schema's familyDaySource column (the window slot), name-mapped like the raw
+   * tables, and stamped with the declaration fingerprint under {@value #FINGERPRINT_PROPERTY}.
+   *
+   * <p>On load, the stored fingerprint must equal {@code fingerprint} — a mismatch means rows
+   * produced under a different declaration live in this table, and folding on top of them would
+   * silently merge incompatible partials. This refuses loudly instead; the repair paths (rebuild
+   * under the new declaration, or freeze the old table alongside a new one) are deliberately an
+   * operator/upgrade concern, not something this writer improvises.
+   */
+  public Table partialsTableOrCreate(final TableSchema sinkSchema, final String fingerprint) {
+    final TableIdentifier identifier = TableIdentifier.of(Namespace.of("lake"), sinkSchema.table());
+    if (catalog.tableExists(identifier)) {
+      final Table existing = catalog.loadTable(identifier);
+      final String stored = existing.properties().get(FINGERPRINT_PROPERTY);
+      if (!fingerprint.equals(stored)) {
+        throw new IllegalStateException(
+            "Partials table "
+                + identifier
+                + " was written under declaration fingerprint "
+                + stored
+                + " but the current declaration hashes to "
+                + fingerprint
+                + " — refusing to fold incompatible partials into it. Rebuild the table under the"
+                + " new declaration (or keep the old one frozen) before starting.");
+      }
+      return existing;
+    }
+    final Schema schema = icebergSchemaOf(sinkSchema);
+    final String familyDayColumn = sinkSchema.columns().get(sinkSchema.familyDayColumn()).name();
+    return catalog.createTable(
+        identifier,
+        schema,
+        PartitionSpec.builderFor(schema).day(familyDayColumn).build(),
+        Map.of(
+            TableProperties.DEFAULT_NAME_MAPPING,
+            NameMappingParser.toJson(MappingUtil.create(schema)),
+            FINGERPRINT_PROPERTY,
+            fingerprint));
+  }
+
+  /**
+   * The Iceberg twin of a generated sink schema. Field ids are taken as-declared (sequential from
+   * 1); {@code createTable}'s fresh-id assignment walks the schema in order, so the created table's
+   * ids coincide with the declared ones — the same property the raw tables rely on.
+   */
+  private static Schema icebergSchemaOf(final TableSchema sinkSchema) {
+    final List<Types.NestedField> fields = new ArrayList<>(sinkSchema.columns().size());
+    for (final TableSchema.Column column : sinkSchema.columns()) {
+      final Type type =
+          switch (column.type()) {
+            case LONG ->
+                column.logicalType() == TableSchema.LogicalType.TIMESTAMPTZ
+                    ? Types.TimestampType.withZone()
+                    : Types.LongType.get();
+            case INT -> Types.IntegerType.get();
+            case STRING_DICT -> Types.StringType.get();
+            case BINARY -> Types.BinaryType.get();
+          };
+      fields.add(
+          column.nullable()
+              ? Types.NestedField.optional(column.icebergFieldId(), column.name(), type)
+              : Types.NestedField.required(column.icebergFieldId(), column.name(), type));
+    }
+    return new Schema(fields);
+  }
+
+  /** The catalog's own JDBC url — what {@code LakeCommitCoordinator} transacts against. */
+  public String jdbcUrl() {
+    return jdbcUrl;
   }
 
   /** {@code file:} URI form of a local directory, with any trailing slash stripped. */

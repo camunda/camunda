@@ -7,19 +7,26 @@
  */
 package io.camunda.analytics.lake;
 
+import io.camunda.analytics.lake.catalog.LakeCommitCoordinator;
+import io.camunda.analytics.lake.metrics.CompiledEntityMetrics;
+import io.camunda.analytics.lake.metrics.EntityMetrics;
+import io.camunda.analytics.lake.metrics.MetricsRider;
 import io.camunda.analytics.lake.sink.BackpressureGate;
 import io.camunda.analytics.lake.sink.BatchEncoder;
 import io.camunda.analytics.lake.sink.ColumnType;
+import io.camunda.analytics.lake.sink.DescriptorSink;
 import io.camunda.analytics.lake.sink.RowAppender;
+import io.camunda.analytics.lake.sink.SealRider;
 import io.camunda.analytics.lake.sink.Segment;
 import io.camunda.analytics.lake.sink.TableSchema;
+import io.camunda.analytics.lake.sink.algebra.Algebras;
 import io.camunda.analytics.lake.sink.batch.Interner;
 import io.camunda.analytics.lake.sink.batch.SegmentFactory;
 import io.camunda.analytics.lake.sink.batch.SegmentRowAppender;
 import io.camunda.analytics.lake.sink.batch.SegmentSorter;
 import io.camunda.analytics.lake.sink.encode.IcebergParquetEncoderFactory;
 import io.camunda.analytics.lake.sink.encode.LocalFileSink;
-import io.camunda.analytics.lake.sink.pipeline.DirectCommitSink;
+import io.camunda.analytics.lake.sink.pipeline.CoordinatedDescriptorSink;
 import io.camunda.analytics.lake.sink.pipeline.SinkConfig;
 import io.camunda.analytics.lake.sink.pipeline.SinkPipeline;
 import io.camunda.analytics.lake.state.RocksDbTranslatorState;
@@ -30,6 +37,7 @@ import io.camunda.analytics.lake.translate.RawTableSchemas;
 import io.camunda.analytics.lake.ui.LakeUiServer;
 import io.camunda.analytics.lake.write.IcebergLakeWriter;
 import io.camunda.analytics.lake.write.LakeCompactor;
+import io.camunda.analytics.lake.write.LocalFileIO;
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.RebalanceListener;
@@ -50,6 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.catalog.Namespace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,8 +75,8 @@ import org.slf4j.LoggerFactory;
  * <p>This app does <em>not</em> rely on the Event Bridge consumer-group protocol's own server-side
  * committed offset ({@link Consumer#commitOffset}) for correctness — the lake's snapshot summary is
  * the sole durable offset authority (see {@link IcebergLakeWriter#committedOffset(int)}, which
- * reads exactly the same {@code lake.offset.p*} property {@link DirectCommitSink} stamps). At
- * startup, and on every partition (re)assignment, this app explicitly {@link Consumer#seek}s to
+ * reads exactly the same {@code lake.offset.p*} property {@link CoordinatedDescriptorSink} stamps).
+ * At startup, and on every partition (re)assignment, this app explicitly {@link Consumer#seek}s to
  * {@code committedOffset(int) + 1}. The coordinator is used only for group membership and partition
  * assignment, never for resume position. As a second, cheap line of defense, every polled record is
  * also checked against a locally cached committed offset before being processed — belt and braces,
@@ -81,11 +90,11 @@ import org.slf4j.LoggerFactory;
  * — but its buffered {@code append}/{@code flush} raw-ingest path is never called from this class
  * anymore. Instead, each owned partition gets its own {@link SinkPipeline} pair, fed directly by
  * {@link LakeTranslator} through a {@link RowAppender}, flushed on its own schedule by its own
- * flush thread, and committed straight to the {@code instances}/{@code activities} {@link Table}s
- * via one shared {@link DirectCommitSink} per table (shared because {@link DirectCommitSink#accept}
- * holds that table's own commit mutex — see {@link IcebergLakeWriter#commitLock(Table)} — so
- * multiple partitions' flush threads, and {@link LakeCompactor}'s own poll-thread commits, never
- * race committing to the same table).
+ * flush thread, and committed to the {@code instances}/{@code activities} {@link Table}s (plus the
+ * rider-derived partials tables) via one shared {@link CoordinatedDescriptorSink} — every
+ * descriptor becomes one atomic catalog transaction through {@link LakeCommitCoordinator}, whose
+ * database row locks serialize concurrent committers (multiple partitions' flush threads, and
+ * {@link LakeCompactor}'s own poll-thread commits).
  */
 public final class LakePocApp {
 
@@ -255,6 +264,7 @@ public final class LakePocApp {
         running,
         stateSnapshotDumper,
         compactor,
+        wiring.coordinator(),
         config.stateDumpIntervalMs(),
         config.compactIntervalMs());
   }
@@ -264,6 +274,22 @@ public final class LakePocApp {
       final LakeConfig config, final IcebergLakeWriter writer) {
     final Table instancesTable = writer.instancesTable();
     final Table activitiesTable = writer.activitiesTable();
+    final TableSchema activitiesSchema = RawTableSchemas.activities(activitiesTable.schema());
+
+    // The activities metrics declaration -- dims, window, measures; everything downstream
+    // (partials schemas, tables, rider plans, merge/finalize SQL, fingerprint) derives from it.
+    final CompiledEntityMetrics activityMetrics =
+        EntityMetrics.declare("activities", activitiesSchema)
+            .dims("process_id", "element_id")
+            .window(Duration.ofMinutes(1), "ended_at")
+            .measure("duration_ms", Algebras.scalarStats(), Algebras.expHistogram(3))
+            .build();
+    final Table metricsTable =
+        writer.partialsTableOrCreate(
+            activityMetrics.metricsSchema(), activityMetrics.fingerprint());
+    final Table histTable =
+        writer.partialsTableOrCreate(activityMetrics.histSchema(), activityMetrics.fingerprint());
+
     // Mirrors the "<table.location()>/data/<fileName>" convention IcebergLakeWriter's own legacy
     // path uses -- see LocalFileSink's javadoc.
     final LocalFileSink fileSink = new LocalFileSink(config.warehouseDir().resolve("lake"));
@@ -276,13 +302,44 @@ public final class LakePocApp {
             fileSink,
             SEGMENT_ROWS,
             Set.of("instance_key", "element_key"));
+    // The rider's one factory dispatches by generated-schema table name -- each partials table has
+    // its own iceberg schema and thus its own underlying encoder factory.
+    final Map<String, BatchEncoder.Factory> partialsFactories =
+        Map.of(
+            activityMetrics.metricsSchema().table(),
+            new IcebergParquetEncoderFactory(
+                metricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
+            activityMetrics.histSchema().table(),
+            new IcebergParquetEncoderFactory(histTable.schema(), fileSink, SEGMENT_ROWS, Set.of()));
+    final BatchEncoder.Factory partialsEncoderFactory =
+        (schema, epochDay) -> partialsFactories.get(schema.table()).newFile(schema, epochDay);
+
+    // Every pipeline commits through the one coordinator: raw-only descriptors are a batch of one,
+    // rider-carrying descriptors fan out atomically -- a single commit path either way.
+    final LakeCommitCoordinator coordinator = new LakeCommitCoordinator(writer.jdbcUrl(), "lake");
+    final Map<String, Table> tablesByName =
+        Map.of(
+            "instances",
+            instancesTable,
+            "activities",
+            activitiesTable,
+            activityMetrics.metricsSchema().table(),
+            metricsTable,
+            activityMetrics.histSchema().table(),
+            histTable);
+    final CoordinatedDescriptorSink commitSink =
+        new CoordinatedDescriptorSink(coordinator, Namespace.of("lake"), tablesByName::get);
+
     return new SinkWiring(
         RawTableSchemas.instances(instancesTable.schema()),
-        RawTableSchemas.activities(activitiesTable.schema()),
+        activitiesSchema,
         instancesEncoderFactory,
         activitiesEncoderFactory,
-        new DirectCommitSink(instancesTable, writer.commitLock(instancesTable)),
-        new DirectCommitSink(activitiesTable, writer.commitLock(activitiesTable)),
+        commitSink,
+        commitSink,
+        activityMetrics,
+        partialsEncoderFactory,
+        coordinator,
         config.flushIntervalMs(),
         new SimpleMeterRegistry());
   }
@@ -295,6 +352,7 @@ public final class LakePocApp {
       final AtomicBoolean running,
       final StateSnapshotDumper stateSnapshotDumper,
       final LakeCompactor compactor,
+      final LakeCommitCoordinator coordinator,
       final long stateDumpIntervalMs,
       final long compactIntervalMs) {
     // Single-threaded: only this loop mutates these, so plain HashMaps (not the ConcurrentHashMaps
@@ -362,6 +420,14 @@ public final class LakePocApp {
       if (compactIntervalMs > 0
           && System.currentTimeMillis() - lastCompactAtMs >= compactIntervalMs) {
         LOG.info("Compaction result: {}", compactor.compactIfNeeded());
+        // Same housekeeping cadence: delete files whose intent was journaled by the coordinator
+        // (lost commit races, redelivered descriptors) -- see LakeCommitCoordinator's javadoc.
+        try (final LocalFileIO io = new LocalFileIO()) {
+          final int swept = coordinator.sweepPendingDeletes(io);
+          if (swept > 0) {
+            LOG.info("Swept {} orphaned files queued by the commit coordinator", swept);
+          }
+        }
         lastCompactAtMs = System.currentTimeMillis();
       }
     }
@@ -467,8 +533,11 @@ public final class LakePocApp {
             gate,
             wiring.instancesEncoderFactory(),
             wiring.instancesSink(),
+            List.of(),
             wiring.flushIntervalMs(),
             wiring.meterRegistry());
+    // The rider is per-pipeline state (accumulators keyed by this partition's flush windows), so
+    // each partition gets its own instance -- unlike the commit sink, which is shared.
     final SinkPipeline activitiesPipeline =
         newPipeline(
             wiring.activitiesSchema(),
@@ -476,6 +545,9 @@ public final class LakePocApp {
             gate,
             wiring.activitiesEncoderFactory(),
             wiring.activitiesSink(),
+            List.of(
+                new MetricsRider(
+                    wiring.activityMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS)),
             wiring.flushIntervalMs(),
             wiring.meterRegistry());
     final RowAppender instanceAppender = new SegmentRowAppender(instancesPipeline.ring());
@@ -489,7 +561,8 @@ public final class LakePocApp {
       final int partition,
       final BackpressureGate gate,
       final BatchEncoder.Factory encoderFactory,
-      final DirectCommitSink descriptorSink,
+      final DescriptorSink descriptorSink,
+      final List<SealRider> riders,
       final long flushIntervalMs,
       final MeterRegistry meterRegistry) {
     final int[] binaryAvgBytesPerRow = new int[schema.columns().size()];
@@ -519,7 +592,7 @@ public final class LakePocApp {
         sorter::sort,
         encoderFactory,
         descriptorSink,
-        List.of(),
+        riders,
         System::currentTimeMillis,
         meterRegistry);
   }
@@ -542,8 +615,9 @@ public final class LakePocApp {
 
   /**
    * Per-table plumbing shared by every partition's {@link SinkPipeline} pair: the {@link
-   * TableSchema}s (field ids resolved once from the live catalog), the encoder factories and {@link
-   * DirectCommitSink}s (both safely shared across partitions — see their own javadocs), the
+   * TableSchema}s (field ids resolved once from the live catalog), the encoder factories and the
+   * shared {@link CoordinatedDescriptorSink} (safe across partitions — see its javadoc), the
+   * activities metrics declaration each partition builds its own {@link MetricsRider} from, the
    * configured flush interval, and the {@link MeterRegistry} every pipeline's metrics register
    * into.
    */
@@ -552,8 +626,11 @@ public final class LakePocApp {
       TableSchema activitiesSchema,
       IcebergParquetEncoderFactory instancesEncoderFactory,
       IcebergParquetEncoderFactory activitiesEncoderFactory,
-      DirectCommitSink instancesSink,
-      DirectCommitSink activitiesSink,
+      DescriptorSink instancesSink,
+      DescriptorSink activitiesSink,
+      CompiledEntityMetrics activityMetrics,
+      BatchEncoder.Factory partialsEncoderFactory,
+      LakeCommitCoordinator coordinator,
       long flushIntervalMs,
       MeterRegistry meterRegistry) {}
 
