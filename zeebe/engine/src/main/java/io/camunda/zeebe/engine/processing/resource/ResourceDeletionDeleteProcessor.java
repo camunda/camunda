@@ -643,7 +643,7 @@ public class ResourceDeletionDeleteProcessor
       return AuthorizedTenants.ANONYMOUS;
     }
     if (!securityConfig.isMultiTenancyChecksEnabled()) {
-      return AuthorizedTenants.ANONYMOUS;
+      return AuthorizedTenants.DEFAULT_TENANTS;
     }
     if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
         && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
