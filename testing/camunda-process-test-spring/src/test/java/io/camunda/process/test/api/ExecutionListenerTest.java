@@ -432,7 +432,7 @@ public class ExecutionListenerTest {
     // given
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         new CamundaProcessTestRuntimeConfiguration();
-    runtimeConfiguration.setDataDeletionEnabled(false);
+    runtimeConfiguration.setDataDeletionMode(DataDeletionMode.NONE);
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(runtimeConfiguration);
 

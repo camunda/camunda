@@ -18,6 +18,7 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -32,9 +33,12 @@ import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import java.lang.reflect.Method;
+import java.util.function.Consumer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -47,13 +51,22 @@ class TestDeploymentServiceTest {
   @Mock private CamundaFuture<DeploymentEvent> future;
   @Mock private DeploymentEvent deploymentEvent;
 
-  private final TestDeploymentService service = new TestDeploymentService();
+  @Mock private Consumer<DeploymentEvent> deploymentCallback;
+  @Captor private ArgumentCaptor<DeploymentEvent> deploymentCaptor;
+
+  private TestDeploymentService service;
+
+  @BeforeEach
+  public void setup() {
+    service = new TestDeploymentService(deploymentCallback);
+  }
 
   private void stubSuccessfulChain() {
     when(client.newDeployResourceCommand()).thenReturn(step1);
     when(step1.addResourceFromClasspath(anyString())).thenReturn(step2);
     when(step2.send()).thenReturn(future);
     when(future.join()).thenReturn(deploymentEvent);
+    lenient().when(deploymentEvent.getKey()).thenReturn(123L);
   }
 
   @Test
@@ -196,6 +209,21 @@ class TestDeploymentServiceTest {
     verify(step2, times(2)).addResourceFromClasspath(resources.capture());
     assertThat(resources.getAllValues())
         .containsExactly("coverage/process.bpmn", "decisions/decision.dmn", "forms/form.form");
+  }
+
+  @Test
+  void shouldInvokeDeploymentCallback() throws Exception {
+    // given
+    stubSuccessfulChain();
+    final Method method =
+        TestClassWithMethodAnnotation.class.getDeclaredMethod("testMethodWithDeployment");
+
+    // when
+    service.deployTestResources(method, TestClassWithMethodAnnotation.class, client);
+
+    // then
+    verify(deploymentCallback).accept(deploymentCaptor.capture());
+    assertThat(deploymentCaptor.getValue()).isEqualTo(deploymentEvent);
   }
 
   // Helper test classes

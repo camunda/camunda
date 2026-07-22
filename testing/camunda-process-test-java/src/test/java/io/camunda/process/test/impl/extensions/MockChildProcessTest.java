@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -70,6 +71,10 @@ public class MockChildProcessTest {
 
   @Captor private ArgumentCaptor<BpmnModelInstance> processModelCaptor;
 
+  @Mock private DeploymentEvent deploymentEvent;
+  @Mock private Consumer<DeploymentEvent> deploymentCallback;
+  @Captor private ArgumentCaptor<DeploymentEvent> deploymentCaptor;
+
   private CamundaProcessTestContext processTestContext;
 
   @BeforeEach
@@ -83,6 +88,7 @@ public class MockChildProcessTest {
         new CamundaProcessTestContextImpl(
             camundaProcessTestRuntime,
             clientCreationCallback,
+            deploymentCallback,
             clockClient,
             DevAwaitBehavior::expectSuccess,
             jsonMapper,
@@ -185,5 +191,19 @@ public class MockChildProcessTest {
     // and the worker for the variable supplier is opened
     verify(camundaClient.newWorker().jobType("variableSupplier_" + CHILD_PROCESS_ID).handler(any()))
         .open();
+  }
+
+  @Test
+  void shouldInvokeDeploymentCallback() {
+    // given
+    when(camundaClient.newDeployResourceCommand().addProcessModel(any(), any()).send().join())
+        .thenReturn(deploymentEvent);
+
+    // when
+    processTestContext.mockChildProcess(CHILD_PROCESS_ID);
+
+    // then
+    verify(deploymentCallback).accept(deploymentCaptor.capture());
+    assertThat(deploymentCaptor.getValue()).isEqualTo(deploymentEvent);
   }
 }

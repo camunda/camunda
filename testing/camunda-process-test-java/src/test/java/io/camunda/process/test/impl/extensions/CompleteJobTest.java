@@ -33,6 +33,7 @@ import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJ
 import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.response.CompleteJobResponse;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.filter.JobFilter;
@@ -77,6 +78,7 @@ public class CompleteJobTest {
 
   @Mock private CamundaProcessTestRuntime camundaProcessTestRuntime;
   @Mock private Consumer<AutoCloseable> clientCreationCallback;
+  @Mock private Consumer<DeploymentEvent> deploymentCallback;
   @Mock private CamundaClockClient clockClient;
   @Mock private JsonMapper jsonMapper;
 
@@ -120,6 +122,7 @@ public class CompleteJobTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
@@ -256,6 +259,7 @@ public class CompleteJobTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectFailure,
               jsonMapper,
@@ -347,6 +351,7 @@ public class CompleteJobTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
@@ -498,6 +503,7 @@ public class CompleteJobTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
@@ -631,6 +637,7 @@ public class CompleteJobTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,
@@ -812,6 +819,7 @@ public class CompleteJobTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectFailure,
               jsonMapper,
@@ -933,6 +941,7 @@ public class CompleteJobTest {
           new CamundaProcessTestContextImpl(
               camundaProcessTestRuntime,
               clientCreationCallback,
+              deploymentCallback,
               clockClient,
               DevAwaitBehavior::expectSuccess,
               jsonMapper,

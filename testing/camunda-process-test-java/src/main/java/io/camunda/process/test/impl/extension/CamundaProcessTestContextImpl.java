@@ -23,6 +23,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.JobKind;
@@ -118,6 +119,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final URI connectorsRestApiAddress;
   private final CamundaClientBuilderFactory camundaClientBuilderFactory;
   private final Consumer<AutoCloseable> clientCreationCallback;
+  private final Consumer<DeploymentEvent> deploymentCallback;
+
   private final CamundaClockClient clockClient;
 
   private final JsonMapper jsonMapper;
@@ -129,6 +132,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
+      final Consumer<DeploymentEvent> deploymentCallback,
       final CamundaClockClient clockClient,
       final Supplier<CamundaAssertAwaitBehavior> awaitBehaviorSupplier,
       final JsonMapper jsonMapper,
@@ -140,6 +144,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
     connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();
     this.clientCreationCallback = clientCreationCallback;
+    this.deploymentCallback = deploymentCallback;
     this.clockClient = clockClient;
     this.awaitBehaviorSupplier = awaitBehaviorSupplier;
     this.jsonMapper = jsonMapper;
@@ -233,7 +238,9 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         "Mock: Deploy a child process '{}' with result variables {}", childProcessId, variables);
 
     final String resourceName = childProcessId + ".bpmn";
-    client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+    final DeploymentEvent deploymentEvent =
+        client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+    deploymentCallback.accept(deploymentEvent);
   }
 
   @Override
@@ -253,7 +260,13 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     try (final CamundaClient client = createClient()) {
       final String resourceName = childProcessId + ".bpmn";
-      client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+      final DeploymentEvent deploymentEvent =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(processModel, resourceName)
+              .send()
+              .join();
+      deploymentCallback.accept(deploymentEvent);
     }
 
     mockJobWorker(variableSupplierJobType)
@@ -539,12 +552,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         decisionOutput);
 
     final String resourceName = decisionId + ".dmn";
-    client
-        .newDeployResourceCommand()
-        .addResourceStream(
-            new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()), resourceName)
-        .send()
-        .join();
+    final DeploymentEvent deploymentEvent =
+        client
+            .newDeployResourceCommand()
+            .addResourceStream(
+                new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()),
+                resourceName)
+            .send()
+            .join();
+    deploymentCallback.accept(deploymentEvent);
   }
 
   @Override
@@ -645,37 +661,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     setVariablesOnElementInstance(processInstanceSelector, elementSelector, variables, true);
   }
 
-  private void setVariablesOnElementInstance(
-      final ProcessInstanceSelector processInstanceSelector,
-      final ElementSelector elementSelector,
-      final Map<String, Object> variables,
-      final boolean local) {
-    final CamundaClient client = createClient();
-
-    awaitProcessInstance(
-        processInstanceSelector,
-        pi ->
-            awaitElementInstance(
-                pi.getProcessInstanceKey(),
-                elementSelector,
-                ei -> {
-                  LOGGER.debug(
-                      "{} variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
-                      local ? "Create local" : "Update local",
-                      elementSelector.describe(),
-                      ei.getElementInstanceKey(),
-                      pi.getProcessInstanceKey(),
-                      variables);
-
-                  client
-                      .newSetVariablesCommand(ei.getElementInstanceKey())
-                      .variables(variables)
-                      .local(local)
-                      .send()
-                      .join();
-                }));
-  }
-
   @Override
   public void completeJobOfUserTaskListener(
       final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
@@ -706,6 +691,37 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public ConditionalBehaviorBuilder when(final BehaviorCondition condition) {
     return conditionalBehaviorEngine.when(condition);
+  }
+
+  private void setVariablesOnElementInstance(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables,
+      final boolean local) {
+    final CamundaClient client = createClient();
+
+    awaitProcessInstance(
+        processInstanceSelector,
+        pi ->
+            awaitElementInstance(
+                pi.getProcessInstanceKey(),
+                elementSelector,
+                ei -> {
+                  LOGGER.debug(
+                      "{} variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
+                      local ? "Create local" : "Update local",
+                      elementSelector.describe(),
+                      ei.getElementInstanceKey(),
+                      pi.getProcessInstanceKey(),
+                      variables);
+
+                  client
+                      .newSetVariablesCommand(ei.getElementInstanceKey())
+                      .variables(variables)
+                      .local(local)
+                      .send()
+                      .join();
+                }));
   }
 
   // completing the job inside the await block to handle the eventual consistency of the API

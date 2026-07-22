@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.api.DataDeletionMode;
 import io.camunda.process.test.impl.runtime.properties.AssertionProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
@@ -61,7 +62,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
     assertThat(propertiesUtil.getRemoteRuntimeConnectionTimeout()).isEqualTo(Duration.ofMinutes(1));
     assertThat(propertiesUtil.isClockResetEnabled()).isTrue();
-    assertThat(propertiesUtil.isDataDeletionEnabled()).isTrue();
+    assertThat(propertiesUtil.getDataDeletionMode()).isEqualTo(DataDeletionMode.CLUSTER_PURGE);
   }
 
   @Test
@@ -374,7 +375,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
       assertThat(propertiesUtil.isMultiTenancyEnabled()).isTrue();
       assertThat(propertiesUtil.isClockResetEnabled()).isFalse();
-      assertThat(propertiesUtil.isDataDeletionEnabled()).isFalse();
+      assertThat(propertiesUtil.getDataDeletionMode()).isEqualTo(DataDeletionMode.NONE);
 
       final CoverageReportProperties coverageReportProperties =
           propertiesUtil.getCoverageReportProperties();
