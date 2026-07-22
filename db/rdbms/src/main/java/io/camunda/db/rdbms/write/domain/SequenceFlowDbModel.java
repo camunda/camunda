@@ -11,51 +11,40 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public final class SequenceFlowDbModel implements DbModel<SequenceFlowDbModel> {
+public record SequenceFlowDbModel(
+    String flowNodeId,
+    Long processInstanceKey,
+    Long rootProcessInstanceKey,
+    Long processDefinitionKey,
+    String processDefinitionId,
+    String tenantId,
+    int partitionId)
+    implements DbModel<SequenceFlowDbModel> {
 
   private static final String ID_PATTERN = "%s_%s";
-  private String flowNodeId;
-  private Long processInstanceKey;
-  private Long rootProcessInstanceKey;
-  private Long processDefinitionKey;
-  private String processDefinitionId;
-  private String tenantId;
-  private int partitionId;
+
+  // Used by the search resultMap, which never returns PARTITION_ID (write-only, insert-only
+  // column) -- mirrors the previous no-arg-constructor-plus-setters behavior where an unset int
+  // field defaulted to 0.
+  public SequenceFlowDbModel(
+      final String flowNodeId,
+      final Long processInstanceKey,
+      final Long rootProcessInstanceKey,
+      final Long processDefinitionKey,
+      final String processDefinitionId,
+      final String tenantId) {
+    this(
+        flowNodeId,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionKey,
+        processDefinitionId,
+        tenantId,
+        0);
+  }
 
   public String sequenceFlowId() {
     return ID_PATTERN.formatted(processInstanceKey, flowNodeId);
-  }
-
-  public void flowNodeId(final String flowNodeId) {
-    this.flowNodeId = flowNodeId;
-  }
-
-  public void processInstanceKey(final Long processInstanceKey) {
-    this.processInstanceKey = processInstanceKey;
-  }
-
-  public void rootProcessInstanceKey(final Long rootProcessInstanceKey) {
-    this.rootProcessInstanceKey = rootProcessInstanceKey;
-  }
-
-  public void processDefinitionKey(final Long processDefinitionKey) {
-    this.processDefinitionKey = processDefinitionKey;
-  }
-
-  public void processDefinitionId(final String processDefinitionId) {
-    this.processDefinitionId = processDefinitionId;
-  }
-
-  public void tenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  public int partitionId() {
-    return partitionId;
-  }
-
-  public void partitionId(final int partitionId) {
-    this.partitionId = partitionId;
   }
 
   @Override
@@ -74,30 +63,8 @@ public final class SequenceFlowDbModel implements DbModel<SequenceFlowDbModel> {
         .build();
   }
 
-  public String flowNodeId() {
-    return flowNodeId;
-  }
-
-  public Long processInstanceKey() {
-    return processInstanceKey;
-  }
-
-  public Long rootProcessInstanceKey() {
-    return rootProcessInstanceKey;
-  }
-
-  public Long processDefinitionKey() {
-    return processDefinitionKey;
-  }
-
-  public String processDefinitionId() {
-    return processDefinitionId;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
+  // partitionId is broker-partition metadata, not part of this entity's identity -- two
+  // otherwise-identical flow records must remain equal regardless of which partition wrote them.
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -124,18 +91,6 @@ public final class SequenceFlowDbModel implements DbModel<SequenceFlowDbModel> {
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public String toString() {
-    return "SequenceFlowDbModel[flowNodeId=%s, processInstanceKey=%d, rootProcessInstanceKey=%d, processDefinitionKey=%d, processDefinitionId=%s, tenantId=%s]"
-        .formatted(
-            flowNodeId,
-            processInstanceKey,
-            rootProcessInstanceKey,
-            processDefinitionKey,
-            processDefinitionId,
-            tenantId);
   }
 
   public static class Builder implements ObjectBuilder<SequenceFlowDbModel> {
@@ -185,15 +140,14 @@ public final class SequenceFlowDbModel implements DbModel<SequenceFlowDbModel> {
 
     @Override
     public SequenceFlowDbModel build() {
-      final var dbModel = new SequenceFlowDbModel();
-      dbModel.flowNodeId(flowNodeId);
-      dbModel.processInstanceKey(processInstanceKey);
-      dbModel.rootProcessInstanceKey(rootProcessInstanceKey);
-      dbModel.processDefinitionKey(processDefinitionKey);
-      dbModel.processDefinitionId(processDefinitionId);
-      dbModel.tenantId(tenantId);
-      dbModel.partitionId(partitionId);
-      return dbModel;
+      return new SequenceFlowDbModel(
+          flowNodeId,
+          processInstanceKey,
+          rootProcessInstanceKey,
+          processDefinitionKey,
+          processDefinitionId,
+          tenantId,
+          partitionId);
     }
   }
 }
