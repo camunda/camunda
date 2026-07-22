@@ -14,69 +14,170 @@ import os from 'node:os';
 
 const execAsync = promisify(exec);
 
-// The Operate spec and the API spec both drive this same isolated stack
-// (same project name, same host ports) and can be scheduled concurrently in
-// different Playwright workers/projects. mkdirSync is atomic, so this acts
-// as a cross-process mutex: only one caller can be mid-lifecycle
-// (start...stop) at a time; a second caller blocks in startIsolatedEnvironmentWaitStatesOff()
-// until the first one's stopIsolatedEnvironment() releases the lock.
-const LOCK_DIR = path.join(os.tmpdir(), 'waitstates-isolated.lock');
-const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
-const LOCK_RETRY_MS = 1_000;
-
-async function acquireLock(): Promise<void> {
-  const start = Date.now();
-  for (;;) {
-    try {
-      mkdirSync(LOCK_DIR);
-      return;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
-        throw error;
-      }
-      if (Date.now() - start > LOCK_TIMEOUT_MS) {
-        throw new Error(
-          `Timed out after ${LOCK_TIMEOUT_MS}ms waiting for the wait-states isolated-stack lock (${LOCK_DIR})`,
-        );
-      }
-      await new Promise((resolve) => setTimeout(resolve, LOCK_RETRY_MS));
-    }
-  }
-}
-
-function releaseLock(): void {
-  rmSync(LOCK_DIR, {recursive: true, force: true});
-}
-
+// Resolved against the CWD Playwright is invoked from (the suite's project
+// root), matching how other specs in this repo reference relative paths
+// (e.g. deployWithSubstitutions('./resources/*.bpmn')).
 const CONFIG_DIR = path.resolve(process.cwd(), 'config');
-const COMPOSE_FILES = [
+
+// Merging docker-compose.yml pulls in the shared `camunda` service's
+// `depends_on: [${DATABASE}]`, which Compose validates even though we only
+// target the isolated services. DATABASE just needs any valid value to
+// satisfy that validation; the isolated services don't use it themselves.
+const COMPOSE_ENV = {
+  ...process.env,
+  DATABASE: process.env.DATABASE ?? 'elasticsearch',
+};
+
+function composeCommand(
+  composeFiles: string[],
+  projectName: string,
+  args: string[],
+): string {
+  return [
+    'docker compose',
+    ...composeFiles,
+    '-p',
+    projectName,
+    ...args,
+  ].join(' ');
+}
+
+// ---------------------------------------------------------------------------
+// Analytics-exporter isolated environment
+// ---------------------------------------------------------------------------
+
+const ANALYTICS_COMPOSE_FILES = [
+  '-f',
+  'docker-compose.yml',
+  '-f',
+  'docker-compose.analytics-isolated.yml',
+];
+const ANALYTICS_PROJECT_NAME = 'analytics-isolated';
+
+/**
+ * Brings up the isolated environment with the exporter NOT configured at
+ * all (N1: proving it's disabled by default). Intentionally isolated from
+ * the shared, long-running stack every other test depends on — see
+ * config/docker-compose.analytics-isolated.yml.
+ */
+export async function startIsolatedEnvironmentWithoutExporter(): Promise<void> {
+  await execAsync(
+    composeCommand(ANALYTICS_COMPOSE_FILES, ANALYTICS_PROJECT_NAME, [
+      'up',
+      '-d',
+      '--no-deps',
+      'camunda-analytics-isolated',
+      'otel-collector-isolated',
+      'loki-isolated',
+      'prometheus-isolated',
+    ]),
+    {cwd: CONFIG_DIR, env: COMPOSE_ENV},
+  );
+}
+
+/**
+ * Brings up the isolated environment with the exporter enabled (P7: counter
+ * vs. raw-event-count parity) — a separate camunda variant from the one
+ * above, on the same host ports; only one is ever started at a time. See
+ * config/docker-compose.analytics-isolated.yml.
+ */
+export async function startIsolatedEnvironmentWithExporter(): Promise<void> {
+  await execAsync(
+    composeCommand(ANALYTICS_COMPOSE_FILES, ANALYTICS_PROJECT_NAME, [
+      'up',
+      '-d',
+      '--no-deps',
+      'camunda-analytics-isolated-exporter',
+      'otel-collector-isolated',
+      'loki-isolated',
+      'prometheus-isolated',
+    ]),
+    {cwd: CONFIG_DIR, env: COMPOSE_ENV},
+  );
+}
+
+/** Tears down the analytics-exporter isolated environment (whichever camunda variant is running). Safe to call even if it was never started. */
+export async function stopIsolatedEnvironment(): Promise<void> {
+  await execAsync(
+    composeCommand(ANALYTICS_COMPOSE_FILES, ANALYTICS_PROJECT_NAME, [
+      'down',
+      '-v',
+    ]),
+    {cwd: CONFIG_DIR, env: COMPOSE_ENV},
+  );
+}
+
+/** Fetches recent logs from a service in the analytics-exporter isolated environment, for assertions/debugging. */
+export async function getIsolatedServiceLogs(
+  serviceName: string,
+): Promise<string> {
+  const {stdout, stderr} = await execAsync(
+    composeCommand(ANALYTICS_COMPOSE_FILES, ANALYTICS_PROJECT_NAME, [
+      'logs',
+      '--no-color',
+      serviceName,
+    ]),
+    {cwd: CONFIG_DIR, env: COMPOSE_ENV},
+  );
+  return stdout + stderr;
+}
+
+// ---------------------------------------------------------------------------
+// Operate wait-states isolated environment
+// ---------------------------------------------------------------------------
+
+const WAITSTATES_COMPOSE_FILES = [
   '-f',
   'docker-compose.yml',
   '-f',
   'docker-compose.waitstates-isolated.yml',
 ];
-const PROJECT_NAME = 'waitstates-isolated';
+const WAITSTATES_PROJECT_NAME = 'waitstates-isolated';
 
-// Merging docker-compose.yml pulls in the shared `camunda` service's
-// `depends_on: [${DATABASE}]`, which Compose validates even though we only
-// target the isolated services. DATABASE must be a literal service name
-// (postgres/elasticsearch/opensearch) — forwarding process.env.DATABASE
-// verbatim breaks when it's e.g. "RDBMS", so hardcode a valid one.
-const COMPOSE_ENV = {
-  ...process.env,
-  DATABASE: 'elasticsearch',
-};
+// The Operate spec and the API spec both drive this same isolated stack
+// (same project name, same host ports) and can be scheduled concurrently in
+// different Playwright workers/projects. mkdirSync is atomic, so this acts
+// as a cross-process mutex: only one caller can be mid-lifecycle
+// (start...stop) at a time; a second caller blocks in
+// startIsolatedEnvironmentWaitStatesOff() until the first one's
+// stopIsolatedEnvironmentWaitStates() releases the lock.
+const WAITSTATES_LOCK_DIR = path.join(
+  os.tmpdir(),
+  'waitstates-isolated.lock',
+);
+const WAITSTATES_LOCK_TIMEOUT_MS = 5 * 60 * 1000;
+const WAITSTATES_LOCK_RETRY_MS = 1_000;
 
-function composeCommand(args: string[]): string {
-  return ['docker compose', ...COMPOSE_FILES, '-p', PROJECT_NAME, ...args].join(
-    ' ',
-  );
+async function acquireWaitStatesLock(): Promise<void> {
+  const start = Date.now();
+  for (;;) {
+    try {
+      mkdirSync(WAITSTATES_LOCK_DIR);
+      return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+        throw error;
+      }
+      if (Date.now() - start > WAITSTATES_LOCK_TIMEOUT_MS) {
+        throw new Error(
+          `Timed out after ${WAITSTATES_LOCK_TIMEOUT_MS}ms waiting for the wait-states isolated-stack lock (${WAITSTATES_LOCK_DIR})`,
+        );
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, WAITSTATES_LOCK_RETRY_MS),
+      );
+    }
+  }
+}
+
+function releaseWaitStatesLock(): void {
+  rmSync(WAITSTATES_LOCK_DIR, {recursive: true, force: true});
 }
 
 export async function startIsolatedEnvironmentWaitStatesOff(): Promise<void> {
-  await acquireLock();
+  await acquireWaitStatesLock();
   await execAsync(
-    composeCommand([
+    composeCommand(WAITSTATES_COMPOSE_FILES, WAITSTATES_PROJECT_NAME, [
       'up',
       '-d',
       '--no-deps',
@@ -88,13 +189,16 @@ export async function startIsolatedEnvironmentWaitStatesOff(): Promise<void> {
 }
 
 /** Tears down the isolated wait-states environment and releases the lock. Safe to call even if it was never started. */
-export async function stopIsolatedEnvironment(): Promise<void> {
+export async function stopIsolatedEnvironmentWaitStates(): Promise<void> {
   try {
-    await execAsync(composeCommand(['down', '-v']), {
-      cwd: CONFIG_DIR,
-      env: COMPOSE_ENV,
-    });
+    await execAsync(
+      composeCommand(WAITSTATES_COMPOSE_FILES, WAITSTATES_PROJECT_NAME, [
+        'down',
+        '-v',
+      ]),
+      {cwd: CONFIG_DIR, env: COMPOSE_ENV},
+    );
   } finally {
-    releaseLock();
+    releaseWaitStatesLock();
   }
 }

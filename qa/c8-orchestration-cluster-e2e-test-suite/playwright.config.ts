@@ -71,6 +71,7 @@ const apiTestIgnore = [
   'tests/api/v2/audit-log/*.spec.ts',
   'tests/api/v2/job/job-statistics-*.spec.ts',
   'tests/api/v2/optimize/**/*.spec.ts',
+  'tests/api/v2/analytics-exporter/**/*.spec.ts',
 ];
 // Projects
 const normalProjects = [
@@ -186,6 +187,20 @@ const normalProjects = [
     use: {
       ...devices['Desktop Chrome'],
     },
+  },
+  {
+    // Analytics exporter scenarios that can't share the main stack's
+    // long-running `camunda` container — N1 (disabled by default) and P7
+    // (counter/raw-count parity) — each run against their own standalone,
+    // throwaway broker variant. See config/docker-compose.analytics-isolated.yml
+    // and utils/dockerComposeControl.ts. Kept as its own single-worker
+    // project so specs never run concurrently with each other and each
+    // test's container lifecycle stays isolated from every other project.
+    name: 'analytics-exporter-isolated',
+    testMatch: ['tests/api/v2/analytics-exporter/analytics-exporter-isolated/*.spec.ts'],
+    use: devices['Desktop Chrome'],
+    workers: 1,
+    fullyParallel: false,
   },
 ];
 

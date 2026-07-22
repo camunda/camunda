@@ -13,7 +13,7 @@ import {encode} from 'utils/http';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {
   startIsolatedEnvironmentWaitStatesOff,
-  stopIsolatedEnvironment,
+  stopIsolatedEnvironmentWaitStates,
 } from 'utils/dockerComposeControl';
 
 const ISOLATED_BASE_URL =
@@ -40,7 +40,7 @@ test.describe.serial('Wait States Flag Off', () => {
   });
 
   test.afterAll(async () => {
-    await stopIsolatedEnvironment();
+    await stopIsolatedEnvironmentWaitStates();
   });
 
   test.afterEach(async ({page}, testInfo) => {

@@ -214,6 +214,26 @@ jobs:
           npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
+      # N1 (analytics exporter disabled by default) and P7 (counter/raw-count
+      # parity) each manage their own standalone, throwaway broker/collector/
+      # Loki/Prometheus via utils/dockerComposeControl.ts — separate from the
+      # shared stack started above, so they run as their own project rather
+      # than under api-tests. Gated to main only: this project doesn't exist
+      # yet on stable/8.7, 8.8, 8.9 until backported.
+      - name: Run analytics-exporter isolated tests
+        if: inputs.branch == 'main'
+        shell: bash
+        run: npm run test -- --project=analytics-exporter-isolated
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Clean up analytics-exporter isolated environment
+        if: always() && inputs.branch == 'main'
+        shell: bash
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.analytics-isolated.yml \
+            -p analytics-isolated down -v || true
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
       - name: Publish test results to TestRail
         if: always()
         shell: bash
