@@ -71,20 +71,23 @@ test.describe.serial('Analytics Exporter Counter Parity', () => {
     const instanceCount = 20;
 
     await test.step('Deploy a dedicated, uniquely-named process', async () => {
-      const bpmn = readFileSync('./resources/analytics_parity_test.bpmn', 'utf-8').replace(
-        /analytics_parity_test/g,
-        processId,
-      );
-      const deployRes = await request.post(`${ISOLATED_BASE_URL}/v2/deployments`, {
-        headers: {Authorization: authHeader},
-        multipart: {
-          resources: {
-            name: `${processId}.bpmn`,
-            mimeType: 'application/xml',
-            buffer: Buffer.from(bpmn),
+      const bpmn = readFileSync(
+        './resources/analytics_parity_test.bpmn',
+        'utf-8',
+      ).replace(/analytics_parity_test/g, processId);
+      const deployRes = await request.post(
+        `${ISOLATED_BASE_URL}/v2/deployments`,
+        {
+          headers: {Authorization: authHeader},
+          multipart: {
+            resources: {
+              name: `${processId}.bpmn`,
+              mimeType: 'application/xml',
+              buffer: Buffer.from(bpmn),
+            },
           },
         },
-      });
+      );
       expect(deployRes.status()).toBe(200);
     });
 

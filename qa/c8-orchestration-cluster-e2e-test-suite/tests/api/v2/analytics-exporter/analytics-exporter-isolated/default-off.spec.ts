@@ -13,7 +13,10 @@ import {
   startIsolatedEnvironmentWithoutExporter,
   stopIsolatedEnvironment,
 } from '../../../../../utils/dockerComposeControl';
-import {queryLoki, toLokiNanos} from '../../../../../utils/analyticsQueryHelpers';
+import {
+  queryLoki,
+  toLokiNanos,
+} from '../../../../../utils/analyticsQueryHelpers';
 
 // N1 — the analytics exporter is disabled by default: with no
 // CAMUNDA_DATA_EXPORTERS_ANALYTICS_* config set at all, zero analytics
