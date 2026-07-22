@@ -164,6 +164,73 @@ public class AgentHistoryCommitTest {
         .containsExactly(lease2ItemKey);
   }
 
+  @Test
+  public void shouldCommitWinningAndDiscardSupersededOnLeasedJobCompletion() {
+    final var serviceTaskInstance = deployAndCreateProcessInstance();
+    final var elementInstanceKey = serviceTaskInstance.getKey();
+    final var processInstanceKey = serviceTaskInstance.getValue().getProcessInstanceKey();
+    final var agentInstanceKey = createAgentInstance(elementInstanceKey).getKey();
+
+    // Activation 1 (superseded): create a history item, then fail to trigger re-activation.
+    final var job1 = activateJobForProcessInstanceWithLease(processInstanceKey);
+    final long supersededItemKey =
+        createHistoryItem(agentInstanceKey, job1.key(), elementInstanceKey, job1.leaseToken());
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withLeaseToken(job1.leaseToken())
+        .withRetries(1)
+        .fail();
+
+    // Activation 2 (winning): create a history item, then complete the job.
+    final var job2 = activateJobForProcessInstanceWithLease(processInstanceKey);
+    assertThat(job2.key()).as("re-activation must reuse the same job key").isEqualTo(job1.key());
+    assertThat(job2.leaseToken())
+        .as("re-activation must advance the lease token")
+        .isNotEqualTo(job1.leaseToken());
+    final long winningItemKey =
+        createHistoryItem(agentInstanceKey, job2.key(), elementInstanceKey, job2.leaseToken());
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withLeaseToken(job2.leaseToken())
+        .complete();
+
+    // JobCompleteProcessor emits AGENT_HISTORY:COMMIT; scope subsequent assertions to it.
+    final var firstCommitted =
+        RecordingExporter.agentHistoryRecords(AgentHistoryIntent.COMMITTED)
+            .withJobKey(job2.key())
+            .getFirst();
+    final long commitPosition = firstCommitted.getSourceRecordPosition();
+    final long clockResetKey = ENGINE.clock().reset().getKey();
+
+    // visitByJobLease(job2.leaseToken()) → winning item COMMITTED
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.COMMITTED)
+                .filter(r -> r.getSourceRecordPosition() == commitPosition)
+                .map(Record::getKey))
+        .as("only the winning activation's history item should be committed")
+        .containsExactly(winningItemKey);
+
+    // discard pass → superseded item DISCARDED
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getKey() == clockResetKey)
+                .withValueType(ValueType.AGENT_HISTORY)
+                .withIntent(AgentHistoryIntent.DISCARDED)
+                .filter(r -> r.getSourceRecordPosition() == commitPosition)
+                .map(Record::getKey))
+        .as("the superseded activation's history item should be discarded")
+        .containsExactly(supersededItemKey);
+  }
+
   // --- helpers ---
 
   private static Record<ProcessInstanceRecordValue> deployAndCreateProcessInstance() {
@@ -237,4 +304,23 @@ public class AgentHistoryCommitTest {
 
     return createHistoryItem(agentInstanceKey, jobKey, elementInstanceKey, jobLease);
   }
+
+  private static ActivatedJob activateJobForProcessInstanceWithLease(
+      final long processInstanceKey) {
+    final var batchRecord = ENGINE.jobs().withType(JOB_TYPE).withLease().activate();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withType(JOB_TYPE)
+            .getFirst()
+            .getKey();
+    final int jobIndex = batchRecord.getValue().getJobKeys().indexOf(jobKey);
+    assertThat(jobIndex)
+        .as("expected activated job batch to contain job key %d", jobKey)
+        .isGreaterThanOrEqualTo(0);
+    final String leaseToken = batchRecord.getValue().getJobs().get(jobIndex).getLeaseToken();
+    return new ActivatedJob(jobKey, leaseToken);
+  }
+
+  private record ActivatedJob(long key, String leaseToken) {}
 }

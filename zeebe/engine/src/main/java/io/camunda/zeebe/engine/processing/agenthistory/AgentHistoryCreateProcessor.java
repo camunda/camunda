@@ -91,6 +91,15 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
     }
     final var job = jobState.getJob(jobKey);
 
+    if (job.hasLeaseToken() && !commandValue.getJobLease().equals(job.getLeaseToken())) {
+      writeRejection(
+          command,
+          RejectionType.NOT_FOUND,
+          "Expected to create agent history entry for job with key '%d', but the supplied lease does not match. The job may have been re-activated."
+              .formatted(jobKey));
+      return;
+    }
+
     final var jobElementInstanceKey = job.getElementInstanceKey();
     final var commandElementInstanceKey = commandValue.getElementInstanceKey();
     if (jobElementInstanceKey != commandElementInstanceKey) {
