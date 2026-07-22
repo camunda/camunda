@@ -82,8 +82,8 @@ serving remain host concerns (a small filter), unrelated to clusterId.
 | `userIdAttributeName` | `...oidc.username-claim` | MAP |
 | `organizationId` | `camunda.security.saas.organization-id` (+ `...oidc.organization-id`) | MAP |
 | `clusterId` | `camunda.security.saas.cluster-id`; also `server.servlet.context-path=/<clusterId>` | MAP |
-| `organizationClaimName` + org-membership gate (`hasAccess`) + allowed org roles | host org validator (via `TokenValidatorFactory` override / login authorization) | HOST-VALIDATOR |
-| `https://camunda.com/clusterId` claim (webapp + public API) | host clusterId-claim validator | HOST-VALIDATOR |
+| org-membership gate (`hasAccess`) + allowed org roles | `OptimizeCloudOidcUserService` (CSL `OidcUserService` webapp hook) | HOST-VALIDATOR |
+| `https://camunda.com/clusterId` claim (public-API bearer) | `TokenValidatorFactory` override adds `CustomClaimValidator` (`OptimizeCloudSecurityConfiguration`) | HOST-VALIDATOR |
 | `https://camunda.com/originalUserId` claim -> user-id migration | `OptimizeCslLoginSuccessListener` (host, on Spring `InteractiveAuthenticationSuccessEvent`) | HOST-HOOK |
 | `m2mClient.*`, `users.cloud.accountsUrl` | none (cloud-console M2M clients, independent of the login chain) | SAAS/NO-ANALOG |
 

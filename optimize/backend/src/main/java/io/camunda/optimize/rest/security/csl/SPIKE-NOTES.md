@@ -136,11 +136,16 @@ SaaS-only concerns still need bringing across (mapping detail in `CONFIG-COMPAT.
   so CSL's login/callback/post-logout URLs carry the prefix natively. Replaces the legacy
   `CCSaasRequestAdjustmentFilter` clusterId stripping + `AddClusterIdSubPathToRedirect...`. The
   `/external/api` -> `/api/external` rewrite + static-share serving stay as a small host filter.
-- **Org membership + role gate and cluster-ID claim validation.** CSL owns the config
-  (`camunda.security.saas.*` needs org-id + cluster-id, `...oidc.organization-id`) but ships no
-  org/cluster checks. The host supplies them as `OAuth2TokenValidator<Jwt>` by overriding CSL's
-  `TokenValidatorFactory` bean (this is how OC does it) — port Optimize's `RoleValidator`,
-  `CustomClaimValidator` (clusterId), and the `hasAccess` org-membership gate there.
+- **Org membership + role gate and cluster-ID claim validation — done host-side** in
+  `OptimizeCloudSecurityConfiguration` (cloud profile + `csl.enabled`). Webapp login:
+  `OptimizeCloudOidcUserService` (registered as CSL's `OidcUserService` webapp hook) denies login
+  unless the OIDC `https://camunda.com/orgs` claim contains the configured organization with an
+  allowed role — replaces the legacy `hasAccess` gate + `RoleValidator`. Public-API bearer path:
+  overriding CSL's `TokenValidatorFactory` bean appends a `https://camunda.com/clusterId` claim
+  validator (reusing Optimize's `CustomClaimValidator`); audience stays CSL's per-registration
+  config. Config is read from `CloudAuthConfiguration` until the Auth0 bridge lands. Note the split:
+  `TokenValidatorFactory` feeds only the bearer API chain and CSL has no ID-token validator hook, so
+  the interactive-login gate lives in the `OidcUserService`, not the factory.
 - **User-id migration on login — done host-side, no CSL change.** `OptimizeCslLoginSuccessListener`
   reacts to Spring Security's `InteractiveAuthenticationSuccessEvent` (published by the oauth2Login
   filter) and, when the OIDC principal carries `https://camunda.com/originalUserId` differing from
