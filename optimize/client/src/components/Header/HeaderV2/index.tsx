@@ -20,6 +20,7 @@ import {showError} from 'notifications';
 import {t} from 'translation';
 import {isLogoutHidden} from 'config';
 import {useDocs, useErrorHandling, useUiConfig, useUser} from 'hooks';
+import {storePostLoginRedirect} from 'postLoginRedirect';
 
 import {getUserToken} from '../service';
 import useSidebarChildren from './useSidebarChildren';
@@ -80,7 +81,11 @@ function HeaderV2Body({noActions, isCloud}: {noActions?: boolean; isCloud: boole
     docsUrl: getBaseDocsUrl(),
     timezone,
     logoutHidden,
-    onLogout: () => history.replace('/logout'),
+    onLogout: () => {
+      // SPIKE (ADR-0036): remember the current route so re-login returns here.
+      storePostLoginRedirect();
+      history.replace('/logout');
+    },
   });
 
   const showLicenseTag = !noActions && licenseType !== 'saas';

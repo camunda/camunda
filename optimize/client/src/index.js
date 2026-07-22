@@ -11,7 +11,13 @@ import {createRoot} from 'react-dom/client';
 import './style.scss';
 import 'polyfills';
 
+import {restorePostLoginRedirect} from 'postLoginRedirect';
+
 import App from './App';
+
+// SPIKE (ADR-0036): re-apply the route stashed before a logout/expiry -> login cycle, before the
+// hash router mounts so it picks up the restored hash.
+restorePostLoginRedirect();
 
 const root = createRoot(document.getElementById('root'));
 root.render(<App />);

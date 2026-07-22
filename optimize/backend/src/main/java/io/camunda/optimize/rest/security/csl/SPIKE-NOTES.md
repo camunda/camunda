@@ -173,6 +173,16 @@ and how they are covered under CSL (mapping detail in `CONFIG-COMPAT.md`):
   and `camunda.security.saas.*`, and overrides the redirect-uri to `{baseUrl}/sso-callback`. Full
   table in `CONFIG-COMPAT.md`. (An earlier note assumed cloud config was YAML-only and unreachable by
   the EPP; that was wrong — those fields are env-var placeholders.)
+- **Post-login page preservation — done host-side (frontend), IdP-agnostic (CCSM + cloud).** Optimize
+  is hash-routed, so the active route lives in `location.hash` (not in the `Referer`, and dropped when
+  the fetch logout navigates to the IdP) — which is why OC's server-side `PostLogoutController`
+  (Referer-based) cannot restore it here (it would only recover the base path). Instead
+  `modules/postLoginRedirect.ts` stashes the route in `sessionStorage` before logout (the `Header`
+  menus) and before a 401 session-expiry reload (`PrivateRoute`), and re-applies it on app init
+  (`index.js`) once login lands back on home. `sessionStorage` survives the same-tab round trip to
+  the IdP, so it behaves the same for Keycloak and Auth0. Applied to both explicit logout and expiry
+  for consistency. This mirrors the legacy CCSaaS `location.hash` re-apply without the fragile
+  fragment-survival dependency.
 - **Obsolete under CSL (do not port):** the cookie-based auth-request repo, split access-token cookie,
   `AuthenticationCookieFilter`, and self-signed session token — all replaced by CSL server sessions.
 - **Independent (keep):** the cloud-console M2M clients (`CCSaaSM2MTokenProvider`, `CCSaaS*Client`,

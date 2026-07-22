@@ -15,6 +15,7 @@ import {t} from 'translation';
 import {isLogoutHidden} from 'config';
 import {showError} from 'notifications';
 import {useErrorHandling, useUser} from 'hooks';
+import {storePostLoginRedirect} from 'postLoginRedirect';
 
 export default function useUserMenu(optimizeVersion: string, timezone: string) {
   const [logoutHidden, setLogoutHidden] = useState(false);
@@ -73,7 +74,11 @@ export default function useUserMenu(optimizeVersion: string, timezone: string) {
       key: 'logout',
       label: t('navigation.logout').toString(),
       kind: 'ghost',
-      onClick: () => history.replace('/logout'),
+      onClick: () => {
+        // SPIKE (ADR-0036): remember the current route so re-login returns here.
+        storePostLoginRedirect();
+        history.replace('/logout');
+      },
       renderIcon: ArrowRight,
     });
   }
