@@ -626,7 +626,7 @@ test.describe('Process Instances Filters', () => {
       await expect(async () => {
         await operateProcessesPage.selectAllRowsCheckbox.click();
         await operateProcessesPage.clickCancelBatchOperationButton();
-        await operateProcessesPage.clickCancelProcessInstanceDialogButton();
+        await operateProcessesPage.clickApplyCancelBatchOperationDialogButton();
         await expect(
           operateProcessesPage.goToOperationDetailsButton,
         ).toBeVisible({timeout: 15000});

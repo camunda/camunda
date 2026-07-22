@@ -104,6 +104,7 @@ class TaskPanelPage {
   ) {
     let retryCount = 0;
     const maxRetries = 5;
+    let lastError: unknown;
     while (retryCount < maxRetries) {
       try {
         const link = this.page.getByRole('link', {name: option, exact: true});
@@ -127,12 +128,16 @@ class TaskPanelPage {
         await this.collapseSidePanelButton.click();
         return;
       } catch (error) {
+        lastError = error;
         retryCount++;
         console.log(`Attempt ${retryCount} failed. Retrying...`, error);
       }
     }
     throw new Error(
-      `Failed to apply filter "${option}" after ${maxRetries} attempts.`,
+      `Failed to apply filter "${option}" after ${maxRetries} attempts. ` +
+        `Last error: ${
+          lastError instanceof Error ? lastError.message : String(lastError)
+        }`,
     );
   }
 
