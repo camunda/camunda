@@ -128,7 +128,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
       - id: slack-notify
-        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook
@@ -192,7 +192,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL;
       - id: slack-notify
-        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           webhook: ${{ steps.slack-secrets.outputs.SLACK_ZEEBOT_RELIABILITY_TESTING_ALERTS_WEBHOOK_URL }}
           webhook-type: incoming-webhook

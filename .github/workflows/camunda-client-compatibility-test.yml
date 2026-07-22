@@ -539,7 +539,7 @@ jobs:
           secrets: |
             secret/data/products/camunda/ci/github-actions SLACK_CAMUNDA_EX_CI_WEBHOOK;
       - name: Notify failure
-        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         if: steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
