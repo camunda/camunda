@@ -8,7 +8,10 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 
@@ -16,10 +19,11 @@ public final class SecretReferenceResolutionRequestedApplier
     implements TypedEventApplier<SecretReferenceIntent, SecretReferenceRecord> {
 
   private final MutableSecretReferenceState secretReferenceState;
+  private final MutableJobState jobState;
 
-  public SecretReferenceResolutionRequestedApplier(
-      final MutableSecretReferenceState secretReferenceState) {
-    this.secretReferenceState = secretReferenceState;
+  public SecretReferenceResolutionRequestedApplier(final MutableProcessingState processingState) {
+    secretReferenceState = processingState.getSecretReferenceState();
+    jobState = processingState.getJobState();
   }
 
   @Override
@@ -31,6 +35,15 @@ public final class SecretReferenceResolutionRequestedApplier
 
     for (final long jobKey : value.getJobKeys()) {
       secretReferenceState.addWaitingJob(storeId, secretReference, jobKey);
+      // stop a waiting job from being collected by a long poll again until it is reactivated once
+      // its secrets resolve. The job stays in state ACTIVATABLE and is only removed from the
+      // activatable index. A concurrent priority update re-inserts it there (see
+      // DbJobState#updateJobPriority), but the next activation removes it again and re-requests
+      // resolution, so the parking self-heals.
+      final JobRecord job = jobState.getJob(jobKey);
+      if (job != null) {
+        jobState.makeJobNotActivatable(jobKey, job);
+      }
     }
   }
 }

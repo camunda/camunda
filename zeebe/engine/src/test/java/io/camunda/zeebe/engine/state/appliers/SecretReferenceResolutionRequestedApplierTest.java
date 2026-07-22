@@ -10,10 +10,13 @@ package io.camunda.zeebe.engine.state.appliers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
 import org.assertj.core.groups.Tuple;
@@ -26,12 +29,14 @@ final class SecretReferenceResolutionRequestedApplierTest {
 
   private MutableProcessingState processingState;
   private MutableSecretReferenceState state;
+  private MutableJobState jobState;
   private SecretReferenceResolutionRequestedApplier applier;
 
   @BeforeEach
   void setUp() {
     state = processingState.getSecretReferenceState();
-    applier = new SecretReferenceResolutionRequestedApplier(state);
+    jobState = processingState.getJobState();
+    applier = new SecretReferenceResolutionRequestedApplier(processingState);
   }
 
   @Test
@@ -206,5 +211,47 @@ final class SecretReferenceResolutionRequestedApplierTest {
         });
     assertThat(pairs)
         .containsExactlyInAnyOrder(tuple("store-1", "secret-a"), tuple("store-1", "secret-b"));
+  }
+
+  @Test
+  void shouldMakeWaitingJobNotActivatable() {
+    // given — an activatable job that references a not-yet-resolved secret
+    final long jobKey = 1L;
+    final var job =
+        new JobRecord().setType("task-type").setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    jobState.create(jobKey, job);
+    assertThat(activatableJobKeys(job)).contains(jobKey);
+    final var record =
+        new SecretReferenceRecord()
+            .setStoreId("store-1")
+            .setSecretReference("secret-a")
+            .addJobKey(jobKey);
+
+    // when
+    applier.applyState(100L, record);
+
+    // then — the job is no longer handed out until it is reactivated after resolution
+    assertThat(activatableJobKeys(job)).doesNotContain(jobKey);
+  }
+
+  @Test
+  void shouldNotFailWhenWaitingJobDoesNotExist() {
+    // given — a record for a job that is absent from the job state
+    final var record =
+        new SecretReferenceRecord()
+            .setStoreId("store-1")
+            .setSecretReference("secret-a")
+            .addJobKey(999L);
+
+    // when / then — applying does not fail and still records the pending reference
+    applier.applyState(100L, record);
+    assertThat(state.isPending("store-1", "secret-a")).isTrue();
+  }
+
+  private List<Long> activatableJobKeys(final JobRecord job) {
+    final List<Long> keys = new ArrayList<>();
+    jobState.forEachActivatableJobs(
+        job.getTypeBuffer(), List.of(job.getTenantId()), (k, j) -> keys.add(k));
+    return keys;
   }
 }
