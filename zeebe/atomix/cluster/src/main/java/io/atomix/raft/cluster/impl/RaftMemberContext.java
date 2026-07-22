@@ -26,12 +26,14 @@ import io.atomix.raft.storage.log.RaftLogReader;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.nio.ByteBuffer;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Cluster member state. */
 public final class RaftMemberContext {
 
-  private static final int APPEND_WINDOW_SIZE = 8;
+  private static final Logger LOG = LoggerFactory.getLogger(RaftMemberContext.class);
+
   private final DefaultRaftMember member;
   private final int maxAppendsPerMember;
   private boolean open = true;
@@ -516,8 +518,19 @@ public final class RaftMemberContext {
       return;
     }
     final long acknowledgedBytes = appendWatermark - acknowledgedAppendWatermark;
-    // non-atomic write is okay because we only write from one thread
-    logReplicationLag = Math.max(0, logReplicationLag - acknowledgedBytes);
+    if (acknowledgedBytes > logReplicationLag) {
+      LOG.warn(
+          "Log replication lag underflow for member {}: lag={}, acknowledged bytes={}, "
+              + "append watermark={}, previous watermark={}",
+          member.memberId(),
+          logReplicationLag,
+          acknowledgedBytes,
+          appendWatermark,
+          acknowledgedAppendWatermark);
+      logReplicationLag = 0;
+    } else {
+      logReplicationLag -= acknowledgedBytes;
+    }
     acknowledgedAppendWatermark = appendWatermark;
   }
 
