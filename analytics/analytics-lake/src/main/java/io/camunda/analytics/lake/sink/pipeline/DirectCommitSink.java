@@ -89,6 +89,13 @@ public final class DirectCommitSink implements DescriptorSink {
 
   @Override
   public void accept(final Descriptor descriptor) {
+    if (!descriptor.derivedFiles().isEmpty()) {
+      // Derived tables' files must land atomically with the raw files, which a single-table
+      // commit cannot do -- descriptors with riders belong to CoordinatedDescriptorSink.
+      throw new IllegalArgumentException(
+          "DirectCommitSink cannot commit derived-table files atomically; use "
+              + "CoordinatedDescriptorSink for descriptors carrying rider output");
+    }
     commitLock.lock();
     try {
       acceptLocked(descriptor);

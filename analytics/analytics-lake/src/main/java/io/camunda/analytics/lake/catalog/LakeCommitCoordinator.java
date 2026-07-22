@@ -259,8 +259,12 @@ public final class LakeCommitCoordinator {
     }
   }
 
-  /** Queues files for deletion; its own small transaction (used after a rollback). */
-  private void enqueueDeletes(final List<String> paths, final String reason) {
+  /**
+   * Queues files for deletion by {@link #sweepPendingDeletes(FileIO)}; its own small transaction
+   * (used after a rollback, and by callers skipping a redelivered descriptor whose replay-produced
+   * files are orphans). Never throws — losing a delete intent only leaks an unreferenced file.
+   */
+  public void enqueueDeletes(final List<String> paths, final String reason) {
     try (final Connection connection = DriverManager.getConnection(jdbcUrl);
         final PreparedStatement insert =
             connection.prepareStatement(

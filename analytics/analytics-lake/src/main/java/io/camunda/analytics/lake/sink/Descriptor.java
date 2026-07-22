@@ -28,6 +28,10 @@ import java.util.Map;
  *     time, keyed by Zeebe partition id — the committer stamps one {@code lake.zbpos.z*} property
  *     per entry (see {@code
  *     io.camunda.analytics.lake.write.IcebergLakeWriter#ZBPOS_PROPERTY_PREFIX}'s javadoc)
+ * @param derivedFiles files produced by seal riders for <em>derived</em> tables (metrics partials),
+ *     keyed by Iceberg table name — computed from exactly the raw rows in {@link #files}, so they
+ *     cover the same offset range and must land in the same atomic commit (see {@code
+ *     io.camunda.analytics.lake.catalog}'s package javadoc); empty when no rider is wired
  */
 public record Descriptor(
     String table,
@@ -36,10 +40,32 @@ public record Descriptor(
     long firstOffset,
     long lastOffset,
     long localFrontierMs,
-    Map<Integer, Long> zeebeWatermarks) {
+    Map<Integer, Long> zeebeWatermarks,
+    Map<String, List<DataFileResult>> derivedFiles) {
 
   public Descriptor {
     files = List.copyOf(files);
     zeebeWatermarks = Map.copyOf(zeebeWatermarks);
+    derivedFiles = Map.copyOf(derivedFiles);
+  }
+
+  /** Rider-less descriptor: raw files only, no derived tables. */
+  public Descriptor(
+      final String table,
+      final int sourcePartition,
+      final List<DataFileResult> files,
+      final long firstOffset,
+      final long lastOffset,
+      final long localFrontierMs,
+      final Map<Integer, Long> zeebeWatermarks) {
+    this(
+        table,
+        sourcePartition,
+        files,
+        firstOffset,
+        lastOffset,
+        localFrontierMs,
+        zeebeWatermarks,
+        Map.of());
   }
 }

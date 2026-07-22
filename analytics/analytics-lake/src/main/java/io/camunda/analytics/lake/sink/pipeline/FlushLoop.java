@@ -18,7 +18,9 @@ import io.camunda.analytics.lake.sink.Segment;
 import io.camunda.analytics.lake.sink.SortedRun;
 import io.camunda.analytics.lake.sink.TableSchema;
 import io.micrometer.core.instrument.Timer;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -129,6 +131,9 @@ final class FlushLoop implements Runnable {
     try {
       final List<DataFileResult> files = window.finishAll();
       pipeline.updateWindowBytesEstimate(0);
+      // Riders drain at the window boundary, not per segment: their partials describe exactly the
+      // raw rows in `files`, so they must ride the same descriptor (same atomic commit).
+      final Map<String, List<DataFileResult>> derivedFiles = drainRiders();
       final Descriptor descriptor =
           new Descriptor(
               config.tableName(),
@@ -137,7 +142,8 @@ final class FlushLoop implements Runnable {
               snapshot.firstOffset(),
               snapshot.lastOffset(),
               snapshot.frontierMs(),
-              snapshot.zeebeWatermarks());
+              snapshot.zeebeWatermarks(),
+              derivedFiles);
       descriptorSink.accept(descriptor);
       metrics.descriptorAccepted();
       // only now: the commit succeeded, so the segment that triggered this window can be recycled.
@@ -166,6 +172,27 @@ final class FlushLoop implements Runnable {
     }
   }
 
+  /** Merges every rider's window drain; disjoint by contract (one rider per derived table set). */
+  private Map<String, List<DataFileResult>> drainRiders() {
+    if (riders.isEmpty()) {
+      return Map.of();
+    }
+    final Map<String, List<DataFileResult>> derived = new HashMap<>();
+    for (final SealRider rider : riders) {
+      rider
+          .onWindowClose()
+          .forEach(
+              (table, files) -> {
+                final List<DataFileResult> clash = derived.put(table, files);
+                if (clash != null) {
+                  throw new IllegalStateException(
+                      "Two seal riders produced files for the same derived table " + table);
+                }
+              });
+    }
+    return derived;
+  }
+
   private void onFailure(final RuntimeException e) {
     LOG.error(
         "L0 sink pipeline for table {} partition {} failed on the flush thread — aborting open "
@@ -174,6 +201,7 @@ final class FlushLoop implements Runnable {
         config.sourcePartition(),
         e);
     window.abortAll();
+    riders.forEach(SealRider::abortWindow);
     // any segment this failure was processing (or holding as a file-boundary trigger) is
     // deliberately left un-released: the pipeline is now terminal, so the ring is never read again
     // and the ring's fixed-memory-footprint contract no longer applies.
