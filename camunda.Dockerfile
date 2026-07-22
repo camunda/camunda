@@ -4,7 +4,7 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 
 ARG BASE_IMAGE="reg.mini.dev/1212/openjre-base-compat:21-dev"
-ARG BASE_DIGEST="sha256:c1aa5840f82e5194d037e89613105f675a6ad5f4ec5be64a3c8ae89a2b96d613"
+ARG BASE_DIGEST="sha256:24019f43d4583c016f9ddf0a4ff18059c9742963a9dcc6e49cedec315b6e6e24"
 
 # If you don't have access to Minimus hardened base images, you can use public
 # base images like this instead on your own risk.
