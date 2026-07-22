@@ -128,14 +128,28 @@ Found while manually testing against a local CCSM/Keycloak setup
 
 ## CCSaaS (cloud) parity — what the `cloud` profile did that CSL must still cover
 
-The spike is validated for CCSM. Comparing the legacy `CCSaaSSecurityConfigurerAdapter`, these
-SaaS-only concerns still need bringing across (mapping detail in `CONFIG-COMPAT.md`):
+End-to-end validated for CCSM. The SaaS-only concerns from the legacy `CCSaaSSecurityConfigurerAdapter`
+and how they are covered under CSL (mapping detail in `CONFIG-COMPAT.md`):
 
-- **Cluster-ID sub-path.** Serve Optimize under `server.servlet.context-path=/<clusterId>`
-  (Optimize's `container.contextPath`); Spring strips it before matching and `{baseUrl}` includes it,
-  so CSL's login/callback/post-logout URLs carry the prefix natively. Replaces the legacy
-  `CCSaasRequestAdjustmentFilter` clusterId stripping + `AddClusterIdSubPathToRedirect...`. The
-  `/external/api` -> `/api/external` rewrite + static-share serving stay as a small host filter.
+- **Cluster-ID sub-path — configuration only, no new security code.** Run Optimize under a context
+  path equal to the clusterId: set `CAMUNDA_OPTIMIZE_CONTEXT_PATH=/<clusterId>` (Optimize config
+  `container.contextPath`; `OptimizeTomcatConfig` applies it to embedded Tomcat via
+  `factory.setContextPath`). Tomcat then serves under `/<clusterId>`, `request.getContextPath()`
+  returns it, CSL's matchers see root-relative paths, and `{baseUrl}` (= scheme://host:port + context
+  path) makes CSL emit login/callback/post-logout URLs already carrying the prefix. This replaces the
+  legacy `CCSaasRequestAdjustmentFilter` clusterId stripping and the
+  `AddClusterIdSubPathToRedirect...` entry point. **IdP requirement:** the Auth0 client must allow the
+  callback and post-logout targets under the clusterId path (e.g. `https://<host>/<clusterId>/sso-callback`
+  and `https://<host>/<clusterId>/`).
+- **Request-adjustment filter is not registered under CSL (affects CCSM too) — follow-up.** The
+  `/external/api` -> `/api/external` rewrite and static external-share serving are done by
+  `CCSMRequestAdjustmentFilter` / `CCSaasRequestAdjustmentFilter`, but both are registered as beans
+  *inside* the legacy security adapters, which back off under `csl.enabled`. So under CSL neither
+  runs and public share resources under `/external/**` will not resolve. Register a CSL-mode
+  request-adjustment filter (gated on `csl.enabled`, reusing `ExternalResourcesUtil`) that does the
+  rewrite + static serving; clusterId stripping is no longer needed there since the context path
+  handles it. Not exercised by the login/webapp happy path, so it does not block a first SaaS smoke
+  test, but external sharing needs it.
 - **Org membership + role gate and cluster-ID claim validation — done host-side** in
   `OptimizeCloudSecurityConfiguration` (cloud profile + `csl.enabled`). Webapp login:
   `OptimizeCloudOidcUserService` (registered as CSL's `OidcUserService` webapp hook) denies login
