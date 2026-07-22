@@ -611,6 +611,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                           "Failed to open exporter '{}'. Not retrying.", container.getId(), e);
                       unrecoverableFailureDetected.set(true);
                       updateHealthStatusWithError(e);
+                      // The container never finished opening (e.g. its writer was never
+                      // assigned), so it must not receive records once exporting starts -
+                      // otherwise every export attempt on this partition would fail on it forever.
+                      containers.remove(container);
+                      recordExporter.resetExporterIndex();
                       return false;
                     } catch (final Exception e) {
                       LOG.warn("Failed to open exporter '{}'. Retrying...", container.getId());
