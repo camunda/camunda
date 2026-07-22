@@ -71,6 +71,7 @@ data.secondary-storage.rdbms.max-varchar-field-length
 license.key
 security.authentication.method
 security.authentication.unprotected-api
+security.authentication.webapp-enabled
 security.cluster-admin.basic.users
 security.cluster-admin.oidc.claims
 security.cluster-admin.oidc.clients

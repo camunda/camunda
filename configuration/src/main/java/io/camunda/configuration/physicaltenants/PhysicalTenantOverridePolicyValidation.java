@@ -93,6 +93,7 @@ final class PhysicalTenantOverridePolicyValidation {
               // camunda.security.* — identity-security settings that must apply uniformly
               "security.authentication.method",
               "security.authentication.unprotected-api",
+              "security.authentication.webapp-enabled",
               "security.csrf",
               "security.http-headers",
               // forward declaration — property lands with #54898
