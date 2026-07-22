@@ -148,6 +148,15 @@
       <artifactId>jspecify</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- Used by DeclaredPropertiesCountArchTest to read the int literal passed to
+         UnifiedRecordValue(int) from compiled bytecode, since ArchUnit's own API does not expose
+         constant call arguments. -->
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
