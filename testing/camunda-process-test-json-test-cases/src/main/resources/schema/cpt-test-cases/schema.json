@@ -1020,6 +1020,10 @@
           "description": "The ID of the child process to mock.",
           "type": "string"
         },
+        "versionTag": {
+          "description": "The version tag to assign to the deployed stub process. Optional. Required when the call activity uses bindingType=\"versionTag\".",
+          "type": "string"
+        },
         "variables": {
           "description": "The variables to set for the mocked child process. Optional.",
           "type": "object",

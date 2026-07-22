@@ -27,6 +27,7 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.behavior.BehaviorCondition;
 import io.camunda.process.test.api.behavior.ConditionalBehaviorBuilder;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.api.mock.MockChildProcessBuilder;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -108,7 +109,32 @@ public interface CamundaProcessTestContext {
   JobWorkerMockBuilder mockJobWorker(final String jobType);
 
   /**
-   * Mocks a child process with the specified ID.
+   * Returns a builder for constructing a mock child process. Use {@link
+   * MockChildProcessBuilder#withProcessId(String)} to set the child process ID, optionally {@link
+   * MockChildProcessBuilder#withVersionTag(String)} for version-tag binding, and one of the {@code
+   * thenComplete} methods to deploy the stub.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   *   // Simple mock without version tag
+   *   processTestContext.mockChildProcess().withProcessId("my-child-process").thenComplete();
+   *
+   *   // Mock with a version tag (for call activities using bindingType="versionTag")
+   *   processTestContext
+   *       .mockChildProcess()
+   *       .withProcessId("my-child-process")
+   *       .withVersionTag("1.7.1")
+   *       .thenComplete();
+   * </pre>
+   *
+   * @return a builder for configuring and deploying the mock
+   */
+  MockChildProcessBuilder mockChildProcess();
+
+  /**
+   * Mocks a child process with the specified ID. Deploys a stub process that completes immediately
+   * without setting any output variables.
    *
    * @param childProcessId the ID of the child process to mock
    */

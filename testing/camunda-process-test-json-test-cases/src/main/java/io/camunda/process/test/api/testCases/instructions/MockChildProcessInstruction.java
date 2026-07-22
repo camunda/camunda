@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import io.camunda.process.test.api.testCases.TestCaseInstructionType;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 /** An instruction to mock a child process. */
@@ -38,6 +39,15 @@ public interface MockChildProcessInstruction extends TestCaseInstruction {
    * @return the process definition ID
    */
   String getProcessDefinitionId();
+
+  /**
+   * The version tag of the mocked child process. Optional. When set, the deployed stub process will
+   * carry this version tag, enabling call activities that use {@code bindingType="versionTag"} to
+   * resolve the stub.
+   *
+   * @return the version tag or empty if not set
+   */
+  Optional<String> getVersionTag();
 
   /**
    * The variables to set for the mocked child process. Optional.
