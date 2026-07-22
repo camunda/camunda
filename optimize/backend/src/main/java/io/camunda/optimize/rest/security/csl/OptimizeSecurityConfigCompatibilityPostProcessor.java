@@ -30,9 +30,11 @@ import org.springframework.core.env.MapPropertySource;
  * <p>Only active when {@code optimize.security.csl.enabled=true}. Obsolete keys (no meaning under
  * server-side sessions) are logged as deprecations, not applied.
  *
- * <p>STUB: this implements the primary env-var interface for representative keys. The full mapping
- * is in CONFIG-COMPAT.md; keys sourced only from Optimize's {@code environment-config.yaml} (not
- * env vars) need reading Optimize's {@code ConfigurationService} source and are a follow-up.
+ * <p>Bridges the CCSM (Identity) and CCSaaS (Auth0) OIDC registrations from their {@code
+ * CAMUNDA_OPTIMIZE_IDENTITY_*} / {@code CAMUNDA_OPTIMIZE_AUTH0_*} / {@code
+ * CAMUNDA_OPTIMIZE_CLIENT_*} env-var interface (the {@code ${...}} placeholders in {@code
+ * service-config.yaml}). The full key-by-key mapping is in CONFIG-COMPAT.md; a few finer keys there
+ * are still marked TODO.
  */
 public final class OptimizeSecurityConfigCompatibilityPostProcessor
     implements EnvironmentPostProcessor, Ordered {
@@ -69,12 +71,13 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // Persist server-side sessions to Optimize's Elasticsearch (OptimizeSessionStoreAdapter), so
     // scaling stays affinity-free. Override to false for a single node to use in-memory sessions.
     derived.putIfAbsent("camunda.security.session.persistent.enabled", "true");
-    // CSL requires a redirect-uri for the authorization-code login. Reuse Optimize's existing
-    // callback path so the pre-provisioned IdP client (which already registers
-    // /api/authentication/callback) needs no change. CSL derives its redirection-endpoint listener
-    // path from this value (ADR-0036), so the sent redirect_uri and the listener stay aligned.
-    // Spring expands {baseUrl} (scheme://host:port + context path) at request time. putIfAbsent so
-    // an explicit camunda.security.authentication.oidc.redirect-uri still wins.
+    // CSL requires a redirect-uri for the authorization-code login. CCSM default: reuse Optimize's
+    // existing callback path so the pre-provisioned Identity client (which already registers
+    // /api/authentication/callback) needs no change (the cloud block below overrides this to
+    // /sso-callback for Auth0). CSL derives its redirection-endpoint listener path from this value
+    // (ADR-0036), so the sent redirect_uri and the listener stay aligned. Spring expands {baseUrl}
+    // (scheme://host:port + context path) at request time. putIfAbsent so an explicit
+    // camunda.security.authentication.oidc.redirect-uri still wins.
     derived.putIfAbsent(
         "camunda.security.authentication.oidc.redirect-uri",
         "{baseUrl}/api/authentication/callback");
@@ -101,6 +104,60 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
         derived,
         "CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE",
         "camunda.security.authentication.oidc.audiences");
+
+    // --- OIDC / Auth0 (CCSaaS cloud). Primary interface is the CAMUNDA_OPTIMIZE_AUTH0_* /
+    // CAMUNDA_OPTIMIZE_CLIENT_* env vars (see service-config.yaml, security.auth.cloud). Detected
+    // by
+    // the Auth0 client id being present; mutually exclusive with the CCSM block above. ---
+    final String auth0ClientId = env.getProperty("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID");
+    if (auth0ClientId != null && !auth0ClientId.isBlank()) {
+      // Cloud login callback is /sso-callback (also CSL's default), not the CCSM path set above;
+      // put
+      // (not putIfAbsent) to override the CCSM default within our derived source. An explicit
+      // operator camunda.security.* still wins, since this whole source is added at lowest
+      // precedence.
+      derived.put("camunda.security.authentication.oidc.redirect-uri", "{baseUrl}/sso-callback");
+
+      derived.putIfAbsent("camunda.security.authentication.oidc.client-id", auth0ClientId);
+      warnDeprecated(
+          "CAMUNDA_OPTIMIZE_AUTH0_CLIENTID", "camunda.security.authentication.oidc.client-id");
+      mapIfPresent(
+          env,
+          derived,
+          "CAMUNDA_OPTIMIZE_AUTH0_CLIENTSECRET",
+          "camunda.security.authentication.oidc.client-secret");
+      mapIfPresent(
+          env,
+          derived,
+          "CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE",
+          "camunda.security.authentication.oidc.audiences");
+      mapIfPresent(
+          env,
+          derived,
+          "CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION",
+          "camunda.security.authentication.oidc.organization-id");
+
+      // Auth0 issuer is https://<customDomain>/; CSL discovers token/jwks/userinfo from it.
+      final String auth0Domain = env.getProperty("CAMUNDA_OPTIMIZE_AUTH0_DOMAIN");
+      if (auth0Domain != null && !auth0Domain.isBlank()) {
+        derived.putIfAbsent(
+            "camunda.security.authentication.oidc.issuer-uri", toAuth0IssuerUri(auth0Domain));
+        warnDeprecated(
+            "CAMUNDA_OPTIMIZE_AUTH0_DOMAIN", "camunda.security.authentication.oidc.issuer-uri");
+      }
+
+      // CSL SaaS config requires BOTH organization-id and cluster-id; set them together only when
+      // both are present so a partial config never trips SaasConfiguration#isConfigured().
+      final String organizationId = env.getProperty("CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION");
+      final String clusterId = env.getProperty("CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID");
+      if (organizationId != null
+          && !organizationId.isBlank()
+          && clusterId != null
+          && !clusterId.isBlank()) {
+        derived.putIfAbsent("camunda.security.saas.organization-id", organizationId);
+        derived.putIfAbsent("camunda.security.saas.cluster-id", clusterId);
+      }
+    }
 
     // --- Public API JWT (api.jwtSetUri / api.audience). ---
     mapIfPresent(
@@ -131,8 +188,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // content-type-options.disabled),
     // token.lifeMin -> session timeout, redirectRootUrl -> oidc.redirect-uri, issuerBackendUrl ->
     // back-channel
-    // endpoints, diagnosticsEnabled -> oidc.diagnostics, CCSaaS Auth0 registration. See
-    // CONFIG-COMPAT.md.
+    // endpoints, diagnosticsEnabled -> oidc.diagnostics. See CONFIG-COMPAT.md.
 
     warnObsolete(
         env,
@@ -164,6 +220,16 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
       derived.putIfAbsent(cslKey, value);
       warnDeprecated(legacyKey, cslKey);
     }
+  }
+
+  // Auth0 issuer URI is https://<domain>/ (trailing slash required for OIDC discovery). Accepts a
+  // bare domain or a full URL.
+  private static String toAuth0IssuerUri(final String domain) {
+    final String base =
+        domain.startsWith("http://") || domain.startsWith("https://")
+            ? domain
+            : "https://" + domain;
+    return base.endsWith("/") ? base : base + "/";
   }
 
   // Deprecation warning for a legacy key that still maps to a CSL property.

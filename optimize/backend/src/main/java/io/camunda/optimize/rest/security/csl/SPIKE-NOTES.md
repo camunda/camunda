@@ -153,9 +153,12 @@ SaaS-only concerns still need bringing across (mapping detail in `CONFIG-COMPAT.
   it is CCSaaS-only). Inert under CCSM (claim absent, service missing); its DEBUG line also confirms
   the event fires on every CSL login. A dedicated CSL SPI would only be needed if we later want to
   *gate* (deny) login from the host.
-- **Auth0 config bridging.** `CONFIG-COMPAT.md` now maps the full `auth.cloud.*` set. The values come
-  from Optimize's `environment-config.yaml` (not env vars), so the `EnvironmentPostProcessor` must
-  load that source before it can bridge them (follow-up); until then set `camunda.security.*` directly.
+- **Auth0 config bridging — done.** The compat `EnvironmentPostProcessor` detects cloud (Auth0
+  client id present) and maps the `CAMUNDA_OPTIMIZE_AUTH0_*` / `CAMUNDA_OPTIMIZE_CLIENT_*` env vars
+  (the `${...}` placeholders in `service-config.yaml`) to `camunda.security.authentication.oidc.*`
+  and `camunda.security.saas.*`, and overrides the redirect-uri to `{baseUrl}/sso-callback`. Full
+  table in `CONFIG-COMPAT.md`. (An earlier note assumed cloud config was YAML-only and unreachable by
+  the EPP; that was wrong — those fields are env-var placeholders.)
 - **Obsolete under CSL (do not port):** the cookie-based auth-request repo, split access-token cookie,
   `AuthenticationCookieFilter`, and self-signed session token — all replaced by CSL server sessions.
 - **Independent (keep):** the cloud-console M2M clients (`CCSaaSM2MTokenProvider`, `CCSaaS*Client`,

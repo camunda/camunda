@@ -72,25 +72,25 @@ legacy `CCSaasRequestAdjustmentFilter` clusterId stripping + `AddClusterIdSubPat
 entry point. The Optimize-specific `/external/api` -> `/api/external` rewrite and static-share
 serving remain host concerns (a small filter), unrelated to clusterId.
 
-| Legacy (`CloudAuthConfiguration`, `auth.cloud.*`) | CSL target | Kind |
+The bridge detects cloud by the presence of `CAMUNDA_OPTIMIZE_AUTH0_CLIENTID` and maps these
+`${...}` env vars (from `service-config.yaml`, `security.auth.cloud`):
+
+| Legacy env var (`auth.cloud.*` field) | CSL target | Kind |
 |---|---|---|
-| `clientId` / `clientSecret` | `...oidc.client-id` / `client-secret` | MAP |
-| `domain` / `customDomain` | `...oidc.issuer-uri` (Auth0 domain) | MAP |
-| `tokenUrl` | `...oidc.token-uri` | MAP |
-| `audience` | `...oidc.audiences` | MAP |
-| `userAccessTokenAudience` | webapp access-token audience (host validator) | HOST-VALIDATOR |
-| `userIdAttributeName` | `...oidc.username-claim` | MAP |
-| `organizationId` | `camunda.security.saas.organization-id` (+ `...oidc.organization-id`) | MAP |
-| `clusterId` | `camunda.security.saas.cluster-id`; also `server.servlet.context-path=/<clusterId>` | MAP |
+| `CAMUNDA_OPTIMIZE_AUTH0_CLIENTID` (`clientId`) | `...oidc.client-id` | MAP (bridged) |
+| `CAMUNDA_OPTIMIZE_AUTH0_CLIENTSECRET` (`clientSecret`) | `...oidc.client-secret` | MAP (bridged) |
+| `CAMUNDA_OPTIMIZE_AUTH0_DOMAIN` (`customDomain`) | `...oidc.issuer-uri` = `https://<domain>/` (CSL discovers token/jwks/userinfo) | MAP (bridged) |
+| `CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE` (`audience`) | `...oidc.audiences` | MAP (bridged) |
+| `CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION` (`organizationId`) | `...oidc.organization-id` + `camunda.security.saas.organization-id` | MAP (bridged) |
+| `CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID` (`clusterId`) | `camunda.security.saas.cluster-id` (+ `server.servlet.context-path=/<clusterId>`, see clusterId note) | MAP (bridged) |
+| (cloud login callback) | `...oidc.redirect-uri` = `{baseUrl}/sso-callback` (overrides the CCSM default) | MAP (bridged) |
+| `userIdAttributeName` (`sub`) | `...oidc.username-claim` (CSL default `sub`) | MAP (no-op) |
+| `CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE` (`userAccessTokenAudience`) | webapp access-token audience; not separately enforced (CSL single-audience per registration) | TODO |
+| `CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL` (`tokenUrl`) | none needed (discovered from `issuer-uri`) | NO-ANALOG |
 | org-membership gate (`hasAccess`) + allowed org roles | `OptimizeCloudOidcUserService` (CSL `OidcUserService` webapp hook) | HOST-VALIDATOR |
 | `https://camunda.com/clusterId` claim (public-API bearer) | `TokenValidatorFactory` override adds `CustomClaimValidator` (`OptimizeCloudSecurityConfiguration`) | HOST-VALIDATOR |
 | `https://camunda.com/originalUserId` claim -> user-id migration | `OptimizeCslLoginSuccessListener` (host, on Spring `InteractiveAuthenticationSuccessEvent`) | HOST-HOOK |
 | `m2mClient.*`, `users.cloud.accountsUrl` | none (cloud-console M2M clients, independent of the login chain) | SAAS/NO-ANALOG |
-
-**Sourcing note:** unlike the CCSM `CAMUNDA_OPTIMIZE_IDENTITY_*` env vars, these cloud values live in
-Optimize's `environment-config.yaml` (`ConfigurationService`), which the `EnvironmentPostProcessor`
-does not see. Bridging them needs the EPP to load Optimize's YAML config source (follow-up); until
-then, set the `camunda.security.*` / `camunda.security.saas.*` values directly for cloud.
 
 ## Transport (not part of the auth bridge)
 `container.ports.*`, `container.keystore.*`, `container.enableSniCheck`, `container.contextPath`,
