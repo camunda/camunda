@@ -169,7 +169,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
     underTest.updateEntity(record, entity);
 
     // when
-    underTest.flush(index, entity, mockRequest); // Assuming null is acceptable for this test
+    underTest.flush(index, entity, mockRequest);
 
     // then
     final var entityCaptor = ArgumentCaptor.forClass(OperationEntity.class);
