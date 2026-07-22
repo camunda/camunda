@@ -12,14 +12,11 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedExce
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
-import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -94,38 +91,25 @@ public final class FailbackRequestTransformer implements ConfigurationChangeRequ
                   brokers.size(), numberOfReplicas, zoneId)));
     }
 
-    final var augmentedMembers = new HashSet<>(currentConfiguration.members().keySet());
-    augmentedMembers.addAll(brokers);
-
     final var newZones = new ArrayList<>(currentZones);
     newZones.add(new ZoneSpec(zoneId, numberOfReplicas, priority));
     final var newConfig = new ZoneAwareConfig(newZones);
 
-    final var coordinator =
-        ClusterConfigurationCoordinatorSupplier.of(() -> currentConfiguration)
-            .getDefaultCoordinator();
-
-    final var updatedConfiguration = currentConfiguration.setPartitionDistributorConfig(newConfig);
-
+    // Join the returning brokers, then reuse the shared distribution transformer to persist the new
+    // config and reassign partitions over the current members plus the returning brokers.
     return new AddMembersTransformer(brokers)
         .operations(currentConfiguration)
         .flatMap(
             addMembersOps ->
-                new PartitionReassignRequestTransformer(
-                        augmentedMembers,
-                        Optional.of(newConfig.replicationFactor()),
-                        Optional.empty())
-                    .operations(updatedConfiguration)
+                new UpdatePartitionDistributionTransformer(newConfig, brokers)
+                    .operations(currentConfiguration)
                     .map(
-                        reassignOps -> {
+                        distributionOps -> {
                           final var allOps =
                               new ArrayList<ClusterConfigurationChangeOperation>(
-                                  addMembersOps.size() + reassignOps.size() + 1);
+                                  addMembersOps.size() + distributionOps.size());
                           allOps.addAll(addMembersOps);
-                          allOps.add(
-                              new UpdatePartitionDistributorConfigOperation(
-                                  coordinator, newConfig));
-                          allOps.addAll(reassignOps);
+                          allOps.addAll(distributionOps);
                           return allOps;
                         }));
   }
