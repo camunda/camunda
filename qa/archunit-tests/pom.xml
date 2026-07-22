@@ -62,16 +62,7 @@
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
-      <version>${version.asm}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <!-- Used by DeclaredPropertiesCountArchTest's assertions; was previously only a transitive
-         dependency of this module, which the dependency-analyze build check flags as used but
-         undeclared. -->
-    <dependency>
-      <groupId>org.assertj</groupId>
-      <artifactId>assertj-core</artifactId>
+      <version>9.10.1</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
