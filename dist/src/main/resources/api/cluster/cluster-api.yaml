@@ -219,6 +219,64 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+  /zones/{zoneId}:
+    delete:
+      summary: Force-remove a zone
+      description: Force-evicts the given zone's brokers from the cluster and drops the zone from
+        the persisted partition distribution configuration, in one atomic change. Use this when a
+        zone is down and its brokers are unreachable.
+      parameters:
+        - $ref: '#/components/parameters/ZoneId'
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+    post:
+      summary: Add back a previously force-removed zone
+      description: Re-adds the operator-supplied brokers and re-includes the given zone in the
+        persisted partition distribution configuration, with the supplied replica count and
+        priority, in one atomic change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/AddZoneRequest"
+      parameters:
+        - $ref: '#/components/parameters/ZoneId'
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
   /zones:
     put:
       summary:
@@ -263,6 +321,13 @@ components:
       description: Id of the broker
       schema:
         $ref: 'components.yaml#/schemas/BrokerId'
+    ZoneId:
+      name: zoneId
+      required: true
+      in: path
+      description: Name of the zone
+      schema:
+        type: string
     DryRunParameter:
       name: dryRun
       description: If true, requested changes are only simulated and not actually applied.
