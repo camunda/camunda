@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {TableHeader} from '@carbon/react';
+import {TableHeader} from '#/shared/design-system-compat';
 import {useNavigate} from '@tanstack/react-router';
 import {
 	getNextSortSearchValue,

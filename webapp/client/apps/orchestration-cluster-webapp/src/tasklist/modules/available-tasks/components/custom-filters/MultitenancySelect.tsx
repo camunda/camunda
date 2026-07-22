@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Select, SelectItem} from '@carbon/react';
+import {Select, SelectItem} from '#/shared/design-system-compat';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {queries} from '#/shared/http/queries';

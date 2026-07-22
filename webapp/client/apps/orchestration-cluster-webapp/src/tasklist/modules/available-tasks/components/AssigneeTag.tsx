@@ -8,8 +8,13 @@
 
 import {useTranslation} from 'react-i18next';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
-import {CircleDash, UserAvatar, UserAvatarFilled} from '@carbon/react/icons';
-import {Tag as BaseTag} from '@carbon/react';
+import {
+	CircleDashIcon,
+	Tag as BaseTag,
+	type TagProps,
+	UserAvatarFilledIcon,
+	UserAvatarIcon,
+} from '#/shared/design-system-compat';
 import {cn} from '#/shared/cn';
 import styles from './AssigneeTag.module.scss';
 
@@ -25,7 +30,7 @@ type AssigneeTagProps = {
 	children: React.ReactNode;
 };
 
-const Tag: React.FC<React.ComponentProps<typeof BaseTag> & AssigneeTagProps> = ({
+const Tag: React.FC<TagProps<'div'> & AssigneeTagProps> = ({
 	className = '',
 	children,
 	$isHighlighted,
@@ -55,7 +60,7 @@ const AssigneeTag: React.FC<Props> = ({currentUser, assignee, isShortFormat = tr
 	if (!isAssigned) {
 		return (
 			<Tag title={t('tasklist.assigneeTagUnassignedTitle')} size={isShortFormat ? 'sm' : 'md'} unselectable="off">
-				<CircleDash size={16} />
+				<CircleDashIcon size={16} />
 				{t('tasklist.assigneeTagUnassigned')}
 			</Tag>
 		);
@@ -69,7 +74,7 @@ const AssigneeTag: React.FC<Props> = ({currentUser, assignee, isShortFormat = tr
 				size={isShortFormat ? 'sm' : 'md'}
 				unselectable="off"
 			>
-				<UserAvatarFilled size={16} />
+				<UserAvatarFilledIcon size={16} />
 				{isShortFormat ? t('tasklist.assigneeTagAssignedToMeShortForm') : t('tasklist.assigneeTagAssignedToMe')}
 			</Tag>
 		);
@@ -81,7 +86,7 @@ const AssigneeTag: React.FC<Props> = ({currentUser, assignee, isShortFormat = tr
 			size={isShortFormat ? 'sm' : 'md'}
 			unselectable="off"
 		>
-			<UserAvatar size={16} />
+			<UserAvatarIcon size={16} />
 			{isShortFormat ? assignee : t('tasklist.assigneeTagAssignedToX', {assignee})}
 		</Tag>
 	);

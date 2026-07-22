@@ -6,4 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export {};
+/**
+ * Off by default everywhere (no env var set = false). Only opt in via a
+ * local, gitignored `.env.local` — never set this in a shared env file,
+ * so every future user/teammate sees the same UI until this is removed.
+ */
+export const featureFlags = {
+	dsTasklistUI: import.meta.env['VITE_DS_TASKLIST_UI'] === 'true',
+};

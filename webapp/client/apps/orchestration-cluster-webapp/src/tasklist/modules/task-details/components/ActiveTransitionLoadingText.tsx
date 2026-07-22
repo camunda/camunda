@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Loading} from '@carbon/react';
+import {Loading} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
 import styles from './ActiveTransitionLoadingText.module.scss';
 

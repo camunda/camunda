@@ -6,8 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Popover} from '@carbon/react';
-import {SkillLevelBasic, SkillLevelIntermediate, SkillLevelAdvanced, Critical} from '@carbon/react/icons';
+import {
+	CriticalIcon,
+	Popover,
+	SkillLevelAdvancedIcon,
+	SkillLevelBasicIcon,
+	SkillLevelIntermediateIcon,
+} from '#/shared/design-system-compat';
 import {LabelWithPopover} from './LabelWithPopover';
 import {getPriorityLabel} from '#/tasklist/modules/available-tasks/getPriorityLabel';
 import styles from './PriorityLabel.module.scss';
@@ -18,10 +23,10 @@ type PriorityLabelProps = {
 };
 
 const ICON_MAPPINGS = {
-	low: SkillLevelBasic,
-	medium: SkillLevelIntermediate,
-	high: SkillLevelAdvanced,
-	critical: Critical,
+	low: SkillLevelBasicIcon,
+	medium: SkillLevelIntermediateIcon,
+	high: SkillLevelAdvancedIcon,
+	critical: CriticalIcon,
 };
 
 const PriorityLabel: React.FC<PriorityLabelProps> = ({priority, align = 'top-end'}) => {

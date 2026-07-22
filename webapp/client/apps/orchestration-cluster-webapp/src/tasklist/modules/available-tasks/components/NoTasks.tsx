@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
-import {Search} from '@carbon/react/icons';
+import {Stack, SearchIcon} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
 import styles from './NoTasks.module.scss';
 
@@ -16,7 +15,7 @@ const NoTasks: React.FC = () => {
 
 	return (
 		<Stack gap={5} orientation="horizontal" className={styles.container}>
-			<Search size={24} aria-hidden className={styles.icon} />
+			<SearchIcon size={24} aria-hidden className={styles.icon} />
 			<Stack gap={1} className={styles.text}>
 				<span className={styles.heading}>{t('tasklist.availableTasksNoTasksFoundInfo')}</span>
 				<span className={styles.body}>{t('tasklist.availableTasksNoTasksMatchingCriteriaInfo')}</span>

@@ -1,0 +1,71 @@
+/* Camunda Design System — consumer setup file.
+ *
+ * DS tokens + utilities are loaded via JS import in your entry file
+ * (`import "@camunda/design-system/styles.css"`). PostCSS does NOT
+ * honor `exports`, so do NOT `@import` it from here.
+ *
+ *
+ * Carbon-coexistence opt-out.
+ *
+ * The shadcn primitives this package ships are authored to render
+ * correctly under any host reset (they write explicit utility classes
+ * rather than relying on preflight defaults). The rule below patches
+ * the one known cascade conflict: Carbon's global `border: 0px`
+ * reset sets `border-color: currentColor` on the listed elements,
+ * which resolves to the c4 `--foreground` token (near-black) inside
+ * `.c4-ui` subtrees and overrides the `--border` design token for any
+ * element using a colorless border utility (e.g. `<tr>` with
+ * `border-b`, or `<div className="border">`).
+ *
+ * Adapted from camunda-hub/frontend/apps/hub/src/styles/_carbon.scss
+ * lines 25–66. Specificity is (0,0,1) via `:where(.c4-ui)` + `:is(...)`
+ * — same as Carbon's reset — so DS component utility classes
+ * (0,1,0) still win.
+ *
+ * If additional cascade conflicts surface (see audit in
+ * docs/dev-specs/HOST_CARBON_INTEGRATION.md), add targeted rules
+ * here. Prefer in-component fixes (explicit utilities on the
+ * adapter) when possible.
+ */
+:where(.c4-ui) :is(
+  html, body, div, span, applet, object, iframe,
+  h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+  a, abbr, acronym, address, big, cite, code,
+  del, dfn, em, img, ins, kbd, q, s, samp,
+  small, strike, strong, sub, sup, tt, var,
+  b, u, i, center,
+  dl, dt, dd, ol, ul, li,
+  fieldset, form, label, legend,
+  table, caption, tbody, tfoot, thead, tr, th, td,
+  article, aside, canvas, details, embed,
+  figure, figcaption, footer, header, hgroup,
+  menu, nav, output, ruby, section, summary,
+  time, mark, audio, video
+) {
+  border-color: var(--border);
+}
+
+/* Carbon form-control coexistence.
+ *
+ * Tailwind preflight (scoped to `.c4-ui`) resets font/padding/margin on
+ * <button>, <input>, <select>, <textarea>. Carbon components like
+ * DataTable / TableToolbar size themselves to the natural content
+ * height of those controls — when preflight shrinks them, Carbon
+ * layouts using sticky-positioned table headers calibrated to the
+ * original toolbar height end up overlapping their toolbar row.
+ *
+ * `revert` returns these properties to the user-agent default, which
+ * Carbon then layers its own styles on. DS components use utility
+ * classes (specificity 0,1,0) that still win over this `:where(.c4-ui)`
+ * rule (0,0,1).
+ *
+ * Discovered on /clusters route (C3DataTable filter toolbar overlapping
+ * the table header row) during PoC validation 2026-06-16.
+ */
+:where(.c4-ui) :is(button, input, optgroup, select, textarea) {
+  font: revert;
+  margin: revert;
+  padding: revert;
+}
+
+/* Consumer overrides go below. */

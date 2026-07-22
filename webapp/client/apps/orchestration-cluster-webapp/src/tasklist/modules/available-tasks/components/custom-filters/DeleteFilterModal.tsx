@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Modal} from '@carbon/react';
 import {Trans, useTranslation} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
+import {Modal} from '#/shared/design-system-compat';
 
 type Props = {
 	isOpen: boolean;

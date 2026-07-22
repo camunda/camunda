@@ -6,11 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {OverflowMenu, OverflowMenuItem} from '@carbon/react';
-import {Checkmark, SortAscending} from '@carbon/react/icons';
 import {useNavigate, useSearch} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
+import {CheckmarkIcon, OverflowMenu, OverflowMenuItem, SortAscendingIcon} from '#/shared/design-system-compat';
 import styles from './Filters.module.scss';
 import {
 	isBuiltInFilter,
@@ -76,7 +75,7 @@ const Filters: React.FC = () => {
 			<OverflowMenu
 				aria-label={t('tasklist.taskFiltersSortButton')}
 				iconDescription={t('tasklist.taskFiltersSortButton')}
-				renderIcon={SortAscending}
+				renderIcon={SortAscendingIcon}
 				size="md"
 				align="bottom"
 				menuOptionsClass={styles.overflowMenu}
@@ -87,7 +86,7 @@ const Filters: React.FC = () => {
 						aria-selected={sortBy === id}
 						itemText={
 							<div className={styles.sortItem}>
-								<Checkmark aria-label="" size={20} style={{visibility: sortBy === id ? undefined : 'hidden'}} />
+								<CheckmarkIcon aria-label="" size={20} style={{visibility: sortBy === id ? undefined : 'hidden'}} />
 								{t(SORTING_OPTION_LABEL_KEYS[id])}
 							</div>
 						}

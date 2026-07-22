@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Select, SelectItem} from '@carbon/react';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
 import {queries} from '#/shared/http/queries';
+import {Select, SelectItem} from '#/shared/design-system-compat';
 
 const DEFAULT_TENANT_ID = '<default>';
 
@@ -33,9 +33,11 @@ const ProcessesSelect: React.FC<Props> = ({tenantId = DEFAULT_TENANT_ID, ...prop
 		},
 	});
 
+	const allProcessesLabel = t('tasklist.customFiltersModalAllProcesses');
+
 	return (
-		<Select {...props}>
-			<SelectItem value="all" text={t('tasklist.customFiltersModalAllProcesses')} />
+		<Select placeholder={allProcessesLabel} {...props}>
+			<SelectItem value="all" text={allProcessesLabel} />
 			{processes.map(({value, label}) => (
 				<SelectItem key={value} value={value} text={label} />
 			))}

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Popover, PopoverContent} from '@carbon/react';
+import {Popover, PopoverContent} from '#/shared/design-system-compat';
 import {useCallback, useState} from 'react';
 import {cn} from '#/shared/cn';
 import styles from './LabelWithPopover.module.scss';

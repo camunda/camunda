@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Stack} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
+import {Stack} from '#/shared/design-system-compat';
 import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
 import {AvailableTasks} from '#/tasklist/modules/available-tasks/components/AvailableTasks';
 import {CollapsiblePanel} from '#/tasklist/modules/available-tasks/components/CollapsiblePanel';

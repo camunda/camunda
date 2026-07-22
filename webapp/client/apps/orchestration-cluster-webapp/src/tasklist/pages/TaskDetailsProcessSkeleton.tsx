@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {SkeletonText} from '@carbon/react';
+import {SkeletonText} from '#/shared/design-system-compat';
 import styles from './TaskDetailsProcessSkeleton.module.scss';
 
 const TaskDetailsProcessSkeleton: React.FC = () => {

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {InlineNotification} from '@carbon/react';
+import {InlineNotification} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
 import type {FallbackProps} from 'react-error-boundary';
 

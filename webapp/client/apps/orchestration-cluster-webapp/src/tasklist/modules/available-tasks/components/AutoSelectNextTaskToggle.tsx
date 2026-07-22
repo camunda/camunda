@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Toggle} from '@carbon/react';
+import {Toggle} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
 import styles from './AutoSelectNextTaskToggle.module.scss';
 import {useCallback, useState} from 'react';

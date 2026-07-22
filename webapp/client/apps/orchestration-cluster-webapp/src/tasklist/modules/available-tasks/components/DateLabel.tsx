@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Popover, Stack} from '@carbon/react';
+import {Popover, Stack} from '#/shared/design-system-compat';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
 import {LabelWithPopover} from './LabelWithPopover';
 import styles from './DateLabel.module.scss';

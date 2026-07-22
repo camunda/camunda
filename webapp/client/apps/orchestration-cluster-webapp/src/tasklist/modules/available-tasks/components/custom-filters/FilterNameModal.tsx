@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ComposedModal, ModalHeader, ModalBody, ModalFooter, TextInput, Button} from '@carbon/react';
+import {ComposedModal, ModalHeader, ModalBody, ModalFooter, TextInput, Button} from '#/shared/design-system-compat';
 import {Field, Form} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
 
