@@ -768,7 +768,9 @@ public class AgenticControlDashboardService {
         null);
     return buildTile(
         TOOL_CALLS_HEATMAP_REPORT_ID,
-        new PositionDto(0, 14),
+        // Top of the reliability-and-tool-calls section: the smallest y in the section, so the
+        // grid's vertical compaction floats it above the number tiles.
+        new PositionDto(0, 0),
         new DimensionDto(18, 4),
         Map.of(
             TILE_CONFIG_VISIBLE_IN_L1_ONLY,
@@ -814,7 +816,9 @@ public class AgenticControlDashboardService {
         null);
     return buildTile(
         DURATION_HEATMAP_REPORT_ID,
-        new PositionDto(0, 14),
+        // Top of the duration section: the smallest y in the section, so the grid's vertical
+        // compaction floats it above the percentile and stability tiles.
+        new PositionDto(0, 0),
         new DimensionDto(18, 4),
         Map.of(TILE_CONFIG_VISIBLE_IN_L1_ONLY, true, TILE_CONFIG_SECTION, TILE_SECTION_DURATION));
   }

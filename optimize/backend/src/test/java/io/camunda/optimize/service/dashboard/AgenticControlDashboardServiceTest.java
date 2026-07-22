@@ -928,7 +928,7 @@ public class AgenticControlDashboardServiceTest {
         tileById(saved, AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID);
 
     assertThat(heatmapTile.getPosition().getX()).isZero();
-    assertThat(heatmapTile.getPosition().getY()).isEqualTo(14);
+    assertThat(heatmapTile.getPosition().getY()).isZero();
     assertThat(heatmapTile.getDimensions().getWidth()).isEqualTo(18);
     assertThat(heatmapTile.getDimensions().getHeight()).isEqualTo(4);
     assertThat(heatmapTile.getConfiguration())
@@ -1022,7 +1022,7 @@ public class AgenticControlDashboardServiceTest {
         tileById(saved, AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID);
 
     assertThat(heatmapTile.getPosition().getX()).isZero();
-    assertThat(heatmapTile.getPosition().getY()).isEqualTo(14);
+    assertThat(heatmapTile.getPosition().getY()).isZero();
     assertThat(heatmapTile.getDimensions().getWidth()).isEqualTo(18);
     assertThat(heatmapTile.getDimensions().getHeight()).isEqualTo(4);
     assertThat(heatmapTile.getConfiguration())
