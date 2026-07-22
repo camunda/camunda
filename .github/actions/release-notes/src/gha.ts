@@ -7,7 +7,7 @@ import { appendFileSync } from 'node:fs';
  * command/file protocols — nothing clever.
  */
 
-const escape = (s: string): string => s.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+const escape = (msg: string): string => msg.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 
 const appendEnvFile = (envVar: string, content: string): void => {
   const file = process.env[envVar];
@@ -44,7 +44,7 @@ class Summary {
     return this;
   }
   addList(items: string[]): this {
-    this.buf += `<ul>${items.map((i) => `<li>${i}</li>`).join('')}</ul>\n`;
+    this.buf += `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>\n`;
     return this;
   }
   async write(): Promise<void> {

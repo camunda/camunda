@@ -15,7 +15,7 @@ const node_fs_1 = __nccwpck_require__(24);
  * command features this action never touches. These are the documented Actions
  * command/file protocols — nothing clever.
  */
-const escape = (s) => s.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+const escape = (msg) => msg.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 const appendEnvFile = (envVar, content) => {
     const file = process.env[envVar];
     if (file)
@@ -53,7 +53,7 @@ class Summary {
         return this;
     }
     addList(items) {
-        this.buf += `<ul>${items.map((i) => `<li>${i}</li>`).join('')}</ul>\n`;
+        this.buf += `<ul>${items.map((item) => `<li>${item}</li>`).join('')}</ul>\n`;
         return this;
     }
     async write() {
@@ -204,25 +204,25 @@ function kindOf(keyword) {
 function parseRefs(text) {
     const refs = [];
     const seen = new Set(); // dedupe by match offset
-    const push = (m, repo, num) => {
-        if (seen.has(m.index))
+    const push = (match, repo, num) => {
+        if (seen.has(match.index))
             return;
-        seen.add(m.index);
-        const keyword = m[1] ? m[1].toLowerCase().replace(/\s+/g, ' ') : null;
+        seen.add(match.index);
+        const keyword = match[1] ? match[1].toLowerCase().replace(/\s+/g, ' ') : null;
         refs.push({
-            raw: m[0].trim(),
+            raw: match[0].trim(),
             number: Number(num),
             repo: repo ?? null,
             keyword,
             kind: kindOf(keyword),
-            index: m.index,
+            index: match.index,
         });
     };
-    for (const m of text.matchAll(URL))
-        push(m, m[2] ?? null, m[3]);
-    for (const m of text.matchAll(SHORTHAND))
-        push(m, m[2] ?? null, m[3]);
-    return refs.sort((a, b) => a.index - b.index);
+    for (const match of text.matchAll(URL))
+        push(match, match[2] ?? null, match[3]);
+    for (const match of text.matchAll(SHORTHAND))
+        push(match, match[2] ?? null, match[3]);
+    return refs.sort((first, second) => first.index - second.index);
 }
 /**
  * Slice out a markdown section body: everything after the matching heading up
@@ -231,11 +231,11 @@ function parseRefs(text) {
 function extractSection(body, heading = exports.SECTION_HEADING) {
     const lines = body.split(/\r?\n/);
     const headingRe = new RegExp(`^#{1,6}\\s+${escapeRe(heading)}\\s*$`, 'i');
-    const start = lines.findIndex((l) => headingRe.test(l.trim()));
+    const start = lines.findIndex((line) => headingRe.test(line.trim()));
     if (start < 0)
         return null;
     const rest = lines.slice(start + 1);
-    const end = rest.findIndex((l) => /^#{1,6}\s+\S/.test(l));
+    const end = rest.findIndex((line) => /^#{1,6}\s+\S/.test(line));
     return (end < 0 ? rest : rest.slice(0, end)).join('\n');
 }
 /** True when the opt-out checkbox is present and ticked. */
@@ -243,8 +243,8 @@ function isOptOutTicked(body) {
     const re = new RegExp(String.raw `^\s*[-*]\s*\[x\]\s*.*${escapeRe(exports.OPT_OUT_PHRASE)}`, 'im');
     return re.test(body);
 }
-function escapeRe(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function escapeRe(literal) {
+    return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 
@@ -270,10 +270,10 @@ exports.decide = decide;
  * Cross-repo refs and backport markers never satisfy the requirement on their own.
  */
 function decide(refs, optOut) {
-    const sameRepo = refs.filter((r) => !r.crossRepo && r.kind !== 'backport');
-    const prRefs = sameRepo.filter((r) => r.target === 'pullRequest');
+    const sameRepo = refs.filter((ref) => !ref.crossRepo && ref.kind !== 'backport');
+    const prRefs = sameRepo.filter((ref) => ref.target === 'pullRequest');
     if (prRefs.length > 0) {
-        const list = prRefs.map((r) => `#${r.number}`).join(', ');
+        const list = prRefs.map((ref) => `#${ref.number}`).join(', ');
         return {
             outcome: 'fail',
             code: 'pr-ref-in-section',
@@ -286,18 +286,18 @@ function decide(refs, optOut) {
     if (optOut) {
         return { outcome: 'pass', code: 'opt-out', reasons: ['Opt-out checkbox ticked: no linked issue required.'] };
     }
-    const liveIssues = sameRepo.filter((r) => r.target === 'issue');
+    const liveIssues = sameRepo.filter((ref) => ref.target === 'issue');
     if (liveIssues.length > 0) {
-        const closing = liveIssues.some((r) => r.kind === 'closing');
-        const list = liveIssues.map((r) => `#${r.number}`).join(', ');
+        const closing = liveIssues.some((ref) => ref.kind === 'closing');
+        const list = liveIssues.map((ref) => `#${ref.number}`).join(', ');
         return {
             outcome: 'pass',
             code: closing ? 'section-closing' : 'section-contributor',
             reasons: [`Linked to issue ${list} in the "Related issues" section.`],
         };
     }
-    const dead = sameRepo.filter((r) => r.target === 'missing').map((r) => `#${r.number}`);
-    const crossRepo = refs.filter((r) => r.crossRepo).map((r) => r.raw);
+    const dead = sameRepo.filter((ref) => ref.target === 'missing').map((ref) => `#${ref.number}`);
+    const crossRepo = refs.filter((ref) => ref.crossRepo).map((ref) => ref.raw);
     const reasons = [
         'No linked issue found in the "Related issues" section, and the opt-out checkbox is not ticked.',
         'Add a closing keyword with the tracked issue (e.g. "closes #1234"), or tick the opt-out checkbox.',

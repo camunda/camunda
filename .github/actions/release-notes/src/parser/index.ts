@@ -42,24 +42,24 @@ export function parseRefs(text: string): ParsedRef[] {
   const refs: ParsedRef[] = [];
   const seen = new Set<number>(); // dedupe by match offset
 
-  const push = (m: RegExpExecArray, repo: string | null, num: string) => {
-    if (seen.has(m.index)) return;
-    seen.add(m.index);
-    const keyword = m[1] ? m[1].toLowerCase().replace(/\s+/g, ' ') : null;
+  const push = (match: RegExpExecArray, repo: string | null, num: string) => {
+    if (seen.has(match.index)) return;
+    seen.add(match.index);
+    const keyword = match[1] ? match[1].toLowerCase().replace(/\s+/g, ' ') : null;
     refs.push({
-      raw: m[0].trim(),
+      raw: match[0].trim(),
       number: Number(num),
       repo: repo ?? null,
       keyword,
       kind: kindOf(keyword),
-      index: m.index,
+      index: match.index,
     });
   };
 
-  for (const m of text.matchAll(URL)) push(m, m[2] ?? null, m[3]!);
-  for (const m of text.matchAll(SHORTHAND)) push(m, m[2] ?? null, m[3]!);
+  for (const match of text.matchAll(URL)) push(match, match[2] ?? null, match[3]!);
+  for (const match of text.matchAll(SHORTHAND)) push(match, match[2] ?? null, match[3]!);
 
-  return refs.sort((a, b) => a.index - b.index);
+  return refs.sort((first, second) => first.index - second.index);
 }
 
 /**
@@ -69,10 +69,10 @@ export function parseRefs(text: string): ParsedRef[] {
 export function extractSection(body: string, heading = SECTION_HEADING): string | null {
   const lines = body.split(/\r?\n/);
   const headingRe = new RegExp(`^#{1,6}\\s+${escapeRe(heading)}\\s*$`, 'i');
-  const start = lines.findIndex((l) => headingRe.test(l.trim()));
+  const start = lines.findIndex((line) => headingRe.test(line.trim()));
   if (start < 0) return null;
   const rest = lines.slice(start + 1);
-  const end = rest.findIndex((l) => /^#{1,6}\s+\S/.test(l));
+  const end = rest.findIndex((line) => /^#{1,6}\s+\S/.test(line));
   return (end < 0 ? rest : rest.slice(0, end)).join('\n');
 }
 
@@ -82,6 +82,6 @@ export function isOptOutTicked(body: string): boolean {
   return re.test(body);
 }
 
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function escapeRe(literal: string): string {
+  return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
