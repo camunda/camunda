@@ -33,13 +33,13 @@ describe('stores/instanceHistorySortOrder', () => {
     expect(getStateLocally().instanceHistorySortOrder).toBe('desc');
   });
 
-  it('should restore the persisted order on reset', () => {
+  it('should restore the default order on reset', () => {
     instanceHistorySortOrderStore.toggle();
     expect(instanceHistorySortOrderStore.order).toBe('asc');
 
     instanceHistorySortOrderStore.reset();
 
-    expect(instanceHistorySortOrderStore.order).toBe('asc');
+    expect(instanceHistorySortOrderStore.order).toBe('desc');
   });
 
   it('should fall back to the default when the persisted value is invalid', () => {

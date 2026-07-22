@@ -18,16 +18,15 @@ type State = {
 const STORAGE_KEY = 'instanceHistorySortOrder';
 const DEFAULT_ORDER: QuerySortOrder = 'desc';
 
-function getInitialOrder(): QuerySortOrder {
-  const storedOrder = getStateLocally()[STORAGE_KEY];
-  return storedOrder === 'asc' || storedOrder === 'desc'
-    ? storedOrder
+const STORED_ORDER: QuerySortOrder = getStateLocally()[STORAGE_KEY];
+const INITIAL_ORDER: QuerySortOrder =
+  STORED_ORDER === 'asc' || STORED_ORDER === 'desc'
+    ? STORED_ORDER
     : DEFAULT_ORDER;
-}
 
 class InstanceHistorySortOrder {
   state: State = {
-    order: getInitialOrder(),
+    order: INITIAL_ORDER,
   };
 
   constructor() {
@@ -56,7 +55,7 @@ class InstanceHistorySortOrder {
 
   reset = () => {
     this.state = {
-      order: getInitialOrder(),
+      order: INITIAL_ORDER,
     };
   };
 }
