@@ -150,7 +150,8 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                     final var jobStreamService =
                         new JobStreamService(
                             remoteStreamService,
-                            new RemoteJobStreamer(streamer, clusterServices.getEventService()),
+                            new RemoteJobStreamer(
+                                streamer, clusterServices.getEventService(), physicalTenantId),
                             errorHandlerService);
                     clusterServices.getMembershipService().addListener(remoteStreamService);
                     brokerStartupContext.addJobStreamService(physicalTenantId, jobStreamService);

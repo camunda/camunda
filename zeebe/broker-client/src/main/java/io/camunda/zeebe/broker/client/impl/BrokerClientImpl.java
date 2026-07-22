@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public final class BrokerClientImpl implements BrokerClient {
   private final BrokerRequestManager requestManager;
 
   private boolean isClosed;
-  private Subscription jobAvailableSubscription;
+  private final List<Subscription> jobAvailableSubscriptions = new CopyOnWriteArrayList<>();
   private final ClusterEventService eventService;
   private final ActorSchedulingService schedulingService;
   private final AtomixClientTransportAdapter atomixTransportAdapter;
@@ -82,9 +83,7 @@ public final class BrokerClientImpl implements BrokerClient {
     doAndLogException(atomixTransportAdapter::close);
     LOG.debug("transport client closed");
 
-    if (jobAvailableSubscription != null) {
-      jobAvailableSubscription.close();
-    }
+    jobAvailableSubscriptions.forEach(Subscription::close);
 
     LOG.debug("Gateway broker client closed.");
   }
@@ -139,7 +138,7 @@ public final class BrokerClientImpl implements BrokerClient {
   @Override
   public void subscribeJobAvailableNotification(
       final String topic, final Consumer<String> handler) {
-    jobAvailableSubscription =
+    final var subscription =
         eventService
             .subscribe(
                 topic,
@@ -148,6 +147,7 @@ public final class BrokerClientImpl implements BrokerClient {
                   return CompletableFuture.completedFuture(null);
                 })
             .join();
+    jobAvailableSubscriptions.add(subscription);
   }
 
   private void doAndLogException(final Runnable r) {
