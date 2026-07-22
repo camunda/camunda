@@ -160,7 +160,8 @@ public final class RecoveryPartitionManager
       return;
     }
 
-    final var partitionCount = brokerCfg.getCluster().getPartitionsCount();
+    final var partitionCount =
+        clusterConfigurationService.getCurrentClusterConfiguration().partitionCount();
     clusterConfigurationService.registerRequestValidator(
         partitionGroup,
         new RestoreValidator(partitionCount, backupStore, exportedPositionSupplier));
