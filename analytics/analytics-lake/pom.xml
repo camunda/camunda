@@ -73,6 +73,236 @@
       <artifactId>iceberg-core</artifactId>
       <version>${version.iceberg}</version>
     </dependency>
+    <!--
+      L0 sink encoder (io.camunda.analytics.lake.sink.encode): writes real Parquet files with
+      Iceberg field ids, column metrics and bloom filters via iceberg-parquet's Parquet.write/
+      writeData builders, driving iceberg-data's GenericParquetWriter over a flyweight
+      org.apache.iceberg.data.Record view of a SortedRun. Pinned to the same ${version.iceberg} as
+      iceberg-core above.
+
+      Transitively pulls org.apache.parquet:parquet-avro/parquet-hadoop/parquet-column/parquet-common
+      (Parquet 1.16.0, iceberg-parquet 1.10.2's own pin) plus codec libs (zstd-jni, snappy-java,
+      aircompressor). parquet-hadoop declares its own org.apache.hadoop:hadoop-client/hadoop-common/
+      hadoop-mapreduce-client-core/hadoop-annotations dependencies as `provided` scope upstream, which
+      Maven does not propagate transitively; however org.apache.iceberg.parquet.Parquet$WriteBuilder's
+      own constructor (used by both Parquet.write(...) and Parquet.writeData(...)) directly
+      instantiates a plain org.apache.hadoop.conf.Configuration(), confirmed by an isolated smoke
+      test throwing NoClassDefFoundError without it on the classpath. hadoop-common is therefore a
+      real, unavoidable dependency of writing Parquet through iceberg-parquet's builder API, not an
+      optional one this module can route around; see the hadoop-common dependency below (with
+      heavy exclusions) for the rest of that story.
+    -->
+    <dependency>
+      <groupId>org.apache.iceberg</groupId>
+      <artifactId>iceberg-parquet</artifactId>
+      <version>${version.iceberg}</version>
+      <exclusions>
+        <!--
+          Excluded to satisfy the enforcer plugin's dependency-convergence rule: iceberg-core
+          already brings io.airlift:aircompressor:2.0.3 (a level up in this same pom); parquet-
+          hadoop (this dependency's own transitive) brings the older 2.0.2, and having both
+          reachable in the graph fails convergence even though Maven's own nearest-wins mediation
+          would have picked 2.0.3 anyway. No functional loss: aircompressor is used identically by
+          both (Snappy/LZ4 codec support), just at iceberg-core's slightly newer version.
+        -->
+        <exclusion>
+          <groupId>io.airlift</groupId>
+          <artifactId>aircompressor</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!--
+      iceberg-parquet's own pom declares parquet-avro/parquet-hadoop/parquet-column as `runtime`
+      scope (they write files iceberg-core hands to iceberg-parquet, so iceberg's own code only
+      needs them at runtime); but this module's encoder code references org.apache.parquet.
+      schema.MessageType directly (the create-writer-function signature iceberg-parquet's write
+      builder takes), which needs parquet-column on the COMPILE classpath, not just runtime. Pinned
+      to the same 1.16.0 iceberg-parquet already resolves parquet-avro/parquet-hadoop to, so this
+      is scope promotion, not a second version in the graph.
+    -->
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-column</artifactId>
+      <version>1.16.0</version>
+    </dependency>
+    <!--
+      Pulled in only so org.apache.iceberg.parquet.Parquet$WriteBuilder's constructor can
+      instantiate a plain, never-configured org.apache.hadoop.conf.Configuration(); see the
+      iceberg-parquet dependency comment above. This module never touches a Hadoop FileSystem,
+      never reads hadoop core-site.xml, and never uses Hadoop's own IPC/HTTP/auth machinery, so the
+      exclusions below strip hadoop-common's own (compile-scoped, so otherwise fully transitive)
+      dependency graph down to what's needed for that one class to load and construct: the
+      annotations module it's compiled against, guava (Preconditions used inside Configuration),
+      and woodstox/stax2 (Configuration's XML resource parser uses a StAX XMLInputFactory even
+      though this module never calls a method that actually parses a resource). Everything else
+      here, Jetty, Jersey, ZooKeeper, Curator, Kerby/Kerberos, the HTTP clients, the Hadoop auth
+      and compression modules, Avro (a different, older version than iceberg-core's own pin), and
+      so on, is Hadoop's own filesystem/RPC/web-UI stack, unrelated to constructing a
+      Configuration object purely to satisfy iceberg-parquet's constructor; version 3.3.0 matches
+      parquet-hadoop 1.16.0's own (otherwise-provided-scope) pin so no other version resolution
+      surprises are introduced.
+    -->
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <version>3.3.0</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.sun.jersey</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.activation</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.zookeeper</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.curator</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.kerby</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.htrace</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-auth</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.jcraft</groupId>
+          <artifactId>jsch</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.httpcomponents</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-configuration2</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-compress</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-beanutils</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.code.gson</groupId>
+          <artifactId>gson</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.re2j</groupId>
+          <artifactId>re2j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.google.protobuf</groupId>
+          <artifactId>protobuf-java</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.avro</groupId>
+          <artifactId>avro</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>dnsjava</groupId>
+          <artifactId>dnsjava</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.wildfly.openssl</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>log4j</groupId>
+          <artifactId>log4j</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-log4j12</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!--
+      Only for org.apache.iceberg.data.Record (the flyweight interface BatchRowView implements) and
+      org.apache.iceberg.data.parquet.GenericParquetWriter (the row-to-Parquet write function the
+      iceberg-parquet builder is configured with); this module never reads/writes ORC. iceberg-data
+      1.10.2 pulls org.apache.orc:orc-core:nohive transitively (its own ORC generic reader/writer
+      support), which drags in Hive storage-api and protobuf-java for a format this module's encoder
+      never touches; excluded to keep the dependency graph to what L0 sink encoding actually uses.
+    -->
+    <dependency>
+      <groupId>org.apache.iceberg</groupId>
+      <artifactId>iceberg-data</artifactId>
+      <version>${version.iceberg}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.orc</groupId>
+          <artifactId>orc-core</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!--
+      Test-only: parquet-java's own org.apache.parquet.ParquetReadOptions$Builder constructor
+      references org.apache.hadoop.mapreduce.lib.input.FileInputFormat directly (confirmed by an
+      isolated smoke test throwing NoClassDefFoundError even when building ParquetReadOptions
+      against parquet-common's Hadoop-free PlainParquetConfiguration); this is unavoidable for
+      any code path that reads a Parquet footer back with parquet-java's ParquetFileReader,
+      including this module's own encoder tests (see the L0 sink encoder test package), which is
+      exactly what those tests need to verify field ids, bloom filters and row-group counts land
+      correctly in the written files without re-deriving them by hand. Never needed by main code
+      (the encoder writes and never reads its own output; see BatchEncoder's javadoc), so this is
+      test scope only. hadoop-yarn-client/hadoop-yarn-common/hadoop-hdfs-client are hadoop-
+      mapreduce-client-core's own (otherwise fully transitive, compile-scoped) dependencies for
+      actually running MapReduce jobs against YARN/HDFS; excluded because loading the
+      FileInputFormat class definition needs none of that.
+    -->
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-core</artifactId>
+      <version>3.3.0</version>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-yarn-client</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-yarn-common</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-hdfs-client</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.fasterxml.jackson.core</groupId>
+          <artifactId>jackson-databind</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
