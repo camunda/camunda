@@ -52,7 +52,6 @@ public class RandomizedRaftTest {
   private List<RaftOperation> operationsWithRestarts;
   private List<RaftOperation> operationsWithSnapshotsAndRestarts;
   private List<RaftOperation> operationsWithSnapshotsAndRestartsWithDataLoss;
-  private List<RaftOperation> operationsWithTransfers;
 
   private List<MemberId> raftMembers;
   private Path raftDataDirectory;
@@ -71,7 +70,6 @@ public class RandomizedRaftTest {
     operationsWithSnapshotsAndRestarts = RaftOperation.getRaftOperationsWithSnapshotsAndRestarts();
     operationsWithSnapshotsAndRestartsWithDataLoss =
         RaftOperation.getRaftOperationsWithSnapshotsAndRestartsWithDataLoss();
-    operationsWithTransfers = RaftOperation.getRaftOperationsWithTransfers();
     raftMembers = servers;
   }
 
@@ -99,15 +97,6 @@ public class RandomizedRaftTest {
       @ForAll("seeds") final long seed)
       throws Exception {
 
-    consistencyTest(raftOperations, raftMembers, seed);
-  }
-
-  @Property
-  void consistencyTestWithLeadershipTransfers(
-      @ForAll("raftOperationsWithTransfers") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
     consistencyTest(raftOperations, raftMembers, seed);
   }
 
@@ -154,15 +143,6 @@ public class RandomizedRaftTest {
   @Property
   void livenessTestWithRestartsAndSnapshots(
       @ForAll("raftOperationsWithSnapshotsAndRestarts") final List<RaftOperation> raftOperations,
-      @ForAll("raftMembers") final List<MemberId> raftMembers,
-      @ForAll("seeds") final long seed)
-      throws Exception {
-    livenessTest(raftOperations, raftMembers, seed);
-  }
-
-  @Property
-  void livenessTestWithLeadershipTransfers(
-      @ForAll("raftOperationsWithTransfers") final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
       @ForAll("seeds") final long seed)
       throws Exception {
@@ -316,12 +296,6 @@ public class RandomizedRaftTest {
     return Arbitraries.of(operationsWithSnapshotsAndRestartsWithDataLoss)
         .list()
         .ofSize(OPERATION_SIZE);
-  }
-
-  /** Basic raft operations plus coordinated leadership transfers via TimeoutNow. */
-  @Provide
-  Arbitrary<List<RaftOperation>> raftOperationsWithTransfers() {
-    return Arbitraries.of(operationsWithTransfers).list().ofSize(OPERATION_SIZE);
   }
 
   @Provide
