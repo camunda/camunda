@@ -175,3 +175,24 @@ export async function expectProcessInstanceCanBeFound(
     timeout: 180_000,
   });
 }
+
+export async function expectProcessState(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  state: string,
+  assertionOptions: {
+    intervals?: number[];
+    timeout?: number;
+  } = defaultAssertionOptions,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.post(buildUrl('/process-instances/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey}},
+    });
+    await assertStatusCode(res, 200);
+    const json = await res.json();
+    expect(json.items).toHaveLength(1);
+    expect(json.items[0].state).toBe(state);
+  }).toPass(assertionOptions);
+}
