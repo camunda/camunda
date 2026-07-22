@@ -17,13 +17,14 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
-import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Validates {@link RestoreRequest}s submitted through the cluster-configuration API while a broker
  * is in recovery mode.
  */
+@NullMarked
 public final class RestoreValidator
     implements ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest> {
 
@@ -39,8 +40,7 @@ public final class RestoreValidator
   }
 
   @Override
-  public @NonNull Either<Exception, RestoreRequest> validate(
-      final @NonNull RestoreRequest request) {
+  public Either<Exception, RestoreRequest> validate(final RestoreRequest request) {
     if (backupStore == null) {
       return Either.left(
           new InvalidRequest("Cannot restore: no backup store is configured on this broker."));

@@ -23,6 +23,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Registry of {@link ClusterConfigurationRequestValidator}s keyed by request type class and
  * physical tenant.
+ *
+ * <p>A {@code null} tenantId is the wildcard entry: the validator registered under it applies to
+ * every tenant that has no specific, tenant-scoped validator registered for the same request type.
  */
 @NullMarked
 public final class RequestValidatorRegistry {
@@ -55,6 +58,15 @@ public final class RequestValidatorRegistry {
     }
   }
 
+  /**
+   * Looks up the validator registered for the given request type and tenant. Falls back to a
+   * validator registered with a {@code null} tenant (applicable to all tenants) if no
+   * tenant-specific one is registered.
+   *
+   * @param physicalTenantId the physical tenant to look up a validator for
+   * @param requestType the request type to look up a validator for
+   * @return the matching validator, or empty if none is registered for this type and tenant
+   */
   @SuppressWarnings("unchecked")
   public <T extends ClusterConfigurationManagementRequest>
       Optional<ClusterConfigurationRequestValidator<T, ?>> getValidator(
@@ -87,6 +99,12 @@ public final class RequestValidatorRegistry {
     return Optional.ofNullable(validators.get(key));
   }
 
+  /**
+   * Composite lookup key for {@link #validators}: a request type paired with the physical tenant a
+   * validator applies to. A {@code null} {@code tenantId} is the wildcard entry — the validator it
+   * maps to applies to every tenant that has no more specific, tenant-scoped entry for the same
+   * {@code requestType}.
+   */
   private record ValidatorKey(
       Class<? extends ClusterConfigurationManagementRequest> requestType,
       @Nullable String tenantId) {}
