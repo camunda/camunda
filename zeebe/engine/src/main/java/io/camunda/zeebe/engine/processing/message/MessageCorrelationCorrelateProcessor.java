@@ -167,10 +167,22 @@ public final class MessageCorrelationCorrelateProcessor
     // Now actually correlate with state writes
     final var blockedProcessIds = new HashSet<String>();
     correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
-    correlateBehavior.correlateToMessageStartEvents(
-        messageData, correlatingSubscriptions, blockedProcessIds);
+    final var delegatedCrossPartition =
+        correlateBehavior.correlateToMessageStartEvents(
+            messageData, correlatingSubscriptions, blockedProcessIds);
 
     if (correlatingSubscriptions.isEmpty()) {
+      if (delegatedCrossPartition) {
+        // A message-start correlation was delegated to P_B = hash(businessId) because the
+        // businessId hashes to a different partition than this one (P_K = hash(correlationKey)).
+        // The instance is being created asynchronously on P_B; the synchronous response is
+        // therefore deferred. The CORRELATING event applied above stored the request's
+        // requestId/requestStreamId keyed by messageKey, and the cross-partition reply processors
+        // on P_K (STARTED / UNIQUENESS_REJECTED / NO_SUBSCRIPTION_REJECTED) resolve that pending
+        // request into the final CORRELATED / NOT_CORRELATED response. Returning NOT_FOUND here
+        // would wrongly report failure while the instance is being created.
+        return;
+      }
       final String errorMessage;
       if (!blockedProcessIds.isEmpty()) {
         errorMessage =
