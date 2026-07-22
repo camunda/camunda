@@ -52,6 +52,12 @@ function splitEncodedFilterOperation(encodedOperation: string) {
  * {@linkcode encodeFilterOperation}) into the API filter shape, applying the same
  * per-operator transforms as the legacy `advancedStringFilterCodec` decode direction
  * (wildcard-wrapping `$like`, splitting `$in`/`$notIn` into arrays).
+ *
+ * Legacy builds this same raw, pre-coercion shape but wraps it in a `z.codec`, whose
+ * output-schema validation is what actually turns `$exists`'s string into a boolean and
+ * rejects a malformed `$in`/`$notIn` (e.g. an empty id from a stray comma). This decoder
+ * isn't a codec, so it runs the result through `advancedStringFilterSchema` itself —
+ * dropping this step would silently send `$exists` as a string over the wire.
  */
 function decodeAdvancedStringFilter(encoded: string): AdvancedStringFilter | undefined {
 	const splitOperation = splitEncodedFilterOperation(encoded);
@@ -60,19 +66,24 @@ function decodeAdvancedStringFilter(encoded: string): AdvancedStringFilter | und
 	}
 
 	const {operator, value} = splitOperation;
-	switch (operator) {
-		case '$eq':
-		case '$neq':
-		case '$exists':
-			return {[operator]: value};
-		case '$like':
-			return {[operator]: `*${value}*`};
-		case '$in':
-		case '$notIn':
-			return {[operator]: parseIds(value)};
-		default:
-			return undefined;
-	}
+	const raw: z.input<typeof advancedStringFilterSchema> = (() => {
+		switch (operator) {
+			case '$eq':
+			case '$neq':
+			case '$exists':
+				return {[operator]: value};
+			case '$like':
+				return {[operator]: `*${value}*`};
+			case '$in':
+			case '$notIn':
+				return {[operator]: parseIds(value)};
+			default:
+				return {};
+		}
+	})();
+
+	const result = advancedStringFilterSchema.safeParse(raw);
+	return result.success ? result.data : undefined;
 }
 
 export {encodeFilterOperation, splitEncodedFilterOperation, decodeAdvancedStringFilter};
