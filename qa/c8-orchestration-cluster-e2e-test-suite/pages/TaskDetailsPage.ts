@@ -240,7 +240,7 @@ class TaskDetailsPage {
   }
 
   async checkChecklistBox(label: string): Promise<void> {
-    await this.page.getByLabel(label).check();
+    await this.page.getByLabel(label, {exact: true}).check();
   }
 
   async enterTwoValuesInTagList(value1: string, value2: string): Promise<void> {
