@@ -9,7 +9,6 @@ package io.camunda.zeebe.restore.validation;
 
 import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -27,6 +26,8 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -44,10 +45,11 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Exercises {@link RestoreValidator#validate(RestoreRequest)} against a mocked {@link BackupStore}.
- * {@code validate} reports invalid requests as an {@link Either.Left} rather than throwing;
- * exceptions raised by the RDBMS backup resolution itself (e.g. {@link IllegalStateException}) are
- * not caught and still propagate. On success, it resolves the request into a {@link
- * RestoreResolvedRequest} carrying the checkpoint ids to restore per partition.
+ * {@code validate} reports every failure as an {@link Either.Left} rather than throwing: malformed
+ * requests as {@link InvalidRequest}, missing backups/metadata as {@link NotFound}, and other
+ * resolution failures (e.g. no common checkpoint across partitions) as {@link InvalidState}. On
+ * success, it resolves the request into a {@link RestoreResolvedRequest} carrying the checkpoint
+ * ids to restore per partition.
  */
 final class RestoreValidatorResolverTest {
 
@@ -73,6 +75,7 @@ final class RestoreValidatorResolverTest {
 
     // then
     assertThat(assertInvalid(result))
+        .isInstanceOf(InvalidRequest.class)
         .hasMessage("Cannot restore: no backup store is configured on this broker.");
   }
 
@@ -86,11 +89,11 @@ final class RestoreValidatorResolverTest {
     assertThat(toComparable(resolved.backups())).isEqualTo(toComparable(expectedBackups));
   }
 
-  private static InvalidRequest assertInvalid(
+  private static RuntimeException assertInvalid(
       final Either<Exception, RestoreResolvedRequest> result) {
     assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft()).isInstanceOf(InvalidRequest.class);
-    return (InvalidRequest) result.getLeft();
+    assertThat(result.getLeft()).isInstanceOf(RuntimeException.class);
+    return (RuntimeException) result.getLeft();
   }
 
   private static Map<Integer, List<Long>> toComparable(final Map<Integer, long[]> backups) {
@@ -264,7 +267,10 @@ final class RestoreValidatorResolverTest {
       final var result = validator.validate(request);
 
       // then
-      assertThat(assertInvalid(result)).hasMessageContaining("Expected `from` to not be null");
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(
+              "Expected either backupIds or exportedPositionSupplier to be registered");
       verifyNoInteractions(backupStore);
     }
 
@@ -289,10 +295,13 @@ final class RestoreValidatorResolverTest {
       stubMetadata(2, singleCheckpointMetadata(2, 2L));
       final var validator = new RestoreValidator(2, backupStore, EXPORTED_POSITIONS);
 
-      // when / then
-      assertThatExceptionOfType(IllegalStateException.class)
-          .isThrownBy(() -> validator.validate(rdbmsRequest()))
-          .withMessageContaining("Could not find common checkpoint across partitions");
+      // when
+      final var result = validator.validate(rdbmsRequest());
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(InvalidState.class)
+          .hasMessageContaining("Could not find common checkpoint across partitions");
     }
 
     @Test
@@ -303,9 +312,10 @@ final class RestoreValidatorResolverTest {
       final var validator = new RestoreValidator(1, backupStore, EXPORTED_POSITIONS);
 
       // when / then
-      assertThatExceptionOfType(IllegalStateException.class)
-          .isThrownBy(() -> validator.validate(rdbmsRequest()))
-          .withMessage("No backup metadata found for partition 1");
+      final var result = validator.validate(rdbmsRequest());
+      assertThat(assertInvalid(result))
+          .isInstanceOf(InvalidState.class)
+          .hasMessageContaining("No backup metadata found for partition 1");
     }
 
     @Test
@@ -320,6 +330,7 @@ final class RestoreValidatorResolverTest {
 
       // then
       assertThat(assertInvalid(result))
+          .isInstanceOf(InvalidState.class)
           .hasMessage("No exported position found for partition 1 in RDBMS");
     }
 
@@ -365,6 +376,7 @@ final class RestoreValidatorResolverTest {
       // when / then
       final var result = validator.validate(request);
       assertThat(assertInvalid(result))
+          .isInstanceOf(NotFound.class)
           .hasMessageContaining("No completed backup found for partition");
     }
   }

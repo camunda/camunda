@@ -24,6 +24,7 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
@@ -131,7 +132,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     // then
     try (final var restoreApp = testRestoreApp(interval)) {
       assertThatThrownBy(restoreApp::start)
-          .isInstanceOf(IllegalStateException.class)
+          .isInstanceOf(InvalidState.class)
           .hasMessageContaining("No usable range found");
     }
   }

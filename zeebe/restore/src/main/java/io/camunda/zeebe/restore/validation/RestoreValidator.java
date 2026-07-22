@@ -17,6 +17,8 @@ import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.restore.RestorePointResolver;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
@@ -80,15 +82,15 @@ public final class RestoreValidator
       validateParameters(request);
       final var partitionBackups = resolveBackups(request);
       resolvedRequest = new RestoreResolvedRequest(partitionBackups, request.dryRun());
-    } catch (final IllegalArgumentException e) {
-      return Either.left(new InvalidRequest(e.getMessage()));
+    } catch (final Exception e) {
+      return Either.left(e);
     }
 
     return Either.right(resolvedRequest);
   }
 
   @VisibleForTesting
-  static void validateParameters(final RestoreRequest request) {
+  void validateParameters(final RestoreRequest request) {
     final var instantFrom = parseTimestamp(request.from(), "from");
     final var instantTo = parseTimestamp(request.to(), "to");
     final var hasTimeRange = hasTimeRange(instantFrom, instantTo);
@@ -108,6 +110,9 @@ public final class RestoreValidator
             instantFrom != null && instantTo != null && instantFrom.isAfter(instantTo),
             "Invalid time range: from (%s) must be before to (%s)"
                 .formatted(instantFrom, instantTo));
+        Preconditions.test(
+            !hasBackupIds && exportedPositionSupplier == null,
+            "Expected either backupIds or exportedPositionSupplier to be registered");
       }
       case "elasticsearch", "opensearch" -> {
         Preconditions.test(
@@ -115,8 +120,7 @@ public final class RestoreValidator
             "Time range restore (from/to) is not supported for %s.".formatted(databaseType));
         Preconditions.test(!hasBackupIds, "No backupId specified");
       }
-      default ->
-          throw new IllegalArgumentException("Invalid database type: " + request.databaseType());
+      default -> throw new InvalidState("Invalid database type: " + request.databaseType());
     }
   }
 
@@ -168,7 +172,7 @@ public final class RestoreValidator
                   statuses.stream()
                       .anyMatch(status -> status.statusCode() == BackupStatusCode.COMPLETED);
               if (!exists) {
-                throw new IllegalArgumentException(
+                throw new NotFound(
                     "No completed backup found for partition %d with backup id %d"
                         .formatted(partitionId, backupId));
               }
@@ -180,10 +184,15 @@ public final class RestoreValidator
     try {
       backups = findBackups(request);
     } catch (final CompletionException e) {
+      if (e.getCause() instanceof final IllegalStateException cause) {
+        throw new InvalidState(cause.getMessage(), cause);
+      }
       if (e.getCause() instanceof final RuntimeException exception) {
         throw exception;
       }
       throw e;
+    } catch (final IllegalStateException e) {
+      throw new InvalidState(e.getMessage(), e);
     }
 
     return backups.backupsByPartitionId().entrySet().stream()
@@ -199,11 +208,6 @@ public final class RestoreValidator
   private RestorableBackups findBackups(final RestoreRequest request) {
     final Instant instantTo = parseTimestamp(request.to(), "to");
     final Instant instantFrom = parseTimestamp(request.from(), "from");
-    if (exportedPositionSupplier == null && instantFrom == null) {
-      throw new IllegalArgumentException(
-          "Expected `from` to not be null, but got <null>. When the restore is not using a "
-              + "RDBMS as secondary storage, `from` parameter is required");
-    }
     final var exportedPositions =
         exportedPositionSupplier == null
             ? null
@@ -224,7 +228,7 @@ public final class RestoreValidator
                 partition -> {
                   final var position = positionSupplier.apply(partition);
                   if (position == null) {
-                    throw new IllegalArgumentException(
+                    throw new InvalidState(
                         "No exported position found for partition " + partition + " in RDBMS");
                   }
                   return position;
@@ -255,7 +259,7 @@ public final class RestoreValidator
                     opt ->
                         opt.orElseThrow(
                             () ->
-                                new IllegalStateException(
+                                new InvalidState(
                                     "No backup metadata found for partition " + partition))));
   }
 
@@ -271,7 +275,7 @@ public final class RestoreValidator
     try {
       return OffsetDateTime.parse(value).toInstant();
     } catch (final DateTimeParseException e) {
-      throw new IllegalArgumentException(
+      throw new InvalidRequest(
           "Invalid %s timestamp '%s': must be an ISO 8601 date-time.".formatted(field, value));
     }
   }
