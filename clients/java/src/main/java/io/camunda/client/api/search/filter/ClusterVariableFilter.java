@@ -19,8 +19,10 @@ import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.api.search.filter.builder.ClusterVariableKindProperty;
 import io.camunda.client.api.search.filter.builder.ClusterVariableScopeProperty;
+import io.camunda.client.api.search.filter.builder.MetadataValueProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public interface ClusterVariableFilter extends SearchRequestFilter {
@@ -99,6 +101,24 @@ public interface ClusterVariableFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ClusterVariableFilter isTruncated(final Boolean isTruncated);
+
+  /**
+   * Filters cluster variables by metadata entries, matching each key on equality with the given
+   * value.
+   *
+   * @param metadata a map of metadata key to the value it must equal
+   * @return the updated filter
+   */
+  ClusterVariableFilter metadata(final Map<String, Object> metadata);
+
+  /**
+   * Filters cluster variables by an advanced filter on the value of a single metadata key.
+   *
+   * @param key the metadata key to filter on
+   * @param fn the {@link MetadataValueProperty} consumer describing the filter
+   * @return the updated filter
+   */
+  ClusterVariableFilter metadata(final String key, final Consumer<MetadataValueProperty> fn);
 
   /**
    * Filters cluster variables by the specified kind.

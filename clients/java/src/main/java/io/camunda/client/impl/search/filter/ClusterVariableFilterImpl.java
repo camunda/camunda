@@ -20,12 +20,15 @@ import io.camunda.client.api.search.enums.ClusterVariableScope;
 import io.camunda.client.api.search.filter.ClusterVariableFilter;
 import io.camunda.client.api.search.filter.builder.ClusterVariableKindProperty;
 import io.camunda.client.api.search.filter.builder.ClusterVariableScopeProperty;
+import io.camunda.client.api.search.filter.builder.MetadataValueProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.ClusterVariableKindPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ClusterVariableScopePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.MetadataValuePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.ClusterVariableSearchQueryFilterRequest;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class ClusterVariableFilterImpl
@@ -97,6 +100,30 @@ public class ClusterVariableFilterImpl
   @Override
   public ClusterVariableFilter isTruncated(final Boolean isTruncated) {
     filter.setIsTruncated(isTruncated);
+    return this;
+  }
+
+  @Override
+  public ClusterVariableFilter metadata(final Map<String, Object> metadata) {
+    if (metadata != null && !metadata.isEmpty()) {
+      metadata.forEach(
+          (key, value) -> {
+            if (value == null) {
+              throw new IllegalArgumentException(
+                  "Metadata value cannot be null for key '" + key + "'");
+            }
+            metadata(key, b -> b.eq(value));
+          });
+    }
+    return this;
+  }
+
+  @Override
+  public ClusterVariableFilter metadata(
+      final String key, final Consumer<MetadataValueProperty> fn) {
+    final MetadataValueProperty property = new MetadataValuePropertyImpl();
+    fn.accept(property);
+    filter.putMetadataItem(key, provideSearchRequestProperty(property));
     return this;
   }
 
