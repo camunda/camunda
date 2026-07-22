@@ -338,7 +338,8 @@ public final class TestCluster implements CloseableSilently {
   public TestCluster awaitHealthyTopology(final Duration timeout) {
     Awaitility.await("until cluster topology is complete")
         .atMost(timeout)
-        .untilAsserted(() -> assertThat(allGateways()).allSatisfy(this::assertHealthyTopology));
+        .untilAsserted(
+            () -> assertThat(allGateways()).allSatisfy(TestCluster::assertHealthyTopology));
     return this;
   }
 
@@ -427,7 +428,7 @@ public final class TestCluster implements CloseableSilently {
     }
   }
 
-  private void assertHealthyTopology(final TestGateway<?> node) {
+  public static void assertHealthyTopology(final TestGateway<?> node) {
     assertThatCode(() -> node.probe(TestHealthProbe.READY))
         .as("gateway '%s' is ready", node.nodeId())
         .doesNotThrowAnyException();

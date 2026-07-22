@@ -10,6 +10,7 @@ package io.camunda.zeebe.management.cluster;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.atomix.cluster.BrokerMemberId;
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.management.cluster.BrokerId.Integer;
 import io.camunda.zeebe.management.cluster.BrokerId.String;
 import java.util.Objects;
@@ -55,6 +56,7 @@ public abstract sealed class BrokerId permits Integer, String {
     return switch (obj) {
       case final java.lang.Integer integer -> new Integer(integer);
       case final java.lang.String string -> new String(string);
+      case final MemberId memberId -> of(memberId.toString());
       case final BrokerId brokerId -> brokerId;
       default -> throw new IllegalStateException("Unexpected value: " + obj);
     };

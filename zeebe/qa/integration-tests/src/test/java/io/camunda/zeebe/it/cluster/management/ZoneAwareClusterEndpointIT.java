@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.it.cluster.management;
 
+import static io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers.addBrokerInZone;
+import static io.camunda.zeebe.qa.util.cluster.TestClusterBuilder.DEFAULT_CLUSTER_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -14,6 +16,7 @@ import feign.FeignException;
 import io.atomix.cluster.MemberId;
 import io.camunda.configuration.Zone;
 import io.camunda.zeebe.management.cluster.BrokerId;
+import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.Operation;
@@ -23,10 +26,14 @@ import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
@@ -264,6 +271,98 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
   }
 
   @Test
+  @Timeout(2 * 60)
+  @SuppressWarnings("resource")
+  void shouldRecoverZoneAwareClusterAfterZoneFailover() {
+    // given -- zoneA x2, zoneB x2, RF=4 (2 replicas/zone), 2 partitions
+    try (final var cluster = createCluster(4, 2, 4)) {
+      cluster.awaitCompleteTopology();
+      // Pin the actuator to a surviving zoneB broker -- availableGateway() may resolve to a
+      // zoneA broker, which is closed below and would take the actuator connection down with it.
+      final var actuator = ClusterActuator.of(cluster.brokers().get(MemberId.from(ZONES[1], 0)));
+
+      // when
+      // 1. stop both zoneA brokers (incl. coordinator zoneA_0)
+      final var brokersToRemove = List.of(MemberId.from("zoneA", 0), MemberId.from("zoneA", 1));
+      brokersToRemove.forEach(b -> cluster.brokers().get(b).close());
+
+      // 2. force-remove both zoneA brokers; remaining member set = zoneB only
+      final var removed =
+          actuator.patchCluster(
+              new ClusterConfigPatchRequest()
+                  .brokers(
+                      new ClusterConfigPatchRequestBrokers()
+                          .remove(brokersToRemove.stream().map(BrokerId::of).toList())),
+              false,
+              true);
+
+      assertChangeDone(actuator, removed);
+
+      final var zoneBOnlyResponse =
+          actuator.patchPartitionDistribution(
+              new PartitionDistributionConfig()
+                  .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
+                  .zones(List.of(new ZoneSpec().name(ZONES[1]).numberOfReplicas(2).priority(10))),
+              false);
+      assertChangeDone(actuator, zoneBOnlyResponse);
+
+      // 3. add 2 new brokers to zoneB (zoneB_2, zoneB_3)
+      final var targetZones = List.of(new Zone(ZONES[1], 4, 4, 10));
+      final var brokersToAdd = brokersInZone(ZONES[1], 2, 3);
+      final var zoneBBrokers = new HashMap<MemberId, TestStandaloneBroker>();
+      cluster.brokers().entrySet().stream()
+          .filter(e -> e.getKey().isInZone(ZONES[1]))
+          .forEach(e -> zoneBBrokers.put(e.getKey(), e.getValue()));
+      brokersToAdd.forEach(
+          id -> {
+            final var broker =
+                closeables.manage(
+                    addBrokerInZone(
+                        cluster,
+                        actuator,
+                        DEFAULT_CLUSTER_NAME,
+                        id.zone(),
+                        id.nodeIdx(),
+                        4,
+                        targetZones));
+            zoneBBrokers.put(id, broker);
+          });
+
+      // 4. reconfigure partition distribution: RF=4 all in zoneB, no zoneA
+      final var config =
+          new PartitionDistributionConfig()
+              .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
+              .zones(List.of(new ZoneSpec().name(ZONES[1]).numberOfReplicas(4).priority(10)));
+      final var response = actuator.patchPartitionDistribution(config, false);
+
+      // then -- recovery applied; RF=4 all in zoneB
+      assertChangeDone(actuator, response);
+
+      final var finalTopology = actuator.getTopology();
+      assertThat(finalTopology.getPartitionDistribution()).isEqualTo(config);
+
+      final var expectedMemberIds = brokersInZone(ZONES[1], 0, 1, 2, 3);
+
+      // all zoneB brokers present in the final topology, each hosting both partitions (RF=4)
+      assertThat(finalTopology.getBrokers())
+          .describedAs("all zoneB brokers present in final topology")
+          .extracting(BrokerState::getId)
+          .containsExactlyInAnyOrder(
+              expectedMemberIds.stream().map(BrokerId::of).toList().toArray(new BrokerId[0]));
+      assertThat(finalTopology.getBrokers())
+          .allSatisfy(
+              broker ->
+                  assertThat(broker.getPartitions())
+                      .describedAs("broker %s has all partitions", broker.getId())
+                      .hasSize(2));
+      for (final var id : expectedMemberIds) {
+        Awaitility.await()
+            .untilAsserted(() -> TestCluster.assertHealthyTopology(zoneBBrokers.get(id)));
+      }
+    }
+  }
+
+  @Test
   void shouldRejectClusterPatchWithBareIntegers() {
     try (final var cluster = createCluster(brokerCount())) {
       // given
@@ -280,5 +379,9 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("Members without a zone cannot be added to a zone-aware cluster");
     }
+  }
+
+  private static List<MemberId> brokersInZone(final String zone, final int... ids) {
+    return Arrays.stream(ids).mapToObj(id -> MemberId.from(zone, id)).toList();
   }
 }

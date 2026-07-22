@@ -26,6 +26,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -65,7 +66,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
                   "Cannot reassign partitions if no brokers are provided")));
     }
 
-    return generatePartitionDistributionOperations(clusterConfiguration, members);
+    return generatePartitionDistributionOperations(clusterConfiguration, members).mapLeft(x -> x);
   }
 
   private int getReplicationFactor(final ClusterConfiguration clusterConfiguration) {
@@ -76,7 +77,7 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     return newPartitionCount.orElse(clusterConfiguration.partitionCount());
   }
 
-  private Either<Exception, List<ClusterConfigurationChangeOperation>>
+  private Either<InvalidRequest, List<ClusterConfigurationChangeOperation>>
       generatePartitionDistributionOperations(
           final ClusterConfiguration currentConfiguration, final Set<MemberId> brokers) {
     final List<ClusterConfigurationChangeOperation> operations = new ArrayList<>();
@@ -129,9 +130,15 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
         Stream.of(oldPartitions, newPartitions).flatMap(List::stream).toList();
 
     final var distributor = currentConfiguration.partitionDistributor();
-    final var newDistribution =
-        distributor.distributePartitions(brokers, allPartitions, replicationFactor).stream()
-            .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
+    final Map<PartitionId, PartitionMetadata> newDistribution;
+    try {
+      newDistribution =
+          // in rare cases the distributor might throw an exception
+          distributor.distributePartitions(brokers, allPartitions, replicationFactor).stream()
+              .collect(Collectors.toMap(PartitionMetadata::id, p -> p));
+    } catch (final Exception e) {
+      return Either.left(new InvalidRequest(e));
+    }
 
     for (final PartitionId partition : oldPartitions) {
       final var newMetadata = newDistribution.get(partition);

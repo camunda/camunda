@@ -17,26 +17,32 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Operation;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import io.camunda.zeebe.test.DynamicAutoCloseable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 @Timeout(2 * 60) // 2 minutes
 abstract class ClusterEndpointIT {
+
+  @AutoClose protected final DynamicAutoCloseable closeables = new DynamicAutoCloseable();
 
   protected abstract int brokerCount();
 
@@ -372,6 +378,14 @@ abstract class ClusterEndpointIT {
         .describedAs("Partitions are evenly distributed")
         .isEqualTo(response.getExpectedTopology().getLast().getPartitions().size());
     assertThat(response.getPlannedChanges()).isNotEmpty();
+  }
+
+  protected void assertChangeDone(
+      final ClusterActuator actuator, final PlannedOperationsResponse response) {
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
   }
 
   @Nested
