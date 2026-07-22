@@ -82,23 +82,27 @@ public final class RecoveryController {
     return RequestExecutor.executeServiceMethod(
         () ->
             clusterConfigurationRequestSender
-                .restore(toRestoreRequest(restoreRequest, dryRun))
+                .restore(toRestoreRequest(physicalTenantId, restoreRequest, dryRun))
                 .thenApply(RecoveryController::unwrapOrThrow),
         RecoveryController::toClusterModeChangeResponse,
         HttpStatus.ACCEPTED);
   }
 
   private RestoreRequest toRestoreRequest(
-      final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest, final boolean dryRun) {
+      final String physicalTenantId,
+      final io.camunda.gateway.protocol.model.RestoreRequest restoreRequest,
+      final boolean dryRun) {
     final String databaseType = DatabaseTypeUtils.getDatabaseTypeOrDefault(environment);
     final boolean continuousBackups =
         environment.getProperty(CONTINUOUS_BACKUPS_PROPERTY, Boolean.class, false);
     if (restoreRequest == null) {
-      return new RestoreRequest(List.of(), null, null, databaseType, continuousBackups, dryRun);
+      return new RestoreRequest(
+          physicalTenantId, List.of(), null, null, databaseType, continuousBackups, dryRun);
     }
     final List<Long> backupIds =
         restoreRequest.getBackupIds() == null ? List.of() : restoreRequest.getBackupIds();
     return new RestoreRequest(
+        physicalTenantId,
         backupIds,
         restoreRequest.getFrom(),
         restoreRequest.getTo(),

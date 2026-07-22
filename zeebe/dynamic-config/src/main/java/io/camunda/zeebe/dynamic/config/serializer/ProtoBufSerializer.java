@@ -1449,6 +1449,7 @@ public class ProtoBufSerializer
   @Override
   public byte[] encodeRestoreRequest(final RestoreRequest request) {
     final var builder = Requests.RestoreRequest.newBuilder();
+    builder.setPhysicalTenantId(request.physicalTenantId());
     builder.addAllBackupIds(request.backupIds());
     builder.setDatabaseType(request.databaseType());
     builder.setContinuousBackups(request.continuousBackups());
@@ -1470,6 +1471,7 @@ public class ProtoBufSerializer
       final String from = request.hasFrom() ? request.getFrom() : null;
       final String to = request.hasTo() ? request.getTo() : null;
       return new RestoreRequest(
+          request.getPhysicalTenantId(),
           request.getBackupIdsList(),
           from,
           to,

@@ -14,6 +14,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -231,13 +232,19 @@ public class RestoreApp implements ApplicationRunner {
     final var continuousBackups = camunda.getData().getPrimaryStorage().getBackup().isContinuous();
     final var fromStr = from != null ? from.toString() : null;
     final var toStr = to != null ? to.toString() : null;
+    // TODO: Backwards compatibility of RestoreApp request tenantId as input
     final var restoreRequest =
-        new RestoreRequest(backupIds, fromStr, toStr, databaseType, continuousBackups, false);
+        new RestoreRequest(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            backupIds,
+            fromStr,
+            toStr,
+            databaseType,
+            continuousBackups,
+            false);
     final RestoreValidator validator = new RestoreValidator(backupStore);
     final var result = validator.validate(restoreRequest);
     if (result.isLeft()) {
-      // every ClusterConfigurationRequestFailedException permitted subtype extends
-      // RuntimeException; the sealed interface itself just can't say so in Java.
       throw (RuntimeException) result.getLeft();
     }
   }

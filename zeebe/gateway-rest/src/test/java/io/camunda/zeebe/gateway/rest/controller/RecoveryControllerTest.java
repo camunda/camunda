@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
@@ -256,7 +257,13 @@ public class RecoveryControllerTest extends RestControllerTest {
       Mockito.verify(clusterConfigurationRequestSender)
           .restore(
               new RestoreRequest(
-                  List.of(100L, 101L), null, null, expectedDatabaseType(), false, false));
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                  List.of(100L, 101L),
+                  null,
+                  null,
+                  expectedDatabaseType(),
+                  false,
+                  false));
     }
 
     @ParameterizedTest
@@ -275,7 +282,15 @@ public class RecoveryControllerTest extends RestControllerTest {
           .isAccepted();
 
       Mockito.verify(clusterConfigurationRequestSender)
-          .restore(new RestoreRequest(List.of(), null, null, expectedDatabaseType(), false, false));
+          .restore(
+              new RestoreRequest(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                  List.of(),
+                  null,
+                  null,
+                  expectedDatabaseType(),
+                  false,
+                  false));
     }
   }
 
@@ -302,7 +317,13 @@ public class RecoveryControllerTest extends RestControllerTest {
       Mockito.verify(clusterConfigurationRequestSender)
           .restore(
               new RestoreRequest(
-                  List.of(100L, 101L), null, null, expectedDatabaseType(), true, false));
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                  List.of(100L, 101L),
+                  null,
+                  null,
+                  expectedDatabaseType(),
+                  true,
+                  false));
     }
 
     @ParameterizedTest
@@ -324,6 +345,7 @@ public class RecoveryControllerTest extends RestControllerTest {
       Mockito.verify(clusterConfigurationRequestSender)
           .restore(
               new RestoreRequest(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
                   List.of(),
                   "2024-01-01T10:00:00Z",
                   "2024-01-01T12:00:00Z",
@@ -358,7 +380,13 @@ public class RecoveryControllerTest extends RestControllerTest {
       Mockito.verify(clusterConfigurationRequestSender)
           .restore(
               new RestoreRequest(
-                  List.of(100L, 101L), null, null, expectedDatabaseType(), false, false));
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                  List.of(100L, 101L),
+                  null,
+                  null,
+                  expectedDatabaseType(),
+                  false,
+                  false));
     }
 
     @ParameterizedTest
@@ -377,7 +405,15 @@ public class RecoveryControllerTest extends RestControllerTest {
           .isAccepted();
 
       Mockito.verify(clusterConfigurationRequestSender)
-          .restore(new RestoreRequest(List.of(), null, null, expectedDatabaseType(), false, false));
+          .restore(
+              new RestoreRequest(
+                  PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                  List.of(),
+                  null,
+                  null,
+                  expectedDatabaseType(),
+                  false,
+                  false));
     }
   }
 }
