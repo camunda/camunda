@@ -168,9 +168,9 @@ test.describe('Decision Instances - Business ID', () => {
 
     await test.step('Verify no decision instances are shown', async () => {
       await expect(
-        operateDecisionsPage.decisionInstancesList
-          .getByRole('row')
-          .filter({hasText: runPrefix}),
+        operateDecisionsPage.decisionInstancesList.getByRole('link', {
+          name: /View decision instance/,
+        }),
       ).toHaveCount(0, {timeout: extendedAssertionOptions.timeout});
     });
   });
