@@ -38,10 +38,10 @@ export ZEEBE_AUTH_METHOD="${ZEEBE_AUTH_METHOD:-none}"
 # instances don't park: inform_about_failed_claim (unsuccessful-claim send task) and
 # io.camunda.zeebe:userTask (the job-based "Decide on fraud case" user task).
 WORKERS=(
-  "customer_notification|dispute_process_receive_documents|"
+  "customer_notification|dispute_process_receive_documents|4"
   "dispute_process_request_proof_from_vendor|dispute_process_refund_approved|30"
-  "dispute_process_request_get_vendor_info||"
-  "extract_data_from_document||"
+  "dispute_process_request_get_vendor_info||60"
+  "extract_data_from_document||4"
   "inform_about_failed_claim||"
   "inform_about_successful_claim||"
   "refunding||30"

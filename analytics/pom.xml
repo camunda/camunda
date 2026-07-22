@@ -31,6 +31,7 @@
     <module>analytics-store-rdbms</module>
     <module>analytics-store-document</module>
     <module>analytics-pipeline</module>
+    <module>analytics-lake</module>
     <module>analytics-webapp</module>
   </modules>
 

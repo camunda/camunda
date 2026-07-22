@@ -189,22 +189,26 @@ start() {
     done
   done
 
-  echo "==> Starting the analytics application (serving + Stage 1 + Stage 2, backend=${BACKEND}) on :8090…"
-  ( cd "${APP_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(app_cp)" \
-      "${ANALYTICS_DB_ARGS[@]}" \
-      -Dgateway=${GW} -DinstanceId=demo -DfactsTopic=analytics-facts -DfactsPartitions=1 -DslaMs=${SLA_MS:-9000} \
-      -DsegmentStride=${SEGMENT_STRIDE:-100} \
-      io.camunda.analytics.webapp.AnalyticsWebappApplication >"${APP_DIR}/app.log" 2>&1 & echo "$!" >"${APP_DIR}/pid" )
+  if [[ -n "${EB_SKIP_APP:-}" ]]; then
+    echo "==> EB_SKIP_APP set — not starting the analytics application (no Stage 1/2, no :8090 webapp)"
+  else
+    echo "==> Starting the analytics application (serving + Stage 1 + Stage 2, backend=${BACKEND}) on :8090…"
+    ( cd "${APP_DIR}" && nohup java "${JVM_FLAGS[@]}" -cp "$(app_cp)" \
+        "${ANALYTICS_DB_ARGS[@]}" \
+        -Dgateway=${GW} -DinstanceId=demo -DfactsTopic=analytics-facts -DfactsPartitions=1 -DslaMs=${SLA_MS:-9000} \
+        -DsegmentStride=${SEGMENT_STRIDE:-100} \
+        io.camunda.analytics.webapp.AnalyticsWebappApplication >"${APP_DIR}/app.log" 2>&1 & echo "$!" >"${APP_DIR}/pid" )
 
-  echo "==> Waiting for 'analytics-facts' topic (the app's Stage 1 provisions it)…"
-  for _ in $(seq 1 60); do curl -fsS "${GW}/v1/topics" 2>/dev/null | grep -q analytics-facts && break || sleep 1; done
+    echo "==> Waiting for 'analytics-facts' topic (the app's Stage 1 provisions it)…"
+    for _ in $(seq 1 60); do curl -fsS "${GW}/v1/topics" 2>/dev/null | grep -q analytics-facts && break || sleep 1; done
 
-  echo "==> Waiting for the app's serving API…"
-  for _ in $(seq 1 120); do
-    kill -0 "$(cat "${APP_DIR}/pid")" 2>/dev/null || { echo "!! app died:"; tail -40 "${APP_DIR}/app.log"; exit 1; }
-    [[ "$(curl -s -o /dev/null -w '%{http_code}' ${UI}/api/dashboard/processes)" == "200" ]] && break
-    sleep 1
-  done
+    echo "==> Waiting for the app's serving API…"
+    for _ in $(seq 1 120); do
+      kill -0 "$(cat "${APP_DIR}/pid")" 2>/dev/null || { echo "!! app died:"; tail -40 "${APP_DIR}/app.log"; exit 1; }
+      [[ "$(curl -s -o /dev/null -w '%{http_code}' ${UI}/api/dashboard/processes)" == "200" ]] && break
+      sleep 1
+    done
+  fi
 
   if [[ -n "${EB_SKIP_DRIVER:-}" ]]; then
     echo "==> EB_SKIP_DRIVER set — not starting the default multi-process driver"
