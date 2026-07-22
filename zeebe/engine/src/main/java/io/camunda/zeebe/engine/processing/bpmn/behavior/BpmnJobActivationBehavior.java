@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.loggers.JobAuthorizationLogger;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -53,7 +55,7 @@ public class BpmnJobActivationBehavior {
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
   private final InstantSource clock;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final JobAuthorizationLogger jobAuthorizationLogger;
 
   public BpmnJobActivationBehavior(
@@ -63,7 +65,7 @@ public class BpmnJobActivationBehavior {
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -71,7 +73,7 @@ public class BpmnJobActivationBehavior {
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
-    authorizationCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.jobAuthorizationLogger = JobAuthorizationLogger.createDefault();
   }
 
@@ -170,7 +172,7 @@ public class BpmnJobActivationBehavior {
         switch (jobActivationProperties.tenantFilter()) {
           case ASSIGNED -> {
             final var authorizedTenants =
-                authorizationCheckBehavior.getAuthorizedTenantIds(jobActivationProperties.claims());
+                cslCheck.resolveAuthorizedTenants(jobActivationProperties.claims());
             yield !authorizedTenants.isAnonymous()
                 && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
           }
@@ -183,15 +185,22 @@ public class BpmnJobActivationBehavior {
     }
 
     final var claims = jobActivationProperties.claims();
+    final var bpmnProcessId = jobRecord.getBpmnProcessId();
+    final var cslPermType = AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE);
+    final var cslResourceType =
+        AuthzModelMapper.fromProtocol(AuthorizationResourceType.PROCESS_DEFINITION);
     final var authorizationResult =
-        authorizationCheckBehavior.isAuthorized(
-            AuthorizationRequest.builder()
-                .authorizationClaims(claims)
-                .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-                .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-                .addResourceId(jobRecord.getBpmnProcessId())
-                .tenantId(ownerTenantId)
-                .build());
+        cslCheck.checkWithClaims(
+            claims,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(cslResourceType)
+                        .permissionType(cslPermType)
+                        .resourceId(bpmnProcessId)),
+            bpmnProcessId,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION));
 
     authorizationResult.ifLeft(
         ignored ->

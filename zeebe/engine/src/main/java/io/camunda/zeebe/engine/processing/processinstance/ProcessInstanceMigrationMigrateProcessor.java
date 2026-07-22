@@ -12,15 +12,17 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
 import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.Loggers;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -44,6 +46,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -76,7 +79,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final IncidentState incidentState;
   private final EventScopeInstanceState eventScopeInstanceState;
   private final MessageState messageState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final ProcessInstanceMigrationCatchEventBehavior migrationCatchEventBehaviour;
   private final ProcessInstanceMigrationJobBehavior migrationJobBehaviour;
   private final ProcessInstanceMigrationSequenceFlowBehavior migrationSequenceFlowBehaviour;
@@ -89,7 +92,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -101,7 +104,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     incidentState = processingState.getIncidentState();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
     messageState = processingState.getMessageState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
 
     migrationCatchEventBehaviour =
         new ProcessInstanceMigrationCatchEventBehavior(
@@ -140,27 +143,30 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNonNullProcessInstance(processInstance, processInstanceKey);
     final ProcessInstanceRecord processInstanceRecord = processInstance.getValue();
 
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(processInstanceRecord.getTenantId())
-            .addResourceId(processInstanceRecord.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      final String errorMessage =
-          RejectionType.NOT_FOUND.equals(rejection.type())
-              ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "migrate a process instance",
-                  processInstanceRecord.getProcessInstanceKey(),
-                  "such process instance")
-              : rejection.reason();
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(processInstanceRecord.getBpmnProcessId())),
+            processInstanceRecord,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            processInstanceRecord.getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND.formatted(processInstanceKey)));
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       enrichRejectionCommand(command, processInstanceRecord);
-      rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
-      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
 

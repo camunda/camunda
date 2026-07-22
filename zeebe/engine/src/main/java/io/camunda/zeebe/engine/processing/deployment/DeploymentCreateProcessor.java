@@ -11,9 +11,11 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -24,8 +26,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSta
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.deployment.transform.ValidationConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -58,7 +60,9 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
@@ -92,7 +96,7 @@ public final class DeploymentCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final ProcessDefinitionMetrics processDefinitionMetrics;
 
   public DeploymentCreateProcessor(
@@ -104,7 +108,7 @@ public final class DeploymentCreateProcessor
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final ExpressionLanguageMetrics expressionLanguageMetrics,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     deploymentState = processingState.getDeploymentState();
@@ -120,7 +124,7 @@ public final class DeploymentCreateProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionProcessor();
     this.distributionBehavior = distributionBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.processDefinitionMetrics = processDefinitionMetrics;
     deploymentTransformer =
         new DeploymentTransformer(
@@ -144,17 +148,27 @@ public final class DeploymentCreateProcessor
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.RESOURCE)
-            .permissionType(PermissionType.CREATE)
-            .tenantId(command.getValue().getTenantId())
-            .newResource()
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
+    final var tenantId = command.getValue().getTenantId();
+    final var tenantMessage =
+        "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant"
+            .formatted(PermissionType.CREATE, AuthorizationResourceType.RESOURCE, tenantId);
+    final var authAndTenant =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(AuthorizationResourceType.RESOURCE))
+                        .permissionType(AuthzModelMapper.fromProtocol(PermissionType.CREATE))
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.CREATE, AuthorizationResourceType.RESOURCE),
+            AuthorizationRejectionMapper::toBareRejection,
+            tenantId,
+            new Rejection(RejectionType.FORBIDDEN, tenantMessage));
+    if (authAndTenant.isLeft()) {
+      final var rejection = authAndTenant.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
       responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), rejection.reason());
       return;

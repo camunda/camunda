@@ -117,6 +117,95 @@ public final class CslAuthorizationCheck {
     return AuthorizedTenantsResolver.resolve(authorizations, securityConfig, claimsConverter);
   }
 
+  public boolean isMultiTenancyChecksEnabled() {
+    return securityConfig.isMultiTenancyChecksEnabled();
+  }
+
+  /**
+   * Tenant-assignment check for command sites that must verify tenant membership independently of a
+   * resource {@link #check} — e.g. a command-level tenant gate, or a site whose RBAC check runs at
+   * a different granularity (one tenant, many resource checks).
+   *
+   * <p>Encapsulates the skip-logic hand-rolled across engine processors: when multi-tenancy checks
+   * are disabled the check is a no-op; when no username or clientId claim is present the check is
+   * also a no-op (mirrors {@link #resolveForCheck} — a no-principal command is either an internal
+   * command already exempted upstream, or authorizations are disabled and the primary permission
+   * check already let it through; either way there is no principal to hold a tenant assignment
+   * requirement against). Otherwise the authorized tenants are resolved from the command's claims
+   * (anonymous access is authorized for every tenant) and {@code tenantId} must be among them.
+   *
+   * <p>Callers own the rejection semantics: {@code notAssignedRejection} carries the {@link
+   * io.camunda.zeebe.protocol.record.RejectionType} — {@code FORBIDDEN} to signal "not assigned to
+   * tenant", or {@code NOT_FOUND} to mask an existing resource — and the message.
+   *
+   * @param value the value to return on success (mirrors {@link #check}; enables {@code flatMap}
+   *     composition with it)
+   * @param notAssignedRejection the rejection to return when the principal is not assigned to
+   *     {@code tenantId}
+   */
+  public <T> Either<Rejection, T> checkTenant(
+      final TypedRecord<?> command,
+      final String tenantId,
+      final T value,
+      final Rejection notAssignedRejection) {
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return Either.right(value);
+    }
+    final var authorizations = command.getAuthorizations();
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return Either.right(value);
+    }
+    if (resolveAuthorizedTenants(authorizations).isAuthorizedForTenantId(tenantId)) {
+      return Either.right(value);
+    }
+    return Either.left(notAssignedRejection);
+  }
+
+  /**
+   * Combines {@link #check} and {@link #checkTenant} into the single call most command sites need:
+   * RBAC permission first, tenant membership second. Mirrors the priority {@code main}'s {@code
+   * AuthorizationCheckBehavior} aggregation gives when both checks would fail on the same command
+   * (permission rejection wins) — so a principal with no permission at all always sees {@code
+   * FORBIDDEN}, never a tenant-shaped rejection that could hint at the resource's existence.
+   *
+   * <p>Only runs the tenant check once the permission check passes; a permission failure never
+   * bothers a tenant lookup, and vice versa a resource-not-permitted-here principal never learns
+   * whether {@code tenantId} would have mattered.
+   *
+   * @param tenantNotAssignedRejection the rejection to return if the principal has the permission
+   *     but is not assigned to {@code tenantId} — callers choose {@code FORBIDDEN} for
+   *     entity-creation commands or {@code NOT_FOUND} to mask cross-tenant existence of a
+   *     looked-up-by-key resource
+   */
+  public <T> Either<Rejection, T> checkAuthorizationAndTenant(
+      final TypedRecord<?> command,
+      final RequiredAuthorization<?> required,
+      final T value,
+      final Rejection noPrincipalRejection,
+      final String tenantId,
+      final Rejection tenantNotAssignedRejection) {
+    return check(command, required, value, noPrincipalRejection)
+        .flatMap(v -> checkTenant(command, tenantId, v, tenantNotAssignedRejection));
+  }
+
+  /**
+   * Like {@link #checkAuthorizationAndTenant} but with a caller-supplied {@code denialMapper} for
+   * the permission check (see {@link #check(TypedRecord, RequiredAuthorization, Object, Rejection,
+   * Function)}).
+   */
+  public <T> Either<Rejection, T> checkAuthorizationAndTenant(
+      final TypedRecord<?> command,
+      final RequiredAuthorization<?> required,
+      final T value,
+      final Rejection noPrincipalRejection,
+      final Function<AuthorizationRejection, Rejection> denialMapper,
+      final String tenantId,
+      final Rejection tenantNotAssignedRejection) {
+    return check(command, required, value, noPrincipalRejection, denialMapper)
+        .flatMap(v -> checkTenant(command, tenantId, v, tenantNotAssignedRejection));
+  }
+
   /**
    * Direct authentication-based check for multi-check callers that have already resolved the
    * principal via {@link #resolveForCheck}.
@@ -135,6 +224,55 @@ public final class CslAuthorizationCheck {
   public <T> io.camunda.security.api.model.Either<AuthorizationRejection, Void> checkAuth(
       final CamundaAuthentication auth, final RequiredAuthorization<T> required, final T ctx) {
     return authzService.check(auth, required, ctx);
+  }
+
+  /**
+   * Like {@link #check} but skips the internal-command gate in {@link #resolveForCheck}. Use for
+   * distributed commands: on target partitions they appear as internal (no request metadata) but
+   * still carry the originating user's claims and must be subject to authorization checks.
+   *
+   * <p>All other skip conditions (anonymous user, security disabled, no principal) still apply.
+   */
+  public <T> Either<Rejection, T> checkForDistributedCommand(
+      final TypedRecord<?> command,
+      final RequiredAuthorization<?> required,
+      final T value,
+      final Rejection noPrincipalRejection) {
+    return checkWithClaims(command.getAuthorizations(), required, value, noPrincipalRejection);
+  }
+
+  /**
+   * Authorization check for contexts where no {@link TypedRecord} is available, only the raw claims
+   * map (e.g. job-stream activation where claims come from {@link
+   * io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties}). Applies the same
+   * skip-logic as {@link #checkForDistributedCommand}: anonymous user, security disabled, no
+   * principal.
+   */
+  public <T> Either<Rejection, T> checkWithClaims(
+      final Map<String, Object> claims,
+      final RequiredAuthorization<?> required,
+      final T value,
+      final Rejection noPrincipalRejection) {
+    if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return Either.right(value);
+    }
+    if (!securityConfig.isAuthorizationsEnabled()
+        && !securityConfig.isMultiTenancyChecksEnabled()) {
+      return Either.right(value);
+    }
+    if (claims.get(Authorization.AUTHORIZED_USERNAME) == null
+        && claims.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      if (!securityConfig.isAuthorizationsEnabled()) {
+        return Either.right(value);
+      }
+      return Either.left(noPrincipalRejection);
+    }
+    final var auth = claimsConverter.resolve(claims);
+    final var result = authzService.check(auth, required);
+    if (result.isLeft()) {
+      return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
+    }
+    return Either.right(value);
   }
 
   /**

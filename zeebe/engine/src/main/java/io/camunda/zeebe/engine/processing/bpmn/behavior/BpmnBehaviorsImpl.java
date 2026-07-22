@@ -27,7 +27,6 @@ import io.camunda.zeebe.engine.processing.expression.NamespacedEvaluationContext
 import io.camunda.zeebe.engine.processing.expression.ProcessInstanceContextEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.TenantScopeClusterVariableEvaluationContext;
 import io.camunda.zeebe.engine.processing.expression.VariableEvaluationContext;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -80,7 +79,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final DueDateTimerCheckScheduler timerChecker,
       final JobStreamer jobStreamer,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ExpressionLanguageMetrics expressionMetrics,
       final EngineConfiguration config,
@@ -230,7 +228,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             jobMetrics,
             clock,
-            authCheckBehavior);
+            cslCheck);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(

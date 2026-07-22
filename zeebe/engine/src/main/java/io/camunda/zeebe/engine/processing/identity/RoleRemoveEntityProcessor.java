@@ -8,7 +8,9 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -50,13 +52,16 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final SideEffectWriter sideEffectWriter;
+  private final MembershipStateAdapter membershipStateAdapter;
 
   public RoleRemoveEntityProcessor(
       final ProcessingState processingState,
       final PermissionsBehavior permissionsBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final MembershipStateAdapter membershipStateAdapter) {
     roleState = processingState.getRoleState();
     mappingRuleState = processingState.getMappingRuleState();
     groupState = processingState.getGroupState();
@@ -66,7 +71,9 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.membershipStateAdapter = membershipStateAdapter;
   }
 
   @Override
@@ -112,6 +119,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record);
     responseWriter.writeAcceptedResponseOnCommand(
         record.getRoleKey(), RoleIntent.ENTITY_REMOVED, record, command);
+    invalidateMembershipCache();
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -127,12 +135,25 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     if (isEntityAssigned(record)) {
       stateWriter.appendFollowUpEvent(
           command.getKey(), RoleIntent.ENTITY_REMOVED, command.getValue());
+      invalidateMembershipCache();
     } else {
       final var errorMessage =
           ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityId(), record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
     }
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Flushes {@link MembershipStateAdapter}'s membership cache after a role-membership change, so a
+   * stale entry doesn't authorize (or reject) against outdated membership until its TTL expires.
+   */
+  private void invalidateMembershipCache() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          membershipStateAdapter.invalidateAll();
+          return true;
+        });
   }
 
   private boolean isEntityAssigned(final RoleRecord record) {

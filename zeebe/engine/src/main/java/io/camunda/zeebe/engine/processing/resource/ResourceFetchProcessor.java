@@ -7,10 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
+import io.camunda.security.configuration.EngineSecurityConfig;
+import io.camunda.security.core.authz.LazyTokenClaimsConverter;
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsAdapter;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -28,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,18 +43,24 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   private final StateWriter stateWriter;
   private final ResourceState resourceState;
   private final TenantState tenantState;
-  private final AuthorizationCheckBehavior authorizationCheckBehavior;
+  private final PermissionsBehavior permissionsBehavior;
+  private final LazyTokenClaimsConverter claimsConverter;
+  private final EngineSecurityConfig securityConfig;
 
   public ResourceFetchProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authorizationCheckBehavior) {
+      final PermissionsBehavior permissionsBehavior,
+      final LazyTokenClaimsConverter claimsConverter,
+      final EngineSecurityConfig securityConfig) {
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     stateWriter = writers.state();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
-    this.authorizationCheckBehavior = authorizationCheckBehavior;
+    this.permissionsBehavior = permissionsBehavior;
+    this.claimsConverter = claimsConverter;
+    this.securityConfig = securityConfig;
   }
 
   @Override
@@ -96,7 +107,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
 
   private Optional<PersistedResource> findResource(
       final TypedRecord<ResourceRecord> command, final long resourceKey) {
-    final var authorizedTenants = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+    final var authorizedTenants = determineAuthorizedTenants(command);
     return AuthorizedTenants.ANONYMOUS.equals(authorizedTenants)
         ? findResourceForAnonymouslyAuthorizedTenants(resourceKey)
         : findResourceForAuthenticatedAuthorizedTenants(resourceKey, authorizedTenants);
@@ -134,18 +145,31 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
     return Optional.ofNullable(resource.get());
   }
 
+  private AuthorizedTenants determineAuthorizedTenants(final TypedRecord<?> command) {
+    final var authorizations = command.getAuthorizations();
+    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
+      return AuthorizedTenants.ANONYMOUS;
+    }
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return new AuthenticatedAuthorizedTenants(List.of());
+    }
+    return new AuthorizedTenantsAdapter(claimsConverter.convert(authorizations));
+  }
+
   private void checkAuthorization(
       final TypedRecord<ResourceRecord> command, final PersistedResource resource) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.RESOURCE)
-            .permissionType(PermissionType.READ)
-            .tenantId(resource.getTenantId())
-            .addResourceId(BufferUtil.bufferAsString(resource.getResourceId()))
-            .build();
-    if (authorizationCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
-      throw new ForbiddenException(authRequest);
+    final var isAuthorized =
+        permissionsBehavior.isAuthorizedWithResourceIdentifiers(
+            command,
+            AuthorizationResourceType.RESOURCE,
+            PermissionType.READ,
+            BufferUtil.bufferAsString(resource.getResourceId()));
+    if (isAuthorized.isLeft()) {
+      throw new ForbiddenException(isAuthorized.getLeft());
     }
   }
 

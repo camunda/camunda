@@ -50,6 +50,11 @@ public final class MembershipStateAdapter implements MembershipPort {
             .build(new MembershipCacheLoader(membershipState));
   }
 
+  /** Invalidates all cached memberships, forcing fresh loads on next access. */
+  public void invalidateAll() {
+    membershipCache.invalidateAll();
+  }
+
   /** Returns mapping rule IDs whose conditions match the token claims in the query. */
   @Override
   public List<String> mappingRuleIds(final MembershipQuery query) {

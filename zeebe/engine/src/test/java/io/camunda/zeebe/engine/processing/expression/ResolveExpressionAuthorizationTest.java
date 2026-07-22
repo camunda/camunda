@@ -22,19 +22,24 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class ResolveExpressionAuthorizationTest {
 
   private static final String EXPRESSION = "=10 + 5";
+  private static final String CUSTOM_TENANT = "custom-tenant";
+  private static final String OTHER_TENANT = "other-tenant";
 
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
@@ -51,12 +56,22 @@ public class ResolveExpressionAuthorizationTest {
           .withIdentitySetup(ResetRecordingExporterMode.NO_RESET_AFTER_IDENTITY_SETUP)
           .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(
               cfg -> {
                 final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
                 defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
                 cfg.getInitialization().setDefaultRoles(defaultRoles);
               });
+
+  @Before
+  public void before() {
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, DEFAULT_USER.getUsername());
+    engine.tenant().newTenant().withTenantId(CUSTOM_TENANT).withName("Custom Tenant").create();
+    engine.tenant().newTenant().withTenantId(OTHER_TENANT).withName("Other Tenant").create();
+    assignUserToTenant(CUSTOM_TENANT, DEFAULT_USER.getUsername());
+    assignUserToTenant(OTHER_TENANT, DEFAULT_USER.getUsername());
+  }
 
   @Test
   public void shouldBeAuthorizedToEvaluateExpression() {
@@ -123,6 +138,7 @@ public class ResolveExpressionAuthorizationTest {
     final var processInstanceKey = createProcessInstance(bpmnProcessId);
 
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user,
         AuthorizationResourceType.EXPRESSION,
@@ -166,6 +182,7 @@ public class ResolveExpressionAuthorizationTest {
             .getKey();
 
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user,
         AuthorizationResourceType.EXPRESSION,
@@ -203,6 +220,7 @@ public class ResolveExpressionAuthorizationTest {
     final var processInstanceKey = createProcessInstance(bpmnProcessId);
 
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user,
         AuthorizationResourceType.EXPRESSION,
@@ -296,6 +314,7 @@ public class ResolveExpressionAuthorizationTest {
     final var processInstanceKey = createProcessInstance(bpmnProcessId);
 
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user,
         AuthorizationResourceType.EXPRESSION,
@@ -334,6 +353,7 @@ public class ResolveExpressionAuthorizationTest {
     final var processAInstanceKey = createProcessInstance(processA);
 
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user,
         AuthorizationResourceType.EXPRESSION,
@@ -381,6 +401,7 @@ public class ResolveExpressionAuthorizationTest {
             .getKey();
 
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user,
         AuthorizationResourceType.EXPRESSION,
@@ -439,7 +460,112 @@ public class ResolveExpressionAuthorizationTest {
             "Insufficient permissions to perform operation 'EVALUATE' on resource 'EXPRESSION'");
   }
 
+  @Test
+  public void shouldRejectEvaluationWhenAssignedTenantsExcludeExpressionTenant() {
+    // given - bare expression (no scope) targeting CUSTOM_TENANT directly; caller has a global
+    // (non-tenant-restricted) EVALUATE permission but is only assigned to OTHER_TENANT
+    final var user = createUser();
+    assignUserToTenant(OTHER_TENANT, user.getUsername());
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.EXPRESSION,
+        PermissionType.EVALUATE,
+        AuthorizationResourceMatcher.ANY,
+        "*");
+
+    // when
+    final var rejection =
+        engine
+            .expression()
+            .withExpression(EXPRESSION)
+            .withTenantId(CUSTOM_TENANT)
+            .expectRejection()
+            .resolve(user.getUsername());
+
+    // then - tenant denial forwards as NOT_FOUND, masking the expression check's tenant scoping
+    // from callers unauthorized for CUSTOM_TENANT
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to perform operation 'EVALUATE' on resource 'EXPRESSION', but no resource"
+                + " was found for tenant 'custom-tenant'");
+  }
+
+  @Test
+  public void shouldEvaluateExpressionWhenAssignedToExpressionTenant() {
+    // given - same as above, but caller is assigned to CUSTOM_TENANT
+    final var user = createUser();
+    assignUserToTenant(CUSTOM_TENANT, user.getUsername());
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.EXPRESSION,
+        PermissionType.EVALUATE,
+        AuthorizationResourceMatcher.ANY,
+        "*");
+
+    // when
+    engine
+        .expression()
+        .withExpression(EXPRESSION)
+        .withTenantId(CUSTOM_TENANT)
+        .resolve(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.expressionRecords()
+                .withIntent(ExpressionIntent.EVALUATED)
+                .withExpression(EXPRESSION)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldRejectWithProcessInstanceKeyWhenAssignedTenantsExcludeProcessTenant() {
+    // given - process deployed under CUSTOM_TENANT, caller has global EVALUATE and
+    // READ_PROCESS_INSTANCE permissions but is only assigned to OTHER_TENANT
+    final var bpmnProcessId = "auth_pi_tenant_mismatch_" + UUID.randomUUID();
+    deployProcess(bpmnProcessId, CUSTOM_TENANT);
+    final var processInstanceKey = createProcessInstance(bpmnProcessId, CUSTOM_TENANT);
+
+    final var user = createUser();
+    assignUserToTenant(OTHER_TENANT, user.getUsername());
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.EXPRESSION,
+        PermissionType.EVALUATE,
+        AuthorizationResourceMatcher.ANY,
+        "*");
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.READ_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
+        bpmnProcessId);
+
+    // when
+    final var rejection =
+        engine
+            .expression()
+            .withExpression(EXPRESSION)
+            .withScopeKey(processInstanceKey)
+            .expectRejection()
+            .resolve(user.getUsername());
+
+    // then - both checks share the same tenantId (resolved from the scoped instance) and
+    // checkCanEvaluateExpression runs first, so the tenant mismatch always surfaces via the
+    // EVALUATE/EXPRESSION message, never the READ_PROCESS_INSTANCE one
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to perform operation 'EVALUATE' on resource 'EXPRESSION', but no resource"
+                + " was found for tenant 'custom-tenant'");
+  }
+
   private void deployProcess(final String bpmnProcessId) {
+    deployProcess(bpmnProcessId, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  private void deployProcess(final String bpmnProcessId, final String tenantId) {
     engine
         .deployment()
         .withXmlResource(
@@ -448,13 +574,19 @@ public class ResolveExpressionAuthorizationTest {
                 .serviceTask("task", t -> t.zeebeJobType("test"))
                 .endEvent()
                 .done())
+        .withTenantId(tenantId)
         .deploy(DEFAULT_USER.getUsername());
   }
 
   private long createProcessInstance(final String bpmnProcessId) {
+    return createProcessInstance(bpmnProcessId, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  private long createProcessInstance(final String bpmnProcessId, final String tenantId) {
     return engine
         .processInstance()
         .ofBpmnProcessId(bpmnProcessId)
+        .withTenantId(tenantId)
         .create(DEFAULT_USER.getUsername());
   }
 
@@ -467,6 +599,15 @@ public class ResolveExpressionAuthorizationTest {
         .withEmail(UUID.randomUUID().toString())
         .create()
         .getValue();
+  }
+
+  private void assignUserToTenant(final String tenantId, final String username) {
+    engine
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityType(EntityType.USER)
+        .withEntityId(username)
+        .add();
   }
 
   private void addPermissionsToUser(

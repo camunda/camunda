@@ -9,7 +9,9 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -53,6 +55,8 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final EngineSecurityConfig securityConfig;
+  private final SideEffectWriter sideEffectWriter;
+  private final MembershipStateAdapter membershipStateAdapter;
 
   public RoleAddEntityProcessor(
       final ProcessingState processingState,
@@ -60,7 +64,8 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final EngineSecurityConfig securityConfig) {
+      final EngineSecurityConfig securityConfig,
+      final MembershipStateAdapter membershipStateAdapter) {
     roleState = processingState.getRoleState();
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
@@ -71,8 +76,10 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.securityConfig = securityConfig;
+    this.membershipStateAdapter = membershipStateAdapter;
   }
 
   @Override
@@ -119,6 +126,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     stateWriter.appendFollowUpEvent(record.getRoleKey(), RoleIntent.ENTITY_ADDED, record);
     responseWriter.writeAcceptedResponseOnCommand(
         record.getRoleKey(), RoleIntent.ENTITY_ADDED, record, command);
+    invalidateMembershipCache();
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
@@ -136,9 +144,22 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
     } else {
       stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, record);
+      invalidateMembershipCache();
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  /**
+   * Flushes {@link MembershipStateAdapter}'s membership cache after a role-membership change, so a
+   * stale entry doesn't authorize (or reject) against outdated membership until its TTL expires.
+   */
+  private void invalidateMembershipCache() {
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          membershipStateAdapter.invalidateAll();
+          return true;
+        });
   }
 
   private boolean isEntityPresent(final EntityType entityType, final String entityId) {

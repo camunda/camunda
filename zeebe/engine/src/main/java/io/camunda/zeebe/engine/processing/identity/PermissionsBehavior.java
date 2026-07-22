@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
@@ -88,6 +89,50 @@ public class PermissionsBehavior {
         command.getValue(),
         AuthorizationRejectionMapper.forbidden(permissionType, resourceType),
         AuthorizationRejectionMapper::toBareRejection);
+  }
+
+  /**
+   * Like {@link #isAuthorized(TypedRecord, AuthorizationResourceType, PermissionType, String)} but
+   * includes the {@code required resource identifiers are one of '[*, ...]'} suffix on the denial
+   * message, matching the pre-migration engine-internal path used by process/resource domain
+   * processors (as opposed to the bare identity-processor message).
+   */
+  public <R extends UnifiedRecordValue> Either<Rejection, R> isAuthorizedWithResourceIdentifiers(
+      final TypedRecord<R> command,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final String resourceId) {
+    LOG.trace(
+        "Checking {} permission on {} resource for command {}",
+        permissionType,
+        resourceType,
+        command.getIntent());
+    final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
+    final var cslResourceType = AuthzModelMapper.fromProtocol(resourceType);
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(cslResourceType).permissionType(cslPermType).resourceId(resourceId)),
+        command.getValue(),
+        AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
+  }
+
+  @SuppressWarnings("NullAway")
+  public Either<Rejection, Void> isAuthorized(
+      final Map<String, Object> claims,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final String resourceId) {
+    final var cslPermType = AuthzModelMapper.fromProtocol(permissionType);
+    final var cslResourceType = AuthzModelMapper.fromProtocol(resourceType);
+    return cslCheck.checkWithClaims(
+        claims,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(cslResourceType).permissionType(cslPermType).resourceId(resourceId)),
+        null,
+        AuthorizationRejectionMapper.forbidden(permissionType, resourceType));
   }
 
   public Either<Rejection, PersistedAuthorization> authorizationExists(

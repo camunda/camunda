@@ -140,6 +140,14 @@ public class AuthorizationArchTest {
                     String.class))
             .or(
                 ArchConditions.callMethod(
+                    PermissionsBehavior.class,
+                    "isAuthorizedWithResourceIdentifiers",
+                    TypedRecord.class,
+                    AuthorizationResourceType.class,
+                    PermissionType.class,
+                    String.class))
+            .or(
+                ArchConditions.callMethod(
                     ProcessInstanceCreationHelper.class,
                     "isAuthorized",
                     TypedRecord.class,
@@ -175,6 +183,46 @@ public class AuthorizationArchTest {
                     TypedRecord.class,
                     RequiredAuthorization.class,
                     Object.class,
+                    Rejection.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "check",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class,
+                    Function.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkForDistributedCommand",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class))
+            // Or the processor should delegate the combined RBAC+tenant check to
+            // CslAuthorizationCheck.checkAuthorizationAndTenant
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuthorizationAndTenant",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class,
+                    String.class,
+                    Rejection.class))
+            .or(
+                ArchConditions.callMethod(
+                    CslAuthorizationCheck.class,
+                    "checkAuthorizationAndTenant",
+                    TypedRecord.class,
+                    RequiredAuthorization.class,
+                    Object.class,
+                    Rejection.class,
+                    Function.class,
+                    String.class,
                     Rejection.class))
             // Or the class should delegate an already-resolved-principal check to
             // CslAuthorizationCheck.checkAuth (used by UserTaskAuthorizationCheck for the

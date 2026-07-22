@@ -9,10 +9,11 @@ package io.camunda.zeebe.engine.processing.dmn;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -35,11 +37,13 @@ public class DecisionEvaluationEvaluateProcessor
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
       "Expected either a decision id or a valid decision key, but none provided";
+  private static final String ERROR_MESSAGE_DECISION_NOT_FOUND =
+      "Expected to evaluate a decision with key '%d', but no such decision was found";
 
   private final DecisionBehavior decisionBehavior;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
 
@@ -47,14 +51,14 @@ public class DecisionEvaluationEvaluateProcessor
       final DecisionBehavior decisionBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
 
     this.decisionBehavior = decisionBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
   }
 
   @Override
@@ -66,25 +70,31 @@ public class DecisionEvaluationEvaluateProcessor
     if (decisionOrFailure.isRight()) {
       final var decision = decisionOrFailure.get();
       final var decisionId = bufferAsString(decision.getDecisionId());
-      final var authRequest =
-          AuthorizationRequest.builder()
-              .command(command)
-              .resourceType(AuthorizationResourceType.DECISION_DEFINITION)
-              .permissionType(PermissionType.CREATE_DECISION_INSTANCE)
-              .tenantId(record.getTenantId())
-              .addResourceId(decisionId)
-              .build();
-
-      final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-      if (isAuthorized.isLeft()) {
-        final var rejection = isAuthorized.getLeft();
-        final String errorMessage =
-            RejectionType.NOT_FOUND.equals(rejection.type())
-                ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                    "evaluate a decision", record.getDecisionKey(), "such decision")
-                : rejection.reason();
-        responseWriter.writeRejectedResponseOnCommand(command, rejection.type(), errorMessage);
-        rejectionWriter.appendRejection(command, rejection.type(), errorMessage);
+      final var authAndTenant =
+          cslCheck.checkAuthorizationAndTenant(
+              command,
+              RequiredAuthorization.of(
+                  b ->
+                      b.resourceType(
+                              AuthzModelMapper.fromProtocol(
+                                  AuthorizationResourceType.DECISION_DEFINITION))
+                          .permissionType(
+                              AuthzModelMapper.fromProtocol(
+                                  PermissionType.CREATE_DECISION_INSTANCE))
+                          .resourceId(decisionId)),
+              decision,
+              AuthorizationRejectionMapper.forbidden(
+                  PermissionType.CREATE_DECISION_INSTANCE,
+                  AuthorizationResourceType.DECISION_DEFINITION),
+              record.getTenantId(),
+              new Rejection(
+                  RejectionType.NOT_FOUND,
+                  ERROR_MESSAGE_DECISION_NOT_FOUND.formatted(record.getDecisionKey())));
+      if (authAndTenant.isLeft()) {
+        final var rejection = authAndTenant.getLeft();
+        responseWriter.writeRejectedResponseOnCommand(
+            command, rejection.type(), rejection.reason());
+        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
         return;
       }
     }

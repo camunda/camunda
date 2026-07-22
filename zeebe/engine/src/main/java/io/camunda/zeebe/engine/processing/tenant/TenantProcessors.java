@@ -11,6 +11,7 @@ import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
+import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -30,7 +31,8 @@ public class TenantProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final EngineSecurityConfig securityConfig,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter) {
+      final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
+      final MembershipStateAdapter membershipStateAdapter) {
     typedRecordProcessors
         .onCommand(
             ValueType.TENANT,
@@ -60,7 +62,8 @@ public class TenantProcessors {
                 writers,
                 commandDistributionBehavior,
                 securityConfig,
-                authCheckBehavior))
+                authCheckBehavior,
+                membershipStateAdapter))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.REMOVE_ENTITY,
@@ -70,7 +73,8 @@ public class TenantProcessors {
                 keyGenerator,
                 writers,
                 commandDistributionBehavior,
-                authCheckBehavior))
+                authCheckBehavior,
+                membershipStateAdapter))
         .onCommand(
             ValueType.TENANT,
             TenantIntent.DELETE,
