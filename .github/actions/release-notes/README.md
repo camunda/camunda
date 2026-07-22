@@ -38,12 +38,12 @@ Given a PR body:
 
 ### Decision table
 
-| Situation | Result |
-|---|---|
-| Section links a **live issue** via a closing or contributor ref | ✅ pass |
+|                            Situation                             | Result |
+|------------------------------------------------------------------|--------|
+| Section links a **live issue** via a closing or contributor ref  | ✅ pass |
 | Opt-out checkbox ticked (`This PR does not need a linked issue`) | ✅ pass |
-| Section links a **pull request** (message names it) | ❌ fail |
-| No satisfying ref **and** no opt-out | ❌ fail |
+| Section links a **pull request** (message names it)              | ❌ fail |
+| No satisfying ref **and** no opt-out                             | ❌ fail |
 
 Cross-repo refs (`owner/repo#N`) and the `Backport of #N` marker never satisfy
 the requirement on their own. A bare `#N` **does** count (contributor ref).
@@ -65,14 +65,14 @@ ParsedRef  ──►  ResolvedRef  ──►  PolicyDecision
   action ships with **zero runtime dependencies** — the committed bundle is
   entirely our own code.
 
-| File | Role |
-|---|---|
-| `src/types.ts` | The `ParsedRef → ResolvedRef → PolicyDecision` contract + `Resolver` interface |
-| `src/parser/` | Pure section-scoped reference extraction (shared with the generator) |
-| `src/policy/` | Pure PASS/FAIL decision from resolved refs + opt-out state |
-| `src/resolver/` | GitHub-API adapter (issue vs PR vs missing, cross-repo) |
-| `src/gha.ts` | Minimal `@actions/core` replacement |
-| `src/lint.ts` | The gate entrypoint (warn-only) |
+|      File       |                                      Role                                      |
+|-----------------|--------------------------------------------------------------------------------|
+| `src/types.ts`  | The `ParsedRef → ResolvedRef → PolicyDecision` contract + `Resolver` interface |
+| `src/parser/`   | Pure section-scoped reference extraction (shared with the generator)           |
+| `src/policy/`   | Pure PASS/FAIL decision from resolved refs + opt-out state                     |
+| `src/resolver/` | GitHub-API adapter (issue vs PR vs missing, cross-repo)                        |
+| `src/gha.ts`    | Minimal `@actions/core` replacement                                            |
+| `src/lint.ts`   | The gate entrypoint (warn-only)                                                |
 
 ## Security model
 
