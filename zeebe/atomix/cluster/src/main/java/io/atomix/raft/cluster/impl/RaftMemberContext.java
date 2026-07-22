@@ -135,9 +135,9 @@ public final class RaftMemberContext {
     return switch (member.getType()) {
       case PASSIVE -> log.openCommittedReader();
       case PROMOTABLE, ACTIVE -> log.openUncommittedReader();
-      default -> {
+      case INACTIVE -> {
         LoggerFactory.getLogger(RaftMemberContext.class)
-            .error("ResetState: No case for Member type {}", member.getType());
+            .error("Cannot open log reader for inactive member");
         yield null;
       }
     };
