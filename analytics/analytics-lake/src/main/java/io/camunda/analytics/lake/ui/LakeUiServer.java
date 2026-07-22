@@ -380,7 +380,7 @@ public final class LakeUiServer implements AutoCloseable {
 
   /**
    * {@code GET /api/process-map?process=<processId>} -- node badges (execution count + avg
-   * duration) and edge stats (n + avg gap), both over every instance.
+   * duration) over every instance.
    */
   private void handleProcessMapData(final HttpExchange exchange) throws IOException {
     if (!"GET".equals(exchange.getRequestMethod())) {
