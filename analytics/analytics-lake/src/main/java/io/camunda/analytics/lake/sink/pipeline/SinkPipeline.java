@@ -18,6 +18,7 @@ import io.camunda.analytics.lake.sink.SortedRun;
 import io.camunda.analytics.lake.sink.TableSchema;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadFactory;
@@ -71,6 +72,10 @@ public final class SinkPipeline {
   private long pendingLastOffset;
   private long currentFrontierMs;
   private long lastFlushCheckMs;
+
+  // See #onPollTick(long, long, Map)'s javadoc; the 2-arg overload leaves this at its empty
+  // default, matching every caller that does not (yet) track Zeebe origin-position watermarks.
+  private Map<Integer, Long> currentZeebeWatermarks = Map.of();
 
   public SinkPipeline(
       final SinkConfig config,
@@ -179,15 +184,33 @@ public final class SinkPipeline {
   }
 
   /**
-   * Called once per translator poll-loop tick, poll thread only: tracks the source offset range and
-   * frontier covered since the last descriptor, and checks the file-boundary time/size triggers
-   * against the currently-filling segment. Never seals an empty segment.
+   * Same as {@link #onPollTick(long, long, Map)}, for callers that do not track Zeebe
+   * origin-position dedup watermarks — every {@link SealSnapshot} this pipeline captures carries an
+   * empty {@code zeebeWatermarks} until a caller starts passing one via the 3-arg overload.
+   */
+  public void onPollTick(final long offsetOfLastAppendedRecord, final long frontierMs) {
+    onPollTick(offsetOfLastAppendedRecord, frontierMs, Map.of());
+  }
+
+  /**
+   * Called once per translator poll-loop tick, poll thread only: tracks the source offset range,
+   * frontier, and Zeebe origin-position dedup watermarks (see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator#watermarkSnapshot()}) covered since the last
+   * descriptor, and checks the file-boundary time/size triggers against the currently-filling
+   * segment. Never seals an empty segment.
+   *
+   * <p>{@code zeebeWatermarks} is expected to already be an immutable snapshot (see {@code
+   * watermarkSnapshot()}'s own javadoc) — stored by reference, not defensively copied again, since
+   * this is called once per tick, not once per record.
    *
    * <p>A no-op once {@link #isFailed()} — the translator is expected to check that itself and stop
    * feeding the pipeline, but a stray tick after failure must not attempt to touch a ring the flush
    * thread has already walked away from.
    */
-  public void onPollTick(final long offsetOfLastAppendedRecord, final long frontierMs) {
+  public void onPollTick(
+      final long offsetOfLastAppendedRecord,
+      final long frontierMs,
+      final Map<Integer, Long> zeebeWatermarks) {
     if (failed) {
       return;
     }
@@ -197,6 +220,7 @@ public final class SinkPipeline {
     }
     pendingLastOffset = offsetOfLastAppendedRecord;
     currentFrontierMs = frontierMs;
+    currentZeebeWatermarks = zeebeWatermarks;
 
     if (ring.filling().size() == 0) {
       return;
@@ -215,7 +239,8 @@ public final class SinkPipeline {
     // before the seal's volatile head++ store, or the flush thread could observe the sealed
     // segment and poll an empty queue: enqueue first, then seal, then roll back on failure.
     final SealSnapshot snapshot =
-        new SealSnapshot(pendingFirstOffset, pendingLastOffset, currentFrontierMs);
+        new SealSnapshot(
+            pendingFirstOffset, pendingLastOffset, currentFrontierMs, currentZeebeWatermarks);
     boundarySnapshots.addLast(snapshot);
     if (ring.seal(reason)) {
       pendingFirstOffsetSet = false;
@@ -247,7 +272,8 @@ public final class SinkPipeline {
             new SealSnapshot(
                 pendingFirstOffsetSet ? pendingFirstOffset : pendingLastOffset,
                 pendingLastOffset,
-                currentFrontierMs);
+                currentFrontierMs,
+                currentZeebeWatermarks);
         boundarySnapshots.addLast(snapshot);
         pendingFirstOffsetSet = false;
         while (!ring.seal(SealReason.SHUTDOWN)) {
@@ -298,7 +324,7 @@ public final class SinkPipeline {
    */
   SealSnapshot currentSnapshotForShutdownDrain() {
     final long first = pendingFirstOffsetSet ? pendingFirstOffset : pendingLastOffset;
-    return new SealSnapshot(first, pendingLastOffset, currentFrontierMs);
+    return new SealSnapshot(first, pendingLastOffset, currentFrontierMs, currentZeebeWatermarks);
   }
 
   void markFailed(final Throwable cause) {

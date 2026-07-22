@@ -84,20 +84,23 @@ import org.slf4j.LoggerFactory;
  * not swept automatically today; a future orphan-file scan (mirroring Iceberg's own {@code
  * removeOrphanFiles} action) is the natural follow-up, deliberately out of scope for this PoC pass.
  *
- * <h2>Offset and frontier re-stamping (critical)</h2>
+ * <h2>Offset, frontier, and watermark re-stamping (critical)</h2>
  *
  * <p>Per {@link IcebergLakeWriter}'s own class javadoc, iceberg-core never carries a snapshot's
  * custom summary properties forward into the next snapshot. {@link IcebergLakeWriter#flush} relies
  * on those {@code lake.offset.p*} properties surviving in the <em>current</em> snapshot's summary
  * for {@link IcebergLakeWriter#committedOffset(int)} to work at all, and {@code
  * io.camunda.analytics.lake.sink.pipeline.DirectCommitSink} relies the same way on the {@code
- * lake.frontier.p*} properties it stamps. Both {@link #rewriteDataFiles} and {@link
- * #rewriteManifests} produce a new current snapshot, so each one re-reads the prior summary via
- * {@link #currentCarryForwardProperties} and re-sets every offset <em>and</em> frontier property
- * onto its own commit before committing — exactly the same pattern {@code flushTable} uses.
- * Skipping either prefix would silently reset every partition's committed offset (or its frontier
+ * lake.frontier.p*} properties it stamps, plus the {@code lake.zbpos.z*} origin-position dedup
+ * watermark properties it also stamps (see {@link IcebergLakeWriter#ZBPOS_PROPERTY_PREFIX}'s
+ * javadoc). Both {@link #rewriteDataFiles} and {@link #rewriteManifests} produce a new current
+ * snapshot, so each one re-reads the prior summary via {@link #currentCarryForwardProperties} and
+ * re-sets every offset, frontier, <em>and</em> watermark property onto its own commit before
+ * committing — exactly the same pattern {@code flushTable} uses. Skipping any one of the three
+ * prefixes would silently reset every partition's committed offset (or its frontier or watermark
  * stamp) to a lost value the moment compaction first runs, forcing a full replay from scratch (or
- * silently regressing the frontier); the compaction integration test asserts on this explicitly.
+ * silently regressing the frontier/watermark); the compaction integration test asserts on this
+ * explicitly.
  *
  * <h2>Gold tables (added step, after the raw-table work above)</h2>
  *
@@ -406,10 +409,10 @@ public final class LakeCompactor {
   }
 
   /**
-   * The table's current {@code lake.offset.p*} <em>and</em> {@code lake.frontier.p*} snapshot
-   * summary properties, read fresh — see this class's "Offset and frontier re-stamping" javadoc
-   * section for why every {@link RewriteFiles}/{@link RewriteManifests} commit this class issues
-   * must re-apply both prefixes before committing.
+   * The table's current {@code lake.offset.p*}, {@code lake.frontier.p*}, <em>and</em> {@code
+   * lake.zbpos.z*} snapshot summary properties, read fresh — see this class's "Offset, frontier,
+   * and watermark re-stamping" javadoc section for why every {@link RewriteFiles}/{@link
+   * RewriteManifests} commit this class issues must re-apply all three prefixes before committing.
    */
   private static Map<String, String> currentCarryForwardProperties(final Table table) {
     table.refresh();
@@ -423,7 +426,8 @@ public final class LakeCompactor {
         .forEach(
             (key, value) -> {
               if (key.startsWith(IcebergLakeWriter.OFFSET_PROPERTY_PREFIX)
-                  || key.startsWith(IcebergLakeWriter.FRONTIER_PROPERTY_PREFIX)) {
+                  || key.startsWith(IcebergLakeWriter.FRONTIER_PROPERTY_PREFIX)
+                  || key.startsWith(IcebergLakeWriter.ZBPOS_PROPERTY_PREFIX)) {
                 carryForward.put(key, value);
               }
             });

@@ -30,14 +30,14 @@ import org.slf4j.LoggerFactory;
  * {@link DataFiles#builder} — using the table's own {@code days(...)} partition spec (schema v2 —
  * see {@code IcebergLakeWriter#INSTANCE_SCHEMA}'s javadoc) and each file's own {@link
  * DataFileResult#epochDay()} as its partition tuple, since a partitioned table's data file must
- * carry exactly one partition value — in one {@link Table#newAppend()}, then stamps the offset and
- * frontier summary properties using the exact same carry-forward rule {@link
- * IcebergLakeWriter#OFFSET_PROPERTY_PREFIX}'s javadoc describes: iceberg does not carry a
- * snapshot's summary forward into the next one, so a commit that only stamped the partition it just
- * flushed would make every <em>other</em> partition's last-known offset/frontier appear to regress
- * the instant a different partition's descriptor lands here. Both properties are therefore carried
- * forward the same way — dropping the frontier carry-forward while keeping it for the offset would
- * reintroduce exactly the bug class the offset rule exists to avoid.
+ * carry exactly one partition value — in one {@link Table#newAppend()}, then stamps the offset,
+ * frontier, and origin-position dedup watermark summary properties using the exact same
+ * carry-forward rule {@link IcebergLakeWriter#OFFSET_PROPERTY_PREFIX}'s javadoc describes: iceberg
+ * does not carry a snapshot's summary forward into the next one, so a commit that only stamped the
+ * partition it just flushed would make every <em>other</em> partition's last-known
+ * offset/frontier/watermark appear to regress the instant a different partition's descriptor lands
+ * here. All three properties are therefore carried forward the same way — dropping any one of them
+ * while keeping the others would reintroduce exactly the bug class the offset rule exists to avoid.
  *
  * <p>Idempotence: if the table's currently-committed offset for {@code
  * descriptor.sourcePartition()} is already {@code >=} {@code descriptor.lastOffset()}, {@link
@@ -62,6 +62,13 @@ public final class DirectCommitSink implements DescriptorSink {
    * IcebergLakeWriter#FRONTIER_PROPERTY_PREFIX}'s own javadoc for why.
    */
   public static final String FRONTIER_PROPERTY_PREFIX = IcebergLakeWriter.FRONTIER_PROPERTY_PREFIX;
+
+  /**
+   * Snapshot summary property prefix for the per-Zeebe-partition origin-position dedup watermark
+   * stamp (see class javadoc). Defined on {@link IcebergLakeWriter}, not here — see {@link
+   * IcebergLakeWriter#ZBPOS_PROPERTY_PREFIX}'s own javadoc for why.
+   */
+  public static final String ZBPOS_PROPERTY_PREFIX = IcebergLakeWriter.ZBPOS_PROPERTY_PREFIX;
 
   private static final Logger LOG = LoggerFactory.getLogger(DirectCommitSink.class);
 
@@ -110,11 +117,12 @@ public final class DirectCommitSink implements DescriptorSink {
     for (final DataFileResult file : descriptor.files()) {
       append.appendFile(toDataFile(table, file));
     }
-    // Carry-forward rule (both prefixes) -- see class javadoc.
+    // Carry-forward rule (all three prefixes) -- see class javadoc.
     priorSummary.forEach(
         (key, value) -> {
           if (key.startsWith(IcebergLakeWriter.OFFSET_PROPERTY_PREFIX)
-              || key.startsWith(FRONTIER_PROPERTY_PREFIX)) {
+              || key.startsWith(FRONTIER_PROPERTY_PREFIX)
+              || key.startsWith(ZBPOS_PROPERTY_PREFIX)) {
             append.set(key, value);
           }
         });
@@ -124,6 +132,14 @@ public final class DirectCommitSink implements DescriptorSink {
     append.set(
         FRONTIER_PROPERTY_PREFIX + descriptor.sourcePartition(),
         Long.toString(descriptor.localFrontierMs()));
+    // One lake.zbpos.z<zeebePartitionId> stamp per captured watermark entry (see Descriptor's own
+    // javadoc) -- keyed by Zeebe partition id, not descriptor.sourcePartition(); see
+    // ZBPOS_PROPERTY_PREFIX's javadoc for why the two ids are not interchangeable here.
+    descriptor
+        .zeebeWatermarks()
+        .forEach(
+            (zeebePartitionId, position) ->
+                append.set(ZBPOS_PROPERTY_PREFIX + zeebePartitionId, Long.toString(position)));
     append.commit();
   }
 
