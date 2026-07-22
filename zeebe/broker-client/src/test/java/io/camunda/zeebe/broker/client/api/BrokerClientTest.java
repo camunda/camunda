@@ -400,6 +400,30 @@ public final class BrokerClientTest {
   }
 
   @Test
+  void shouldCloseAllJobAvailableSubscriptionsOnClose() {
+    // given
+    client.subscribeJobAvailableNotification("foo", ignored -> {});
+    client.subscribeJobAvailableNotification("bar", ignored -> {});
+    Awaitility.await("both subscriptions are registered")
+        .untilAsserted(
+            () -> {
+              assertThat(atomixCluster.getEventService().getSubscriptions("foo")).isNotEmpty();
+              assertThat(atomixCluster.getEventService().getSubscriptions("bar")).isNotEmpty();
+            });
+
+    // when
+    client.close();
+
+    // then — every subscription is closed, not just the most recently registered one
+    Awaitility.await("both subscriptions are unregistered")
+        .untilAsserted(
+            () -> {
+              assertThat(atomixCluster.getEventService().getSubscriptions("foo")).isEmpty();
+              assertThat(atomixCluster.getEventService().getSubscriptions("bar")).isEmpty();
+            });
+  }
+
+  @Test
   public void shouldThrowCorrectErrorForInactivePartitionAndNoLeaderRequest() {
     // given
     final var partitionId = 1;

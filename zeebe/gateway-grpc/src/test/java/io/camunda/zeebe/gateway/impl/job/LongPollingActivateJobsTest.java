@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -1050,7 +1051,10 @@ public final class LongPollingActivateJobsTest {
 
     // probe fires: re-activates request against broker (2nd call: response pending)
     actorClock.addTime(Duration.ofMillis(probeTimeout + 1));
-    Awaitility.await().until(() -> customHandler.activeRequestsCountForJobType(TYPE) > 0);
+    Awaitility.await()
+        .until(
+            () ->
+                customHandler.activeRequestsCountForJobType(DEFAULT_PHYSICAL_TENANT_ID, TYPE) > 0);
 
     // when
     // long-poll timeout fires: request closes while broker call is still in-flight
@@ -1066,7 +1070,10 @@ public final class LongPollingActivateJobsTest {
 
     // then
     // request must be removed from activeRequests
-    Awaitility.await().until(() -> customHandler.activeRequestsCountForJobType(TYPE) == 0);
+    Awaitility.await()
+        .until(
+            () ->
+                customHandler.activeRequestsCountForJobType(DEFAULT_PHYSICAL_TENANT_ID, TYPE) == 0);
   }
 
   @Test
@@ -1077,7 +1084,8 @@ public final class LongPollingActivateJobsTest {
     // given
     activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
     actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
-    Awaitility.await().until(() -> handler.pendingRequestsCountForJobType(TYPE) == 0);
+    Awaitility.await()
+        .until(() -> handler.pendingRequestsCountForJobType(DEFAULT_PHYSICAL_TENANT_ID, TYPE) == 0);
 
     activateJobsStub.addAvailableJobs(TYPE, 1);
     final var newRequest = getLongPollingActivateJobsRequest();
