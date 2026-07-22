@@ -86,15 +86,15 @@ import org.slf4j.LoggerFactory;
  *
  * <p>{@link IcebergLakeWriter} is still constructed here — its table creation (schemas + field ids
  * + name-mapping), {@link IcebergLakeWriter#committedOffset(int)}, and the DuckDB connection {@link
- * LakeCompactor}/{@code GoldTables} still drive for compaction/gold-table work are all still needed
- * — but its buffered {@code append}/{@code flush} raw-ingest path is never called from this class
- * anymore. Instead, each owned partition gets its own {@link SinkPipeline} pair, fed directly by
- * {@link LakeTranslator} through a {@link RowAppender}, flushed on its own schedule by its own
- * flush thread, and committed to the {@code instances}/{@code activities} {@link Table}s (plus the
- * rider-derived partials tables) via one shared {@link CoordinatedDescriptorSink} — every
- * descriptor becomes one atomic catalog transaction through {@link LakeCommitCoordinator}, whose
- * database row locks serialize concurrent committers (multiple partitions' flush threads, and
- * {@link LakeCompactor}'s own poll-thread commits).
+ * LakeCompactor} still drives for compaction work are all still needed — but its buffered {@code
+ * append}/{@code flush} raw-ingest path is never called from this class anymore. Instead, each
+ * owned partition gets its own {@link SinkPipeline} pair, fed directly by {@link LakeTranslator}
+ * through a {@link RowAppender}, flushed on its own schedule by its own flush thread, and committed
+ * to the {@code instances}/{@code activities} {@link Table}s (plus the rider-derived partials
+ * tables) via one shared {@link CoordinatedDescriptorSink} — every descriptor becomes one atomic
+ * catalog transaction through {@link LakeCommitCoordinator}, whose database row locks serialize
+ * concurrent committers (multiple partitions' flush threads, and {@link LakeCompactor}'s own
+ * poll-thread commits).
  */
 public final class LakePocApp {
 

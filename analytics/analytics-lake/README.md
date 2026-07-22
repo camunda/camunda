@@ -13,12 +13,11 @@ with its own flush thread, committed via `DirectCommitSink`. See
 partition and `src/main/java/io/camunda/analytics/lake/translate/LakeTranslator.java` for how a
 Zeebe record becomes a row append (including the backpressure retry loop).
 
-Gold-table derivation and compaction still go through an embedded DuckDB connection (Parquet
-read/rewrite, not raw ingest) and iceberg-core commits the result — see
+Compaction still goes through an embedded DuckDB connection (Parquet read/rewrite, not raw ingest)
+and iceberg-core commits the result — see
 `src/main/java/io/camunda/analytics/lake/write/IcebergLakeWriter.java` for that machinery (table
 creation/schemas/field ids, the offset-stamping property `DirectCommitSink` also reuses, and the
-DuckDB connection `LakeCompactor`/`GoldTables` drive) and `LakeCompactor`/`GoldTables` themselves for
-what still uses it.
+DuckDB connection `LakeCompactor` drives) and `LakeCompactor` itself for what still uses it.
 
 This is a PoC: one file per flush (folded back down by periodic compaction, see "Compaction"
 below), no retention, no authentication on the H2/DuckDB side. None of the rest is an oversight —
@@ -37,8 +36,6 @@ from a fresh `lake.dir`** (table recreation is free while there's no production 
 - Both tables are now **partitioned by `days(...)` on their family-day column** — `instances` by
   `started_at`, `activities` by `instance_started_at` — so a query filtered to a time range prunes
   to just the relevant days' files at the manifest level, not a full-table scan.
-- The gold tables' `day` column (`transitions`, `instance_kpis`) changed from a `STRING` to a
-  native Iceberg `DATE` (they are fully recomputed on every pass, so this was free too).
 
 Every consumer of these columns had to change accordingly: the L0 sink batch vectors still carry
 plain `long[]` (no allocation), but `started_at`/`ended_at`/`instance_started_at` now hold epoch
@@ -210,59 +207,40 @@ controls the port; `0` disables it). It's built on nothing but the JDK's own
 connection, entirely separate from the writer's, so browsing the lake can never contend with or
 block the translator's own flush path.
 
-The page shows six canned query tiles:
+The page shows five canned query tiles:
 
 - **Instances per process** — count, average and p95 duration per process/version.
 - **Activities per element** — count and average duration per BPMN element.
-- **Top 10 variants** — each instance's ordered element-id sequence, grouped and counted.
 - **Bottleneck edges** — average gap between consecutive elements in the same instance.
 - **Currently running per process** — from the periodic open-state snapshot (`open_instances`),
   not the finished-row tables.
 - **Recent instances** — the last 20 finished instances by end time.
 
 Plus a free-form SQL box that runs against the same `/api/query` endpoint. All queries run over
-seven views (`instances`, `activities`, `open_instances`, `open_elements`, and the three gold-table
-views `transitions`, `instance_kpis`, `element_bits` — see `GoldTables`) (re)created lazily on each
-request — before the translator has flushed anything (or before the first compaction pass has
-derived the gold tables), hitting a tile just returns a friendly "no data yet" error instead of a
-server crash. Results are capped at 500 rows with a ~15s query timeout.
+four views (`instances`, `activities`, `open_instances`, `open_elements`) (re)created lazily on
+each request — before the translator has flushed anything, hitting a tile just returns a friendly
+"no data yet" error instead of a server crash. Results are capped at 500 rows with a ~15s query
+timeout.
 
-The `instances`/`activities`/`transitions`/`instance_kpis`/`element_bits` views are
-**snapshot-consistent**, not a directory glob: the UI opens its own independent Iceberg catalog
-handle (never the writer's own `Table`/catalog instances — see `LakeUiServer`'s javadoc for why
-sharing those would be unsafe) and builds each view from `read_parquet([...])` over the exact file
-list the table's *current snapshot* reports via `newScan().planFiles()`. This is what makes the UI
-immune to the double-counting caveat described below for hand-written `read_parquet` globs:
-compaction-retained old files (kept on disk by the 3-snapshot retention policy) and any orphaned
-crash litter are invisible to a snapshot, so they never make it into the UI's view, even though
-they're still physically present under `data/`. This matters just as much for the gold tables as for
-the raw ones: `GoldTables#recompute()` wholesale-replaces each gold table's contents on every pass
-(see that class's javadoc), so without the snapshot-consistent view a naive glob would double-count
-every row after a second recompute. `open_instances`/`open_elements` stay plain single-file reads —
-`StateSnapshotDumper` atomically replaces those files, so there is no Iceberg table (and no
-compaction-retained old copy) to worry about there.
-
-### Dashboard tiles from the gold tables
-
-Three of the dashboard's tiles are derived from the gold tables rather than the raw `instances`/
-`activities` tables, and render an empty-state caption (not an error) when the gold views exist but
-have no rows yet:
-
-- **Straight-through rate** — share of instances with `rework_count = 0`, overall and per process
-  (from `instance_kpis`).
-- **Bottleneck transitions** — top 8 directly-follows edges by average gap
-  (`total_gap_ms / n`, excluding the synthetic `__START__`/`__END__` edges), with an optional
-  process filter (from `transitions`).
-- **Rework hotspots** — per-process share of instances with `rework_count > 0`, with average
-  activity count for reworked vs. clean instances in the tooltip (from `instance_kpis`).
+The `instances`/`activities` views are **snapshot-consistent**, not a directory glob: the UI opens
+its own independent Iceberg catalog handle (never the writer's own `Table`/catalog instances — see
+`LakeUiServer`'s javadoc for why sharing those would be unsafe) and builds each view from
+`read_parquet([...])` over the exact file list the table's *current snapshot* reports via
+`newScan().planFiles()`. This is what makes the UI immune to the double-counting caveat described
+below for hand-written `read_parquet` globs: compaction-retained old files (kept on disk by the
+3-snapshot retention policy) and any orphaned crash litter are invisible to a snapshot, so they
+never make it into the UI's view, even though they're still physically present under `data/`.
+`open_instances`/`open_elements` stay plain single-file reads — `StateSnapshotDumper` atomically
+replaces those files, so there is no Iceberg table (and no compaction-retained old copy) to worry
+about there.
 
 ## Process map
 
 `/process-map` renders a BPMN heatmap: node badges (execution count + average duration, from
-`activities`) and edge badges/coloring (`n` + average gap, from `transitions`) overlaid on the
-process's own BPMN diagram via [bpmn-js](https://github.com/bpmn-io/bpmn-js) (loaded from a pinned
-CDN version — if that fails to load, e.g. offline, the page degrades to plain node/edge data tables
-instead of a broken diagram; neither the data explorer nor the dashboard are affected either way).
+`activities`) overlaid on the process's own BPMN diagram via
+[bpmn-js](https://github.com/bpmn-io/bpmn-js) (loaded from a pinned CDN version — if that fails to
+load, e.g. offline, the page degrades to a plain node data table instead of a broken diagram;
+neither the data explorer nor the dashboard are affected either way).
 
 BPMN XML is discovered from disk, not from a running engine's deployment — see
 `io.camunda.analytics.lake.ui.BpmnCatalog`'s javadoc for the exact directory resolution order (an
@@ -270,15 +248,8 @@ explicit `lake.bpmnDir` override first; otherwise `/tmp/eb-demo`, this repo's `a
 directory, and two further PoC-pragmatic fallbacks, in that order). Only processes whose BPMN
 `<bpmn:process id="...">` matches a process id actually present in the data appear in the picker; if
 none match, the page shows a hint listing the data's process ids and every directory that was
-scanned.
-
-The page's killer feature is its conformance cohort filter: "only instances that skipped/visited
-element X", a dropdown populated from `element_bits` and applied as a bitmask predicate
-(`elements_seen & (1 << bit)`) on `instance_kpis`, joined via `instance_key` into `activities` so
-node badges recompute for exactly that cohort. The edge layer is **not** cohort-filtered — `
-transitions` is already pre-aggregated across every instance, so the page marks it "all instances"
-rather than silently mixing cohort-filtered nodes with all-instance edges. See
-`io.camunda.analytics.lake.ui.ProcessMapService`'s javadoc for the query logic in full.
+scanned. See `io.camunda.analytics.lake.ui.ProcessMapService`'s javadoc for the query logic in
+full.
 
 ## Demo queries
 
