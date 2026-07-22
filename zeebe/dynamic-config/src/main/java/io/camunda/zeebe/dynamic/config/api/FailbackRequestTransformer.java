@@ -1,0 +1,132 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.dynamic.config.api;
+
+import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
+import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Restores a previously failed-over zone: re-adds the operator-supplied brokers to the member set,
+ * re-includes the zone in the persisted {@link ZoneAwareConfig}, and reassigns partitions over the
+ * augmented member set, in one atomic change.
+ */
+public final class FailbackRequestTransformer implements ConfigurationChangeRequest {
+
+  private final String zoneId;
+  private final int numberOfReplicas;
+  private final int priority;
+  private final Set<MemberId> brokers;
+
+  public FailbackRequestTransformer(
+      final String zoneId,
+      final int numberOfReplicas,
+      final int priority,
+      final Set<MemberId> brokers) {
+    this.zoneId = zoneId;
+    this.numberOfReplicas = numberOfReplicas;
+    this.priority = priority;
+    this.brokers = brokers;
+  }
+
+  @Override
+  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+      final ClusterConfiguration currentConfiguration) {
+    final var partitionDistributorConfig = currentConfiguration.partitionDistributorConfig();
+    final List<ZoneSpec> currentZones;
+    if (partitionDistributorConfig.isPresent()
+        && partitionDistributorConfig.get() instanceof final ZoneAwareConfig cfg) {
+      currentZones = cfg.zones();
+    } else {
+      return Either.left(
+          new InvalidRequest(
+              "Failback requires a persisted zone-aware partition distribution config, but was %s. Failback restores a previously failed-over zone; bootstrapping a zoned config from a non-zoned cluster is not supported here."
+                  .formatted(
+                      partitionDistributorConfig
+                          .map(c -> c.getClass().getSimpleName())
+                          .orElse("not set"))));
+    }
+
+    if (currentZones.stream().anyMatch(zone -> zone.name().equals(zoneId))) {
+      return Either.left(
+          new InvalidRequest(
+              "Cannot fail back zone '"
+                  + zoneId
+                  + "' because it is already present in the partition distribution config."));
+    }
+
+    if (brokers.isEmpty()) {
+      return Either.left(new InvalidRequest("Failback request must specify at least one broker."));
+    }
+
+    final var brokersNotInZone = brokers.stream().filter(b -> !b.isInZone(zoneId)).toList();
+    if (!brokersNotInZone.isEmpty()) {
+      return Either.left(
+          new InvalidRequest(
+              "Failback request brokers must belong to zone '"
+                  + zoneId
+                  + "', but got brokers not in that zone: "
+                  + brokersNotInZone));
+    }
+
+    if (brokers.size() < numberOfReplicas) {
+      return Either.left(
+          new InvalidRequest(
+              String.format(
+                  "Failback request provided %d broker(s), which is less than the requested number"
+                      + " of replicas [%d] for zone '%s'.",
+                  brokers.size(), numberOfReplicas, zoneId)));
+    }
+
+    final var augmentedMembers = new HashSet<>(currentConfiguration.members().keySet());
+    augmentedMembers.addAll(brokers);
+
+    final var newZones = new ArrayList<>(currentZones);
+    newZones.add(new ZoneSpec(zoneId, numberOfReplicas, priority));
+    final var newConfig = new ZoneAwareConfig(newZones);
+
+    final var coordinator =
+        ClusterConfigurationCoordinatorSupplier.of(() -> currentConfiguration)
+            .getDefaultCoordinator();
+
+    final var updatedConfiguration = currentConfiguration.setPartitionDistributorConfig(newConfig);
+
+    return new AddMembersTransformer(brokers)
+        .operations(currentConfiguration)
+        .flatMap(
+            addMembersOps ->
+                new PartitionReassignRequestTransformer(
+                        augmentedMembers,
+                        Optional.of(newConfig.replicationFactor()),
+                        Optional.empty())
+                    .operations(updatedConfiguration)
+                    .map(
+                        reassignOps -> {
+                          final var allOps =
+                              new ArrayList<ClusterConfigurationChangeOperation>(
+                                  addMembersOps.size() + reassignOps.size() + 1);
+                          allOps.addAll(addMembersOps);
+                          allOps.add(
+                              new UpdatePartitionDistributorConfigOperation(
+                                  coordinator, newConfig));
+                          allOps.addAll(reassignOps);
+                          return allOps;
+                        }));
+  }
+}
