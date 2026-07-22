@@ -13,7 +13,6 @@ import {jsonHeaders} from 'utils/http';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
-import {clearAllProcessInstances} from '@requestHelpers';
 import {uniqueBusinessId} from 'utils/constants';
 
 const USER_TASK_PROCESS_ID = 'user_task_api_test_process';
@@ -40,7 +39,6 @@ async function startInstanceWithBusinessId(
 }
 
 test.beforeAll(async ({request}) => {
-  await clearAllProcessInstances(request);
   await deploy(['./resources/user_task_api_test_process.bpmn']);
   instanceKey = await startInstanceWithBusinessId(request, BUSINESS_ID);
 });
