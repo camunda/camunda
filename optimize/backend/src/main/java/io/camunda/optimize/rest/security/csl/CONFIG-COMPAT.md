@@ -90,7 +90,7 @@ The bridge detects cloud by the presence of `CAMUNDA_OPTIMIZE_AUTH0_CLIENTID` an
 | `CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID` (`clusterId`) | `camunda.security.saas.cluster-id`, the redirect_uri `?uuid=<clusterId>`, and the servlet `contextPath=/<clusterId>` (all derived; `CAMUNDA_OPTIMIZE_CONTEXT_PATH` is no longer needed) | MAP (bridged) |
 | (cloud login callback) | `...oidc.redirect-uri` = `{baseScheme}://{baseHost}{basePort}/sso-callback?uuid=<clusterId>` (root host, NO context path, clusterId as **query param**; reproduces the legacy redirect_uri so the single registered Auth0 callback works with no re-registration; the cloud ingress rewrites it to `/<clusterId>/sso-callback` and routes by `uuid`) | MAP (bridged) |
 | `userIdAttributeName` (`sub`) | `...oidc.username-claim` (CSL default `sub`) | MAP (no-op) |
-| `CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE` (`userAccessTokenAudience`) | webapp access-token audience; not separately enforced (CSL single-audience per registration) | TODO |
+| `CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE` (`userAccessTokenAudience`) | `...oidc.authorize-request.additional-parameters.audience` (Auth0 `audience` authorization param, so the login token is accepted by the cloud Accounts API used by `CCSaaSUserCache`) | MAP (bridged) |
 | `CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL` (`tokenUrl`) | none needed (discovered from `issuer-uri`) | NO-ANALOG |
 | org-membership gate (`hasAccess`) + allowed org roles | `OptimizeCloudOidcUserService` (CSL `OidcUserService` webapp hook) | HOST-VALIDATOR |
 | `https://camunda.com/clusterId` claim (public-API bearer) | `TokenValidatorFactory` override adds `CustomClaimValidator` (`OptimizeCloudSecurityConfiguration`) | HOST-VALIDATOR |

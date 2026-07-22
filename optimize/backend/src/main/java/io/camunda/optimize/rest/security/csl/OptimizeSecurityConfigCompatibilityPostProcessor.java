@@ -154,6 +154,15 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
           derived,
           "CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION",
           "camunda.security.authentication.oidc.organization-id");
+      // Request the login token for the cloud Accounts API audience via Auth0's `audience`
+      // authorization parameter, so the user's access token is accepted by the Accounts API
+      // (CCSaaSUserCache). Legacy baked ?audience=<userAccessTokenAudience> into the authorize URL;
+      // CSL's authorization-request resolver reads it from authorize-request.additional-parameters.
+      mapIfPresent(
+          env,
+          derived,
+          "CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE",
+          "camunda.security.authentication.oidc.authorize-request.additional-parameters.audience");
 
       // Auth0 issuer is https://<customDomain>/; CSL discovers token/jwks/userinfo from it.
       final String auth0Domain = env.getProperty("CAMUNDA_OPTIMIZE_AUTH0_DOMAIN");

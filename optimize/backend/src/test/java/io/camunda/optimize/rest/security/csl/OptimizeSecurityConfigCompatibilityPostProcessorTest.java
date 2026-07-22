@@ -39,6 +39,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     legacy.put("CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION", "org-42");
     legacy.put("CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID", "cluster-7");
     legacy.put("CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE", "optimize");
+    legacy.put("CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE", "cloud.accounts");
 
     final StandardEnvironment env = environmentWith(legacy);
     processor.postProcessEnvironment(env, null);
@@ -55,6 +56,9 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     assertThat(env.getProperty("camunda.security.saas.cluster-id")).isEqualTo("cluster-7");
     // context path derived from the clusterId so CAMUNDA_OPTIMIZE_CONTEXT_PATH is not needed
     assertThat(env.getProperty("contextPath")).isEqualTo("/cluster-7");
+    // Auth0 `audience` authorization param so the login token is valid for the cloud Accounts API
+    assertThat(env.getProperty(OIDC + "authorize-request.additional-parameters.audience"))
+        .isEqualTo("cloud.accounts");
   }
 
   @Test

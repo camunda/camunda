@@ -138,6 +138,18 @@ Found while manually testing against a local CCSM/Keycloak setup
     not an M2M token; the M2M token (`CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE`) is used only by
     `CCSaaSNotificationClient`.
 
+12. **Cloud Accounts API rejected the user token with 401 (`/current/user` -> 500).** After the
+    finding-11 bridge supplied a token, `CCSaaSUserClient` got `Unexpected response when fetching
+    cloud user by id: 401`. Cause: legacy CCSaaS requested the Auth0 login token *for the Accounts
+    API audience* by baking `?audience=<userAccessTokenAudience>` into the authorize URL, so the
+    access token was valid there. CSL's login did not send that `audience`, so the token had the
+    wrong audience and the Accounts API rejected it. Fixed via config, not code: CSL's authorization
+    -request resolver already injects `authorize-request.additional-parameters`, so the bridge maps
+    `CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE` ->
+    `camunda.security.authentication.oidc.authorize-request.additional-parameters.audience`,
+    reproducing the legacy `?audience=` behaviour. (Auth0 uses `audience`, not the RFC 8707
+    `resource` param, so `...oidc.resource` would not work here.)
+
 ## Follow-ups (tracked in ADR-0036)
 
 1. `SessionStorePort`: ES done. Remaining: OpenSearch mirror (`WebSessionIndexOS` +
