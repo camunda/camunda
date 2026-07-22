@@ -477,6 +477,13 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillTextInput('Department', 'Rome');
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    // Wait for the completion toast to auto-dismiss before completing the
+    // second task. taskCompletedBanner is an unscoped getByText('Task
+    // completed') and the toasts stack, so a lingering first toast makes the
+    // second assertion match two elements (strict-mode violation).
+    await expect(taskDetailsPage.taskCompletedBanner).toBeHidden({
+      timeout: 15000,
+    });
 
     await taskPanelPage.filterBy('Unassigned');
     // The next task can take a moment to be indexed/rendered right after
