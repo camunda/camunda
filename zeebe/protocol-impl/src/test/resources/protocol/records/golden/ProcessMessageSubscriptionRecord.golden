@@ -44,6 +44,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
 
@@ -64,12 +65,14 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public ProcessMessageSubscriptionRecord() {
-    super(15);
+    super(16);
     declareProperty(subscriptionPartitionIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -83,6 +86,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(elementIdProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(businessIdProp)
         .declareProperty(elementTypeProp);
   }
@@ -101,6 +105,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     setElementId(record.getElementIdBuffer());
     setTenantId(record.getTenantId());
     setRootProcessInstanceKey(record.getRootProcessInstanceKey());
+    setStorageOrdinalKey(record.getStorageOrdinalKey());
     setBusinessId(record.getBusinessIdBuffer());
     setElementType(record.getElementType());
   }
@@ -220,6 +225,31 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public String getBusinessId() {
+    return BufferUtil.bufferAsString(businessIdProp.getValue());
+  }
+
+  public ProcessMessageSubscriptionRecord setBusinessId(final String businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public ProcessMessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  @Override
+  public BpmnElementType getElementType() {
+    return elementTypeProp.getValue();
+  }
+
+  public ProcessMessageSubscriptionRecord setElementType(final BpmnElementType elementType) {
+    elementTypeProp.setValue(elementType);
+    return this;
+  }
+
   public ProcessMessageSubscriptionRecord setElementId(final DirectBuffer elementId) {
     elementIdProp.setValue(elementId);
     return this;
@@ -260,33 +290,18 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     return this;
   }
 
-  @Override
-  public String getBusinessId() {
-    return BufferUtil.bufferAsString(businessIdProp.getValue());
-  }
-
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
     return businessIdProp.getValue();
   }
 
-  public ProcessMessageSubscriptionRecord setBusinessId(final String businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
-  public ProcessMessageSubscriptionRecord setBusinessId(final DirectBuffer businessId) {
-    businessIdProp.setValue(businessId);
-    return this;
-  }
-
   @Override
-  public BpmnElementType getElementType() {
-    return elementTypeProp.getValue();
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
   }
 
-  public ProcessMessageSubscriptionRecord setElementType(final BpmnElementType elementType) {
-    elementTypeProp.setValue(elementType);
+  public ProcessMessageSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 }

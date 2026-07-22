@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -33,14 +34,18 @@ public final class ProcessEventRecord extends UnifiedRecordValue
   private final StringProperty tenantIdProperty =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
+  private final IntegerProperty storageOrdinalKeyProperty =
+      new IntegerProperty("storageOrdinalKey", 0);
+
   public ProcessEventRecord() {
-    super(6);
+    super(7);
     declareProperty(scopeKeyProperty)
         .declareProperty(targetElementIdProperty)
         .declareProperty(variablesProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
-        .declareProperty(tenantIdProperty);
+        .declareProperty(tenantIdProperty)
+        .declareProperty(storageOrdinalKeyProperty);
   }
 
   public ProcessEventRecord wrap(final ProcessEventRecord record) {
@@ -50,6 +55,7 @@ public final class ProcessEventRecord extends UnifiedRecordValue
     processDefinitionKeyProperty.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProperty.setValue(record.getProcessInstanceKey());
     tenantIdProperty.setValue(record.getTenantId());
+    storageOrdinalKeyProperty.setValue(record.getStorageOrdinalKey());
 
     return this;
   }
@@ -121,6 +127,16 @@ public final class ProcessEventRecord extends UnifiedRecordValue
 
   public ProcessEventRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProperty.getValue();
+  }
+
+  public ProcessEventRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
     return this;
   }
 }

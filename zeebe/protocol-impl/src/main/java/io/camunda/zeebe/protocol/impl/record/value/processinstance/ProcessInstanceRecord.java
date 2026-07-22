@@ -58,6 +58,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   public static final StringValue TAGS_KEY = new StringValue("tags");
   public static final StringValue ROOT_PROCESS_INSTANCE_KEY =
       new StringValue("rootProcessInstanceKey");
+  public static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
 
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
@@ -97,10 +98,13 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY, -1L);
 
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
+
   private final StringProperty businessIdProp = new StringProperty(BUSINESS_ID_KEY, "");
 
   public ProcessInstanceRecord() {
-    super(17);
+    super(18);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -117,6 +121,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(callingElementPathProp)
         .declareProperty(tagsProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(businessIdProp);
   }
 
@@ -133,6 +138,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
     businessIdProp.setValue(record.getBusinessId());
   }
 
@@ -150,11 +156,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
       final DirectBuffer directBuffer, final int offset, final int length) {
     bpmnProcessIdProp.setValue(directBuffer, offset, length);
     return this;
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
   }
 
   @Override
@@ -282,9 +283,9 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return rootProcessInstanceKeyProp.getValue();
   }
 
-  public ProcessInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
-    return this;
+  @Override
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProp.getValue());
   }
 
   @Override
@@ -299,6 +300,21 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBusinessId(final DirectBuffer businessId) {
     businessIdProp.setValue(businessId);
+    return this;
+  }
+
+  public ProcessInstanceRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
+
+  public ProcessInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
     return this;
   }
 
@@ -341,13 +357,13 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public ProcessInstanceRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
   }
 
-  public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
-    bpmnProcessIdProp.setValue(directBuffer);
+  public ProcessInstanceRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 

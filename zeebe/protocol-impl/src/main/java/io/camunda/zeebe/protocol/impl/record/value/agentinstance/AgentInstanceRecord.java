@@ -37,6 +37,7 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", -1L);
+  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
@@ -59,13 +60,14 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       new ArrayProperty<>("changedAttributes", StringValue::new);
 
   public AgentInstanceRecord() {
-    super(17);
+    super(18);
     declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(elementInstanceKeysProp)
         .declareProperty(elementIdProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processDefinitionVersionProp)
@@ -112,11 +114,6 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentInstanceRecord addElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeysProp.add().setValue(elementInstanceKey);
-    return this;
-  }
-
   @Override
   public String getElementId() {
     return BufferUtil.bufferAsString(elementIdProp.getValue());
@@ -138,23 +135,8 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  public AgentInstanceRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
-    return this;
-  }
-
-  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
-  }
-
-  public AgentInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
-    processDefinitionKeyProp.setValue(processDefinitionKey);
-    return this;
   }
 
   @Override
@@ -162,8 +144,13 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
     return rootProcessInstanceKeyProp.getValue();
   }
 
-  public AgentInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
-    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public AgentInstanceRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
@@ -256,6 +243,31 @@ public final class AgentInstanceRecord extends UnifiedRecordValue
       changedAttributes.forEach(
           attr -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attr)));
     }
+    return this;
+  }
+
+  public AgentInstanceRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProp.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  public AgentInstanceRecord setProcessDefinitionKey(final long processDefinitionKey) {
+    processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  public AgentInstanceRecord addElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeysProp.add().setValue(elementInstanceKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public AgentInstanceRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 
