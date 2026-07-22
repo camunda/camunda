@@ -7,14 +7,17 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
-import io.camunda.archunit.DoNotIncludeTestsOrTestJars;
+import com.tngtech.archunit.lang.ArchCondition;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,13 +44,13 @@ import org.objectweb.asm.Type;
  * <p>ArchUnit's {@link JavaClass}/{@link com.tngtech.archunit.core.domain.JavaConstructor} API
  * exposes which methods a constructor calls, but not the constant {@code int} literal pushed onto
  * the stack before a given call. To recover that literal, this test reads the compiled bytecode of
- * each candidate class directly via ASM (already present on the classpath, see {@code
- * org.ow2.asm:asm}), inspecting the constructor's instructions for the {@code invokespecial} call
- * to {@code UnifiedRecordValue(int)} and the constant that was pushed immediately before it.
+ * each candidate class directly via ASM, inspecting the constructor's instructions for the {@code
+ * invokespecial} call to {@code UnifiedRecordValue(int)} and the constant that was pushed
+ * immediately before it.
  */
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.protocol.impl.record.value..",
-    importOptions = DoNotIncludeTestsOrTestJars.class)
+    importOptions = ImportOption.DoNotIncludeTests.class)
 final class DeclaredPropertiesCountArchTest {
 
   private static final String DECLARE_PROPERTY_METHOD_NAME = "declareProperty";
@@ -58,56 +61,10 @@ final class DeclaredPropertiesCountArchTest {
 
   @ArchTest
   void superConstructorPropertyCountShouldMatchDeclarePropertyCalls(final JavaClasses classes) {
-    final List<String> violations = new ArrayList<>();
-
-    for (final JavaClass javaClass : classes) {
-      if (!isConcreteDirectUnifiedRecordValueSubclass(javaClass)) {
-        continue;
-      }
-
-      final List<ConstructorInfo> constructorInfos;
-      try {
-        constructorInfos = analyzeConstructors(javaClass);
-      } catch (final IOException e) {
-        throw new IllegalStateException(
-            "Failed to read the compiled bytecode of " + javaClass.getFullName(), e);
-      }
-
-      if (constructorInfos.isEmpty()) {
-        // Every class directly extending UnifiedRecordValue is expected to call
-        // super(<int literal>) from at least one constructor. If none does (e.g. because it
-        // only delegates via this(...) with no constructor ever reaching the super call with a
-        // resolvable constant), fail loudly instead of silently skipping the class, so this
-        // never masks a real record value class.
-        violations.add(
-            String.format(
-                "%s: extends UnifiedRecordValue directly, but no constructor could be found that"
-                    + " calls super(<int literal>) - cannot verify the declared properties count",
-                javaClass.getFullName()));
-        continue;
-      }
-
-      for (final ConstructorInfo constructorInfo : constructorInfos) {
-        if (constructorInfo.superArgument() != constructorInfo.declarePropertyCalls()) {
-          violations.add(
-              String.format(
-                  "%s: constructor %s calls super(%d) but invokes declareProperty(...) %d"
-                      + " time(s) - these two numbers must be equal",
-                  javaClass.getFullName(),
-                  constructorInfo.descriptor(),
-                  constructorInfo.superArgument(),
-                  constructorInfo.declarePropertyCalls()));
-        }
-      }
-    }
-
-    assertThat(violations)
-        .as(
-            "Every class directly extending UnifiedRecordValue must call super(N) in its"
-                + " constructor(s) with N exactly equal to the number of declareProperty(...)"
-                + " invocations made in that constructor. Violations found:%n%s",
-            String.join(System.lineSeparator(), violations))
-        .isEmpty();
+    ArchRuleDefinition.classes()
+        .that(directlyExtendUnifiedRecordValue())
+        .should(new DeclaredPropertiesCountCondition())
+        .check(classes);
   }
 
   /**
@@ -116,7 +73,17 @@ final class DeclaredPropertiesCountArchTest {
    * property set themselves, and none of the current record value classes have an intermediate
    * UnifiedRecordValue subclass in between.
    */
-  private boolean isConcreteDirectUnifiedRecordValueSubclass(final JavaClass javaClass) {
+  private static DescribedPredicate<JavaClass> directlyExtendUnifiedRecordValue() {
+    return new DescribedPredicate<>(
+        "are concrete classes whose direct superclass is UnifiedRecordValue") {
+      @Override
+      public boolean test(final JavaClass javaClass) {
+        return isConcreteDirectUnifiedRecordValueSubclass(javaClass);
+      }
+    };
+  }
+
+  private static boolean isConcreteDirectUnifiedRecordValueSubclass(final JavaClass javaClass) {
     if (javaClass.isInterface() || javaClass.getModifiers().contains(JavaModifier.ABSTRACT)) {
       return false;
     }
@@ -127,7 +94,8 @@ final class DeclaredPropertiesCountArchTest {
         .orElse(false);
   }
 
-  private List<ConstructorInfo> analyzeConstructors(final JavaClass javaClass) throws IOException {
+  private static List<ConstructorInfo> analyzeConstructors(final JavaClass javaClass)
+      throws IOException {
     final String resourceName = javaClass.getFullName().replace('.', '/') + ".class";
 
     // Reading the .class resource via this test's own classloader is enough, since every
@@ -162,6 +130,62 @@ final class DeclaredPropertiesCountArchTest {
           ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
       return constructorInfos;
+    }
+  }
+
+  /**
+   * Verifies, for a single class, that every constructor calling {@code super(N)} does so with
+   * {@code N} equal to the number of {@code declareProperty(...)} invocations made in that same
+   * constructor.
+   */
+  private static final class DeclaredPropertiesCountCondition extends ArchCondition<JavaClass> {
+
+    private DeclaredPropertiesCountCondition() {
+      super(
+          "call super(N) in its constructor(s) with N exactly equal to the number of"
+              + " declareProperty(...) invocations made in that constructor");
+    }
+
+    @Override
+    public void check(final JavaClass javaClass, final ConditionEvents events) {
+      final List<ConstructorInfo> constructorInfos;
+      try {
+        constructorInfos = analyzeConstructors(javaClass);
+      } catch (final IOException e) {
+        throw new IllegalStateException(
+            "Failed to read the compiled bytecode of " + javaClass.getFullName(), e);
+      }
+
+      if (constructorInfos.isEmpty()) {
+        // Every class directly extending UnifiedRecordValue is expected to call
+        // super(<int literal>) from at least one constructor. If none does (e.g. because it
+        // only delegates via this(...) with no constructor ever reaching the super call with a
+        // resolvable constant), fail loudly instead of silently skipping the class, so this
+        // never masks a real record value class.
+        events.add(
+            SimpleConditionEvent.violated(
+                javaClass,
+                javaClass.getFullName()
+                    + ": extends UnifiedRecordValue directly, but no constructor could be found"
+                    + " that calls super(<int literal>) - cannot verify the declared properties"
+                    + " count"));
+        return;
+      }
+
+      for (final ConstructorInfo constructorInfo : constructorInfos) {
+        if (constructorInfo.superArgument() != constructorInfo.declarePropertyCalls()) {
+          events.add(
+              SimpleConditionEvent.violated(
+                  javaClass,
+                  String.format(
+                      "%s: constructor %s calls super(%d) but invokes declareProperty(...) %d"
+                          + " time(s) - these two numbers must be equal",
+                      javaClass.getFullName(),
+                      constructorInfo.descriptor(),
+                      constructorInfo.superArgument(),
+                      constructorInfo.declarePropertyCalls())));
+        }
+      }
     }
   }
 
