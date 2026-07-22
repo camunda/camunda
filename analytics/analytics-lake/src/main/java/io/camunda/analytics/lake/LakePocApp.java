@@ -274,21 +274,33 @@ public final class LakePocApp {
       final LakeConfig config, final IcebergLakeWriter writer) {
     final Table instancesTable = writer.instancesTable();
     final Table activitiesTable = writer.activitiesTable();
+    final TableSchema instancesSchema = RawTableSchemas.instances(instancesTable.schema());
     final TableSchema activitiesSchema = RawTableSchemas.activities(activitiesTable.schema());
 
-    // The activities metrics declaration -- dims, window, measures; everything downstream
-    // (partials schemas, tables, rider plans, merge/finalize SQL, fingerprint) derives from it.
+    // The metrics declarations -- dims, window, measures; everything downstream (partials
+    // schemas, tables, rider plans, merge/finalize SQL, fingerprint) derives from them.
     final CompiledEntityMetrics activityMetrics =
         EntityMetrics.declare("activities", activitiesSchema)
             .dims("process_id", "element_id")
             .window(Duration.ofMinutes(1), "ended_at")
             .measure("duration_ms", Algebras.scalarStats(), Algebras.expHistogram(3))
             .build();
-    final Table metricsTable =
+    final CompiledEntityMetrics instanceMetrics =
+        EntityMetrics.declare("instances", instancesSchema)
+            .dims("process_id")
+            .window(Duration.ofMinutes(1), "ended_at")
+            .measure("duration_ms", Algebras.scalarStats(), Algebras.expHistogram(3))
+            .build();
+    final Table activityMetricsTable =
         writer.partialsTableOrCreate(
             activityMetrics.metricsSchema(), activityMetrics.fingerprint());
-    final Table histTable =
+    final Table activityHistTable =
         writer.partialsTableOrCreate(activityMetrics.histSchema(), activityMetrics.fingerprint());
+    final Table instanceMetricsTable =
+        writer.partialsTableOrCreate(
+            instanceMetrics.metricsSchema(), instanceMetrics.fingerprint());
+    final Table instanceHistTable =
+        writer.partialsTableOrCreate(instanceMetrics.histSchema(), instanceMetrics.fingerprint());
 
     // Mirrors the "<table.location()>/data/<fileName>" convention IcebergLakeWriter's own legacy
     // path uses -- see LocalFileSink's javadoc.
@@ -308,9 +320,16 @@ public final class LakePocApp {
         Map.of(
             activityMetrics.metricsSchema().table(),
             new IcebergParquetEncoderFactory(
-                metricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
+                activityMetricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
             activityMetrics.histSchema().table(),
-            new IcebergParquetEncoderFactory(histTable.schema(), fileSink, SEGMENT_ROWS, Set.of()));
+            new IcebergParquetEncoderFactory(
+                activityHistTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
+            instanceMetrics.metricsSchema().table(),
+            new IcebergParquetEncoderFactory(
+                instanceMetricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
+            instanceMetrics.histSchema().table(),
+            new IcebergParquetEncoderFactory(
+                instanceHistTable.schema(), fileSink, SEGMENT_ROWS, Set.of()));
     final BatchEncoder.Factory partialsEncoderFactory =
         (schema, epochDay) -> partialsFactories.get(schema.table()).newFile(schema, epochDay);
 
@@ -324,19 +343,24 @@ public final class LakePocApp {
             "activities",
             activitiesTable,
             activityMetrics.metricsSchema().table(),
-            metricsTable,
+            activityMetricsTable,
             activityMetrics.histSchema().table(),
-            histTable);
+            activityHistTable,
+            instanceMetrics.metricsSchema().table(),
+            instanceMetricsTable,
+            instanceMetrics.histSchema().table(),
+            instanceHistTable);
     final CoordinatedDescriptorSink commitSink =
         new CoordinatedDescriptorSink(coordinator, Namespace.of("lake"), tablesByName::get);
 
     return new SinkWiring(
-        RawTableSchemas.instances(instancesTable.schema()),
+        instancesSchema,
         activitiesSchema,
         instancesEncoderFactory,
         activitiesEncoderFactory,
         commitSink,
         commitSink,
+        instanceMetrics,
         activityMetrics,
         partialsEncoderFactory,
         coordinator,
@@ -526,6 +550,8 @@ public final class LakePocApp {
     // Shared by both tables' pipelines for this partition -- see PartitionBackpressureGate's own
     // javadoc for why a plain 1:1 gate per ring would thrash pause/resume instead.
     final PartitionBackpressureGate gate = new PartitionBackpressureGate(consumer, topicPartition);
+    // Riders are per-pipeline state (accumulators keyed by this partition's flush windows), so
+    // each partition gets its own instances -- unlike the commit sink, which is shared.
     final SinkPipeline instancesPipeline =
         newPipeline(
             wiring.instancesSchema(),
@@ -533,11 +559,11 @@ public final class LakePocApp {
             gate,
             wiring.instancesEncoderFactory(),
             wiring.instancesSink(),
-            List.of(),
+            List.of(
+                new MetricsRider(
+                    wiring.instanceMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS)),
             wiring.flushIntervalMs(),
             wiring.meterRegistry());
-    // The rider is per-pipeline state (accumulators keyed by this partition's flush windows), so
-    // each partition gets its own instance -- unlike the commit sink, which is shared.
     final SinkPipeline activitiesPipeline =
         newPipeline(
             wiring.activitiesSchema(),
@@ -628,6 +654,7 @@ public final class LakePocApp {
       IcebergParquetEncoderFactory activitiesEncoderFactory,
       DescriptorSink instancesSink,
       DescriptorSink activitiesSink,
+      CompiledEntityMetrics instanceMetrics,
       CompiledEntityMetrics activityMetrics,
       BatchEncoder.Factory partialsEncoderFactory,
       LakeCommitCoordinator coordinator,

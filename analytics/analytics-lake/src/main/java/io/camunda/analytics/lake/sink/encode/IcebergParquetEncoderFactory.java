@@ -21,14 +21,22 @@ import org.apache.iceberg.io.OutputFile;
  * #newFile}, all writing to the same table (fixed {@link Schema}) through the same {@link
  * FileSink}.
  *
- * <p>File naming: {@code day=<YYYY-MM-DD>/f-<sequence>-day<epochDay>.parquet}, relative to the
- * table's data location (see {@link FileSink#newOutputFile}'s javadoc). {@code epochDay} may be
- * negative (a day before 1970-01-01) — {@link LocalDate#ofEpochDay} handles that natively, so the
- * {@code YYYY-MM-DD} folder is always the real calendar day, never a "mixed" sentinel: every file
- * this factory opens carries exactly one family day (see {@link DayRouter}'s javadoc). The sequence
- * is a per-factory monotonic counter, not a random id, so file names stay reproducible in tests; it
- * does not need to be globally unique across factories/processes because {@link FileSink} owns the
- * table-scoped namespace each factory writes into.
+ * <p>File naming: {@code day=<YYYY-MM-DD>/<sequence>.parquet}, relative to the table's data
+ * location (see {@link FileSink#newOutputFile}'s javadoc) — the folder carries the calendar day
+ * (mirroring the tables' {@code days(...)} partition spec and nothing else; provenance like the
+ * source partition deliberately does NOT appear in the layout: it lives in the commit journal and
+ * the snapshot summaries, where it is queryable instead of parsed out of paths). {@code epochDay}
+ * may be negative (a day before 1970-01-01) — {@link LocalDate#ofEpochDay} handles that natively,
+ * so the day folder is always the real calendar day, never a "mixed" sentinel: every file this
+ * factory opens carries exactly one family day (see {@link DayRouter}'s javadoc).
+ *
+ * <p>The sequence is zero-padded (sortable listings) and seeded from the factory's creation time in
+ * epoch milliseconds rather than starting at zero: a factory only lives as long as its process, and
+ * a restarted process must never re-mint a name an earlier run already committed — the encoder's
+ * output file refuses to overwrite, so a colliding name would fail the pipeline. A forward-moving
+ * clock makes every run's sequences disjoint without any directory scan or random id in the name.
+ * Uniqueness is only needed within one table's directory (single writer per table; {@link FileSink}
+ * owns that namespace).
  */
 public final class IcebergParquetEncoderFactory implements BatchEncoder.Factory {
 
@@ -39,7 +47,8 @@ public final class IcebergParquetEncoderFactory implements BatchEncoder.Factory 
   private final int targetRowGroupRows;
   private final Set<String> bloomFilterColumns;
   private final String compressionCodec;
-  private final AtomicLong fileSequence = new AtomicLong();
+  // Seeded from wall clock, not zero -- see the class javadoc's naming section for why.
+  private final AtomicLong fileSequence = new AtomicLong(System.currentTimeMillis());
 
   public IcebergParquetEncoderFactory(
       final Schema icebergSchema,
@@ -66,9 +75,8 @@ public final class IcebergParquetEncoderFactory implements BatchEncoder.Factory 
 
   @Override
   public BatchEncoder newFile(final TableSchema schema, final long epochDay) {
-    final String dayFolder = LocalDate.ofEpochDay(epochDay).toString();
-    final String fileName = "f-" + fileSequence.incrementAndGet() + "-day" + epochDay + ".parquet";
-    final String relativePath = "day=" + dayFolder + "/" + fileName;
+    final String fileName = "%014d.parquet".formatted(fileSequence.incrementAndGet());
+    final String relativePath = "day=" + LocalDate.ofEpochDay(epochDay) + "/" + fileName;
     final OutputFile outputFile = fileSink.newOutputFile(schema, relativePath);
     return new IcebergParquetEncoder(
         schema,
