@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config;
 
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.function.UnaryOperator;
 
@@ -17,6 +18,30 @@ public interface ClusterConfigurationManager {
 
   ActorFuture<ClusterConfiguration> updateClusterConfiguration(
       UnaryOperator<ClusterConfiguration> updatedConfiguration);
+
+  /**
+   * Whether this manager operates on the new multi-partition-group model. When {@code false}, the
+   * {@code *MultiConfiguration} methods below are not supported.
+   */
+  default boolean isUsingNewConfig() {
+    return false;
+  }
+
+  /** Returns the full multi-partition-group configuration. Only valid when the new model is on. */
+  default ActorFuture<CurrentClusterConfiguration> getMultiConfiguration() {
+    throw new UnsupportedOperationException(
+        "getMultiConfiguration is only supported with the new configuration model");
+  }
+
+  /**
+   * Applies {@code updater} to the multi-partition-group configuration, persists and gossips it,
+   * and triggers local operation application. Only valid when the new model is on.
+   */
+  default ActorFuture<CurrentClusterConfiguration> updateMultiConfiguration(
+      final UnaryOperator<CurrentClusterConfiguration> updater) {
+    throw new UnsupportedOperationException(
+        "updateMultiConfiguration is only supported with the new configuration model");
+  }
 
   /**
    * A listener that is invoked, when the local member state in the local configuration is older

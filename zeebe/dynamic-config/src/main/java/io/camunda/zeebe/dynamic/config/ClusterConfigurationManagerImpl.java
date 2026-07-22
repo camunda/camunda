@@ -469,7 +469,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   // New multi-partition-group model (used only when useNewConfig is true).
   // ---------------------------------------------------------------------------
 
-  boolean isUsingNewConfig() {
+  @Override
+  public boolean isUsingNewConfig() {
     return useNewConfig;
   }
 
@@ -479,7 +480,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   /** Returns the full multi-group configuration. Only valid when {@link #useNewConfig} is true. */
-  ActorFuture<CurrentClusterConfiguration> getMultiConfiguration() {
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> getMultiConfiguration() {
     final var future = executor.<CurrentClusterConfiguration>createFuture();
     executor.run(() -> future.complete(persistedCurrentConfiguration.getConfiguration()));
     return future;
@@ -489,7 +491,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
    * Applies {@code updater} to the multi-group configuration, persists and gossips the result, then
    * triggers local operation application. Only valid when {@link #useNewConfig} is true.
    */
-  ActorFuture<CurrentClusterConfiguration> updateMultiConfiguration(
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> updateMultiConfiguration(
       final UnaryOperator<CurrentClusterConfiguration> updater) {
     final var future = executor.<CurrentClusterConfiguration>createFuture();
     executor.run(
