@@ -18,6 +18,8 @@ import type {
   QueryAuditLogsResponseBody,
   QueryElementInstanceInspectionResponseBody,
   GetProcessInstanceWaitStateStatisticsResponseBody,
+  QueryAgentInstancesResponseBody,
+  QueryAgentInstanceHistoryResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 
 type InstanceMock = {
@@ -31,6 +33,8 @@ type InstanceMock = {
   incidents?: QueryProcessInstanceIncidentsResponseBody;
   waitStates?: QueryElementInstanceInspectionResponseBody;
   waitStateStatistics?: GetProcessInstanceWaitStateStatisticsResponseBody;
+  agentInstances?: QueryAgentInstancesResponseBody;
+  agentInstanceHistory?: QueryAgentInstanceHistoryResponseBody;
 };
 
 function mockResponses({
@@ -45,6 +49,8 @@ function mockResponses({
   auditLogs,
   waitStates,
   waitStateStatistics,
+  agentInstances,
+  agentInstanceHistory,
 }: {
   processInstanceDetail?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
@@ -57,6 +63,8 @@ function mockResponses({
   auditLogs?: QueryAuditLogsResponseBody;
   waitStates?: QueryElementInstanceInspectionResponseBody;
   waitStateStatistics?: GetProcessInstanceWaitStateStatisticsResponseBody;
+  agentInstances?: QueryAgentInstancesResponseBody;
+  agentInstanceHistory?: QueryAgentInstanceHistoryResponseBody;
 }) {
   return (route: Route) => {
     if (route.request().url().includes('/v2/authentication/me')) {
@@ -98,18 +106,77 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().includes('/v2/agent-instances/search')) {
+    if (route.request().url().match(/\/v2\/agent-instances\/\d+\/history\/search/)) {
+      const requestBody = route.request().postDataJSON() ?? {};
+      const roleFilter: string | undefined = requestBody?.filter?.role;
+      const elementInstanceKeyFilter: string | undefined =
+        requestBody?.filter?.elementInstanceKey;
+      const limit: number | undefined = requestBody?.page?.limit;
+
+      let items = agentInstanceHistory?.items ?? [];
+      if (roleFilter) {
+        items = items.filter((item) => item.role === roleFilter);
+      }
+      if (elementInstanceKeyFilter) {
+        items = items.filter(
+          (item) => item.elementInstanceKey === elementInstanceKeyFilter,
+        );
+      }
+      const totalItems = items.length;
+      if (typeof limit === 'number') {
+        items = items.slice(0, limit);
+      }
+
       return route.fulfill({
         status: 200,
         body: JSON.stringify({
-          items: [],
+          items,
           page: {
-            totalItems: 0,
+            totalItems,
             startCursor: null,
             endCursor: null,
             hasMoreTotalItems: false,
           },
         }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/agent-instances/search')) {
+      const elementId: string | undefined = route.request().postDataJSON()
+        ?.filter?.elementId;
+
+      let filteredAgentInstances = agentInstances;
+      if (elementId && agentInstances) {
+        const filteredItems = agentInstances.items.filter(
+          (instance) => instance.elementId === elementId,
+        );
+        filteredAgentInstances = {
+          items: filteredItems,
+          page: {
+            totalItems: filteredItems.length,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        };
+      }
+
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(
+          filteredAgentInstances ?? {
+            items: [],
+            page: {
+              totalItems: 0,
+              startCursor: null,
+              endCursor: null,
+              hasMoreTotalItems: false,
+            },
+          },
+        ),
         headers: {
           'content-type': 'application/json',
         },
@@ -128,6 +195,24 @@ function mockResponses({
             hasMoreTotalItems: false,
           },
         }),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    const elementInstanceByKeyMatch = route
+      .request()
+      .url()
+      .match(/\/v2\/element-instances\/(\d+)(?:\?|$)/);
+    if (route.request().method() === 'GET' && elementInstanceByKeyMatch) {
+      const elementInstanceKey = elementInstanceByKeyMatch[1];
+      const item = elementInstances?.items.find(
+        (instance) => instance.elementInstanceKey === elementInstanceKey,
+      );
+      return route.fulfill({
+        status: item === undefined ? 404 : 200,
+        body: JSON.stringify(item ?? {}),
         headers: {
           'content-type': 'application/json',
         },
@@ -344,3 +429,7 @@ export {waitStateRunningInstance} from './waitStateRunningInstance.mocks';
 export {runningOrderProcessInstance} from './runningOrderProcessInstance.mocks';
 export {compensationProcessInstance} from './compensationProcessInstance.mocks';
 export {documentReferenceProcessInstance} from './documentReferenceProcessInstance.mocks';
+export {
+  agentProcessWithOneActiveInstance,
+  agentProcessWithTwoActiveInstances,
+} from './aiAgentProcessInstance.mock';
