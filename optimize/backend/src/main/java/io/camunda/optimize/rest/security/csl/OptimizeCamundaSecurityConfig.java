@@ -39,7 +39,7 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
  * <ul>
  *   <li>{@code optimize.security.csl.enabled=true}
  *   <li>{@code camunda.security.authentication.method=oidc}
- *   <li>{@code camunda.security.unhandled-paths-chain.enabled=false} (so the CSL deny chain does
+ *   <li>{@code camunda.security.authentication.catch-all-unhandled-paths-enabled=false} (so the CSL deny chain does
  *       not collide with the {@code /**} webapp chain)
  *   <li>{@code camunda.security.authentication.oidc.*} for the Identity (CCSM) / Auth0 (CCSaaS)
  *       client registration

@@ -44,7 +44,7 @@ stock webapp chain with a `/**` matcher is the catch-all below the bearer API ch
    to publish local `0.1.0-SNAPSHOT` (deny-chain toggle + API/webapp order split). `parent/pom.xml`
    already pins `version.camunda-security-library` to it.
 2. Set `optimize.security.csl.enabled=true`. The compat bridge sets the `camunda.security.*` defaults
-   (`method=oidc`, `unhandled-paths-chain.enabled=false`, `oidc.redirect-uri`) and maps the existing
+   (`method=oidc`, `catch-all-unhandled-paths-enabled=false`, `oidc.redirect-uri`) and maps the existing
    `CAMUNDA_OPTIMIZE_IDENTITY_*` env vars, so no extra `camunda.security.*` config is needed.
 3. Build the SPA: `cd optimize/client && yarn build`, then rebuild `optimize-backend` so
    `../client/dist` lands on the `webapp` classpath. Without it, `GET /` -> `NoResourceFoundException`

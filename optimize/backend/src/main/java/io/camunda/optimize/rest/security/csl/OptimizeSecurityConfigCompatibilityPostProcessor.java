@@ -67,7 +67,7 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // Always-on for the CSL adoption.
     derived.put("camunda.security.authentication.method", "oidc");
     // Optimize's webapp chain is /**, so the CSL deny chain must be suppressed.
-    derived.put("camunda.security.unhandled-paths-chain.enabled", "false");
+    derived.put("camunda.security.authentication.catch-all-unhandled-paths-enabled", "false");
     // Persist server-side sessions to Optimize's Elasticsearch (OptimizeSessionStoreAdapter), so
     // scaling stays affinity-free. Override to false for a single node to use in-memory sessions.
     derived.putIfAbsent("camunda.security.session.persistent.enabled", "true");

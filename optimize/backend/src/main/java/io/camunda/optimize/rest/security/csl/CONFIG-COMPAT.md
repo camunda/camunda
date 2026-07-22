@@ -17,7 +17,7 @@ TRANSPORT = Spring/server config, not part of the auth bridge (unchanged).
 | CSL property | Value |
 |---|---|
 | `camunda.security.authentication.method` | `oidc` |
-| `camunda.security.unhandled-paths-chain.enabled` | `false` (Optimize webapp chain is `/**`) |
+| `camunda.security.authentication.catch-all-unhandled-paths-enabled` | `false` (Optimize webapp chain is `/**`) |
 | `camunda.security.authentication.oidc.redirect-uri` | `{baseUrl}/api/authentication/callback` (Optimize's existing callback; CSL derives its listener path from this, ADR-0036, so the pre-provisioned IdP client needs no change) |
 
 ## OIDC / CCSM (Camunda Identity)
