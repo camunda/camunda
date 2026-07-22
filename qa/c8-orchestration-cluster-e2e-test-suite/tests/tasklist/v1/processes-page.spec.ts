@@ -194,11 +194,18 @@ test.describe('process page', () => {
     await expect(page.getByText('3000-01-01')).toBeVisible();
     await expect(page.getByText('3000-01-02')).toBeVisible();
     await expect(page.getByText('123')).toBeVisible();
-    await expect(
-      page.getByText(
-        '[{"itemName":"laptop1","unitPrice":11,"quantity":21},{"itemName":"laptop2","unitPrice":12,"quantity":22}]',
-      ),
-    ).toBeVisible();
+    // The `items` process variable is a JSON array whose object keys are not
+    // emitted in a stable order (observed: the second item rendered as
+    // {"quantity":...,"itemName":...,"unitPrice":...}), so matching the whole
+    // array as one fixed string is flaky. Assert each item's key/value pairs
+    // individually — every "key":value pair stays contiguous in the compact
+    // JSON regardless of object key ordering.
+    await expect(page.getByText('"itemName":"laptop1"')).toBeVisible();
+    await expect(page.getByText('"unitPrice":11')).toBeVisible();
+    await expect(page.getByText('"quantity":21')).toBeVisible();
+    await expect(page.getByText('"itemName":"laptop2"')).toBeVisible();
+    await expect(page.getByText('"unitPrice":12')).toBeVisible();
+    await expect(page.getByText('"quantity":22')).toBeVisible();
     await taskDetailsPageV1.clickAssignToMeButton();
     await taskDetailsPageV1.clickCompleteTaskButton();
     await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible({
