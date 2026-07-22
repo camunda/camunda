@@ -123,6 +123,20 @@ Found while manually testing against a local CCSM/Keycloak setup
     `camunda.security.authentication.oidc.*`. Lesson: audit every host bean that supplies a
     `ClientRegistrationRepository` / `OAuth2AuthorizedClientService` for the CSL back-off condition,
     not just the `SecurityFilterChain` adapters.
+11. **Cloud `/api/identity/current/user` 401'd in a reload loop.** After login succeeded, the SPA
+    looped because `current/user` returned 401 while the other `/api` calls were 200. Root cause
+    (from `saas.log`): `CCSaaSUserCache.getUserById` throws `NotAuthorizedException: Missing user
+    access token for service access` because `AccountsUserAccessTokenProvider` only extracts the
+    user's Accounts access token from a bearer `JwtAuthenticationToken` (or the legacy
+    `X-Optimize-Authorization` service-token cookie). Under CSL the browser principal is an
+    `OAuth2AuthenticationToken` and the split cookie is gone, so no token was found. The user *id*
+    resolved fine (via the `subjectFromCslWebappSession` bridge), which is why only endpoints that
+    fetch the cloud user (not the ones that catch/skip it) failed. Fixed by bridging
+    `AccountsUserAccessTokenProvider` to read the access token from the OIDC session's
+    `OAuth2AuthorizedClient` (optional `ObjectProvider`, inert in legacy) — the CCSaaS twin of the
+    CCSM `CCSMTokenService` bridge (finding 7). Note: cloud user retrieval uses the *user's* token,
+    not an M2M token; the M2M token (`CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE`) is used only by
+    `CCSaaSNotificationClient`.
 
 ## Follow-ups (tracked in ADR-0036)
 
