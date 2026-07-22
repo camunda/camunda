@@ -39,7 +39,7 @@ import java.util.List;
  */
 public final class SegmentSorter implements SortedRun {
 
-  // Family-day source columns carry epoch MICROSECONDS (see TableSchema.Column#timestamptz()) --
+  // Family-day source columns carry epoch MICROSECONDS (see TableSchema.Column#logicalType()) --
   // this is the one divisor that turns that instant into a family day, so it must track whichever
   // unit the schema's familyDaySource column actually holds.
   private static final long MICROS_PER_DAY = 86_400_000_000L;

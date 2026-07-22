@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.ToLongFunction;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.CatalogProperties;
@@ -112,6 +113,19 @@ public final class IcebergLakeWriter implements LakeWriter {
    * regardless of which of the two commits a snapshot.
    */
   public static final String OFFSET_PROPERTY_PREFIX = "lake.offset.p";
+
+  /**
+   * Prefix of the snapshot summary property {@code
+   * io.camunda.analytics.lake.sink.pipeline.DirectCommitSink} uses to stamp a partition's local
+   * frontier. Lives here, next to {@link #OFFSET_PROPERTY_PREFIX}, rather than on {@code
+   * DirectCommitSink} itself: every commit that re-stamps one carry-forward property must re-stamp
+   * the other (see {@link #flushTable}'s and {@link LakeCompactor}'s own carry-forward code) — a
+   * commit that only knew about one prefix would silently wipe the other the moment it landed a
+   * snapshot, exactly the bug class {@link #OFFSET_PROPERTY_PREFIX}'s own javadoc describes.
+   * Keeping both prefixes on this one class means every restamp site only has to import one
+   * constant to get both right.
+   */
+  public static final String FRONTIER_PROPERTY_PREFIX = "lake.frontier.p";
 
   private static final String INSTANCES_STAGING_TABLE = "staging_instances";
   private static final String ACTIVITIES_STAGING_TABLE = "staging_activities";
@@ -223,6 +237,12 @@ public final class IcebergLakeWriter implements LakeWriter {
   private final Table instancesTable;
   private final Table activitiesTable;
   private final Connection duckdb;
+
+  // One commit mutex per raw table (never a single shared lock across both) -- see #commitLock's
+  // own javadoc for the invariant these guard and why instances/activities must never block each
+  // other.
+  private final ReentrantLock instancesCommitLock = new ReentrantLock();
+  private final ReentrantLock activitiesCommitLock = new ReentrantLock();
 
   private final List<InstanceRow> bufferedInstances = new ArrayList<>();
   private final List<ActivityRow> bufferedActivities = new ArrayList<>();
@@ -372,10 +392,14 @@ public final class IcebergLakeWriter implements LakeWriter {
 
     final AppendFiles append = table.newAppend();
     // Re-stamp every partition this table has ever seen (see class javadoc) -- not just the one
-    // advancing now -- so the new snapshot's summary remains a complete map.
+    // advancing now -- so the new snapshot's summary remains a complete map. Both carry-forward
+    // prefixes must be re-stamped together (see FRONTIER_PROPERTY_PREFIX's javadoc): this legacy
+    // flush path shares instancesTable/activitiesTable with DirectCommitSink, so a commit here that
+    // only forwarded lake.offset.* would silently wipe every frontier stamp DirectCommitSink had
+    // already landed on the same table.
     priorSummary.forEach(
         (key, value) -> {
-          if (key.startsWith(OFFSET_PROPERTY_PREFIX)) {
+          if (key.startsWith(OFFSET_PROPERTY_PREFIX) || key.startsWith(FRONTIER_PROPERTY_PREFIX)) {
             append.set(key, value);
           }
         });
@@ -557,13 +581,15 @@ public final class IcebergLakeWriter implements LakeWriter {
   }
 
   /**
-   * Handle for {@link LakeCompactor} (constructed with, and only ever called from, the same
-   * poll-loop thread that drives {@link #flush(int, long)} — see {@link LakeCompactor}'s class
-   * javadoc for why that makes sharing this connection safe without any synchronization) and for
-   * {@code LakePocApp}'s L0 sink wiring, which builds its {@code
+   * Handle for {@link LakeCompactor} (constructed against this same {@link Table} instance, driven
+   * from the poll-loop thread) and for {@code LakePocApp}'s L0 sink wiring, which builds its {@code
    * io.camunda.analytics.lake.sink.pipeline.SinkPipeline}s and {@code
    * io.camunda.analytics.lake.sink.pipeline.DirectCommitSink}s directly against this {@link Table}
-   * (a different package, hence public rather than package-private).
+   * (a different package, hence public rather than package-private). Since {@code DirectCommitSink}
+   * commits from each partition's own flush thread, concurrently with {@link LakeCompactor}'s
+   * poll-thread-driven passes, both sides must serialize their commit sequences through {@link
+   * #commitLock(Table)} — sharing the handle itself is safe, mutating through it concurrently is
+   * not.
    */
   public Table instancesTable() {
     return instancesTable;
@@ -572,6 +598,31 @@ public final class IcebergLakeWriter implements LakeWriter {
   /** See {@link #instancesTable()}. */
   public Table activitiesTable() {
     return activitiesTable;
+  }
+
+  /**
+   * The commit mutex guarding every mutation sequence (refresh &rarr; rewrite/append &rarr; commit)
+   * against {@code table} — one lock per raw table, not one shared lock for both, so instances and
+   * activities commits never block each other. {@code table} must be exactly the {@link Table}
+   * instance returned by {@link #instancesTable()} or {@link #activitiesTable()}.
+   *
+   * <p>Load-bearing since {@code io.camunda.analytics.lake.sink.pipeline.DirectCommitSink} started
+   * committing directly from each partition's own flush thread: {@link LakeCompactor}'s rewrite/
+   * manifest-rewrite/expire passes run on the poll-loop thread and mutate the very same {@link
+   * Table} objects, so both sides must hold this lock for the whole read-current-summary-then-
+   * commit sequence, or a lost update (a wiped offset/frontier stamp, or a rewrite racing a fresh
+   * append) becomes possible. See {@link LakeCompactor}'s class javadoc for the full picture.
+   *
+   * @throws IllegalArgumentException if {@code table} is neither of this writer's own tables
+   */
+  public ReentrantLock commitLock(final Table table) {
+    if (table == instancesTable) {
+      return instancesCommitLock;
+    }
+    if (table == activitiesTable) {
+      return activitiesCommitLock;
+    }
+    throw new IllegalArgumentException("Unknown table " + table.name());
   }
 
   /** See {@link #instancesTable()}. */

@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.analytics.lake.LakeConfig;
 import io.camunda.analytics.lake.model.ActivityRow;
 import io.camunda.analytics.lake.model.InstanceRow;
+import io.camunda.analytics.lake.sink.Descriptor;
+import io.camunda.analytics.lake.sink.pipeline.DirectCommitSink;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -82,6 +84,18 @@ class IcebergLakeWriterCompactionTest {
       assertThat(activityRowsBefore).isEqualTo(BATCH_COUNT);
       assertThat(committedOffsetBefore).isEqualTo(BATCH_COUNT - 1);
 
+      // and: simulate a frontier stamp DirectCommitSink would have already landed on this same
+      // table for a different partition -- this is the property Fix 1 guards: every restamp site
+      // in write/ must carry lake.frontier.p* forward exactly like it already does for
+      // lake.offset.p*, or a maintenance commit (like the compaction below) silently wipes it.
+      final int frontierPartition = PARTITION + 1;
+      final long stampedFrontierMs = 123_456_789L;
+      final DirectCommitSink sink =
+          new DirectCommitSink(instancesTable, writer.commitLock(instancesTable));
+      sink.accept(
+          new Descriptor("instances", frontierPartition, List.of(), 0L, 0L, stampedFrontierMs));
+      assertThat(frontierOf(instancesTable, frontierPartition)).isEqualTo(stampedFrontierMs);
+
       // when a compaction pass runs
       final LakeCompactor compactor = new LakeCompactor(writer);
       final LakeCompactor.CompactionReport report = compactor.compactIfNeeded();
@@ -105,6 +119,10 @@ class IcebergLakeWriterCompactionTest {
       // and -- the critical assertion -- the durable offset survived compaction unchanged; a
       // regression here would silently force a full replay from scratch on the next restart
       assertThat(writer.committedOffset(PARTITION)).isEqualTo(committedOffsetBefore);
+
+      // and -- Fix 1's own critical assertion -- the frontier stamp survived compaction too, not
+      // just the offset
+      assertThat(frontierOf(instancesTable, frontierPartition)).isEqualTo(stampedFrontierMs);
     } finally {
       writer.close();
     }
@@ -154,6 +172,18 @@ class IcebergLakeWriterCompactionTest {
       count++;
     }
     return count;
+  }
+
+  /** The current snapshot's {@code lake.frontier.p<partition>} stamp, or {@code null}. */
+  private static Long frontierOf(final Table table, final int partition) {
+    table.refresh();
+    final Snapshot snapshot = table.currentSnapshot();
+    if (snapshot == null) {
+      return null;
+    }
+    final String value =
+        snapshot.summary().get(DirectCommitSink.FRONTIER_PROPERTY_PREFIX + partition);
+    return value == null ? null : Long.parseLong(value);
   }
 
   /** Row count across every data file currently live in {@code table}'s current snapshot. */

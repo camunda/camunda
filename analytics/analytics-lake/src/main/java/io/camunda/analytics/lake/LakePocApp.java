@@ -83,8 +83,9 @@ import org.slf4j.LoggerFactory;
  * {@link LakeTranslator} through a {@link RowAppender}, flushed on its own schedule by its own
  * flush thread, and committed straight to the {@code instances}/{@code activities} {@link Table}s
  * via one shared {@link DirectCommitSink} per table (shared because {@link DirectCommitSink#accept}
- * is {@code synchronized}, so multiple partitions' flush threads committing to the same table never
- * race).
+ * holds that table's own commit mutex — see {@link IcebergLakeWriter#commitLock(Table)} — so
+ * multiple partitions' flush threads, and {@link LakeCompactor}'s own poll-thread commits, never
+ * race committing to the same table).
  */
 public final class LakePocApp {
 
@@ -280,8 +281,8 @@ public final class LakePocApp {
         RawTableSchemas.activities(activitiesTable.schema()),
         instancesEncoderFactory,
         activitiesEncoderFactory,
-        new DirectCommitSink(instancesTable),
-        new DirectCommitSink(activitiesTable),
+        new DirectCommitSink(instancesTable, writer.commitLock(instancesTable)),
+        new DirectCommitSink(activitiesTable, writer.commitLock(activitiesTable)),
         config.flushIntervalMs(),
         new SimpleMeterRegistry());
   }

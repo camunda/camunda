@@ -137,8 +137,10 @@ class SinkIntegrationTest {
       final IcebergParquetEncoderFactory activitiesEncoderFactory =
           new IcebergParquetEncoderFactory(
               activitiesTable.schema(), fileSink, SEGMENT_ROWS, Set.of());
-      final DirectCommitSink instancesSink = new DirectCommitSink(instancesTable);
-      final DirectCommitSink activitiesSink = new DirectCommitSink(activitiesTable);
+      final DirectCommitSink instancesSink =
+          new DirectCommitSink(instancesTable, writer.commitLock(instancesTable));
+      final DirectCommitSink activitiesSink =
+          new DirectCommitSink(activitiesTable, writer.commitLock(activitiesTable));
       final TableSchema instancesSchema = RawTableSchemas.instances(instancesTable.schema());
       final TableSchema activitiesSchema = RawTableSchemas.activities(activitiesTable.schema());
       final MeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -320,8 +322,11 @@ class SinkIntegrationTest {
       final IcebergParquetEncoderFactory activitiesEncoderFactory =
           new IcebergParquetEncoderFactory(
               writer.activitiesTable().schema(), fileSink, SEGMENT_ROWS, Set.of());
-      final DirectCommitSink instancesSink = new DirectCommitSink(instancesTable);
-      final DirectCommitSink activitiesSink = new DirectCommitSink(writer.activitiesTable());
+      final DirectCommitSink instancesSink =
+          new DirectCommitSink(instancesTable, writer.commitLock(instancesTable));
+      final DirectCommitSink activitiesSink =
+          new DirectCommitSink(
+              writer.activitiesTable(), writer.commitLock(writer.activitiesTable()));
       final TableSchema instancesSchema = RawTableSchemas.instances(instancesTable.schema());
       final TableSchema activitiesSchema =
           RawTableSchemas.activities(writer.activitiesTable().schema());

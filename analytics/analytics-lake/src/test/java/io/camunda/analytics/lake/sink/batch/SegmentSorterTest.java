@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class SegmentSorterTest {
 
   // Matches SegmentSorter's own day-bucketing divisor: family-day source columns carry epoch
-  // microseconds (see TableSchema.Column#timestamptz()), not milliseconds.
+  // microseconds (see TableSchema.Column#logicalType()), not milliseconds.
   private static final long MICROS_PER_DAY = 86_400_000_000L;
 
   // columns: ts (family day source, not a sort key), entityId (primary sort key),

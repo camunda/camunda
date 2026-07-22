@@ -72,6 +72,17 @@ import org.slf4j.LoggerFactory;
  * before the failing {@code begin()} call (state puts, {@code state.getInstance}/{@code getElement}
  * lookups) is idempotent and side-effect-free until the append actually succeeds, and eviction
  * ({@code state.deleteInstance}/{@code deleteElement}) only happens after it does.
+ *
+ * <h2>Allocation: budgeted per completed instance, not per record</h2>
+ *
+ * <p>{@code RowAppender}'s own zero-allocation contract covers the per-record append path (the
+ * {@code begin}/{@code put*}/{@code endRow} calls this class makes on every record). Building the
+ * {@code vars_json} payload in {@link #emitInstance} does allocate — the JSON string, its UTF-8
+ * byte array, and (see {@code RocksDbTranslatorState#variablesOf}) the drained variable map itself
+ * — but only once per <em>completed</em> instance, never once per record. That is bounded by
+ * completion rate, not by however many records it took to reach it, and is the one explicitly
+ * budgeted exception to the sink's otherwise strict zero-allocation hot path (see {@code
+ * io.camunda.analytics.lake.sink} package-info and {@code RowAppender}'s own javadoc).
  */
 public final class LakeTranslator {
 
@@ -81,11 +92,18 @@ public final class LakeTranslator {
    */
   private static final int MAX_VARIABLE_VALUE_CHARS = 8192;
 
+  private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
+
   private static final Logger LOG = LoggerFactory.getLogger(LakeTranslator.class);
 
   private final TranslatorState state;
   private final RowAppender instanceAppender;
   private final RowAppender activityAppender;
+
+  // Reused across every completed instance's vars_json build (see class javadoc's allocation
+  // note) -- poll thread only, like everything else in this class; setLength(0) per use rather
+  // than allocating a fresh StringBuilder per completed instance.
+  private final StringBuilder varsJsonScratch = new StringBuilder(256);
 
   public LakeTranslator(
       final TranslatorState state,
@@ -264,25 +282,28 @@ public final class LakeTranslator {
   /**
    * Builds the instance variable payload: a JSON object whose keys are JSON-escaped variable names
    * and whose values are inserted <b>raw</b> (variable values are already JSON documents). {@code
-   * "{}"} when there are no variables.
+   * "{}"} when there are no variables. Uses {@link #varsJsonScratch} rather than a fresh {@code
+   * StringBuilder} per call — see class javadoc's allocation note; the returned {@link String} (and
+   * the caller's subsequent UTF-8 encoding of it) is still an unavoidable per-completed-instance
+   * allocation, just no longer a doubled one.
    */
-  private static String varsJson(final Map<String, String> variables) {
+  private String varsJson(final Map<String, String> variables) {
     if (variables.isEmpty()) {
       return "{}";
     }
-    final StringBuilder json = new StringBuilder(2 + variables.size() * 16);
-    json.append('{');
+    varsJsonScratch.setLength(0);
+    varsJsonScratch.append('{');
     boolean first = true;
     for (final Map.Entry<String, String> entry : variables.entrySet()) {
       if (!first) {
-        json.append(',');
+        varsJsonScratch.append(',');
       }
       first = false;
-      json.append('"');
-      escapeJson(json, entry.getKey());
-      json.append("\":").append(entry.getValue());
+      varsJsonScratch.append('"');
+      escapeJson(varsJsonScratch, entry.getKey());
+      varsJsonScratch.append("\":").append(entry.getValue());
     }
-    return json.append('}').toString();
+    return varsJsonScratch.append('}').toString();
   }
 
   /** Appends {@code raw} to {@code out} escaped as the contents of a JSON string. */
@@ -299,12 +320,26 @@ public final class LakeTranslator {
         case '\t' -> out.append("\\t");
         default -> {
           if (c < 0x20) {
-            out.append(String.format("\\u%04x", (int) c));
+            appendUnicodeEscape(out, c);
           } else {
             out.append(c);
           }
         }
       }
     }
+  }
+
+  /**
+   * Appends {@code \\uXXXX} for a control character manually (four hex digit appends), instead of
+   * {@code String.format}: the format string parser and its boxing of {@code (int) c} allocate on
+   * every call, which would otherwise run on every completed instance whose variable JSON happens
+   * to contain a raw control character — rare, but avoidable at zero extra complexity.
+   */
+  private static void appendUnicodeEscape(final StringBuilder out, final char c) {
+    out.append('\\').append('u');
+    out.append(HEX_DIGITS[(c >> 12) & 0xF]);
+    out.append(HEX_DIGITS[(c >> 8) & 0xF]);
+    out.append(HEX_DIGITS[(c >> 4) & 0xF]);
+    out.append(HEX_DIGITS[c & 0xF]);
   }
 }

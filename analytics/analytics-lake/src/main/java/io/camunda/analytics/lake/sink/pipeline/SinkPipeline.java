@@ -20,6 +20,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
@@ -49,6 +50,7 @@ public final class SinkPipeline {
   private final LongSupplier clock;
   private final SinkMetrics metrics;
   private final FlushLoop flushLoop;
+  private final ThreadFactory threadFactory;
 
   // A Deque (not a Queue) is deliberate: the speculative-add/roll-back-on-failure dance in
   // trySeal()/close() must undo exactly the element it just added, by position — not by value
@@ -80,8 +82,41 @@ public final class SinkPipeline {
       final List<SealRider> riders,
       final LongSupplier clock,
       final MeterRegistry meterRegistry) {
+    this(
+        config,
+        segments,
+        gate,
+        sorter,
+        encoderFactory,
+        descriptorSink,
+        riders,
+        clock,
+        meterRegistry,
+        Thread::new);
+  }
+
+  /**
+   * Same as the 9-arg constructor, additionally accepting the {@link ThreadFactory} {@link
+   * #start()} uses to create the flush thread — e.g. to set a custom uncaught-exception handler,
+   * priority, or thread group. The default (9-arg) constructor passes {@link
+   * Thread#Thread(Runnable)} via {@code Thread::new}, matching this class's pre-existing behavior
+   * exactly: {@link #start()} still names the thread itself afterward regardless of which factory
+   * produced it.
+   */
+  public SinkPipeline(
+      final SinkConfig config,
+      final Segment[] segments,
+      final BackpressureGate gate,
+      final Function<Segment, SortedRun> sorter,
+      final BatchEncoder.Factory encoderFactory,
+      final DescriptorSink descriptorSink,
+      final List<SealRider> riders,
+      final LongSupplier clock,
+      final MeterRegistry meterRegistry,
+      final ThreadFactory threadFactory) {
     this.config = Objects.requireNonNull(config, "config");
     this.clock = Objects.requireNonNull(clock, "clock");
+    this.threadFactory = Objects.requireNonNull(threadFactory, "threadFactory");
     Objects.requireNonNull(segments, "segments");
     Objects.requireNonNull(gate, "gate");
     Objects.requireNonNull(sorter, "sorter");
@@ -131,13 +166,15 @@ public final class SinkPipeline {
     return ring;
   }
 
-  /** Starts the flush thread. Must be called exactly once, before any {@link #onPollTick} call. */
+  /**
+   * Starts the flush thread, created via the configured {@link ThreadFactory} (see this class's
+   * constructors). Must be called exactly once, before any {@link #onPollTick} call.
+   */
   public void start() {
     lastFlushCheckMs = clock.getAsLong();
-    flushThread =
-        new Thread(
-            flushLoop,
-            "lake-sink-flush-%s-%d".formatted(config.tableName(), config.sourcePartition()));
+    flushThread = threadFactory.newThread(flushLoop);
+    flushThread.setName(
+        "lake-sink-flush-%s-%d".formatted(config.tableName(), config.sourcePartition()));
     flushThread.start();
   }
 

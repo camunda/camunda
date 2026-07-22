@@ -32,10 +32,18 @@ public final class RawTableSchemas {
   private RawTableSchemas() {}
 
   /**
-   * Sort key {@code (process_id, key, started_at)}; family day source is {@code started_at}
-   * (instance activation) — see the class-level "Column mapping"/"Sort keys" contract this mirrors.
+   * Sort key {@code (process_id, key)} — identity-only, no timestamp component; family day source
+   * is {@code started_at} (instance activation), which stays the implicit leading sort component
+   * (see {@link io.camunda.analytics.lake.sink.SortedRun#dayRanges()}'s javadoc) but is no longer
+   * also an explicit tertiary key. {@code key} (the process instance key) is a Zeebe key: unique
+   * and monotonically increasing per partition, so once {@code process_id} groups rows of the same
+   * process together, {@code key} alone gives a strict total order within that group with no ties
+   * possible — a {@code started_at} tiebreaker cannot change the order, only cost a comparison
+   * getting there. Because ties are unreachable by construction, {@link
+   * io.camunda.analytics.lake.sink.batch.SegmentSorter}'s equal-keys worst case (the quicksort
+   * degrading toward its insertion-sort fallback across a long run of ties) is unreachable too.
    * {@code started_at}/{@code ended_at} are {@code timestamptz} columns (epoch microseconds on the
-   * batch vector, see {@link TableSchema.Column#timestamptz()}); {@code duration_ms} stays a plain
+   * batch vector, see {@link TableSchema.Column#logicalType()}); {@code duration_ms} stays a plain
    * millisecond {@code LONG}.
    */
   public static TableSchema instances(final Schema icebergSchema) {
@@ -53,15 +61,22 @@ public final class RawTableSchemas {
             column(icebergSchema, "version", ColumnType.INT, -1, false),
             column(icebergSchema, "tenant_id", ColumnType.STRING_DICT, -1, false),
             column(icebergSchema, "state", ColumnType.STRING_DICT, -1, false),
-            timestamptzColumn(icebergSchema, "started_at", InstanceColumns.SORT_START_MS, true),
+            timestamptzColumn(icebergSchema, "started_at", -1, true),
             timestamptzColumn(icebergSchema, "ended_at", -1, false),
             column(icebergSchema, "duration_ms", ColumnType.LONG, -1, false),
             column(icebergSchema, "vars_json", ColumnType.BINARY, -1, false)));
   }
 
   /**
-   * Sort key {@code (process_id, instance_key, started_at)}; family day source is {@code
-   * instance_started_at} (the owning instance's activation, not the element's own start).
+   * Sort key {@code (process_id, instance_key, element_key)} — {@code element_key} replaces the old
+   * {@code started_at} tiebreaker; family day source is {@code instance_started_at} (the owning
+   * instance's activation, not the element's own start), still the implicit leading sort component,
+   * no longer also an explicit key. All of an instance's elements live on the same Zeebe partition
+   * as the instance itself, and element keys on one partition are unique and monotonically
+   * increasing — so within one {@code (process_id, instance_key)} group, {@code element_key} order
+   * <em>is</em> activation order, and, being unique, leaves no tie for {@code started_at} to break.
+   * See {@link #instances(Schema)}'s javadoc for why that makes the sorter's equal-keys worst case
+   * unreachable here too.
    */
   public static TableSchema activities(final Schema icebergSchema) {
     return new TableSchema(
@@ -83,9 +98,14 @@ public final class RawTableSchemas {
             column(icebergSchema, "tenant_id", ColumnType.STRING_DICT, -1, false),
             column(icebergSchema, "element_id", ColumnType.STRING_DICT, -1, false),
             column(icebergSchema, "element_type", ColumnType.STRING_DICT, -1, false),
-            column(icebergSchema, "element_key", ColumnType.LONG, -1, false),
+            column(
+                icebergSchema,
+                "element_key",
+                ColumnType.LONG,
+                ActivityColumns.SORT_ELEMENT_KEY,
+                false),
             column(icebergSchema, "state", ColumnType.STRING_DICT, -1, false),
-            timestamptzColumn(icebergSchema, "started_at", ActivityColumns.SORT_START_MS, false),
+            timestamptzColumn(icebergSchema, "started_at", -1, false),
             timestamptzColumn(icebergSchema, "ended_at", -1, false),
             column(icebergSchema, "duration_ms", ColumnType.LONG, -1, false),
             timestamptzColumn(icebergSchema, "instance_started_at", -1, true)));
@@ -109,7 +129,13 @@ public final class RawTableSchemas {
       final boolean familyDaySource) {
     final Types.NestedField field = findField(icebergSchema, name);
     return new TableSchema.Column(
-        name, ColumnType.LONG, field.fieldId(), false, sortOrder, familyDaySource, true);
+        name,
+        ColumnType.LONG,
+        field.fieldId(),
+        false,
+        sortOrder,
+        familyDaySource,
+        TableSchema.LogicalType.TIMESTAMPTZ);
   }
 
   private static Types.NestedField findField(final Schema icebergSchema, final String name) {
@@ -141,11 +167,12 @@ public final class RawTableSchemas {
     /** Sort-key position of {@code process_id} (primary, after the implicit family-day lead). */
     private static final int SORT_PROCESS_ID = 0;
 
-    /** Sort-key position of {@code key} (secondary). */
+    /**
+     * Sort-key position of {@code key} (secondary, and the last explicit key — see {@link
+     * #instances(Schema)}'s javadoc for why a Zeebe key alone already yields a strict total order,
+     * with no timestamp tiebreaker needed).
+     */
     private static final int SORT_KEY = 1;
-
-    /** Sort-key position of {@code started_at} (tertiary; also the family-day source). */
-    private static final int SORT_START_MS = 2;
 
     private InstanceColumns() {}
   }
@@ -167,7 +194,13 @@ public final class RawTableSchemas {
 
     private static final int SORT_PROCESS_ID = 0;
     private static final int SORT_INSTANCE_KEY = 1;
-    private static final int SORT_START_MS = 2;
+
+    /**
+     * Sort-key position of {@code element_key} (tertiary, and the last explicit key — replaces the
+     * old {@code started_at} tiebreaker; see {@link #activities(Schema)}'s javadoc for why an
+     * element key alone already yields a strict total order within one instance).
+     */
+    private static final int SORT_ELEMENT_KEY = 2;
 
     private ActivityColumns() {}
   }

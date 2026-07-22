@@ -16,7 +16,13 @@ package io.camunda.analytics.lake.sink;
  * consumption and retry later; it must never buffer rows elsewhere.
  *
  * <p>Contract: implementations perform no allocation at steady state; {@code putDict} is
- * allocation-free for already-interned values.
+ * allocation-free for already-interned values. This covers exactly the per-record path — the {@code
+ * begin}/{@code put*}/{@code endRow} sequence a caller runs for every record. It does not cover
+ * work upstream of that sequence: {@code io.camunda.analytics.lake.translate.LakeTranslator} builds
+ * the {@code vars_json} payload (and drains {@code
+ * io.camunda.analytics.lake.state.RocksDbTranslatorState#variablesOf}) once per <em>completed</em>
+ * instance, which does allocate — bounded by completion rate, never by per-record rate, and the one
+ * explicitly budgeted exception to this interface's own zero-allocation claim.
  */
 public interface RowAppender {
 

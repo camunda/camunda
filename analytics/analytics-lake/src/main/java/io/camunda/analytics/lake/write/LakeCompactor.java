@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
@@ -42,15 +43,30 @@ import org.slf4j.LoggerFactory;
  * expiry} — plus a DuckDB-driven Parquet rewrite, into the PoC-scale equivalent of a managed
  * lakehouse's periodic {@code CHECKPOINT}/compaction.
  *
- * <h2>Same-thread, single-writer invariant (load-bearing)</h2>
+ * <h2>Concurrency: per-table commit lock (load-bearing)</h2>
  *
  * <p>This class is constructed with, and only ever reuses, {@link IcebergLakeWriter}'s own {@link
- * Table} handles and embedded DuckDB {@link Connection}. That is only safe because {@link
- * #compactIfNeeded()} is called from the very same single poll-loop thread that drives {@link
- * IcebergLakeWriter#flush(int, long)} (see {@code LakePocApp}'s run loop) — there is, by
- * construction, never a commit or a DuckDB statement in flight on another thread within this
- * process while a compaction pass runs. Sharing the connection/table objects would be unsafe under
- * any concurrent-caller assumption; it is a deliberate simplification here, not an oversight.
+ * Table} handles and embedded DuckDB {@link Connection}. It used to be true that {@link
+ * #compactIfNeeded()} ran on the very same single poll-loop thread that drove every commit against
+ * these tables, making synchronization unnecessary by construction — that stopped being true once
+ * {@code io.camunda.analytics.lake.sink.pipeline.DirectCommitSink} started committing directly from
+ * each source partition's own flush thread. Both this class's per-table pass ({@link
+ * #compactTable}, covering the data-file rewrite, manifest rewrite, and snapshot-expiry steps
+ * together) and {@code DirectCommitSink#accept} now hold the same table's commit mutex — obtained
+ * from {@link IcebergLakeWriter#commitLock(Table)}, one lock per raw table — for the whole
+ * refresh-then-commit sequence, so a flush thread's append can never interleave with this class's
+ * rewrite/manifest/expire commits against the same table. The lock is per-table (not one shared
+ * lock for both), so instances and activities compaction/commits never block each other.
+ *
+ * <p>The embedded DuckDB {@link Connection} itself needs no such lock: {@code DirectCommitSink}
+ * never issues a DuckDB statement (it only calls Iceberg's {@code Table} commit API), so this
+ * class's own poll-loop thread remains the DuckDB connection's sole user, exactly as before.
+ *
+ * <p>Gold-table recompute ({@link #recomputeGoldTablesSafely()}) is unaffected by any of this: it
+ * only ever reads the raw tables (Iceberg reads are snapshot-isolated without external locking) and
+ * writes to its own three gold tables, which no other thread ever commits to — see {@link
+ * GoldTables}'s own class javadoc. It keeps its pre-existing single-threaded story and needs no
+ * commit lock of its own.
  *
  * <h2>Failure handling</h2>
  *
@@ -68,17 +84,20 @@ import org.slf4j.LoggerFactory;
  * not swept automatically today; a future orphan-file scan (mirroring Iceberg's own {@code
  * removeOrphanFiles} action) is the natural follow-up, deliberately out of scope for this PoC pass.
  *
- * <h2>Offset re-stamping (critical)</h2>
+ * <h2>Offset and frontier re-stamping (critical)</h2>
  *
  * <p>Per {@link IcebergLakeWriter}'s own class javadoc, iceberg-core never carries a snapshot's
  * custom summary properties forward into the next snapshot. {@link IcebergLakeWriter#flush} relies
  * on those {@code lake.offset.p*} properties surviving in the <em>current</em> snapshot's summary
- * for {@link IcebergLakeWriter#committedOffset(int)} to work at all. Both {@link #rewriteDataFiles}
- * and {@link #rewriteManifests} produce a new current snapshot, so each one re-reads the prior
- * summary and re-sets every offset property onto its own commit before committing — exactly the
- * same pattern {@code flushTable} uses. Skipping this would silently reset every partition's
- * committed offset to {@code -1} the moment compaction first runs, forcing a full replay from
- * scratch; the compaction integration test asserts on this explicitly.
+ * for {@link IcebergLakeWriter#committedOffset(int)} to work at all, and {@code
+ * io.camunda.analytics.lake.sink.pipeline.DirectCommitSink} relies the same way on the {@code
+ * lake.frontier.p*} properties it stamps. Both {@link #rewriteDataFiles} and {@link
+ * #rewriteManifests} produce a new current snapshot, so each one re-reads the prior summary via
+ * {@link #currentCarryForwardProperties} and re-sets every offset <em>and</em> frontier property
+ * onto its own commit before committing — exactly the same pattern {@code flushTable} uses.
+ * Skipping either prefix would silently reset every partition's committed offset (or its frontier
+ * stamp) to a lost value the moment compaction first runs, forcing a full replay from scratch (or
+ * silently regressing the frontier); the compaction integration test asserts on this explicitly.
  *
  * <h2>Gold tables (added step, after the raw-table work above)</h2>
  *
@@ -107,12 +126,16 @@ public final class LakeCompactor {
   private final Connection duckdb;
   private final Table instancesTable;
   private final Table activitiesTable;
+  private final ReentrantLock instancesCommitLock;
+  private final ReentrantLock activitiesCommitLock;
   private final GoldTables goldTables;
 
   public LakeCompactor(final IcebergLakeWriter writer) {
     duckdb = writer.duckdbConnection();
     instancesTable = writer.instancesTable();
     activitiesTable = writer.activitiesTable();
+    instancesCommitLock = writer.commitLock(instancesTable);
+    activitiesCommitLock = writer.commitLock(activitiesTable);
     // Applied at construction, not only on tables created from now on -- this brings the
     // already-existing demo tables under the same metadata-cleanup policy retroactively (see the
     // README's Compaction section).
@@ -127,9 +150,9 @@ public final class LakeCompactor {
    */
   public CompactionReport compactIfNeeded() {
     final TableCompactionResult instances =
-        compactTable(INSTANCES_LABEL, instancesTable, INSTANCES_SORT);
+        compactTable(INSTANCES_LABEL, instancesTable, instancesCommitLock, INSTANCES_SORT);
     final TableCompactionResult activities =
-        compactTable(ACTIVITIES_LABEL, activitiesTable, ACTIVITIES_SORT);
+        compactTable(ACTIVITIES_LABEL, activitiesTable, activitiesCommitLock, ACTIVITIES_SORT);
     final GoldTables.GoldRecomputeResult gold = recomputeGoldTablesSafely();
     return new CompactionReport(instances, activities, gold);
   }
@@ -161,8 +184,20 @@ public final class LakeCompactor {
     }
   }
 
+  /**
+   * Runs one table's full compaction pass (data-file rewrite, manifest rewrite, snapshot expiry)
+   * under {@code commitLock} held for the entire sequence — see this class's "Concurrency" javadoc
+   * section for why that must span all three steps together rather than being acquired and released
+   * per step: a {@code DirectCommitSink} append landing between, say, the data-file rewrite and the
+   * manifest rewrite would otherwise see this pass's intermediate (and momentarily inconsistent)
+   * state.
+   */
   private TableCompactionResult compactTable(
-      final String label, final Table table, final String sortClause) {
+      final String label,
+      final Table table,
+      final ReentrantLock commitLock,
+      final String sortClause) {
+    commitLock.lock();
     try {
       table.refresh();
       final Map<String, DataFile> filesBefore = currentDataFiles(table);
@@ -186,6 +221,8 @@ public final class LakeCompactor {
       // ever reach the poll loop.
       LOG.warn("Compaction pass failed unexpectedly for {} table; skipping this cycle", label, e);
       return TableCompactionResult.unavailable(label);
+    } finally {
+      commitLock.unlock();
     }
   }
 
@@ -223,6 +260,10 @@ public final class LakeCompactor {
       final Map<Integer, List<DataFile>> filesByDay = groupByPartitionDay(filesToReplace.values());
       final List<DataFile> filesRewritten = new ArrayList<>();
       final List<DataFile> newFiles = new ArrayList<>();
+      // Tracked separately from newFiles.size() even though the two happen to coincide today (one
+      // output file per compacted day) -- the log line below must report the actual day count, not
+      // stand in a file count for it (see B3 in the review).
+      int daysCompacted = 0;
       for (final Map.Entry<Integer, List<DataFile>> dayGroup : filesByDay.entrySet()) {
         final List<DataFile> dayFiles = dayGroup.getValue();
         if (dayFiles.size() < 2) {
@@ -278,6 +319,7 @@ public final class LakeCompactor {
                 .build();
         filesRewritten.addAll(dayFiles);
         newFiles.add(newFile);
+        daysCompacted++;
       }
 
       if (newFiles.isEmpty()) {
@@ -285,8 +327,9 @@ public final class LakeCompactor {
       }
 
       // Read BEFORE constructing the rewrite producer -- same ordering IcebergLakeWriter#flushTable
-      // uses, so the offset properties captured are unambiguously the pre-rewrite current summary.
-      final Map<String, String> offsetProperties = currentOffsetProperties(table);
+      // uses, so the carry-forward properties captured are unambiguously the pre-rewrite current
+      // summary.
+      final Map<String, String> carryForwardProperties = currentCarryForwardProperties(table);
       final RewriteFiles rewrite = table.newRewrite();
       // Without this, RewriteFiles validates against the FULL table history (starting snapshot
       // null) — which a prior pass's expireSnapshots has truncated, failing every later rewrite
@@ -296,7 +339,7 @@ public final class LakeCompactor {
       if (table.currentSnapshot() != null) {
         rewrite.validateFromSnapshot(table.currentSnapshot().snapshotId());
       }
-      offsetProperties.forEach(rewrite::set);
+      carryForwardProperties.forEach(rewrite::set);
       filesRewritten.forEach(rewrite::deleteFile);
       newFiles.forEach(rewrite::addFile);
       rewrite.commit();
@@ -306,7 +349,7 @@ public final class LakeCompactor {
           label,
           table.name(),
           filesRewritten.size(),
-          newFiles.size(),
+          daysCompacted,
           newFiles.size());
       return true;
     } catch (final SQLException | IOException | RuntimeException e) {
@@ -348,11 +391,11 @@ public final class LakeCompactor {
   private boolean rewriteManifests(final Table table, final String label) {
     try {
       // Read BEFORE constructing the rewrite producer -- see the comment in #rewriteDataFiles.
-      final Map<String, String> offsetProperties = currentOffsetProperties(table);
+      final Map<String, String> carryForwardProperties = currentCarryForwardProperties(table);
       // Cluster everything into one bucket -- the goal here is "many small manifests -> one",
       // not partition-aware clustering (the tables are unpartitioned anyway).
       final RewriteManifests rewrite = table.rewriteManifests().clusterBy(file -> 0);
-      offsetProperties.forEach(rewrite::set);
+      carryForwardProperties.forEach(rewrite::set);
       rewrite.commit();
       return true;
     } catch (final RuntimeException e) {
@@ -363,26 +406,28 @@ public final class LakeCompactor {
   }
 
   /**
-   * The table's current {@code lake.offset.p*} snapshot summary properties, read fresh — see this
-   * class's "Offset re-stamping" javadoc section for why every {@link RewriteFiles}/{@link
-   * RewriteManifests} commit this class issues must re-apply these before committing.
+   * The table's current {@code lake.offset.p*} <em>and</em> {@code lake.frontier.p*} snapshot
+   * summary properties, read fresh — see this class's "Offset and frontier re-stamping" javadoc
+   * section for why every {@link RewriteFiles}/{@link RewriteManifests} commit this class issues
+   * must re-apply both prefixes before committing.
    */
-  private static Map<String, String> currentOffsetProperties(final Table table) {
+  private static Map<String, String> currentCarryForwardProperties(final Table table) {
     table.refresh();
     final Snapshot current = table.currentSnapshot();
     if (current == null) {
       return Map.of();
     }
-    final Map<String, String> offsets = new LinkedHashMap<>();
+    final Map<String, String> carryForward = new LinkedHashMap<>();
     current
         .summary()
         .forEach(
             (key, value) -> {
-              if (key.startsWith(IcebergLakeWriter.OFFSET_PROPERTY_PREFIX)) {
-                offsets.put(key, value);
+              if (key.startsWith(IcebergLakeWriter.OFFSET_PROPERTY_PREFIX)
+                  || key.startsWith(IcebergLakeWriter.FRONTIER_PROPERTY_PREFIX)) {
+                carryForward.put(key, value);
               }
             });
-    return offsets;
+    return carryForward;
   }
 
   private int expireSnapshots(final Table table, final String label) {

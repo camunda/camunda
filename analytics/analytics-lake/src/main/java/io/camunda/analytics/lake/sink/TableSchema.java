@@ -37,11 +37,9 @@ public record TableSchema(String table, List<Column> columns) {
    *     secondary, ...; {@code -1} = not part of the sort key)
    * @param familyDaySource whether this column carries the epoch-microseconds instant the family
    *     day is derived from (exactly one column per schema must set this)
-   * @param timestamptz whether this {@code LONG} column is logically an Iceberg {@code timestamptz}
-   *     carrying epoch <b>microseconds</b> rather than a plain integer — the vector storage stays
-   *     {@code long[]} either way (see {@link ColumnType#LONG}'s javadoc); this flag only tells
-   *     {@code BatchRowView} to hand the value to the Parquet writer as an {@code OffsetDateTime}
-   *     instead of a boxed {@code Long}. Meaningless for any other {@link ColumnType}.
+   * @param logicalType which Iceberg logical type this {@code LONG} column carries beyond its
+   *     physical storage — see {@link LogicalType}'s own javadoc. Meaningless for any other {@link
+   *     ColumnType}.
    */
   public record Column(
       String name,
@@ -50,9 +48,11 @@ public record TableSchema(String table, List<Column> columns) {
       boolean nullable,
       int sortOrder,
       boolean familyDaySource,
-      boolean timestamptz) {
+      LogicalType logicalType) {
 
-    /** Same as the 7-arg constructor, defaulting {@code timestamptz} to {@code false}. */
+    /**
+     * Same as the 7-arg constructor, defaulting {@code logicalType} to {@link LogicalType#NONE}.
+     */
     public Column(
         final String name,
         final ColumnType type,
@@ -60,8 +60,23 @@ public record TableSchema(String table, List<Column> columns) {
         final boolean nullable,
         final int sortOrder,
         final boolean familyDaySource) {
-      this(name, type, icebergFieldId, nullable, sortOrder, familyDaySource, false);
+      this(name, type, icebergFieldId, nullable, sortOrder, familyDaySource, LogicalType.NONE);
     }
+  }
+
+  /**
+   * Which Iceberg logical type a {@link ColumnType#LONG} column carries beyond its physical {@code
+   * long[]} vector storage (see {@link ColumnType#LONG}'s javadoc). The vector storage is identical
+   * either way; this only tells {@code BatchRowView} how to hand the value to the Parquet writer.
+   */
+  public enum LogicalType {
+    /** Plain integer — handed to the Parquet writer as a boxed {@code Long}. */
+    NONE,
+    /**
+     * Iceberg {@code timestamptz}, carrying epoch <b>microseconds</b> rather than a plain integer —
+     * handed to the Parquet writer as an {@code OffsetDateTime} instead of a boxed {@code Long}.
+     */
+    TIMESTAMPTZ
   }
 
   /** Index of the column the family day is derived from. */

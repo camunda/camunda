@@ -30,6 +30,14 @@
  * the poll thread pauses consumption through the {@link
  * io.camunda.analytics.lake.sink.BackpressureGate} until the flush thread releases a slot.
  *
+ * <p>"Never allocates at steady state" above is the per-<b>record</b> path's contract, not an
+ * absolute one: {@code io.camunda.analytics.lake.translate.LakeTranslator}'s own work upstream of a
+ * {@link io.camunda.analytics.lake.sink.RowAppender} call — building the {@code vars_json} payload
+ * and draining {@code io.camunda.analytics.lake.state.RocksDbTranslatorState#variablesOf} — does
+ * allocate, once per completed instance. That cost is bounded by how often an instance finishes,
+ * never by how many records it took to get there, and is the one explicitly budgeted exception; see
+ * {@link io.camunda.analytics.lake.sink.RowAppender}'s own javadoc.
+ *
  * <h2>Data path vs control path</h2>
  *
  * <p>Data path: rows &rarr; segment vectors &rarr; sorted run &rarr; Parquet bytes &rarr; object

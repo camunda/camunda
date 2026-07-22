@@ -83,6 +83,13 @@ class SinkBatchAllocationGuardTest {
         .isLessThan(64L * 1024);
   }
 
+  /**
+   * Alternates both nullable columns' two code paths every row — a non-null {@code putInt}/null
+   * {@code putNull} for {@code count}, and a non-null {@code putBinary}/null {@code putNull} for
+   * {@code payload} (which exercises {@code HeapBinaryColumn#setNull}'s own offset-stamping path,
+   * not just its non-null append path) — so every branch is covered inside the same steady-state
+   * allocation measurement, not just the null/non-null branch each column happened to take before.
+   */
   private static void appendRows(
       final RowAppender appender,
       final ColumnarSegmentRing ring,
@@ -95,8 +102,16 @@ class SinkBatchAllocationGuardTest {
       appender.putLong(0, i);
       appender.putLong(1, i);
       appender.putDict(2, i % 2 == 0 ? "kind-a" : "kind-b");
-      appender.putNull(3);
-      appender.putBinary(4, payload, 0, payload.length);
+      if (i % 2 == 0) {
+        appender.putInt(3, i);
+      } else {
+        appender.putNull(3);
+      }
+      if (i % 3 == 0) {
+        appender.putNull(4);
+      } else {
+        appender.putBinary(4, payload, 0, payload.length);
+      }
       appender.endRow();
     }
     drain(ring);

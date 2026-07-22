@@ -39,6 +39,16 @@ import org.apache.iceberg.util.DateTimeUtil;
  * #setField(String, Object)}/{@link #copy()} family all throw: this is a read-only cursor over
  * someone else's storage, and a name-based lookup here would mean a linear struct scan on every row
  * of the flush path for a method the writer never actually calls.
+ *
+ * <p><b>This flyweight itself allocates nothing per row, but a plain (non-{@code timestamptz})
+ * {@code LONG}/{@code INT} column still boxes on every row</b> — {@link #get(int, Class)}'s {@code
+ * switch} branches return {@code long}/{@code int} primitives, and {@link Record#get(int, Class)}'s
+ * signature forces them into {@code Object} before the caller ever downcasts, so the JIT cannot
+ * elide the box. A profiled 16k-row flush measured roughly 5&nbsp;MB of Eden churn from exactly
+ * this — bounded, flush-thread-only garbage, not steady-state poll-thread allocation, but real cost
+ * nonetheless. Driving parquet-java's column writers directly (no {@code Record} indirection, no
+ * {@code Object} return type to box through) is the escape hatch — rung 1.5 in the encoder ladder,
+ * see the module backlog.
  */
 final class BatchRowView implements Record {
 
@@ -68,7 +78,8 @@ final class BatchRowView implements Record {
       final int columnIndex = columnIndexForFieldId(columns, fieldId, tableSchema.table());
       sortedRunColumnByPos[pos] = columnIndex;
       columnTypeByPos[pos] = columns.get(columnIndex).type();
-      timestamptzByPos[pos] = columns.get(columnIndex).timestamptz();
+      timestamptzByPos[pos] =
+          columns.get(columnIndex).logicalType() == TableSchema.LogicalType.TIMESTAMPTZ;
     }
   }
 
@@ -120,7 +131,7 @@ final class BatchRowView implements Record {
 
   /**
    * A {@code timestamptz} column's batch-vector value is epoch microseconds (see {@link
-   * TableSchema.Column#timestamptz()}); iceberg-data's generic Parquet writer expects an {@link
+   * TableSchema.Column#logicalType()}); iceberg-data's generic Parquet writer expects an {@link
    * OffsetDateTime} for such a field (confirmed against {@code
    * GenericParquetWriter.TimestamptzWriter}, which extends {@code
    * ParquetValueWriters.PrimitiveWriter<OffsetDateTime>}) — one allocation per timestamp value on

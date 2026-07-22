@@ -14,6 +14,7 @@ import io.camunda.analytics.lake.write.IcebergLakeWriter;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
@@ -45,24 +46,51 @@ import org.slf4j.LoggerFactory;
  *
  * <p>One instance is meant to be shared by every {@link SinkPipeline} feeding the same table,
  * regardless of source partition (their flush threads are otherwise independent) — {@link #accept}
- * is {@code synchronized} so two partitions' flush threads committing to the same table never race
- * the read-current-summary-then-append dance below.
+ * holds {@code table}'s own commit mutex ({@link
+ * IcebergLakeWriter#commitLock(org.apache.iceberg.Table)}) for the whole
+ * read-current-summary-then-append dance below, so two partitions' flush threads committing to the
+ * same table never race each other. That same mutex is also held by {@code
+ * io.camunda.analytics.lake.write.LakeCompactor}'s own rewrite/manifest/expire passes against this
+ * table (poll-loop thread) — see its class javadoc — so this sink's flush-thread commits and the
+ * compactor's poll-thread commits never race each other either.
  */
 public final class DirectCommitSink implements DescriptorSink {
 
-  /** Snapshot summary property prefix for the per-partition frontier stamp (see class javadoc). */
-  public static final String FRONTIER_PROPERTY_PREFIX = "lake.frontier.p";
+  /**
+   * Snapshot summary property prefix for the per-partition frontier stamp (see class javadoc).
+   * Defined on {@link IcebergLakeWriter}, not here — see {@link
+   * IcebergLakeWriter#FRONTIER_PROPERTY_PREFIX}'s own javadoc for why.
+   */
+  public static final String FRONTIER_PROPERTY_PREFIX = IcebergLakeWriter.FRONTIER_PROPERTY_PREFIX;
 
   private static final Logger LOG = LoggerFactory.getLogger(DirectCommitSink.class);
 
   private final Table table;
+  private final ReentrantLock commitLock;
 
-  public DirectCommitSink(final Table table) {
+  /**
+   * @param table the raw table this sink commits descriptors to
+   * @param commitLock {@code table}'s own commit mutex — see {@link
+   *     IcebergLakeWriter#commitLock(org.apache.iceberg.Table)}; callers always obtain this from
+   *     the same {@link IcebergLakeWriter} that owns {@code table}, so it is shared with {@code
+   *     LakeCompactor}'s commits against the same table
+   */
+  public DirectCommitSink(final Table table, final ReentrantLock commitLock) {
     this.table = table;
+    this.commitLock = commitLock;
   }
 
   @Override
-  public synchronized void accept(final Descriptor descriptor) {
+  public void accept(final Descriptor descriptor) {
+    commitLock.lock();
+    try {
+      acceptLocked(descriptor);
+    } finally {
+      commitLock.unlock();
+    }
+  }
+
+  private void acceptLocked(final Descriptor descriptor) {
     table.refresh();
     final Snapshot current = table.currentSnapshot();
     final Map<String, String> priorSummary = current == null ? Map.of() : current.summary();

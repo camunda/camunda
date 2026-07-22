@@ -301,7 +301,7 @@ class IcebergParquetEncoderTest {
 
   @Test
   void shouldRoundTripTimestamptzValuesThroughDuckDb() throws Exception {
-    // given a schema v2 column marked timestamptz (see TableSchema.Column#timestamptz()): the
+    // given a schema v2 column marked timestamptz (see TableSchema.Column#logicalType()): the
     // batch vector carries epoch MICROSECONDS, exactly what LakeTranslator's ×1000 conversion
     // produces, and the catalog field is Iceberg's timestamptz logical type
     final TableSchema schema =
@@ -309,7 +309,14 @@ class IcebergParquetEncoderTest {
             "instances",
             List.of(
                 new TableSchema.Column("key", ColumnType.LONG, 1, false, 0, false),
-                new TableSchema.Column("started_at", ColumnType.LONG, 2, false, -1, true, true)));
+                new TableSchema.Column(
+                    "started_at",
+                    ColumnType.LONG,
+                    2,
+                    false,
+                    -1,
+                    true,
+                    TableSchema.LogicalType.TIMESTAMPTZ)));
     final Schema icebergSchema =
         new Schema(
             List.of(

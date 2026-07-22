@@ -12,6 +12,7 @@ import io.camunda.analytics.lake.sink.DataFileResult;
 import io.camunda.analytics.lake.sink.SortedRun;
 import io.camunda.analytics.lake.sink.TableSchema;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,11 @@ public final class DayRouter {
    * Appends every day range of {@code run} to its day's encoder, opening one via the factory on
    * first use of that day (or writing a straggler's own one-shot file — see class javadoc — once
    * {@link #MAX_OPEN_DAY_ENCODERS} is already in use by other days).
+   *
+   * <p>A freshly opened day encoder is put into {@link #openByDay} <em>before</em> its first {@link
+   * BatchEncoder#append} call, not after: if that first append throws, {@link #abortAll} must still
+   * be able to find and abort it (an encoder the factory opened but this method never tracked would
+   * leak — never aborted, never finished).
    */
   public void route(final SortedRun run) {
     for (final SortedRun.DayRange range : run.dayRanges()) {
@@ -61,35 +67,63 @@ public final class DayRouter {
         open.append(run, range.fromIndex(), range.toIndex());
       } else if (openByDay.size() < MAX_OPEN_DAY_ENCODERS) {
         final BatchEncoder created = encoderFactory.newFile(schema, range.epochDay());
-        created.append(run, range.fromIndex(), range.toIndex());
         openByDay.put(range.epochDay(), created);
+        created.append(run, range.fromIndex(), range.toIndex());
       } else {
         routeStraggler(run, range);
       }
     }
   }
 
+  /**
+   * Opens, appends to, and eagerly finishes a straggler's own one-shot file. If either the append
+   * or the finish throws, the straggler is aborted before the exception propagates — it is never
+   * reachable from {@link #openByDay} or {@link #stragglerResults}, so nothing else would ever
+   * abort or finish it otherwise.
+   */
   private void routeStraggler(final SortedRun run, final SortedRun.DayRange range) {
     final BatchEncoder straggler = encoderFactory.newFile(schema, range.epochDay());
-    straggler.append(run, range.fromIndex(), range.toIndex());
-    stragglerResults.add(straggler.finish());
+    final DataFileResult result;
+    try {
+      straggler.append(run, range.fromIndex(), range.toIndex());
+      result = straggler.finish();
+    } catch (final RuntimeException e) {
+      straggler.abort();
+      throw e;
+    }
+    stragglerResults.add(result);
   }
 
   /**
    * Finishes every currently-open day encoder and returns every {@link DataFileResult}, including
    * any straggler files already finished eagerly by {@link #route}. Leaves this router with no open
    * encoders; a later {@link #route} call opens fresh ones.
+   *
+   * <p>Removes each encoder from {@link #openByDay} the moment its {@link BatchEncoder#finish()}
+   * returns, rather than clearing the map in one shot afterwards: if a later encoder's {@code
+   * finish()} throws, the caller recovers by calling {@link #abortAll()}, which must never re-touch
+   * an encoder that already finished successfully (that would violate {@link
+   * BatchEncoder#abort()}'s "safe to call after a failed append" contract, which does not cover
+   * calling abort after a successful finish). Leaving a not-yet-attempted encoder in the map is
+   * exactly what {@link #abortAll()} needs to see.
    */
   public List<DataFileResult> closeAll() {
     final List<DataFileResult> results =
         new ArrayList<>(openByDay.size() + stragglerResults.size());
-    for (final BatchEncoder encoder : openByDay.values()) {
+    final Iterator<Map.Entry<Long, BatchEncoder>> it = openByDay.entrySet().iterator();
+    while (it.hasNext()) {
+      final BatchEncoder encoder = it.next().getValue();
       results.add(encoder.finish());
+      it.remove();
     }
-    openByDay.clear();
     results.addAll(stragglerResults);
     stragglerResults.clear();
     return results;
+  }
+
+  /** Whether anything is currently pending a {@link #closeAll()} call. */
+  public boolean hasPendingResults() {
+    return !openByDay.isEmpty() || !stragglerResults.isEmpty();
   }
 
   /** Abandons every open encoder (shutdown/crash path); never throws. */
