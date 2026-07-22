@@ -310,6 +310,27 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
             });
   }
 
+  @Override
+  public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
+    logRequest(request);
+
+    // If a member sends a PollRequest to the leader, that indicates that it likely healed from
+    // a network partition and may have had its status set to UNAVAILABLE by the leader. In order
+    // to ensure heartbeats are immediately stored to the member, update its status if necessary.
+    final RaftMemberContext member = raft.getCluster().getMemberContext(request.candidate());
+    if (member != null) {
+      member.resetFailureCount();
+    }
+
+    return CompletableFuture.completedFuture(
+        logResponse(
+            PollResponse.builder()
+                .withStatus(RaftResponse.Status.OK)
+                .withTerm(raft.getTerm())
+                .withAccepted(false)
+                .build()));
+  }
+
   private void leaveJointConsensus(
       final Collection<RaftMember> updatedMembers, final Configuration configuration) {
     configure(updatedMembers, List.of())
@@ -391,7 +412,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   /** Sets the current node as the cluster leader. */
   private void takeLeadership() {
     raft.setLeader(raft.getCluster().getLocalMember().memberId());
-    raft.getCluster().reset();
     raft.getCluster()
         .getReplicationTargets()
         .forEach(member -> member.openReplicationContext(raft.getLog()));
@@ -606,27 +626,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       raft.transition(RaftServer.Role.FOLLOWER);
       return super.onAppend(request);
     }
-  }
-
-  @Override
-  public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
-    logRequest(request);
-
-    // If a member sends a PollRequest to the leader, that indicates that it likely healed from
-    // a network partition and may have had its status set to UNAVAILABLE by the leader. In order
-    // to ensure heartbeats are immediately stored to the member, update its status if necessary.
-    final RaftMemberContext member = raft.getCluster().getMemberContext(request.candidate());
-    if (member != null) {
-      member.resetFailureCount();
-    }
-
-    return CompletableFuture.completedFuture(
-        logResponse(
-            PollResponse.builder()
-                .withStatus(RaftResponse.Status.OK)
-                .withTerm(raft.getTerm())
-                .withAccepted(false)
-                .build()));
   }
 
   @Override
