@@ -100,6 +100,7 @@ data.secondary-storage.elasticsearch.batch-operation-cache.cache-name
 data.secondary-storage.elasticsearch.batch-operation-cache.database-name
 data.secondary-storage.elasticsearch.batch-operations.database-name
 data.secondary-storage.elasticsearch.bulk.database-name
+data.secondary-storage.elasticsearch.cluster-id-check-restriction-enabled
 data.secondary-storage.elasticsearch.cluster-name
 data.secondary-storage.elasticsearch.connection-timeout
 data.secondary-storage.elasticsearch.create-schema
@@ -144,6 +145,7 @@ data.secondary-storage.opensearch.batch-operation-cache.cache-name
 data.secondary-storage.opensearch.batch-operation-cache.database-name
 data.secondary-storage.opensearch.batch-operations.database-name
 data.secondary-storage.opensearch.bulk.database-name
+data.secondary-storage.opensearch.cluster-id-check-restriction-enabled
 data.secondary-storage.opensearch.cluster-name
 data.secondary-storage.opensearch.connection-timeout
 data.secondary-storage.opensearch.create-schema
@@ -190,6 +192,7 @@ data.secondary-storage.rdbms.async-replication.polling-interval
 data.secondary-storage.rdbms.auto-ddl
 data.secondary-storage.rdbms.batch-operation-cache
 data.secondary-storage.rdbms.batch-operation-item-insert-block-size
+data.secondary-storage.rdbms.cluster-id-check-restriction-enabled
 data.secondary-storage.rdbms.connection-pool.connection-timeout
 data.secondary-storage.rdbms.connection-pool.idle-timeout
 data.secondary-storage.rdbms.connection-pool.leak-detection-threshold

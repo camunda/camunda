@@ -65,10 +65,6 @@ public class MultiDbConfigurator {
               configureDocumentBasedStorage(
                   cfg, elasticsearchUrl, indexPrefix, "", "", retentionEnabled);
             });
-    testApplication.withProperty(
-        "zeebe.broker.exporters.camundaexporter.class-name", "io.camunda.exporter.CamundaExporter");
-    testApplication.withProperty(
-        "zeebe.broker.exporters.camundaexporter.args.clusterIdCheckRestrictionEnabled", "false");
   }
 
   public void configureOpenSearchSupportIncludingOldExporter(
@@ -120,10 +116,6 @@ public class MultiDbConfigurator {
                   cfg, opensearchUrl, indexPrefix, userName, userPassword, retentionEnabled);
               cfg.getData().getSecondaryStorage().getOpensearch().setAwsEnabled(isAws);
             });
-    testApplication.withProperty(
-        "zeebe.broker.exporters.camundaexporter.class-name", "io.camunda.exporter.CamundaExporter");
-    testApplication.withProperty(
-        "zeebe.broker.exporters.camundaexporter.args.clusterIdCheckRestrictionEnabled", "false");
   }
 
   private void configureDocumentBasedStorage(
@@ -138,6 +130,7 @@ public class MultiDbConfigurator {
     final var documentBasedDatabase =
         cfg.getData().getSecondaryStorage().getDocumentBasedDatabase();
     documentBasedDatabase.setCreateSchema(true);
+    documentBasedDatabase.setClusterIdCheckRestrictionEnabled(false);
     documentBasedDatabase.setUrl(url);
     documentBasedDatabase.setIndexPrefix(indexPrefix);
     documentBasedDatabase.getHistory().setPolicyName(indexPrefix + "-ilm");
