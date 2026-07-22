@@ -187,40 +187,60 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
   test('Get process instance statistics sort by processDefinitionId - Success', async ({
     request,
   }) => {
-    const res = await request.post(
-      buildUrl(`/process-definitions/statistics/process-instances`),
-      {
-        headers: jsonHeaders(),
-        data: {
-          sort: [
-            {
-              field: 'processDefinitionId',
-              order: 'ASC',
+    // processDefinitionId is a string, so its ordering is decided by the backing
+    // database's collation: Oracle/Postgres sort case-sensitively (code point order)
+    // while MySQL/MSSQL/MariaDB default to case-insensitive collations. Reproducing
+    // that order with a JS `.sort()` is therefore unreliable across databases.
+    // Instead, verify the sort is applied consistently: the ASC result must be the
+    // exact reverse of the DESC result. Results are aggregated per definition, so
+    // processDefinitionId is unique per item and the ordering is total, making the
+    // reverse relationship exact regardless of collation.
+    const fetchProcessDefinitionIds = async (order: 'ASC' | 'DESC') => {
+      const res = await request.post(
+        buildUrl(`/process-definitions/statistics/process-instances`),
+        {
+          headers: jsonHeaders(),
+          data: {
+            sort: [
+              {
+                field: 'processDefinitionId',
+                order,
+              },
+            ],
+            page: {
+              from: 0,
+              limit: 1000,
             },
-          ],
+          },
         },
-      },
-    );
-    await assertStatusCode(res, 200);
-    const body = await res.json();
-    await validateResponse(
-      {
-        path: '/process-definitions/statistics/process-instances',
-        method: 'POST',
-        status: '200',
-      },
-      res,
-    );
-    expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
-    const actualProcessDefinitionIdList = body.items.map(
-      (item: {processDefinitionId: string}) => item.processDefinitionId,
-    );
-    const expectedProcessDefinitionIdList = [
-      ...actualProcessDefinitionIdList,
-    ].sort();
-    expect(actualProcessDefinitionIdList).toEqual(
-      expectedProcessDefinitionIdList,
-    );
+      );
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      await validateResponse(
+        {
+          path: '/process-definitions/statistics/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+      return body.items.map(
+        (item: {processDefinitionId: string}) => item.processDefinitionId,
+      );
+    };
+
+    // Wrap in toPass so a concurrent deployment landing between the two requests
+    // (which would momentarily desynchronize the ASC/DESC result sets) is retried
+    // rather than reported as a spurious failure.
+    await expect(async () => {
+      const ascProcessDefinitionIdList = await fetchProcessDefinitionIds('ASC');
+      const descProcessDefinitionIdList =
+        await fetchProcessDefinitionIds('DESC');
+      expect(ascProcessDefinitionIdList).toEqual(
+        [...descProcessDefinitionIdList].reverse(),
+      );
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Get process instance statistics sort by not existing field - Bad Request', async ({
