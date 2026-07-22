@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.conditional.ConditionalSubscriptionTriggerProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionCheckScheduler;
@@ -83,7 +82,6 @@ public final class BpmnProcessors {
       final InstantSource clock,
       final EngineConfiguration config,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final PermissionsBehavior permissionsBehavior,
       final CslAuthorizationCheck cslCheck,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,

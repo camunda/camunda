@@ -666,7 +666,6 @@ public final class EngineProcessors {
         clock,
         config,
         asyncRequestBehavior,
-        permissionsBehavior,
         cslCheck,
         authCheckBehavior,
         transientProcessMessageSubscriptionState,
