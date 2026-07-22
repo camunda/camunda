@@ -201,7 +201,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -D skip.fe.build -D skip.yarn -D skip.docker
+          maven-extra-args: -T1C -Dskip.fe.build -Dskip.yarn -Dskip.docker
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
