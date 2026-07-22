@@ -232,6 +232,37 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldNotExportToContainerThatFailedToOpenUnrecoverably() throws Exception {
+    // given - exporter-1 fails to open unrecoverably. It never finished opening, so it must
+    // never receive an export call - a real exporter relies on state only assigned in open()
+    // (e.g. CamundaExporter's writer field), so exporting to it anyway fails unpredictably.
+    final ControlledTestExporter failingExporter = exporters.get(0);
+    final var failingExportCallCount = new AtomicInteger();
+    failingExporter.onExport(record -> failingExportCallCount.incrementAndGet());
+    doThrow(new UnrecoverableException("permanent misconfiguration"))
+        .when(failingExporter)
+        .open(any());
+
+    // when
+    startExporterDirector(exporterDescriptors);
+    Awaitility.await("director reports the exporter failure as unrecoverable")
+        .untilAsserted(
+            () ->
+                assertThat(rule.getDirector().getHealthReport().status())
+                    .isEqualTo(HealthStatus.DEAD));
+    writeEvent();
+
+    // then - give the pipeline time to attempt exporting, then confirm the failed container was
+    // never called
+    Awaitility.await("healthy exporter has had a chance to export")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(exporters.get(1).getExportedRecords()).hasSize(1));
+    assertThat(failingExportCallCount.get()).isZero();
+
+    rule.closeExporterDirector();
+  }
+
+  @Test
   public void shouldExportAfterOpenRetried() throws Exception {
     // given
     final var exporter = startExporterWithFaultyOpenCall();
