@@ -17,6 +17,7 @@ package io.atomix.raft;
 
 import static io.atomix.raft.impl.RaftContext.State.READY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -29,6 +30,7 @@ import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.ControllableRaftServerProtocol;
+import io.atomix.raft.protocol.TimeoutNowRequest;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
@@ -391,6 +393,38 @@ public final class ControllableRaftContexts {
       final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, nextEntry++);
       leaderRole.appendEntry(nextEntry, nextEntry, data, dataLossChecker);
     }
+  }
+
+  /**
+   * Send a TimeoutNow to the given member (only when it is not currently the leader), prompting an
+   * immediate leadership transfer.
+   *
+   * @param to The member to which leadership should be transferred.
+   */
+  public void transferLeadershipTo(final MemberId to) {
+    final var raftContext = getRaftContext(to);
+    if (raftContext.getRaftRole() instanceof LeaderRole) {
+      LOG.info("Not transferring leadership to {}: already leader", to.id());
+      return;
+    }
+
+    final MemberId from =
+        raftServers.entrySet().stream()
+            .filter(entry -> entry.getValue().isLeader())
+            .map(Entry::getKey)
+            .findFirst()
+            .orElse(null);
+
+    if (from == null) {
+      LOG.info("Not transferring leadership to {}: no current leader", to);
+      return;
+    }
+
+    final var leader = getRaftContext(from);
+    LOG.info("Transferring leadership from {} to {} via TimeoutNow", from.id(), to.id());
+    getServerProtocol(from)
+        .timeoutNow(
+            to, TimeoutNowRequest.builder().withTerm(leader.getTerm()).withLeader(from).build());
   }
 
   // Find current leader and execute an append request

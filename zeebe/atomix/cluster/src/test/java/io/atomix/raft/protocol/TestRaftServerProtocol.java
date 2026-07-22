@@ -43,6 +43,7 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
   private Function<InstallRequest, CompletableFuture<InstallResponse>> installHandler;
   private Function<TransferRequest, CompletableFuture<TransferResponse>> transferHandler;
+  private Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> timeoutNowHandler;
   private Function<PollRequest, CompletableFuture<PollResponse>> pollHandler;
   private Function<VoteRequest, CompletableFuture<VoteResponse>> voteHandler;
   private Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> appendHandler;
@@ -149,6 +150,16 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   }
 
   @Override
+  public CompletableFuture<TimeoutNowResponse> timeoutNow(
+      final MemberId memberId, final TimeoutNowRequest request) {
+    return getServer(memberId)
+        .thenCompose(listener -> intercept(listener, request, TimeoutNowRequest.class))
+        .thenCompose(listener -> listener.timeoutNow(request))
+        .thenCompose(response -> transformResponse(response, TimeoutNowResponse.class))
+        .orTimeout(REQUEST_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
     return getServer(memberId)
         .thenCompose(listener -> intercept(listener, request, PollRequest.class))
@@ -191,6 +202,17 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   @Override
   public void unregisterTransferHandler() {
     transferHandler = null;
+  }
+
+  @Override
+  public void registerTimeoutNowHandler(
+      final Function<TimeoutNowRequest, CompletableFuture<TimeoutNowResponse>> handler) {
+    timeoutNowHandler = handler;
+  }
+
+  @Override
+  public void unregisterTimeoutNowHandler() {
+    timeoutNowHandler = null;
   }
 
   @Override
@@ -335,6 +357,14 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
   CompletableFuture<TransferResponse> transfer(final TransferRequest request) {
     if (transferHandler != null) {
       return transferHandler.apply(request);
+    } else {
+      return CompletableFuture.failedFuture(new ConnectException());
+    }
+  }
+
+  CompletableFuture<TimeoutNowResponse> timeoutNow(final TimeoutNowRequest request) {
+    if (timeoutNowHandler != null) {
+      return timeoutNowHandler.apply(request);
     } else {
       return CompletableFuture.failedFuture(new ConnectException());
     }
