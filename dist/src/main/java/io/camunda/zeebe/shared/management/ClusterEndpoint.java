@@ -10,12 +10,14 @@ package io.camunda.zeebe.shared.management;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ModeChangeRequest;
@@ -498,6 +500,44 @@ public class ClusterEndpoint {
       final var migrationRequest = new ClusterZoneMigrationRequest(request.getZone(), dryRun);
       return ClusterApiUtils.mapOperationResponse(
           requestSender.migrateToZones(migrationRequest).join());
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
+    }
+  }
+
+  @DeleteMapping(path = "/zones/{zoneId}")
+  public ResponseEntity<?> forceRemoveZone(
+      @PathVariable final String zoneId,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      final var forceRemoveRequest = new ForceZoneRemoveRequest(zoneId, dryRun);
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender.forceRemoveZone(forceRemoveRequest).join());
+    } catch (final Exception exception) {
+      return ClusterApiUtils.mapError(exception);
+    }
+  }
+
+  @PostMapping(path = "/zones/{zoneId}", consumes = "application/json")
+  public ResponseEntity<?> addZone(
+      @PathVariable final String zoneId,
+      @RequestBody final io.camunda.zeebe.management.cluster.AddZoneRequest request,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      final var brokerIds = request.getBrokers().stream().map(BrokerId::toString).toList();
+      return withValidMembers(
+          brokerIds,
+          members -> {
+            final var addZoneRequest =
+                new AddZoneRequest(
+                    zoneId,
+                    request.getNumberOfReplicas(),
+                    request.getPriority(),
+                    Set.copyOf(members),
+                    dryRun);
+            return ClusterApiUtils.mapOperationResponse(
+                requestSender.addZone(addZoneRequest).join());
+          });
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }
