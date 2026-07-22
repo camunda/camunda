@@ -10,11 +10,16 @@ package io.camunda.zeebe.engine.state.appliers;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSecretReferenceState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,12 +37,14 @@ final class JobCanceledV4ApplierTest {
 
   private MutableJobState jobState;
   private MutableSecretReferenceState secretReferenceState;
+  private MutableElementInstanceState elementInstanceState;
   private JobCanceledV4Applier applier;
 
   @BeforeEach
   void setUp() {
     jobState = processingState.getJobState();
     secretReferenceState = processingState.getSecretReferenceState();
+    elementInstanceState = processingState.getElementInstanceState();
     applier = new JobCanceledV4Applier(processingState);
   }
 
@@ -81,6 +88,27 @@ final class JobCanceledV4ApplierTest {
     assertThat(jobState.getState(jobKey)).isEqualTo(State.NOT_FOUND);
   }
 
+  @Test
+  void shouldResetElementInstanceJobKeyForJobToUserTaskMigration() {
+    // given - a job canceled as part of a job-to-user-task migration, like the previous applier
+    // version handles it
+    final long jobKey = 4L;
+    final long elementInstanceKey = 10L;
+    final var elementInstance = createElementInstance(elementInstanceKey);
+    elementInstance.setJobKey(jobKey);
+    elementInstanceState.updateInstance(elementInstance);
+    final var job =
+        createJob(jobKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setIsJobToUserTaskMigration(true);
+
+    // when
+    applier.applyState(jobKey, job);
+
+    // then - the element instance no longer references the canceled job
+    assertThat(elementInstanceState.getInstance(elementInstanceKey).getJobKey()).isEqualTo(-1L);
+  }
+
   private JobRecord createJob(final long key) {
     final var job =
         new JobRecord().setType("task-type").setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -88,6 +116,17 @@ final class JobCanceledV4ApplierTest {
     jobState.makeJobActivatableByPriority(
         job.getTypeBuffer(), key, job.getTenantId(), job.getPriority());
     return job;
+  }
+
+  private ElementInstance createElementInstance(final long key) {
+    final var processInstanceRecord =
+        new ProcessInstanceRecord()
+            .setBpmnElementType(BpmnElementType.SERVICE_TASK)
+            .setElementId("task")
+            .setBpmnProcessId("process")
+            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    return elementInstanceState.newInstance(
+        key, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
   }
 
   private List<String> secretReferencesOf(final long jobKey) {
