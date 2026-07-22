@@ -158,3 +158,15 @@ pursue radix sort if profiling shows sorting as a bottleneck even with the equal
 gone.
 
 **Fix sketch**: N/A until the measurement above justifies it — do not implement speculatively.
+
+## 10. Swap hadoop-common+exclusions for the shaded hadoop-client-api artifact
+- **What**: replace `org.apache.hadoop:hadoop-common` (with its long exclusion list) by
+  `org.apache.hadoop:hadoop-client-api` — the purpose-built shaded artifact with no transitive
+  graph, carrying `Configuration` and friends. Likely sufficient alone for iceberg-parquet's
+  settings-bag usage; verify the encoder test suite + a smoke pass.
+- **Why deferred**: the exclusion approach is empirically green (61/61 + review); swapping mid-smoke
+  churns the classpath for no functional gain today.
+- **Trigger**: next pom-touching change, or the first exclusion-related runtime surprise.
+- **Fix sketch**: dependency swap + delete exclusions; if something misses an impl class, add
+  hadoop-client-runtime (also shaded) rather than reverting to exclusions. Long-term this whole
+  block dies when iceberg-parquet adopts ParquetConfiguration (watch release notes).
