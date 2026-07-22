@@ -225,6 +225,10 @@ test.describe.parallel('Get process instance statistics API Tests', () => {
         res,
       );
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+      // The ASC==reverse(DESC) invariant only holds when both responses carry
+      // the full result set, so fail loudly if the page ever truncates instead
+      // of silently comparing two partial windows.
+      expect(body.items).toHaveLength(body.page.totalItems);
       return body.items.map(
         (item: {processDefinitionId: string}) => item.processDefinitionId,
       );

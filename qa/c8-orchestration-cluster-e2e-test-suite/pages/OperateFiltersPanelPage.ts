@@ -206,9 +206,12 @@ export class OperateFiltersPanelPage {
 
   async openVariableFilterModal() {
     // The modal can fail to open on the first click under load; retry the
-    // click until the dialog is actually present.
+    // click until the dialog is present, but do not click again once it is
+    // already up (a second click would toggle the dialog closed).
     await expect(async () => {
-      await this.openVariableFilterModalButton.click();
+      if (!(await this.variableFilterDialog.isVisible())) {
+        await this.openVariableFilterModalButton.click();
+      }
       await expect(this.variableFilterDialog).toBeVisible({timeout: 5_000});
     }).toPass({timeout: 30_000});
   }
