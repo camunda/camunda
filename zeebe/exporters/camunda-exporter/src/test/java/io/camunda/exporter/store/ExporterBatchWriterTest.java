@@ -231,6 +231,7 @@ class ExporterBatchWriterTest {
     final TestRecord record = new TestRecord(0, NULL_VAL);
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
+    when(handler.getIndexName()).thenReturn("test-index");
     when(handler.handlesRecord(eq(record))).thenReturn(true);
     when(handler.generateIds(eq(record))).thenReturn(List.of(id));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
