@@ -472,8 +472,6 @@ jobs:
     # is included because its filter is a superset of java-code-changes (adds rdbms-change). See #52693.
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true' || needs.detect-changes.outputs.java-code-changes == 'true' || needs.detect-changes.outputs.frontend-changes == 'true' || needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
-    runs-on: ubicloud-standard-8
-    timeout-minutes: 30
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
