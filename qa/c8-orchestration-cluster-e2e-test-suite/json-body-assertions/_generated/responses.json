@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "f7468cedd504fbd0ec912031354961e2210e7fa2",
-    "generatedAt": "2026-07-22T05:13:27.402Z",
+    "commit": "2621ca59c9557a9a19917dbb86d0f55cc4a294fd",
+    "generatedAt": "2026-07-22T12:34:18.258Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "a1503c91b406d99bb855654ea48a2778e3a42bd2e1116eb9316652915636ce95"
+    "specSha256": "41e371cab397ac73966ff7b0e0aab2a8f608598197d284da69dab4a1c961a6c4"
   },
   "responses": [
     {
@@ -1153,12 +1153,14 @@
                   "enumValues": [
                     "AUDIT_LOG",
                     "AUTHORIZATION",
+                    "BACKUP",
                     "BATCH",
                     "CLUSTER_VARIABLE",
                     "COMPONENT",
                     "DECISION_DEFINITION",
                     "DECISION_REQUIREMENTS_DEFINITION",
                     "DOCUMENT",
+                    "EXPORTER",
                     "EXPRESSION",
                     "GLOBAL_LISTENER",
                     "GROUP",
@@ -1255,12 +1257,14 @@
             "enumValues": [
               "AUDIT_LOG",
               "AUTHORIZATION",
+              "BACKUP",
               "BATCH",
               "CLUSTER_VARIABLE",
               "COMPONENT",
               "DECISION_DEFINITION",
               "DECISION_REQUIREMENTS_DEFINITION",
               "DOCUMENT",
+              "EXPORTER",
               "EXPRESSION",
               "GLOBAL_LISTENER",
               "GROUP",
@@ -7788,6 +7792,59 @@
                 {
                   "name": "totalItems",
                   "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/secrets/resolve",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "errors",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "code",
+                  "type": "string",
+                  "enumValues": [
+                    "NOT_FOUND",
+                    "ACCESS_DENIED",
+                    "INVALID_REFERENCE"
+                  ]
+                },
+                {
+                  "name": "message",
+                  "type": "string"
+                },
+                {
+                  "name": "reference",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "resolved",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "reference",
+                  "type": "string"
+                },
+                {
+                  "name": "value",
+                  "type": "string"
                 }
               ],
               "optional": []
