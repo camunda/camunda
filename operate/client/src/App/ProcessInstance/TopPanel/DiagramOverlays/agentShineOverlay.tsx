@@ -77,7 +77,8 @@ const useAgentShineOverlaysData = (
 ): OverlayData[] =>
   useMemo(
     () =>
-      Array.from(agentInstancesStatusMap.entries()).map(
+      Array.from(
+        agentInstancesStatusMap.entries(),
         ([elementId, statusInfo]) => ({
           type: AGENT_SHINE_OVERLAY_TYPE,
           elementId,
