@@ -1,0 +1,115 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.analytics.lake.sink.pipeline;
+
+import io.camunda.analytics.lake.sink.DataFileResult;
+import io.camunda.analytics.lake.sink.Descriptor;
+import io.camunda.analytics.lake.sink.DescriptorSink;
+import io.camunda.analytics.lake.write.IcebergLakeWriter;
+import java.util.Map;
+import org.apache.iceberg.AppendFiles;
+import org.apache.iceberg.DataFile;
+import org.apache.iceberg.DataFiles;
+import org.apache.iceberg.FileFormat;
+import org.apache.iceberg.PartitionSpec;
+import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.Table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * {@link DescriptorSink} rung 1 — the direct-commit implementation {@link DescriptorSink}'s own
+ * javadoc anticipates: registers a {@link Descriptor}'s files with one Iceberg {@link Table} via
+ * {@link DataFiles#builder} (unpartitioned spec — the raw tables have none) in one {@link
+ * Table#newAppend()}, then stamps the offset and frontier summary properties using the exact same
+ * carry-forward rule {@link IcebergLakeWriter#OFFSET_PROPERTY_PREFIX}'s javadoc describes: iceberg
+ * does not carry a snapshot's summary forward into the next one, so a commit that only stamped the
+ * partition it just flushed would make every <em>other</em> partition's last-known offset/frontier
+ * appear to regress the instant a different partition's descriptor lands here. Both properties are
+ * therefore carried forward the same way — dropping the frontier carry-forward while keeping it for
+ * the offset would reintroduce exactly the bug class the offset rule exists to avoid.
+ *
+ * <p>Idempotence: if the table's currently-committed offset for {@code
+ * descriptor.sourcePartition()} is already {@code >=} {@code descriptor.lastOffset()}, {@link
+ * #accept} is a no-op — the expected shape of a redelivered descriptor after a crash (see {@link
+ * DescriptorSink}'s own javadoc).
+ *
+ * <p>One instance is meant to be shared by every {@link SinkPipeline} feeding the same table,
+ * regardless of source partition (their flush threads are otherwise independent) — {@link #accept}
+ * is {@code synchronized} so two partitions' flush threads committing to the same table never race
+ * the read-current-summary-then-append dance below.
+ */
+public final class DirectCommitSink implements DescriptorSink {
+
+  /** Snapshot summary property prefix for the per-partition frontier stamp (see class javadoc). */
+  public static final String FRONTIER_PROPERTY_PREFIX = "lake.frontier.p";
+
+  private static final Logger LOG = LoggerFactory.getLogger(DirectCommitSink.class);
+
+  private final Table table;
+
+  public DirectCommitSink(final Table table) {
+    this.table = table;
+  }
+
+  @Override
+  public synchronized void accept(final Descriptor descriptor) {
+    table.refresh();
+    final Snapshot current = table.currentSnapshot();
+    final Map<String, String> priorSummary = current == null ? Map.of() : current.summary();
+    final long committed = offsetOf(priorSummary, descriptor.sourcePartition());
+    if (descriptor.lastOffset() <= committed) {
+      LOG.debug(
+          "Skipping already-committed descriptor for {} partition {}: committed offset {} >= "
+              + "descriptor's {}",
+          descriptor.table(),
+          descriptor.sourcePartition(),
+          committed,
+          descriptor.lastOffset());
+      return;
+    }
+
+    final AppendFiles append = table.newAppend();
+    for (final DataFileResult file : descriptor.files()) {
+      append.appendFile(toDataFile(file));
+    }
+    // Carry-forward rule (both prefixes) -- see class javadoc.
+    priorSummary.forEach(
+        (key, value) -> {
+          if (key.startsWith(IcebergLakeWriter.OFFSET_PROPERTY_PREFIX)
+              || key.startsWith(FRONTIER_PROPERTY_PREFIX)) {
+            append.set(key, value);
+          }
+        });
+    append.set(
+        IcebergLakeWriter.OFFSET_PROPERTY_PREFIX + descriptor.sourcePartition(),
+        Long.toString(descriptor.lastOffset()));
+    append.set(
+        FRONTIER_PROPERTY_PREFIX + descriptor.sourcePartition(),
+        Long.toString(descriptor.localFrontierMs()));
+    append.commit();
+  }
+
+  private static DataFile toDataFile(final DataFileResult file) {
+    // PartitionSpec.unpartitioned() must match the table's own spec, same as
+    // IcebergLakeWriter#writeParquet -- for an unpartitioned table a partition value is never
+    // expected. withMetrics also sets the record count from the encoder-collected Metrics, which
+    // must already equal file.rowCount() (both come from the same encoder finish() call).
+    return DataFiles.builder(PartitionSpec.unpartitioned())
+        .withPath(file.path())
+        .withFormat(FileFormat.PARQUET)
+        .withFileSizeInBytes(file.fileSizeBytes())
+        .withMetrics(file.metrics())
+        .build();
+  }
+
+  private static long offsetOf(final Map<String, String> summary, final int partition) {
+    final String value = summary.get(IcebergLakeWriter.OFFSET_PROPERTY_PREFIX + partition);
+    return value == null ? -1L : Long.parseLong(value);
+  }
+}

@@ -78,17 +78,37 @@ import org.slf4j.LoggerFactory;
  * exactly one source partition at any time {@link #flush(int, long)} is called — the app flushes
  * whenever it is about to move to a different partition's records, never interleaving two
  * partitions' rows in one buffer. This class does not itself enforce that; it trusts the caller.
+ *
+ * <h2>No longer the production raw-ingest path</h2>
+ *
+ * <p>{@code LakePocApp}'s production wiring no longer calls {@link #append(InstanceRow)}/{@link
+ * #append(ActivityRow)}/{@link #flush(int, long)}: raw-table ingest goes through the L0 sink's
+ * {@code io.camunda.analytics.lake.sink.pipeline.SinkPipeline} + {@code
+ * io.camunda.analytics.lake.sink.pipeline.DirectCommitSink} instead (see {@code
+ * LakeTranslator}/{@code LakePocApp}). This class is retained for: table creation (schemas + field
+ * ids + name-mapping property, both tables' authoritative source), {@link #committedOffset(int)}
+ * and the offset-stamping property/carry-forward pattern {@link DirectCommitSink} reuses, and the
+ * embedded DuckDB connection {@link LakeCompactor}/{@code GoldTables} still drive for compaction
+ * rewrites and gold-table derivation (neither of which is raw-table ingest). The buffered
+ * append/flush methods below stay because the compaction/gold-table/UI test suites still construct
+ * this class directly and use them to seed fixture data — removing them would force rewriting five
+ * otherwise-unrelated test files for no behavioral gain (see the module's L0-sink integration test
+ * for how the new pipelines are exercised instead).
  */
 public final class IcebergLakeWriter implements LakeWriter {
 
   /**
-   * Prefix of the snapshot summary property this writer uses to stamp a partition's offset.
-   * Package-private (not {@code private}): {@link LakeCompactor} re-stamps these same properties
-   * onto every snapshot its own rewrite operations produce, for the same reason {@link #flushTable}
-   * does here — see this class's javadoc and {@link LakeCompactor}'s for why a snapshot's summary
-   * is never carried forward automatically.
+   * Prefix of the snapshot summary property this writer uses to stamp a partition's offset. Public
+   * (not package-private): {@link LakeCompactor} re-stamps these same properties onto every
+   * snapshot its own rewrite operations produce, for the same reason {@link #flushTable} does here
+   * — see this class's javadoc and {@link LakeCompactor}'s for why a snapshot's summary is never
+   * carried forward automatically — and {@code
+   * io.camunda.analytics.lake.sink.pipeline.DirectCommitSink} (a different package: the L0 sink's
+   * direct-commit path, which replaced this class's own buffered append/flush for raw-table ingest)
+   * reuses the exact same property key so {@link #committedOffset(int)} keeps working unchanged
+   * regardless of which of the two commits a snapshot.
    */
-  static final String OFFSET_PROPERTY_PREFIX = "lake.offset.p";
+  public static final String OFFSET_PROPERTY_PREFIX = "lake.offset.p";
 
   private static final String INSTANCES_STAGING_TABLE = "staging_instances";
   private static final String ACTIVITIES_STAGING_TABLE = "staging_activities";
@@ -117,6 +137,18 @@ public final class IcebergLakeWriter implements LakeWriter {
    * on; a plain 64-bit integer column sidesteps that entirely at the cost of every consumer having
    * to remember these are millis-since-epoch, not a temporal type (queries must {@code
    * to_timestamp(start_ms / 1000)} explicitly — see the README's demo queries).
+   *
+   * <p>{@code vars_json} (field id 10) is {@link Types.BinaryType}, not {@link Types.StringType}:
+   * the L0 sink's {@code io.camunda.analytics.lake.sink.ColumnType#BINARY} column for this field
+   * stores raw UTF-8 bytes (never boxes a {@code String} on the hot path — see {@code
+   * TableSchema}'s javadoc), so the catalog schema's own field type has to agree, or
+   * iceberg-parquet's generic writer hands a {@code ByteBuffer} to a column configured for {@code
+   * CharSequence} and throws a {@code ClassCastException}. This does not disturb this class's own
+   * legacy DuckDB-appender path (still exercised by the compaction/gold-table/UI tests that
+   * construct {@link IcebergLakeWriter} directly): DuckDB writes Parquet files by inferring types
+   * from the staged {@code VARCHAR} column, never consulting this catalog {@link Schema}, and every
+   * reader of those legacy files (DuckDB {@code read_parquet}) resolves columns by their own
+   * physical Parquet metadata, not by this catalog schema either.
    */
   private static final Schema INSTANCE_SCHEMA =
       new Schema(
@@ -130,7 +162,7 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(7, "start_ms", Types.LongType.get()),
               Types.NestedField.required(8, "end_ms", Types.LongType.get()),
               Types.NestedField.required(9, "duration_ms", Types.LongType.get()),
-              Types.NestedField.required(10, "vars_json", Types.StringType.get())));
+              Types.NestedField.required(10, "vars_json", Types.BinaryType.get())));
 
   /**
    * Mirrors {@link ActivityRow} field for field; see {@link #INSTANCE_SCHEMA} for the millis note.
@@ -434,17 +466,20 @@ public final class IcebergLakeWriter implements LakeWriter {
   }
 
   /**
-   * Package-private handle for {@link LakeCompactor}, which is constructed with (and only ever
-   * called from) the same poll-loop thread that drives {@link #flush(int, long)} — see {@link
-   * LakeCompactor}'s class javadoc for why that makes sharing this connection safe without any
-   * synchronization.
+   * Handle for {@link LakeCompactor} (constructed with, and only ever called from, the same
+   * poll-loop thread that drives {@link #flush(int, long)} — see {@link LakeCompactor}'s class
+   * javadoc for why that makes sharing this connection safe without any synchronization) and for
+   * {@code LakePocApp}'s L0 sink wiring, which builds its {@code
+   * io.camunda.analytics.lake.sink.pipeline.SinkPipeline}s and {@code
+   * io.camunda.analytics.lake.sink.pipeline.DirectCommitSink}s directly against this {@link Table}
+   * (a different package, hence public rather than package-private).
    */
-  Table instancesTable() {
+  public Table instancesTable() {
     return instancesTable;
   }
 
   /** See {@link #instancesTable()}. */
-  Table activitiesTable() {
+  public Table activitiesTable() {
     return activitiesTable;
   }
 

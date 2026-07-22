@@ -7,12 +7,12 @@
  */
 package io.camunda.analytics.lake.translate;
 
-import io.camunda.analytics.lake.model.ActivityRow;
-import io.camunda.analytics.lake.model.InstanceRow;
+import io.camunda.analytics.lake.sink.RowAppender;
 import io.camunda.analytics.lake.state.TranslatorState;
 import io.camunda.analytics.lake.state.TranslatorState.OpenElement;
 import io.camunda.analytics.lake.state.TranslatorState.OpenInstance;
-import io.camunda.analytics.lake.write.LakeWriter;
+import io.camunda.analytics.lake.translate.RawTableSchemas.ActivityColumns;
+import io.camunda.analytics.lake.translate.RawTableSchemas.InstanceColumns;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +48,20 @@ import org.slf4j.LoggerFactory;
  *       open row and is skipped silently — the same finished row is already durable in the lake.
  * </ul>
  *
- * <p>The translator never flushes the writer — the app loop owns flush (and thus offset-commit)
- * policy.
+ * <p>The translator never flushes or triggers the L0 sink pipelines — the app loop owns flush (and
+ * thus offset-commit) policy via {@code SinkPipeline#onPollTick}.
+ *
+ * <h2>Backpressure</h2>
+ *
+ * <p>Each Zeebe record touches at most one {@link RowAppender} (an instance-completion emits to
+ * {@code instances}, an element-completion emits to {@code activities}, never both). {@link
+ * #onRecord(ZeebeRecord)} returns {@code false} the moment a row append's {@link
+ * RowAppender#begin()} reports backpressure (ring full) — per {@code RowAppender}'s own contract,
+ * the caller must then retry the very same record later rather than drop it or advance past it.
+ * This is safe to do by simply calling {@link #onRecord(ZeebeRecord)} again: everything that runs
+ * before the failing {@code begin()} call (state puts, {@code state.getInstance}/{@code getElement}
+ * lookups) is idempotent and side-effect-free until the append actually succeeds, and eviction
+ * ({@code state.deleteInstance}/{@code deleteElement}) only happens after it does.
  */
 public final class LakeTranslator {
 
@@ -61,27 +74,38 @@ public final class LakeTranslator {
   private static final Logger LOG = LoggerFactory.getLogger(LakeTranslator.class);
 
   private final TranslatorState state;
-  private final LakeWriter writer;
+  private final RowAppender instanceAppender;
+  private final RowAppender activityAppender;
 
-  public LakeTranslator(final TranslatorState state, final LakeWriter writer) {
+  public LakeTranslator(
+      final TranslatorState state,
+      final RowAppender instanceAppender,
+      final RowAppender activityAppender) {
     this.state = state;
-    this.writer = writer;
+    this.instanceAppender = instanceAppender;
+    this.activityAppender = activityAppender;
   }
 
-  public void onRecord(final ZeebeRecord zr) {
+  /**
+   * @return {@code false} if a row append hit backpressure (ring full) — the caller must retry this
+   *     same {@code zr} later instead of advancing past it (see class javadoc); {@code true}
+   *     otherwise, including when the record needed no row append at all
+   */
+  public boolean onRecord(final ZeebeRecord zr) {
     final Record<?> record = zr.record();
     if (record.getRecordType() != RecordType.EVENT) {
-      return;
+      return true;
     }
     final ValueType valueType = record.getValueType();
     if (valueType == ValueType.PROCESS_INSTANCE) {
-      onProcessInstance(record);
+      return onProcessInstance(record);
     } else if (valueType == ValueType.VARIABLE) {
       onVariable(record);
     }
+    return true;
   }
 
-  private void onProcessInstance(final Record<?> record) {
+  private boolean onProcessInstance(final Record<?> record) {
     final ProcessInstanceRecordValue value = (ProcessInstanceRecordValue) record.getValue();
     final long timestamp = record.getTimestamp();
     final long processInstanceKey = value.getProcessInstanceKey();
@@ -117,63 +141,73 @@ public final class LakeTranslator {
                 timestamp,
                 instanceStartMs));
       }
-      return;
+      return true;
     }
 
     final String finalState = finalStateOf(record.getIntent());
     if (finalState == null) {
-      return; // an intent other than COMPLETED/TERMINATED
+      return true; // an intent other than COMPLETED/TERMINATED
     }
     if (root) {
-      emitInstance(processInstanceKey, timestamp, finalState);
+      return emitInstance(processInstanceKey, timestamp, finalState);
     } else {
-      emitElement(elementInstanceKey, timestamp, finalState);
+      return emitElement(elementInstanceKey, timestamp, finalState);
     }
   }
 
-  private void emitElement(
+  private boolean emitElement(
       final long elementInstanceKey, final long timestamp, final String finalState) {
     final OpenElement element = state.getElement(elementInstanceKey);
     if (element == null) {
-      return; // replay past evict — expected, not an error
+      return true; // replay past evict — expected, not an error
     }
-    writer.append(
-        new ActivityRow(
-            element.instanceKey(),
-            element.processId(),
-            element.version(),
-            element.tenantId(),
-            element.elementId(),
-            element.elementType(),
-            elementInstanceKey,
-            finalState,
-            element.startMs(),
-            timestamp,
-            timestamp - element.startMs(),
-            element.instanceStartMs()));
+    if (!activityAppender.begin()) {
+      return false; // ring full — caller must retry this same record
+    }
+    activityAppender
+        .putLong(ActivityColumns.INSTANCE_KEY, element.instanceKey())
+        .putDict(ActivityColumns.PROCESS_ID, element.processId())
+        .putInt(ActivityColumns.VERSION, element.version())
+        .putDict(ActivityColumns.TENANT_ID, element.tenantId())
+        .putDict(ActivityColumns.ELEMENT_ID, element.elementId())
+        .putDict(ActivityColumns.ELEMENT_TYPE, element.elementType())
+        .putLong(ActivityColumns.ELEMENT_KEY, elementInstanceKey)
+        .putDict(ActivityColumns.STATE, finalState)
+        .putLong(ActivityColumns.START_MS, element.startMs())
+        .putLong(ActivityColumns.END_MS, timestamp)
+        .putLong(ActivityColumns.DURATION_MS, timestamp - element.startMs())
+        .putLong(ActivityColumns.INSTANCE_START_MS, element.instanceStartMs());
+    activityAppender.endRow();
     state.deleteElement(elementInstanceKey);
+    return true;
   }
 
-  private void emitInstance(
+  private boolean emitInstance(
       final long processInstanceKey, final long timestamp, final String finalState) {
     final OpenInstance instance = state.getInstance(processInstanceKey);
     if (instance == null) {
-      return; // replay past evict — expected, not an error
+      return true; // replay past evict — expected, not an error
     }
-    writer.append(
-        new InstanceRow(
-            processInstanceKey,
-            instance.processDefinitionKey(),
-            instance.processId(),
-            instance.version(),
-            instance.tenantId(),
-            finalState,
-            instance.startMs(),
-            timestamp,
-            timestamp - instance.startMs(),
-            varsJson(state.variablesOf(processInstanceKey))));
+    if (!instanceAppender.begin()) {
+      return false; // ring full — caller must retry this same record
+    }
+    final byte[] varsJson =
+        varsJson(state.variablesOf(processInstanceKey)).getBytes(StandardCharsets.UTF_8);
+    instanceAppender
+        .putLong(InstanceColumns.KEY, processInstanceKey)
+        .putLong(InstanceColumns.PROCESS_DEFINITION_KEY, instance.processDefinitionKey())
+        .putDict(InstanceColumns.PROCESS_ID, instance.processId())
+        .putInt(InstanceColumns.VERSION, instance.version())
+        .putDict(InstanceColumns.TENANT_ID, instance.tenantId())
+        .putDict(InstanceColumns.STATE, finalState)
+        .putLong(InstanceColumns.START_MS, instance.startMs())
+        .putLong(InstanceColumns.END_MS, timestamp)
+        .putLong(InstanceColumns.DURATION_MS, timestamp - instance.startMs())
+        .putBinary(InstanceColumns.VARS_JSON, varsJson, 0, varsJson.length);
+    instanceAppender.endRow();
     state.deleteInstance(processInstanceKey);
     state.deleteVariablesOf(processInstanceKey);
+    return true;
   }
 
   private void onVariable(final Record<?> record) {

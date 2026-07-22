@@ -2,11 +2,23 @@
 
 A learning proof of concept: a small translator that reads Zeebe records off the Event Bridge,
 folds open process/element state in RocksDB, and lands two finished-row tables — `instances` and
-`activities` — as a local Iceberg lakehouse. Parquet files are written by an embedded DuckDB
-connection; iceberg-core commits them to the table (catalog: `JdbcCatalog` over a local H2 file
-database). See `src/main/java/io/camunda/analytics/lake/write/IcebergLakeWriter.java` for the
-heavily-commented walkthrough of how the two pieces fit together and exactly which iceberg-core and
-DuckDB APIs are involved.
+`activities` — as a local Iceberg lakehouse (catalog: `JdbcCatalog` over a local H2 file database).
+
+Raw-table ingest is the **L0 sink**: a fixed-memory columnar batching pipeline
+(`src/main/java/io/camunda/analytics/lake/sink/`) that sorts, Parquet-encodes (via
+iceberg-parquet, with real field ids/column metrics/bloom filters) and commits rows directly to
+Iceberg — one `SinkPipeline` pair (`instances`, `activities`) per owned Event Bridge partition, each
+with its own flush thread, committed via `DirectCommitSink`. See
+`src/main/java/io/camunda/analytics/lake/LakePocApp.java` for how the pipelines are wired per
+partition and `src/main/java/io/camunda/analytics/lake/translate/LakeTranslator.java` for how a
+Zeebe record becomes a row append (including the backpressure retry loop).
+
+Gold-table derivation and compaction still go through an embedded DuckDB connection (Parquet
+read/rewrite, not raw ingest) and iceberg-core commits the result — see
+`src/main/java/io/camunda/analytics/lake/write/IcebergLakeWriter.java` for that machinery (table
+creation/schemas/field ids, the offset-stamping property `DirectCommitSink` also reuses, and the
+DuckDB connection `LakeCompactor`/`GoldTables` drive) and `LakeCompactor`/`GoldTables` themselves for
+what still uses it.
 
 This is a PoC: unpartitioned tables, one file per flush, no retention, no authentication on the
 H2/DuckDB side. A periodic compaction pass (see "Compaction" below) keeps the one-file-per-flush
@@ -27,8 +39,8 @@ You need a running Event Bridge gateway with a `zeebe-records` topic being fed b
 | `lake.topic`              | `zeebe-records`    | Topic carrying Zeebe records                          |
 | `lake.group`              | `lake-poc`         | This translator's own consumer group                  |
 | `lake.dir`                | `./data/lake`      | Iceberg warehouse directory (catalog DB + data files) |
-| `lake.flushRows`          | `5000`             | Flush the buffer at this many buffered records        |
-| `lake.flushIntervalMs`    | `2000`             | Flush at least this often while rows are buffered     |
+| `lake.flushRows`          | `5000`             | Unused — retained only for backward compatibility with tests that build `LakeConfig` positionally; the L0 sink's own segment-size trigger replaces it (see `SinkConfig`) |
+| `lake.flushIntervalMs`    | `30000`            | The L0 sink's per-partition-pipeline flush interval: how long a filling segment may sit non-empty before its file is finalized, regardless of row count |
 | `lake.stateDumpIntervalMs`| `30000`            | Dump the open translator state to Parquet at least this often; `0` disables it |
 | `lake.compactIntervalMs`  | `300000`           | Run a compaction pass (see "Compaction" below) at least this often; `0` disables it |
 | `lake.uiPort`             | `8091`             | Port for the embedded demo UI (see "Demo UI" below); `0` disables it |
@@ -97,18 +109,21 @@ data/
 │       ├── instances/
 │       │   ├── metadata/                    # Iceberg table metadata JSON, manifests, manifest-lists
 │       │   └── data/
-│       │       └── p<partition>-<from>-<to>.parquet   # one file per flush with buffered rows
+│       │       └── day=<YYYY-MM-DD|mixed>/f-<sequence>-day<epochDay>.parquet
 │       └── activities/
 │           ├── metadata/
 │           └── data/
-│               └── p<partition>-<from>-<to>.parquet
+│               └── day=<YYYY-MM-DD|mixed>/f-<sequence>-day<epochDay>.parquet
 └── lake-state/                              # RocksDB: open (unfinished) instances/elements/variables
     └── _snapshot/                            # periodic Parquet dump of the open state (see below)
 ```
 
-`<partition>` is the Event Bridge source partition the flush was for; `<from>`/`<to>` are the
-(inclusive) source-topic offset range folded into that file — informational only, not read back by
-anything.
+Each file's family day (`instances`: `start_ms`; `activities`: `instance_start_ms`) is a directory
+component (`day=...`), and `<sequence>` is a per-encoder-factory monotonic counter — see
+`IcebergParquetEncoderFactory`'s javadoc. The source-topic offset range a given commit covered is not
+part of the file name anymore; it lives only in the commit's `lake.offset.p<partition>` snapshot
+summary property (see `DirectCommitSink`), the same property the old `p<partition>-<from>-<to>`
+naming scheme encoded redundantly.
 
 ## Inspecting live state
 
