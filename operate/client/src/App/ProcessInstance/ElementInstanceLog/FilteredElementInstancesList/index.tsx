@@ -33,6 +33,7 @@ import {useDashboardScrollPagination} from 'modules/hooks/useDashboardScrollPagi
 import {escapeLikePattern} from 'modules/utils/escapeLikePattern';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {instanceHistorySortOrderStore} from 'modules/stores/instanceHistorySortOrder';
 import {
   ScrollContainer,
   StatusRegion,
@@ -109,94 +110,93 @@ type Props = {
   businessObjects: BusinessObjects;
 };
 
-const FilteredElementInstancesList: React.FC<Props> = ({
-  searchText,
-  processInstanceKey,
-  businessObjects,
-}) => {
-  const scrollableContainerRef = useRef<HTMLDivElement>(null);
+const FilteredElementInstancesList: React.FC<Props> = observer(
+  ({searchText, processInstanceKey, businessObjects}) => {
+    const scrollableContainerRef = useRef<HTMLDivElement>(null);
+    const sortOrder = instanceHistorySortOrderStore.order;
 
-  const payload = useMemo((): QueryElementInstancesRequestBody => {
-    const pattern = escapeLikePattern(searchText);
-    return {
-      filter: {
-        processInstanceKey,
-        $or: [{elementName: {$like: pattern}}, {elementId: {$like: pattern}}],
-      },
-      sort: [{field: 'startDate', order: 'asc'}],
-    };
-  }, [searchText, processInstanceKey]);
+    const payload = useMemo((): QueryElementInstancesRequestBody => {
+      const pattern = escapeLikePattern(searchText);
+      return {
+        filter: {
+          processInstanceKey,
+          $or: [{elementName: {$like: pattern}}, {elementId: {$like: pattern}}],
+        },
+        sort: [{field: 'startDate', order: sortOrder}],
+      };
+    }, [searchText, processInstanceKey, sortOrder]);
 
-  const query = useElementInstancesSearchPaginated({
-    payload,
-    select: flattenPaginatedPages,
-  });
+    const query = useElementInstancesSearchPaginated({
+      payload,
+      select: flattenPaginatedPages,
+    });
 
-  const scroll = useDashboardScrollPagination(query, PAGE_LIMIT, ROW_HEIGHT);
+    const scroll = useDashboardScrollPagination(query, PAGE_LIMIT, ROW_HEIGHT);
 
-  const isForbiddenError =
-    query.status === 'error' &&
-    isRequestError(query.error) &&
-    query.error?.response?.status === HTTP_STATUS_FORBIDDEN;
+    const isForbiddenError =
+      query.status === 'error' &&
+      isRequestError(query.error) &&
+      query.error?.response?.status === HTTP_STATUS_FORBIDDEN;
 
-  if (isForbiddenError) {
-    // Re-throw so the parent error boundary handles the forbidden message.
-    // This keeps the forbidden UX in a single place for both the tree and
-    // the filtered list views.
-    throw query.error;
-  }
+    if (isForbiddenError) {
+      // Re-throw so the parent error boundary handles the forbidden message.
+      // This keeps the forbidden UX in a single place for both the tree and
+      // the filtered list views.
+      throw query.error;
+    }
 
-  if (query.status === 'error') {
-    return (
-      <ErrorMessage
-        message="Search results could not be fetched"
-        additionalInfo="Refresh the page to try again"
-      />
-    );
-  }
-
-  if (query.status === 'pending') {
-    return <Skeleton />;
-  }
-
-  if (query.data?.items.length === 0) {
-    return (
-      <EmptyStateContainer>
-        <EmptyState
-          heading="No matching elements"
-          description="Try a different name or ID"
-          icon={<Search size={32} />}
+    if (query.status === 'error') {
+      return (
+        <ErrorMessage
+          message="Search results could not be fetched"
+          additionalInfo="Refresh the page to try again"
         />
-      </EmptyStateContainer>
-    );
-  }
+      );
+    }
 
-  return (
-    <>
-      <StatusRegion aria-live="polite">
-        {query.data?.totalCount ?? 0} matching elements
-      </StatusRegion>
-      <ScrollContainer ref={scrollableContainerRef}>
-        <TreeView label="Search results" hideLabel>
-          <InfiniteScroller
-            scrollableContainerRef={scrollableContainerRef}
-            onVerticalScrollEndReach={scroll.handleScrollEndReach}
-            onVerticalScrollStartReach={scroll.handleScrollStartReach}
-          >
-            <ul>
-              {query.data?.items.map((item) => (
-                <Row
-                  key={item.elementInstanceKey}
-                  item={item}
-                  businessObjects={businessObjects}
-                />
-              ))}
-            </ul>
-          </InfiniteScroller>
-        </TreeView>
-      </ScrollContainer>
-    </>
-  );
-};
+    if (query.status === 'pending') {
+      return <Skeleton />;
+    }
+
+    if (query.data?.items.length === 0) {
+      return (
+        <EmptyStateContainer>
+          <EmptyState
+            heading="No matching elements"
+            description="Try a different name or ID"
+            icon={<Search size={32} />}
+          />
+        </EmptyStateContainer>
+      );
+    }
+
+    return (
+      <>
+        <StatusRegion aria-live="polite">
+          {query.data?.totalCount ?? 0} matching elements
+        </StatusRegion>
+        <ScrollContainer ref={scrollableContainerRef}>
+          <TreeView label="Search results" hideLabel>
+            <InfiniteScroller
+              scrollableContainerRef={scrollableContainerRef}
+              onVerticalScrollEndReach={scroll.handleScrollEndReach}
+              onVerticalScrollStartReach={scroll.handleScrollStartReach}
+            >
+              <ul>
+                {query.data?.items.map((item) => (
+                  <Row
+                    key={item.elementInstanceKey}
+                    item={item}
+                    businessObjects={businessObjects}
+                  />
+                ))}
+              </ul>
+            </InfiniteScroller>
+          </TreeView>
+        </ScrollContainer>
+      </>
+    );
+  },
+);
 
 export {FilteredElementInstancesList};

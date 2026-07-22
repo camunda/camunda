@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+  ElementInstance,
+  QuerySortOrder,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 import {makeObservable, observable, action, override} from 'mobx';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
 import {logger} from 'modules/logger';
@@ -47,6 +50,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
   isPollRequestRunning: boolean = false;
   intervalId: ReturnType<typeof setInterval> | null = null;
   pollAbortController: AbortController | null = null;
+  private sortOrder: QuerySortOrder = 'desc';
 
   constructor() {
     super();
@@ -77,12 +81,15 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     processInstanceKey: string,
     config?: {
       enablePolling?: boolean;
+      sortOrder?: QuerySortOrder;
     },
   ) => {
     const isNewRoot = this.state.rootScopeKey !== processInstanceKey;
     const isPollingEnabled = config?.enablePolling ?? false;
+    const nextSortOrder = config?.sortOrder ?? this.sortOrder;
+    const isSortOrderChanged = this.sortOrder !== nextSortOrder;
 
-    if (!isNewRoot) {
+    if (!isNewRoot && !isSortOrderChanged) {
       if (isPollingEnabled && this.intervalId === null) {
         this.startPolling();
       } else if (!isPollingEnabled && this.intervalId !== null) {
@@ -100,6 +107,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
 
     this.state.nodes.clear();
     this.state.expandedNodes.clear();
+    this.sortOrder = nextSortOrder;
     this.state.rootScopeKey = processInstanceKey;
 
     this.state.expandedNodes.add(processInstanceKey);
@@ -132,7 +140,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: 0},
-        sort: [{field: 'startDate', order: 'asc'}],
+        sort: [{field: 'startDate', order: this.sortOrder}],
       },
       controller.signal,
     );
@@ -240,7 +248,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: nextWindowStart},
-        sort: [{field: 'startDate', order: 'asc'}],
+        sort: [{field: 'startDate', order: this.sortOrder}],
       },
       controller.signal,
     );
@@ -295,7 +303,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: prevWindowStart},
-        sort: [{field: 'startDate', order: 'asc'}],
+        sort: [{field: 'startDate', order: this.sortOrder}],
       },
       controller.signal,
     );
@@ -453,7 +461,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
                 limit: PAGE_SIZE * 2,
                 from: requestedWindowStart,
               },
-              sort: [{field: 'startDate', order: 'asc'}],
+              sort: [{field: 'startDate', order: this.sortOrder}],
             },
             signal,
           );

@@ -10,6 +10,7 @@ import {createContext, useContext, useEffect, useMemo, useRef} from 'react';
 import type {
   ElementInstance,
   ProcessInstance,
+  QuerySortOrder,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {observer} from 'mobx-react-lite';
 import {elementInstancesTreeStore} from './elementInstancesTreeStore';
@@ -36,6 +37,7 @@ import {
   type ElementInstancePlaceholder,
 } from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
+import {instanceHistorySortOrderStore} from 'modules/stores/instanceHistorySortOrder';
 import {VirtualBar} from './Bar/VirtualBar';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {tracking} from 'modules/tracking';
@@ -95,6 +97,7 @@ const ElementInstanceHistoryTree = createContext<{
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
   businessObjects: BusinessObjects;
   latestMigrationDate: string | null;
+  sortOrder: QuerySortOrder;
 } | null>(null);
 
 const useElementInstanceHistoryTree = () => {
@@ -497,12 +500,13 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
         businessObjects,
         processInstance,
         latestMigrationDate,
+        sortOrder,
       } = useElementInstanceHistoryTree();
       const {refetch: fetchFirstChild} = useSearchElementInstancesByScope(
         {
           filter: {elementInstanceScopeKey: scopeKey},
           page: {limit: 1, from: 0},
-          sort: [{field: 'startDate', order: 'asc'}],
+          sort: [{field: 'startDate', order: sortOrder}],
         },
         {enabled: false},
       );
@@ -819,16 +823,22 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
       processInstance.state === 'ACTIVE' &&
       !modificationsStore.isModificationModeEnabled;
 
+    const sortOrder: QuerySortOrder =
+      modificationsStore.isModificationModeEnabled
+        ? 'asc'
+        : instanceHistorySortOrderStore.order;
+
     useEffect(() => {
       elementInstancesTreeStore.setRootNode(
         processInstance.processInstanceKey,
         {
           enablePolling,
+          sortOrder,
         },
       );
 
       return elementInstancesTreeStore.stopPolling;
-    }, [processInstance.processInstanceKey, enablePolling]);
+    }, [processInstance.processInstanceKey, enablePolling, sortOrder]);
 
     const rootNodeData = elementInstancesTreeStore.state.nodes.get(
       processInstance.processInstanceKey,
@@ -854,6 +864,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
           scrollableContainerRef,
           businessObjects,
           latestMigrationDate,
+          sortOrder,
         }}
       >
         <InstanceHistory ref={scrollableContainerRef}>

@@ -480,4 +480,26 @@ describe('ElementInstanceLog — search flow', () => {
 
     modificationsStore.reset();
   });
+
+  it('shows the sort order control in panel mode and hides it in modification mode', async () => {
+    mockSearchElementInstances().withSuccess(mockElementInstances);
+
+    render(<ElementInstanceLog isPanel />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('button', {name: 'Latest first'}),
+    ).toBeInTheDocument();
+
+    modificationsStore.enableModificationMode();
+
+    await waitForElementToBeRemoved(
+      screen.queryByRole('button', {name: 'Latest first'}),
+    );
+
+    modificationsStore.reset();
+  });
 });
