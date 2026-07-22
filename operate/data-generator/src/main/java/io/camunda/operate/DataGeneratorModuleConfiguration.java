@@ -33,6 +33,14 @@ public class DataGeneratorModuleConfiguration {
     LOGGER.info("Starting module: data generator");
   }
 
+  /**
+   * Kept for the job-worker paths in {@code AbstractDataGenerator} (progressSimpleTask,
+   * completeTask, failTask, message/signal publishing) that still activate/complete jobs through
+   * the gRPC client. This bean carries no credentials, so it must never be used for the
+   * deploy/create-process-instance/cancel write path under {@code consolidated-auth} — those go
+   * through {@code ProcessInstanceServices}/{@code ResourceServices} with an anonymous {@code
+   * CamundaAuthentication} instead (see {@code AbstractDataGenerator}).
+   */
   @Bean
   @ConditionalOnMissingBean
   public CamundaClient camundaClient() {
