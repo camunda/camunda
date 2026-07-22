@@ -60,8 +60,17 @@ public interface MutableJobState extends JobState {
   @Deprecated
   void yield(long key, JobRecord updatedValue);
 
-  /** Makes the job activatable; silently does nothing if the job no longer exists. */
-  void makeActivatable(long key);
+  /**
+   * Makes a job activatable after its pending secret references have been resolved. Silently does
+   * nothing if the job no longer exists.
+   *
+   * <p>Callers must ensure the job is not currently {@link
+   * io.camunda.zeebe.engine.state.immutable.JobState.State#ACTIVATED} — flipping an actively held
+   * job back to activatable would risk double activation. Ideally this is enforced via a dedicated
+   * {@code WAITING_FOR_SECRET} job state; until that state is introduced, the calling flow is
+   * responsible for the precondition.
+   */
+  void makeActivatableAfterSecretResolution(long key);
 
   /**
    * @deprecated see {@link #create(long, JobRecord)}.

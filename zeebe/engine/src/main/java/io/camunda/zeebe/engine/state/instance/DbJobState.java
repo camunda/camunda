@@ -265,7 +265,7 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void makeActivatable(final long key) {
+  public void makeActivatableAfterSecretResolution(final long key) {
     final JobRecord record = getJob(key);
     if (record != null) {
       updateJobState(key, State.ACTIVATABLE);

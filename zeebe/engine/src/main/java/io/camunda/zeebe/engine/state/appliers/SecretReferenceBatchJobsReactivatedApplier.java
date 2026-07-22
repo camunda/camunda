@@ -35,7 +35,7 @@ public final class SecretReferenceBatchJobsReactivatedApplier
     for (final long jobKey : value.getJobKeys()) {
       secretReferenceState.removeWaitingJob(storeId, secretReference, jobKey);
       if (isEligible(jobKey)) {
-        jobState.makeActivatable(jobKey);
+        jobState.makeActivatableAfterSecretResolution(jobKey);
       }
     }
   }
