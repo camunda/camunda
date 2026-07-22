@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.INCIDENT;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.gateway.rest.annotation.PhysicalTenantId;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.UpdateMetadataMapper;
 import jakarta.validation.ValidationException;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -85,12 +87,21 @@ public class IncidentController {
       @PhysicalTenantId final String physicalTenantId,
       @PathVariable("incidentKey") final Long incidentKey) {
     try {
-      return ResponseEntity.ok()
-          .body(
-              SearchQueryResponseMapper.toIncident(
-                  serviceRegistry
-                      .incidentServices(physicalTenantId)
-                      .getByKey(incidentKey, authenticationProvider.getCamundaAuthentication())));
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var response =
+          SearchQueryResponseMapper.toIncident(
+              serviceRegistry
+                  .incidentServices(physicalTenantId)
+                  .getByKey(incidentKey, authentication));
+      UpdateMetadataMapper.addUpdateMetadata(
+          response,
+          IncidentResult::getIncidentKey,
+          INCIDENT,
+          serviceRegistry.auditLogServices(physicalTenantId),
+          authentication,
+          IncidentResult::setUpdatedBy,
+          IncidentResult::setUpdatedAt);
+      return ResponseEntity.ok().body(response);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -125,9 +136,18 @@ public class IncidentController {
       final String physicalTenantId, final IncidentQuery query) {
     final var incidentServices = serviceRegistry.incidentServices(physicalTenantId);
     try {
-      final var result =
-          incidentServices.search(query, authenticationProvider.getCamundaAuthentication());
-      return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      final var result = incidentServices.search(query, authentication);
+      final var response = SearchQueryResponseMapper.toIncidentSearchQueryResponse(result);
+      UpdateMetadataMapper.addUpdateMetadata(
+          response.getItems(),
+          IncidentResult::getIncidentKey,
+          INCIDENT,
+          serviceRegistry.auditLogServices(physicalTenantId),
+          authentication,
+          IncidentResult::setUpdatedBy,
+          IncidentResult::setUpdatedAt);
+      return ResponseEntity.ok(response);
     } catch (final ValidationException e) {
       final var problemDetail =
           GatewayErrorMapper.createProblemDetail(

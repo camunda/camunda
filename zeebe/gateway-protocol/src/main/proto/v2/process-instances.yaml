@@ -1746,6 +1746,8 @@ components:
         - rootProcessInstanceKey
         - tags
         - businessId
+        - updatedBy
+        - updatedAt
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
@@ -1817,6 +1819,15 @@ components:
           nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
+        updatedBy:
+          description: The actor ID from the latest accessible successful audit log entry for this process instance.
+          type: string
+          nullable: true
+        updatedAt:
+          description: The timestamp of the latest accessible successful audit log entry for this process instance.
+          type: string
+          format: date-time
+          nullable: true
       x-properties-added-in-version:
         - propertyName: processDefinitionId
           addedInVersion: "8.8"
@@ -1852,6 +1863,10 @@ components:
           addedInVersion: "8.8"
         - propertyName: businessId
           addedInVersion: "8.9"
+        - propertyName: updatedBy
+          addedInVersion: "8.10"
+        - propertyName: updatedAt
+          addedInVersion: "8.10"
 
     CancelProcessInstanceRequest:
       type: object

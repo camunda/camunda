@@ -2815,6 +2815,16 @@
                 {
                   "name": "version",
                   "type": "number"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -2892,6 +2902,16 @@
           {
             "name": "version",
             "type": "number"
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           }
         ],
         "optional": []
@@ -4276,6 +4296,16 @@
                 {
                   "name": "tenantId",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -5032,6 +5062,16 @@
                 {
                   "name": "tenantId",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -5153,6 +5193,16 @@
           {
             "name": "tenantId",
             "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           }
         ],
         "optional": []
@@ -7327,6 +7377,16 @@
                   "underlyingPrimitive": "string",
                   "rawRefName": "schema",
                   "wrapper": true
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -7487,6 +7547,16 @@
             "underlyingPrimitive": "string",
             "rawRefName": "schema",
             "wrapper": true
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           }
         ],
         "optional": []
@@ -7624,6 +7694,16 @@
                 {
                   "name": "tenantId",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -9369,6 +9449,16 @@
                 {
                   "name": "userTaskKey",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -9535,6 +9625,16 @@
           {
             "name": "userTaskKey",
             "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           }
         ],
         "optional": []
@@ -9835,6 +9935,16 @@
                 {
                   "name": "variableKey",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -9944,6 +10054,16 @@
                 {
                   "name": "variableKey",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -10023,6 +10143,16 @@
                 {
                   "name": "variableKey",
                   "type": "string"
+                },
+                {
+                  "name": "updatedAt",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "updatedBy",
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -10093,6 +10223,16 @@
           {
             "name": "variableKey",
             "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "updatedBy",
+            "type": "string",
+            "nullable": true
           }
         ],
         "optional": []

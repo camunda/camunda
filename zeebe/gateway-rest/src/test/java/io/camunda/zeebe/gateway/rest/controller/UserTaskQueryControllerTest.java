@@ -87,7 +87,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "processDefinitionVersion": 1,
                         "customHeaders": {},
                         "priority": 50,
-                        "tags": []
+                        "tags": [],
+                        "updatedBy": null,
+                        "updatedAt": null
                     }
                 ],
                 "page": {
@@ -110,7 +112,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                     "processInstanceKey":"2",
                     "rootProcessInstanceKey":"3",
                     "tenantId":"<default>",
-                    "isTruncated":false
+                    "isTruncated":false,
+                    "updatedBy": null,
+                    "updatedAt": null
                 },
                 {
                     "variableKey":"1",
@@ -120,7 +124,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                     "processInstanceKey":"2",
                     "rootProcessInstanceKey":"3",
                     "tenantId":"<default>",
-                    "isTruncated":true
+                    "isTruncated":true,
+                    "updatedBy": null,
+                    "updatedAt": null
                 }
               ],
               "page": {
@@ -144,7 +150,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "processInstanceKey":"2",
               "rootProcessInstanceKey":"3",
               "tenantId":"<default>",
-              "isTruncated":false
+              "isTruncated":false,
+              "updatedBy": null,
+              "updatedAt": null
           },
           {
               "variableKey":"1",
@@ -154,7 +162,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "processInstanceKey":"2",
               "rootProcessInstanceKey":"3",
               "tenantId":"<default>",
-              "isTruncated":false
+              "isTruncated":false,
+              "updatedBy": null,
+              "updatedAt": null
           }
         ],
         "page": {
@@ -178,7 +188,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "processInstanceKey":"2",
               "rootProcessInstanceKey":"3",
               "tenantId":"<default>",
-              "isTruncated":false
+              "isTruncated":false,
+              "updatedBy": null,
+              "updatedAt": null
           },
           {
               "variableKey":"1",
@@ -188,7 +200,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "processInstanceKey":"2",
               "rootProcessInstanceKey":"3",
               "tenantId":"<default>",
-              "isTruncated":true
+              "isTruncated":true,
+              "updatedBy": null,
+              "updatedAt": null
           }
         ],
         "page": {
@@ -311,7 +325,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "processDefinitionVersion": 1,
                         "customHeaders": {},
                         "priority": 50,
-                        "tags": []
+                        "tags": [],
+                        "updatedBy": null,
+                        "updatedAt": null
             }
             """;
 
