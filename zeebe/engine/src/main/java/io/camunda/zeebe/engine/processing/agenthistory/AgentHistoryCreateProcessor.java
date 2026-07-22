@@ -91,8 +91,7 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
     }
     final var job = jobState.getJob(jobKey);
 
-    final var jobLeaseToken = job.getLeaseToken();
-    if (!jobLeaseToken.isEmpty() && !commandValue.getJobLease().equals(jobLeaseToken)) {
+    if (job.hasLeaseToken() && !commandValue.getJobLease().equals(job.getLeaseToken())) {
       writeRejection(
           command,
           RejectionType.NOT_FOUND,

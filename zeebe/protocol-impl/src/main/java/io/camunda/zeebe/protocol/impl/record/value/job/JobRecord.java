@@ -498,6 +498,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return bufferAsString(leaseTokenProp.getValue());
   }
 
+  @JsonIgnore
+  public boolean hasLeaseToken() {
+    return !getLeaseToken().isEmpty();
+  }
+
   public JobRecord setLeaseToken(final String leaseToken) {
     leaseTokenProp.setValue(leaseToken);
     return this;
