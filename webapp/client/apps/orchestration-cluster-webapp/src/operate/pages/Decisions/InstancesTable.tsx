@@ -18,7 +18,7 @@ import {getClientConfig} from '#/shared/config/getClientConfig';
 import {useInstancesSelection} from '#/operate/shared/hooks/useInstancesSelection';
 import {useDecisionInstancesSearch} from './useDecisionInstancesSearch';
 import {isSpecificTenant, type DecisionsSearch} from './decisionsFilter';
-import {formatEvaluationDate} from './utils';
+import {formatEvaluationDate} from '#/operate/shared/utils/formatEvaluationDate';
 import {Toolbar} from './Toolbar';
 import {Container, DecisionName, InstanceLink} from './styled';
 import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.10';
