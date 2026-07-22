@@ -697,7 +697,7 @@ public final class SearchQueryRequestMapper {
                 request.getSort()),
             SortOptionBuilders::clusterVariable,
             SearchQuerySortRequestMapper::applyClusterVariableSortField);
-    final ClusterVariableFilter filter =
+    final Either<List<String>, ClusterVariableFilter> filter =
         SearchQueryFilterMapper.toClusterVariableFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::clusterVariableSearchQuery);
   }
