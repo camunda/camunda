@@ -9,12 +9,16 @@ package io.camunda.zeebe.restore.validation;
 
 import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
+import io.camunda.zeebe.restore.BackupNotFoundException;
 import io.camunda.zeebe.restore.RestorePointResolver;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
 import io.camunda.zeebe.util.Either;
@@ -47,7 +51,6 @@ import org.slf4j.LoggerFactory;
 @NullMarked
 public final class RestoreValidator
     implements ClusterConfigurationRequestValidator<RestoreRequest, RestoreResolvedRequest> {
-  private static final List<String> RANGE_AVAILABLE_TYPES = List.of("rdbms", "none");
   private static final Logger LOG = LoggerFactory.getLogger(RestoreValidator.class);
   private final @Nullable BackupStore backupStore;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
@@ -119,13 +122,62 @@ public final class RestoreValidator
   }
 
   private Map<Integer, long[]> resolveBackups(final RestoreRequest request) {
-    if (RANGE_AVAILABLE_TYPES.contains(request.databaseType().toLowerCase())) {
-      return resolveRdbmsBackups(request);
+    if (!request.backupIds().isEmpty()) {
+      return resolveBackupsByPartition(request.backupIds());
     }
-    return Map.of();
+    return resolveRdbmsRangeBackups(request);
   }
 
-  private Map<Integer, long[]> resolveRdbmsBackups(final RestoreRequest request) {
+  private Map<Integer, long[]> resolveBackupsByPartition(final List<Long> backupIds) {
+    final var ids = backupIds.stream().mapToLong(Long::longValue).sorted().toArray();
+    final var store =
+        Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
+    try {
+      return FuturesUtil.parTraverse(
+              IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+              partition -> verifyBackupsExist(store, partition, ids))
+          .join()
+          .stream()
+          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    } catch (final CompletionException e) {
+      if (e.getCause() instanceof final RuntimeException exception) {
+        throw exception;
+      }
+      throw e;
+    }
+  }
+
+  private CompletableFuture<Entry<Integer, long[]>> verifyBackupsExist(
+      final BackupStore store, final int partitionId, final long[] backupIds) {
+    var chain = CompletableFuture.completedFuture((Void) null);
+    for (final long backupId : backupIds) {
+      chain = chain.thenCompose(ignored -> verifyBackupExists(store, partitionId, backupId));
+    }
+    return chain.thenApply(ignored -> Map.entry(partitionId, backupIds));
+  }
+
+  private CompletableFuture<Void> verifyBackupExists(
+      final BackupStore store, final int partitionId, final long backupId) {
+    final var searchPattern =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(backupId));
+    return store
+        .list(searchPattern)
+        .thenAccept(
+            statuses -> {
+              final var exists =
+                  statuses.stream()
+                      .anyMatch(status -> status.statusCode() == BackupStatusCode.COMPLETED);
+              if (!exists) {
+                throw new IllegalStateException(
+                    "No completed backup found for partition %d with backup id %d"
+                        .formatted(partitionId, backupId),
+                    new BackupNotFoundException(backupId));
+              }
+            });
+  }
+
+  private Map<Integer, long[]> resolveRdbmsRangeBackups(final RestoreRequest request) {
     final RestorableBackups backups;
     try {
       backups = findBackups(request);
@@ -149,13 +201,17 @@ public final class RestoreValidator
   private RestorableBackups findBackups(final RestoreRequest request) {
     final Instant instantTo = parseTimestamp(request.to(), "to");
     final Instant instantFrom = parseTimestamp(request.from(), "from");
-    if (exportedPositionSupplier == null) {
-      final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
-      return RestorePointResolver.resolve(metadataByPartition, instantFrom, instantTo, null);
+    if (exportedPositionSupplier == null && instantFrom == null) {
+      throw new IllegalArgumentException(
+          "Expected `from` to not be null, but got <null>. When the restore is not using a "
+              + "RDBMS as secondary storage, `from` parameter is required");
     }
-    final var exportedPositions = exportedPositions(exportedPositionSupplier, partitionCount);
-    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
+    final var exportedPositions =
+        exportedPositionSupplier == null
+            ? null
+            : exportedPositions(exportedPositionSupplier, partitionCount);
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
+    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
     return RestorePointResolver.resolve(
         metadataByPartition, instantFrom, instantTo, exportedPositions);
   }

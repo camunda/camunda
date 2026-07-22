@@ -10,15 +10,20 @@ package io.camunda.zeebe.restore.validation;
 import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
+import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
@@ -47,6 +52,14 @@ import org.junit.jupiter.api.Test;
 final class RestoreValidatorResolverTest {
 
   private static final Instant CHECKPOINT_TIMESTAMP = Instant.parse("2026-01-01T10:00:00Z");
+
+  /**
+   * Matches how {@code RestoreApp} wires an rdbms secondary storage: an exported-position supplier
+   * is only present for real RDBMS setups, which is what allows the null/null "auto lookup the
+   * latest common checkpoint" request to be resolved at all - see {@link
+   * RestoreValidator#findBackups}.
+   */
+  private static final IntFunction<Long> EXPORTED_POSITIONS = partitionId -> 50L;
 
   private final BackupStore backupStore = mock(BackupStore.class);
 
@@ -89,6 +102,24 @@ final class RestoreValidatorResolverTest {
   private void stubMetadata(final int partitionId, final BackupMetadata metadata) {
     when(backupStore.loadBackupMetadata(partitionId))
         .thenReturn(CompletableFuture.completedFuture(Optional.of(serialize(metadata))));
+  }
+
+  private void stubBackupExists(final long backupId) {
+    final var status =
+        new BackupStatusImpl(
+            new BackupIdentifierImpl(1, 1, backupId),
+            Optional.empty(),
+            BackupStatusCode.COMPLETED,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    when(backupStore.list(any(BackupIdentifierWildcard.class)))
+        .thenReturn(CompletableFuture.completedFuture(List.of(status)));
+  }
+
+  private void stubNoBackupExists() {
+    when(backupStore.list(any(BackupIdentifierWildcard.class)))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
   }
 
   private static byte[] serialize(final BackupMetadata metadata) {
@@ -139,7 +170,7 @@ final class RestoreValidatorResolverTest {
     void shouldValidateWhenSinglePartitionHasBackup() {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
-      final var validator = new RestoreValidator(1, backupStore, null);
+      final var validator = new RestoreValidator(1, backupStore, EXPORTED_POSITIONS);
       final var request = rdbmsRequest();
 
       // when
@@ -155,7 +186,7 @@ final class RestoreValidatorResolverTest {
       stubMetadata(1, singleCheckpointMetadata(1));
       stubMetadata(2, singleCheckpointMetadata(2));
       stubMetadata(3, singleCheckpointMetadata(3));
-      final var validator = new RestoreValidator(3, backupStore, null);
+      final var validator = new RestoreValidator(3, backupStore, EXPORTED_POSITIONS);
       final var request = rdbmsRequest();
 
       // when
@@ -167,10 +198,52 @@ final class RestoreValidatorResolverTest {
     }
 
     @Test
-    void shouldValidateForNoneDatabaseType() {
+    void shouldResolveWhenFromIsProvidedAloneForContinuousBackups() {
+      // given - with a single checkpoint, the exported position must match its checkpoint
+      // position exactly: the range lookup requires it not be after the checkpoint, and trimming
+      // by `from` requires it not be before
+      stubMetadata(1, singleCheckpointMetadata(1));
+      final IntFunction<Long> exportedPositionSupplier = partitionId -> 100L;
+      final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
+      final var request =
+          new RestoreRequest(
+              "default", List.of(), CHECKPOINT_TIMESTAMP.toString(), null, "rdbms", true, false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}), false);
+    }
+
+    @Test
+    void shouldResolveWhenFromAndToAreBothProvided() {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
-      final var validator = new RestoreValidator(1, backupStore, null);
+      final IntFunction<Long> exportedPositionSupplier = partitionId -> 100L;
+      final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
+      final var request =
+          new RestoreRequest(
+              "default",
+              List.of(),
+              CHECKPOINT_TIMESTAMP.toString(),
+              CHECKPOINT_TIMESTAMP.plusSeconds(3600).toString(),
+              "rdbms",
+              true,
+              false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}), false);
+    }
+
+    @Test
+    void shouldValidateForNoneDatabaseType() {
+      // given - "none" storage still tracks exported positions in this scenario
+      stubMetadata(1, singleCheckpointMetadata(1));
+      final var validator = new RestoreValidator(1, backupStore, EXPORTED_POSITIONS);
       final var request = rdbmsRequest("none");
 
       // when
@@ -181,10 +254,25 @@ final class RestoreValidatorResolverTest {
     }
 
     @Test
+    void shouldFailWhenNoFromIsGivenAndNoExportedPositionsAreTracked() {
+      // given - matches RestoreManager: without an exported-position supplier, `from` is required
+      // to resolve a restore point; there is no backup-store-wide notion of "the latest backup".
+      final var validator = new RestoreValidator(1, backupStore, null);
+      final var request = rdbmsRequest("none");
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertThat(assertInvalid(result)).hasMessageContaining("Expected `from` to not be null");
+      verifyNoInteractions(backupStore);
+    }
+
+    @Test
     void shouldPropagateDryRunFlagToResolvedRequest() {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
-      final var validator = new RestoreValidator(1, backupStore, null);
+      final var validator = new RestoreValidator(1, backupStore, EXPORTED_POSITIONS);
       final var request = rdbmsRequest("rdbms", true);
 
       // when
@@ -199,7 +287,7 @@ final class RestoreValidatorResolverTest {
       // given - partition 2 only has a checkpoint that partition 1 does not have
       stubMetadata(1, singleCheckpointMetadata(1, 1L));
       stubMetadata(2, singleCheckpointMetadata(2, 2L));
-      final var validator = new RestoreValidator(2, backupStore, null);
+      final var validator = new RestoreValidator(2, backupStore, EXPORTED_POSITIONS);
 
       // when / then
       assertThatExceptionOfType(IllegalStateException.class)
@@ -212,7 +300,7 @@ final class RestoreValidatorResolverTest {
       // given
       when(backupStore.loadBackupMetadata(1))
           .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
-      final var validator = new RestoreValidator(1, backupStore, null);
+      final var validator = new RestoreValidator(1, backupStore, EXPORTED_POSITIONS);
 
       // when / then
       assertThatExceptionOfType(IllegalStateException.class)
@@ -249,39 +337,36 @@ final class RestoreValidatorResolverTest {
       // then
       assertValid(result, Map.of(1, new long[] {1L}), false);
     }
-  }
-
-  @Nested
-  final class NonRdbmsDatabaseTypes {
 
     @Test
-    void shouldNotResolveRdbmsBackupsForElasticsearch() {
-      // given
-      final var validator = new RestoreValidator(2, backupStore, null);
+    void shouldResolveSameBackupIdsForEveryPartitionWhenBackupIdsAreExplicit() {
+      // given - no range metadata (e.g. continuous backups disabled), only an ad-hoc backup taken
+      stubBackupExists(42L);
+      final var validator = new RestoreValidator(3, backupStore, null);
       final var request =
-          new RestoreRequest("default", List.of(1L), null, null, "elasticsearch", false, false);
+          new RestoreRequest("default", List.of(42L), null, null, "rdbms", false, false);
 
       // when
       final var result = validator.validate(request);
 
       // then
-      assertValid(result, Map.of(), false);
-      verifyNoInteractions(backupStore);
+      assertValid(
+          result, Map.of(1, new long[] {42L}, 2, new long[] {42L}, 3, new long[] {42L}), false);
     }
 
     @Test
-    void shouldNotResolveRdbmsBackupsForOpensearch() {
+    void shouldFailWhenExplicitBackupIdDoesNotExistOnAPartition() {
       // given
+      stubNoBackupExists();
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
-          new RestoreRequest("default", List.of(1L), null, null, "opensearch", false, false);
+          new RestoreRequest("default", List.of(42L), null, null, "rdbms", false, false);
 
-      // when
-      final var result = validator.validate(request);
-
-      // then
-      assertValid(result, Map.of(), false);
-      verifyNoInteractions(backupStore);
+      // when / then
+      assertThatExceptionOfType(IllegalStateException.class)
+          .isThrownBy(() -> validator.validate(request))
+          .withMessageContaining("No completed backup found for partition")
+          .withMessageContaining("backup id 42");
     }
   }
 }
