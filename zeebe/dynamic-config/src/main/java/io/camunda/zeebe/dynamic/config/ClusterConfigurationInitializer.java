@@ -312,10 +312,6 @@ public interface ClusterConfigurationInitializer {
             "Querying members {} before initializing ClusterConfiguration",
             knownMembersToSync.get());
         clusterConfigurationUpdateNotifier.addUpdateListener(this);
-        bootstrapTimeoutTimer =
-            executor.schedule(
-                bootstrapTimeout,
-                () -> completeAsUninitialized("sync timeout (%s)".formatted(bootstrapTimeout)));
         refreshAndSync();
       }
       return initialized;
@@ -358,6 +354,14 @@ public interface ClusterConfigurationInitializer {
         scheduleRetry();
       } else if (configuration.isUninitialized()) {
         LOGGER.trace("Cluster configuration is uninitialized in {}", memberId);
+
+        // start timeout after first uninitialized
+        if (bootstrapTimeoutTimer == null && uninitializedMembers.isEmpty()) {
+          bootstrapTimeoutTimer =
+              executor.schedule(
+                  bootstrapTimeout,
+                  () -> completeAsUninitialized("sync timeout (%s)".formatted(bootstrapTimeout)));
+        }
         uninitializedMembers.add(memberId);
         final var members = knownMembersToSync.get();
         if (uninitializedMembers.containsAll(members)
