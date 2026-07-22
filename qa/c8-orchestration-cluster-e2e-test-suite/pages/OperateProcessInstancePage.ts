@@ -969,6 +969,10 @@ class OperateProcessInstancePage {
     await this.clickDiagramElement(elementId);
   }
 
+  async isElementSelectedInDiagram(elementId: string): Promise<boolean> {
+    return new URL(this.page.url()).searchParams.get('elementId') === elementId;
+  }
+
   getCalledProcessLink(processName: string): Locator {
     return this.page.getByRole('link', {name: processName});
   }
@@ -1003,14 +1007,22 @@ class OperateProcessInstancePage {
 
   async verifyIncidents(errorTypes: string[], elementId?: string) {
     if (elementId) {
-      await this.clickOnElementInDiagram(elementId);
+      // Scope the incidents view to the flow node by selecting it. On a freshly
+      // migrated instance the diagram is still settling, so the selection click
+      // can be dropped; re-apply it until it sticks. Only click when the node is
+      // not already selected — clicking a selected node in Operate toggles the
+      // selection back off (BpmnJS #handleElementClick).
+      await expect(async () => {
+        if (!(await this.isElementSelectedInDiagram(elementId))) {
+          await this.clickOnElementInDiagram(elementId);
+        }
+        expect(await this.isElementSelectedInDiagram(elementId)).toBe(true);
+      }).toPass({timeout: 15000});
     }
     await this.clickIncidentsTab();
-    // When a flow node is selected the incidents view switches to the
-    // element-scoped query, so the header count reflects only the selected
-    // element's incidents. That query may still be resolving (the header can
-    // briefly show the stale instance-wide total), so poll the count until it
-    // settles instead of reading it once.
+    // The element-scoped incidents query may still be resolving after selection
+    // (the header can briefly show the stale instance-wide total), so poll the
+    // count until it settles instead of reading it once.
     await expect
       .poll(() => this.getIncidentCount(), {timeout: 30000})
       .toBe(errorTypes.length);
