@@ -17,11 +17,10 @@ package io.camunda.process.test.impl.cleanup;
 
 import io.camunda.process.test.api.DataDeletionMode;
 
-public final class CleanupStrategyResolver {
+public final class DefaultCleanupStrategyFactory implements CleanupStrategyFactory {
 
-  private CleanupStrategyResolver() {}
-
-  public static CleanupStrategy resolve(final DataDeletionMode dataDeletionMode) {
+  @Override
+  public CleanupStrategy create(final DataDeletionMode dataDeletionMode) {
     switch (dataDeletionMode) {
       case CLUSTER_PURGE:
         return new ClusterPurgeCleanupStrategy();
