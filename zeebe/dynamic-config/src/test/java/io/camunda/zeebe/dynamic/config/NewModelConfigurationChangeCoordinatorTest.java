@@ -10,6 +10,8 @@ package io.camunda.zeebe.dynamic.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
@@ -26,11 +28,13 @@ import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.BrokerState.State;
 import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -43,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -203,5 +208,55 @@ final class NewModelConfigurationChangeCoordinatorTest {
     // then
     assertThat(result.operations()).isEmpty();
     assertThat(configuration().phasedChangeState().pending()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectInvalidOperationUsingRealAppliers() {
+    // given — a request whose second operation is invalid: member 0 leaves partition 1 twice,
+    // but after the first leave it no longer hosts the partition. Validation must catch this via
+    // the real PartitionGroupConfigurationChangeAppliersImpl dispatch table, not a legacy
+    // simulator.
+    wire(MEMBER_0, twoMemberCluster());
+    final ConfigurationChangeRequest request =
+        current ->
+            Either.right(
+                List.of(
+                    new PartitionLeaveOperation(MEMBER_0, 1, 1),
+                    new PartitionLeaveOperation(MEMBER_0, 1, 1)));
+
+    // when
+    final var applyFuture = coordinator.applyOperations(request);
+
+    // then — rejected during validation; no plan is started
+    assertThat(applyFuture)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(InvalidRequest.class);
+    assertThat(configuration().phasedChangeState().pending()).isEmpty();
+    final var defaultGroup =
+        configuration().partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(defaultGroup.hasMember(MEMBER_0)).isTrue();
+  }
+
+  @Test
+  void shouldRejectWhenAnotherChangeIsInProgress() {
+    // given — a plan is already pending (its only operation targets member 1, so it never drains
+    // on this member)
+    wire(MEMBER_0, twoMemberCluster());
+    manager
+        .updateMultiConfiguration(
+            c -> c.initPlan(List.of(new GlobalPhase(List.of(new MemberLeaveOperation(MEMBER_1))))))
+        .join();
+    final ConfigurationChangeRequest request =
+        current -> Either.right(List.of(new PartitionLeaveOperation(MEMBER_0, 1, 1)));
+
+    // when
+    final var applyFuture = coordinator.applyOperations(request);
+
+    // then — rejected because a change is already in progress
+    assertThat(applyFuture)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(ConcurrentModificationException.class);
   }
 }
