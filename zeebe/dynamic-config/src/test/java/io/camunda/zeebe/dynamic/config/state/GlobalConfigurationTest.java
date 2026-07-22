@@ -446,6 +446,7 @@ class GlobalConfigurationTest {
           config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)))
               .startConfigurationChange(
                   List.of(new MemberJoinOperation(MEMBER_1), new MemberLeaveOperation(MEMBER_0)));
+      final long versionAfterStart = config.version();
 
       // when — advance past the first operation with a no-op updater
       final var advanced = config.advanceConfigurationChange(UnaryOperator.identity());
@@ -454,7 +455,7 @@ class GlobalConfigurationTest {
       assertThat(advanced.hasPendingChanges()).isTrue();
       assertThat(advanced.pendingChanges().get().pendingOperations())
           .containsExactly(new MemberLeaveOperation(MEMBER_0));
-      assertThat(advanced.version()).isEqualTo(5);
+      assertThat(advanced.version()).isEqualTo(versionAfterStart);
     }
 
     @Test
@@ -493,13 +494,14 @@ class GlobalConfigurationTest {
       final var config =
           config(4, Map.of(MEMBER_0, broker(0, State.ACTIVE)))
               .startConfigurationChange(List.of(new MemberLeaveOperation(MEMBER_0)));
+      final long versionAfterStart = config.version();
 
       // when
       final var cancelled = config.cancelPendingChanges();
 
       // then
       assertThat(cancelled.hasPendingChanges()).isFalse();
-      assertThat(cancelled.version()).isEqualTo(7); // start bumped to 5, cancel adds 2
+      assertThat(cancelled.version()).isEqualTo(versionAfterStart + 2);
       assertThat(cancelled.lastChange()).isPresent();
     }
 
