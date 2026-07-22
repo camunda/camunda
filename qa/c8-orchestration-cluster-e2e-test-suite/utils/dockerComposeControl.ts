@@ -43,9 +43,9 @@ function composeCommand(args: string[]): string {
 
 /**
  * Brings up the isolated environment with the exporter NOT configured at
- * all (N1: proving it's disabled by default). Intentionally isolated from
- * the shared, long-running stack every other test depends on — see
- * config/docker-compose.analytics-isolated.yml.
+ * all — for the test proving it's disabled by default. Intentionally
+ * isolated from the shared, long-running stack every other test depends
+ * on — see config/docker-compose.analytics-isolated.yml.
  */
 export async function startIsolatedEnvironmentWithoutExporter(): Promise<void> {
   await execAsync(
@@ -63,10 +63,10 @@ export async function startIsolatedEnvironmentWithoutExporter(): Promise<void> {
 }
 
 /**
- * Brings up the isolated environment with the exporter enabled (P7: counter
- * vs. raw-event-count parity) — a separate camunda variant from the one
- * above, on the same host ports; only one is ever started at a time. See
- * config/docker-compose.analytics-isolated.yml.
+ * Brings up the isolated environment with the exporter enabled — for the
+ * counter vs. raw-event-count parity test. A separate camunda variant from
+ * the one above, on the same host ports; only one is ever started at a
+ * time. See config/docker-compose.analytics-isolated.yml.
  */
 export async function startIsolatedEnvironmentWithExporter(): Promise<void> {
   await execAsync(

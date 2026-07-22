@@ -217,13 +217,10 @@ jobs:
           npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      # N1 (analytics exporter disabled by default) and P7 (counter/raw-count
-      # parity) each manage their own standalone, throwaway broker/collector/
-      # Loki/Prometheus via utils/dockerComposeControl.ts — separate from the
-      # shared stack started above, so they run as their own project rather
-      # than under api-tests. Gated to main only, permanently: the analytics
-      # exporter's config/behavior differs enough on stable/8.7, 8.8, 8.9 that
-      # this isolated setup doesn't carry over as-is — not backporting.
+      # Analytics exporter tests manage their own throwaway broker/collector
+      # stack via utils/dockerComposeControl.ts, so they run separately from
+      # api-tests above. Main-only, permanently — not backporting, the
+      # exporter's config differs too much on stable/8.7/8.8/8.9.
       - name: Run analytics-exporter isolated tests
         if: inputs.branch == 'main'
         shell: bash
