@@ -118,6 +118,7 @@ message RestoreRequest {
   string databaseType = 4;
   bool continuousBackups = 5;
   bool dryRun = 6;
+  string physicalTenantId = 7;
 }
 
 message TopologyChangeResponse {

@@ -14,6 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
@@ -47,9 +48,11 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOper
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.util.Either;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Collection;
@@ -104,12 +107,27 @@ final class ClusterConfigurationManagementApiTest {
                 () -> recordingCoordinator.getClusterConfiguration().join()),
             new ProtoBufSerializer());
 
+    final var validatorRegistry = new RequestValidatorRegistry();
+    validatorRegistry.registerValidator(
+        null,
+        new ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest>() {
+          @Override
+          public Class<RestoreRequest> requestType() {
+            return RestoreRequest.class;
+          }
+
+          @Override
+          public Either<Exception, RestoreRequest> validate(final RestoreRequest request) {
+            return Either.right(request);
+          }
+        });
+
     requestServer =
         new ClusterConfigurationRequestServer(
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                recordingCoordinator, id0, new TestConcurrencyControl()));
+                recordingCoordinator, id0, new TestConcurrencyControl(), validatorRegistry));
 
     requestServer.start();
   }
@@ -543,7 +561,14 @@ final class ClusterConfigurationManagementApiTest {
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
     final var request =
-        new RestoreRequest(List.of(100L, 101L), null, null, "elasticsearch", false, false);
+        new RestoreRequest(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            List.of(100L, 101L),
+            null,
+            null,
+            "elasticsearch",
+            false,
+            false);
 
     // when
     final var result = clientApi.restore(request).join();
@@ -557,7 +582,14 @@ final class ClusterConfigurationManagementApiTest {
     // given
     recordingCoordinator.setCurrentTopology(initialTopology); // member is ACTIVE
     final var request =
-        new RestoreRequest(List.of(100L), null, null, "elasticsearch", false, false);
+        new RestoreRequest(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            List.of(100L),
+            null,
+            null,
+            "elasticsearch",
+            false,
+            false);
 
     // when
     final var result = clientApi.restore(request).join();
@@ -571,104 +603,6 @@ final class ClusterConfigurationManagementApiTest {
               assertThat(error.code()).isEqualTo(ErrorCode.CONCURRENT_MODIFICATION);
               assertThat(error.message())
                   .isEqualTo("Restore is only allowed while the cluster is in recovery mode.");
-            });
-  }
-
-  @Test
-  void shouldRejectRestoreWhenBackupIdsAndTimeRangeProvided() {
-    // given
-    recordingCoordinator.setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request =
-        new RestoreRequest(List.of(100L), "2024-01-01T10:00:00Z", null, "rdbms", false, false);
-
-    // when
-    final var result = clientApi.restore(request).join();
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .satisfies(
-            error -> {
-              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
-              assertThat(error.message())
-                  .isEqualTo(
-                      "Cannot specify both backupId and from/to parameters. Choose one approach.");
-            });
-  }
-
-  @Test
-  void shouldRejectRestoreWhenFromIsAfterTo() {
-    // given
-    recordingCoordinator.setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request =
-        new RestoreRequest(
-            List.of(), "2024-01-01T12:00:00Z", "2024-01-01T10:00:00Z", "rdbms", true, false);
-
-    // when
-    final var result = clientApi.restore(request).join();
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .satisfies(
-            error -> {
-              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
-              assertThat(error.message()).contains("Invalid time range: from", "must be before to");
-            });
-  }
-
-  @Test
-  void shouldRejectRestoreWhenTimeRangeProvidedWithoutContinuousBackups() {
-    // given
-    recordingCoordinator.setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request =
-        new RestoreRequest(
-            List.of(), "2024-01-01T10:00:00Z", "2024-01-01T12:00:00Z", "rdbms", false, false);
-
-    // when
-    final var result = clientApi.restore(request).join();
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .satisfies(
-            error -> {
-              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
-              assertThat(error.message())
-                  .isEqualTo(
-                      "Time range restore (from/to) is only supported for continuous backups.");
-            });
-  }
-
-  @Test
-  void shouldRejectRestoreWhenTimestampIsInvalid() {
-    // given
-    recordingCoordinator.setCurrentTopology(
-        ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
-    final var request = new RestoreRequest(List.of(), "not-a-date", null, "rdbms", false, false);
-
-    // when
-    final var result = clientApi.restore(request).join();
-
-    // then
-    EitherAssert.assertThat(result)
-        .isLeft()
-        .left()
-        .satisfies(
-            error -> {
-              assertThat(error.code()).isEqualTo(ErrorCode.INVALID_REQUEST);
-              assertThat(error.message())
-                  .isEqualTo("Invalid from timestamp 'not-a-date': must be an ISO 8601 date-time.");
             });
   }
 

@@ -74,6 +74,21 @@
     </dependency>
 
     <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-cluster-config</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-logstreams</artifactId>
       <scope>test</scope>
@@ -95,16 +110,6 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jspecify</groupId>
-      <artifactId>jspecify</artifactId>
     </dependency>
 
   </dependencies>

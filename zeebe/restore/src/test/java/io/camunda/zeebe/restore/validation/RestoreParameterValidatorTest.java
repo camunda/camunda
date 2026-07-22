@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.dynamic.config.api;
+package io.camunda.zeebe.restore.validation;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import java.time.Instant;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -30,13 +31,17 @@ final class RestoreParameterValidatorTest {
       "Time range restore (from/to) is only supported for continuous backups.";
   private static final String NO_BACKUP_ID_MESSAGE = "No backupId specified";
 
+  @BeforeAll
+  static void setup() {}
+
   private static RestoreRequest request(
       final List<Long> backupIds,
       final @Nullable String from,
       final @Nullable String to,
       final String databaseType,
       final boolean continuousBackups) {
-    return new RestoreRequest(backupIds, from, to, databaseType, continuousBackups, false);
+    return new RestoreRequest(
+        "default", backupIds, from, to, databaseType, continuousBackups, false);
   }
 
   @Test
@@ -44,7 +49,7 @@ final class RestoreParameterValidatorTest {
     // when / then
     assertThatCode(
             () ->
-                RestoreParameterValidator.validate(
+                RestoreValidator.validateParameters(
                     request(BACKUP_ID, null, null, "ElasticSearch", false)))
         .doesNotThrowAnyException();
   }
@@ -58,7 +63,7 @@ final class RestoreParameterValidatorTest {
     void shouldAcceptBackupIdOnly() {
       // when / then
       assertThatCode(
-              () -> RestoreParameterValidator.validate(request(BACKUP_ID, null, null, DB, false)))
+              () -> RestoreValidator.validateParameters(request(BACKUP_ID, null, null, DB, false)))
           .doesNotThrowAnyException();
     }
 
@@ -67,7 +72,7 @@ final class RestoreParameterValidatorTest {
       // when / then
       assertThatCode(
               () ->
-                  RestoreParameterValidator.validate(
+                  RestoreValidator.validateParameters(
                       request(NO_BACKUP_IDS, EARLIER, LATER, DB, true)))
           .doesNotThrowAnyException();
     }
@@ -77,7 +82,8 @@ final class RestoreParameterValidatorTest {
       // when / then
       assertThatCode(
               () ->
-                  RestoreParameterValidator.validate(request(NO_BACKUP_IDS, null, null, DB, false)))
+                  RestoreValidator.validateParameters(
+                      request(NO_BACKUP_IDS, null, null, DB, false)))
           .doesNotThrowAnyException();
     }
 
@@ -86,7 +92,8 @@ final class RestoreParameterValidatorTest {
       // when / then
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
-              () -> RestoreParameterValidator.validate(request(BACKUP_ID, EARLIER, null, DB, true)))
+              () ->
+                  RestoreValidator.validateParameters(request(BACKUP_ID, EARLIER, null, DB, true)))
           .withMessage(BOTH_MESSAGE);
     }
 
@@ -96,7 +103,7 @@ final class RestoreParameterValidatorTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
-                  RestoreParameterValidator.validate(
+                  RestoreValidator.validateParameters(
                       request(NO_BACKUP_IDS, EARLIER, LATER, DB, false)))
           .withMessage(CONTINUOUS_MESSAGE);
     }
@@ -107,7 +114,7 @@ final class RestoreParameterValidatorTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
-                  RestoreParameterValidator.validate(
+                  RestoreValidator.validateParameters(
                       request(NO_BACKUP_IDS, EARLIER, null, DB, false)))
           .withMessage(CONTINUOUS_MESSAGE);
     }
@@ -118,7 +125,7 @@ final class RestoreParameterValidatorTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
-                  RestoreParameterValidator.validate(
+                  RestoreValidator.validateParameters(
                       request(NO_BACKUP_IDS, LATER, EARLIER, DB, true)))
           .withMessage(
               "Invalid time range: from (%s) must be before to (%s)"
@@ -131,7 +138,7 @@ final class RestoreParameterValidatorTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
-                  RestoreParameterValidator.validate(
+                  RestoreValidator.validateParameters(
                       request(NO_BACKUP_IDS, "not-a-timestamp", null, DB, true)))
           .withMessage("Invalid from timestamp 'not-a-timestamp': must be an ISO 8601 date-time.");
     }
@@ -146,7 +153,7 @@ final class RestoreParameterValidatorTest {
     void shouldAcceptBackupIdOnly() {
       // when / then
       assertThatCode(
-              () -> RestoreParameterValidator.validate(request(BACKUP_ID, null, null, DB, false)))
+              () -> RestoreValidator.validateParameters(request(BACKUP_ID, null, null, DB, false)))
           .doesNotThrowAnyException();
     }
 
@@ -156,7 +163,8 @@ final class RestoreParameterValidatorTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
-                  RestoreParameterValidator.validate(request(NO_BACKUP_IDS, null, null, DB, false)))
+                  RestoreValidator.validateParameters(
+                      request(NO_BACKUP_IDS, null, null, DB, false)))
           .withMessage(NO_BACKUP_ID_MESSAGE);
     }
 
@@ -166,7 +174,7 @@ final class RestoreParameterValidatorTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
-                  RestoreParameterValidator.validate(
+                  RestoreValidator.validateParameters(
                       request(NO_BACKUP_IDS, EARLIER, LATER, DB, true)))
           .withMessage("Time range restore (from/to) is not supported for elasticsearch.");
     }
@@ -176,7 +184,8 @@ final class RestoreParameterValidatorTest {
       // when / then
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
-              () -> RestoreParameterValidator.validate(request(BACKUP_ID, EARLIER, null, DB, true)))
+              () ->
+                  RestoreValidator.validateParameters(request(BACKUP_ID, EARLIER, null, DB, true)))
           .withMessage(BOTH_MESSAGE);
     }
   }
@@ -190,7 +199,7 @@ final class RestoreParameterValidatorTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
-                  RestoreParameterValidator.validate(
+                  RestoreValidator.validateParameters(
                       request(BACKUP_ID, null, null, "mongodb", false)))
           .withMessage("Invalid database type: mongodb");
     }

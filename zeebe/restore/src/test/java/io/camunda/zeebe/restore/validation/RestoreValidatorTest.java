@@ -5,36 +5,32 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.restore;
+package io.camunda.zeebe.restore.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
-import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class RestoreValidatorTest {
-
   @TempDir Path dataDirectory;
 
-  private BrokerCfg brokerCfg;
+  private PostRestoreValidator postRestoreValidator;
 
   @BeforeEach
   void setUp() {
-    brokerCfg = new BrokerCfg();
-    brokerCfg.getData().setDirectory(dataDirectory.toString());
-    brokerCfg.getCluster().setNodeId(0);
-    brokerCfg.getCluster().setClusterSize(1);
-    brokerCfg.getCluster().setPartitionsCount(1);
-    brokerCfg.getCluster().setReplicationFactor(1);
+    postRestoreValidator = getPostRestoreValidator(1);
   }
 
   @Test
@@ -42,7 +38,7 @@ class RestoreValidatorTest {
     // given - no partition directory created
 
     // when
-    final boolean result = RestoreValidator.validate(brokerCfg);
+    final boolean result = postRestoreValidator.verifyRestore();
 
     // then
     assertThat(result).isFalse();
@@ -55,7 +51,7 @@ class RestoreValidatorTest {
     Files.createDirectories(partitionDir);
 
     // when
-    final boolean result = RestoreValidator.validate(brokerCfg);
+    final boolean result = postRestoreValidator.verifyRestore();
 
     // then
     assertThat(result).isFalse();
@@ -69,7 +65,7 @@ class RestoreValidatorTest {
     Files.writeString(partitionDir.resolve("segment-1.log"), "data");
 
     // when
-    final boolean result = RestoreValidator.validate(brokerCfg);
+    final boolean result = postRestoreValidator.verifyRestore();
 
     // then
     assertThat(result).isFalse();
@@ -87,7 +83,7 @@ class RestoreValidatorTest {
     Files.writeString(topologyFile, "topology");
 
     // when
-    final boolean result = RestoreValidator.validate(brokerCfg);
+    final boolean result = postRestoreValidator.verifyRestore();
 
     // then
     assertThat(result).isTrue();
@@ -105,7 +101,7 @@ class RestoreValidatorTest {
     Files.createDirectories(topologyDir);
 
     // when
-    final boolean result = RestoreValidator.validate(brokerCfg);
+    final boolean result = postRestoreValidator.verifyRestore();
 
     // then
     assertThat(result).isFalse();
@@ -114,7 +110,7 @@ class RestoreValidatorTest {
   @Test
   void shouldReturnTrueWithMultiplePartitions() throws IOException {
     // given
-    brokerCfg.getCluster().setPartitionsCount(3);
+    postRestoreValidator = getPostRestoreValidator(3);
 
     for (int i = 1; i <= 3; i++) {
       final Path partitionDir = getPartitionDir(i);
@@ -127,7 +123,7 @@ class RestoreValidatorTest {
     Files.writeString(topologyFile, "topology");
 
     // when
-    final boolean result = RestoreValidator.validate(brokerCfg);
+    final boolean result = postRestoreValidator.verifyRestore();
 
     // then
     assertThat(result).isTrue();
@@ -136,7 +132,7 @@ class RestoreValidatorTest {
   @Test
   void shouldReturnFalseWhenOneOfMultiplePartitionsIsEmpty() throws IOException {
     // given
-    brokerCfg.getCluster().setPartitionsCount(3);
+    postRestoreValidator = getPostRestoreValidator(3);
 
     for (int i = 1; i <= 3; i++) {
       final Path partitionDir = getPartitionDir(i);
@@ -151,10 +147,22 @@ class RestoreValidatorTest {
     Files.writeString(topologyFile, "topology");
 
     // when
-    final boolean result = RestoreValidator.validate(brokerCfg);
+    final boolean result = postRestoreValidator.verifyRestore();
 
     // then
     assertThat(result).isFalse();
+  }
+
+  private PostRestoreValidator getPostRestoreValidator(final int partitionCount) {
+    final var memberId = MemberId.from(0);
+    final var partitionMap = new HashMap<PartitionMetadata, Path>();
+    for (int i = 1; i <= partitionCount; i++) {
+      final var partitionId = new PartitionId("default", i);
+      final var partitionMetadata =
+          new PartitionMetadata(partitionId, Set.of(memberId), Map.of(), 0, memberId);
+      partitionMap.put(partitionMetadata, getPartitionDir(i));
+    }
+    return new PostRestoreValidator(memberId, partitionMap, dataDirectory);
   }
 
   private Path getPartitionDir() {
@@ -162,8 +170,6 @@ class RestoreValidatorTest {
   }
 
   private Path getPartitionDir(final int partitionId) {
-    return RaftPartitionFactory.getPartitionDirectory(
-        new PartitionId(PartitionManagerImpl.DEFAULT_GROUP_NAME, partitionId),
-        dataDirectory.toString());
+    return dataDirectory.resolve(String.valueOf(partitionId));
   }
 }

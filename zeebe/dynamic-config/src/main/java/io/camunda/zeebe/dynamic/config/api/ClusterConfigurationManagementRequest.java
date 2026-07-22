@@ -150,6 +150,7 @@ public sealed interface ClusterConfigurationManagementRequest {
   }
 
   record RestoreRequest(
+      String physicalTenantId,
       List<Long> backupIds,
       @Nullable String from,
       @Nullable String to,

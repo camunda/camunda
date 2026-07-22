@@ -12,6 +12,8 @@ import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManager.InconsistentConfigurationListener;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
+import org.jspecify.annotations.Nullable;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
 
@@ -138,6 +141,27 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   public void removeInconsistentConfigurationListener() {
     if (clusterConfigurationManagerService != null) {
       clusterConfigurationManagerService.removeTopologyChangedListener();
+    }
+  }
+
+  @Override
+  public void registerRequestValidator(
+      final @Nullable String physicalTenantId,
+      final ClusterConfigurationRequestValidator<?, ?> validator) {
+    if (clusterConfigurationManagerService != null) {
+      clusterConfigurationManagerService.registerRequestValidator(physicalTenantId, validator);
+    } else {
+      throw new IllegalStateException(
+          "Cannot register a request validator before the topology manager is started");
+    }
+  }
+
+  @Override
+  public void removeRequestValidator(
+      final @Nullable String physicalTenantId,
+      final Class<? extends ClusterConfigurationManagementRequest> requestType) {
+    if (clusterConfigurationManagerService != null) {
+      clusterConfigurationManagerService.removeRequestValidator(physicalTenantId, requestType);
     }
   }
 

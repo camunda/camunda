@@ -34,8 +34,10 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
@@ -50,14 +52,17 @@ public final class ClusterConfigurationManagementRequestsHandler
   private final ConfigurationChangeCoordinator coordinator;
   private final ConcurrencyControl executor;
   private final MemberId localMemberId;
+  private final RequestValidatorRegistry validatorRegistry;
 
   public ClusterConfigurationManagementRequestsHandler(
       final ConfigurationChangeCoordinator coordinator,
       final MemberId localMemberId,
-      final ConcurrencyControl executor) {
+      final ConcurrencyControl executor,
+      final RequestValidatorRegistry validatorRegistry) {
     this.coordinator = coordinator;
     this.executor = executor;
     this.localMemberId = localMemberId;
+    this.validatorRegistry = validatorRegistry;
   }
 
   @Override
@@ -92,7 +97,6 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> leavePartition(
       final LeavePartitionRequest leavePartitionRequest) {
-
     return handleRequest(
         leavePartitionRequest.dryRun(),
         ignore ->
@@ -126,13 +130,11 @@ public final class ClusterConfigurationManagementRequestsHandler
     final Optional<Integer> optionalNewReplicationFactor =
         forceScaleDownRequest.newReplicationFactor();
     if (optionalNewReplicationFactor.isPresent()) {
-      final var failedFuture = executor.<ClusterConfigurationChangeResponse>createFuture();
       final String errorMessage =
           String.format(
               "The replication factor cannot be changed to requested value '%s' during force scale down. It will be automatically changed based on which brokers are removed. Do not provide any replication factor in the request",
               optionalNewReplicationFactor.get());
-      failedFuture.completeExceptionally(new InvalidRequest(errorMessage));
-      return failedFuture;
+      return CompletableActorFuture.completedExceptionally(new InvalidRequest(errorMessage));
     }
 
     return handleRequest(
@@ -143,7 +145,6 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> scaleCluster(
       final ClusterScaleRequest clusterScaleRequest) {
-
     return handleRequest(
         clusterScaleRequest.dryRun(),
         new ClusterScaleRequestTransformer(
@@ -156,7 +157,6 @@ public final class ClusterConfigurationManagementRequestsHandler
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> patchCluster(
       final ClusterPatchRequest clusterPatchRequest) {
-
     return handleRequest(
         clusterPatchRequest.dryRun(),
         new ClusterPatchRequestTransformer(
@@ -182,8 +182,15 @@ public final class ClusterConfigurationManagementRequestsHandler
   }
 
   @Override
-  public ActorFuture<ClusterConfigurationChangeResponse> purge(final PurgeRequest purgeRequest) {
+  public ActorFuture<ClusterConfigurationChangeResponse> migrateZone(
+      final ClusterZoneMigrationRequest zoneMigrationRequest) {
+    return handleRequest(
+        zoneMigrationRequest.dryRun(),
+        new ZoneMigrationRequestTransformer(zoneMigrationRequest.zone()));
+  }
 
+  @Override
+  public ActorFuture<ClusterConfigurationChangeResponse> purge(final PurgeRequest purgeRequest) {
     return handleRequest(purgeRequest.dryRun(), new PurgeRequestTransformer());
   }
 
@@ -241,15 +248,8 @@ public final class ClusterConfigurationManagementRequestsHandler
 
   @Override
   public ActorFuture<ClusterConfigurationChangeResponse> restore(final RestoreRequest request) {
-    return handleRequest(request.dryRun(), new RestoreRequestTransformer(request));
-  }
-
-  @Override
-  public ActorFuture<ClusterConfigurationChangeResponse> migrateZone(
-      final ClusterZoneMigrationRequest zoneMigrationRequest) {
     return handleRequest(
-        zoneMigrationRequest.dryRun(),
-        new ZoneMigrationRequestTransformer(zoneMigrationRequest.zone()));
+        request.dryRun(), new RestoreRequestTransformer(request, validatorRegistry));
   }
 
   private ActorFuture<ClusterConfigurationChangeResponse> handleRequest(

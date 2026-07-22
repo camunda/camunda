@@ -19,11 +19,13 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -131,6 +133,7 @@ public final class RecoveryPartitionManager
           if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
             clusterConfigurationService.removePartitionChangeExecutor();
           }
+          clusterConfigurationService.removeRequestValidator(partitionGroup, RestoreRequest.class);
           stopInternal(result);
         });
     return result;
@@ -152,6 +155,9 @@ public final class RecoveryPartitionManager
       result.completeExceptionally(e);
       return;
     }
+
+    clusterConfigurationService.registerRequestValidator(
+        partitionGroup, new RestoreValidator(backupStore));
 
     final var startFutures = new ArrayList<ActorFuture<Void>>();
     for (final var partitionMetadata : localPartitions) {

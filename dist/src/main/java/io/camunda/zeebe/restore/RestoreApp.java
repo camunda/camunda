@@ -14,6 +14,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.UnifiedConfigurationModule;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -23,9 +24,9 @@ import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.RestoreParameterValidator;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
+import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
@@ -231,9 +232,21 @@ public class RestoreApp implements ApplicationRunner {
     final var continuousBackups = camunda.getData().getPrimaryStorage().getBackup().isContinuous();
     final var fromStr = from != null ? from.toString() : null;
     final var toStr = to != null ? to.toString() : null;
+    // TODO: Backwards compatibility of RestoreApp request tenantId as input
     final var restoreRequest =
-        new RestoreRequest(backupIds, fromStr, toStr, databaseType, continuousBackups, false);
-    RestoreParameterValidator.validate(restoreRequest);
+        new RestoreRequest(
+            PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+            backupIds,
+            fromStr,
+            toStr,
+            databaseType,
+            continuousBackups,
+            false);
+    final RestoreValidator validator = new RestoreValidator(backupStore);
+    final var result = validator.validate(restoreRequest);
+    if (result.isLeft()) {
+      throw (RuntimeException) result.getLeft();
+    }
   }
 
   private boolean hasTimeRange() {
