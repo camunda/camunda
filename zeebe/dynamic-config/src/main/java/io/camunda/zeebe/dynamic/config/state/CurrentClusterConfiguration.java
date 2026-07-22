@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
@@ -16,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -51,9 +52,9 @@ public record CurrentClusterConfiguration(
   public static final String DEFAULT_GROUP = "default";
 
   public CurrentClusterConfiguration {
-    Objects.requireNonNull(globalConfiguration, "globalConfiguration must not be null");
-    Objects.requireNonNull(partitionGroups, "partitionGroups must not be null");
-    Objects.requireNonNull(phasedChangeState, "phasedChangeState must not be null");
+    requireNonNull(globalConfiguration, "globalConfiguration must not be null");
+    requireNonNull(partitionGroups, "partitionGroups must not be null");
+    requireNonNull(phasedChangeState, "phasedChangeState must not be null");
     partitionGroups = Map.copyOf(partitionGroups);
   }
 

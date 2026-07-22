@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -58,7 +60,7 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
                   memberId)));
     }
 
-    final MemberState member = currentClusterConfiguration.getMember(memberId);
+    final MemberState member = requireNonNull(currentClusterConfiguration.getMember(memberId));
     final var partitionExistsInLocalMember = member.hasPartition(partitionId);
 
     if (!partitionExistsInLocalMember) {
@@ -70,7 +72,8 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
     }
 
     final var exportersInPartition =
-        member.getPartition(partitionId).config().exporting().exporters();
+        requireNonNull(requireNonNull(member.getPartition(partitionId)).config().exporting())
+            .exporters();
 
     if (initializeFrom.isPresent()) {
       final String otherExporterId = initializeFrom.orElseThrow();
@@ -82,7 +85,7 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
                     "Expected to enable exporter and initialize from exporter '%s', but the partition '%s' does not have exporter '%s'",
                     otherExporterId, partitionId, otherExporterId)));
       } else {
-        final var otherExporter = exportersInPartition.get(otherExporterId);
+        final var otherExporter = requireNonNull(exportersInPartition.get(otherExporterId));
         if (otherExporter.state() == State.DISABLED) {
           return Either.left(
               new IllegalStateException(
@@ -95,7 +98,8 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
 
     final var partitionHasExporter = exportersInPartition.containsKey(exporterId);
 
-    if (partitionHasExporter && exportersInPartition.get(exporterId).state() == State.ENABLED) {
+    final var exporter = partitionHasExporter ? exportersInPartition.get(exporterId) : null;
+    if (partitionHasExporter && requireNonNull(exporter).state() == State.ENABLED) {
       return Either.left(
           new IllegalStateException(
               String.format(
@@ -108,7 +112,7 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
       // whether the runtime state has the latest state. This is useful when the operation is
       // retried or if there was restart without a snapshot after a sequence of disable, enable
       // operations.
-      metadataVersionToUpdate = exportersInPartition.get(exporterId).metadataVersion() + 1;
+      metadataVersionToUpdate = requireNonNull(exporter).metadataVersion() + 1;
     } else {
       metadataVersionToUpdate = 1;
     }
@@ -129,8 +133,10 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
           if (error == null) {
             result.complete(
                 memberState ->
-                    memberState.updatePartition(
-                        partitionId, partition -> partition.updateConfig(this::enableExporter)));
+                    requireNonNull(memberState)
+                        .updatePartition(
+                            partitionId,
+                            partition -> partition.updateConfig(this::enableExporter)));
           } else {
             result.completeExceptionally(error);
           }
@@ -145,7 +151,8 @@ final class PartitionEnableExporterApplier implements MemberOperationApplier {
             initializeFrom
                 .map(
                     otherExporterId ->
-                        c.enableExporter(exporterId, otherExporterId, metadataVersionToUpdate))
-                .orElse(c.enableExporter(exporterId, metadataVersionToUpdate)));
+                        requireNonNull(c)
+                            .enableExporter(exporterId, otherExporterId, metadataVersionToUpdate))
+                .orElse(requireNonNull(c).enableExporter(exporterId, metadataVersionToUpdate)));
   }
 }

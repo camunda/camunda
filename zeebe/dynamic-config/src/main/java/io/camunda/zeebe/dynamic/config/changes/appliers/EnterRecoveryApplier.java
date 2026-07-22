@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
@@ -46,7 +48,8 @@ public final class EnterRecoveryApplier implements PartitionGroupConfigurationCh
       final PartitionGroupConfiguration currentPartitionGroupConfiguration) {
     final boolean localMemberIsActiveInCluster =
         currentGlobalConfiguration.hasMember(memberId)
-            && currentGlobalConfiguration.getMember(memberId).state() == BrokerState.State.ACTIVE;
+            && requireNonNull(currentGlobalConfiguration.getMember(memberId)).state()
+                == BrokerState.State.ACTIVE;
     if (!localMemberIsActiveInCluster) {
       return Either.left(
           new IllegalStateException(

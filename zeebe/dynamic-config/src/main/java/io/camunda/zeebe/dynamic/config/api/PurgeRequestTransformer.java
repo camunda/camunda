@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -52,7 +54,7 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
         final var partitionId = partitions.getKey();
         operations.add(new PartitionLeaveOperation(memberId, partitionId, 0));
 
-        final var primaryForPartition = primaries.get(partitionId);
+        final var primaryForPartition = requireNonNull(primaries.get(partitionId));
 
         if (!primaryForPartition.memberId().equals(memberId)) {
           followers

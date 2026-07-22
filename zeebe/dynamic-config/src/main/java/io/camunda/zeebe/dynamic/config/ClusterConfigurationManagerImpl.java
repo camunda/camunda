@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
@@ -24,6 +28,7 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,10 +60,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(1);
   private final ConcurrencyControl executor;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
-  private Consumer<ClusterConfiguration> configurationGossiper;
+  private @Nullable Consumer<ClusterConfiguration> configurationGossiper;
   private final ActorFuture<Void> startFuture;
-  private ConfigurationChangeAppliers changeAppliers;
-  private InconsistentConfigurationListener onInconsistentConfigurationDetected;
+  private @Nullable ConfigurationChangeAppliers changeAppliers;
+  private @Nullable InconsistentConfigurationListener onInconsistentConfigurationDetected;
   private final MemberId localMemberId;
   // Indicates whether there is a configuration change operation in progress on this member.
   private boolean onGoingConfigurationChangeOperation = false;
@@ -166,7 +171,8 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                   LOG.debug(
                       "Initialized cluster configuration '{}'",
                       persistedClusterConfiguration.getConfiguration());
-                  configurationGossiper.accept(persistedClusterConfiguration.getConfiguration());
+                  requireNonNull(configurationGossiper)
+                      .accept(persistedClusterConfiguration.getConfiguration());
                   setStarted();
                 } catch (final IOException e) {
                   startFuture.completeExceptionally(
@@ -179,7 +185,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private void setStarted() {
     if (!startFuture.isDone()) {
       initialized = true;
-      startFuture.complete(null);
+      startFuture.complete(unit());
     }
   }
 
@@ -192,7 +198,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                 receivedConfiguration);
             // When not started, do not update the local configuration. This is to avoid any race
             // condition between FileInitializer and concurrently received configuration via gossip.
-            configurationGossiper.accept(receivedConfiguration);
+            requireNonNull(configurationGossiper).accept(receivedConfiguration);
             return;
           }
           try {
@@ -218,7 +224,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
                       mergedConfiguration, oldConfiguration);
                 }
 
-                configurationGossiper.accept(mergedConfiguration);
+                requireNonNull(configurationGossiper).accept(mergedConfiguration);
                 applyConfigurationChangeOperation(mergedConfiguration);
               }
             }
@@ -235,7 +241,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       final ClusterConfiguration mergedConfiguration, final ClusterConfiguration oldConfiguration) {
     if (!mergedConfiguration.hasMember(localMemberId)
         && oldConfiguration.hasMember(localMemberId)
-        && oldConfiguration.getMember(localMemberId).state() == State.LEFT) {
+        && requireNonNull(oldConfiguration.getMember(localMemberId)).state() == State.LEFT) {
       // If the member has left, it's state will be removed from the configuration by another
       // member. See ClusterConfiguration#advance()
       return false;
@@ -270,7 +276,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     final var operation = mergedConfiguration.pendingChangesFor(localMemberId).orElseThrow();
     final var observer = topologyMetrics.observeOperation(operation);
     LOG.info("Applying configuration change operation {}", operation);
-    final var operationApplier = changeAppliers.getApplier(operation);
+    final var operationApplier = requireNonNull(changeAppliers).getApplier(operation);
     final var operationInitialized =
         operationApplier
             .init(mergedConfiguration)
@@ -360,7 +366,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     }
     try {
       persistedClusterConfiguration.update(configuration);
-      configurationGossiper.accept(configuration);
+      requireNonNull(configurationGossiper).accept(configuration);
       return Either.right(configuration);
     } catch (final Exception e) {
       return Either.left(e);

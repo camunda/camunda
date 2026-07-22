@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 import io.atomix.cluster.MemberId;
@@ -137,7 +139,8 @@ public class ForceScaleDownRequestTransformer implements ConfigurationChangeRequ
     for (final var partitionId : partitions) {
       partitionToMembersMap.put(partitionId, new TreeSet<>());
       for (final var member : membersToRetain) {
-        if (currentTopology.getMember(member).hasPartition(partitionId)) {
+        final var memberState = requireNonNull(currentTopology.getMember(member));
+        if (memberState.hasPartition(partitionId)) {
           partitionToMembersMap.computeIfPresent(
               partitionId,
               (ignore, members) -> {

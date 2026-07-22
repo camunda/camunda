@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeApplier;
@@ -47,7 +49,8 @@ public final class MemberJoinApplier implements GlobalConfigurationChangeApplier
       final CurrentClusterConfiguration currentClusterConfiguration) {
     final var currentGlobalConfiguration = currentClusterConfiguration.globalConfiguration();
     if (currentGlobalConfiguration.hasMember(memberId)) {
-      final var currentState = currentGlobalConfiguration.getMember(memberId).state();
+      final var currentState =
+          requireNonNull(currentGlobalConfiguration.getMember(memberId)).state();
       if (currentState != State.JOINING) {
         return Either.left(
             new IllegalStateException(

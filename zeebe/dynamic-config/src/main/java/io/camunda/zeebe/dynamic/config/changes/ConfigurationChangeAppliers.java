@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
@@ -64,7 +66,12 @@ public interface ConfigurationChangeAppliers {
     default Either<Exception, UnaryOperator<ClusterConfiguration>> init(
         final ClusterConfiguration currentClusterConfiguration) {
       return initMemberState(currentClusterConfiguration)
-          .map(transformer -> cluster -> cluster.updateMember(memberId(), transformer));
+          .map(
+              transformer ->
+                  cluster ->
+                      cluster.updateMember(
+                          memberId(),
+                          memberState -> transformer.apply(requireNonNull(memberState))));
     }
 
     @Override
@@ -74,7 +81,11 @@ public interface ConfigurationChangeAppliers {
           .onComplete(
               (transformer, error) -> {
                 if (error == null) {
-                  future.complete(cluster -> cluster.updateMember(memberId(), transformer));
+                  future.complete(
+                      cluster ->
+                          cluster.updateMember(
+                              memberId(),
+                              memberState -> transformer.apply(requireNonNull(memberState))));
                 } else {
                   future.completeExceptionally(error);
                 }

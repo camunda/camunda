@@ -9,12 +9,13 @@ package io.camunda.zeebe.dynamic.config.gossip;
 
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 public final class ClusterConfigurationGossipState {
   // TODO: This should also tracks the BrokerInfo which is currently in SWIM member.properties
-  private ClusterConfiguration clusterConfiguration;
+  private @Nullable ClusterConfiguration clusterConfiguration;
 
-  public ClusterConfiguration getClusterConfiguration() {
+  public @Nullable ClusterConfiguration getClusterConfiguration() {
     return clusterConfiguration;
   }
 

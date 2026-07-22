@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -21,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A Partition Join operation is executed when a member wants to start replicating a partition. This
@@ -31,8 +34,9 @@ final class PartitionJoinApplier implements MemberOperationApplier {
   private final int priority;
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final MemberId localMemberId;
-  private Map<MemberId, Integer> partitionMembersWithPriority;
-  private DynamicPartitionConfig partitionConfig;
+  // initialized in initMemberState
+  private @Nullable Map<MemberId, Integer> partitionMembersWithPriority;
+  private @Nullable DynamicPartitionConfig partitionConfig;
 
   PartitionJoinApplier(
       final int partitionId,
@@ -54,59 +58,71 @@ final class PartitionJoinApplier implements MemberOperationApplier {
   public Either<Exception, UnaryOperator<MemberState>> initMemberState(
       final ClusterConfiguration currentClusterConfiguration) {
 
-    final boolean localMemberIsActive =
-        currentClusterConfiguration.hasMember(localMemberId)
-            && currentClusterConfiguration.getMember(localMemberId).state() == State.ACTIVE;
-    if (!localMemberIsActive) {
-      return Either.left(
-          new IllegalStateException(
-              "Expected to join partition, but the local member is not active"));
-    }
+    try {
+      final boolean localMemberIsActive =
+          currentClusterConfiguration.hasMember(localMemberId)
+              && requireNonNull(currentClusterConfiguration.getMember(localMemberId)).state()
+                  == State.ACTIVE;
+      if (!localMemberIsActive) {
+        return Either.left(
+            new IllegalStateException(
+                "Expected to join partition, but the local member is not active"));
+      }
 
-    final var partitionHasActiveMember =
-        currentClusterConfiguration.members().values().stream()
-            .flatMap(
-                memberState ->
-                    memberState.partitions().entrySet().stream()
-                        .filter(partitionState -> partitionState.getKey() == partitionId)
-                        .map(Entry::getValue))
-            .anyMatch(partitionState -> partitionState.state() == PartitionState.State.ACTIVE);
-    if (!partitionHasActiveMember) {
-      return Either.left(
-          new IllegalStateException(
-              String.format(
-                  "Expected to join partition %s, but partition has no active members",
-                  partitionId)));
-    }
+      final var partitionHasActiveMember =
+          currentClusterConfiguration.members().values().stream()
+              .flatMap(
+                  memberState ->
+                      memberState.partitions().entrySet().stream()
+                          .filter(partitionState -> partitionState.getKey() == partitionId)
+                          .map(Entry::getValue))
+              .anyMatch(partitionState -> partitionState.state() == PartitionState.State.ACTIVE);
+      if (!partitionHasActiveMember) {
+        return Either.left(
+            new IllegalStateException(
+                String.format(
+                    "Expected to join partition %s, but partition has no active members",
+                    partitionId)));
+      }
 
-    final MemberState localMemberState = currentClusterConfiguration.getMember(localMemberId);
-    final boolean partitionExistsInLocalMember = localMemberState.hasPartition(partitionId);
-    if (partitionExistsInLocalMember
-        && localMemberState.getPartition(partitionId).state() != PartitionState.State.JOINING) {
-      return Either.left(
-          new IllegalStateException(
-              String.format(
-                  "Expected to join partition %s, but the local member already has the partition at state %s",
-                  partitionId, localMemberState.partitions().get(partitionId).state())));
-    }
+      final MemberState localMemberState =
+          requireNonNull(currentClusterConfiguration.getMember(localMemberId));
+      final boolean partitionExistsInLocalMember = localMemberState.hasPartition(partitionId);
+      if (partitionExistsInLocalMember
+          && requireNonNull(localMemberState.getPartition(partitionId)).state()
+              != PartitionState.State.JOINING) {
+        return Either.left(
+            new IllegalStateException(
+                String.format(
+                    "Expected to join partition %s, but the local member already has the partition at state %s",
+                    partitionId,
+                    requireNonNull(localMemberState.getPartition(partitionId)).state())));
+      }
 
-    // Collect the priority of each member, including the local member. This is needed to generate
-    // PartitionMetadata when joining the partition.
-    partitionMembersWithPriority = collectPriorityByMembers(currentClusterConfiguration);
+      // Collect the priority of each member, including the local member. This is needed to generate
+      // PartitionMetadata when joining the partition.
+      partitionMembersWithPriority = collectPriorityByMembers(currentClusterConfiguration);
 
-    if (partitionExistsInLocalMember
-        && localMemberState.getPartition(partitionId).state() == PartitionState.State.JOINING) {
-      // The state is already JOINING, so we don't need to change it. This can happen when the node
-      // was restarted while applying the join operation. To ensure that the configuration change
-      // can make progress, we do not treat this as an error.
-      partitionConfig = localMemberState.getPartition(partitionId).config();
-      return Either.right(memberState -> memberState);
-    } else {
-      partitionConfig = getPartitionConfig(currentClusterConfiguration);
-      return Either.right(
-          memberState ->
-              memberState.addPartition(
-                  partitionId, PartitionState.joining(priority, partitionConfig)));
+      if (partitionExistsInLocalMember
+          && requireNonNull(localMemberState.getPartition(partitionId)).state()
+              == PartitionState.State.JOINING) {
+        // The state is already JOINING, so we don't need to change it. This can happen when the
+        // node
+        // was restarted while applying the join operation. To ensure that the configuration change
+        // can make progress, we do not treat this as an error.
+        partitionConfig = requireNonNull(localMemberState.getPartition(partitionId)).config();
+        return Either.right(memberState -> memberState);
+      } else {
+        partitionConfig = getPartitionConfig(currentClusterConfiguration);
+        return Either.right(
+            memberState ->
+                requireNonNull(memberState)
+                    .addPartition(
+                        partitionId,
+                        PartitionState.joining(priority, requireNonNull(partitionConfig))));
+      }
+    } catch (final NullPointerException e) {
+      return Either.left(e);
     }
   }
 
@@ -115,19 +131,26 @@ final class PartitionJoinApplier implements MemberOperationApplier {
     final CompletableActorFuture<UnaryOperator<MemberState>> result =
         new CompletableActorFuture<>();
 
-    partitionChangeExecutor
-        .join(partitionId, partitionMembersWithPriority, partitionConfig)
-        .onComplete(
-            (ignore, error) -> {
-              if (error == null) {
-                result.complete(
-                    memberState ->
-                        memberState.updatePartition(partitionId, PartitionState::toActive));
-              } else {
-                result.completeExceptionally(error);
-              }
-            });
-    return result;
+    try {
+      partitionChangeExecutor
+          .join(
+              partitionId,
+              requireNonNull(partitionMembersWithPriority),
+              requireNonNull(partitionConfig))
+          .onComplete(
+              (ignore, error) -> {
+                if (error == null) {
+                  result.complete(
+                      memberState ->
+                          memberState.updatePartition(partitionId, PartitionState::toActive));
+                } else {
+                  result.completeExceptionally(error);
+                }
+              });
+      return result;
+    } catch (final NullPointerException e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
   }
 
   private DynamicPartitionConfig getPartitionConfig(

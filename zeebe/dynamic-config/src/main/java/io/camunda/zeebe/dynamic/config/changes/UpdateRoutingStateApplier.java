@@ -15,6 +15,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.function.UnaryOperator;
+import org.jspecify.annotations.Nullable;
 
 public class UpdateRoutingStateApplier implements ClusterOperationApplier {
 
@@ -35,10 +36,14 @@ public class UpdateRoutingStateApplier implements ClusterOperationApplier {
 
   @Override
   public ActorFuture<UnaryOperator<ClusterConfiguration>> apply() {
-    final var routingState =
-        updateRoutingState.routingState().isPresent()
-            ? CompletableActorFuture.completed(updateRoutingState.routingState().get())
-            : executor.getRoutingState();
+    final ActorFuture<@Nullable RoutingState> routingState;
+    if (updateRoutingState.routingState().isPresent()) {
+      routingState =
+          CompletableActorFuture.<@Nullable RoutingState>completed(
+              updateRoutingState.routingState().get());
+    } else {
+      routingState = executor.getRoutingState();
+    }
 
     return routingState.thenApply(
         state -> {

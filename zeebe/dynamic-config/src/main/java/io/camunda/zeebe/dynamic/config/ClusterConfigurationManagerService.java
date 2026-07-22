@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
@@ -43,8 +45,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
@@ -62,7 +64,7 @@ public final class ClusterConfigurationManagerService
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
   private final MemberId localMemberId;
-  private ModeChangeExecutor modeChangeExecutor;
+  private @Nullable ModeChangeExecutor modeChangeExecutor;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -140,7 +142,9 @@ public final class ClusterConfigurationManagerService
                 managerActor))
         .andThen(
             new ExporterStateInitializer(
-                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                requireNonNull(staticConfiguration.partitionConfig().exporting())
+                    .exporters()
+                    .keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor,
                 false))
@@ -170,7 +174,9 @@ public final class ClusterConfigurationManagerService
         .orThen(new StaticInitializer(staticConfiguration))
         .andThen(
             new ExporterStateInitializer(
-                staticConfiguration.partitionConfig().exporting().exporters().keySet(),
+                requireNonNull(staticConfiguration.partitionConfig().exporting())
+                    .exporters()
+                    .keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor,
                 true))
@@ -250,7 +256,7 @@ public final class ClusterConfigurationManagerService
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
     managerActor.run(
         () -> {
-          Objects.requireNonNull(
+          requireNonNull(
               modeChangeExecutor,
               "ModeChangeExecutor not set before registering topology appliers.");
           clusterConfigurationManager.registerTopologyChangeAppliers(

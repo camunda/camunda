@@ -13,50 +13,51 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 
 public final class NoopPartitionChangeExecutor implements PartitionChangeExecutor {
 
   @Override
   public ActorFuture<Void> join(
       final int partitionId,
-      final Map<MemberId, Integer> membersWithPriority,
-      final DynamicPartitionConfig config) {
-    return CompletableActorFuture.completed(null);
+      final @Nullable Map<MemberId, Integer> membersWithPriority,
+      final @Nullable DynamicPartitionConfig config) {
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> leave(final int partitionId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> bootstrap(
       final int partitionId,
       final int priority,
-      final DynamicPartitionConfig partitionConfig,
+      final @Nullable DynamicPartitionConfig partitionConfig,
       final boolean initializeFromSnapshot) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> reconfigurePriority(final int partitionId, final int newPriority) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> forceReconfigure(
       final int partitionId, final Collection<MemberId> members) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> disableExporter(final int partitionId, final String exporterId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
   public ActorFuture<Void> deleteExporter(final int partitionId, final String exporterId) {
-    return CompletableActorFuture.completed(null);
+    return CompletableActorFuture.completed();
   }
 
   @Override
@@ -64,7 +65,7 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
       final int partitionId,
       final String exporterId,
       final long metadataVersionToUpdate,
-      final String initializeFrom) {
-    return CompletableActorFuture.completed(null);
+      final @Nullable String initializeFrom) {
+    return CompletableActorFuture.completed();
   }
 }

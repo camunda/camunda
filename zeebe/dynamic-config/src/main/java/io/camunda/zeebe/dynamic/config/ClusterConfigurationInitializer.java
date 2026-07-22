@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -259,14 +260,14 @@ public interface ClusterConfigurationInitializer {
     private final ActorFuture<ClusterConfiguration> initialized;
     private final List<MemberId> knownMembersToSync;
     private final ConcurrencyControl executor;
-    private final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester;
+    private final Function<MemberId, ActorFuture<@Nullable ClusterConfiguration>> syncRequester;
 
     public SyncInitializer(
         final Duration syncDelay,
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
         final List<MemberId> knownMembersToSync,
         final ConcurrencyControl executor,
-        final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester) {
+        final Function<MemberId, ActorFuture<@Nullable ClusterConfiguration>> syncRequester) {
       this.syncDelay = syncDelay;
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.knownMembersToSync = knownMembersToSync;
@@ -320,7 +321,7 @@ public interface ClusterConfigurationInitializer {
               });
     }
 
-    private ActorFuture<ClusterConfiguration> requestSync(final MemberId memberId) {
+    private ActorFuture<@Nullable ClusterConfiguration> requestSync(final MemberId memberId) {
       return syncRequester.apply(memberId);
     }
 

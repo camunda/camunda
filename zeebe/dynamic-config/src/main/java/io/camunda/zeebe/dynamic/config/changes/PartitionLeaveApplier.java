@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -44,7 +46,8 @@ record PartitionLeaveApplier(
     }
 
     final boolean partitionExistsInLocalMember =
-        currentClusterConfiguration.getMember(localMemberId).hasPartition(partitionId);
+        requireNonNull(currentClusterConfiguration.getMember(localMemberId))
+            .hasPartition(partitionId);
 
     if (!partitionExistsInLocalMember) {
       return Either.left(
@@ -55,7 +58,10 @@ record PartitionLeaveApplier(
     }
 
     final boolean partitionIsLeaving =
-        currentClusterConfiguration.getMember(localMemberId).getPartition(partitionId).state()
+        requireNonNull(
+                    requireNonNull(currentClusterConfiguration.getMember(localMemberId))
+                        .getPartition(partitionId))
+                .state()
             == PartitionState.State.LEAVING;
 
     if (partitionIsLeaving) {
@@ -77,7 +83,8 @@ record PartitionLeaveApplier(
                     partitionId, partitionReplicaCount, minimumAllowedReplicas)));
       }
       return Either.right(
-          memberState -> memberState.updatePartition(partitionId, PartitionState::toLeaving));
+          memberState ->
+              requireNonNull(memberState).updatePartition(partitionId, PartitionState::toLeaving));
     }
   }
 

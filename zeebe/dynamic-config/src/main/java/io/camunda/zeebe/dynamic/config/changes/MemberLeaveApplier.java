@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -45,16 +47,17 @@ public class MemberLeaveApplier implements MemberOperationApplier {
     }
 
     final boolean hasPartitions =
-        !currentClusterConfiguration.getMember(memberId).partitions().isEmpty();
+        !requireNonNull(currentClusterConfiguration.getMember(memberId)).partitions().isEmpty();
     if (hasPartitions) {
       return Either.left(
           new IllegalStateException(
               String.format(
                   "Expected to remove member %s, but the member still has partitions assigned. Partitions: [%s]",
-                  memberId, currentClusterConfiguration.getMember(memberId).partitions())));
+                  memberId,
+                  requireNonNull(currentClusterConfiguration.getMember(memberId)).partitions())));
     }
 
-    return Either.right(MemberState::toLeaving);
+    return Either.right(memberState -> requireNonNull(memberState).toLeaving());
   }
 
   @Override

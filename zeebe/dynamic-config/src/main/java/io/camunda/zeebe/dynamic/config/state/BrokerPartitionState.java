@@ -7,11 +7,12 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableSortedMap;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.SortedMap;
 import java.util.function.UnaryOperator;
 import org.jspecify.annotations.NullMarked;
@@ -50,8 +51,8 @@ public record BrokerPartitionState(
     long version, Instant lastUpdated, SortedMap<Integer, PartitionState> partitions, Mode mode) {
 
   public BrokerPartitionState {
-    Objects.requireNonNull(mode, "mode must not be null");
-    Objects.requireNonNull(lastUpdated, "lastUpdated must not be null");
+    requireNonNull(mode, "mode must not be null");
+    requireNonNull(lastUpdated, "lastUpdated must not be null");
     partitions = ImmutableSortedMap.copyOf(partitions);
   }
 

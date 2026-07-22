@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * An executor that supports partition scaling and monitoring progress of redistribution and
@@ -27,11 +28,11 @@ public interface PartitionScalingChangeExecutor {
   ActorFuture<Void> initiateScaleUp(int desiredPartitionCount);
 
   ActorFuture<Void> awaitRedistributionCompletion(
-      int desiredPartitionCount, Set<Integer> redistributedPartitions, Duration timeout);
+      int desiredPartitionCount, Set<Integer> redistributedPartitions, @Nullable Duration timeout);
 
   ActorFuture<Void> notifyPartitionBootstrapped(int partitionId);
 
-  ActorFuture<RoutingState> getRoutingState();
+  ActorFuture<@Nullable RoutingState> getRoutingState();
 
   final class NoopPartitionScalingChangeExecutor implements PartitionScalingChangeExecutor {
     @Override
@@ -43,7 +44,7 @@ public interface PartitionScalingChangeExecutor {
     public ActorFuture<Void> awaitRedistributionCompletion(
         final int desiredPartitionCount,
         final Set<Integer> redistributedPartitions,
-        final Duration timeout) {
+        final @Nullable Duration timeout) {
       return CompletableActorFuture.completed();
     }
 
@@ -53,7 +54,7 @@ public interface PartitionScalingChangeExecutor {
     }
 
     @Override
-    public ActorFuture<RoutingState> getRoutingState() {
+    public ActorFuture<@Nullable RoutingState> getRoutingState() {
       return CompletableActorFuture.completed(null);
     }
   }

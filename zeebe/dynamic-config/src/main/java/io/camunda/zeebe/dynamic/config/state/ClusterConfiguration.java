@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.state;
 
+import static java.util.Objects.requireNonNull;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import io.atomix.cluster.MemberId;
@@ -26,6 +28,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Represents the cluster configuration which describes the current active, joining or leaving
@@ -80,12 +83,12 @@ public record ClusterConfiguration(
           String.format("Version must be >= %d", UNINITIALIZED_VERSION));
     }
 
-    Objects.requireNonNull(members);
-    Objects.requireNonNull(lastChange);
-    Objects.requireNonNull(pendingChanges);
-    Objects.requireNonNull(routingState);
-    Objects.requireNonNull(clusterId);
-    Objects.requireNonNull(partitionDistributorConfig);
+    requireNonNull(members);
+    requireNonNull(lastChange);
+    requireNonNull(pendingChanges);
+    requireNonNull(routingState);
+    requireNonNull(clusterId);
+    requireNonNull(partitionDistributorConfig);
     if (incarnationNumber < 0) {
       throw new IllegalArgumentException("Incarnation number must be >= 0");
     }
@@ -185,7 +188,7 @@ public record ClusterConfiguration(
    * @return the updated ClusterConfiguration
    */
   public ClusterConfiguration updateMember(
-      final MemberId memberId, final UnaryOperator<MemberState> memberStateUpdater) {
+      final MemberId memberId, final UnaryOperator<@Nullable MemberState> memberStateUpdater) {
     final MemberState currentState = members.get(memberId);
     final var updateMemberState = memberStateUpdater.apply(currentState);
 
@@ -422,7 +425,7 @@ public record ClusterConfiguration(
     return members().containsKey(memberId);
   }
 
-  public MemberState getMember(final MemberId memberId) {
+  public @Nullable MemberState getMember(final MemberId memberId) {
     return members().get(memberId);
   }
 
@@ -488,8 +491,8 @@ public record ClusterConfiguration(
         .max(
             (e1, e2) ->
                 Integer.compare(
-                    e1.getValue().getPartition(partitionId).priority(),
-                    e2.getValue().getPartition(partitionId).priority()))
+                    requireNonNull(e1.getValue().getPartition(partitionId)).priority(),
+                    requireNonNull(e2.getValue().getPartition(partitionId)).priority()))
         .map(Entry::getKey);
   }
 

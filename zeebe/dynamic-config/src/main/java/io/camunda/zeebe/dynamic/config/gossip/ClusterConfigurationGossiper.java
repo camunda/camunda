@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.gossip;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -29,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +81,7 @@ public final class ClusterConfigurationGossiper
     executor.run(
         () -> {
           internalStart();
-          startedFuture.complete(null);
+          startedFuture.complete(unit());
         });
     return startedFuture;
   }
@@ -210,8 +213,9 @@ public final class ClusterConfigurationGossiper
         });
   }
 
-  public ActorFuture<ClusterConfiguration> queryClusterConfiguration(final MemberId memberId) {
-    final ActorFuture<ClusterConfiguration> responseFuture = executor.createFuture();
+  public ActorFuture<@Nullable ClusterConfiguration> queryClusterConfiguration(
+      final MemberId memberId) {
+    final ActorFuture<@Nullable ClusterConfiguration> responseFuture = executor.createFuture();
     sendSyncRequest(memberId)
         .whenCompleteAsync(
             (response, error) -> {

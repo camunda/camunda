@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
 import static io.camunda.zeebe.dynamic.config.state.ExporterState.State.CONFIG_NOT_FOUND;
+import static java.util.Objects.requireNonNull;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
@@ -64,7 +65,7 @@ public final class PartitionDeleteExporterApplier
                   .formatted(memberId, partitionId)));
     }
 
-    final var exporters = localPartition.config().exporting().exporters();
+    final var exporters = requireNonNull(localPartition.config().exporting()).exporters();
     final var exporterState = exporters.get(exporterId);
     if (exporterState == null) {
       return Either.left(
@@ -101,6 +102,7 @@ public final class PartitionDeleteExporterApplier
   }
 
   private DynamicPartitionConfig deleteExporter(final DynamicPartitionConfig config) {
-    return config.updateExporting(exporting -> exporting.deleteExporter(exporterId));
+    return config.updateExporting(
+        exporting -> requireNonNull(exporting).deleteExporter(exporterId));
   }
 }

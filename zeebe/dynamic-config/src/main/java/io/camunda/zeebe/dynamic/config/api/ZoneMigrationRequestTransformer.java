@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.ZoneLayout;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
@@ -155,7 +157,7 @@ public final class ZoneMigrationRequestTransformer implements ConfigurationChang
                   zoneName, zones.size())));
     }
 
-    return Either.right(null);
+    return Either.right(unit());
   }
 
   private int expectedNextZoneIndex(

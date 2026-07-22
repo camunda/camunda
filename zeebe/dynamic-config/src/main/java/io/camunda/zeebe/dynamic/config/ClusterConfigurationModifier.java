@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * After the configuration is initialized, we can use a {@link ClusterConfigurationModifier} to
@@ -38,7 +39,7 @@ public interface ClusterConfigurationModifier {
    */
   ActorFuture<ClusterConfiguration> modify(ClusterConfiguration configuration);
 
-  record ExecutionFilter(boolean coordinatorOnly, MemberId localMemberId) {
+  record ExecutionFilter(boolean coordinatorOnly, @Nullable MemberId localMemberId) {
     public boolean canRunInitializer(final Collection<MemberId> clusterMembers) {
       if (!coordinatorOnly) {
         return true;
@@ -46,7 +47,7 @@ public interface ClusterConfigurationModifier {
       final var coordinator =
           ClusterConfigurationCoordinatorSupplier.ofMembers(Set.copyOf(clusterMembers))
               .getDefaultCoordinator();
-      return coordinator.equals(localMemberId);
+      return localMemberId != null && coordinator.equals(localMemberId);
     }
 
     public boolean canRunInitializer(final ClusterConfiguration configuration) {

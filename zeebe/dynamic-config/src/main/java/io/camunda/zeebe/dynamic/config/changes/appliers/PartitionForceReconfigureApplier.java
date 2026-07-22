@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.dynamic.config.changes.appliers;
 
+import static java.util.Objects.requireNonNull;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeApplier;
@@ -68,7 +70,8 @@ public final class PartitionForceReconfigureApplier
     for (final MemberId member : members) {
       final boolean memberIsActive =
           currentGlobalConfiguration.hasMember(member)
-              && currentGlobalConfiguration.getMember(member).state() == BrokerState.State.ACTIVE;
+              && requireNonNull(currentGlobalConfiguration.getMember(member)).state()
+                  == BrokerState.State.ACTIVE;
       if (!memberIsActive) {
         return Either.left(
             new IllegalStateException(
@@ -110,7 +113,8 @@ public final class PartitionForceReconfigureApplier
     // remove this partition from the state of non-members
     var updatedGroup = group;
     for (final var member : group.members().keySet()) {
-      if (!members.contains(member) && group.getMember(member).hasPartition(partitionId)) {
+      if (!members.contains(member)
+          && requireNonNull(group.getMember(member)).hasPartition(partitionId)) {
         updatedGroup =
             updatedGroup.updateMember(member, broker -> broker.removePartition(partitionId));
       }
