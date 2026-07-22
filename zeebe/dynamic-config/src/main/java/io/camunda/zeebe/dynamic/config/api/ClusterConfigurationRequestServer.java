@@ -277,6 +277,10 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
               new ErrorResponse(ErrorCode.OPERATION_NOT_ALLOWED, operationNotAllowed.getMessage()));
       case final ClusterConfigurationRequestFailedException.InvalidRequest invalidRequest ->
           Either.left(new ErrorResponse(ErrorCode.INVALID_REQUEST, invalidRequest.getMessage()));
+      case final ClusterConfigurationRequestFailedException.InvalidState invalidState ->
+          Either.left(new ErrorResponse(ErrorCode.INVALID_STATE, invalidState.getMessage()));
+      case final ClusterConfigurationRequestFailedException.NotFound notFound ->
+          Either.left(new ErrorResponse(ErrorCode.NOT_FOUND, notFound.getMessage()));
       case final ConcurrentModificationException concurrentModificationException ->
           Either.left(
               new ErrorResponse(

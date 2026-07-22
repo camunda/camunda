@@ -127,7 +127,8 @@ final class ClusterApiUtils {
     final var errorCode =
         switch (response.code()) {
           case INVALID_REQUEST, OPERATION_NOT_ALLOWED -> 400;
-          case CONCURRENT_MODIFICATION -> 409;
+          case NOT_FOUND -> 404;
+          case CONCURRENT_MODIFICATION, INVALID_STATE -> 409;
           case INTERNAL_ERROR -> 500;
         };
     final var error = new Error();
