@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStoreType;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.protocol.record.PartitionRole;
@@ -86,6 +87,8 @@ final class RecoveryPartitionManagerTest {
     clusterConfigurationService = mock(ClusterConfigurationService.class);
     when(clusterConfigurationService.getPartitionDistribution())
         .thenReturn(new PartitionDistribution(Set.of(metadata, metadata2)));
+    when(clusterConfigurationService.getCurrentClusterConfiguration())
+        .thenReturn(ClusterConfiguration.uninitialized());
 
     brokerInfo = new BrokerInfo(0, null, "localhost:26501").setPartitionGroup(GROUP);
     topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
