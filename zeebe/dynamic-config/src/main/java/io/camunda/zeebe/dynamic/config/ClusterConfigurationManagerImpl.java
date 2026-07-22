@@ -598,7 +598,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
           case final PartitionGroupParallelPhase parallelPhase ->
               parallelPhase.groupOperations().keySet().stream()
                   .map(config::partitionGroup)
-                  .allMatch(group -> group == null || !group.hasPendingChanges());
+                  .allMatch(group -> group != null && !group.hasPendingChanges());
         };
     if (!currentPhaseComplete) {
       return;
