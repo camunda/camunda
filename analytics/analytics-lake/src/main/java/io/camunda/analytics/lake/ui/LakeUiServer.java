@@ -111,24 +111,10 @@ public final class LakeUiServer implements AutoCloseable {
   private static final String ACTIVITIES_VIEW = "activities";
   private static final String OPEN_INSTANCES_VIEW = "open_instances";
   private static final String OPEN_ELEMENTS_VIEW = "open_elements";
-  // Gold-table views (see GoldTables) -- same snapshot-consistent, metadata-driven construction as
-  // INSTANCES_VIEW/ACTIVITIES_VIEW (see #ensureIcebergBackedView's javadoc): every one of these
-  // three tables is wholesale-replaced on each compaction pass, so a directory glob would double-
-  // count exactly the same way it would for the raw tables.
-  private static final String TRANSITIONS_VIEW = "transitions";
-  private static final String INSTANCE_KPIS_VIEW = "instance_kpis";
-  private static final String ELEMENT_BITS_VIEW = "element_bits";
 
   /** Every canned view {@link #ensureAllCannedViews()} knows how to (re)create. */
   private static final List<String> CANNED_VIEWS =
-      List.of(
-          INSTANCES_VIEW,
-          ACTIVITIES_VIEW,
-          OPEN_INSTANCES_VIEW,
-          OPEN_ELEMENTS_VIEW,
-          TRANSITIONS_VIEW,
-          INSTANCE_KPIS_VIEW,
-          ELEMENT_BITS_VIEW);
+      List.of(INSTANCES_VIEW, ACTIVITIES_VIEW, OPEN_INSTANCES_VIEW, OPEN_ELEMENTS_VIEW);
 
   private final HttpServer httpServer;
   private final ExecutorService requestExecutor;
@@ -152,9 +138,6 @@ public final class LakeUiServer implements AutoCloseable {
   private JdbcCatalog catalog;
   private Table instancesTable;
   private Table activitiesTable;
-  private Table transitionsTable;
-  private Table instanceKpisTable;
-  private Table elementBitsTable;
 
   public LakeUiServer(final int port, final Path warehouseDir, final Path stateDir) {
     this(port, warehouseDir, stateDir, null);
@@ -280,7 +263,7 @@ public final class LakeUiServer implements AutoCloseable {
 
   /**
    * {@code GET /api/process-map/catalog} -- the process picker's data source: every BPMN process id
-   * discovered on disk (see {@link BpmnCatalog}) that also has data in {@code instance_kpis}, plus
+   * discovered on disk (see {@link BpmnCatalog}) that also has data in {@code activities}, plus
    * (for the page's "no match" hint) every data process id and every directory that was scanned.
    */
   private void handleProcessMapCatalog(final HttpExchange exchange) throws IOException {
@@ -293,8 +276,8 @@ public final class LakeUiServer implements AutoCloseable {
     List<String> dataProcessIds;
     try {
       dataProcessIds =
-          viewExists(INSTANCE_KPIS_VIEW)
-              ? ProcessMapService.dataProcessIds(duckdb, INSTANCE_KPIS_VIEW)
+          viewExists(ACTIVITIES_VIEW)
+              ? ProcessMapService.dataProcessIds(duckdb, ACTIVITIES_VIEW)
               : List.of();
     } catch (final SQLException e) {
       dataProcessIds = List.of();
@@ -333,7 +316,7 @@ public final class LakeUiServer implements AutoCloseable {
 
   /**
    * {@code GET /api/process-map/model?process=<processId>} -- the BPMN XML plus its element/
-   * sequence-flow index and this process definition's cohort-filter dropdown options.
+   * sequence-flow index.
    */
   private void handleProcessMapModel(final HttpExchange exchange) throws IOException {
     if (!"GET".equals(exchange.getRequestMethod())) {
@@ -362,19 +345,6 @@ public final class LakeUiServer implements AutoCloseable {
       sendJson(exchange, jsonErrorObject("Failed to read BPMN file: " + e.getMessage()));
       return;
     }
-    List<ProcessMapService.CohortOption> cohortOptions = List.of();
-    if (viewExists(INSTANCE_KPIS_VIEW) && viewExists(ELEMENT_BITS_VIEW)) {
-      try {
-        final Optional<Long> defKey =
-            ProcessMapService.resolveProcessDefinitionKey(duckdb, INSTANCE_KPIS_VIEW, processId);
-        if (defKey.isPresent()) {
-          cohortOptions = ProcessMapService.cohortOptions(duckdb, ELEMENT_BITS_VIEW, defKey.get());
-        }
-      } catch (final SQLException e) {
-        LOG.debug("Failed to resolve cohort options for {}: {}", processId, e.getMessage());
-      }
-    }
-
     final String json =
         JsonSupport.object(
             List.of(
@@ -404,23 +374,13 @@ public final class LakeUiServer implements AutoCloseable {
                                 List.of(
                                     JsonSupport.stringMember("id", flow.id()),
                                     JsonSupport.stringMember("sourceRef", flow.sourceRef()),
-                                    JsonSupport.stringMember("targetRef", flow.targetRef()))))),
-                JsonSupport.member(
-                    "cohortOptions",
-                    JsonSupport.arrayOf(
-                        cohortOptions,
-                        opt ->
-                            JsonSupport.object(
-                                List.of(
-                                    JsonSupport.stringMember("elementId", opt.elementId()),
-                                    JsonSupport.numberMember("bit", opt.bit())))))));
+                                    JsonSupport.stringMember("targetRef", flow.targetRef())))))));
     sendJson(exchange, json);
   }
 
   /**
-   * {@code GET /api/process-map?process=<processId>[&skip=<elementId>|&visited=<elementId>]} --
-   * node badges (execution count + avg duration, over the cohort) and edge stats (n + avg gap,
-   * always all instances -- see {@link ProcessMapService}'s class javadoc for why).
+   * {@code GET /api/process-map?process=<processId>} -- node badges (execution count + avg
+   * duration) and edge stats (n + avg gap), both over every instance.
    */
   private void handleProcessMapData(final HttpExchange exchange) throws IOException {
     if (!"GET".equals(exchange.getRequestMethod())) {
@@ -433,57 +393,25 @@ public final class LakeUiServer implements AutoCloseable {
       sendPlainText(exchange, 400, "Missing required 'process' query parameter");
       return;
     }
-    final String skip = params.get("skip");
-    final String visited = params.get("visited");
-    final boolean hasSkip = skip != null && !skip.isBlank();
-    final boolean hasVisited = visited != null && !visited.isBlank();
-    if (hasSkip && hasVisited) {
-      sendPlainText(exchange, 400, "Specify at most one of 'skip' or 'visited', not both");
-      return;
-    }
-    final String mode = hasSkip ? "skip" : (hasVisited ? "visited" : "all");
-    final String element = hasSkip ? skip : (hasVisited ? visited : null);
 
     ensureAllCannedViews();
-    if (!viewExists(INSTANCE_KPIS_VIEW)
-        || !viewExists(TRANSITIONS_VIEW)
-        || !viewExists(ACTIVITIES_VIEW)) {
+    if (!viewExists(ACTIVITIES_VIEW)) {
       sendJson(
           exchange,
           jsonErrorObject(
-              "No gold-table data yet for process-map -- run the translator with compaction "
-                  + "enabled (or the GoldTablesStandaloneRunner) against this warehouse first."));
+              "No activities data yet for process-map -- run the translator against this "
+                  + "warehouse first."));
       return;
     }
 
     try {
-      final ProcessMapService.CohortResolution cohort =
-          ProcessMapService.resolveCohort(
-              duckdb, INSTANCE_KPIS_VIEW, ELEMENT_BITS_VIEW, processId, mode, element);
-      if (element != null && !cohort.available()) {
-        sendJson(exchange, jsonErrorObject(cohort.unavailableReason()));
-        return;
-      }
       final List<ProcessMapService.NodeStat> nodes =
-          ProcessMapService.nodeStats(
-              duckdb, ACTIVITIES_VIEW, INSTANCE_KPIS_VIEW, processId, cohort);
-      final List<ProcessMapService.EdgeStat> edges =
-          ProcessMapService.edgeStats(duckdb, TRANSITIONS_VIEW, processId);
+          ProcessMapService.nodeStats(duckdb, ACTIVITIES_VIEW, processId);
 
-      final String cohortJson =
-          JsonSupport.object(
-              List.of(
-                  JsonSupport.stringMember("mode", element == null ? "all" : mode),
-                  element == null
-                      ? JsonSupport.nullMember("element")
-                      : JsonSupport.stringMember("element", element),
-                  JsonSupport.numberMember("totalInstances", cohort.totalInstances()),
-                  JsonSupport.numberMember("cohortInstances", cohort.cohortInstances())));
       final String json =
           JsonSupport.object(
               List.of(
                   JsonSupport.stringMember("process", processId),
-                  JsonSupport.member("cohort", cohortJson),
                   JsonSupport.member(
                       "nodes",
                       JsonSupport.arrayOf(
@@ -495,21 +423,7 @@ public final class LakeUiServer implements AutoCloseable {
                                       JsonSupport.numberMember(
                                           "executionCount", n.executionCount()),
                                       JsonSupport.numberMember(
-                                          "avgDurationMs", n.avgDurationMs()))))),
-                  JsonSupport.member(
-                      "edges",
-                      JsonSupport.arrayOf(
-                          edges,
-                          e ->
-                              JsonSupport.object(
-                                  List.of(
-                                      JsonSupport.stringMember("from", e.fromElement()),
-                                      JsonSupport.stringMember("to", e.toElement()),
-                                      JsonSupport.numberMember("n", e.n()),
-                                      JsonSupport.numberMember("avgGapMs", e.avgGapMs()))))),
-                  JsonSupport.stringMember(
-                      "edgesScope",
-                      "all instances -- transitions is pre-aggregated and not cohort-filtered")));
+                                          "avgDurationMs", n.avgDurationMs())))))));
       sendJson(exchange, json);
     } catch (final SQLException e) {
       sendJson(exchange, jsonErrorObject(e.getMessage()));
@@ -554,18 +468,15 @@ public final class LakeUiServer implements AutoCloseable {
    */
   /**
    * (Re)creates every canned view this server knows how to serve -- the two metadata-driven raw
-   * views, the three metadata-driven gold views (see class javadoc's bullet list), and the two
-   * single-file open-state views -- skipping whichever aren't available yet. Shared by {@link
-   * #runGuarded} (the {@code /api/query}/dashboard path) and the {@code /process-map} handlers
-   * below, so both paths see exactly the same view set with no duplicated wiring.
+   * views and the two single-file open-state views -- skipping whichever aren't available yet.
+   * Shared by {@link #runGuarded} (the {@code /api/query}/dashboard path) and the {@code
+   * /process-map} handlers below, so both paths see exactly the same view set with no duplicated
+   * wiring.
    */
   private void ensureAllCannedViews() {
     ensureCatalogAndTablesLoaded();
     ensureIcebergBackedView(INSTANCES_VIEW, instancesTable);
     ensureIcebergBackedView(ACTIVITIES_VIEW, activitiesTable);
-    ensureIcebergBackedView(TRANSITIONS_VIEW, transitionsTable);
-    ensureIcebergBackedView(INSTANCE_KPIS_VIEW, instanceKpisTable);
-    ensureIcebergBackedView(ELEMENT_BITS_VIEW, elementBitsTable);
     ensureViewIfAvailable(
         OPEN_INSTANCES_VIEW,
         Files.isRegularFile(openInstancesFile),
@@ -673,11 +584,7 @@ public final class LakeUiServer implements AutoCloseable {
    * iceberg-core does not guarantee is safe.
    */
   private synchronized void ensureCatalogAndTablesLoaded() {
-    if (instancesTable != null
-        && activitiesTable != null
-        && transitionsTable != null
-        && instanceKpisTable != null
-        && elementBitsTable != null) {
+    if (instancesTable != null && activitiesTable != null) {
       return;
     }
     if (catalog == null) {
@@ -700,19 +607,6 @@ public final class LakeUiServer implements AutoCloseable {
     }
     if (activitiesTable == null) {
       activitiesTable = loadTableIfExists(namespace, ACTIVITIES_VIEW);
-    }
-    // Gold tables (see GoldTables) may not exist yet -- a fresh warehouse before its first
-    // compaction pass has none of the three. loadTableIfExists tolerates that (returns null), and
-    // this method retries on every request until they appear, exactly like the two raw tables did
-    // before compaction ever ran.
-    if (transitionsTable == null) {
-      transitionsTable = loadTableIfExists(namespace, TRANSITIONS_VIEW);
-    }
-    if (instanceKpisTable == null) {
-      instanceKpisTable = loadTableIfExists(namespace, INSTANCE_KPIS_VIEW);
-    }
-    if (elementBitsTable == null) {
-      elementBitsTable = loadTableIfExists(namespace, ELEMENT_BITS_VIEW);
     }
   }
 
@@ -1100,22 +994,6 @@ public final class LakeUiServer implements AutoCloseable {
                   ORDER BY activity_count DESC`,
           },
           {
-            id: 'top-variants',
-            title: 'Top 10 variants',
-            desc: "Each instance's ordered element-id sequence, grouped and counted.",
-            sql: `WITH sequences AS (
-                    SELECT instance_key, process_id, version,
-                           string_agg(element_id, ' -> ' ORDER BY started_at) AS variant
-                    FROM activities
-                    GROUP BY instance_key, process_id, version
-                  )
-                  SELECT process_id, version, variant, count(*) AS instance_count
-                  FROM sequences
-                  GROUP BY process_id, version, variant
-                  ORDER BY instance_count DESC
-                  LIMIT 10`,
-          },
-          {
             id: 'bottleneck-edges',
             title: 'Bottleneck edges',
             desc: 'Average gap between consecutive elements in the same instance.',
@@ -1313,9 +1191,6 @@ public final class LakeUiServer implements AutoCloseable {
         .tile-line { grid-column: span 2; }
         .tile-bars, .tile-pctl, .tile-region, .tile-spread { grid-column: span 1; }
         .tile-duration { grid-column: 1 / -1; }
-        .tile-stp { grid-column: 1 / -1; }
-        .tile-bottleneck { grid-column: span 2; }
-        .tile-rework { grid-column: span 1; }
         @media (max-width: 900px) {
           .grid { grid-template-columns: 1fr; }
           .tile-line { grid-column: span 1; }
@@ -1549,39 +1424,6 @@ public final class LakeUiServer implements AutoCloseable {
           <div class="chart-body" id="body-duration"></div>
         </div>
 
-        <div class="card tile-stp" id="tile-stp">
-          <h2>Straight-through rate</h2>
-          <p class="caption">Share of instances with zero rework (no element ran twice) &mdash; overall and per process. From <code>instance_kpis</code> only.</p>
-          <div class="tile-error" id="err-stp"></div>
-          <div class="chart-body" id="body-stp">
-            <div class="stat-row" style="margin-bottom:0.75rem;">
-              <div class="stat">
-                <p class="stat-label">Overall straight-through rate</p>
-                <p class="stat-value" id="stat-stp-overall">&mdash;</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card tile-bottleneck" id="tile-bottleneck">
-          <h2>Bottleneck transitions</h2>
-          <p class="caption">Top 8 directly-follows edges by average gap (<code>total_gap_ms / n</code>), excluding the synthetic start/end edges.</p>
-          <div class="tile-controls">
-            <select id="bottleneck-process-select" aria-label="Filter bottleneck transitions by process">
-              <option value="">All processes</option>
-            </select>
-          </div>
-          <div class="tile-error" id="err-bottleneck"></div>
-          <div class="chart-body" id="body-bottleneck"></div>
-        </div>
-
-        <div class="card tile-rework" id="tile-rework">
-          <h2>Rework hotspots</h2>
-          <p class="caption">Share of instances per process with at least one repeated element.</p>
-          <div class="tile-error" id="err-rework"></div>
-          <div class="chart-body" id="body-rework"></div>
-        </div>
-
       </div>
 
       <div class="chart-tooltip" id="tooltip"></div>
@@ -1624,37 +1466,7 @@ public final class LakeUiServer implements AutoCloseable {
                    FROM instances
                    GROUP BY process_id
                    ORDER BY p95_ms DESC`,
-          stp: `SELECT process_id, count(*) AS n,
-                       sum(CASE WHEN rework_count = 0 THEN 1 ELSE 0 END) AS stp_count
-                FROM instance_kpis
-                GROUP BY process_id
-                ORDER BY n DESC`,
-          rework: `SELECT process_id, count(*) AS n,
-                          sum(CASE WHEN rework_count > 0 THEN 1 ELSE 0 END) AS reworked_count,
-                          avg(CASE WHEN rework_count > 0 THEN activity_count END) AS avg_activity_reworked,
-                          avg(CASE WHEN rework_count = 0 THEN activity_count END) AS avg_activity_clean
-                   FROM instance_kpis
-                   GROUP BY process_id
-                   ORDER BY reworked_count DESC`,
         };
-
-        // Bottleneck-transitions tile: like the duration tile's process filter, a plain JS variable
-        // persisting across refreshes -- there is no server-side session to keep it in.
-        let bottleneckProcessFilter = '';
-
-        function buildBottleneckSql(processFilter) {
-          const filterClause = processFilter
-            ? ` AND process_id = '${processFilter.replace(/'/g, "''")}'`
-            : '';
-          return `SELECT process_id, from_element, to_element,
-                         CAST(sum(n) AS BIGINT) AS n,
-                         sum(total_gap_ms)::DOUBLE / sum(n) AS avg_gap_ms
-                  FROM transitions
-                  WHERE from_element <> '__START__' AND to_element <> '__END__'${filterClause}
-                  GROUP BY process_id, from_element, to_element
-                  ORDER BY avg_gap_ms DESC
-                  LIMIT 8`;
-        }
 
         // -------------------------------------------------------------------------------------------
         // Formatting helpers
@@ -2093,8 +1905,8 @@ public final class LakeUiServer implements AutoCloseable {
             const valueLabel = svgEl('text', {
               class: 'value-label', x: labelWidth + barW + 8, y: y + barHeight / 2 + 4, 'text-anchor': 'start',
             });
-            // formatValue's second (row) argument is optional -- every existing caller's function
-            // ignores it, only the bottleneck-transitions tile (n=.. alongside the avg gap) uses it.
+            // formatValue's second (row) argument is optional -- callers that only need the value
+            // itself can ignore it.
             valueLabel.textContent = opts.formatValue(value, r);
 
             attachRowInteraction(hitRect, (clientX, clientY) => {
@@ -2120,68 +1932,6 @@ public final class LakeUiServer implements AutoCloseable {
           ));
         }
 
-        // -------------------------------------------------------------------------------------------
-        // Percent-domain horizontal bars (0-100%) -- straight-through rate per process, rework rate
-        // per process. Same interaction model as renderHBarChart, but the bar domain is fixed at
-        // 100% (a rate chart's bars should be relative to the full range, not to the largest row).
-        // -------------------------------------------------------------------------------------------
-
-        function renderPercentBarChart(container, rows, opts) {
-          container.replaceChildren();
-
-          const barHeight = 18;
-          const rowGap = 10;
-          const labelWidth = 150;
-          const width = 560;
-          const marginRight = 56;
-          const marginTop = 6;
-          const plotWidth = width - labelWidth - marginRight;
-          const rowHeight = barHeight + rowGap;
-          const height = marginTop + rows.length * rowHeight;
-
-          const svg = svgEl('svg', {
-            class: 'chart-svg', viewBox: `0 0 ${width} ${height}`, role: 'img',
-            'aria-label': opts.ariaLabel,
-          });
-
-          rows.forEach((r, i) => {
-            const pct = Math.max(0, Math.min(100, opts.value(r)));
-            const barW = Math.max(2, (pct / 100) * plotWidth);
-            const y = marginTop + i * rowHeight;
-
-            const hitRect = svgEl('rect', {
-              class: 'hit-rect', x: 0, y: y - rowGap / 2, width: width, height: rowHeight,
-            });
-            const label = svgEl('text', {
-              class: 'category-label', x: labelWidth - 10, y: y + barHeight / 2 + 4, 'text-anchor': 'end',
-            });
-            label.textContent = opts.label(r);
-            const bar = svgEl('rect', {
-              class: 'bar-mark', x: labelWidth, y, width: barW, height: barHeight,
-              rx: 4, ry: 4, fill: 'var(--series-1)',
-            });
-            const valueLabel = svgEl('text', {
-              class: 'value-label', x: labelWidth + barW + 8, y: y + barHeight / 2 + 4, 'text-anchor': 'start',
-            });
-            valueLabel.textContent = pct.toFixed(1) + '%';
-
-            attachRowInteraction(hitRect, (clientX, clientY) => {
-              bar.classList.add('hovered');
-              showTooltip(clientX, clientY, opts.label(r), opts.tooltipRows(r));
-            }, () => {
-              bar.classList.remove('hovered');
-              hideTooltip();
-            });
-
-            svg.appendChild(label);
-            svg.appendChild(bar);
-            svg.appendChild(valueLabel);
-            svg.appendChild(hitRect);
-          });
-
-          container.appendChild(svg);
-          container.appendChild(buildDataTable(opts.tableColumns, rows.map(opts.tableRow)));
-        }
       """);
 
   /**
@@ -2194,156 +1944,6 @@ public final class LakeUiServer implements AutoCloseable {
   private static final String DASHBOARD_HTML_PART2 =
       asIs(
           """
-        // -------------------------------------------------------------------------------------------
-        // Tile 8: straight-through rate -- overall stat (in the static HTML) + per-process mini bars
-        // (appended here). Tile 9: bottleneck transitions -- reuses renderHBarChart. Tile 10: rework
-        // hotspots -- per-process rework rate with reworked-vs-clean avg activity count in the
-        // tooltip. All three degrade to a plain "no data yet" caption when instance_kpis/transitions
-        // exist but are empty (compaction hasn't produced any rows yet) -- the loadTile error path
-        // above already handles the case where the gold view doesn't exist at all.
-        // -------------------------------------------------------------------------------------------
-
-        function renderStpTile(columns, rows) {
-          const objs = rowsToObjects(columns, rows);
-          const totalN = objs.reduce((sum, r) => sum + Number(r.n), 0);
-          const totalStp = objs.reduce((sum, r) => sum + Number(r.stp_count), 0);
-          const overallPct = totalN > 0 ? (totalStp / totalN) * 100 : null;
-          document.getElementById('stat-stp-overall').textContent =
-            overallPct === null ? '—' : overallPct.toFixed(1) + '%';
-
-          const body = document.getElementById('body-stp');
-          const previous = body.querySelector('.stp-per-process');
-          if (previous) {
-            previous.remove();
-          }
-          const wrap = document.createElement('div');
-          wrap.className = 'stp-per-process';
-          body.appendChild(wrap);
-
-          if (objs.length === 0) {
-            const msg = document.createElement('p');
-            msg.className = 'caption';
-            msg.textContent = 'No instance_kpis data yet.';
-            wrap.appendChild(msg);
-            return;
-          }
-          const withPct = objs.map((r) => ({
-            ...r,
-            pct: Number(r.n) > 0 ? (Number(r.stp_count) / Number(r.n)) * 100 : 0,
-          }));
-          renderPercentBarChart(wrap, withPct, {
-            ariaLabel: 'Straight-through rate per process',
-            label: (r) => r.process_id,
-            value: (r) => r.pct,
-            tooltipRows: (r) => [
-              { color: 'var(--series-1)', label: 'straight-through', value: r.pct.toFixed(1) + '%' },
-              { label: 'instances', value: formatCount(Number(r.n)) },
-            ],
-            tableColumns: ['process_id', 'n', 'straight_through_rate'],
-            tableRow: (r) => [r.process_id, formatCount(Number(r.n)), r.pct.toFixed(1) + '%'],
-          });
-        }
-
-        function renderBottleneckChart(container, rows) {
-          if (rows.length === 0) {
-            container.replaceChildren();
-            const msg = document.createElement('p');
-            msg.className = 'caption';
-            msg.textContent = 'No transitions data yet (excluding the synthetic start/end edges).';
-            container.appendChild(msg);
-            return;
-          }
-          renderHBarChart(container, rows, {
-            label: (r) => `${r.from_element} → ${r.to_element}`,
-            value: (r) => Number(r.avg_gap_ms),
-            formatValue: (v, r) => humanizeMs(v) + '  (n=' + formatCount(Number(r.n)) + ')',
-            valueLabel: 'avg gap',
-            labelColumn: 'transition',
-            valueColumn: 'avg_gap_ms',
-            ariaLabel: 'Top bottleneck transitions by average gap',
-          });
-        }
-
-        function renderReworkChart(container, rows) {
-          if (rows.length === 0) {
-            container.replaceChildren();
-            const msg = document.createElement('p');
-            msg.className = 'caption';
-            msg.textContent = 'No instance_kpis data yet.';
-            container.appendChild(msg);
-            return;
-          }
-          const withPct = rows.map((r) => ({
-            ...r,
-            pct: Number(r.n) > 0 ? (Number(r.reworked_count) / Number(r.n)) * 100 : 0,
-          }));
-          renderPercentBarChart(container, withPct, {
-            ariaLabel: 'Rework rate per process',
-            label: (r) => r.process_id,
-            value: (r) => r.pct,
-            tooltipRows: (r) => [
-              { color: 'var(--series-1)', label: 'reworked', value: r.pct.toFixed(1) + '%' },
-              {
-                label: 'avg activities (reworked)',
-                value: r.avg_activity_reworked != null ? Number(r.avg_activity_reworked).toFixed(1) : '—',
-              },
-              {
-                label: 'avg activities (clean)',
-                value: r.avg_activity_clean != null ? Number(r.avg_activity_clean).toFixed(1) : '—',
-              },
-            ],
-            tableColumns: ['process_id', 'reworked_rate', 'avg_activities_reworked', 'avg_activities_clean'],
-            tableRow: (r) => [
-              r.process_id,
-              r.pct.toFixed(1) + '%',
-              r.avg_activity_reworked != null ? Number(r.avg_activity_reworked).toFixed(1) : '—',
-              r.avg_activity_clean != null ? Number(r.avg_activity_clean).toFixed(1) : '—',
-            ],
-          });
-        }
-
-        // Mirrors refreshDurationProcessOptions() above, for the bottleneck tile's process filter.
-        async function refreshBottleneckProcessOptions() {
-          try {
-            const response = await fetch('/api/query', {
-              method: 'POST', body: 'SELECT DISTINCT process_id FROM instance_kpis ORDER BY 1',
-            });
-            const json = await response.json();
-            if (json.error) {
-              return;
-            }
-            const select = document.getElementById('bottleneck-process-select');
-            const current = select.value;
-            const processIds = rowsToObjects(json.columns, json.rows).map((r) => r.process_id);
-            select.replaceChildren();
-            const allOption = document.createElement('option');
-            allOption.value = '';
-            allOption.textContent = 'All processes';
-            select.appendChild(allOption);
-            for (const processId of processIds) {
-              const option = document.createElement('option');
-              option.value = processId;
-              option.textContent = processId;
-              select.appendChild(option);
-            }
-            select.value = processIds.includes(current) ? current : '';
-            bottleneckProcessFilter = select.value;
-          } catch (e) {
-            // Best-effort only -- leave whatever options are already there.
-          }
-        }
-
-        function refreshBottleneckTile() {
-          loadTile('bottleneck', buildBottleneckSql(bottleneckProcessFilter), (columns, rows) => {
-            renderBottleneckChart(document.getElementById('body-bottleneck'), rowsToObjects(columns, rows));
-          });
-        }
-
-        document.getElementById('bottleneck-process-select').addEventListener('change', (evt) => {
-          bottleneckProcessFilter = evt.target.value;
-          refreshBottleneckTile();
-        });
-
         // -------------------------------------------------------------------------------------------
         // Tile 4: grouped horizontal bars -- two series (p50 / p95), legend, fixed categorical order
         // -------------------------------------------------------------------------------------------
@@ -3090,12 +2690,6 @@ public final class LakeUiServer implements AutoCloseable {
           });
           refreshDurationProcessOptions();
           refreshDurationTile();
-          loadTile('stp', SQL.stp, renderStpTile);
-          refreshBottleneckProcessOptions();
-          refreshBottleneckTile();
-          loadTile('rework', SQL.rework, (columns, rows) => {
-            renderReworkChart(document.getElementById('body-rework'), rowsToObjects(columns, rows));
-          });
         }
 
         refreshAll();
@@ -3127,16 +2721,13 @@ public final class LakeUiServer implements AutoCloseable {
   private static final String DASHBOARD_HTML = DASHBOARD_HTML_PART1 + DASHBOARD_HTML_PART2;
 
   /**
-   * The {@code /process-map} page: a BPMN heatmap over the same gold-table views the dashboard
-   * queries, rendered with bpmn-js (loaded from a pinned CDN version -- see the {@code
-   * bpmn-js-script} tag below) overlaid with node/edge stats from {@code /api/process-map}. Reuses
-   * this module's dataviz palette ({@code --series-1}, the one categorical hue) for the sequential
-   * edge-gap ramp -- five opacity steps of the same hue, not a new color, matching this feature's
-   * design brief ("reuse the existing palette's sequential ramp"). Degrades to a plain data-table
-   * view (no diagram) if the CDN script fails to load or times out -- see {@code
-   * markBpmnJsUnavailable()} -- so an offline environment still gets a readable page, and neither
-   * the dashboard nor the data explorer are affected either way (this is an entirely separate
-   * page).
+   * The {@code /process-map} page: a BPMN heatmap over the raw {@code activities} table, rendered
+   * with bpmn-js (loaded from a pinned CDN version -- see the {@code bpmn-js-script} tag below)
+   * overlaid with per-element node stats (execution count + avg duration) from {@code
+   * /api/process-map}. Degrades to a plain data-table view (no diagram) if the CDN script fails to
+   * load or times out -- see {@code markBpmnJsUnavailable()} -- so an offline environment still
+   * gets a readable page, and neither the dashboard nor the data explorer are affected either way
+   * (this is an entirely separate page).
    */
   private static final String PROCESS_MAP_HTML =
       """
@@ -3159,11 +2750,6 @@ public final class LakeUiServer implements AutoCloseable {
           --border: rgba(11,11,11,0.10);
           --error: #d03b3b;
           --series-1: #2a78d6;
-          --gap-1: rgba(42,120,214,0.15);
-          --gap-2: rgba(42,120,214,0.35);
-          --gap-3: rgba(42,120,214,0.55);
-          --gap-4: rgba(42,120,214,0.75);
-          --gap-5: rgba(42,120,214,0.95);
         }
         @media (prefers-color-scheme: dark) {
           :root {
@@ -3176,11 +2762,6 @@ public final class LakeUiServer implements AutoCloseable {
             --border: rgba(255,255,255,0.10);
             --error: #e66767;
             --series-1: #3987e5;
-            --gap-1: rgba(57,135,229,0.20);
-            --gap-2: rgba(57,135,229,0.40);
-            --gap-3: rgba(57,135,229,0.60);
-            --gap-4: rgba(57,135,229,0.80);
-            --gap-5: rgba(57,135,229,1.0);
           }
         }
         * { box-sizing: border-box; }
@@ -3207,7 +2788,6 @@ public final class LakeUiServer implements AutoCloseable {
           padding: 0.3rem 0.5rem; font-size: 0.82rem; font-family: inherit;
         }
         .controls select:disabled { opacity: 0.5; }
-        .cohort-note { font-size: 0.78rem; color: var(--ink-muted); margin-left: auto; }
 
         .hint {
           background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
@@ -3232,16 +2812,6 @@ public final class LakeUiServer implements AutoCloseable {
           box-shadow: 0 1px 3px rgba(0,0,0,0.18); color: var(--ink-primary);
           font-variant-numeric: tabular-nums;
         }
-        .pm-badge.pm-edge-badge { color: var(--ink-secondary); }
-
-        .gap-bucket-1 .djs-visual > path { stroke: var(--gap-1) !important; stroke-width: 2px !important; }
-        .gap-bucket-2 .djs-visual > path { stroke: var(--gap-2) !important; stroke-width: 3px !important; }
-        .gap-bucket-3 .djs-visual > path { stroke: var(--gap-3) !important; stroke-width: 4px !important; }
-        .gap-bucket-4 .djs-visual > path { stroke: var(--gap-4) !important; stroke-width: 5px !important; }
-        .gap-bucket-5 .djs-visual > path { stroke: var(--gap-5) !important; stroke-width: 6px !important; }
-
-        .ramp-legend { display: flex; align-items: center; gap: 0.4rem; margin: 0.75rem 0; font-size: 0.78rem; color: var(--ink-muted); }
-        .ramp-legend .swatch { width: 22px; height: 8px; border-radius: 2px; display: inline-block; }
 
         details.data-table { margin-top: 0.75rem; }
         details.data-table summary { cursor: pointer; font-size: 0.8rem; color: var(--ink-muted); }
@@ -3258,47 +2828,24 @@ public final class LakeUiServer implements AutoCloseable {
       <body>
       <h1>Process Map</h1>
       <p class="subtitle">
-        BPMN heatmap over the gold tables' node/edge stats, with a conformance cohort filter.
+        BPMN heatmap over raw activity node stats.
         <a href="/dashboard">&larr; Back to the dashboard</a>
       </p>
 
       <div class="controls">
         <label for="process-select">Process</label>
         <select id="process-select" disabled><option value="">(loading…)</option></select>
-
-        <label for="cohort-mode-select">Cohort</label>
-        <select id="cohort-mode-select" disabled>
-          <option value="all">All instances</option>
-          <option value="skip">Only instances that skipped…</option>
-          <option value="visited">Only instances that visited…</option>
-        </select>
-        <select id="cohort-element-select" disabled><option value="">(select a process first)</option></select>
-
-        <span class="cohort-note" id="cohort-note"></span>
       </div>
 
       <div class="hint hidden" id="pm-hint"></div>
-
-      <div class="ramp-legend" id="ramp-legend">
-        Edge color/thickness &rarr; average wait on that transition:
-        <span class="swatch" style="background:var(--gap-1)"></span> fast
-        <span class="swatch" style="background:var(--gap-2)"></span>
-        <span class="swatch" style="background:var(--gap-3)"></span>
-        <span class="swatch" style="background:var(--gap-4)"></span>
-        <span class="swatch" style="background:var(--gap-5)"></span> slow
-      </div>
 
       <div id="diagram-wrap">
         <div id="canvas" class="hidden"></div>
       </div>
 
       <details class="data-table" id="node-table-wrap" style="display:none">
-        <summary>Node stats (execution count &middot; avg duration, this cohort)</summary>
+        <summary>Node stats (execution count &middot; avg duration)</summary>
         <div id="node-table"></div>
-      </details>
-      <details class="data-table" id="edge-table-wrap" style="display:none">
-        <summary>Edge stats (n &middot; avg gap, all instances -- transitions is pre-aggregated)</summary>
-        <div id="edge-table"></div>
       </details>
 
       <script src="https://unpkg.com/bpmn-js@17.11.1/dist/bpmn-navigated-viewer.production.min.js"
@@ -3416,7 +2963,6 @@ public final class LakeUiServer implements AutoCloseable {
               select.appendChild(option);
             }
             select.disabled = false;
-            document.getElementById('cohort-mode-select').disabled = false;
             hideHint();
             await loadProcess(select.value);
           } catch (e) {
@@ -3427,9 +2973,6 @@ public final class LakeUiServer implements AutoCloseable {
         // -------------------------------------------------------------------------------------------
         // Diagram rendering (bpmn-js) with a data-table fallback when it's unavailable.
         // -------------------------------------------------------------------------------------------
-
-        let currentFlowByPair = new Map(); // "source->target" -> sequenceFlow id, for edge coloring
-        let currentCohortOptions = [];
 
         function ensureViewer() {
           if (viewer || !bpmnJsAvailable) {
@@ -3450,13 +2993,6 @@ public final class LakeUiServer implements AutoCloseable {
               showHint(escapeHtml(json.error), true);
               return;
             }
-            currentFlowByPair = new Map();
-            for (const flow of json.sequenceFlows) {
-              currentFlowByPair.set(flow.sourceRef + '->' + flow.targetRef, flow.id);
-            }
-            currentCohortOptions = json.cohortOptions || [];
-            populateCohortElementOptions();
-
             if (bpmnJsAvailable) {
               const v = ensureViewer();
               document.getElementById('canvas').classList.remove('hidden');
@@ -3480,49 +3016,20 @@ public final class LakeUiServer implements AutoCloseable {
           }
         }
 
-        function populateCohortElementOptions() {
-          const select = document.getElementById('cohort-element-select');
-          select.innerHTML = '';
-          for (const opt of currentCohortOptions) {
-            const option = document.createElement('option');
-            option.value = opt.elementId;
-            option.textContent = opt.elementId;
-            select.appendChild(option);
-          }
-          const mode = document.getElementById('cohort-mode-select').value;
-          select.disabled = (mode === 'all') || currentCohortOptions.length === 0;
-        }
-
-        // Five roughly-even buckets over the observed avg-gap range -- a fixed 5-step ramp (see the
-        // gap-bucket-N CSS classes), not a continuous scale, so bucket boundaries stay legible.
-        function gapBucket(value, minGap, maxGap) {
-          if (maxGap <= minGap) {
-            return 3;
-          }
-          const frac = (value - minGap) / (maxGap - minGap);
-          return Math.min(5, Math.max(1, Math.ceil(frac * 5) || 1));
-        }
-
-        let appliedMarkers = []; // [{ elementId, cssClass }] -- cleared before every re-render
-        let appliedOverlayIds = [];
+        let appliedOverlayIds = []; // cleared before every re-render
 
         function clearDiagramAnnotations() {
           if (!viewer) {
             return;
           }
           const overlays = viewer.get('overlays');
-          const canvas = viewer.get('canvas');
           for (const id of appliedOverlayIds) {
             try { overlays.remove(id); } catch (e) { /* element may be gone after a re-import */ }
           }
           appliedOverlayIds = [];
-          for (const marker of appliedMarkers) {
-            try { canvas.removeMarker(marker.elementId, marker.cssClass); } catch (e) { /* ignore */ }
-          }
-          appliedMarkers = [];
         }
 
-        function renderDiagramAnnotations(nodes, edges) {
+        function renderDiagramAnnotations(nodes) {
           if (!bpmnJsAvailable || !viewer) {
             return;
           }
@@ -3540,24 +3047,6 @@ public final class LakeUiServer implements AutoCloseable {
             const overlayId = overlays.add(node.elementId, { position: { bottom: -8, right: 0 }, html });
             appliedOverlayIds.push(overlayId);
           }
-
-          const gaps = edges.map((e) => e.avgGapMs).filter((v) => v !== null && v !== undefined);
-          const minGap = gaps.length ? Math.min(...gaps) : 0;
-          const maxGap = gaps.length ? Math.max(...gaps) : 0;
-          for (const edge of edges) {
-            const flowId = currentFlowByPair.get(edge.from + '->' + edge.to);
-            if (!flowId || !elementRegistry.get(flowId)) {
-              continue;
-            }
-            const bucket = edge.avgGapMs === null ? 3 : gapBucket(edge.avgGapMs, minGap, maxGap);
-            const cssClass = 'gap-bucket-' + bucket;
-            viewer.get('canvas').addMarker(flowId, cssClass);
-            appliedMarkers.push({ elementId: flowId, cssClass });
-            const html = '<div class="pm-badge pm-edge-badge">n=' + formatCount(edge.n) +
-              ' &middot; ' + humanizeMs(edge.avgGapMs) + '</div>';
-            const overlayId = overlays.add(flowId, { position: { top: -18, left: 0 }, html });
-            appliedOverlayIds.push(overlayId);
-          }
         }
 
         async function loadData() {
@@ -3565,12 +3054,7 @@ public final class LakeUiServer implements AutoCloseable {
           if (!processId) {
             return;
           }
-          const mode = document.getElementById('cohort-mode-select').value;
-          const elementSelect = document.getElementById('cohort-element-select');
-          let query = 'process=' + encodeURIComponent(processId);
-          if (mode !== 'all' && elementSelect.value) {
-            query += '&' + mode + '=' + encodeURIComponent(elementSelect.value);
-          }
+          const query = 'process=' + encodeURIComponent(processId);
           try {
             const response = await fetch('/api/process-map?' + query);
             const json = await response.json();
@@ -3578,22 +3062,13 @@ public final class LakeUiServer implements AutoCloseable {
               showHint(escapeHtml(json.error), true);
               return;
             }
-            const cohortNote = document.getElementById('cohort-note');
-            cohortNote.textContent = json.cohort.mode === 'all'
-              ? json.cohort.totalInstances + ' instance(s) total'
-              : json.cohort.cohortInstances + ' of ' + json.cohort.totalInstances +
-                ' instance(s) match this cohort';
 
             document.getElementById('node-table-wrap').style.display = '';
-            document.getElementById('edge-table-wrap').style.display = '';
             buildDataTable(document.getElementById('node-table'),
               ['element_id', 'execution_count', 'avg_duration_ms'],
               json.nodes.map((n) => [n.elementId, formatCount(n.executionCount), humanizeMs(n.avgDurationMs)]));
-            buildDataTable(document.getElementById('edge-table'),
-              ['from', 'to', 'n', 'avg_gap_ms'],
-              json.edges.map((e) => [e.from, e.to, formatCount(e.n), humanizeMs(e.avgGapMs)]));
 
-            renderDiagramAnnotations(json.nodes, json.edges);
+            renderDiagramAnnotations(json.nodes);
           } catch (e) {
             showHint('Failed to load process-map data: ' + escapeHtml(String(e)), true);
           }
@@ -3601,13 +3076,6 @@ public final class LakeUiServer implements AutoCloseable {
 
         document.getElementById('process-select').addEventListener('change', (evt) => {
           loadProcess(evt.target.value);
-        });
-        document.getElementById('cohort-mode-select').addEventListener('change', () => {
-          populateCohortElementOptions();
-          loadData();
-        });
-        document.getElementById('cohort-element-select').addEventListener('change', () => {
-          loadData();
         });
 
         // Grace period for the CDN script: onerror fires immediately for a hard network/404

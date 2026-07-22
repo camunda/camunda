@@ -16,10 +16,9 @@ import org.slf4j.LoggerFactory;
  * warehouse/state directory -- no Event Bridge connection, no {@link
  * io.camunda.analytics.lake.write.IcebergLakeWriter}, no translator process required.
  *
- * <p>Mirrors {@code io.camunda.analytics.lake.write.GoldTablesStandaloneRunner}'s own rationale:
- * this server already opens its own independent {@code JdbcCatalog}/DuckDB connection (see {@link
- * LakeUiServer}'s class javadoc), so browsing a preserved demo warehouse -- e.g. one a translator
- * process is no longer running against -- needs nothing more than this class to spin up.
+ * <p>This server already opens its own independent {@code JdbcCatalog}/DuckDB connection (see
+ * {@link LakeUiServer}'s class javadoc), so browsing a preserved demo warehouse -- e.g. one a
+ * translator process is no longer running against -- needs nothing more than this class to spin up.
  *
  * <h2>Usage</h2>
  *

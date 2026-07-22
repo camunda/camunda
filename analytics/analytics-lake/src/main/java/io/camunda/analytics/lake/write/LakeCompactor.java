@@ -62,12 +62,6 @@ import org.slf4j.LoggerFactory;
  * never issues a DuckDB statement (it only calls Iceberg's {@code Table} commit API), so this
  * class's own poll-loop thread remains the DuckDB connection's sole user, exactly as before.
  *
- * <p>Gold-table recompute ({@link #recomputeGoldTablesSafely()}) is unaffected by any of this: it
- * only ever reads the raw tables (Iceberg reads are snapshot-isolated without external locking) and
- * writes to its own three gold tables, which no other thread ever commits to — see {@link
- * GoldTables}'s own class javadoc. It keeps its pre-existing single-threaded story and needs no
- * commit lock of its own.
- *
  * <h2>Failure handling</h2>
  *
  * <p>No exception from this class is ever allowed to propagate to the poll loop: every step is
@@ -101,15 +95,6 @@ import org.slf4j.LoggerFactory;
  * stamp) to a lost value the moment compaction first runs, forcing a full replay from scratch (or
  * silently regressing the frontier/watermark); the compaction integration test asserts on this
  * explicitly.
- *
- * <h2>Gold tables (added step, after the raw-table work above)</h2>
- *
- * <p>Once the two raw tables' rewrite/manifest/expiry steps above have run, this class also drives
- * one {@link GoldTables#recompute()} pass. Unlike everything above, the gold-table step never reads
- * or writes any {@code lake.offset.p*} property — see {@link GoldTables}'s own class javadoc for
- * why that is correct rather than an oversight, and {@link IcebergLakeWriter#committedOffset(int)}
- * for confirmation that its table enumeration is untouched (still exactly {@code instances}/{@code
- * activities}).
  */
 public final class LakeCompactor {
 
@@ -131,7 +116,6 @@ public final class LakeCompactor {
   private final Table activitiesTable;
   private final ReentrantLock instancesCommitLock;
   private final ReentrantLock activitiesCommitLock;
-  private final GoldTables goldTables;
 
   public LakeCompactor(final IcebergLakeWriter writer) {
     duckdb = writer.duckdbConnection();
@@ -144,35 +128,15 @@ public final class LakeCompactor {
     // README's Compaction section).
     configureMetadataCleanup(instancesTable, INSTANCES_LABEL);
     configureMetadataCleanup(activitiesTable, ACTIVITIES_LABEL);
-    goldTables = new GoldTables(writer.catalog(), duckdb, instancesTable, activitiesTable);
   }
 
-  /**
-   * Runs one compaction pass over both lake tables, then one {@link GoldTables#recompute()} pass.
-   * Never throws; see class javadoc.
-   */
+  /** Runs one compaction pass over both lake tables. Never throws; see class javadoc. */
   public CompactionReport compactIfNeeded() {
     final TableCompactionResult instances =
         compactTable(INSTANCES_LABEL, instancesTable, instancesCommitLock, INSTANCES_SORT);
     final TableCompactionResult activities =
         compactTable(ACTIVITIES_LABEL, activitiesTable, activitiesCommitLock, ACTIVITIES_SORT);
-    final GoldTables.GoldRecomputeResult gold = recomputeGoldTablesSafely();
-    return new CompactionReport(instances, activities, gold);
-  }
-
-  /**
-   * {@link GoldTables#recompute()} throws on failure (see its javadoc); this class's own contract
-   * is that nothing it does ever reaches the poll loop (see this class's "Failure handling" javadoc
-   * section), so the same guard-and-log pattern {@link #compactTable} uses for its own steps
-   * applies here too.
-   */
-  private GoldTables.GoldRecomputeResult recomputeGoldTablesSafely() {
-    try {
-      return goldTables.recompute();
-    } catch (final RuntimeException e) {
-      LOG.warn("Gold-table recompute failed; leaving existing gold tables in place", e);
-      return GoldTables.GoldRecomputeResult.unavailable();
-    }
+    return new CompactionReport(instances, activities);
   }
 
   private static void configureMetadataCleanup(final Table table, final String label) {
@@ -459,18 +423,13 @@ public final class LakeCompactor {
     }
   }
 
-  /**
-   * Aggregate result of one {@link #compactIfNeeded()} call: one entry per raw lake table, plus the
-   * gold-table recompute outcome.
-   */
+  /** Aggregate result of one {@link #compactIfNeeded()} call: one entry per raw lake table. */
   public record CompactionReport(
-      TableCompactionResult instances,
-      TableCompactionResult activities,
-      GoldTables.GoldRecomputeResult goldTables) {
+      TableCompactionResult instances, TableCompactionResult activities) {
 
     @Override
     public String toString() {
-      return "CompactionReport{" + instances + ", " + activities + ", " + goldTables + '}';
+      return "CompactionReport{" + instances + ", " + activities + '}';
     }
   }
 

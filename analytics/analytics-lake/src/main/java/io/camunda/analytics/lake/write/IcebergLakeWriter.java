@@ -96,12 +96,11 @@ import org.slf4j.LoggerFactory;
  * LakeTranslator}/{@code LakePocApp}). This class is retained for: table creation (schemas + field
  * ids + name-mapping property, both tables' authoritative source), {@link #committedOffset(int)}
  * and the offset-stamping property/carry-forward pattern {@link DirectCommitSink} reuses, and the
- * embedded DuckDB connection {@link LakeCompactor}/{@code GoldTables} still drive for compaction
- * rewrites and gold-table derivation (neither of which is raw-table ingest). The buffered
- * append/flush methods below stay because the compaction/gold-table/UI test suites still construct
- * this class directly and use them to seed fixture data — removing them would force rewriting five
- * otherwise-unrelated test files for no behavioral gain (see the module's L0-sink integration test
- * for how the new pipelines are exercised instead).
+ * embedded DuckDB connection {@link LakeCompactor} still drives for compaction rewrites (not
+ * raw-table ingest). The buffered append/flush methods below stay because the compaction/UI test
+ * suites still construct this class directly and use them to seed fixture data — removing them
+ * would force rewriting several otherwise-unrelated test files for no behavioral gain (see the
+ * module's L0-sink integration test for how the new pipelines are exercised instead).
  */
 public final class IcebergLakeWriter implements LakeWriter {
 
@@ -217,11 +216,11 @@ public final class IcebergLakeWriter implements LakeWriter {
    * TableSchema}'s javadoc), so the catalog schema's own field type has to agree, or
    * iceberg-parquet's generic writer hands a {@code ByteBuffer} to a column configured for {@code
    * CharSequence} and throws a {@code ClassCastException}. This does not disturb this class's own
-   * legacy DuckDB-appender path (still exercised by the compaction/gold-table/UI tests that
-   * construct {@link IcebergLakeWriter} directly): DuckDB writes Parquet files by inferring types
-   * from the staged column's own {@code SELECT} projection, never consulting this catalog {@link
-   * Schema}, and every reader of those legacy files (DuckDB {@code read_parquet}) resolves columns
-   * by their own physical Parquet metadata, not by this catalog schema either.
+   * legacy DuckDB-appender path (still exercised by the compaction/UI tests that construct {@link
+   * IcebergLakeWriter} directly): DuckDB writes Parquet files by inferring types from the staged
+   * column's own {@code SELECT} projection, never consulting this catalog {@link Schema}, and every
+   * reader of those legacy files (DuckDB {@code read_parquet}) resolves columns by their own
+   * physical Parquet metadata, not by this catalog schema either.
    */
   private static final Schema INSTANCE_SCHEMA =
       new Schema(
@@ -795,15 +794,6 @@ public final class IcebergLakeWriter implements LakeWriter {
   /** See {@link #instancesTable()}. */
   Connection duckdbConnection() {
     return duckdb;
-  }
-
-  /**
-   * Package-private handle for {@link GoldTables} (constructed by {@link LakeCompactor}), which
-   * needs the catalog only to create-or-load its own gold tables in the same {@code lake} namespace
-   * -- it never touches {@link #instancesTable}/{@link #activitiesTable} through it.
-   */
-  JdbcCatalog catalog() {
-    return catalog;
   }
 
   private static void appendInstanceRow(final DuckDBAppender appender, final InstanceRow row)
