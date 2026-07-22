@@ -104,7 +104,7 @@ RUN \
     count=$(find "$UNPACK" \( -name '*.so' -o -name '*.jnilib' -o -name '*.dll' \) | wc -l) && \
     [ "$count" -eq 1 ] || { echo "Expected exactly 1 native lib, found $count" >&2; exit 1; } && \
     rm "$ROCKSDB_JAR" && \
-    ( cd "$UNPACK" && jar cf "$OLDPWD/$ROCKSDB_JAR" . ) && \
+    ( cd "$UNPACK" && jar cMf "$OLDPWD/$ROCKSDB_JAR" . ) && \
     rm -rf "$UNPACK"
 
 
