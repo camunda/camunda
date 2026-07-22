@@ -19,13 +19,10 @@ type OptionalFilter =
   | 'End Date Range'
   | 'Failed job but retries left';
 
-export type AdvancedStringFilterOperator =
-  | 'equals'
-  | 'does not equal'
-  | 'contains'
-  | 'is one of'
-  | 'is not one of'
-  | 'exists';
+// The Business ID advanced string filter only renders the operators
+// configured via `selectableOperators` in OptionalFiltersFormGroup.tsx
+// ($eq / $like / $in) — keep this type in sync with that configuration.
+export type AdvancedStringFilterOperator = 'equals' | 'contains' | 'is one of';
 
 export class OperateFiltersPanelPage {
   private page: Page;

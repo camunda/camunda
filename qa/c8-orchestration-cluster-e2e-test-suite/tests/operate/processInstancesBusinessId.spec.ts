@@ -8,7 +8,6 @@
 
 import {test} from 'fixtures';
 import {expect} from '@playwright/test';
-import {randomUUID} from 'crypto';
 import {deploy, cancelProcessInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToAppHome} from '@pages/UtilitiesPage';
@@ -19,11 +18,11 @@ import {
 } from '@pages/OperateFiltersPanelPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {createProcessInstanceWithBusinessId} from 'utils/requestHelpers/process-instance-requestHelpers';
-import {extendedAssertionOptions} from 'utils/constants';
+import {extendedAssertionOptions, uniqueBusinessId} from 'utils/constants';
 
 const USER_TASK_PROCESS_ID = 'user_task_api_test_process';
 
-const runPrefix = `ui-bizid-${randomUUID().slice(0, 8)}`;
+const runPrefix = uniqueBusinessId('ui-bizid');
 const BUSINESS_ID_A = `${runPrefix}-aaa`;
 const BUSINESS_ID_B = `${runPrefix}-zzz`;
 
