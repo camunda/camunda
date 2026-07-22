@@ -197,9 +197,10 @@ test.describe('Operations', () => {
     });
   });
 
-  // Skipped due to bug 42448: https://github.com/camunda/camunda/issues/42448
-  // !Note: assert the code after the bug is fixed as it was dicoverd during the test implementation
-  test.skip('Retry and cancel multiple instances', async ({
+  // Regression coverage for bug 42448 (fixed by #48419): batch cancellation with
+  // an operationId filter no longer returns 400.
+  // https://github.com/camunda/camunda/issues/42448
+  test('Retry and cancel multiple instances', async ({
     operateProcessesPage,
     operateFiltersPanelPage,
     operateOperationPanelPage,
