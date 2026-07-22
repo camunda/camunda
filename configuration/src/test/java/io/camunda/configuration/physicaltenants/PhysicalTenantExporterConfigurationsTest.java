@@ -25,11 +25,14 @@ import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
 /**
- * Covers the step-1 rows of the ADR-0008 §2 decision table against the test-only mergers registered
- * via {@code src/test/resources/META-INF/services} (real-merger end-to-end coverage lives in {@code
- * PhysicalTenantExporterConfigIT}). The step-2 rows — the {@code exporters-assigned} manifest,
- * narrowing, and the configured-but-unassigned error — are gated on #56652 and deliberately absent
- * here; see {@link PhysicalTenantExporterConfigurations}.
+ * Covers the step-1 rows of the ADR-0008 §2 decision table (args merge, class-divergence, and
+ * autoconfigured tuning) against the test-only mergers registered via {@code
+ * src/test/resources/META-INF/services} (real-merger end-to-end coverage lives in {@code
+ * PhysicalTenantExporterConfigIT}), plus the dormant step-2 {@link
+ * PhysicalTenantExporterConfigurations#narrowToAssigned}. The step-2 mandatory-explicit and
+ * boot-error validations live in {@link PhysicalTenantExporterAssignedValidationTest}. Both step-2
+ * halves are dormant (not wired into {@link PhysicalTenantResolver}) pending #56652; see {@link
+ * PhysicalTenantExporterConfigurations}.
  */
 class PhysicalTenantExporterConfigurationsTest {
 
@@ -273,5 +276,83 @@ class PhysicalTenantExporterConfigurationsTest {
     assertThat(boundEmpty.isBound()).isTrue();
     assertThat(boundEmpty.get()).isEmpty();
     assertThat(absent.isBound()).isFalse();
+  }
+
+  // --- step-2 narrowing (dormant; gated on #56652) ---------------------------------------------
+
+  @Test
+  void shouldNarrowAwayUnassignedCatalogEntries() {
+    // given — a tenant resolved with two catalog entries; only one is assigned
+    final Camunda tenant = camundaWithExporters("es", "other");
+    environment.setProperty("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "es");
+
+    // when
+    PhysicalTenantExporterConfigurations.narrowToAssigned(tenant, TENANT, environment);
+
+    // then — the unassigned catalog entry is removed
+    assertThat(tenant.getData().getExporters()).containsOnlyKeys("es");
+  }
+
+  @Test
+  void shouldAlwaysKeepAutoconfiguredEntriesEvenWhenUnassigned() {
+    // given — autoconfigured ids are never listed in exporters-assigned but must survive narrowing
+    final Camunda tenant = camundaWithExporters("es", "camundaexporter", "rdbms");
+    environment.setProperty("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "es");
+
+    // when
+    PhysicalTenantExporterConfigurations.narrowToAssigned(tenant, TENANT, environment);
+
+    // then
+    assertThat(tenant.getData().getExporters()).containsOnlyKeys("es", "camundaexporter", "rdbms");
+  }
+
+  @Test
+  void shouldRemoveAllGenericExportersWhenAssignedIsEmpty() {
+    // given — an explicit empty manifest means "no generic exporters"
+    final Camunda tenant = camundaWithExporters("es", "other", "camundaexporter");
+    environment.setProperty("camunda.physical-tenants.tenanta.data.exporters-assigned", "");
+
+    // when
+    PhysicalTenantExporterConfigurations.narrowToAssigned(tenant, TENANT, environment);
+
+    // then — only the autoconfigured entry survives
+    assertThat(tenant.getData().getExporters()).containsOnlyKeys("camundaexporter");
+  }
+
+  @Test
+  void shouldNotNarrowWhenAssignedIsAbsent() {
+    // given — no manifest at all: narrowing is a no-op (validation rejects this at boot upstream)
+    final Camunda tenant = camundaWithExporters("es", "other");
+
+    // when
+    PhysicalTenantExporterConfigurations.narrowToAssigned(tenant, TENANT, environment);
+
+    // then — the resolved map is left untouched
+    assertThat(tenant.getData().getExporters()).containsOnlyKeys("es", "other");
+  }
+
+  @Test
+  void shouldMatchAssignedIdsCaseSensitivelyWhenNarrowing() {
+    // given — exporter ids are case-sensitive (#36444): "ES" does not match the catalog key "es"
+    final Camunda tenant = camundaWithExporters("es");
+    environment.setProperty("camunda.physical-tenants.tenanta.data.exporters-assigned[0]", "ES");
+
+    // when
+    PhysicalTenantExporterConfigurations.narrowToAssigned(tenant, TENANT, environment);
+
+    // then — the differently-cased id matches nothing, so the catalog entry is narrowed away
+    assertThat(tenant.getData().getExporters()).isEmpty();
+  }
+
+  private static Camunda camundaWithExporters(final String... exporterIds) {
+    final Camunda camunda = new Camunda();
+    final Map<String, Exporter> exporters = new HashMap<>();
+    for (final String id : exporterIds) {
+      final Exporter exporter = new Exporter();
+      exporter.setClassName("com.acme." + id);
+      exporters.put(id, exporter);
+    }
+    camunda.getData().setExporters(exporters);
+    return camunda;
   }
 }
