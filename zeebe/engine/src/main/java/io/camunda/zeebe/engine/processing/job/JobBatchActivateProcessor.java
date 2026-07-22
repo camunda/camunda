@@ -30,9 +30,11 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -197,16 +199,41 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobBatchRecord value,
       final long jobBatchKey) {
     // jobs whose secret references are not all cached must not be activated: remove them from the
-    // batch before the ACTIVATED event is appended, so they stay activatable
+    // batch before the ACTIVATED event is appended
     final var preparation = jobSecretInjector.removeJobsWithUncachedSecrets(value);
     // building the response can drop further jobs from the batch (those whose injected secret
     // values would exceed the max message size), so it must also happen before the event
     final var response = responseValueFor(record, value, preparation);
     // append (and apply to state) the ACTIVATED event with the unresolved placeholders
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
+    // request the background resolution of the uncached secrets of the removed jobs; the applier
+    // also marks those jobs not activatable so a long poll does not collect them again right away
+    requestSecretResolution(preparation);
     responseWriter.writeAcceptedResponseOnCommand(
         jobBatchKey, JobBatchIntent.ACTIVATED, response, record);
     countActivatedJobs(value);
+  }
+
+  /**
+   * Writes one {@code SecretReference.RESOLUTION_REQUESTED} event per uncached reference of the
+   * removed jobs, carrying the keys of the jobs that await it, so the background task resolves it
+   * into the cache and the jobs are reactivated once every reference they wait for is resolved.
+   */
+  private void requestSecretResolution(final Preparation preparation) {
+    preparation
+        .missingSecrets()
+        .forEach(
+            (reference, jobKeys) -> {
+              final var request =
+                  new SecretReferenceRecord()
+                      .setStoreId(reference.storeId())
+                      .setSecretReference(reference.secretReference());
+              for (final long jobKey : jobKeys) {
+                request.addJobKey(jobKey);
+              }
+              stateWriter.appendFollowUpEvent(
+                  keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, request);
+            });
   }
 
   /**

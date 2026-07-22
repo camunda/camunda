@@ -21,9 +21,11 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -94,10 +96,15 @@ public final class JobSecretActivationInjectionTest {
   }
 
   @Test
-  public void shouldNotActivateJobWhenSecretIsNotCached() {
+  public void shouldNotActivateJobAndRequestResolutionWhenSecretIsNotCached() {
     // given - the secret has no cached value (empty resolver)
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
-    createInstanceAndAwaitJob();
+    final long processInstanceKey = createInstanceAndAwaitJob();
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getKey();
 
     // when
     final Record<JobBatchRecordValue> activated =
@@ -111,17 +118,23 @@ public final class JobSecretActivationInjectionTest {
         .untilAsserted(() -> assertThat(activationResponse).isNotNull());
     assertThat(activationResponse.getJobs()).isEmpty();
 
-    // and - the job stays activatable: once the secret value is cached, a later activation hands
-    // it out with the resolved value on the response
+    // and - a RESOLUTION_REQUESTED event is written for the missing secret, carrying the job key
+    final Record<SecretReferenceRecordValue> requested =
+        RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+            .getFirst();
+    assertThat(requested.getValue().getStoreId()).isEmpty();
+    assertThat(requested.getValue().getSecretReference()).isEqualTo("token");
+    assertThat(requested.getValue().getJobKeys()).containsExactly(jobKey);
+    // and - it is written after the JobBatch ACTIVATED event
+    assertThat(requested.getPosition()).isGreaterThan(activated.getPosition());
+
+    // and - the job is now waiting for resolution and no longer activatable: even once the secret
+    // value is cached, a later poll does not hand it out (the job is reactivated only after the
+    // resolution flow completes, which is out of this component's scope)
     cachedSecrets.put("token", "resolved-secret");
     final Record<JobBatchRecordValue> secondAttempt =
         engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
-    assertThat(secondAttempt.getValue().getJobs()).hasSize(1);
-    Awaitility.await("until the second activation response is written")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(activationResponse.getJobs()).hasSize(1));
-    assertThat(activationResponse.getJobs().get(0).getVariables())
-        .containsEntry("authorization", "Bearer resolved-secret");
+    assertThat(secondAttempt.getValue().getJobs()).isEmpty();
   }
 
   @Test
