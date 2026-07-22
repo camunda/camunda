@@ -75,6 +75,26 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(tenantFilterProp);
   }
 
+  /**
+   * Wraps this record around another record's data. Unlike {@link #copyFrom}, the other record's
+   * buffers are shared instead of copied, so this record is only valid as long as the other record
+   * is neither modified nor reset.
+   */
+  public void wrap(final JobBatchRecord record) {
+    reset();
+    typeProp.setValue(record.getTypeBuffer());
+    workerProp.setValue(record.getWorkerBuffer());
+    timeoutProp.setValue(record.getTimeout());
+    maxJobsToActivateProp.setValue(record.getMaxJobsToActivate());
+    truncatedProp.setValue(record.getTruncated());
+    withLeaseProp.setValue(record.isWithLease());
+    tenantFilterProp.setValue(record.getTenantFilter());
+    record.jobKeys().forEach(jobKey -> jobKeysProp.add().setValue(jobKey.getValue()));
+    record.jobs().forEach(job -> jobsProp.add().wrap(job));
+    record.tenantIds().forEach(tenantId -> tenantIdsProp.add().wrap(tenantId.getValue()));
+    record.variables().forEach(variable -> variablesProp.add().wrap(variable.getValue()));
+  }
+
   public JobBatchRecord setType(final DirectBuffer buf, final int offset, final int length) {
     typeProp.setValue(buf, offset, length);
     return this;
