@@ -33,7 +33,25 @@ on:
         required: false
         type: string
         default: ""
-        description: When set, runs the acceptance suite under this physical tenant by passing -Dtest.integration.camunda.physical-tenant=<value>. Only supported with RDBMS database types.
+        description: When set, runs the acceptance suite under this physical tenant by passing -Dtest.integration.camunda.physical-tenant=<value>.
+      physical-tenant-elasticsearch-url:
+        required: false
+        type: string
+        default: ""
+        description: >-
+          When set (together with physical-tenant), the PT's secondary storage is pointed at this
+          separate Elasticsearch instance instead of reusing the default tenant's connection, by
+          passing -Dtest.integration.camunda.physical-tenant.elasticsearch.url=<value>. Requires the
+          "elasticsearch-tenant" docker-compose service to be running.
+      test-suite-name:
+        required: false
+        type: string
+        default: ""
+        description: >-
+          Short suite name appended to the job's display name (e.g. "identity" renders the job as
+          "elasticsearch - identity"). Leave empty to display the database type alone. Joined with
+          a non-slash separator because the GHA sidebar only displays the last " / "-separated
+          segment of the check name.
       maven-profiles:
         required: false
         type: string
@@ -84,7 +102,10 @@ env:
 
 jobs:
   integration-tests:
-    name: "${{ inputs.database-type }}"
+    # the GHA sidebar only shows the last " / "-separated segment of the composed check name, so
+    # append the suite with a non-slash separator to keep matrix entries distinguishable
+    # (e.g. "elasticsearch - identity")
+    name: "${{ inputs.database-type }}${{ inputs.test-suite-name != '' && format(' - {0}', inputs.test-suite-name) || '' }}"
     permissions:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
@@ -118,7 +139,7 @@ jobs:
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
         run: |
-          docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} || {
+          docker compose -f db/docker-compose.yml up -d --wait ${{ env.DATABASE_CONTAINER }} ${{ inputs.physical-tenant-elasticsearch-url != '' && 'elasticsearch-tenant' || '' }} || {
             docker compose -f db/docker-compose.yml logs
             exit 1
           }
@@ -155,6 +176,7 @@ jobs:
           -D test.integration.camunda.database.type=${{inputs.it-database-type}}
           -D test.integration.camunda.database.fast-init=true
           ${{ inputs.physical-tenant != '' && format('-D test.integration.camunda.physical-tenant={0}', inputs.physical-tenant) || '' }}
+          ${{ inputs.physical-tenant-elasticsearch-url != '' && format('-D test.integration.camunda.physical-tenant.elasticsearch.url={0}', inputs.physical-tenant-elasticsearch-url) || '' }}
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,${{inputs.maven-profiles}}
           -pl 'qa/acceptance-tests'
           verify

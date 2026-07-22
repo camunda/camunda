@@ -207,6 +207,12 @@ class ApplicationAuthorizationIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = "test.integration.camunda.physical-tenant",
+      matches = ".+",
+      disabledReason =
+          "authorizedComponents is resolved against root storage under a physical tenant, "
+              + "see https://github.com/camunda/camunda/issues/58393")
   void meContainsComponentUserSpecificAuthorizations(
       @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {

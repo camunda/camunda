@@ -134,6 +134,26 @@ services:
     volumes:
       - ./els-snapshots:/usr/local/els-snapshots
 
+  elasticsearch-tenant:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${IMAGE_VERSION:-8.19.16}
+    container_name: elasticsearch-tenant
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch-tenant
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9201:9200
+    networks:
+      - zeebe_network
+    restart: always
+
   opensearch:
     image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.5}
     container_name: opensearch

@@ -1122,23 +1122,106 @@ jobs:
       use-shared-distball: true
 
   physical-tenant-acceptance-tests:
-    name: "Physical Tenant Acceptance Tests / H2"
+    name: "Physical Tenant Acceptance Tests / ${{ matrix.database-name }}"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [ detect-changes ]
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database-type: "h2"
+            database-name: "H2"
+            # Lowercase to match the @DisabledIfSystemProperty(matches = "rdbms.*$") guards that
+            # skip RDBMS-incompatible tests.
+            it-database-type: "rdbms_h2"
+            database-image-version: ""
+          - database-type: "elasticsearch"
+            database-name: "ES 8.x"
+            it-database-type: "es"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            # Points the PT at a genuinely separate ES instance (db/docker-compose.yml's
+            # elasticsearch-tenant service) instead of the default tenant's cluster.
+            physical-tenant-elasticsearch-url: "http://localhost:9201"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
-      database-type: "h2"
-      database-name: "H2"
-      # Lowercase to match the @DisabledIfSystemProperty(matches = "rdbms.*$") guards that skip
-      # RDBMS-incompatible tests.
-      it-database-type: "rdbms_h2"
+      database-type: "${{ matrix.database-type }}"
+      database-name: "${{ matrix.database-name }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      it-database-type: "${{ matrix.it-database-type }}"
       physical-tenant: "tenanta"
+      physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
       # Scope to the tests that pass under physical-tenant mode; known gaps are excluded in the
       # physical-tenant profile.
       maven-profiles: "physical-tenant"
       test-type: "physical-tenant-acceptance-tests"
       test-type-label: "Physical Tenant Acceptance"
+      test-suite-name: "acceptance"
+      use-shared-distball: true
+
+  physical-tenant-identity-tests:
+    name: "Physical Tenant Acceptance Tests / Identity / ${{ matrix.database-name }}"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database-type: "h2"
+            database-name: "H2"
+            it-database-type: "rdbms_h2"
+            database-image-version: ""
+          - database-type: "elasticsearch"
+            database-name: "ES 8.x"
+            it-database-type: "es"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            physical-tenant-elasticsearch-url: "http://localhost:9201"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-name: "${{ matrix.database-name }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      physical-tenant: "tenanta"
+      physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
+      maven-profiles: "physical-tenant-identity"
+      test-type: "physical-tenant-identity-tests"
+      test-type-label: "Physical Tenant Acceptance Identity"
+      test-suite-name: "identity"
+      use-shared-distball: true
+
+  physical-tenant-history-tests:
+    name: "Physical Tenant Acceptance Tests / History / ${{ matrix.database-name }}"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes, generate-db-versions, build-distball ]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - database-type: "h2"
+            database-name: "H2"
+            it-database-type: "rdbms_h2"
+            database-image-version: ""
+          - database-type: "elasticsearch"
+            database-name: "ES 8.x"
+            it-database-type: "es"
+            database-image-version: "${{ needs.generate-db-versions.outputs.elasticsearch-8 }}"
+            physical-tenant-elasticsearch-url: "http://localhost:9201"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-name: "${{ matrix.database-name }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      physical-tenant: "tenanta"
+      physical-tenant-elasticsearch-url: "${{ matrix.physical-tenant-elasticsearch-url }}"
+      maven-profiles: "physical-tenant-history"
+      test-type: "physical-tenant-history-tests"
+      test-type-label: "Physical Tenant Acceptance History"
+      test-suite-name: "history"
+      use-shared-distball: true
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -1592,6 +1675,8 @@ jobs:
       - identity-tests
       - integration-tests
       - physical-tenant-acceptance-tests
+      - physical-tenant-identity-tests
+      - physical-tenant-history-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
     runs-on: ubuntu-latest
@@ -1643,6 +1728,8 @@ jobs:
             "zeebe:zeebe-unit-tests" \
             "integration:integration-tests" \
             "physical-tenant-acceptance:physical-tenant-acceptance-tests" \
+            "physical-tenant-identity:physical-tenant-identity-tests" \
+            "physical-tenant-history:physical-tenant-history-tests" \
             "database-integration:database-integration-tests" \
             "history:history-tests" \
             "identity:identity-tests"; do
@@ -1675,6 +1762,10 @@ jobs:
           integration-matrix-output-result: ${{ steps.matrix-read.outputs.integration }}
           physical-tenant-acceptance-tests-result: ${{ needs.physical-tenant-acceptance-tests.result }}
           physical-tenant-acceptance-matrix-output-result: ${{ steps.matrix-read.outputs.physical-tenant-acceptance }}
+          physical-tenant-identity-tests-result: ${{ needs.physical-tenant-identity-tests.result }}
+          physical-tenant-identity-matrix-output-result: ${{ steps.matrix-read.outputs.physical-tenant-identity }}
+          physical-tenant-history-tests-result: ${{ needs.physical-tenant-history-tests.result }}
+          physical-tenant-history-matrix-output-result: ${{ steps.matrix-read.outputs.physical-tenant-history }}
 
       - name: Check if there are flaky tests to analyze
         if: steps.bypass.outputs.present != 'true'
@@ -2367,6 +2458,8 @@ jobs:
       - operate-ci
       - optimize-ci
       - physical-tenant-acceptance-tests
+      - physical-tenant-identity-tests
+      - physical-tenant-history-tests
       - pin-check
       - pr-maven-snapshot
       - pr-vuln-check

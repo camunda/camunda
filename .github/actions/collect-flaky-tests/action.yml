@@ -58,6 +58,18 @@ inputs:
     physical-tenant-acceptance-matrix-output-result:
         description: 'Matrix output for physical-tenant acceptance tests'
         required: true
+    physical-tenant-identity-tests-result:
+        description: 'Result of the physical-tenant identity tests job'
+        required: true
+    physical-tenant-identity-matrix-output-result:
+        description: 'Matrix output for physical-tenant identity tests'
+        required: true
+    physical-tenant-history-tests-result:
+        description: 'Result of the physical-tenant history tests job'
+        required: true
+    physical-tenant-history-matrix-output-result:
+        description: 'Matrix output for physical-tenant history tests'
+        required: true
 
 
 outputs:
@@ -90,6 +102,10 @@ runs:
         INTEGRATION_MATRIX_OUTPUT_RESULT: ${{ inputs.integration-matrix-output-result }}
         PHYSICAL_TENANT_ACCEPTANCE_TESTS_RESULT: ${{ inputs.physical-tenant-acceptance-tests-result }}
         PHYSICAL_TENANT_ACCEPTANCE_MATRIX_OUTPUT_RESULT: ${{ inputs.physical-tenant-acceptance-matrix-output-result }}
+        PHYSICAL_TENANT_IDENTITY_TESTS_RESULT: ${{ inputs.physical-tenant-identity-tests-result }}
+        PHYSICAL_TENANT_IDENTITY_MATRIX_OUTPUT_RESULT: ${{ inputs.physical-tenant-identity-matrix-output-result }}
+        PHYSICAL_TENANT_HISTORY_TESTS_RESULT: ${{ inputs.physical-tenant-history-tests-result }}
+        PHYSICAL_TENANT_HISTORY_MATRIX_OUTPUT_RESULT: ${{ inputs.physical-tenant-history-matrix-output-result }}
       run: |
         set -euo pipefail
 
@@ -111,6 +127,8 @@ runs:
         collect_from_matrix_job "zeebe-unit-tests" "$ZEEBE_TESTS_RESULT" "$ZEEBE_MATRIX_OUTPUT_RESULT"
         collect_from_matrix_job "integration-tests" "$INTEGRATION_TESTS_RESULT" "$INTEGRATION_MATRIX_OUTPUT_RESULT"
         collect_from_matrix_job "physical-tenant-acceptance-tests" "$PHYSICAL_TENANT_ACCEPTANCE_TESTS_RESULT" "$PHYSICAL_TENANT_ACCEPTANCE_MATRIX_OUTPUT_RESULT"
+        collect_from_matrix_job "physical-tenant-identity-tests" "$PHYSICAL_TENANT_IDENTITY_TESTS_RESULT" "$PHYSICAL_TENANT_IDENTITY_MATRIX_OUTPUT_RESULT"
+        collect_from_matrix_job "physical-tenant-history-tests" "$PHYSICAL_TENANT_HISTORY_TESTS_RESULT" "$PHYSICAL_TENANT_HISTORY_MATRIX_OUTPUT_RESULT"
 
         # Output the collected data
         {
