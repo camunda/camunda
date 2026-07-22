@@ -23,7 +23,7 @@ import {
   toLokiNanos,
 } from '../../../../../utils/analyticsQueryHelpers';
 
-// P7 — the analytics exporter's pre-aggregated Prometheus counter
+// The analytics exporter's pre-aggregated Prometheus counter
 // (camunda_process_instance_created_total) must agree with the raw
 // process_instance_created event count in Loki for the same instances.
 //

@@ -1,17 +1,20 @@
 # Standalone, throwaway environment for analytics-exporter scenarios that
 # can't share the main stack's long-running `camunda` container — either
-# because the test needs to prove something is absent by default (N1) or
-# because comparing exact counts (P7) would get contaminated by every other
-# test's process instances running concurrently against the same broker.
-# Deliberately NOT part of docker-compose.yml — brought up and torn down
-# around a single test via utils/dockerComposeControl.ts, on shared
+# because the default-off test needs to prove something is absent by
+# default, or because the counter-parity test's exact counts would get
+# contaminated by every other test's process instances running concurrently
+# against the same broker. Deliberately NOT part of docker-compose.yml —
+# brought up and torn down around a single test via
+# utils/dockerComposeControl.ts, on shared
 # otel-collector-isolated/loki-isolated/prometheus-isolated companions, with
 # two mutually-exclusive camunda variants (only one is ever started at a
 # time, both bind the same host ports):
 #
-#   camunda-analytics-isolated           — N1: no exporter config at all
-#   camunda-analytics-isolated-exporter  — P7: exporter enabled, endpoint
-#                                           points at otel-collector-isolated
+#   camunda-analytics-isolated           — default-off test: no exporter
+#                                           config at all
+#   camunda-analytics-isolated-exporter  — counter-parity test: exporter
+#                                           enabled, endpoint points at
+#                                           otel-collector-isolated
 #
 # Usage:
 #   docker compose -f config/docker-compose.yml -f config/docker-compose.analytics-isolated.yml \
@@ -53,8 +56,8 @@ services:
       <<: *camunda-analytics-isolated-base-env
       ZEEBE_BROKER_NETWORK_HOST: camunda-analytics-isolated
       # Deliberately no CAMUNDA_DATA_EXPORTERS_ANALYTICS_* vars — this is the
-      # entire point of the N1 test (exporter absent unless explicitly
-      # configured).
+      # entire point of the default-off test (exporter absent unless
+      # explicitly configured).
     ports:
       - '28080:8080'
       - '28600:9600'
