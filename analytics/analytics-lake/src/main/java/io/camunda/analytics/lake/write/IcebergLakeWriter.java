@@ -18,9 +18,12 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.ToLongFunction;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.DataFile;
@@ -130,13 +133,40 @@ public final class IcebergLakeWriter implements LakeWriter {
           + "start_ms BIGINT, end_ms BIGINT, duration_ms BIGINT, instance_start_ms BIGINT)";
 
   /**
-   * Mirrors {@link InstanceRow} field for field. {@code start_ms}/{@code end_ms} are plain {@link
-   * Types.LongType} millis columns rather than Iceberg's {@code timestamp} logical type — a
-   * deliberate PoC simplification. Parquet's timestamp encoding carries a unit (millis/micros) and
-   * an "is UTC adjusted" flag that DuckDB, iceberg-core and any downstream reader all have to agree
-   * on; a plain 64-bit integer column sidesteps that entirely at the cost of every consumer having
-   * to remember these are millis-since-epoch, not a temporal type (queries must {@code
-   * to_timestamp(start_ms / 1000)} explicitly — see the README's demo queries).
+   * Projects the staging table's raw millisecond columns into the catalog schema's {@code
+   * timestamptz} columns (schema v2 -- see {@link #INSTANCE_SCHEMA}'s javadoc): DuckDB's {@code
+   * to_timestamp} takes fractional seconds and returns {@code TIMESTAMP WITH TIME ZONE} natively,
+   * so dividing the staged millisecond column by 1000.0 is the whole conversion. Every other column
+   * passes through unchanged.
+   */
+  private static final String INSTANCES_SELECT_SQL =
+      "SELECT key, process_definition_key, process_id, version, tenant_id, state, "
+          + "to_timestamp(start_ms / 1000.0) AS started_at, "
+          + "to_timestamp(end_ms / 1000.0) AS ended_at, "
+          + "duration_ms, vars_json FROM "
+          + INSTANCES_STAGING_TABLE;
+
+  /** See {@link #INSTANCES_SELECT_SQL}; same idea, plus {@code instance_started_at}. */
+  private static final String ACTIVITIES_SELECT_SQL =
+      "SELECT instance_key, process_id, version, tenant_id, element_id, element_type, "
+          + "element_key, state, "
+          + "to_timestamp(start_ms / 1000.0) AS started_at, "
+          + "to_timestamp(end_ms / 1000.0) AS ended_at, "
+          + "duration_ms, "
+          + "to_timestamp(instance_start_ms / 1000.0) AS instance_started_at FROM "
+          + ACTIVITIES_STAGING_TABLE;
+
+  /** Family-day bucketing granularity for the legacy buffered write path (see {@link #flush}). */
+  private static final long MILLIS_PER_DAY = 86_400_000L;
+
+  /**
+   * Mirrors {@link InstanceRow} field for field. {@code started_at}/{@code ended_at} are Iceberg
+   * {@code timestamptz} columns (schema v2 — see the README's "Schema v2" note): Parquet stores a
+   * {@code timestamptz} value as epoch <b>microseconds</b>, which is why every producer of these
+   * columns (the L0 sink's batch vectors, and this class's own legacy DuckDB-appender path below)
+   * has to convert from Zeebe's native epoch milliseconds at the point of writing, never before.
+   * {@code duration_ms} and every other {@code *_ms} column stay plain {@link Types.LongType}
+   * milliseconds — only the two instant columns changed shape.
    *
    * <p>{@code vars_json} (field id 10) is {@link Types.BinaryType}, not {@link Types.StringType}:
    * the L0 sink's {@code io.camunda.analytics.lake.sink.ColumnType#BINARY} column for this field
@@ -146,9 +176,9 @@ public final class IcebergLakeWriter implements LakeWriter {
    * CharSequence} and throws a {@code ClassCastException}. This does not disturb this class's own
    * legacy DuckDB-appender path (still exercised by the compaction/gold-table/UI tests that
    * construct {@link IcebergLakeWriter} directly): DuckDB writes Parquet files by inferring types
-   * from the staged {@code VARCHAR} column, never consulting this catalog {@link Schema}, and every
-   * reader of those legacy files (DuckDB {@code read_parquet}) resolves columns by their own
-   * physical Parquet metadata, not by this catalog schema either.
+   * from the staged column's own {@code SELECT} projection, never consulting this catalog {@link
+   * Schema}, and every reader of those legacy files (DuckDB {@code read_parquet}) resolves columns
+   * by their own physical Parquet metadata, not by this catalog schema either.
    */
   private static final Schema INSTANCE_SCHEMA =
       new Schema(
@@ -159,13 +189,14 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(4, "version", Types.IntegerType.get()),
               Types.NestedField.required(5, "tenant_id", Types.StringType.get()),
               Types.NestedField.required(6, "state", Types.StringType.get()),
-              Types.NestedField.required(7, "start_ms", Types.LongType.get()),
-              Types.NestedField.required(8, "end_ms", Types.LongType.get()),
+              Types.NestedField.required(7, "started_at", Types.TimestampType.withZone()),
+              Types.NestedField.required(8, "ended_at", Types.TimestampType.withZone()),
               Types.NestedField.required(9, "duration_ms", Types.LongType.get()),
               Types.NestedField.required(10, "vars_json", Types.BinaryType.get())));
 
   /**
-   * Mirrors {@link ActivityRow} field for field; see {@link #INSTANCE_SCHEMA} for the millis note.
+   * Mirrors {@link ActivityRow} field for field; see {@link #INSTANCE_SCHEMA} for the {@code
+   * timestamptz} note.
    */
   private static final Schema ACTIVITY_SCHEMA =
       new Schema(
@@ -178,12 +209,13 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(6, "element_type", Types.StringType.get()),
               Types.NestedField.required(7, "element_key", Types.LongType.get()),
               Types.NestedField.required(8, "state", Types.StringType.get()),
-              Types.NestedField.required(9, "start_ms", Types.LongType.get()),
-              Types.NestedField.required(10, "end_ms", Types.LongType.get()),
+              Types.NestedField.required(9, "started_at", Types.TimestampType.withZone()),
+              Types.NestedField.required(10, "ended_at", Types.TimestampType.withZone()),
               Types.NestedField.required(11, "duration_ms", Types.LongType.get()),
-              // The owning instance's start -- the family date activities will be partitioned and
+              // The owning instance's start -- the family date activities are partitioned and
               // retired by (see ActivityRow#instanceStartMs).
-              Types.NestedField.required(12, "instance_start_ms", Types.LongType.get())));
+              Types.NestedField.required(
+                  12, "instance_started_at", Types.TimestampType.withZone())));
 
   private static final Logger LOG = LoggerFactory.getLogger(IcebergLakeWriter.class);
 
@@ -223,8 +255,16 @@ public final class IcebergLakeWriter implements LakeWriter {
     if (!catalog.namespaceExists(namespace)) {
       catalog.createNamespace(namespace);
     }
-    instancesTable = tableOrCreate(TableIdentifier.of(namespace, "instances"), INSTANCE_SCHEMA);
-    activitiesTable = tableOrCreate(TableIdentifier.of(namespace, "activities"), ACTIVITY_SCHEMA);
+    instancesTable =
+        tableOrCreate(
+            TableIdentifier.of(namespace, "instances"),
+            INSTANCE_SCHEMA,
+            PartitionSpec.builderFor(INSTANCE_SCHEMA).day("started_at").build());
+    activitiesTable =
+        tableOrCreate(
+            TableIdentifier.of(namespace, "activities"),
+            ACTIVITY_SCHEMA,
+            PartitionSpec.builderFor(ACTIVITY_SCHEMA).day("instance_started_at").build());
 
     try {
       // One embedded, in-process DuckDB instance for the life of this writer. It never persists
@@ -237,14 +277,15 @@ public final class IcebergLakeWriter implements LakeWriter {
     }
   }
 
-  private Table tableOrCreate(final TableIdentifier identifier, final Schema schema) {
+  private Table tableOrCreate(
+      final TableIdentifier identifier, final Schema schema, final PartitionSpec spec) {
     if (catalog.tableExists(identifier)) {
       return catalog.loadTable(identifier);
     }
-    // UNPARTITIONED is a deliberate PoC simplification (see LakeConfig / module README):
-    // partitioning by e.g. a truncated start_ms would speed up time-range queries at the cost of
-    // small-file proliferation from this writer's one-file-per-flush pattern, which is a tuning
-    // question deferred past this PoC.
+    // Partitioned by days(...) on the table's family-day column (schema v2 -- see the README's
+    // "Schema v2" note): pruning a time-range query to the files of one or a few days is the whole
+    // point, at the cost of small-file proliferation from this writer's one-file-per-flush pattern,
+    // which LakeCompactor's periodic pass exists to fold back down.
     //
     // The name mapping is load-bearing for interoperability: the Parquet files written by the
     // embedded engine carry no Iceberg field ids, so without a default name mapping any strict
@@ -253,7 +294,7 @@ public final class IcebergLakeWriter implements LakeWriter {
     return catalog.createTable(
         identifier,
         schema,
-        PartitionSpec.unpartitioned(),
+        spec,
         Map.of(
             TableProperties.DEFAULT_NAME_MAPPING,
             NameMappingParser.toJson(MappingUtil.create(schema))));
@@ -288,7 +329,9 @@ public final class IcebergLakeWriter implements LakeWriter {
         "instances",
         INSTANCES_STAGING_DDL,
         INSTANCES_STAGING_TABLE,
+        INSTANCES_SELECT_SQL,
         IcebergLakeWriter::appendInstanceRow,
+        InstanceRow::startMs,
         sourcePartition,
         throughOffset);
     flushTable(
@@ -297,7 +340,9 @@ public final class IcebergLakeWriter implements LakeWriter {
         "activities",
         ACTIVITIES_STAGING_DDL,
         ACTIVITIES_STAGING_TABLE,
+        ACTIVITIES_SELECT_SQL,
         IcebergLakeWriter::appendActivityRow,
+        ActivityRow::instanceStartMs,
         sourcePartition,
         throughOffset);
   }
@@ -308,7 +353,9 @@ public final class IcebergLakeWriter implements LakeWriter {
       final String tableLabel,
       final String stagingDdl,
       final String stagingTableName,
+      final String selectSql,
       final RowAppender<T> rowAppender,
+      final ToLongFunction<T> familyDayMillis,
       final int partition,
       final long throughOffset) {
     table.refresh();
@@ -349,35 +396,82 @@ public final class IcebergLakeWriter implements LakeWriter {
           partition,
           throughOffset);
     } else {
-      final DataFile file =
-          writeParquet(
+      final List<DataFile> files =
+          writeParquetByDay(
               table,
               tableLabel,
               stagingDdl,
               stagingTableName,
+              selectSql,
               rowAppender,
+              familyDayMillis,
               bufferedRows,
               partition,
               committed + 1,
               throughOffset);
-      append.appendFile(file);
+      files.forEach(append::appendFile);
     }
     append.commit();
     bufferedRows.clear();
   }
 
-  private <T> DataFile writeParquet(
+  /**
+   * Groups {@code rows} by family day (schema v2 -- see {@link #INSTANCE_SCHEMA}'s javadoc) and
+   * writes one Parquet file per day, each registered with the day's own partition tuple: a
+   * partitioned table's data file must carry exactly one partition value, so a single flush whose
+   * rows happen to span more than one family day can no longer produce a single mixed file the way
+   * the pre-v2 unpartitioned tables allowed.
+   */
+  private <T> List<DataFile> writeParquetByDay(
       final Table table,
       final String tableLabel,
       final String stagingDdl,
       final String stagingTableName,
+      final String selectSql,
       final RowAppender<T> rowAppender,
+      final ToLongFunction<T> familyDayMillis,
+      final List<T> rows,
+      final int partition,
+      final long fromOffset,
+      final long throughOffset) {
+    final Map<Long, List<T>> rowsByDay = new LinkedHashMap<>();
+    for (final T row : rows) {
+      final long epochDay = Math.floorDiv(familyDayMillis.applyAsLong(row), MILLIS_PER_DAY);
+      rowsByDay.computeIfAbsent(epochDay, ignored -> new ArrayList<>()).add(row);
+    }
+    final List<DataFile> files = new ArrayList<>(rowsByDay.size());
+    for (final Map.Entry<Long, List<T>> dayRows : rowsByDay.entrySet()) {
+      files.add(
+          writeParquetForDay(
+              table,
+              tableLabel,
+              stagingDdl,
+              stagingTableName,
+              selectSql,
+              rowAppender,
+              dayRows.getKey(),
+              dayRows.getValue(),
+              partition,
+              fromOffset,
+              throughOffset));
+    }
+    return files;
+  }
+
+  private <T> DataFile writeParquetForDay(
+      final Table table,
+      final String tableLabel,
+      final String stagingDdl,
+      final String stagingTableName,
+      final String selectSql,
+      final RowAppender<T> rowAppender,
+      final long epochDay,
       final List<T> rows,
       final int partition,
       final long fromOffset,
       final long throughOffset) {
     final String fileName =
-        String.format("p%d-%d-%d.parquet", partition, fromOffset, throughOffset);
+        String.format("p%d-%d-%d-day%d.parquet", partition, fromOffset, throughOffset, epochDay);
     // Logical location Iceberg tracks in the DataFile -- keeps the file: URI scheme every other
     // table/warehouse location in this catalog uses.
     final String location = table.location() + "/data/" + fileName;
@@ -406,28 +500,25 @@ public final class IcebergLakeWriter implements LakeWriter {
         // separate explicit flush() call needed here because try-with-resources calls close().
       }
       try (Statement copy = duckdb.createStatement()) {
-        copy.execute(
-            "COPY (SELECT * FROM "
-                + stagingTableName
-                + ") TO '"
-                + physicalPath
-                + "' (FORMAT PARQUET)");
+        copy.execute("COPY (" + selectSql + ") TO '" + physicalPath + "' (FORMAT PARQUET)");
       }
       final long fileSizeBytes = Files.size(physicalPath);
       LOG.info(
-          "Flushed {} rows ({} table, partition {}, offsets {}-{}) to {}",
+          "Flushed {} rows ({} table, partition {}, offsets {}-{}, day {}) to {}",
           rows.size(),
           tableLabel,
           partition,
           fromOffset,
           throughOffset,
+          epochDay,
           physicalPath);
-      // PartitionSpec.unpartitioned() must match the table's own spec -- DataFiles.Builder uses
-      // it only to decide whether a partition value is expected, which for an unpartitioned table
-      // it never is.
-      return DataFiles.builder(PartitionSpec.unpartitioned())
+      // table.spec() is this table's days(...) partition spec (see #tableOrCreate); the partition
+      // value is the day's own ISO date string -- Conversions#fromPartitionString parses a DATE
+      // partition value as an ISO local date, not a raw integer epoch-day.
+      return DataFiles.builder(table.spec())
           .withPath(location)
           .withFormat(FileFormat.PARQUET)
+          .withPartitionValues(List.of(LocalDate.ofEpochDay(epochDay).toString()))
           .withRecordCount(rows.size())
           .withFileSizeInBytes(fileSizeBytes)
           .build();

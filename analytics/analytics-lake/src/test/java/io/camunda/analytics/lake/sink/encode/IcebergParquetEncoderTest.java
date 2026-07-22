@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.analytics.lake.sink.BatchEncoder;
+import io.camunda.analytics.lake.sink.ColumnType;
 import io.camunda.analytics.lake.sink.DataFileResult;
 import io.camunda.analytics.lake.sink.TableSchema;
 import io.camunda.analytics.lake.write.LocalFileIO;
@@ -21,9 +22,12 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import org.apache.iceberg.Schema;
+import org.apache.iceberg.types.Types;
 import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.conf.PlainParquetConfiguration;
 import org.apache.parquet.hadoop.ParquetFileReader;
@@ -293,5 +297,60 @@ class IcebergParquetEncoderTest {
     // when / then: abort right after opening, with no appends at all, does not throw
     encoder.abort();
     assertThatThrownBy(encoder::finish).isInstanceOf(IllegalStateException.class);
+  }
+
+  @Test
+  void shouldRoundTripTimestamptzValuesThroughDuckDb() throws Exception {
+    // given a schema v2 column marked timestamptz (see TableSchema.Column#timestamptz()): the
+    // batch vector carries epoch MICROSECONDS, exactly what LakeTranslator's ×1000 conversion
+    // produces, and the catalog field is Iceberg's timestamptz logical type
+    final TableSchema schema =
+        new TableSchema(
+            "instances",
+            List.of(
+                new TableSchema.Column("key", ColumnType.LONG, 1, false, 0, false),
+                new TableSchema.Column("started_at", ColumnType.LONG, 2, false, -1, true, true)));
+    final Schema icebergSchema =
+        new Schema(
+            List.of(
+                Types.NestedField.required(1, "key", Types.LongType.get()),
+                Types.NestedField.required(2, "started_at", Types.TimestampType.withZone())));
+    final LocalFileSink fileSink = new LocalFileSink(tempDir);
+    final IcebergParquetEncoderFactory factory =
+        new IcebergParquetEncoderFactory(icebergSchema, fileSink, 10, Set.of());
+
+    final Instant instantA = Instant.parse("2026-07-20T10:15:30.123456Z");
+    final Instant instantB = Instant.parse("2026-07-20T11:00:00.000001Z");
+    final long microsA = instantA.getEpochSecond() * 1_000_000L + instantA.getNano() / 1000;
+    final long microsB = instantB.getEpochSecond() * 1_000_000L + instantB.getNano() / 1000;
+
+    final Object[][] columns = new Object[2][2];
+    columns[0] = new Object[] {1L, 2L};
+    columns[1] = new Object[] {microsA, microsB};
+    final FakeSortedRun run = new FakeSortedRun(schema, columns, new long[] {19193, 19193});
+
+    // when: the encoder writes the sink's own Parquet file (the same rung the sink pipeline uses)
+    final BatchEncoder encoder = factory.newFile(schema, 19193L);
+    encoder.append(run, 0, 2);
+    final DataFileResult result = encoder.finish();
+
+    // then: DuckDB reads the file back with proper TIMESTAMP (WITH TIME ZONE) values equal to the
+    // instants that were appended, not raw integers
+    final Path physicalPath = LocalFileIO.toFilesystemPath(result.path());
+    try (Connection duckdb = DriverManager.getConnection("jdbc:duckdb:");
+        Statement statement = duckdb.createStatement();
+        ResultSet rs =
+            statement.executeQuery(
+                "SELECT key, started_at FROM read_parquet('" + physicalPath + "') ORDER BY key")) {
+      assertThat(rs.next()).isTrue();
+      assertThat(rs.getLong("key")).isEqualTo(1L);
+      assertThat(rs.getObject("started_at", OffsetDateTime.class).toInstant()).isEqualTo(instantA);
+
+      assertThat(rs.next()).isTrue();
+      assertThat(rs.getLong("key")).isEqualTo(2L);
+      assertThat(rs.getObject("started_at", OffsetDateTime.class).toInstant()).isEqualTo(instantB);
+
+      assertThat(rs.next()).isFalse();
+    }
   }
 }

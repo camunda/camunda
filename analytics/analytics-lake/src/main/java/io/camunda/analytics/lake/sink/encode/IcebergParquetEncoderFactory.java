@@ -21,16 +21,18 @@ import org.apache.iceberg.io.OutputFile;
  * #newFile}, all writing to the same table (fixed {@link Schema}) through the same {@link
  * FileSink}.
  *
- * <p>File naming: {@code day=<YYYY-MM-DD|mixed>/f-<sequence>-day<epochDay>.parquet}, relative to
- * the table's data location (see {@link FileSink#newOutputFile}'s javadoc). The sequence is a
- * per-factory monotonic counter, not a random id, so file names stay reproducible in tests; it does
- * not need to be globally unique across factories/processes because {@link FileSink} owns the
+ * <p>File naming: {@code day=<YYYY-MM-DD>/f-<sequence>-day<epochDay>.parquet}, relative to the
+ * table's data location (see {@link FileSink#newOutputFile}'s javadoc). {@code epochDay} may be
+ * negative (a day before 1970-01-01) — {@link LocalDate#ofEpochDay} handles that natively, so the
+ * {@code YYYY-MM-DD} folder is always the real calendar day, never a "mixed" sentinel: every file
+ * this factory opens carries exactly one family day (see {@link DayRouter}'s javadoc). The sequence
+ * is a per-factory monotonic counter, not a random id, so file names stay reproducible in tests; it
+ * does not need to be globally unique across factories/processes because {@link FileSink} owns the
  * table-scoped namespace each factory writes into.
  */
 public final class IcebergParquetEncoderFactory implements BatchEncoder.Factory {
 
   private static final String DEFAULT_COMPRESSION_CODEC = "zstd";
-  private static final String MIXED_DAY_FOLDER = "mixed";
 
   private final Schema icebergSchema;
   private final FileSink fileSink;
@@ -64,8 +66,7 @@ public final class IcebergParquetEncoderFactory implements BatchEncoder.Factory 
 
   @Override
   public BatchEncoder newFile(final TableSchema schema, final long epochDay) {
-    final String dayFolder =
-        epochDay < 0 ? MIXED_DAY_FOLDER : LocalDate.ofEpochDay(epochDay).toString();
+    final String dayFolder = LocalDate.ofEpochDay(epochDay).toString();
     final String fileName = "f-" + fileSequence.incrementAndGet() + "-day" + epochDay + ".parquet";
     final String relativePath = "day=" + dayFolder + "/" + fileName;
     final OutputFile outputFile = fileSink.newOutputFile(schema, relativePath);

@@ -59,8 +59,12 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,9 +72,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
+import org.apache.iceberg.DataFile;
 import org.apache.iceberg.FileScanTask;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.expressions.Expression;
+import org.apache.iceberg.expressions.Expressions;
 import org.apache.iceberg.io.CloseableIterable;
 import org.apache.parquet.ParquetReadOptions;
 import org.apache.parquet.conf.PlainParquetConfiguration;
@@ -111,6 +118,7 @@ class SinkIntegrationTest {
   // family day (an instance's own activities never straddle two days by construction).
   private static final long DAY_A_START_MS = 1_700_000_000_000L;
   private static final long DAY_B_START_MS = DAY_A_START_MS + 86_400_000L;
+  private static final long DAY_C_START_MS = DAY_B_START_MS + 86_400_000L;
 
   @TempDir Path tempDir;
 
@@ -237,6 +245,14 @@ class SinkIntegrationTest {
       // then (e): a data file actually carries the schema's authoritative field ids
       assertFieldIdsInOneDataFile(instancesTable, instancesSchema);
 
+      // then (f): every planned data file carries exactly one partition tuple (schema v2 --
+      // days(started_at)), spanning both family days this batch actually touched
+      assertPartitionTuplesSpanBothDays(instancesTable);
+
+      // then (g): started_at/ended_at round-trip through DuckDB as proper TIMESTAMP values equal
+      // to the instants that were appended, not raw millisecond integers
+      assertTimestamptzRoundTrip(instancesTable, 1L, DAY_A_START_MS, DAY_A_START_MS + 50);
+
       // then (d): replaying the exact same records after a simulated crash (fresh state, fresh
       // pipelines, same tables/sinks) does not duplicate rows -- DirectCommitSink's idempotence
       // guard must skip every replayed descriptor since its lastOffset is already committed
@@ -279,6 +295,98 @@ class SinkIntegrationTest {
       assertThat(rowCount(instancesTable)).isEqualTo(instanceRowsBeforeReplay);
       assertThat(rowCount(activitiesTable)).isEqualTo(activityRowsBeforeReplay);
       assertThat(writer.committedOffset(PARTITION_0)).isEqualTo(lastOffset0);
+    } finally {
+      writer.close();
+    }
+  }
+
+  /**
+   * The point of this whole slice: instances land across three distinct family days, then an
+   * Iceberg scan filtered to just one day's instant range plans <b>only</b> that day's data file(s)
+   * -- proved at the file level via {@link org.apache.iceberg.TableScan#planFiles()}, not merely by
+   * post-filtering rows after reading everything.
+   */
+  @Test
+  void shouldPruneIcebergScanFilesToOnlyTheRequestedFamilyDay() throws Exception {
+    // given a fresh warehouse with one instance on each of three distinct family days
+    final LakeConfig config = testConfig();
+    final IcebergLakeWriter writer = new IcebergLakeWriter(config);
+    try {
+      final Table instancesTable = writer.instancesTable();
+      final LocalFileSink fileSink = new LocalFileSink(config.warehouseDir().resolve("lake"));
+      final IcebergParquetEncoderFactory instancesEncoderFactory =
+          new IcebergParquetEncoderFactory(
+              instancesTable.schema(), fileSink, SEGMENT_ROWS, Set.of());
+      final IcebergParquetEncoderFactory activitiesEncoderFactory =
+          new IcebergParquetEncoderFactory(
+              writer.activitiesTable().schema(), fileSink, SEGMENT_ROWS, Set.of());
+      final DirectCommitSink instancesSink = new DirectCommitSink(instancesTable);
+      final DirectCommitSink activitiesSink = new DirectCommitSink(writer.activitiesTable());
+      final TableSchema instancesSchema = RawTableSchemas.instances(instancesTable.schema());
+      final TableSchema activitiesSchema =
+          RawTableSchemas.activities(writer.activitiesTable().schema());
+      final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+      final FakeClock clock = new FakeClock(0L);
+
+      final TranslatorState state = new InMemoryTranslatorState();
+      final Pipelines pipelines =
+          buildPipelines(
+              PARTITION_0,
+              instancesSchema,
+              activitiesSchema,
+              instancesEncoderFactory,
+              activitiesEncoderFactory,
+              instancesSink,
+              activitiesSink,
+              clock,
+              meterRegistry);
+      final LakeTranslator translator =
+          new LakeTranslator(state, pipelines.instanceAppender, pipelines.activityAppender);
+      pipelines.start();
+
+      final OffsetCounter offsets = new OffsetCounter();
+      final long lastOffset =
+          feed(
+              translator,
+              offsets,
+              List.of(
+                  instance(101L, DAY_A_START_MS),
+                  instance(102L, DAY_B_START_MS),
+                  instance(103L, DAY_C_START_MS)));
+      clock.advance(FLUSH_INTERVAL_MS + 1);
+      pipelines.onPollTick(lastOffset, DAY_C_START_MS);
+      pipelines.close();
+
+      // when: the scan is filtered to day B's instant range only
+      final long dayBStartMicros = DAY_B_START_MS * 1000L;
+      final long dayBEndMicros = dayBStartMicros + 86_400_000_000L;
+      final Expression dayBOnly =
+          Expressions.and(
+              Expressions.greaterThanOrEqual("started_at", dayBStartMicros),
+              Expressions.lessThan("started_at", dayBEndMicros));
+      instancesTable.refresh();
+      final List<FileScanTask> planned = new ArrayList<>();
+      try (CloseableIterable<FileScanTask> tasks =
+          instancesTable.newScan().filter(dayBOnly).planFiles()) {
+        tasks.forEach(planned::add);
+      }
+
+      // then: at least one file is planned, and EVERY planned file's partition tuple is day B's
+      // epoch day -- day A's and day C's files were pruned at the manifest level, never opened
+      assertThat(planned).isNotEmpty();
+      final long expectedEpochDay = epochDayOf(DAY_B_START_MS);
+      for (final FileScanTask task : planned) {
+        assertThat(task.file().partition().get(0, Integer.class))
+            .as("planned file's partition day for %s", task.file().location())
+            .isEqualTo((int) expectedEpochDay);
+      }
+
+      // and reading exactly the planned files back yields only day B's instance -- confirming the
+      // plan is not just correct in theory but actually excludes day A/C's rows
+      final List<String> plannedLocations =
+          planned.stream().map(task -> task.file().location()).distinct().toList();
+      final List<Long> keysInPlannedFiles = instanceKeysAt(plannedLocations);
+      assertThat(keysInPlannedFiles).containsExactly(102L);
     } finally {
       writer.close();
     }
@@ -541,6 +649,74 @@ class SinkIntegrationTest {
     assertThat(value)
         .as("lake.offset.p%d on table %s", partition, table.name())
         .isEqualTo(Long.toString(expected));
+  }
+
+  /**
+   * Asserts every data file the table's current snapshot plans carries exactly one partition tuple
+   * (schema v2 -- a partitioned table's data file must, see {@code
+   * io.camunda.analytics.lake.sink.encode.DayRouter}'s javadoc), and that the set of distinct
+   * partition days spans both {@link #DAY_A_START_MS} and {@link #DAY_B_START_MS}.
+   */
+  private static void assertPartitionTuplesSpanBothDays(final Table table) throws SQLException {
+    table.refresh();
+    final Set<Integer> partitionDays = new LinkedHashSet<>();
+    try (CloseableIterable<FileScanTask> tasks = table.newScan().planFiles()) {
+      for (final FileScanTask task : tasks) {
+        final DataFile file = task.file();
+        assertThat(file.partition().size())
+            .as("partition tuple size for %s", file.location())
+            .isEqualTo(1);
+        partitionDays.add(file.partition().get(0, Integer.class));
+      }
+    } catch (final IOException e) {
+      throw new SQLException("Failed to plan data files for " + table.name(), e);
+    }
+    assertThat(partitionDays)
+        .contains((int) epochDayOf(DAY_A_START_MS), (int) epochDayOf(DAY_B_START_MS));
+  }
+
+  private static long epochDayOf(final long epochMillis) {
+    return Instant.ofEpochMilli(epochMillis).atZone(ZoneOffset.UTC).toLocalDate().toEpochDay();
+  }
+
+  /**
+   * Asserts {@code started_at}/{@code ended_at} round-trip through DuckDB as proper {@code
+   * TIMESTAMP WITH TIME ZONE} values equal to the millisecond instants that were appended (schema
+   * v2 -- these columns are Iceberg {@code timestamptz}, not raw integers).
+   */
+  private static void assertTimestamptzRoundTrip(
+      final Table table,
+      final long instanceKey,
+      final long expectedStartMs,
+      final long expectedEndMs)
+      throws SQLException {
+    final List<String> locations = currentFileLocations(table);
+    try (Connection duckdb = DriverManager.getConnection("jdbc:duckdb:");
+        Statement statement = duckdb.createStatement();
+        ResultSet rs =
+            statement.executeQuery(
+                "SELECT started_at, ended_at FROM "
+                    + readParquetOf(locations)
+                    + " WHERE key = "
+                    + instanceKey)) {
+      assertThat(rs.next()).as("row for instance key %d", instanceKey).isTrue();
+      assertThat(rs.getObject("started_at", OffsetDateTime.class).toInstant())
+          .isEqualTo(Instant.ofEpochMilli(expectedStartMs));
+      assertThat(rs.getObject("ended_at", OffsetDateTime.class).toInstant())
+          .isEqualTo(Instant.ofEpochMilli(expectedEndMs));
+    }
+  }
+
+  private static List<Long> instanceKeysAt(final List<String> locations) throws SQLException {
+    final List<Long> keys = new ArrayList<>();
+    try (Connection duckdb = DriverManager.getConnection("jdbc:duckdb:");
+        Statement statement = duckdb.createStatement();
+        ResultSet rs = statement.executeQuery("SELECT key FROM " + readParquetOf(locations))) {
+      while (rs.next()) {
+        keys.add(rs.getLong(1));
+      }
+    }
+    return keys;
   }
 
   private static long rowCount(final Table table) throws SQLException {

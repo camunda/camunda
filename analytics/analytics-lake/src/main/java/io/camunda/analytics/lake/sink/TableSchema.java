@@ -35,8 +35,13 @@ public record TableSchema(String table, List<Column> columns) {
    * @param nullable whether null values may be appended
    * @param sortOrder position in the seal-time sort key ({@code 0} = primary, {@code 1} =
    *     secondary, ...; {@code -1} = not part of the sort key)
-   * @param familyDaySource whether this column carries the epoch-millis timestamp the family day is
-   *     derived from (exactly one column per schema must set this)
+   * @param familyDaySource whether this column carries the epoch-microseconds instant the family
+   *     day is derived from (exactly one column per schema must set this)
+   * @param timestamptz whether this {@code LONG} column is logically an Iceberg {@code timestamptz}
+   *     carrying epoch <b>microseconds</b> rather than a plain integer — the vector storage stays
+   *     {@code long[]} either way (see {@link ColumnType#LONG}'s javadoc); this flag only tells
+   *     {@code BatchRowView} to hand the value to the Parquet writer as an {@code OffsetDateTime}
+   *     instead of a boxed {@code Long}. Meaningless for any other {@link ColumnType}.
    */
   public record Column(
       String name,
@@ -44,7 +49,20 @@ public record TableSchema(String table, List<Column> columns) {
       int icebergFieldId,
       boolean nullable,
       int sortOrder,
-      boolean familyDaySource) {}
+      boolean familyDaySource,
+      boolean timestamptz) {
+
+    /** Same as the 7-arg constructor, defaulting {@code timestamptz} to {@code false}. */
+    public Column(
+        final String name,
+        final ColumnType type,
+        final int icebergFieldId,
+        final boolean nullable,
+        final int sortOrder,
+        final boolean familyDaySource) {
+      this(name, type, icebergFieldId, nullable, sortOrder, familyDaySource, false);
+    }
+  }
 
   /** Index of the column the family day is derived from. */
   public int familyDayColumn() {

@@ -33,8 +33,13 @@ public interface BatchEncoder {
   interface Factory {
     /**
      * Opens an encoder for a new data file of {@code schema}'s table holding rows of family day
-     * {@code epochDay} (or the mixed-day spill file when {@code epochDay < 0} — legal while tables
-     * are unpartitioned; stats will be wide, the ladder folds it properly later).
+     * {@code epochDay} — epoch days, UTC, and may legitimately be negative (a day before
+     * 1970-01-01). Every file this produces carries exactly one family day: the tables are
+     * partitioned by {@code days(...)} on their family-day column, and a partitioned table's data
+     * file must carry exactly one partition tuple, so a "mixed day" file is no longer a legal
+     * output — {@link io.camunda.analytics.lake.sink.encode.DayRouter} routes any family day beyond
+     * its concurrently-open slots to its own dedicated one-shot file instead of a shared spill file
+     * (see that class's javadoc).
      */
     BatchEncoder newFile(TableSchema schema, long epochDay);
   }

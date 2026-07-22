@@ -25,7 +25,9 @@ import org.junit.jupiter.api.Test;
 
 class SegmentSorterTest {
 
-  private static final long MILLIS_PER_DAY = 86_400_000L;
+  // Matches SegmentSorter's own day-bucketing divisor: family-day source columns carry epoch
+  // microseconds (see TableSchema.Column#timestamptz()), not milliseconds.
+  private static final long MICROS_PER_DAY = 86_400_000_000L;
 
   // columns: ts (family day source, not a sort key), entityId (primary sort key),
   // kind (secondary sort key, STRING_DICT, compared by code), count (nullable, not sort key),
@@ -82,7 +84,7 @@ class SegmentSorterTest {
     final List<Row> rows = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       final long day = random.nextInt(dayCount);
-      final long ts = day * MILLIS_PER_DAY + random.nextInt(1000);
+      final long ts = day * MICROS_PER_DAY + random.nextInt(1000);
       final long entityId = i;
       final String kind = kinds[random.nextInt(kinds.length)];
       final Integer count2 = random.nextBoolean() ? random.nextInt(1000) : null;
@@ -110,7 +112,7 @@ class SegmentSorterTest {
     // interner (idempotent) to resolve dict codes exactly as the sorter does
     final List<Row> expected = new ArrayList<>(rows);
     expected.sort(
-        Comparator.<Row>comparingLong(r -> Math.floorDiv(r.ts(), MILLIS_PER_DAY))
+        Comparator.<Row>comparingLong(r -> Math.floorDiv(r.ts(), MICROS_PER_DAY))
             .thenComparingLong(Row::entityId)
             .thenComparingInt(r -> interner.intern(r.kind())));
 
@@ -143,7 +145,7 @@ class SegmentSorterTest {
     final List<Row> rows = new ArrayList<>();
     for (int i = 0; i < 5; i++) {
       for (int day = 0; day < 3; day++) {
-        rows.add(new Row(day * MILLIS_PER_DAY + i, day * 100L + i, "kind", null, null));
+        rows.add(new Row(day * MICROS_PER_DAY + i, day * 100L + i, "kind", null, null));
       }
     }
     final Segment segment = fillSegment(rows, interner);
@@ -222,7 +224,7 @@ class SegmentSorterTest {
     assertThat(secondRun.size()).isEqualTo(secondRows.size());
     final List<Row> expectedSecond = new ArrayList<>(secondRows);
     expectedSecond.sort(
-        Comparator.<Row>comparingLong(r -> Math.floorDiv(r.ts(), MILLIS_PER_DAY))
+        Comparator.<Row>comparingLong(r -> Math.floorDiv(r.ts(), MICROS_PER_DAY))
             .thenComparingLong(Row::entityId)
             .thenComparingInt(r -> interner.intern(r.kind())));
     for (int i = 0; i < expectedSecond.size(); i++) {

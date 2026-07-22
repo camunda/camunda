@@ -1105,7 +1105,7 @@ public final class LakeUiServer implements AutoCloseable {
             desc: "Each instance's ordered element-id sequence, grouped and counted.",
             sql: `WITH sequences AS (
                     SELECT instance_key, process_id, version,
-                           string_agg(element_id, ' -> ' ORDER BY start_ms) AS variant
+                           string_agg(element_id, ' -> ' ORDER BY started_at) AS variant
                     FROM activities
                     GROUP BY instance_key, process_id, version
                   )
@@ -1120,13 +1120,14 @@ public final class LakeUiServer implements AutoCloseable {
             title: 'Bottleneck edges',
             desc: 'Average gap between consecutive elements in the same instance.',
             sql: `WITH ordered AS (
-                    SELECT instance_key, element_id, start_ms, end_ms,
-                           lead(element_id) OVER (PARTITION BY instance_key ORDER BY start_ms) AS next_element_id,
-                           lead(start_ms)   OVER (PARTITION BY instance_key ORDER BY start_ms) AS next_start_ms
+                    SELECT instance_key, element_id, started_at, ended_at,
+                           lead(element_id) OVER (PARTITION BY instance_key ORDER BY started_at) AS next_element_id,
+                           lead(started_at) OVER (PARTITION BY instance_key ORDER BY started_at) AS next_started_at
                     FROM activities
                   )
                   SELECT element_id AS from_element, next_element_id AS to_element,
-                         count(*) AS transitions, avg(next_start_ms - end_ms) AS avg_gap_ms
+                         count(*) AS transitions,
+                         avg(epoch_ms(next_started_at) - epoch_ms(ended_at)) AS avg_gap_ms
                   FROM ordered
                   WHERE next_element_id IS NOT NULL
                   GROUP BY 1, 2
@@ -1148,10 +1149,10 @@ public final class LakeUiServer implements AutoCloseable {
             title: 'Recent instances',
             desc: 'Last 20 finished instances by end time.',
             sql: `SELECT key, process_id, version, state, duration_ms,
-                         to_timestamp(end_ms / 1000) AS ended_at,
+                         ended_at,
                          substr(vars_json, 1, 200) AS vars_json_preview
                   FROM instances
-                  ORDER BY end_ms DESC
+                  ORDER BY ended_at DESC
                   LIMIT 20`,
           },
         ];
@@ -1592,12 +1593,12 @@ public final class LakeUiServer implements AutoCloseable {
           stats: `SELECT
                     (SELECT count(*) FROM instances) AS total_completed,
                     (SELECT count(*) FROM open_instances) AS running_now,
-                    (SELECT count(*) FROM instances WHERE end_ms > (epoch(now()) - 300) * 1000) AS completed_last_5m,
+                    (SELECT count(*) FROM instances WHERE ended_at > now() - INTERVAL '300 seconds') AS completed_last_5m,
                     (SELECT quantile_cont(duration_ms, 0.95) FROM instances) AS p95_duration_ms`,
-          line: `SELECT date_trunc('minute', to_timestamp(end_ms / 1000)) AS minute,
+          line: `SELECT date_trunc('minute', ended_at) AS minute,
                         count(*) AS completions
                  FROM instances
-                 WHERE end_ms > (epoch(now()) - 900) * 1000
+                 WHERE ended_at > now() - INTERVAL '900 seconds'
                  GROUP BY 1
                  ORDER BY 1`,
           bars: `SELECT process_id, count(*) AS instance_count
@@ -2694,14 +2695,14 @@ public final class LakeUiServer implements AutoCloseable {
           const filterClause = processFilter
             ? ` AND process_id = '${processFilter.replace(/'/g, "''")}'`
             : '';
-          return `SELECT time_bucket(INTERVAL '${range.bucketSql}', to_timestamp(end_ms/1000)) AS bucket,
+          return `SELECT time_bucket(INTERVAL '${range.bucketSql}', ended_at) AS bucket,
                          count(*) AS n,
                          quantile_cont(duration_ms, 0.5) AS median_ms,
                          quantile_cont(duration_ms, 0.95) AS p95_ms,
                          min(duration_ms) AS min_ms, arg_min(key, duration_ms) AS min_key,
                          max(duration_ms) AS max_ms, arg_max(key, duration_ms) AS max_key
                   FROM instances
-                  WHERE end_ms > (epoch(now()) - ${range.seconds}) * 1000${filterClause}
+                  WHERE ended_at > now() - INTERVAL '${range.seconds} seconds'${filterClause}
                   GROUP BY bucket
                   ORDER BY bucket`;
         }

@@ -19,7 +19,9 @@ import org.apache.iceberg.Metrics;
  * @param fileSizeBytes final size
  * @param metrics per-column metrics collected during the write (iceberg-parquet provides these;
  *     never re-derive by re-reading)
- * @param epochDay the file's family day, or {@code -1} for the mixed-day spill file
+ * @param epochDay the file's family day (epoch days, UTC) — every file carries exactly one, since a
+ *     partitioned table's data file must carry exactly one partition tuple; may legitimately be
+ *     negative (a day before 1970-01-01)
  */
 public record DataFileResult(
     String table, String path, long rowCount, long fileSizeBytes, Metrics metrics, long epochDay) {}

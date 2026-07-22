@@ -11,11 +11,13 @@ import io.camunda.analytics.lake.sink.ColumnType;
 import io.camunda.analytics.lake.sink.SortedRun;
 import io.camunda.analytics.lake.sink.TableSchema;
 import java.nio.ByteBuffer;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import org.apache.iceberg.StructLike;
 import org.apache.iceberg.data.Record;
 import org.apache.iceberg.types.Types;
+import org.apache.iceberg.util.DateTimeUtil;
 
 /**
  * Flyweight {@link Record} cursor over one position of a {@link SortedRun}: constructed once per
@@ -43,6 +45,7 @@ final class BatchRowView implements Record {
   private final Types.StructType struct;
   private final ColumnType[] columnTypeByPos;
   private final int[] sortedRunColumnByPos;
+  private final boolean[] timestamptzByPos;
 
   // Mutable cursor state; rebound per row by moveTo(), never per column.
   private SortedRun run;
@@ -59,11 +62,13 @@ final class BatchRowView implements Record {
     final int size = struct.fields().size();
     columnTypeByPos = new io.camunda.analytics.lake.sink.ColumnType[size];
     sortedRunColumnByPos = new int[size];
+    timestamptzByPos = new boolean[size];
     for (int pos = 0; pos < size; pos++) {
       final int fieldId = struct.fields().get(pos).fieldId();
       final int columnIndex = columnIndexForFieldId(columns, fieldId, tableSchema.table());
       sortedRunColumnByPos[pos] = columnIndex;
       columnTypeByPos[pos] = columns.get(columnIndex).type();
+      timestamptzByPos[pos] = columns.get(columnIndex).timestamptz();
     }
   }
 
@@ -102,12 +107,27 @@ final class BatchRowView implements Record {
     }
     final Object value =
         switch (columnTypeByPos[pos]) {
-          case LONG -> run.longAt(column, index);
+          case LONG ->
+              timestamptzByPos[pos]
+                  ? microsToOffsetDateTime(run.longAt(column, index))
+                  : run.longAt(column, index);
           case INT -> run.intAt(column, index);
           case STRING_DICT -> run.stringAt(column, index);
           case BINARY -> copyBinary(column);
         };
     return javaClass.cast(value);
+  }
+
+  /**
+   * A {@code timestamptz} column's batch-vector value is epoch microseconds (see {@link
+   * TableSchema.Column#timestamptz()}); iceberg-data's generic Parquet writer expects an {@link
+   * OffsetDateTime} for such a field (confirmed against {@code
+   * GenericParquetWriter.TimestamptzWriter}, which extends {@code
+   * ParquetValueWriters.PrimitiveWriter<OffsetDateTime>}) — one allocation per timestamp value on
+   * the flush thread, same budgeted trade-off as {@link #copyBinary}.
+   */
+  private static OffsetDateTime microsToOffsetDateTime(final long epochMicros) {
+    return DateTimeUtil.timestamptzFromMicros(epochMicros);
   }
 
   private ByteBuffer copyBinary(final int column) {

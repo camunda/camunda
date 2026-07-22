@@ -32,8 +32,11 @@ public final class RawTableSchemas {
   private RawTableSchemas() {}
 
   /**
-   * Sort key {@code (process_id, key, start_ms)}; family day source is {@code start_ms} (instance
-   * activation) — see the class-level "Column mapping"/"Sort keys" contract this mirrors.
+   * Sort key {@code (process_id, key, started_at)}; family day source is {@code started_at}
+   * (instance activation) — see the class-level "Column mapping"/"Sort keys" contract this mirrors.
+   * {@code started_at}/{@code ended_at} are {@code timestamptz} columns (epoch microseconds on the
+   * batch vector, see {@link TableSchema.Column#timestamptz()}); {@code duration_ms} stays a plain
+   * millisecond {@code LONG}.
    */
   public static TableSchema instances(final Schema icebergSchema) {
     return new TableSchema(
@@ -50,15 +53,15 @@ public final class RawTableSchemas {
             column(icebergSchema, "version", ColumnType.INT, -1, false),
             column(icebergSchema, "tenant_id", ColumnType.STRING_DICT, -1, false),
             column(icebergSchema, "state", ColumnType.STRING_DICT, -1, false),
-            column(icebergSchema, "start_ms", ColumnType.LONG, InstanceColumns.SORT_START_MS, true),
-            column(icebergSchema, "end_ms", ColumnType.LONG, -1, false),
+            timestamptzColumn(icebergSchema, "started_at", InstanceColumns.SORT_START_MS, true),
+            timestamptzColumn(icebergSchema, "ended_at", -1, false),
             column(icebergSchema, "duration_ms", ColumnType.LONG, -1, false),
             column(icebergSchema, "vars_json", ColumnType.BINARY, -1, false)));
   }
 
   /**
-   * Sort key {@code (process_id, instance_key, start_ms)}; family day source is {@code
-   * instance_start_ms} (the owning instance's activation, not the element's own start).
+   * Sort key {@code (process_id, instance_key, started_at)}; family day source is {@code
+   * instance_started_at} (the owning instance's activation, not the element's own start).
    */
   public static TableSchema activities(final Schema icebergSchema) {
     return new TableSchema(
@@ -82,11 +85,10 @@ public final class RawTableSchemas {
             column(icebergSchema, "element_type", ColumnType.STRING_DICT, -1, false),
             column(icebergSchema, "element_key", ColumnType.LONG, -1, false),
             column(icebergSchema, "state", ColumnType.STRING_DICT, -1, false),
-            column(
-                icebergSchema, "start_ms", ColumnType.LONG, ActivityColumns.SORT_START_MS, false),
-            column(icebergSchema, "end_ms", ColumnType.LONG, -1, false),
+            timestamptzColumn(icebergSchema, "started_at", ActivityColumns.SORT_START_MS, false),
+            timestamptzColumn(icebergSchema, "ended_at", -1, false),
             column(icebergSchema, "duration_ms", ColumnType.LONG, -1, false),
-            column(icebergSchema, "instance_start_ms", ColumnType.LONG, -1, true)));
+            timestamptzColumn(icebergSchema, "instance_started_at", -1, true)));
   }
 
   private static TableSchema.Column column(
@@ -95,12 +97,28 @@ public final class RawTableSchemas {
       final ColumnType type,
       final int sortOrder,
       final boolean familyDaySource) {
+    final Types.NestedField field = findField(icebergSchema, name);
+    return new TableSchema.Column(name, type, field.fieldId(), false, sortOrder, familyDaySource);
+  }
+
+  /** Same as {@link #column}, but for a {@code timestamptz} column (see the class javadoc). */
+  private static TableSchema.Column timestamptzColumn(
+      final Schema icebergSchema,
+      final String name,
+      final int sortOrder,
+      final boolean familyDaySource) {
+    final Types.NestedField field = findField(icebergSchema, name);
+    return new TableSchema.Column(
+        name, ColumnType.LONG, field.fieldId(), false, sortOrder, familyDaySource, true);
+  }
+
+  private static Types.NestedField findField(final Schema icebergSchema, final String name) {
     final Types.NestedField field = icebergSchema.findField(name);
     if (field == null) {
       throw new IllegalArgumentException(
           "iceberg schema " + icebergSchema + " has no field named " + name);
     }
-    return new TableSchema.Column(name, type, field.fieldId(), false, sortOrder, familyDaySource);
+    return field;
   }
 
   /**
@@ -115,8 +133,8 @@ public final class RawTableSchemas {
     public static final int VERSION = 3;
     public static final int TENANT_ID = 4;
     public static final int STATE = 5;
-    public static final int START_MS = 6;
-    public static final int END_MS = 7;
+    public static final int STARTED_AT = 6;
+    public static final int ENDED_AT = 7;
     public static final int DURATION_MS = 8;
     public static final int VARS_JSON = 9;
 
@@ -126,7 +144,7 @@ public final class RawTableSchemas {
     /** Sort-key position of {@code key} (secondary). */
     private static final int SORT_KEY = 1;
 
-    /** Sort-key position of {@code start_ms} (tertiary; also the family-day source). */
+    /** Sort-key position of {@code started_at} (tertiary; also the family-day source). */
     private static final int SORT_START_MS = 2;
 
     private InstanceColumns() {}
@@ -142,10 +160,10 @@ public final class RawTableSchemas {
     public static final int ELEMENT_TYPE = 5;
     public static final int ELEMENT_KEY = 6;
     public static final int STATE = 7;
-    public static final int START_MS = 8;
-    public static final int END_MS = 9;
+    public static final int STARTED_AT = 8;
+    public static final int ENDED_AT = 9;
     public static final int DURATION_MS = 10;
-    public static final int INSTANCE_START_MS = 11;
+    public static final int INSTANCE_STARTED_AT = 11;
 
     private static final int SORT_PROCESS_ID = 0;
     private static final int SORT_INSTANCE_KEY = 1;

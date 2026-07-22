@@ -86,12 +86,13 @@ import org.slf4j.LoggerFactory;
  *   <li>{@code transitions} does not filter by {@code element_type} — every element kind
  *       contributes directly-follows edges. This is an evolvable choice (a future version might
  *       exclude e.g. boundary events or gateways) documented here rather than hidden in SQL.
- *   <li>{@code gap_ms} on a consecutive-pair edge is the raw {@code next.start_ms - prev.end_ms}
- *       and is kept <b>as computed, including negative values</b> — a negative gap is expected for
- *       parallel branches (the "next" element by {@code start_ms} order may have started before the
- *       "prev" element in the same ordering finished). {@code instance_kpis.total_wait_ms} excludes
- *       negative gaps deliberately (see its own column note); {@code
- *       transitions.total_gap_ms}/{@code min_gap_ms}/{@code max_gap_ms} do not.
+ *   <li>{@code gap_ms} on a consecutive-pair edge is the raw millisecond difference {@code
+ *       epoch_ms(next.started_at) - epoch_ms(prev.ended_at)} and is kept <b>as computed, including
+ *       negative values</b> — a negative gap is expected for parallel branches (the "next" element
+ *       by {@code started_at} order may have started before the "prev" element in the same ordering
+ *       finished). {@code instance_kpis.total_wait_ms} excludes negative gaps deliberately (see its
+ *       own column note); {@code transitions.total_gap_ms}/{@code min_gap_ms}/{@code max_gap_ms} do
+ *       not.
  *   <li>{@code instance_kpis.elements_seen} is a bitmask over {@code element_bits}' per-{@code
  *       process_definition_key} bit assignment (0-indexed, alphabetical by {@code element_id}). It
  *       is {@code NULL} whenever that definition has more than 64 distinct element ids in this
@@ -147,7 +148,7 @@ public final class GoldTables {
               Types.NestedField.required(1, "process_id", Types.StringType.get()),
               Types.NestedField.required(2, "process_definition_key", Types.LongType.get()),
               Types.NestedField.required(3, "tenant_id", Types.StringType.get()),
-              Types.NestedField.required(4, "day", Types.StringType.get()),
+              Types.NestedField.required(4, "day", Types.DateType.get()),
               Types.NestedField.required(5, "from_element", Types.StringType.get()),
               Types.NestedField.required(6, "to_element", Types.StringType.get()),
               Types.NestedField.required(7, "n", Types.LongType.get()),
@@ -162,7 +163,7 @@ public final class GoldTables {
               Types.NestedField.required(2, "process_id", Types.StringType.get()),
               Types.NestedField.required(3, "process_definition_key", Types.LongType.get()),
               Types.NestedField.required(4, "tenant_id", Types.StringType.get()),
-              Types.NestedField.required(5, "day", Types.StringType.get()),
+              Types.NestedField.required(5, "day", Types.DateType.get()),
               Types.NestedField.required(6, "activity_count", Types.LongType.get()),
               Types.NestedField.required(7, "distinct_element_count", Types.LongType.get()),
               Types.NestedField.required(8, "rework_count", Types.LongType.get()),
@@ -186,12 +187,12 @@ public final class GoldTables {
         a.process_id,
         i.process_definition_key,
         a.tenant_id,
-        strftime(to_timestamp(a.instance_start_ms / 1000), '%Y-%m-%d') AS day,
+        CAST(a.instance_started_at AS DATE) AS day,
         a.element_id,
         a.element_key,
-        a.start_ms,
-        a.end_ms,
-        a.instance_start_ms
+        a.started_at,
+        a.ended_at,
+        a.instance_started_at
       FROM gold_activities_src a
       JOIN gold_instances_src i ON a.instance_key = i.instance_key
       """;
@@ -204,9 +205,9 @@ public final class GoldTables {
         row_number() OVER w AS rn,
         count(*) OVER (PARTITION BY instance_key) AS activity_count,
         lag(element_id) OVER w AS prev_element_id,
-        lag(end_ms) OVER w AS prev_end_ms
+        lag(ended_at) OVER w AS prev_ended_at
       FROM gold_enriched
-      WINDOW w AS (PARTITION BY instance_key ORDER BY start_ms, element_key)
+      WINDOW w AS (PARTITION BY instance_key ORDER BY started_at, element_key)
       """;
 
   private static final String GOLD_ELEMENT_BITS_DDL =
@@ -237,13 +238,13 @@ public final class GoldTables {
       WITH edges AS (
         SELECT process_id, process_definition_key, tenant_id, day,
                prev_element_id AS from_element, element_id AS to_element,
-               start_ms - prev_end_ms AS gap_ms
+               epoch_ms(started_at) - epoch_ms(prev_ended_at) AS gap_ms
         FROM gold_ordered
         WHERE prev_element_id IS NOT NULL
         UNION ALL
         SELECT process_id, process_definition_key, tenant_id, day,
                '__START__' AS from_element, element_id AS to_element,
-               start_ms - instance_start_ms AS gap_ms
+               epoch_ms(started_at) - epoch_ms(instance_started_at) AS gap_ms
         FROM gold_ordered
         WHERE rn = 1
         UNION ALL
@@ -277,8 +278,9 @@ public final class GoldTables {
           CAST(max(activity_count) AS BIGINT) AS activity_count,
           CAST(count(DISTINCT element_id) AS BIGINT) AS distinct_element_count,
           CAST(sum(CASE
-                     WHEN prev_element_id IS NOT NULL AND (start_ms - prev_end_ms) > 0
-                       THEN start_ms - prev_end_ms
+                     WHEN prev_element_id IS NOT NULL
+                       AND (epoch_ms(started_at) - epoch_ms(prev_ended_at)) > 0
+                       THEN epoch_ms(started_at) - epoch_ms(prev_ended_at)
                      ELSE 0
                    END) AS BIGINT) AS total_wait_ms
         FROM gold_ordered

@@ -20,11 +20,35 @@ creation/schemas/field ids, the offset-stamping property `DirectCommitSink` also
 DuckDB connection `LakeCompactor`/`GoldTables` drive) and `LakeCompactor`/`GoldTables` themselves for
 what still uses it.
 
-This is a PoC: unpartitioned tables, one file per flush, no retention, no authentication on the
-H2/DuckDB side. A periodic compaction pass (see "Compaction" below) keeps the one-file-per-flush
-pattern from accumulating indefinitely, but it is not a substitute for retention. None of the rest
-is an oversight — see the javadoc on `IcebergLakeWriter` and `LakeConfig` for what's deliberately
-deferred and why.
+This is a PoC: one file per flush (folded back down by periodic compaction, see "Compaction"
+below), no retention, no authentication on the H2/DuckDB side. None of the rest is an oversight —
+see the javadoc on `IcebergLakeWriter` and `LakeConfig` for what's deliberately deferred and why.
+
+## Schema v2
+
+The two raw tables were recreated with a fresh schema — **old warehouses are incompatible; start
+from a fresh `lake.dir`** (table recreation is free while there's no production data to migrate).
+
+- `instances`: `start_ms`/`end_ms` (epoch-millis `LONG`) renamed and retyped to `started_at`/
+  `ended_at` (Iceberg `timestamptz`, epoch **microseconds** on the wire). `duration_ms` and every
+  other `*_ms` column stay plain millisecond `LONG`s.
+- `activities`: same rename/retype for `start_ms`/`end_ms`/`instance_start_ms` →
+  `started_at`/`ended_at`/`instance_started_at`.
+- Both tables are now **partitioned by `days(...)` on their family-day column** — `instances` by
+  `started_at`, `activities` by `instance_started_at` — so a query filtered to a time range prunes
+  to just the relevant days' files at the manifest level, not a full-table scan.
+- The gold tables' `day` column (`transitions`, `instance_kpis`) changed from a `STRING` to a
+  native Iceberg `DATE` (they are fully recomputed on every pass, so this was free too).
+
+Every consumer of these columns had to change accordingly: the L0 sink batch vectors still carry
+plain `long[]` (no allocation), but `started_at`/`ended_at`/`instance_started_at` now hold epoch
+**microseconds** rather than milliseconds (`LakeTranslator` does the one ×1000 conversion, right at
+row-append time — everything upstream, including `TranslatorState`'s open instances/elements,
+stays in native Zeebe milliseconds throughout). `LakeCompactor`'s data-file rewrite is now
+**day-scoped**: it groups a table's live files by partition value and rewrites each day's files
+into that day's own single output file, never mixing two family days into one file (a partitioned
+table's data file must carry exactly one partition tuple). `DirectCommitSink` registers each file
+with its day's partition tuple, derived from the encoder's own `DataFileResult#epochDay()`.
 
 ## Running it against a local stack
 
@@ -109,21 +133,23 @@ data/
 │       ├── instances/
 │       │   ├── metadata/                    # Iceberg table metadata JSON, manifests, manifest-lists
 │       │   └── data/
-│       │       └── day=<YYYY-MM-DD|mixed>/f-<sequence>-day<epochDay>.parquet
+│       │       └── day=<YYYY-MM-DD>/f-<sequence>-day<epochDay>.parquet
 │       └── activities/
 │           ├── metadata/
 │           └── data/
-│               └── day=<YYYY-MM-DD|mixed>/f-<sequence>-day<epochDay>.parquet
+│               └── day=<YYYY-MM-DD>/f-<sequence>-day<epochDay>.parquet
 └── lake-state/                              # RocksDB: open (unfinished) instances/elements/variables
     └── _snapshot/                            # periodic Parquet dump of the open state (see below)
 ```
 
-Each file's family day (`instances`: `start_ms`; `activities`: `instance_start_ms`) is a directory
-component (`day=...`), and `<sequence>` is a per-encoder-factory monotonic counter — see
-`IcebergParquetEncoderFactory`'s javadoc. The source-topic offset range a given commit covered is not
-part of the file name anymore; it lives only in the commit's `lake.offset.p<partition>` snapshot
-summary property (see `DirectCommitSink`), the same property the old `p<partition>-<from>-<to>`
-naming scheme encoded redundantly.
+Each file's family day (`instances`: `started_at`; `activities`: `instance_started_at`) is a
+directory component (`day=...`) and this table's own `days(...)` partition value, and `<sequence>`
+is a per-encoder-factory monotonic counter — see `IcebergParquetEncoderFactory`'s javadoc.
+`epochDay` may be negative (a day before 1970-01-01); `LocalDate.ofEpochDay` handles that natively,
+so the folder is always the real calendar day, never a "mixed" sentinel — every file carries
+exactly one family day (see `DayRouter`'s javadoc). The source-topic offset range a given commit
+covered is not part of the file name; it lives only in the commit's `lake.offset.p<partition>`
+snapshot summary property (see `DirectCommitSink`).
 
 ## Inspecting live state
 
@@ -146,12 +172,15 @@ snapshots) accumulate over time. `io.camunda.analytics.lake.write.LakeCompactor`
 compaction pass, on the same poll-loop thread as the flush/state-dump checks (never concurrently
 with a commit), assembled from three plain iceberg-core primitives plus one DuckDB rewrite:
 
-1. **Data-file compaction** — once a table's live data-file count exceeds a threshold (20), DuckDB
-   reads every live file back with `read_parquet([...])`, sorts it (`process_id, start_ms` for
-   `instances`; `process_id, instance_key, start_ms` for `activities`), and writes one new
-   compacted Parquet file. The row count is verified against the files it replaces before iceberg
-   registers the swap via `Table#newRewrite()` — a mismatch aborts just that table's pass (logged,
-   not thrown).
+1. **Data-file compaction** — once a table's live data-file count exceeds a threshold (20), the
+   live files are grouped by partition value (family day) first: DuckDB reads each day's own files
+   back with `read_parquet([...])`, sorts them (`process_id, started_at` for `instances`;
+   `process_id, instance_key, started_at` for `activities`), and writes that day's own single
+   compacted Parquet file — never mixing two family days into one output file, since a partitioned
+   table's data file must carry exactly one partition tuple. A day whose group is already a single
+   file is left untouched. Each day's row count is verified against the files it replaces before
+   iceberg registers the swap (all touched days in one `Table#newRewrite()` commit) — a mismatch
+   skips just that day (logged, not thrown).
 2. **Manifest consolidation** — `Table#rewriteManifests()` clusters everything into a single
    manifest, so the many small manifests one-file-per-flush produces don't pile up indefinitely.
 3. **Snapshot expiry** — `Table#expireSnapshots()` drops all but the last 3 snapshots, which also
@@ -282,13 +311,15 @@ Two ways to point DuckDB at the data:
   applies to hand-written queries against the raw files, like the ones in this section.
 
 All the snippets below use the `read_parquet` glob form; swap in `iceberg_scan(...)` on the table
-directory if you prefer. **`start_ms`/`end_ms`/`duration_ms`/`instance_start_ms` are epoch
-milliseconds, not a timestamp type** (see `IcebergLakeWriter`'s schema javadoc for why) — always
-divide by 1000 before `to_timestamp(...)`.
+directory if you prefer. **`started_at`/`ended_at`/`instance_started_at` are Iceberg `timestamptz`
+columns (schema v2)** — DuckDB's `read_parquet` resolves them as native `TIMESTAMP WITH TIME ZONE`
+values directly, no `to_timestamp(.../1000)` conversion needed anymore. `duration_ms` and every
+other `*_ms` column stay plain millisecond integers.
 
-The `activities` table's `instance_start_ms` column carries the owning process instance's start
-time — the "family date" a future retention pass will use to partition and drop an instance and all
-of its activities together atomically.
+The `activities` table's `instance_started_at` column carries the owning process instance's start
+time — the family date both tables are now partitioned by (`days(started_at)` /
+`days(instance_started_at)`), so a query filtered to a time range on this column prunes to just the
+relevant days' files.
 
 ### 1. Completed instance count per process per day
 
@@ -296,7 +327,7 @@ of its activities together atomically.
 SELECT
   process_id,
   version,
-  date_trunc('day', to_timestamp(end_ms / 1000)) AS day,
+  date_trunc('day', ended_at) AS day,
   count(*) AS completed_count
 FROM read_parquet('data/lake/lake/instances/data/*.parquet')
 WHERE state = 'COMPLETED'
@@ -310,7 +341,7 @@ ORDER BY 3, 1;
 SELECT
   process_id,
   version,
-  string_agg(element_id, ' -> ' ORDER BY start_ms) AS variant,
+  string_agg(element_id, ' -> ' ORDER BY started_at) AS variant,
   count(DISTINCT instance_key) AS instance_count
 FROM read_parquet('data/lake/lake/activities/data/*.parquet')
 GROUP BY 1, 2, 3
@@ -324,17 +355,17 @@ WITH ordered AS (
   SELECT
     instance_key,
     element_id,
-    start_ms,
-    end_ms,
-    lead(element_id) OVER (PARTITION BY instance_key ORDER BY start_ms) AS next_element_id,
-    lead(start_ms)   OVER (PARTITION BY instance_key ORDER BY start_ms) AS next_start_ms
+    started_at,
+    ended_at,
+    lead(element_id) OVER (PARTITION BY instance_key ORDER BY started_at) AS next_element_id,
+    lead(started_at) OVER (PARTITION BY instance_key ORDER BY started_at) AS next_started_at
   FROM read_parquet('data/lake/lake/activities/data/*.parquet')
 )
 SELECT
   element_id AS from_element,
   next_element_id AS to_element,
   count(*) AS transitions,
-  avg(next_start_ms - end_ms) AS avg_gap_ms
+  avg(epoch_ms(next_started_at) - epoch_ms(ended_at)) AS avg_gap_ms
 FROM ordered
 WHERE next_element_id IS NOT NULL
 GROUP BY 1, 2
@@ -388,7 +419,7 @@ process is selected):
 
 ```sql
 SELECT
-  time_bucket(INTERVAL '1 minute', to_timestamp(end_ms / 1000)) AS bucket,
+  time_bucket(INTERVAL '1 minute', ended_at) AS bucket,
   count(*) AS n,
   quantile_cont(duration_ms, 0.5) AS median_ms,
   quantile_cont(duration_ms, 0.95) AS p95_ms,
@@ -397,7 +428,7 @@ SELECT
   max(duration_ms) AS max_ms,
   arg_max(key, duration_ms) AS max_key
 FROM read_parquet('data/lake/lake/instances/data/*.parquet')
-WHERE end_ms > (epoch(now()) - 900) * 1000
+WHERE ended_at > now() - INTERVAL '900 seconds'
 GROUP BY bucket
 ORDER BY bucket;
 ```

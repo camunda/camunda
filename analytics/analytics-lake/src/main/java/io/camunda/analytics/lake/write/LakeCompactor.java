@@ -14,6 +14,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +27,6 @@ import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.ExpireSnapshots;
 import org.apache.iceberg.FileFormat;
 import org.apache.iceberg.FileScanTask;
-import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.RewriteFiles;
 import org.apache.iceberg.RewriteManifests;
 import org.apache.iceberg.Snapshot;
@@ -97,8 +99,8 @@ public final class LakeCompactor {
 
   private static final String INSTANCES_LABEL = "instances";
   private static final String ACTIVITIES_LABEL = "activities";
-  private static final String INSTANCES_SORT = "process_id, start_ms";
-  private static final String ACTIVITIES_SORT = "process_id, instance_key, start_ms";
+  private static final String INSTANCES_SORT = "process_id, started_at";
+  private static final String ACTIVITIES_SORT = "process_id, instance_key, started_at";
 
   private static final Logger LOG = LoggerFactory.getLogger(LakeCompactor.class);
 
@@ -202,59 +204,85 @@ public final class LakeCompactor {
     return files;
   }
 
+  /**
+   * Day-scoped rewrite (schema v2 — see {@link IcebergLakeWriter#INSTANCE_SCHEMA}'s javadoc): both
+   * raw tables are now partitioned by {@code days(...)} on their family-day column, and a
+   * partitioned table's data file must carry exactly one partition tuple, so files are grouped by
+   * partition value first and each day's files are rewritten into that day's own single output file
+   * — never mixing two family days into one file. A day whose group already has only one file is
+   * left untouched (nothing to gain); every touched day's old files and new file are deleted/added
+   * in the same {@link RewriteFiles} commit.
+   */
   private boolean rewriteDataFiles(
       final Table table,
       final String label,
       final Map<String, DataFile> filesToReplace,
       final String sortClause) {
-    Path compactedPhysicalPath = null;
+    Path lastWrittenPath = null;
     try {
-      final long expectedRows =
-          filesToReplace.values().stream().mapToLong(DataFile::recordCount).sum();
+      final Map<Integer, List<DataFile>> filesByDay = groupByPartitionDay(filesToReplace.values());
+      final List<DataFile> filesRewritten = new ArrayList<>();
+      final List<DataFile> newFiles = new ArrayList<>();
+      for (final Map.Entry<Integer, List<DataFile>> dayGroup : filesByDay.entrySet()) {
+        final List<DataFile> dayFiles = dayGroup.getValue();
+        if (dayFiles.size() < 2) {
+          continue; // a single file for this day is already minimal
+        }
+        final int epochDay = dayGroup.getKey();
+        final long expectedRows = dayFiles.stream().mapToLong(DataFile::recordCount).sum();
+        final String fileList =
+            dayFiles.stream()
+                .map(f -> quote(LocalFileIO.toFilesystemPath(f.location()).toString()))
+                .collect(Collectors.joining(", "));
+        final String fileName = "compacted-" + UUID.randomUUID() + "-day" + epochDay + ".parquet";
+        final String location = table.location() + "/data/" + fileName;
+        final Path compactedPhysicalPath = LocalFileIO.toFilesystemPath(location);
+        lastWrittenPath = compactedPhysicalPath;
+        if (compactedPhysicalPath.getParent() != null) {
+          Files.createDirectories(compactedPhysicalPath.getParent());
+        }
 
-      final String fileList =
-          filesToReplace.keySet().stream()
-              .map(location -> quote(LocalFileIO.toFilesystemPath(location).toString()))
-              .collect(Collectors.joining(", "));
+        try (Statement copy = duckdb.createStatement()) {
+          copy.execute(
+              "COPY (SELECT * FROM read_parquet(["
+                  + fileList
+                  + "]) ORDER BY "
+                  + sortClause
+                  + ") TO '"
+                  + compactedPhysicalPath
+                  + "' (FORMAT PARQUET)");
+        }
 
-      final String fileName = "compacted-" + UUID.randomUUID() + ".parquet";
-      final String location = table.location() + "/data/" + fileName;
-      compactedPhysicalPath = LocalFileIO.toFilesystemPath(location);
-      if (compactedPhysicalPath.getParent() != null) {
-        Files.createDirectories(compactedPhysicalPath.getParent());
+        final long actualRows = countRows(compactedPhysicalPath);
+        if (actualRows != expectedRows) {
+          LOG.warn(
+              "Compaction row-count mismatch for {} table day {}: expected {} but compacted file "
+                  + "has {}; skipping this day's rewrite (orphan file left at {} for a future "
+                  + "sweep)",
+              label,
+              epochDay,
+              expectedRows,
+              actualRows,
+              compactedPhysicalPath);
+          continue;
+        }
+
+        final long fileSizeBytes = Files.size(compactedPhysicalPath);
+        final DataFile newFile =
+            DataFiles.builder(table.spec())
+                .withPath(location)
+                .withFormat(FileFormat.PARQUET)
+                .withPartitionValues(List.of(LocalDate.ofEpochDay(epochDay).toString()))
+                .withRecordCount(actualRows)
+                .withFileSizeInBytes(fileSizeBytes)
+                .build();
+        filesRewritten.addAll(dayFiles);
+        newFiles.add(newFile);
       }
 
-      try (Statement copy = duckdb.createStatement()) {
-        copy.execute(
-            "COPY (SELECT * FROM read_parquet(["
-                + fileList
-                + "]) ORDER BY "
-                + sortClause
-                + ") TO '"
-                + compactedPhysicalPath
-                + "' (FORMAT PARQUET)");
-      }
-
-      final long actualRows = countRows(compactedPhysicalPath);
-      if (actualRows != expectedRows) {
-        LOG.warn(
-            "Compaction row-count mismatch for {} table: expected {} but compacted file has {}; "
-                + "aborting this table's compaction (orphan file left at {} for a future sweep)",
-            label,
-            expectedRows,
-            actualRows,
-            compactedPhysicalPath);
+      if (newFiles.isEmpty()) {
         return false;
       }
-
-      final long fileSizeBytes = Files.size(compactedPhysicalPath);
-      final DataFile newFile =
-          DataFiles.builder(PartitionSpec.unpartitioned())
-              .withPath(location)
-              .withFormat(FileFormat.PARQUET)
-              .withRecordCount(actualRows)
-              .withFileSizeInBytes(fileSizeBytes)
-              .build();
 
       // Read BEFORE constructing the rewrite producer -- same ordering IcebergLakeWriter#flushTable
       // uses, so the offset properties captured are unambiguously the pre-rewrite current summary.
@@ -269,27 +297,39 @@ public final class LakeCompactor {
         rewrite.validateFromSnapshot(table.currentSnapshot().snapshotId());
       }
       offsetProperties.forEach(rewrite::set);
-      filesToReplace.values().forEach(rewrite::deleteFile);
-      rewrite.addFile(newFile);
+      filesRewritten.forEach(rewrite::deleteFile);
+      newFiles.forEach(rewrite::addFile);
       rewrite.commit();
 
       LOG.info(
-          "Compacted {} table {}: {} data file(s) -> 1 ({} rows)",
+          "Compacted {} table {}: {} data file(s) across {} day(s) -> {} file(s)",
           label,
           table.name(),
-          filesToReplace.size(),
-          actualRows);
+          filesRewritten.size(),
+          newFiles.size(),
+          newFiles.size());
       return true;
     } catch (final SQLException | IOException | RuntimeException e) {
       LOG.warn(
           "Data-file compaction failed for {} table; leaving existing files in place{}",
           label,
-          compactedPhysicalPath == null
+          lastWrittenPath == null
               ? ""
-              : " (orphan file possibly left at " + compactedPhysicalPath + ")",
+              : " (orphan file(s) possibly left, e.g. at " + lastWrittenPath + ")",
           e);
       return false;
     }
+  }
+
+  /** Groups {@code files} by their {@code days(...)} partition value (epoch day). */
+  private static Map<Integer, List<DataFile>> groupByPartitionDay(
+      final Collection<DataFile> files) {
+    final Map<Integer, List<DataFile>> byDay = new LinkedHashMap<>();
+    for (final DataFile file : files) {
+      final int epochDay = file.partition().get(0, Integer.class);
+      byDay.computeIfAbsent(epochDay, ignored -> new ArrayList<>()).add(file);
+    }
+    return byDay;
   }
 
   private long countRows(final Path parquetFile) throws SQLException {

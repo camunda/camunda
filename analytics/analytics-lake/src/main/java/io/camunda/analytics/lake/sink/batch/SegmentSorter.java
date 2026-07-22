@@ -39,7 +39,10 @@ import java.util.List;
  */
 public final class SegmentSorter implements SortedRun {
 
-  private static final long MILLIS_PER_DAY = 86_400_000L;
+  // Family-day source columns carry epoch MICROSECONDS (see TableSchema.Column#timestamptz()) --
+  // this is the one divisor that turns that instant into a family day, so it must track whichever
+  // unit the schema's familyDaySource column actually holds.
+  private static final long MICROS_PER_DAY = 86_400_000_000L;
   private static final int INSERTION_SORT_THRESHOLD = 24;
 
   private final TableSchema schema;
@@ -99,7 +102,7 @@ public final class SegmentSorter implements SortedRun {
         (ColumnVector.LongColumn) segment.vector(familyDayColumn);
     for (int row = 0; row < size; row++) {
       permutation[row] = row;
-      epochDayByRow[row] = Math.floorDiv(familyDayVector.get(row), MILLIS_PER_DAY);
+      epochDayByRow[row] = Math.floorDiv(familyDayVector.get(row), MICROS_PER_DAY);
     }
     if (size > 1) {
       quicksort(segment, 0, size - 1);

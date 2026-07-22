@@ -11,12 +11,13 @@ import io.camunda.analytics.lake.sink.DataFileResult;
 import io.camunda.analytics.lake.sink.Descriptor;
 import io.camunda.analytics.lake.sink.DescriptorSink;
 import io.camunda.analytics.lake.write.IcebergLakeWriter;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
-import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.Table;
 import org.slf4j.Logger;
@@ -25,14 +26,17 @@ import org.slf4j.LoggerFactory;
 /**
  * {@link DescriptorSink} rung 1 — the direct-commit implementation {@link DescriptorSink}'s own
  * javadoc anticipates: registers a {@link Descriptor}'s files with one Iceberg {@link Table} via
- * {@link DataFiles#builder} (unpartitioned spec — the raw tables have none) in one {@link
- * Table#newAppend()}, then stamps the offset and frontier summary properties using the exact same
- * carry-forward rule {@link IcebergLakeWriter#OFFSET_PROPERTY_PREFIX}'s javadoc describes: iceberg
- * does not carry a snapshot's summary forward into the next one, so a commit that only stamped the
- * partition it just flushed would make every <em>other</em> partition's last-known offset/frontier
- * appear to regress the instant a different partition's descriptor lands here. Both properties are
- * therefore carried forward the same way — dropping the frontier carry-forward while keeping it for
- * the offset would reintroduce exactly the bug class the offset rule exists to avoid.
+ * {@link DataFiles#builder} — using the table's own {@code days(...)} partition spec (schema v2 —
+ * see {@code IcebergLakeWriter#INSTANCE_SCHEMA}'s javadoc) and each file's own {@link
+ * DataFileResult#epochDay()} as its partition tuple, since a partitioned table's data file must
+ * carry exactly one partition value — in one {@link Table#newAppend()}, then stamps the offset and
+ * frontier summary properties using the exact same carry-forward rule {@link
+ * IcebergLakeWriter#OFFSET_PROPERTY_PREFIX}'s javadoc describes: iceberg does not carry a
+ * snapshot's summary forward into the next one, so a commit that only stamped the partition it just
+ * flushed would make every <em>other</em> partition's last-known offset/frontier appear to regress
+ * the instant a different partition's descriptor lands here. Both properties are therefore carried
+ * forward the same way — dropping the frontier carry-forward while keeping it for the offset would
+ * reintroduce exactly the bug class the offset rule exists to avoid.
  *
  * <p>Idempotence: if the table's currently-committed offset for {@code
  * descriptor.sourcePartition()} is already {@code >=} {@code descriptor.lastOffset()}, {@link
@@ -76,7 +80,7 @@ public final class DirectCommitSink implements DescriptorSink {
 
     final AppendFiles append = table.newAppend();
     for (final DataFileResult file : descriptor.files()) {
-      append.appendFile(toDataFile(file));
+      append.appendFile(toDataFile(table, file));
     }
     // Carry-forward rule (both prefixes) -- see class javadoc.
     priorSummary.forEach(
@@ -95,14 +99,21 @@ public final class DirectCommitSink implements DescriptorSink {
     append.commit();
   }
 
-  private static DataFile toDataFile(final DataFileResult file) {
-    // PartitionSpec.unpartitioned() must match the table's own spec, same as
-    // IcebergLakeWriter#writeParquet -- for an unpartitioned table a partition value is never
-    // expected. withMetrics also sets the record count from the encoder-collected Metrics, which
-    // must already equal file.rowCount() (both come from the same encoder finish() call).
-    return DataFiles.builder(PartitionSpec.unpartitioned())
+  /**
+   * {@code table.spec()} is this table's one-and-only {@code days(...)} partition spec (see {@code
+   * IcebergLakeWriter#tableOrCreate}); {@code file.epochDay()} is that file's single family day
+   * (see {@code io.camunda.analytics.lake.sink.encode.DayRouter}'s javadoc for why every file the
+   * sink produces carries exactly one). {@code withPartitionValues} takes the partition's ISO date
+   * string, not a raw integer epoch day -- {@code Conversions#fromPartitionString} parses a {@code
+   * DATE} partition value as an ISO local date. {@code withMetrics} also sets the record count from
+   * the encoder-collected {@link org.apache.iceberg.Metrics}, which must already equal {@code
+   * file.rowCount()} (both come from the same encoder {@code finish()} call).
+   */
+  private static DataFile toDataFile(final Table table, final DataFileResult file) {
+    return DataFiles.builder(table.spec())
         .withPath(file.path())
         .withFormat(FileFormat.PARQUET)
+        .withPartitionValues(List.of(LocalDate.ofEpochDay(file.epochDay()).toString()))
         .withFileSizeInBytes(file.fileSizeBytes())
         .withMetrics(file.metrics())
         .build();

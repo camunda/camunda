@@ -23,8 +23,8 @@ class DayRouterTest {
   @TempDir Path tempDir;
 
   @Test
-  void shouldCapOpenDayEncodersAndSpillExtraDaysToASharedFile() {
-    // given: 4 distinct family days, one row each
+  void shouldWriteStragglerDaysAsTheirOwnOneShotFilesBeyondTheOpenCap() {
+    // given: 4 distinct family days, one row each -- one more than MAX_OPEN_DAY_ENCODERS (3)
     final TableSchema schema = EncodeTestFixtures.instancesSchema();
     final Schema icebergSchema = EncodeTestFixtures.icebergSchema(schema);
     final LocalFileSink fileSink = new LocalFileSink(tempDir);
@@ -47,25 +47,26 @@ class DayRouterTest {
     router.route(run);
     final List<DataFileResult> results = router.closeAll();
 
-    // then: 3 day files (the first 3 distinct days) + 1 spill file at epochDay -1
+    // then: 4 files, one per real family day -- no "mixed"/spill sentinel; a partitioned table's
+    // data file must carry exactly one partition tuple, so the 4th day (beyond the open cap) gets
+    // its own dedicated one-shot file instead of sharing one
     assertThat(results).hasSize(4);
     final List<Long> epochDays = results.stream().map(DataFileResult::epochDay).toList();
-    assertThat(epochDays).containsExactlyInAnyOrder(10L, 11L, 12L, -1L);
+    assertThat(epochDays).containsExactlyInAnyOrder(10L, 11L, 12L, 13L);
 
-    final DataFileResult spill =
-        results.stream().filter(r -> r.epochDay() == -1L).findFirst().orElseThrow();
-    assertThat(spill.rowCount()).isEqualTo(1);
+    final DataFileResult straggler =
+        results.stream().filter(r -> r.epochDay() == 13L).findFirst().orElseThrow();
+    assertThat(straggler.rowCount()).isEqualTo(1);
 
     final long totalRows = results.stream().mapToLong(DataFileResult::rowCount).sum();
     assertThat(totalRows).isEqualTo(4);
   }
 
   @Test
-  void shouldRouteAnAlreadyMixedDayRangeDirectlyToTheSameSpillSlot() {
-    // given: a run whose SortedRun already reports epochDay < 0 for one of its ranges (e.g. an
-    // unpartitioned-table mixed-day dump), alongside 3 normal distinct days -- exactly filling the
-    // cap -- so the pre-existing "-1" range must land in the same shared spill file, not open a
-    // 4th day slot.
+  void shouldWriteEachStragglerRouteCallAsItsOwnSeparateFile() {
+    // given: 3 days fill the open cap, then two SEPARATE route() calls each contribute one more
+    // row for the very same 4th (straggler) day -- each call must produce its own one-shot file,
+    // never merged into a shared spill file (that concept no longer exists, see class javadoc)
     final TableSchema schema = EncodeTestFixtures.instancesSchema();
     final Schema icebergSchema = EncodeTestFixtures.icebergSchema(schema);
     final LocalFileSink fileSink = new LocalFileSink(tempDir);
@@ -73,25 +74,35 @@ class DayRouterTest {
         new IcebergParquetEncoderFactory(icebergSchema, fileSink, 100, Set.of());
     final DayRouter router = new DayRouter(schema, factory);
 
-    final Object[][] columns = new Object[5][4];
+    final Object[][] firstColumns = new Object[5][4];
     for (int i = 0; i < 4; i++) {
-      columns[0][i] = (long) i;
-      columns[1][i] = 1_000L + i;
-      columns[2][i] = "P";
-      columns[3][i] = (long) i;
-      columns[4][i] = new byte[] {(byte) i};
+      firstColumns[0][i] = (long) i;
+      firstColumns[1][i] = 1_000L + i;
+      firstColumns[2][i] = "P";
+      firstColumns[3][i] = (long) i;
+      firstColumns[4][i] = new byte[] {(byte) i};
     }
-    final long[] days = {10, 11, 12, -1};
-    final FakeSortedRun run = new FakeSortedRun(schema, columns, days);
+    final long[] firstDays = {10, 11, 12, 13};
+    router.route(new FakeSortedRun(schema, firstColumns, firstDays));
+
+    final Object[][] secondColumns = new Object[5][1];
+    secondColumns[0][0] = 99L;
+    secondColumns[1][0] = 1_099L;
+    secondColumns[2][0] = "P";
+    secondColumns[3][0] = 99L;
+    secondColumns[4][0] = new byte[] {9};
+    router.route(new FakeSortedRun(schema, secondColumns, new long[] {13}));
 
     // when
-    router.route(run);
     final List<DataFileResult> results = router.closeAll();
 
-    // then: still exactly 4 files (3 day files + the one shared spill), not 5
-    assertThat(results).hasSize(4);
-    final List<Long> epochDays = results.stream().map(DataFileResult::epochDay).toList();
-    assertThat(epochDays).containsExactlyInAnyOrder(10L, 11L, 12L, -1L);
+    // then: 3 open-day files + TWO separate day-13 straggler files (not one merged file)
+    assertThat(results).hasSize(5);
+    final List<DataFileResult> day13Files =
+        results.stream().filter(r -> r.epochDay() == 13L).toList();
+    assertThat(day13Files).hasSize(2);
+    assertThat(day13Files).allSatisfy(r -> assertThat(r.rowCount()).isEqualTo(1));
+    assertThat(day13Files.stream().map(DataFileResult::path).distinct()).hasSize(2);
   }
 
   @Test

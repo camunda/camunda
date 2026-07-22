@@ -51,6 +51,16 @@ import org.slf4j.LoggerFactory;
  * <p>The translator never flushes or triggers the L0 sink pipelines — the app loop owns flush (and
  * thus offset-commit) policy via {@code SinkPipeline#onPollTick}.
  *
+ * <h2>Millis in, micros at the wire</h2>
+ *
+ * <p>{@link TranslatorState}/{@code OpenInstance}/{@code OpenElement} and every {@code
+ * Record#getTimestamp()} this class reads stay in Zeebe's native epoch-<b>milli</b>seconds
+ * throughout — {@link #millisToMicros} is the one and only place the ×1000 conversion to epoch
+ * microseconds happens, right at the row-append boundary, for exactly the columns backing an
+ * Iceberg {@code timestamptz} field ({@code started_at}/{@code ended_at}/{@code
+ * instance_started_at} — see {@link RawTableSchemas}). {@code duration_ms} is a plain difference of
+ * two (unconverted) millis values and is never touched by this conversion.
+ *
  * <h2>Backpressure</h2>
  *
  * <p>Each Zeebe record touches at most one {@link RowAppender} (an instance-completion emits to
@@ -173,10 +183,10 @@ public final class LakeTranslator {
         .putDict(ActivityColumns.ELEMENT_TYPE, element.elementType())
         .putLong(ActivityColumns.ELEMENT_KEY, elementInstanceKey)
         .putDict(ActivityColumns.STATE, finalState)
-        .putLong(ActivityColumns.START_MS, element.startMs())
-        .putLong(ActivityColumns.END_MS, timestamp)
+        .putLong(ActivityColumns.STARTED_AT, millisToMicros(element.startMs()))
+        .putLong(ActivityColumns.ENDED_AT, millisToMicros(timestamp))
         .putLong(ActivityColumns.DURATION_MS, timestamp - element.startMs())
-        .putLong(ActivityColumns.INSTANCE_START_MS, element.instanceStartMs());
+        .putLong(ActivityColumns.INSTANCE_STARTED_AT, millisToMicros(element.instanceStartMs()));
     activityAppender.endRow();
     state.deleteElement(elementInstanceKey);
     return true;
@@ -200,8 +210,8 @@ public final class LakeTranslator {
         .putInt(InstanceColumns.VERSION, instance.version())
         .putDict(InstanceColumns.TENANT_ID, instance.tenantId())
         .putDict(InstanceColumns.STATE, finalState)
-        .putLong(InstanceColumns.START_MS, instance.startMs())
-        .putLong(InstanceColumns.END_MS, timestamp)
+        .putLong(InstanceColumns.STARTED_AT, millisToMicros(instance.startMs()))
+        .putLong(InstanceColumns.ENDED_AT, millisToMicros(timestamp))
         .putLong(InstanceColumns.DURATION_MS, timestamp - instance.startMs())
         .putBinary(InstanceColumns.VARS_JSON, varsJson, 0, varsJson.length);
     instanceAppender.endRow();
@@ -231,6 +241,14 @@ public final class LakeTranslator {
       return;
     }
     state.putVariable(value.getProcessInstanceKey(), value.getName(), valueJson);
+  }
+
+  /**
+   * Converts an epoch-millisecond instant to the epoch microseconds a {@code timestamptz} column
+   * stores.
+   */
+  private static long millisToMicros(final long epochMillis) {
+    return epochMillis * 1000L;
   }
 
   private static String finalStateOf(final Intent intent) {
