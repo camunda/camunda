@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
+import io.camunda.zeebe.broker.secret.CachedSecretResolver;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -107,6 +108,11 @@ public final class ZeebePartitionFactory {
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
+
+  // Broker-shared secret resolver: one instance across partitions, caching resolved secret
+  // values keyed by their secret reference. Populated by the background secret-resolution flow
+  // and read on job activation to inject resolved secrets.
+  private final CachedSecretResolver cachedSecretResolver = new CachedSecretResolver();
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -278,7 +284,8 @@ public final class ZeebePartitionFactory {
           featureFlags,
           jobStreamer,
           searchClientsProxy,
-          brokerRequestAuthorizationConverter);
+          brokerRequestAuthorizationConverter,
+          cachedSecretResolver);
     };
   }
 }

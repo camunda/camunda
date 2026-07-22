@@ -65,6 +65,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
+import io.camunda.zeebe.engine.processing.job.SecretResolver;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.metrics.job.JobMetricsProcessors;
@@ -123,7 +124,8 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final SecretResolver secretResolver) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -342,7 +344,8 @@ public final class EngineProcessors {
         config,
         clock,
         cslCheck,
-        incidentMetrics);
+        incidentMetrics,
+        secretResolver);
 
     final var userTaskProcessor =
         createUserTaskProcessor(

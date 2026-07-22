@@ -17,7 +17,8 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
+import io.camunda.zeebe.engine.processing.job.JobSecretInjector.OversizedJob;
+import io.camunda.zeebe.engine.processing.job.JobSecretInjector.Preparation;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -41,13 +42,16 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
-import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
+
+  /** Scratch copy of the batch that carries the injected secret values to the response only. */
+  private final JobBatchRecord responseValue = new JobBatchRecord();
 
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -59,6 +63,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ProcessState processState;
   private final CslAuthorizationCheck cslCheck;
   private final IncidentMetrics incidentMetrics;
+  private final JobSecretInjector jobSecretInjector;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -67,12 +72,14 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobProcessingMetrics jobMetrics,
       final CslAuthorizationCheck cslCheck,
       final InstantSource clock,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final SecretResolver secretResolver) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.cslCheck = cslCheck;
+    jobSecretInjector = new JobSecretInjector(secretResolver);
     jobBatchCollector =
         new JobBatchCollector(
             state, stateWriter::canWriteEventOfLength, cslCheck, clock, jobMetrics);
@@ -170,15 +177,14 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final JobBatchRecord value = record.getValue();
     final long jobBatchKey = keyGenerator.nextKey();
 
-    final Either<TooLargeJob, Map<JobKind, Integer>> result =
-        jobBatchCollector.collectJobs(record, tenantIds);
-    final var activatedJobCountPerJobKind = result.getOrElse(Collections.emptyMap());
-    result.ifLeft(
-        largeJob ->
-            raiseIncidentJobTooLargeForMessageSize(
-                largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
+    jobBatchCollector
+        .collectJobs(record, tenantIds)
+        .ifLeft(
+            largeJob ->
+                raiseIncidentJobTooLargeForMessageSize(
+                    largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
 
-    activateJobBatch(record, value, jobBatchKey, activatedJobCountPerJobKind);
+    activateJobBatch(record, value, jobBatchKey);
   }
 
   private void rejectCommand(final TypedRecord<JobBatchRecord> record, final Rejection rejection) {
@@ -189,12 +195,51 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private void activateJobBatch(
       final TypedRecord<JobBatchRecord> record,
       final JobBatchRecord value,
-      final long jobBatchKey,
-      final Map<JobKind, Integer> activatedJobsCountPerJobKind) {
+      final long jobBatchKey) {
+    // jobs whose secret references are not all cached must not be activated: remove them from the
+    // batch before the ACTIVATED event is appended, so they stay activatable
+    final var preparation = jobSecretInjector.removeJobsWithUncachedSecrets(value);
+    // building the response can drop further jobs from the batch (those whose injected secret
+    // values would exceed the max message size), so it must also happen before the event
+    final var response = responseValueFor(record, value, preparation);
+    // append (and apply to state) the ACTIVATED event with the unresolved placeholders
     stateWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeAcceptedResponseOnCommand(
-        jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
-    activatedJobsCountPerJobKind.forEach(
+        jobBatchKey, JobBatchIntent.ACTIVATED, response, record);
+    countActivatedJobs(value);
+  }
+
+  /**
+   * Returns the batch value to write to the activation response. Secret values must reach the
+   * worker via the response only, never the persisted event, state, exported records, or logs: the
+   * values are injected into a copy of the batch, so the command value always keeps the
+   * placeholders.
+   *
+   * <p>Jobs whose injected values would exceed the max message size are dropped from the response
+   * and the command value alike, to be activated in a later batch; a job whose values can never fit
+   * gets a message-size incident instead, like a job that is too large without secrets.
+   */
+  private JobBatchRecord responseValueFor(
+      final TypedRecord<JobBatchRecord> record,
+      final JobBatchRecord value,
+      final Preparation preparation) {
+    if (!record.hasRequestMetadata() || preparation.pendingJobs().isEmpty()) {
+      return value;
+    }
+    responseValue.wrap(value);
+    jobSecretInjector
+        .injectSecretValues(responseValue, value, preparation)
+        .ifPresent(this::raiseIncidentJobSecretValuesTooLargeForMessageSize);
+    return responseValue;
+  }
+
+  /** Counts the activated-job metrics from the batch as it was actually activated. */
+  private void countActivatedJobs(final JobBatchRecord value) {
+    final Map<JobKind, Integer> countPerJobKind = new EnumMap<>(JobKind.class);
+    for (final JobRecord job : value.jobs()) {
+      countPerJobKind.merge(job.getJobKind(), 1, Integer::sum);
+    }
+    countPerJobKind.forEach(
         (jobKind, count) ->
             jobMetrics.countJobEvent(JobAction.ACTIVATED, jobKind, value.getType(), count));
   }
@@ -202,12 +247,30 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private void raiseIncidentJobTooLargeForMessageSize(
       final long jobKey, final JobRecord job, final int expectedJobRecordSize) {
     final String jobSize = ByteValue.prettyPrint(expectedJobRecordSize);
-    final DirectBuffer incidentMessage =
-        wrapString(
-            String.format(
-                "The job with key '%s' can not be activated, because with %s it is larger than the configured message size (per default is 4 MB). "
-                    + "Try to reduce the size by reducing the number of fetched variables or modifying the variable values.",
-                jobKey, jobSize));
+    raiseMessageSizeExceededIncident(
+        jobKey,
+        job,
+        String.format(
+            "The job with key '%s' can not be activated, because with %s it is larger than the configured message size (per default is 4 MB). "
+                + "Try to reduce the size by reducing the number of fetched variables or modifying the variable values.",
+            jobKey, jobSize));
+  }
+
+  private void raiseIncidentJobSecretValuesTooLargeForMessageSize(final OversizedJob oversized) {
+    final String growth = ByteValue.prettyPrint(oversized.growth());
+    raiseMessageSizeExceededIncident(
+        oversized.jobKey(),
+        oversized.job(),
+        String.format(
+            "The job with key '%s' can not be activated, because injecting its secret values would grow the activation batch by %s, "
+                + "more than any batch can grow without exceeding the configured message size (per default is 4 MB). "
+                + "Try to reduce the size of the secret values or of the job variables.",
+            oversized.jobKey(), growth));
+  }
+
+  private void raiseMessageSizeExceededIncident(
+      final long jobKey, final JobRecord job, final String message) {
+    final DirectBuffer incidentMessage = wrapString(message);
 
     final var treePathProperties =
         new ElementTreePathBuilder()

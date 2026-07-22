@@ -18,6 +18,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
+import io.camunda.zeebe.engine.processing.job.SecretResolver;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -132,6 +133,7 @@ public final class EngineRule extends ExternalResource {
 
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
+  private SecretResolver secretResolver = SecretResolver.noop();
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
@@ -245,6 +247,11 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
     this.jobStreamer = jobStreamer;
+    return this;
+  }
+
+  public EngineRule withSecretResolver(final SecretResolver secretResolver) {
+    this.secretResolver = secretResolver;
     return this;
   }
 
@@ -374,7 +381,8 @@ public final class EngineRule extends ExternalResource {
                         featureFlags,
                         jobStreamer,
                         searchClientsProxy,
-                        brokerRequestAuthorizationConverter)
+                        brokerRequestAuthorizationConverter,
+                        secretResolver)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

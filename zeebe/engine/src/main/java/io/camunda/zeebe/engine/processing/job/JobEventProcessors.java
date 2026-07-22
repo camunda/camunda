@@ -35,7 +35,8 @@ public final class JobEventProcessors {
       final EngineConfiguration config,
       final InstantSource clock,
       final CslAuthorizationCheck cslCheck,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final SecretResolver secretResolver) {
 
     final var keyGenerator = processingState.getKeyGenerator();
 
@@ -127,7 +128,8 @@ public final class JobEventProcessors {
                 jobMetrics,
                 cslCheck,
                 clock,
-                incidentMetrics))
+                incidentMetrics,
+                secretResolver))
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),

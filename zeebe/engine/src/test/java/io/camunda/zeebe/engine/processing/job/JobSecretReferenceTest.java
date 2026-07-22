@@ -21,13 +21,22 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobSecretReferenceV
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 public final class JobSecretReferenceTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  /** Every reference resolves, so jobs with secret references stay activatable in these tests. */
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecretResolver(
+              references ->
+                  references.stream()
+                      .collect(Collectors.toMap(Function.identity(), reference -> "cached")));
 
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";

@@ -47,6 +47,8 @@ public final class JobActivationClient {
   private final JobBatchRecord jobBatchRecord;
 
   private int partitionId;
+  private Integer requestStreamId;
+  private Long requestId;
   private BiFunction<Integer, Long, Record<JobBatchRecordValue>> expectation =
       SUCCESS_EXPECTATION_SUPPLIER;
 
@@ -115,14 +117,41 @@ public final class JobActivationClient {
     return this;
   }
 
+  public JobActivationClient withRequestStreamId(final int requestStreamId) {
+    this.requestStreamId = requestStreamId;
+    return this;
+  }
+
+  public JobActivationClient withRequestId(final long requestId) {
+    this.requestId = requestId;
+    return this;
+  }
+
   public JobActivationClient expectRejection() {
     expectation = REJECTION_EXPECTATION_SUPPLIER;
     return this;
   }
 
   public Record<JobBatchRecordValue> activate() {
+    if ((requestStreamId == null) != (requestId == null)) {
+      throw new IllegalStateException(
+          "Expected both request stream id and request id to be set together, or neither, but got "
+              + "requestStreamId=%s and requestId=%s".formatted(requestStreamId, requestId));
+    }
+    // when a request id is set, the command carries request metadata so the engine writes a
+    // command response; both variants write on the configured partition
     final long position =
-        writer.writeCommandOnPartition(partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord);
+        requestStreamId != null && requestId != null
+            ? writer.writeCommandOnPartition(
+                partitionId,
+                builder ->
+                    builder
+                        .intent(JobBatchIntent.ACTIVATE)
+                        .requestStreamId(requestStreamId)
+                        .requestId(requestId)
+                        .authorizations()
+                        .event(jobBatchRecord))
+            : writer.writeCommandOnPartition(partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord);
 
     return expectation.apply(partitionId, position);
   }
