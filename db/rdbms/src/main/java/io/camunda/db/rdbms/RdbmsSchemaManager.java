@@ -32,8 +32,7 @@ public interface RdbmsSchemaManager {
    * it. Called lazily by the exporter itself, once its cluster ID is resolved.
    *
    * @param clusterId this cluster's resolved ID, or blank if unresolved (skips the check)
-   * @param clusterIdCheckRestrictionEnabled if {@code true}, a mismatch throws; otherwise it's only
-   *     logged
+   * @param clusterIdCheckRestrictionEnabled if {@code false}, the check is skipped entirely
    */
   void validateClusterId(String clusterId, boolean clusterIdCheckRestrictionEnabled);
 }

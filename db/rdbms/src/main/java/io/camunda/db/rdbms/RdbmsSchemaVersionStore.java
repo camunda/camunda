@@ -248,7 +248,7 @@ public class RdbmsSchemaVersionStore {
     }
 
     if (previousClusterId == null) {
-      LOG.debug(
+      LOG.info(
           "[RDBMS Schema] No cluster ID recorded yet for prefix '{}', assuming a fresh "
               + "installation.",
           prefix);

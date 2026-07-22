@@ -308,7 +308,7 @@ public class SchemaManager implements CloseableSilently {
   private boolean checkClusterIdCompatibility(
       final String previousClusterId, final String currentClusterId) {
     if (previousClusterId == null) {
-      LOG.debug("No cluster ID found in metadata index, assuming a fresh installation");
+      LOG.info("No cluster ID found in metadata index, assuming a fresh installation");
       return true;
     }
     if (previousClusterId.equals(currentClusterId)) {

@@ -81,11 +81,7 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Whether to schedule the cleanup of legacy indexes */
   private boolean performCleanup = false;
 
-  /**
-   * If true, startup fails when the cluster ID recorded in the database schema does not match this
-   * cluster's ID. Disable only if intentionally re-pointing this cluster at storage belonging to a
-   * different installation.
-   */
+  /** If true, startup fails when this cluster's ID doesn't match the one recorded in storage. */
   private boolean clusterIdCheckRestrictionEnabled = true;
 
   @NestedConfigurationProperty
