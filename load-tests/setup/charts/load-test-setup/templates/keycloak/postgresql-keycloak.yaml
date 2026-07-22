@@ -41,6 +41,32 @@ spec:
       #log_connections: "on"
       #log_disconnections: "on"
 
+  # Initialize the Keycloak PostgreSQL cluster with:
+  #
+  # 1. A dedicated user
+  # 2. A dedicated database, owned by the user created in 1.
+  # 3. The password comes from the specified Kubernetes Secret
+  #
+  # The dedicated user will also be used by Keycloak to connect into this
+  # PostgeSQL cluster.
+  #
+  # In this cluster, this "bootstrap/initdb" method is preferred over the
+  # dedicated `Database`/`DatabaseRole` custom resources, as:
+  #
+  # 1. We only create a single database role + database ; we don't need to
+  #    manage multiple databases.
+  # 2. It's faster to provision the PostgeSQL cluster: this bootstrap method is
+  #    done very early during the cluster creation, whereas the custom resource
+  #    requires the CNPG Operator to trigger reconciliations.
+  #
+  # Reference: https://cloudnative-pg.io/docs/1.30/bootstrap#bootstrap-an-empty-cluster-initdb
+  bootstrap:
+    initdb:
+      database: {{ .Values.keycloak.postgresql.databaseName }}
+      owner: {{ .Values.keycloak.postgresql.databaseUser }}
+      secret:
+        name: {{ include "load-test-setup.keycloak.postgresql.secret-name" . }}
+
   managed:
     services:
       # Only deploy the (mandatory) read-write `rw` Kubernetes service. We

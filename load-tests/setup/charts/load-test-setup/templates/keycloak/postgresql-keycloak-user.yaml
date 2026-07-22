@@ -8,37 +8,15 @@
 apiVersion: v1
 kind: Secret
 metadata:
-  name: postgresql-keycloak-user
+  name: {{ include "load-test-setup.keycloak.postgresql.secret-name" . }}
   labels:
     cnpg.io/reload: "true"
 type: kubernetes.io/basic-auth
 data:
 {{- $secretName := dict
             "namespace" $.Release.Namespace
-            "user" "identity-keycloak-postgresql-user-password"
+            "user" "keycloak-postgresql-user"
 }}
   username: {{ .Values.keycloak.postgresql.databaseUser | b64enc }}
   password: {{ include "generate-secret" $secretName | b64enc }}
----
-# Configure the PostgreSQL role for Keycloak.
-# This is the PostgreSQL "user" used by Keycloak when connecting to the database.
-# Reference: https://cloudnative-pg.io/docs/1.30/cloudnative-pg.v1#databaserole
-apiVersion: postgresql.cnpg.io/v1
-kind: DatabaseRole
-metadata:
-  name: {{ .Values.keycloak.postgresql.databaseUser }}
-spec:
-  # The CNPG cluster to create this role in.
-  cluster:
-    name: {{ .Values.keycloak.postgresql.clusterName }}
-
-  name: {{ .Values.keycloak.postgresql.databaseUser }}
-  comment: The PostgreSQL user used by Keycloak
-
-  # Where to fetch the password for this PostgreSQL user.
-  passwordSecret:
-    name: postgresql-keycloak-user
-
-  # Can login to the PostgreSQL cluster
-  login: true
 {{- end -}}

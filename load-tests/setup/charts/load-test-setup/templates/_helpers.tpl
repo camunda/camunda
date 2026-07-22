@@ -27,4 +27,11 @@ The "derivePassword" function is not well documented, by conventions, we use:
 {{- derivePassword 1 "long" "secret" .user .namespace -}}
 {{- end -}}
 
+{{/*
+The name of the Kubernetes Secret to store the username/password for the Keycloak user in PostgreSQL.
+*/}}
+{{- define "load-test-setup.keycloak.postgresql.secret-name" -}}
+postgresql-keycloak-user
+{{- end -}}
+
 {{/* vim: set filetype=gotmpl: */}}
