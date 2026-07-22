@@ -159,6 +159,12 @@ public final class CamundaDocumentStoreConfigurationLoader
       final String propertyKey,
       final Object unifiedValue) {
     if (unifiedValue != null) {
+      UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+          PREFIX + storeType + "." + storeId + "." + unifiedField,
+          String.valueOf(unifiedValue),
+          String.class,
+          BackwardsCompatibilityMode.SUPPORTED,
+          Set.of(LEGACY_STORE_PREFIX + storeId.toUpperCase() + "_" + propertyKey));
       properties.put(propertyKey, String.valueOf(unifiedValue));
       return;
     }

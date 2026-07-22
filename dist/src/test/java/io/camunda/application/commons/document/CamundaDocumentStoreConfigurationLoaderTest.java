@@ -19,8 +19,12 @@ import io.camunda.document.store.gcp.GcpDocumentStoreProvider;
 import io.camunda.document.store.localstorage.LocalStorageDocumentStoreProvider;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.mock.env.MockEnvironment;
 
+@ExtendWith(OutputCaptureExtension.class)
 class CamundaDocumentStoreConfigurationLoaderTest {
 
   @Test
@@ -215,18 +219,25 @@ class CamundaDocumentStoreConfigurationLoaderTest {
   }
 
   @Test
-  void shouldPreferResolvedTenantValueOverLegacyWithoutRootUnifiedProperty() {
+  void shouldPreferResolvedTenantValuesAndWarnAboutLegacyWithoutRootUnifiedProperties(
+      final CapturedOutput output) {
     // given
     final Camunda tenantConfig = new Camunda();
+    tenantConfig.getDocument().setDefaultStoreId("aws");
+    tenantConfig.getDocument().setThreadPoolSize(12);
     final Document.AwsStore awsStore = new Document.AwsStore();
     awsStore.setBucketPath("documents/tenanta");
     tenantConfig.getDocument().getAws().put("aws", awsStore);
 
     final var mockEnv = new MockEnvironment();
+    mockEnv.setProperty("DOCUMENT_DEFAULT_STORE_ID", "legacy");
+    mockEnv.setProperty("DOCUMENT_THREAD_POOL_SIZE", "5");
     mockEnv.setProperty("DOCUMENT_STORE_AWS_BUCKET", "shared-bucket");
     mockEnv.setProperty("DOCUMENT_STORE_AWS_BUCKET_PATH", "documents");
     UnifiedConfigurationHelper.setCustomEnvironment(mockEnv);
 
+    System.setProperty("DOCUMENT_DEFAULT_STORE_ID", "legacy");
+    System.setProperty("DOCUMENT_THREAD_POOL_SIZE", "5");
     System.setProperty(
         "DOCUMENT_STORE_AWS_CLASS", "io.camunda.document.store.aws.AwsDocumentStoreProvider");
     System.setProperty("DOCUMENT_STORE_AWS_BUCKET", "shared-bucket");
@@ -238,11 +249,22 @@ class CamundaDocumentStoreConfigurationLoaderTest {
           new CamundaDocumentStoreConfigurationLoader(tenantConfig).loadConfiguration();
 
       // then
+      assertThat(configuration.defaultDocumentStoreId()).isEqualTo("aws");
+      assertThat(configuration.threadPoolSize()).isEqualTo(12);
       assertThat(store("aws", configuration.documentStores()).properties())
           .containsEntry("BUCKET", "shared-bucket")
           .containsEntry("BUCKET_PATH", "documents/tenanta");
+      assertThat(output)
+          .contains(
+              "The following legacy configuration properties should be removed in favor of 'camunda.document.default-store-id': DOCUMENT_DEFAULT_STORE_ID")
+          .contains(
+              "The following legacy configuration properties should be removed in favor of 'camunda.document.thread-pool-size': DOCUMENT_THREAD_POOL_SIZE")
+          .contains(
+              "The following legacy configuration properties should be removed in favor of 'camunda.document.aws.aws.bucket-path': DOCUMENT_STORE_AWS_BUCKET_PATH");
     } finally {
       UnifiedConfigurationHelper.setCustomEnvironment(null);
+      System.clearProperty("DOCUMENT_DEFAULT_STORE_ID");
+      System.clearProperty("DOCUMENT_THREAD_POOL_SIZE");
       System.clearProperty("DOCUMENT_STORE_AWS_CLASS");
       System.clearProperty("DOCUMENT_STORE_AWS_BUCKET");
       System.clearProperty("DOCUMENT_STORE_AWS_BUCKET_PATH");

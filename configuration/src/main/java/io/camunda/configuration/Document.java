@@ -55,10 +55,20 @@ public class Document {
   @NestedConfigurationProperty private Map<String, InMemoryStore> inMemory = new LinkedHashMap<>();
 
   public String getDefaultStoreId() {
+    if (defaultStoreId != null) {
+      UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+          "camunda.document.default-store-id",
+          defaultStoreId,
+          String.class,
+          BackwardsCompatibilityMode.SUPPORTED,
+          Set.of("DOCUMENT_DEFAULT_STORE_ID"));
+      return normalizeStoreId(defaultStoreId);
+    }
+
     final String value =
         UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
             "camunda.document.default-store-id",
-            defaultStoreId,
+            null,
             String.class,
             BackwardsCompatibilityMode.SUPPORTED,
             Set.of("DOCUMENT_DEFAULT_STORE_ID"));
@@ -75,9 +85,19 @@ public class Document {
   }
 
   public Integer getThreadPoolSize() {
+    if (threadPoolSize != null) {
+      UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
+          "camunda.document.thread-pool-size",
+          threadPoolSize,
+          Integer.class,
+          BackwardsCompatibilityMode.SUPPORTED,
+          Set.of("DOCUMENT_THREAD_POOL_SIZE"));
+      return threadPoolSize;
+    }
+
     return UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
         "camunda.document.thread-pool-size",
-        threadPoolSize,
+        null,
         Integer.class,
         BackwardsCompatibilityMode.SUPPORTED,
         Set.of("DOCUMENT_THREAD_POOL_SIZE"));
