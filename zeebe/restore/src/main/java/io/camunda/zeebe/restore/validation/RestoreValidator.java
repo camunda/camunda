@@ -127,6 +127,9 @@ public final class RestoreValidator
             hasTimeRange,
             "Time range restore (from/to) is not supported for %s.".formatted(databaseType));
         Preconditions.test(!hasBackupIds, "No backupId specified");
+        Preconditions.test(
+            request.backupIds().size() > 1,
+            "Cannot restore from multiple backups against this database type");
       }
       default ->
           throw new IllegalStateException("Invalid database type: " + request.databaseType());

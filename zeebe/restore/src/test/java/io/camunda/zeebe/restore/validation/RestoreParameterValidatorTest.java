@@ -22,6 +22,7 @@ final class RestoreParameterValidatorTest {
   private static final String EARLIER = "2026-01-01T10:00:00Z";
   private static final String LATER = "2026-01-01T12:00:00Z";
   private static final List<Long> BACKUP_ID = List.of(1L);
+  private static final List<Long> MULTIPLE_BACKUP_IDS = List.of(1L, 2L);
   private static final List<Long> NO_BACKUP_IDS = List.of();
 
   private static final String BOTH_MESSAGE =
@@ -29,6 +30,8 @@ final class RestoreParameterValidatorTest {
   private static final String CONTINUOUS_MESSAGE =
       "Time range restore (from/to) is only supported for continuous backups.";
   private static final String NO_BACKUP_ID_MESSAGE = "No backupId specified";
+  private static final String MULTIPLE_BACKUP_IDS_MESSAGE =
+      "Cannot restore from multiple backups against this database type";
 
   private final RestoreValidator validator = new RestoreValidator(1, null, partitionId -> 1L);
 
@@ -185,6 +188,17 @@ final class RestoreParameterValidatorTest {
           .isThrownBy(
               () -> validator.validateParameters(request(BACKUP_ID, EARLIER, null, DB, true)))
           .withMessage(BOTH_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectMultipleBackupIds() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  RestoreValidator.validateParameters(
+                      request(MULTIPLE_BACKUP_IDS, null, null, DB, false)))
+          .withMessage(MULTIPLE_BACKUP_IDS_MESSAGE);
     }
   }
 
