@@ -94,6 +94,7 @@ final class PhysicalTenantOverridePolicyValidation {
               "security.authentication.method",
               "security.authentication.unprotected-api",
               "security.authentication.webapp-enabled",
+              "security.authentication.catch-all-unhandled-paths-enabled",
               "security.csrf",
               "security.http-headers",
               // forward declaration — property lands with #54898
