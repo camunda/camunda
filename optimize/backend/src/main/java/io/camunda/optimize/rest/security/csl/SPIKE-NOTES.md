@@ -131,16 +131,22 @@ Found while manually testing against a local CCSM/Keycloak setup
 End-to-end validated for CCSM. The SaaS-only concerns from the legacy `CCSaaSSecurityConfigurerAdapter`
 and how they are covered under CSL (mapping detail in `CONFIG-COMPAT.md`):
 
-- **Cluster-ID sub-path — configuration only, no new security code.** Run Optimize under a context
-  path equal to the clusterId: set `CAMUNDA_OPTIMIZE_CONTEXT_PATH=/<clusterId>` (Optimize config
-  `container.contextPath`; `OptimizeTomcatConfig` applies it to embedded Tomcat via
-  `factory.setContextPath`). Tomcat then serves under `/<clusterId>`, `request.getContextPath()`
-  returns it, CSL's matchers see root-relative paths, and `{baseUrl}` (= scheme://host:port + context
-  path) makes CSL emit login/callback/post-logout URLs already carrying the prefix. This replaces the
-  legacy `CCSaasRequestAdjustmentFilter` clusterId stripping and the
-  `AddClusterIdSubPathToRedirect...` entry point. **IdP requirement:** the Auth0 client must allow the
-  callback and post-logout targets under the clusterId path (e.g. `https://<host>/<clusterId>/sso-callback`
-  and `https://<host>/<clusterId>/`).
+- **Cluster-ID sub-path — configuration only, no new security code.** The app runs under a context
+  path equal to the clusterId so it serves the webapp and the ingress-rewritten callback under that
+  prefix. The bridge derives `contextPath=/<clusterId>` from `CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID`
+  (`OptimizeTomcatConfig` reads `contextPath` from the Spring Environment), so
+  `CAMUNDA_OPTIMIZE_CONTEXT_PATH` need not be set. The **Auth0 callback is different from OC/CCSM**:
+  Auth0 cannot wildcard callback paths, so the redirect_uri is the root host + `?uuid=<clusterId>`
+  (single registered callback), and the cloud ingress rewrites root `/sso-callback?uuid=<clusterId>`
+  to `/<clusterId>/sso-callback` (the same thing OC does). The bridge derives a request-based default
+  (`{baseScheme}://{baseHost}{basePort}/sso-callback?uuid=<clusterId>`); behind a reverse proxy the
+  robust, OC-aligned setup is an explicit absolute `camunda.security.authentication.oidc.redirect-uri`
+  (e.g. `https://<host>/sso-callback?uuid=<clusterId>`), which overrides the default. So adopting CSL
+  on a SaaS cluster means adding the CSL toggle and (recommended) the explicit redirect-uri; this
+  replaces the legacy `CCSaasRequestAdjustmentFilter` stripping + `AddClusterIdSubPathToRedirect`
+  entry point. **IdP:** the existing single Auth0 callback (`.../sso-callback?uuid=<clusterId>`) keeps
+  working; no per-cluster path callback is registered. Post-logout likely needs the same `?uuid`
+  treatment (follow-up).
 - **Request-adjustment filter is not registered under CSL (affects CCSM too) — follow-up.** The
   `/external/api` -> `/api/external` rewrite and static external-share serving are done by
   `CCSMRequestAdjustmentFilter` / `CCSaasRequestAdjustmentFilter`, but both are registered as beans

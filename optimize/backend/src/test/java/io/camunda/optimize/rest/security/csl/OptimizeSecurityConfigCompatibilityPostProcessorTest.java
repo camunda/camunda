@@ -49,9 +49,12 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
     assertThat(env.getProperty(OIDC + "issuer-uri")).isEqualTo("https://weblogin.example.com/");
     assertThat(env.getProperty(OIDC + "audiences")).isEqualTo("optimize");
     assertThat(env.getProperty(OIDC + "organization-id")).isEqualTo("org-42");
-    assertThat(env.getProperty(OIDC + "redirect-uri")).isEqualTo("{baseUrl}/sso-callback");
+    assertThat(env.getProperty(OIDC + "redirect-uri"))
+        .isEqualTo("{baseScheme}://{baseHost}{basePort}/sso-callback?uuid=cluster-7");
     assertThat(env.getProperty("camunda.security.saas.organization-id")).isEqualTo("org-42");
     assertThat(env.getProperty("camunda.security.saas.cluster-id")).isEqualTo("cluster-7");
+    // context path derived from the clusterId so CAMUNDA_OPTIMIZE_CONTEXT_PATH is not needed
+    assertThat(env.getProperty("contextPath")).isEqualTo("/cluster-7");
   }
 
   @Test
@@ -70,6 +73,7 @@ class OptimizeSecurityConfigCompatibilityPostProcessorTest {
         .isEqualTo("{baseUrl}/api/authentication/callback");
     assertThat(env.getProperty("camunda.security.saas.organization-id")).isNull();
     assertThat(env.getProperty("camunda.security.saas.cluster-id")).isNull();
+    assertThat(env.getProperty("contextPath")).isNull();
   }
 
   @Test

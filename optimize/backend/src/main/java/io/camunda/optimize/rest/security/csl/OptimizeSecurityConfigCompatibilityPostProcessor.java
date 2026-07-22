@@ -111,12 +111,30 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
     // the Auth0 client id being present; mutually exclusive with the CCSM block above. ---
     final String auth0ClientId = env.getProperty("CAMUNDA_OPTIMIZE_AUTH0_CLIENTID");
     if (auth0ClientId != null && !auth0ClientId.isBlank()) {
-      // Cloud login callback is /sso-callback (also CSL's default), not the CCSM path set above;
-      // put
-      // (not putIfAbsent) to override the CCSM default within our derived source. An explicit
-      // operator camunda.security.* still wins, since this whole source is added at lowest
-      // precedence.
-      derived.put("camunda.security.authentication.oidc.redirect-uri", "{baseUrl}/sso-callback");
+      // SaaS keeps Optimize's legacy Auth0 callback exactly: root host (NO servlet context path)
+      // plus ?uuid=<clusterId>. Auth0 cannot wildcard callback paths, so a single root callback is
+      // registered and the cloud ingress rewrites it to /<clusterId>/sso-callback (routing by
+      // uuid),
+      // which the context-path'd app then receives. {baseScheme}://{baseHost}{basePort} excludes
+      // the
+      // servlet context path (unlike {baseUrl}), reproducing the legacy redirect_uri so no Auth0
+      // re-registration is needed. put (not putIfAbsent) overrides the CCSM default set above; an
+      // explicit operator redirect-uri still wins (this source is added at lowest precedence).
+      final String clusterId = env.getProperty("CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID");
+      final String uuidParam =
+          (clusterId != null && !clusterId.isBlank()) ? "?uuid=" + clusterId : "";
+      derived.put(
+          "camunda.security.authentication.oidc.redirect-uri",
+          "{baseScheme}://{baseHost}{basePort}/sso-callback" + uuidParam);
+
+      // Serve the app under /<clusterId> so it receives the ingress-rewritten callback and webapp
+      // under that prefix, derived from the clusterId so operators need not also set
+      // CAMUNDA_OPTIMIZE_CONTEXT_PATH. OptimizeTomcatConfig reads "contextPath" from the Spring
+      // Environment (this derived source) ahead of its YAML config. putIfAbsent keeps an explicit
+      // Spring "contextPath" winning.
+      if (clusterId != null && !clusterId.isBlank()) {
+        derived.putIfAbsent("contextPath", "/" + clusterId);
+      }
 
       derived.putIfAbsent("camunda.security.authentication.oidc.client-id", auth0ClientId);
       warnDeprecated(
@@ -149,7 +167,6 @@ public final class OptimizeSecurityConfigCompatibilityPostProcessor
       // CSL SaaS config requires BOTH organization-id and cluster-id; set them together only when
       // both are present so a partial config never trips SaasConfiguration#isConfigured().
       final String organizationId = env.getProperty("CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION");
-      final String clusterId = env.getProperty("CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID");
       if (organizationId != null
           && !organizationId.isBlank()
           && clusterId != null

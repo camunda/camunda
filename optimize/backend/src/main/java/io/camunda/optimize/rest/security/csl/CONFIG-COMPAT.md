@@ -66,11 +66,16 @@ CSL owns SaaS org/cluster config via `camunda.security.saas.*` (requires BOTH `o
 are host-supplied `OAuth2TokenValidator<Jwt>` beans plugged in by overriding CSL's
 `TokenValidatorFactory` bean (CSL ships only timestamp/issuer/audience validators). The cluster
 sub-path (`/<clusterId>`) is handled by running Optimize under
-`server.servlet.context-path=/<clusterId>` (Optimize's `container.contextPath`), so CSL's generated
-login/callback/post-logout URLs and its matchers carry the prefix natively — this replaces the
-legacy `CCSaasRequestAdjustmentFilter` clusterId stripping + `AddClusterIdSubPathToRedirect...`
-entry point. The Optimize-specific `/external/api` -> `/api/external` rewrite and static-share
-serving remain host concerns (a small filter), unrelated to clusterId.
+`server.servlet.context-path=/<clusterId>` (Optimize's `container.contextPath`) so the app serves
+the webapp and the ingress-rewritten callback under that prefix, and CSL's login-initiation and
+matchers pick it up. The Auth0 **callback**, however, must NOT carry the clusterId in the path:
+Auth0 cannot wildcard callback paths, so the redirect_uri is the root host plus `?uuid=<clusterId>`
+(a single registered callback), and the cloud ingress rewrites root `/sso-callback?uuid=<clusterId>`
+to `/<clusterId>/sso-callback`. This mirrors OC (`OidcOverrideBeansConfiguration` + gateway rewrite);
+it replaces the legacy `CCSaasRequestAdjustmentFilter` stripping + `AddClusterIdSubPathToRedirect`
+entry point. Post-logout likely needs the same `?uuid` treatment (Auth0 logout URLs can't wildcard
+paths either) - follow-up. The Optimize-specific `/external/api` -> `/api/external` rewrite and
+static-share serving remain host concerns (a small filter), unrelated to clusterId.
 
 The bridge detects cloud by the presence of `CAMUNDA_OPTIMIZE_AUTH0_CLIENTID` and maps these
 `${...}` env vars (from `service-config.yaml`, `security.auth.cloud`):
@@ -82,8 +87,8 @@ The bridge detects cloud by the presence of `CAMUNDA_OPTIMIZE_AUTH0_CLIENTID` an
 | `CAMUNDA_OPTIMIZE_AUTH0_DOMAIN` (`customDomain`) | `...oidc.issuer-uri` = `https://<domain>/` (CSL discovers token/jwks/userinfo) | MAP (bridged) |
 | `CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE` (`audience`) | `...oidc.audiences` | MAP (bridged) |
 | `CAMUNDA_OPTIMIZE_AUTH0_ORGANIZATION` (`organizationId`) | `...oidc.organization-id` + `camunda.security.saas.organization-id` | MAP (bridged) |
-| `CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID` (`clusterId`) | `camunda.security.saas.cluster-id` (+ `server.servlet.context-path=/<clusterId>`, see clusterId note) | MAP (bridged) |
-| (cloud login callback) | `...oidc.redirect-uri` = `{baseUrl}/sso-callback` (overrides the CCSM default) | MAP (bridged) |
+| `CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID` (`clusterId`) | `camunda.security.saas.cluster-id`, the redirect_uri `?uuid=<clusterId>`, and the servlet `contextPath=/<clusterId>` (all derived; `CAMUNDA_OPTIMIZE_CONTEXT_PATH` is no longer needed) | MAP (bridged) |
+| (cloud login callback) | `...oidc.redirect-uri` = `{baseScheme}://{baseHost}{basePort}/sso-callback?uuid=<clusterId>` (root host, NO context path, clusterId as **query param**; reproduces the legacy redirect_uri so the single registered Auth0 callback works with no re-registration; the cloud ingress rewrites it to `/<clusterId>/sso-callback` and routes by `uuid`) | MAP (bridged) |
 | `userIdAttributeName` (`sub`) | `...oidc.username-claim` (CSL default `sub`) | MAP (no-op) |
 | `CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE` (`userAccessTokenAudience`) | webapp access-token audience; not separately enforced (CSL single-audience per registration) | TODO |
 | `CAMUNDA_OPTIMIZE_AUTH0_TOKEN_URL` (`tokenUrl`) | none needed (discovered from `issuer-uri`) | NO-ANALOG |
@@ -91,6 +96,15 @@ The bridge detects cloud by the presence of `CAMUNDA_OPTIMIZE_AUTH0_CLIENTID` an
 | `https://camunda.com/clusterId` claim (public-API bearer) | `TokenValidatorFactory` override adds `CustomClaimValidator` (`OptimizeCloudSecurityConfiguration`) | HOST-VALIDATOR |
 | `https://camunda.com/originalUserId` claim -> user-id migration | `OptimizeCslLoginSuccessListener` (host, on Spring `InteractiveAuthenticationSuccessEvent`) | HOST-HOOK |
 | `m2mClient.*`, `users.cloud.accountsUrl` | none (cloud-console M2M clients, independent of the login chain) | SAAS/NO-ANALOG |
+
+**Behind a reverse proxy (SaaS), prefer an explicit redirect-uri.** The derived
+`{baseScheme}://{baseHost}{basePort}` form is request-derived, so it depends on the proxy passing
+through the public scheme/host (it did in the observed dev env). The robust, OC-aligned option is to
+set an absolute `camunda.security.authentication.oidc.redirect-uri`, e.g.
+`https://<host>/sso-callback?uuid=<clusterId>` (exactly how OC's control plane configures it); as a
+higher-precedence source it overrides the bridge default. Adopting CSL on a SaaS cluster therefore
+means adding this (and the CSL toggle) to the deployment - recycling the existing config is not
+required.
 
 ## Transport (not part of the auth bridge)
 `container.ports.*`, `container.keystore.*`, `container.enableSniCheck`, `container.contextPath`,
