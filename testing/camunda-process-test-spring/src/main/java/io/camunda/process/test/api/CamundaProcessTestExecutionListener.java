@@ -24,7 +24,6 @@ import io.camunda.process.test.api.runtime.CamundaProcessTestContainerProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.util.InstantProbeAwaitBehavior;
 import io.camunda.process.test.impl.cleanup.CleanupStrategy;
-import io.camunda.process.test.impl.cleanup.CleanupStrategyResolver;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.AssertionConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -33,6 +32,7 @@ import io.camunda.process.test.impl.coverage.CoverageCollector;
 import io.camunda.process.test.impl.coverage.CoverageCollectorBuilder;
 import io.camunda.process.test.impl.coverage.CoverageTestDataCollector;
 import io.camunda.process.test.impl.coverage.data.CoverageTestData;
+import io.camunda.process.test.impl.deployment.DeploymentCollector;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.extension.ConditionalBehaviorEngine;
@@ -58,6 +58,7 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.DisplayName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.Ordered;
 import org.springframework.test.context.TestContext;
 import org.springframework.test.context.TestExecutionListener;
@@ -107,7 +108,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private CamundaManagementClient camundaManagementClient;
   private CamundaDataSource dataSource;
   private boolean clockResetEnabled = true;
-  private DataDeletionMode dataDeletionMode = DataDeletionMode.CLUSTER_PURGE;
   private Instant testCaseStartTime;
 
   private CamundaClient client;
@@ -133,7 +133,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
     clockResetEnabled = runtimeConfiguration.isClockResetEnabled();
-    dataDeletionMode = runtimeConfiguration.getDataDeletionMode();
 
     final JsonMapper jsonMapper = testContext.getApplicationContext().getBean(JsonMapper.class);
 
@@ -215,6 +214,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
+    final ApplicationContext applicationContext = testContext.getApplicationContext();
+
     if (runtime == null) {
       // Skip if the runtime is not created.
       return;
@@ -239,19 +240,14 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // reset assertions
     CamundaAssert.reset();
     // close Zeebe clients
-    testContext
-        .getApplicationContext()
-        .publishEvent(new CamundaClientClosingSpringEvent(this, client));
+    applicationContext.publishEvent(new CamundaClientClosingSpringEvent(this, client));
 
     closeCreatedClients();
 
     // clean up proxies
-    testContext.getApplicationContext().getBean(CamundaClientProxy.class).removeDelegate();
-    testContext
-        .getApplicationContext()
-        .getBean(CamundaProcessTestContextProxy.class)
-        .removeDelegate();
-    testContext.getApplicationContext().getBean(TestCaseRunnerProxy.class).removeDelegate();
+    applicationContext.getBean(CamundaClientProxy.class).removeDelegate();
+    applicationContext.getBean(CamundaProcessTestContextProxy.class).removeDelegate();
+    applicationContext.getBean(TestCaseRunnerProxy.class).removeDelegate();
 
     // final steps: reset the time and delete data
     // It's important that the runtime clock is reset before the cleanup is started, as doing it
@@ -261,9 +257,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     } else {
       LOG.info("Runtime clock reset is disabled. Skipping.");
     }
-    deleteRuntimeData();
 
-    deployments.clear();
+    deleteRuntimeData(applicationContext);
   }
 
   @Override
@@ -327,9 +322,14 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
   }
 
-  private void deleteRuntimeData() {
+  private void deleteRuntimeData(final ApplicationContext applicationContext) {
+    final CleanupStrategy cleanupStrategy = applicationContext.getBean(CleanupStrategy.class);
+    final DeploymentCollector deploymentCollector =
+        applicationContext.getBean(DeploymentCollector.class);
+
+    deployments.addAll(deploymentCollector.getDeploymentEvents());
+
     try {
-      final CleanupStrategy cleanupStrategy = CleanupStrategyResolver.resolve(dataDeletionMode);
       cleanupStrategy.cleanup(
           camundaManagementClient,
           () -> runtime.getCamundaClientBuilderFactory().get().build(),
@@ -341,6 +341,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
           "Failed to delete the runtime data, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
+    } finally {
+      deploymentCollector.clear();
+      deployments.clear();
     }
   }
 

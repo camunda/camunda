@@ -414,8 +414,6 @@ public class CamundaProcessTestExtension
       LOG.info("Runtime clock reset is disabled. Skipping.");
     }
     deleteRuntimeData();
-
-    deployments.clear();
   }
 
   private String getCoverageTestName(final ExtensionContext context) {
@@ -464,6 +462,8 @@ public class CamundaProcessTestExtension
           "Failed to delete the runtime data, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
+    } finally {
+      deployments.clear();
     }
   }
 
