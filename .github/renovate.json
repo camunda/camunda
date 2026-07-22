@@ -821,6 +821,12 @@
         "docker.io/camunda/camunda"
       ],
       "allowedVersions": "<= {{{major}}}.{{{minor}}}"
+    },
+    {
+      "description": "Pin slackapi/slack-github-action to v3.x. v4.0.0 re-bundled @slack/webhook onto a new global-fetch stack that no longer accepts the bare 200 returned by Slack Workflow Builder webhook-trigger endpoints as success. The default retries then re-deliver the same message 3-5 times and the escalating back-off blows past the job timeout (jobs show as cancelled). Remove this pin once webhook-trigger handling is fixed upstream.",
+      "matchManagers": ["github-actions"],
+      "matchDepNames": ["slackapi/slack-github-action"],
+      "allowedVersions": "<4"
     }
   ],
   "ignorePaths": [
