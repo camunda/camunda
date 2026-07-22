@@ -183,4 +183,37 @@ final class FailbackRequestTransformerTest {
         .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
         .hasMessageContaining("less than the requested number");
   }
+
+  @Test
+  void shouldRejectInvalidReplica() {
+    // given: only 1 broker supplied but 2 replicas requested
+    final var currentTopology = buildTopology(SINGLE_ZONE_CONFIG, SINGLE_ZONE_MEMBERS);
+
+    // when
+    final var result =
+        new FailbackRequestTransformer(ZONE_B, -1, 500, Set.of(ZONE_B_0))
+            .operations(currentTopology);
+
+    // then
+    EitherAssert.assertThat(result).isLeft();
+    assertThat(result.getLeft())
+        .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
+        .hasMessageContaining("ZoneSpec: numberOfReplicas must be >= 1, got -1");
+  }
+
+  @Test
+  void shouldRejectInvalidPriorities() {
+    // given: only 1 broker supplied but 2 replicas requested
+    final var currentTopology = buildTopology(SINGLE_ZONE_CONFIG, SINGLE_ZONE_MEMBERS);
+
+    // when
+    final var result =
+        new FailbackRequestTransformer(ZONE_B, 1, -1, Set.of(ZONE_B_0)).operations(currentTopology);
+
+    // then
+    EitherAssert.assertThat(result).isLeft();
+    assertThat(result.getLeft())
+        .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
+        .hasMessageContaining("ZoneSpec: priority must be > 0, got -1");
+  }
 }

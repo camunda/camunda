@@ -92,7 +92,13 @@ public final class FailbackRequestTransformer implements ConfigurationChangeRequ
     }
 
     final var newZones = new ArrayList<>(currentZones);
-    newZones.add(new ZoneSpec(zoneId, numberOfReplicas, priority));
+    final ZoneSpec newZone;
+    try {
+      newZone = new ZoneSpec(zoneId, numberOfReplicas, priority);
+    } catch (final IllegalArgumentException e) {
+      return Either.left(new InvalidRequest(e));
+    }
+    newZones.add(newZone);
     final var newConfig = new ZoneAwareConfig(newZones);
 
     // Join the returning brokers, then reuse the shared distribution transformer to persist the new

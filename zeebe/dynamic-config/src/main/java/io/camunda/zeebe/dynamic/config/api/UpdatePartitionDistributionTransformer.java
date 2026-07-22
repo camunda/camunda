@@ -51,7 +51,7 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
   public UpdatePartitionDistributionTransformer(
       final PartitionDistributorConfig newConfig, final Set<MemberId> extraMembers) {
     this.newConfig = newConfig;
-    this.extraMembers = extraMembers;
+    this.extraMembers = Set.copyOf(extraMembers);
   }
 
   @Override
