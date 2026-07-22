@@ -219,7 +219,9 @@ final class SecretReferenceResolutionRequestedApplierTest {
     final long jobKey = 1L;
     final var job =
         new JobRecord().setType("task-type").setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    jobState.create(jobKey, job);
+    jobState.insertJobRecordActivatable(jobKey, job);
+    jobState.makeJobActivatableByPriority(
+        job.getTypeBuffer(), jobKey, job.getTenantId(), job.getPriority());
     assertThat(activatableJobKeys(job)).contains(jobKey);
     final var record =
         new SecretReferenceRecord()

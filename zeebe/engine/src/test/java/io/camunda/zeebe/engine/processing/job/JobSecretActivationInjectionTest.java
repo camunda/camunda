@@ -135,6 +135,15 @@ public final class JobSecretActivationInjectionTest {
     final Record<JobBatchRecordValue> secondAttempt =
         engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
     assertThat(secondAttempt.getValue().getJobs()).isEmpty();
+
+    // and - the parked job does not re-request the resolution on later polls: cancelling the
+    // instance fences the record stream, and only the first activation requested the resolution
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .filter(r -> r.getIntent() == SecretReferenceIntent.RESOLUTION_REQUESTED))
+        .hasSize(1);
   }
 
   @Test
