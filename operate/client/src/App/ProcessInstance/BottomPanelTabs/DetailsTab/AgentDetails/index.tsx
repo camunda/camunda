@@ -115,7 +115,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
 
   if (isError || !agentInstance) {
     return (
-      <AgentDetailsContainer>
+      <AgentDetailsContainer aria-label="AI Agent">
         <AgentHeading>AI Agent</AgentHeading>
         <ErrorHint>Unable to load agent information.</ErrorHint>
       </AgentDetailsContainer>
@@ -133,6 +133,7 @@ const AgentDetails: React.FC<AgentDetailsProps> = ({
 
   return (
     <AgentDetailsContainer
+      aria-label="AI Agent"
       data-testid="agent-details"
       onKeyDown={(e) => {
         // TODO: Workaround for https://github.com/carbon-design-system/carbon/issues/22483.
