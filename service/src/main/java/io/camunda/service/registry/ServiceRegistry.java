@@ -35,6 +35,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TopologyServices;
@@ -107,6 +108,8 @@ public interface ServiceRegistry {
   ResourceServices resourceServices(String physicalTenantId);
 
   RoleServices roleServices(String physicalTenantId);
+
+  SecretServices secretServices(String physicalTenantId);
 
   SignalServices signalServices(String physicalTenantId);
 
