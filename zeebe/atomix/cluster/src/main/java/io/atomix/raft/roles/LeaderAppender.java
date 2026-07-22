@@ -102,7 +102,8 @@ final class LeaderAppender {
    * @param member The member to which to send the request.
    * @return The append request.
    */
-  private AppendBatch buildAppendRequest(final RaftMemberContext member, final long lastIndex) {
+  private SizedAppendRequest buildAppendRequest(
+      final RaftMemberContext member, final long lastIndex) {
     // If the log is empty then send an empty commit.
     // If the next index hasn't yet been set then we send an empty commit first.
     // If the next index is greater than the last index then send an empty commit.
@@ -122,7 +123,7 @@ final class LeaderAppender {
    *
    * <p>Empty append requests are used as heartbeats to followers.
    */
-  private AppendBatch buildAppendEmptyRequest(final RaftMemberContext member) {
+  private SizedAppendRequest buildAppendEmptyRequest(final RaftMemberContext member) {
     // Read the previous entry from the reader.
     // The reader can be null for RESERVE members.
     final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
@@ -135,7 +136,7 @@ final class LeaderAppender {
             .withEntries(Collections.emptyList())
             .withCommitIndex(raft.getCommitIndex())
             .build();
-    return new AppendBatch(request, 0L);
+    return new SizedAppendRequest(request, 0L);
   }
 
   private VersionedAppendRequest.Builder builderWithPreviousEntry(
@@ -157,7 +158,7 @@ final class LeaderAppender {
   }
 
   /** Builds a populated AppendEntries request. */
-  private AppendBatch buildAppendEntriesRequest(
+  private SizedAppendRequest buildAppendEntriesRequest(
       final RaftMemberContext member, final long lastIndex) {
     final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
 
@@ -178,8 +179,8 @@ final class LeaderAppender {
     // If there exists an entry in the log with size >= MAX_BATCH_SIZE the logic ensures that
     // entry will be sent in a batch of size one
     int size = 0;
-    // Exact on-disk journal bytes of this batch, tracked separately from the approximate wire size
-    // used for the batch cap so the lag accounting matches bytesUntilEnd() and never drifts.
+    // Exact on-disk journal size of this request, tracked separately from the approximate wire
+    // size used for the batch cap so the lag accounting matches bytesUntilEnd() and never drifts.
     long journalBytes = 0;
 
     // Iterate through the log until the last index or the end of the log is reached.
@@ -196,13 +197,14 @@ final class LeaderAppender {
     }
 
     // Add the entries to the request builder and build the request.
-    return new AppendBatch(builder.withEntries(entries).build(), journalBytes);
+    return new SizedAppendRequest(builder.withEntries(entries).build(), journalBytes);
   }
 
   /** Connects to the member and sends a commit message. */
-  private void sendAppendRequest(final RaftMemberContext member, final AppendBatch batch) {
-    final VersionedAppendRequest request = batch.request();
-    final long batchBytes = batch.bytes();
+  private void sendAppendRequest(
+      final RaftMemberContext member, final SizedAppendRequest sizedRequest) {
+    final VersionedAppendRequest request = sizedRequest.request();
+    final long requestSize = sizedRequest.size();
     // If this is a heartbeat message and a heartbeat is already in progress, skip the request.
     if (request.entries().isEmpty() && !member.canHeartbeat()) {
       return;
@@ -210,7 +212,7 @@ final class LeaderAppender {
 
     // Start the append to the member.
     member.startAppend();
-    final long appendWatermark = member.recordInFlightAppend(batchBytes);
+    final long appendWatermark = member.recordInFlightAppend(requestSize);
 
     final long timestamp = System.currentTimeMillis();
 
@@ -1101,9 +1103,9 @@ final class LeaderAppender {
   /**
    * An append request together with the exact journal-byte size of the entries it carries, so the
    * byte count computed at build time can be assigned a cumulative position when the request is
-   * sent. Empty heartbeat requests carry {@code 0} bytes and retain the current position.
+   * sent. Empty heartbeat requests have {@code 0} size and retain the current position.
    */
-  private record AppendBatch(VersionedAppendRequest request, long bytes) {}
+  private record SizedAppendRequest(VersionedAppendRequest request, long size) {}
 
   /** Timestamped completable future. */
   private static class TimestampedFuture<T> extends CompletableFuture<T> {
