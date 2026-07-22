@@ -46,9 +46,11 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
+@Timeout(120)
 final class ClusterConfigurationInitializerTest {
   @TempDir Path rootDir;
   private final ClusterConfiguration initialClusterConfiguration =
@@ -235,19 +237,56 @@ final class ClusterConfigurationInitializerTest {
   }
 
   @Test
-  void shouldFallBackToUninitializedAfterBootstrapTimeout() {
+  void shouldNotFallBackToUninitializedAfterBootstrapTimeoutWhenNoMemberIsReachable() {
     // given - a member that never responds to sync requests
     final var unresponsiveMember = MemberId.from("1");
-    final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester =
-        id -> new TestActorFuture<>();
     final var concurrencyControl = new TestConcurrencyControl(true);
+    final var bootstrapTimeout = Duration.ofSeconds(1);
+    final var initializer =
+        new SyncInitializer(
+            Duration.ofSeconds(1),
+            new TestClusterConfigurationNotifier(),
+            () -> List.of(unresponsiveMember),
+            concurrencyControl,
+            ignored -> new TestActorFuture<>(),
+            bootstrapTimeout);
+
+    // when
+    final var initializeFuture = initializer.initialize();
+
+    // then - stays pending while no member has replied
+    assertThat(initializeFuture.isDone()).isFalse();
+
+    // when - the bootstrap timeout elapses
+    concurrencyControl.runAll();
+    final var testTimeout = bootstrapTimeout.toMillis() * 5;
+    // there's no easy way to verify that a future does not terminates, so we fail the future
+    // with an exception that we check later.
+    concurrencyControl.schedule(
+        testTimeout, () -> initializeFuture.completeExceptionally(new Exception("expected")));
+    concurrencyControl.runAll();
+
+    // then - falls back to uninitialized so the coordinator can use static initialization
+    assertThat(initializeFuture)
+        .failsWithin(Duration.ofMillis(testTimeout + 1000))
+        .withThrowableThat()
+        .withMessageContaining("expected");
+  }
+
+  @Test
+  void shouldFallBackToUninitializedAfterBootstrapTimeoutAfterOneUninitializedReturns() {
+    // given - a member that never responds to sync requests
+    final var unresponsiveMember = MemberId.from("1");
+    final var concurrencyControl = new TestConcurrencyControl(true);
+    final var uninitializedResponse = new TestActorFuture<ClusterConfiguration>();
+    final var syncResponses = Map.of(unresponsiveMember, uninitializedResponse);
     final var initializer =
         new SyncInitializer(
             Duration.ofSeconds(5),
             new TestClusterConfigurationNotifier(),
             () -> List.of(unresponsiveMember),
             concurrencyControl,
-            syncRequester,
+            m -> syncResponses.getOrDefault(m, new TestActorFuture<>()),
             Duration.ofSeconds(1));
 
     // when
@@ -257,6 +296,7 @@ final class ClusterConfigurationInitializerTest {
     assertThat(initializeFuture.isDone()).isFalse();
 
     // when - the bootstrap timeout elapses
+    uninitializedResponse.complete(ClusterConfiguration.uninitialized());
     concurrencyControl.runAll();
 
     // then - falls back to uninitialized so the coordinator can use static initialization
