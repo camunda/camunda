@@ -70,6 +70,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
   private static final List<CrossTenantValidation> CROSS_TENANT_VALIDATIONS =
       List.of(
           new SecondaryStorageIsolationValidation(),
+          new RetentionPolicyIsolationValidation(),
           new SecondaryStorageTypeHomogeneityValidation(),
           new DocumentStoreIsolationValidation());
 

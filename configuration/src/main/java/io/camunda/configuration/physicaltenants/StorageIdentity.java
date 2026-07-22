@@ -128,7 +128,7 @@ record StorageIdentity(
    * The connection is the {@code urls} list when configured, otherwise the single {@code url}. Both
    * live on {@link SecondaryStorageDatabase} and are mutually exclusive (enforced at getter time).
    */
-  private static List<String> connectionOf(final SecondaryStorageDatabase<?> database) {
+  static List<String> connectionOf(final SecondaryStorageDatabase<?> database) {
     final List<String> urls = database.getUrls();
     final List<String> raw = (urls != null && !urls.isEmpty()) ? urls : List.of(database.getUrl());
     return raw.stream().map(StorageIdentity::normalizeUrl).sorted().toList();

@@ -355,6 +355,53 @@ class PhysicalTenantResolverTest {
   }
 
   @Test
+  void shouldRejectRetentionEnabledTenantsSharingLifecyclePolicyOnSharedCluster() {
+    // given two tenants on the same Elasticsearch cluster with distinct index prefixes (so the
+    // isolation rule passes) but both with retention enabled and the default policy name — the
+    // cluster-global ILM policy would be overwritten
+    setProperties(
+        Map.of(
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.retention.enabled", "true",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.retention.enabled", "true"),
+        "tenanta",
+        "tenantb");
+
+    // when / then resolution fails fast at boot on the shared lifecycle policy
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(this::newResolver)
+        .withMessageContaining("lifecycle");
+  }
+
+  @Test
+  void shouldResolveWhenSharedClusterButDistinctLifecyclePolicyNames() {
+    // given two retention-enabled tenants on the same cluster (distinct index prefixes) that give
+    // their history lifecycle policies distinct names
+    setProperties(
+        Map.of(
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.index-prefix",
+                "tenanta",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.retention.enabled", "true",
+            "camunda.physical-tenants.tenanta.data.secondary-storage.elasticsearch.history.policy-name",
+                "tenanta-policy",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.index-prefix",
+                "tenantb",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.retention.enabled", "true",
+            "camunda.physical-tenants.tenantb.data.secondary-storage.elasticsearch.history.policy-name",
+                "tenantb-policy"),
+        "tenanta",
+        "tenantb");
+
+    // when / then distinct policy names isolate the tenants — resolution succeeds
+    final PhysicalTenantResolver resolver = newResolver();
+    assertThat(resolver.getAll())
+        .containsOnlyKeys("tenanta", "tenantb", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
+  }
+
+  @Test
   void shouldRejectInvalidTenantIds() {
     // tenant ids must be lowercase alphanumeric — no underscores, no uppercase, no dashes
     // (dashes would make yaml and env-var forms address two different tenants).
