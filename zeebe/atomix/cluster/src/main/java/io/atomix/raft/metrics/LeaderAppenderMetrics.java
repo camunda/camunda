@@ -63,7 +63,7 @@ public class LeaderAppenderMetrics extends RaftMetrics implements CloseableSilen
   }
 
   public void observeAppend(
-      final String memberId, final int appendedEntries, final int appendedBytes) {
+      final String memberId, final int appendedEntries, final long appendedBytes) {
     getAppendRate(memberId).increment(appendedEntries);
     getAppendDataRate(memberId).increment(appendedBytes / 1024f);
   }

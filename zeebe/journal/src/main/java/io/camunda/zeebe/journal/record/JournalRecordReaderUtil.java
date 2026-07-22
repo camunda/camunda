@@ -28,7 +28,8 @@ public final class JournalRecordReaderUtil {
    * Reads the JournalRecord in the buffer at the current position. After the methods returns, the
    * position of {@code buffer} will be advanced to the next record.
    */
-  public JournalRecord read(final ByteBuffer buffer, final long expectedIndex) {
+  public JournalRecord read(
+      final ByteBuffer buffer, final long expectedIndex, final int frameLength) {
     // Mark the buffer so it can be reset if necessary.
     buffer.mark();
 
@@ -82,6 +83,9 @@ public final class JournalRecordReaderUtil {
     //       if the underlying buffer is unmapped, any access to serializedRecord will crash the JVM
     //       link: https://github.com/camunda/camunda/issues/57609
     return new PersistedJournalRecord(
-        metadata, record, new UnsafeBuffer(buffer, startPosition + metadataLength, recordLength));
+        metadata,
+        record,
+        new UnsafeBuffer(buffer, startPosition + metadataLength, recordLength),
+        frameLength + metadataLength + recordLength);
   }
 }

@@ -102,7 +102,7 @@ final class LeaderAppender {
    * @param member The member to which to send the request.
    * @return The append request.
    */
-  private VersionedAppendRequest buildAppendRequest(
+  private SizedAppendRequest buildAppendRequest(
       final RaftMemberContext member, final long lastIndex) {
     // If the log is empty then send an empty commit.
     // If the next index hasn't yet been set then we send an empty commit first.
@@ -123,18 +123,20 @@ final class LeaderAppender {
    *
    * <p>Empty append requests are used as heartbeats to followers.
    */
-  private VersionedAppendRequest buildAppendEmptyRequest(final RaftMemberContext member) {
+  private SizedAppendRequest buildAppendEmptyRequest(final RaftMemberContext member) {
     // Read the previous entry from the reader.
     // The reader can be null for RESERVE members.
     final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
 
     final DefaultRaftMember leader = raft.getLeader();
-    return builderWithPreviousEntry(prevEntry)
-        .withTerm(raft.getTerm())
-        .withLeader(leader.memberId())
-        .withEntries(Collections.emptyList())
-        .withCommitIndex(raft.getCommitIndex())
-        .build();
+    final var request =
+        builderWithPreviousEntry(prevEntry)
+            .withTerm(raft.getTerm())
+            .withLeader(leader.memberId())
+            .withEntries(Collections.emptyList())
+            .withCommitIndex(raft.getCommitIndex())
+            .build();
+    return new SizedAppendRequest(request, 0L);
   }
 
   private VersionedAppendRequest.Builder builderWithPreviousEntry(
@@ -156,7 +158,7 @@ final class LeaderAppender {
   }
 
   /** Builds a populated AppendEntries request. */
-  private VersionedAppendRequest buildAppendEntriesRequest(
+  private SizedAppendRequest buildAppendEntriesRequest(
       final RaftMemberContext member, final long lastIndex) {
     final IndexedRaftLogEntry prevEntry = member.getCurrentEntry();
 
@@ -176,7 +178,7 @@ final class LeaderAppender {
     // counted towards the size of the batch.
     // If there exists an entry in the log with size >= MAX_BATCH_SIZE the logic ensures that
     // entry will be sent in a batch of size one
-    int size = 0;
+    long size = 0;
 
     // Iterate through the log until the last index or the end of the log is reached.
     while (hasMoreEntries(member)) {
@@ -184,19 +186,21 @@ final class LeaderAppender {
       final IndexedRaftLogEntry entry = member.nextEntry();
       final var replicatableRecord = entry.getReplicatableJournalRecord();
       entries.add(replicatableRecord);
-      size += replicatableRecord.approximateSize();
+      size += entry.size();
       if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {
         break;
       }
     }
 
     // Add the entries to the request builder and build the request.
-    return builder.withEntries(entries).build();
+    return new SizedAppendRequest(builder.withEntries(entries).build(), size);
   }
 
   /** Connects to the member and sends a commit message. */
   private void sendAppendRequest(
-      final RaftMemberContext member, final VersionedAppendRequest request) {
+      final RaftMemberContext member, final SizedAppendRequest sizedRequest) {
+    final VersionedAppendRequest request = sizedRequest.request();
+    final long requestSize = sizedRequest.size();
     // If this is a heartbeat message and a heartbeat is already in progress, skip the request.
     if (request.entries().isEmpty() && !member.canHeartbeat()) {
       return;
@@ -204,6 +208,7 @@ final class LeaderAppender {
 
     // Start the append to the member.
     member.startAppend();
+    final long appendWatermark = member.recordInFlightAppend(requestSize);
 
     final long timestamp = System.currentTimeMillis();
 
@@ -220,7 +225,7 @@ final class LeaderAppender {
 
                 if (error == null) {
                   LOGGER.trace("Received {} from {}", response, member.getMember().memberId());
-                  handleAppendResponse(member, request, response, timestamp);
+                  handleAppendResponse(member, sizedRequest, response, appendWatermark, timestamp);
                 } else {
                   handleAppendResponseFailure(member, request, error);
                 }
@@ -420,9 +425,8 @@ final class LeaderAppender {
             e);
         return Optional.empty();
       }
-      member.setNextSnapshotIndex(persistedSnapshot.getIndex());
-      member.setNextSnapshotChunkId(null);
-      seedSnapshotReplicationLag(member, persistedSnapshot);
+      member.beginSnapshotInstall(raft.getLog(), persistedSnapshot);
+      observeReplicationLag(member);
     }
 
     final SnapshotChunkReader reader = member.getSnapshotChunkReader();
@@ -705,21 +709,23 @@ final class LeaderAppender {
 
   private void handleAppendResponse(
       final RaftMemberContext member,
-      final VersionedAppendRequest request,
+      final SizedAppendRequest sizedRequest,
       final AppendResponse response,
+      final long appendWatermark,
       final long timestamp) {
     if (response.status() == RaftResponse.Status.OK) {
-      handleAppendResponseOk(member, request, response);
+      handleAppendResponseOk(member, sizedRequest, response, appendWatermark);
     } else {
-      handleAppendResponseError(member, request, response);
+      handleAppendResponseError(member, sizedRequest, response);
     }
     recordHeartbeat(member, timestamp);
   }
 
   private void handleAppendResponseOk(
       final RaftMemberContext member,
-      final VersionedAppendRequest request,
-      final AppendResponse response) {
+      final SizedAppendRequest sizedRequest,
+      final AppendResponse response,
+      final long appendWatermark) {
     // Reset the member failure count and update the member's availability status if necessary.
     succeedAttempt(member);
 
@@ -728,11 +734,14 @@ final class LeaderAppender {
     // If replication succeeded then trigger commit futures.
     if (response.succeeded()) {
       member.appendSucceeded();
+      member.acknowledgeInFlightAppends(appendWatermark);
       updateMatchIndex(member, response);
+
+      final var request = sizedRequest.request();
       metrics.observeAppend(
-          member.getMember().memberId().id(),
-          request.entries().size(),
-          request.entries().stream().mapToInt(ReplicatableJournalRecord::approximateSize).sum());
+          member.getMember().memberId().id(), request.entries().size(), sizedRequest.size());
+
+      observeReplicationLag(member);
 
       commitEntries();
 
@@ -832,7 +841,7 @@ final class LeaderAppender {
 
   private void handleAppendResponseError(
       final RaftMemberContext member,
-      final VersionedAppendRequest request,
+      final SizedAppendRequest sizedRequest,
       final AppendResponse response) {
     // If we've received a greater term, update the term and transition back to follower.
     if (response.term() > raft.getTerm()) {
@@ -856,7 +865,7 @@ final class LeaderAppender {
       if (failures <= 3 || failures % 100 == 0) {
         LOGGER.warn(
             "{} to {} failed: {}",
-            request,
+            sizedRequest.request(),
             member.getMember().memberId(),
             response.error() != null ? response.error() : "");
       }
@@ -1087,6 +1096,12 @@ final class LeaderAppender {
   void observeNonCommittedEntries(final long commitIndex) {
     metrics.observeNonCommittedEntries(raft.getLog().getLastIndex() - commitIndex);
   }
+
+  /**
+   * An append request together with the exact journal-byte size of the entries it carries. Empty
+   * heartbeat requests have {@code 0} size and retain the current position.
+   */
+  private record SizedAppendRequest(VersionedAppendRequest request, long size) {}
 
   /** Timestamped completable future. */
   private static class TimestampedFuture<T> extends CompletableFuture<T> {

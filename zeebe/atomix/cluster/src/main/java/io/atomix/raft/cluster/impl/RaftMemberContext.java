@@ -23,14 +23,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.nio.ByteBuffer;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Cluster member state. */
 public final class RaftMemberContext {
 
-  private static final int APPEND_WINDOW_SIZE = 8;
+  private static final Logger LOG = LoggerFactory.getLogger(RaftMemberContext.class);
+
   private final DefaultRaftMember member;
   private final int maxAppendsPerMember;
   private boolean open = true;
@@ -51,8 +54,27 @@ public final class RaftMemberContext {
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
   private IndexedRaftLogEntry currentEntry;
+
+  // Number of bytes remaining to replicate for this member for any pending/in-flight snapshot
+  // install
   private long snapshotReplicationLag;
+  // Size in bytes of any in-flight snapshot chunk being sent to this member
   private long snapshotChunkBytesInFlight;
+
+  // Number of bytes remaining to replicate to this member for log appends
+  private long logReplicationLag;
+  // Cumulative number of bytes assigned to append requests across the lifetime of this instance.
+  // The watermark is only incremented, never decreased or reset. For each append request, we track
+  // the value of the watermark after incrementing it for that request. When the append request is
+  // successfully acknowledged, we check that no later append request has yet been acknowledged by
+  // comparing the tracked watermark to acknowledgedAppendWatermark. If the acknowledged watermark
+  // is less than the watermark for the request, we can calculate the number of bytes replicated
+  // since the last acknowledgement by subtracting the request watermark from the acknowledged one.
+  // If it's greater than or equal to the acknowledged watermark, we know that a later append
+  // request has already been acknowledged (and that the earlier log entries have already been
+  // replicated).
+  private long sentAppendWatermark;
+  private long acknowledgedAppendWatermark;
 
   RaftMemberContext(
       final DefaultRaftMember member,
@@ -78,6 +100,8 @@ public final class RaftMemberContext {
     failureTime = 0;
     snapshotReplicationLag = 0;
     snapshotChunkBytesInFlight = 0;
+    logReplicationLag = 0;
+    acknowledgedAppendWatermark = sentAppendWatermark;
 
     if (reader != null) {
       closeReader();
@@ -119,21 +143,22 @@ public final class RaftMemberContext {
   }
 
   private void openReader(final RaftLog log) {
-    switch (member.getType()) {
-      case PASSIVE:
-        reader = log.openCommittedReader();
-        resetReaderAtEndOfLog(reader);
-        break;
-      case PROMOTABLE:
-      case ACTIVE:
-        reader = log.openUncommittedReader();
-        resetReaderAtEndOfLog(reader);
-        break;
-      default:
-        LoggerFactory.getLogger(RaftMemberContext.class)
-            .error("ResetState: No case for Member type {}", member.getType());
-        break;
+    reader = newReader(log);
+    if (reader != null) {
+      resetReaderAtEndOfLog(reader);
     }
+  }
+
+  private RaftLogReader newReader(final RaftLog log) {
+    return switch (member.getType()) {
+      case PASSIVE -> log.openCommittedReader();
+      case PROMOTABLE, ACTIVE -> log.openUncommittedReader();
+      case INACTIVE -> {
+        LoggerFactory.getLogger(RaftMemberContext.class)
+            .error("Cannot open log reader for inactive member");
+        yield null;
+      }
+    };
   }
 
   private void resetReaderAtEndOfLog(final RaftLogReader reader) {
@@ -265,6 +290,7 @@ public final class RaftMemberContext {
         .add("installing", installing)
         .add("failures", failures)
         .add("snapshotReplicationLag", snapshotReplicationLag)
+        .add("logReplicationLag", logReplicationLag)
         .toString();
   }
 
@@ -453,6 +479,12 @@ public final class RaftMemberContext {
     snapshotReplicationLag = Math.max(0, snapshotReplicationLag - bytes);
   }
 
+  /**
+   * Returns the number of bytes remaining to replicate for this member for any pending/in-flight
+   * snapshot installs
+   *
+   * @return The snapshot replication lag, in bytes.
+   */
   public long getSnapshotReplicationLag() {
     return snapshotReplicationLag;
   }
@@ -468,6 +500,11 @@ public final class RaftMemberContext {
     this.snapshotReplicationLag = snapshotReplicationLag;
   }
 
+  /**
+   * Returns the size in bytes of any in-flight snapshot chunk being sent to this member.
+   *
+   * @return The size of any in-flight snapshot chunk, in bytes.
+   */
   public long getSnapshotChunkBytesInFlight() {
     return snapshotChunkBytesInFlight;
   }
@@ -482,16 +519,66 @@ public final class RaftMemberContext {
     this.snapshotChunkBytesInFlight = snapshotChunkBytesInFlight;
   }
 
+  /** Tracks replication lag for each locally-appended entry. */
+  public void recordAppendedBytes(final long appendedBytes) {
+    logReplicationLag += appendedBytes;
+  }
+
+  /**
+   * Update the watermark tracking appended bytes for lag replication, and return the new watermark.
+   *
+   * @param bytes the size of this append batch, in bytes
+   * @return the updated watermark
+   */
+  public long recordInFlightAppend(final long bytes) {
+    sentAppendWatermark += bytes;
+    return sentAppendWatermark;
+  }
+
+  /**
+   * Acknowledges every byte up to {@code appendWatermark}. A later successful request therefore
+   * accounts for an earlier request whose local future timed out, while callbacks at or below the
+   * current watermark are no-ops.
+   */
+  public void acknowledgeInFlightAppends(final long appendWatermark) {
+    if (appendWatermark <= acknowledgedAppendWatermark) {
+      return;
+    }
+    final long acknowledgedBytes = appendWatermark - acknowledgedAppendWatermark;
+    if (acknowledgedBytes > logReplicationLag) {
+      LOG.warn(
+          "Log replication lag underflow for member {}: lag={}, acknowledged bytes={}, "
+              + "append watermark={}, previous watermark={}",
+          member.memberId(),
+          logReplicationLag,
+          acknowledgedBytes,
+          appendWatermark,
+          acknowledgedAppendWatermark);
+      logReplicationLag = 0;
+    } else {
+      logReplicationLag -= acknowledgedBytes;
+    }
+    acknowledgedAppendWatermark = appendWatermark;
+  }
+
+  /**
+   * Returns the number of bytes remaining to replicate to this member for log appends.
+   *
+   * @return The log replication lag, in bytes.
+   */
+  public long getLogReplicationLag() {
+    return logReplicationLag;
+  }
+
   /**
    * The total per-follower replication lag in bytes.
    *
-   * <p>Currently this is the remaining snapshot-install bytes; log replication lag will be added to
-   * this total in future.
+   * <p>This is the outstanding log replication bytes plus the remaining snapshot-install bytes.
    *
    * @return the replication lag in bytes, never negative
    */
   public long getReplicationLagBytes() {
-    return snapshotReplicationLag;
+    return Math.max(0, logReplicationLag + snapshotReplicationLag);
   }
 
   public boolean hasNextEntry() {
@@ -518,5 +605,31 @@ public final class RaftMemberContext {
     } else {
       currentEntry = null;
     }
+
+    resetLogReplicationLag(reader);
+  }
+
+  public void beginSnapshotInstall(final RaftLog log, final PersistedSnapshot persistedSnapshot) {
+    setNextSnapshotIndex(persistedSnapshot.getIndex());
+    setNextSnapshotChunkId(null);
+    setSnapshotReplicationLag(persistedSnapshot.getTotalSizeInBytes());
+
+    // Get the remaining log bytes after the snapshot with a temporary reader to avoid disrupting
+    // the current reader
+    try (final var lagReader = newReader(log)) {
+      if (lagReader == null) {
+        return;
+      }
+      lagReader.seek(persistedSnapshot.getIndex() + 1);
+      resetLogReplicationLag(lagReader);
+    }
+  }
+
+  private void resetLogReplicationLag(final RaftLogReader lagReader) {
+    // Advance the acknowledged watermark to the sent watermark to invalidate callbacks for every
+    // request issued before the reset, and recalculate the lag from the follower's new replication
+    // position.
+    acknowledgedAppendWatermark = sentAppendWatermark;
+    logReplicationLag = lagReader.bytesUntilEnd();
   }
 }
