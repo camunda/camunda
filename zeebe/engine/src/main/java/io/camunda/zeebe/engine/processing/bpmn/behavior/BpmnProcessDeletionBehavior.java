@@ -19,10 +19,12 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 /**
- * Reports that the local partition has finished draining a {@link PersistedProcessState#DRAINING}
- * definition, by emitting a {@link ProcessIntent#DELETE_COMPLETE} command once its last active
- * instance completes or terminates. Physical removal is coordinated across partitions by {@code
- * ProcessDrainedProcessor}, not done here.
+ * Finalizes local deletion of a {@link PersistedProcessState#DRAINING} definition once its last
+ * active instance completes or terminates. On this partition it appends the ordinary {@link
+ * ProcessIntent#DELETING}/{@link ProcessIntent#DELETED} follow-up events (physically removing the
+ * definition locally, reusing the existing appliers), then emits a {@link
+ * ProcessIntent#DELETE_COMPLETE} command so {@code ProcessDeleteCompleteProcessor} can aggregate
+ * the per-partition reports cluster-wide.
  *
  * <p>Known limitation: {@link ElementInstanceState#hasActiveProcessInstances} excludes banned
  * instances, which never complete/terminate, so a definition whose last instance is banned stays
@@ -79,7 +81,7 @@ public final class BpmnProcessDeletionBehavior {
             .setResourceName(process.getResourceName())
             .setTenantId(process.getTenantId())
             .setDeploymentKey(process.getDeploymentKey());
-    // the locally-minted key identifies the reporting partition to ProcessDrainedProcessor
+    // the locally-minted key identifies the reporting partition to ProcessDeleteCompleteProcessor
     final long key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETING, processRecord);
     stateWriter.appendFollowUpEvent(key, ProcessIntent.DELETED, processRecord);
