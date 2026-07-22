@@ -212,9 +212,9 @@ sed_inplace "s/__STORAGE_TYPE__/$secondary_storage/"   Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 
 # Bake values into the resource manifests and the platform/load-test values.
-sed_inplace "s/__NAMESPACE__/$namespace/" load-tester-values-defaults.yaml
 sed_targets=(*.yaml)
 [[ -d databases ]] && sed_targets+=(databases/*.yaml)
+sed_inplace "s/__NAMESPACE__/$namespace/" "${sed_targets[@]}"
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" "${sed_targets[@]}"
 sed_inplace "s/__AUTHOR__/$git_author/"                   "${sed_targets[@]}"
 
@@ -246,7 +246,6 @@ loadTest:
       # are overridden here.
       clientId: zeebe
       zeebeRestAddress: http://zeebe-gateway:8080
-      authServer: http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token
       zeebeGrpcAddress: http://zeebe-gateway:26500
       authorizationAudience: zeebe-api
       secret:

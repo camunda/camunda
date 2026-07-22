@@ -331,6 +331,7 @@ endif
 install-platform:
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
+		--force-conflicts \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
@@ -343,6 +344,7 @@ install-platform:
 install-platform-stable:
 	helm upgrade $(namespace) $(helm_chart_platform) \
 		--install \
+		--force-conflicts \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
@@ -356,6 +358,7 @@ install-platform-stable:
 install-load-test-setup: create-namespace
 	helm upgrade load-test-setup $(helm_chart_load_test_setup) \
 		--install \
+		--force-conflicts \
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
@@ -423,9 +426,14 @@ archiver:
 
 .PHONY: clean
 clean:
-	@echo "Deleting namespace $(namespace) and waiting for finalization..."
+	@# Make sure to uninstall our load-test-setup Helm Chart as it also removes
+	@# the Keycloak resources which are **NOT** in the same namespace as all the
+	@# other resources.
+	@echo "Uninstalling the load-test-setup Helm Chart"
+	-helm uninstall load-test-setup --namespace $(namespace) --wait
 	@# `--wait` (default) blocks until the namespace is fully gone. We intentionally
 	@# wait so that a subsequent `make install` (or `make clean install`) doesn't
 	@# race against finalizers — applying manifests into a still-terminating
 	@# namespace errors out with "namespace X is being terminated".
+	@echo "Deleting namespace $(namespace) and waiting for finalization..."
 	-kubectl delete namespace $(namespace) --ignore-not-found --wait

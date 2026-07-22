@@ -91,7 +91,7 @@ spec:
                   name: camunda-credentials
                   key: identity-zeebe-client-token
             - name: CAMUNDA_CLIENT_AUTH_TOKENURL
-              value: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token"
+              value: "http://c8-golden-stable-87-elasticsearch.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
             - name: CAMUNDA_CLIENT_ZEEBE_AUDIENCE
               value: "zeebe-api"
             

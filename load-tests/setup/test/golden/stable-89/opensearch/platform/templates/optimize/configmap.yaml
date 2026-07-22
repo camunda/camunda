@@ -42,7 +42,7 @@ data:
           redirectRootUrl: "http://localhost:8083"
     api:
       audience: "optimize-api"
-      jwtSetUri: "http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/certs"
+      jwtSetUri: "http://c8-golden-stable-89-opensearch.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
   application-ccsm.yaml: |
     spring:
       config:
@@ -52,7 +52,7 @@ data:
         clientId: "optimize"
         audience: "optimize-api"
         issuer: "http://localhost:18080/auth/realms/camunda-platform"
-        issuerBackendUrl: "http://keycloak/auth/realms/camunda-platform"
+        issuerBackendUrl: "http://c8-golden-stable-89-opensearch.keycloak-operator.svc:18080/auth/realms/camunda-platform"
   application.yml: |
     historyCleanup:
       cronTrigger: '*/30 * * * *'

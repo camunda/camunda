@@ -1,0 +1,84 @@
+{{- if .Values.keycloak.enabled }}
+---
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  namespace: {{ .Values.keycloak.namespace }}
+  name: {{ .Release.Namespace }}
+spec:
+  {{- with .Values.keycloak.image }}
+  image: "{{ .registry }}/{{ .repository }}:{{ .tag }}"
+  {{- end }}
+
+  imagePullSecrets:
+    # Required if the image is stored on Harbor.
+    - name: harbor-registry
+
+  bootstrapAdmin:
+    user:
+      secret: "{{ include "load-test-setup.keycloak.admin-secret-name" . }}"
+
+  # Configure the access to the underlying PostgreSQL database.
+  db:
+    # The "aws-wrapper" driver should be compatible with Plain PostgreSQL.{{/* Cf. https://camunda.slack.com/archives/C03UR0V2R2M/p1784655291700549?thread_ts=1784642609.014369&cid=C03UR0V2R2M */}}
+    url: "jdbc:aws-wrapper:postgresql://{{ .Values.keycloak.postgresql.clusterName }}-rw.{{ .Release.Namespace }}/{{ .Values.keycloak.postgresql.databaseName }}"
+
+    {{- $secretPostgreSQL := include "load-test-setup.keycloak.postgresql.keycloak-secret-name" . }}
+    # Configure the credentials to authenticate to PostgreSQL.
+    usernameSecret:
+      name: "{{ $secretPostgreSQL }}"
+      key: username
+    passwordSecret:
+      name: "{{ $secretPostgreSQL }}"
+      key: password
+
+  http:
+    httpEnabled: true
+    # Use a non-default port to avoid conflict with Zeebe Gateway on port 8080
+    # during port-forwarding.
+    httpPort: {{ .Values.keycloak.http.port }}
+    serviceName: "{{ .Release.Namespace }}"
+
+  additionalOptions:
+    - name: http-relative-path
+      value: /auth
+    - name: log-console-output
+      value: json
+    - name: log-level
+      value: info
+
+  ingress:
+    enabled: false
+
+  hostname:
+    hostname: "{{ .Release.Namespace }}"
+    strict: false
+
+  resources:
+    {{- toYaml .Values.keycloak.resources | nindent 4 }}
+
+  scheduling:
+    {{- with .Values.keycloak.nodeSelector }}
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - matchExpressions:
+                {{- range $key, $value := . }}
+                - key: {{ $key }}
+                  operator: In
+                  values:
+                    - {{ $value | quote }}
+                {{- end }}
+                {{- if $.Values.topologyZone }}
+                - key: topology.kubernetes.io/zone
+                  operator: In
+                  values:
+                    - {{ $.Values.topologyZone | quote }}
+                {{- end }}
+    {{- end }}
+    {{- with .Values.keycloak.tolerations }}
+    tolerations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+{{- end }}

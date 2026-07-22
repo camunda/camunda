@@ -19,4 +19,4 @@ data:
   CAMUNDA_IDENTITY_BASEURL: "http://identity:80"
   CAMUNDA_IDENTITY_TYPE: "KEYCLOAK"
   CAMUNDA_IDENTITY_ISSUER: "http://localhost:18080/auth/realms/camunda-platform"
-  CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: "http://keycloak/auth/realms/camunda-platform"
+  CAMUNDA_IDENTITY_ISSUER_BACKEND_URL: "http://c8-golden-stable-89-none-optimize.keycloak-operator.svc:18080/auth/realms/camunda-platform"

@@ -51,6 +51,21 @@ global:
         clientId: connectors
         existingSecret: camunda-credentials
         existingSecretKey: identity-connectors-client-token
+
+    keycloak:
+      auth:
+        adminUser: admin
+        existingSecret: camunda-credentials
+        existingSecretKey: identity-keycloak-admin-password
+
+      # The address of the Keycloak deployed via the Keycloak Operator.
+      # Note that this instance of Keycloak **runs in a different namespace**
+      # than the namespace of the load test. This is on purpose, due to a
+      # limitation in how the Keycloak Operator works.
+      url:
+        protocol: http
+        host: __NAMESPACE__.keycloak-operator.svc
+        port: '18080'
   # To override the names - and remove the release name from the names
   # Allows shorter names like zeebe-0, zeebe-1, etc.
   # Especially useful for the services, which are just zeebe-gateway and zeebe
@@ -73,44 +88,6 @@ identity:
       operator: Equal
       value: n2-standard-4
       effect: NoSchedule
-
-identityKeycloak:
-  enabled: true
-  fullnameOverride: keycloak # we override the names for simplicity of the deployment
-  auth:
-    adminUser: admin
-    existingSecret: camunda-credentials
-    passwordSecretKey: identity-keycloak-admin-password
-  nodeSelector:
-    component: benchmark-n2-standard-4
-    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
-  extraEnvVars:
-    # https://www.keycloak.org/server/logging#_console
-    - name: KC_LOG_CONSOLE_OUTPUT
-      value: json
-
-  # Disable the built-in PostgreSQL deployed by the Keycloak Helm Chart as we deploy our own.
-  postgresql:
-    enabled: false
-
-  # This Keycloak external database depends on the CNPG cluster deployed by
-  # the load-test-setup Helm Chart.
-  externalDatabase:
-    # The name of the Service deployed by the CNPG Cluster from the
-    # load-test-setup Helm Chart.
-    host: postgresql-keycloak-rw
-    database: keycloak
-
-    # Secret deployed via the load-test-setup Helm Chart.
-    existingSecret: postgresql-keycloak-user
-    existingSecretUserKey: username
-    existingSecretPasswordKey: password
-
 
 operate:
   enabled: true
@@ -383,7 +360,10 @@ prometheusServiceMonitor:
     release: monitoring
   scrapeInterval: 30s
 
-# Disable the default built-in Elasticsearch Bitnami Helm Chart dependency from
-# the Camunda Platform Helm Chart.
+# Disable the default built-in Bitnami Helm Chart dependencies, enabled by
+# default, from the Camunda Platform Helm Chart.
 elasticsearch:
+  enabled: false
+
+identityKeycloak:
   enabled: false

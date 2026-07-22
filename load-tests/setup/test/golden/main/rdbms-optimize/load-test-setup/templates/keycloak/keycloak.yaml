@@ -1,0 +1,59 @@
+---
+# Source: load-test-setup/templates/keycloak/keycloak.yaml
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  namespace: keycloak-operator
+  name: c8-golden-main-rdbms-optimize
+spec:
+  image: europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/camunda/keycloak:quay-optimized-26.6.4
+
+  imagePullSecrets:
+    # Required if the image is stored on Harbor.
+    - name: harbor-registry
+
+  bootstrapAdmin:
+    user:
+      secret: "c8-golden-main-rdbms-optimize-admin"
+
+  # Configure the access to the underlying PostgreSQL database.
+  db:
+    # The "aws-wrapper" driver should be compatible with Plain PostgreSQL.
+    url: "jdbc:aws-wrapper:postgresql://postgresql-keycloak-rw.c8-golden-main-rdbms-optimize/keycloak"
+    # Configure the credentials to authenticate to PostgreSQL.
+    usernameSecret:
+      name: "c8-golden-main-rdbms-optimize-postgresql"
+      key: username
+    passwordSecret:
+      name: "c8-golden-main-rdbms-optimize-postgresql"
+      key: password
+
+  http:
+    httpEnabled: true
+    # Use port 18080 to avoid conflict with Zeebe Gateway on port 8080 during
+    # port-forwarding.
+    httpPort: 18080
+    serviceName: "c8-golden-main-rdbms-optimize"
+
+  additionalOptions:
+    - name: http-relative-path
+      value: /auth
+    - name: log-console-output
+      value: json
+    - name: log-level
+      value: info
+
+  ingress:
+    enabled: false
+
+  hostname:
+    hostname: "c8-golden-main-rdbms-optimize"
+    strict: false
+
+  resources:
+    limits:
+      cpu: "2"
+      memory: 2Gi
+    requests:
+      cpu: "1"
+      memory: 1Gi

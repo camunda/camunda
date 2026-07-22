@@ -1,0 +1,12 @@
+---
+# Source: load-test-setup/templates/keycloak/keycloak-user-admin.yaml
+# This configures the "admin" credentials for Keycloak itself.
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: "keycloak-operator"
+  name: "c8-golden-stable-87-elasticsearch-stable-admin"
+type: kubernetes.io/basic-auth
+data:
+  username: "YWRtaW4="
+  password: "UW9xYThdV2Vzb1Jpc3M="

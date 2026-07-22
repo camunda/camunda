@@ -1,0 +1,12 @@
+---
+# Source: load-test-setup/templates/keycloak/keycloak-user-admin.yaml
+# This configures the "admin" credentials for Keycloak itself.
+apiVersion: v1
+kind: Secret
+metadata:
+  namespace: "keycloak-operator"
+  name: "c8-golden-main-opensearch-admin"
+type: kubernetes.io/basic-auth
+data:
+  username: "YWRtaW4="
+  password: "U2l2YVplY28xQEZ1am8="
