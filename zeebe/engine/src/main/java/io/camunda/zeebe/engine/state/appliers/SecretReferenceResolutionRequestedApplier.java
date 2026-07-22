@@ -34,6 +34,13 @@ public final class SecretReferenceResolutionRequestedApplier
     secretReferenceState.addPendingSecretReference(storeId, secretReference);
 
     for (final long jobKey : value.getJobKeys()) {
+      final JobRecord job = jobState.getJob(jobKey);
+      if (job == null) {
+        // a job that no longer exists must not wait for the resolution: without its waiting
+        // entries the reactivation flow cannot touch it, and no orphan entries are left behind.
+        // The pending reference is still added above, so the remaining jobs resolve normally
+        continue;
+      }
       secretReferenceState.addWaitingJob(storeId, secretReference, jobKey);
       // stop a waiting job from being collected by a long poll again until it is reactivated once
       // its secrets resolve. The job stays in state ACTIVATABLE and is only removed from the
@@ -44,10 +51,7 @@ public final class SecretReferenceResolutionRequestedApplier
       // the reactivation flow (see #57852) must only make a job activatable again if it still
       // exists and is in state ACTIVATABLE, and must remove the waiting entries of every job
       // regardless.
-      final JobRecord job = jobState.getJob(jobKey);
-      if (job != null) {
-        jobState.makeJobNotActivatable(jobKey, job);
-      }
+      jobState.makeJobNotActivatable(jobKey, job);
     }
   }
 }

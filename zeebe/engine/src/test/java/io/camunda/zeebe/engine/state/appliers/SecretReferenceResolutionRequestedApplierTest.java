@@ -58,6 +58,8 @@ final class SecretReferenceResolutionRequestedApplierTest {
   @Test
   void shouldAddAllJobsWaitingForSecretReference() {
     // given
+    createJob(1L);
+    createJob(2L);
     final var record =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -84,6 +86,8 @@ final class SecretReferenceResolutionRequestedApplierTest {
   void shouldAccumulateJobsAcrossSeparateResolutionRequestedEvents() {
     // given — two separate RESOLUTION_REQUESTED events for the same secret, each adding a different
     // job
+    createJob(1L);
+    createJob(2L);
     final var record1 =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -115,6 +119,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
   @Test
   void shouldIndexSecretReferenceByJob() {
     // given
+    createJob(1L);
     final var record =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -138,6 +143,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
   @Test
   void shouldNotDuplicateJobOnRepeatedResolutionRequest() {
     // given
+    createJob(1L);
     final var record =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -186,6 +192,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
   @Test
   void shouldIndexMultipleSecretReferencesByJob() {
     // given — the same job key waiting on two different secret references
+    createJob(1L);
     final var record1 =
         new SecretReferenceRecord()
             .setStoreId("store-1")
@@ -217,11 +224,7 @@ final class SecretReferenceResolutionRequestedApplierTest {
   void shouldMakeWaitingJobNotActivatable() {
     // given — an activatable job that references a not-yet-resolved secret
     final long jobKey = 1L;
-    final var job =
-        new JobRecord().setType("task-type").setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    jobState.insertJobRecordActivatable(jobKey, job);
-    jobState.makeJobActivatableByPriority(
-        job.getTypeBuffer(), jobKey, job.getTenantId(), job.getPriority());
+    final var job = createJob(jobKey);
     assertThat(activatableJobKeys(job)).contains(jobKey);
     final var record =
         new SecretReferenceRecord()
@@ -237,17 +240,47 @@ final class SecretReferenceResolutionRequestedApplierTest {
   }
 
   @Test
-  void shouldNotFailWhenWaitingJobDoesNotExist() {
-    // given — a record for a job that is absent from the job state
+  void shouldNotAddWaitingEntriesWhenJobDoesNotExist() {
+    // given - a record with an existing job and a job that is absent from the job state
+    createJob(1L);
     final var record =
         new SecretReferenceRecord()
             .setStoreId("store-1")
             .setSecretReference("secret-a")
+            .addJobKey(1L)
             .addJobKey(999L);
 
-    // when / then — applying does not fail and still records the pending reference
+    // when - applying does not fail
     applier.applyState(100L, record);
+
+    // then - the reference is pending and only the existing job waits for it, in both directions
     assertThat(state.isPending("store-1", "secret-a")).isTrue();
+    final List<Long> waitingJobs = new ArrayList<>();
+    state.visitJobsBySecretReference(
+        "store-1",
+        "secret-a",
+        jobKey -> {
+          waitingJobs.add(jobKey);
+          return true;
+        });
+    assertThat(waitingJobs).containsExactly(1L);
+    final List<Tuple> pairs = new ArrayList<>();
+    state.visitSecretReferencesByJob(
+        999L,
+        (storeId, secretReference) -> {
+          pairs.add(tuple(storeId, secretReference));
+          return true;
+        });
+    assertThat(pairs).isEmpty();
+  }
+
+  private JobRecord createJob(final long key) {
+    final var job =
+        new JobRecord().setType("task-type").setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    jobState.insertJobRecordActivatable(key, job);
+    jobState.makeJobActivatableByPriority(
+        job.getTypeBuffer(), key, job.getTenantId(), job.getPriority());
+    return job;
   }
 
   private List<Long> activatableJobKeys(final JobRecord job) {
