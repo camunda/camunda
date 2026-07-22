@@ -141,9 +141,13 @@ SaaS-only concerns still need bringing across (mapping detail in `CONFIG-COMPAT.
   org/cluster checks. The host supplies them as `OAuth2TokenValidator<Jwt>` by overriding CSL's
   `TokenValidatorFactory` bean (this is how OC does it) — port Optimize's `RoleValidator`,
   `CustomClaimValidator` (clusterId), and the `hasAccess` org-membership gate there.
-- **User-id migration on login.** Legacy migrated stored ownership when the token's
-  `https://camunda.com/originalUserId` differs from the subject. CSL has no login-success hook; a CSL
-  SPI is planned (see ADR-0036) that Optimize implements to call `UserIdMigrationService`.
+- **User-id migration on login — done host-side, no CSL change.** `OptimizeCslLoginSuccessListener`
+  reacts to Spring Security's `InteractiveAuthenticationSuccessEvent` (published by the oauth2Login
+  filter) and, when the OIDC principal carries `https://camunda.com/originalUserId` differing from
+  the current user id, calls `UserIdMigrationService` (injected as an optional `ObjectProvider`, as
+  it is CCSaaS-only). Inert under CCSM (claim absent, service missing); its DEBUG line also confirms
+  the event fires on every CSL login. A dedicated CSL SPI would only be needed if we later want to
+  *gate* (deny) login from the host.
 - **Auth0 config bridging.** `CONFIG-COMPAT.md` now maps the full `auth.cloud.*` set. The values come
   from Optimize's `environment-config.yaml` (not env vars), so the `EnvironmentPostProcessor` must
   load that source before it can bridge them (follow-up); until then set `camunda.security.*` directly.

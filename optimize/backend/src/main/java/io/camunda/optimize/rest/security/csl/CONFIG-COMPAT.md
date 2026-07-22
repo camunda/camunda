@@ -84,7 +84,7 @@ serving remain host concerns (a small filter), unrelated to clusterId.
 | `clusterId` | `camunda.security.saas.cluster-id`; also `server.servlet.context-path=/<clusterId>` | MAP |
 | `organizationClaimName` + org-membership gate (`hasAccess`) + allowed org roles | host org validator (via `TokenValidatorFactory` override / login authorization) | HOST-VALIDATOR |
 | `https://camunda.com/clusterId` claim (webapp + public API) | host clusterId-claim validator | HOST-VALIDATOR |
-| `https://camunda.com/originalUserId` claim -> user-id migration | login-success hook (planned CSL SPI, ADR-0036) | HOST-HOOK |
+| `https://camunda.com/originalUserId` claim -> user-id migration | `OptimizeCslLoginSuccessListener` (host, on Spring `InteractiveAuthenticationSuccessEvent`) | HOST-HOOK |
 | `m2mClient.*`, `users.cloud.accountsUrl` | none (cloud-console M2M clients, independent of the login chain) | SAAS/NO-ANALOG |
 
 **Sourcing note:** unlike the CCSM `CAMUNDA_OPTIMIZE_IDENTITY_*` env vars, these cloud values live in
