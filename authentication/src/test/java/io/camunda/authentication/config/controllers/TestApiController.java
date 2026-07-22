@@ -37,12 +37,6 @@ public class TestApiController {
    */
   public static final String DUMMY_CLUSTER_ADMIN_ENDPOINT = "/cluster/v2/topology";
 
-  /**
-   * Public cluster-admin status endpoint at the real {@code /cluster/v2/status} path, carved out of
-   * the cluster-admin chain with {@code permitAll}. Returns a 200 body here (the real {@code
-   * DummyClusterTopologyController} returns 204); slice tests assert reachability, not the status
-   * contract.
-   */
   public static final String DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT = "/cluster/v2/status";
 
   /**
