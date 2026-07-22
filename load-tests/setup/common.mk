@@ -130,6 +130,17 @@ install_es_prom_exporter = false
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
+
+	ifeq ($(secondary_storage),opensearch)
+	    install_es_prom_exporter = true
+	    es_prom_exporter_es_uri = http://opensearch:9200
+	    _load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
+	else ifeq ($(secondary_storage),elasticsearch)
+	    install_es_prom_exporter = true
+	    es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
+	    _load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
+	endif
+
 else
 	platform_values += -f camunda-platform-values-optimize.yaml
 
