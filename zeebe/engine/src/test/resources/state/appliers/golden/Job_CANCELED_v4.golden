@@ -51,15 +51,18 @@ public class JobCanceledV4Applier implements TypedEventApplier<JobIntent, JobRec
    */
   private void removeWaitingSecretReferenceEntries(final long jobKey) {
     // collect first: the column family must not be modified while iterating it
-    final List<String[]> waitingEntries = new ArrayList<>();
+    final List<WaitingEntry> waitingEntries = new ArrayList<>();
     secretReferenceState.visitSecretReferencesByJob(
         jobKey,
         (storeId, secretReference) -> {
-          waitingEntries.add(new String[] {storeId, secretReference});
+          waitingEntries.add(new WaitingEntry(storeId, secretReference));
           return true;
         });
-    for (final String[] entry : waitingEntries) {
-      secretReferenceState.removeWaitingJob(entry[0], entry[1], jobKey);
+    for (final WaitingEntry entry : waitingEntries) {
+      secretReferenceState.removeWaitingJob(entry.storeId(), entry.secretReference(), jobKey);
     }
   }
+
+  /** A secret reference the canceled job was waiting for. */
+  private record WaitingEntry(String storeId, String secretReference) {}
 }
