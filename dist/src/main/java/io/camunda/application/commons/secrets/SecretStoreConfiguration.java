@@ -11,6 +11,8 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretStore;
+import io.camunda.secretstore.aws.AwsSecretsManagerSecretStore;
+import io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -38,12 +40,15 @@ public class SecretStoreConfiguration {
         .forEach(
             (tenantId, secrets) -> {
               final var fileStores = secrets.getStores().getFile();
-              if (fileStores.size() > 1) {
+              final var awsStores = secrets.getStores().getAwsSecretsManager();
+              // cap is one store total per tenant, counted across all store types combined
+              final var totalStores = fileStores.size() + awsStores.size();
+              if (totalStores > 1) {
                 throw new IllegalStateException(
                     "Physical tenant '"
                         + tenantId
                         + "' has "
-                        + fileStores.size()
+                        + totalStores
                         + " secret stores configured, but only one is supported at this time");
               }
               final Map<String, SecretStore> stores = new LinkedHashMap<>();
@@ -58,12 +63,26 @@ public class SecretStoreConfiguration {
                               + tenantId
                               + "' has no path configured");
                     }
-                    stores.put(
-                        storeId.trim().toLowerCase(), new FileBasedSecretStore(Path.of(path)));
-                    LOG.info(
-                        "Registered file secret store '{}' for physical tenant '{}'",
-                        storeId.trim().toLowerCase(),
-                        tenantId);
+                    registerStore(
+                        stores, storeId, tenantId, "file", new FileBasedSecretStore(Path.of(path)));
+                  });
+              awsStores.forEach(
+                  (storeId, awsStore) -> {
+                    final var config =
+                        new AwsSecretsManagerStoreConfig(
+                            awsStore.getRegion(),
+                            awsStore.getPathPrefix(),
+                            awsStore.getContainerSecretId(),
+                            null,
+                            AwsSecretsManagerStoreConfig.DEFAULT_MAX_RETRIES,
+                            awsStore.isBatchEnabled(),
+                            awsStore.getBatchSize());
+                    registerStore(
+                        stores,
+                        storeId,
+                        tenantId,
+                        "AWS Secrets Manager",
+                        AwsSecretsManagerSecretStore.fromConfig(config));
                   });
               if (stores.isEmpty()) {
                 stores.put("default", NOOP_STORE);
@@ -74,5 +93,20 @@ public class SecretStoreConfiguration {
               registries.put(tenantId, new SecretStoreRegistry(Map.copyOf(stores)));
             });
     return Map.copyOf(registries);
+  }
+
+  private static void registerStore(
+      final Map<String, SecretStore> stores,
+      final String storeId,
+      final String tenantId,
+      final String storeType,
+      final SecretStore store) {
+    final var normalizedId = storeId.trim().toLowerCase();
+    stores.put(normalizedId, store);
+    LOG.info(
+        "Registered {} secret store '{}' for physical tenant '{}'",
+        storeType,
+        normalizedId,
+        tenantId);
   }
 }
