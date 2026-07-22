@@ -23,7 +23,7 @@ public class SecurityPathAdapter implements SecurityPathPort {
   // Tenant-prefixed paths (/physical-tenants/<id>/...) are deliberately NOT listed here. They are
   // owned exclusively by the per-tenant scoped security chains that PhysicalTenantScopeProvider
   // contributes (CSL derives each scope's matcher as basePath + these apiPaths, e.g.
-  // /physical-tenants/<id>/v2/**). The cluster chain and a scoped chain share ORDER_WEBAPP_API, so
+  // /physical-tenants/<id>/v2/**). The cluster chain and a scoped chain share ORDER_API, so
   // listing the tenant prefix here would let the cluster chain also match a tenant request and, if
   // it wins the same-order tie-break, validate the token against the cluster's providers instead of
   // the tenant's — breaking per-tenant audience isolation. Keep this list cluster-only.

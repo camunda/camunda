@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.clusteradmin;
 
-import static io.camunda.security.spring.security.CamundaSecurityFilterChainConstants.ORDER_WEBAPP_API;
+import static io.camunda.security.spring.security.CamundaSecurityFilterChainConstants.ORDER_API;
 
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
@@ -48,7 +48,7 @@ public class ClusterAdminOidcSecurityConfiguration {
   private static final String CLUSTER_ADMIN_API_PATTERN = "/cluster/v2/**";
 
   @Bean
-  @Order(ORDER_WEBAPP_API)
+  @Order(ORDER_API)
   public SecurityFilterChain clusterAdminOidcSecurityFilterChain(
       final HttpSecurity http,
       final Environment environment,
