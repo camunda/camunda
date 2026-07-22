@@ -125,10 +125,6 @@ public abstract class AbstractRole implements RaftRole {
         || (term == raft.getTerm() && raft.getLeader() == null && leader != null)) {
       raft.setTerm(term);
       raft.setLeader(leader);
-
-      // Reset the current cluster configuration to the last committed configuration when a leader
-      // change occurs.
-      raft.getCluster().reset();
       return true;
     }
     return false;
