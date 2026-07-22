@@ -247,7 +247,11 @@ class TaskDetailsPage {
   }
 
   async checkChecklistBox(label: string): Promise<void> {
-    await this.page.getByLabel(label).check();
+    // Scope to the embedded form: an unscoped getByLabel can also match a task
+    // card link in the left panel whose aria-label contains the checkbox label
+    // (e.g. "Unassigned task: Confirm Employee Details" collides with "Confirm"),
+    // triggering a strict-mode violation.
+    await this.form.getByLabel(label).check();
   }
 
   async enterTwoValuesInTagList(value1: string, value2: string): Promise<void> {
