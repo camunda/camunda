@@ -27,7 +27,13 @@ import org.slf4j.LoggerFactory;
  */
 public class DelayReplicationController implements ReplicationController {
 
+  // Minimum queue size used as a floor regardless of delay length.
   public static final int DEFAULT_QUEUE_CAPACITY = 8192;
+
+  // Conservative upper bound on flushes per second used to size the queue for longer delays.
+  // The queue is a last resort; dropping entries is safe (watermark semantics), but sizing
+  // generously avoids spurious drops for delays up to ~12 h at realistic flush rates.
+  static final int ESTIMATED_MAX_FLUSHES_PER_SECOND = 5;
 
   private static final Logger LOG = LoggerFactory.getLogger(DelayReplicationController.class);
 
@@ -48,7 +54,7 @@ public class DelayReplicationController implements ReplicationController {
     this.delay = delay;
     this.clock = clock;
     this.partitionId = partitionId;
-    pendingEntries = new ArrayBlockingQueue<>(DEFAULT_QUEUE_CAPACITY);
+    pendingEntries = new ArrayBlockingQueue<>(queueCapacityFor(delay));
     checkTask = controller.scheduleCancellableTask(delay, this::checkDue);
   }
 
@@ -105,6 +111,11 @@ public class DelayReplicationController implements ReplicationController {
       }
       checkTask = controller.scheduleCancellableTask(nextDelay, this::checkDue);
     }
+  }
+
+  static int queueCapacityFor(final Duration delay) {
+    final long computed = delay.toSeconds() * ESTIMATED_MAX_FLUSHES_PER_SECOND;
+    return (int) Math.max(DEFAULT_QUEUE_CAPACITY, Math.min(computed, Integer.MAX_VALUE));
   }
 
   @Override

@@ -212,4 +212,27 @@ class DelayReplicationControllerTest {
     // then
     assertThat(replicationController.isReplicationInSync()).isTrue();
   }
+
+  @Test
+  void shouldUseDefaultCapacityForShortDelays() {
+    // given - a delay shorter than what 5 flushes/sec over DEFAULT_QUEUE_CAPACITY would require
+    final var shortDelay = Duration.ofSeconds(1);
+
+    // then - floor kicks in
+    assertThat(DelayReplicationController.queueCapacityFor(shortDelay))
+        .isEqualTo(DelayReplicationController.DEFAULT_QUEUE_CAPACITY);
+  }
+
+  @Test
+  void shouldScaleCapacityWithDelay() {
+    // given - a 12-hour delay (realistic upper bound for this controller)
+    final var twelveHours = Duration.ofHours(12);
+
+    // then - capacity exceeds default and fits 5 flushes/sec for the full delay
+    final int capacity = DelayReplicationController.queueCapacityFor(twelveHours);
+    assertThat(capacity).isGreaterThan(DelayReplicationController.DEFAULT_QUEUE_CAPACITY);
+    assertThat(capacity)
+        .isEqualTo(
+            (int) (twelveHours.toSeconds() * DelayReplicationController.ESTIMATED_MAX_FLUSHES_PER_SECOND));
+  }
 }
