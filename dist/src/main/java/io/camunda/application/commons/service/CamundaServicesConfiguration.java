@@ -124,12 +124,12 @@ public class CamundaServicesConfiguration {
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
-      final ApiServicesExecutorProvider executor) {
+      final ApiServicesExecutorProvider executor,
+      final ExportingRequestBroadcaster exportingRequestBroadcaster) {
 
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
         DatabaseTypeUtils.isSecondaryStorageEnabled(environment);
-    final var exportingRequestBroadcaster = new ExportingRequestBroadcaster(brokerClient);
 
     final var builder = new DefaultServiceRegistry.Builder();
     builder.managementServices(managementServices);
