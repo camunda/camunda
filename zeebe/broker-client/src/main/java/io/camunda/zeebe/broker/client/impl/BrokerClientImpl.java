@@ -22,8 +22,9 @@ import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,10 @@ public final class BrokerClientImpl implements BrokerClient {
   private final BrokerRequestManager requestManager;
 
   private boolean isClosed;
-  private final List<Subscription> jobAvailableSubscriptions = new CopyOnWriteArrayList<>();
+  // Keyed by topic so a repeated subscribe for the same topic is a no-op: ActivateJobsHandler#
+  // activateJobs can be called concurrently and lazily subscribes per physical tenant on every
+  // call, so the dedup here must be atomic (computeIfAbsent) rather than left to the caller.
+  private final Map<String, Subscription> jobAvailableSubscriptions = new ConcurrentHashMap<>();
   private final ClusterEventService eventService;
   private final ActorSchedulingService schedulingService;
   private final AtomixClientTransportAdapter atomixTransportAdapter;
@@ -83,7 +87,7 @@ public final class BrokerClientImpl implements BrokerClient {
     doAndLogException(atomixTransportAdapter::close);
     LOG.debug("transport client closed");
 
-    jobAvailableSubscriptions.forEach(Subscription::close);
+    jobAvailableSubscriptions.values().forEach(Subscription::close);
 
     LOG.debug("Gateway broker client closed.");
   }
@@ -138,16 +142,17 @@ public final class BrokerClientImpl implements BrokerClient {
   @Override
   public void subscribeJobAvailableNotification(
       final String topic, final Consumer<String> handler) {
-    final var subscription =
-        eventService
-            .subscribe(
-                topic,
-                msg -> {
-                  handler.accept((String) msg);
-                  return CompletableFuture.completedFuture(null);
-                })
-            .join();
-    jobAvailableSubscriptions.add(subscription);
+    jobAvailableSubscriptions.computeIfAbsent(
+        topic,
+        t ->
+            eventService
+                .subscribe(
+                    t,
+                    msg -> {
+                      handler.accept((String) msg);
+                      return CompletableFuture.completedFuture(null);
+                    })
+                .join());
   }
 
   private void doAndLogException(final Runnable r) {

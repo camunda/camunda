@@ -133,18 +133,6 @@ final class LongPollingActivateJobsPhysicalTenantTest {
     assertThat(completions.get()).isEqualTo(1);
   }
 
-  @Test
-  void shouldSubscribeOncePerPhysicalTenantAcrossMultipleRequests() {
-    // given — two separate long-poll requests for the same non-default tenant
-    submitPendingRequest("tenanta", new AtomicInteger());
-    submitPendingRequest("tenanta", new AtomicInteger());
-
-    // then — the tenant's topic was subscribed to exactly once, not once per request
-    assertThat(brokerClient.getJobAvailableSubscriptionTopics())
-        .filteredOn("tenanta-jobsAvailable"::equals)
-        .hasSize(1);
-  }
-
   // -- helpers --
 
   private void submitPendingRequest(

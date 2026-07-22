@@ -31,7 +31,6 @@ public final class StubbedBrokerClient implements BrokerClient {
 
   final BrokerTopologyManager topologyManager = new StubbedTopologyManager();
   private final Map<String, Consumer<String>> jobsAvailableHandlers = new HashMap<>();
-  private final List<String> jobAvailableSubscriptionTopics = new ArrayList<>();
 
   private final Map<Class<?>, RequestHandler<?, ?>> requestHandlers = new HashMap<>();
 
@@ -117,13 +116,7 @@ public final class StubbedBrokerClient implements BrokerClient {
   @Override
   public void subscribeJobAvailableNotification(
       final String topic, final Consumer<String> handler) {
-    jobAvailableSubscriptionTopics.add(topic);
     jobsAvailableHandlers.put(topic, handler);
-  }
-
-  /** Every topic passed to {@link #subscribeJobAvailableNotification}, including duplicates. */
-  public List<String> getJobAvailableSubscriptionTopics() {
-    return jobAvailableSubscriptionTopics;
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>

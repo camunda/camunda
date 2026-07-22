@@ -23,7 +23,6 @@ import io.camunda.zeebe.scheduler.ScheduledTimer;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -47,7 +46,6 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
 
   private final Map<JobTypeKey, InFlightLongPollingActivateJobsRequestsState<T>> jobTypeState =
       new ConcurrentHashMap<>();
-  private final Set<String> subscribedPhysicalTenants = ConcurrentHashMap.newKeySet();
   private final Duration longPollingTimeout;
   private final long probeTimeoutMillis;
   private final int failedAttemptThreshold;
@@ -95,15 +93,14 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   }
 
   /**
-   * Subscribes to the job-available notifications of a physical tenant the first time it is seen,
-   * so a notification only wakes long-poll requests of its own tenant. The default tenant also
-   * listens on the legacy, prefix-less topic for rolling-upgrade compat with 8.9 brokers; remove
-   * alongside the legacy topic in 8.11.
+   * Subscribes to the job-available notifications of a physical tenant, so a notification only
+   * wakes long-poll requests of its own tenant. Safe to call on every request for a tenant: {@link
+   * BrokerClient#subscribeJobAvailableNotification} dedups by topic, so a repeat call for an
+   * already-subscribed tenant is a no-op. The default tenant also listens on the legacy,
+   * prefix-less topic for rolling-upgrade compat with 8.9 brokers; remove alongside the legacy
+   * topic in 8.11.
    */
   private void subscribeIfNeeded(final String physicalTenantId) {
-    if (!subscribedPhysicalTenants.add(physicalTenantId)) {
-      return;
-    }
     brokerClient.subscribeJobAvailableNotification(
         topic(physicalTenantId), jobType -> onJobAvailableNotification(physicalTenantId, jobType));
     if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {

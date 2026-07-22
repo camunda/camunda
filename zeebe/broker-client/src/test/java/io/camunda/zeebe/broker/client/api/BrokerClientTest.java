@@ -400,6 +400,19 @@ public final class BrokerClientTest {
   }
 
   @Test
+  void shouldSubscribeToJobAvailableTopicOnlyOnceOnRepeatedCalls() {
+    // given — a repeated subscribe for the same topic, as happens when a physical-tenant-aware
+    // caller lazily (re-)subscribes on every request rather than tracking subscriptions itself
+    client.subscribeJobAvailableNotification("foo", ignored -> {});
+    client.subscribeJobAvailableNotification("foo", ignored -> {});
+
+    // then — only one subscription was registered with the event service, not two
+    Awaitility.await("subscription is registered")
+        .untilAsserted(
+            () -> assertThat(atomixCluster.getEventService().getSubscriptions("foo")).hasSize(1));
+  }
+
+  @Test
   void shouldCloseAllJobAvailableSubscriptionsOnClose() {
     // given
     client.subscribeJobAvailableNotification("foo", ignored -> {});
