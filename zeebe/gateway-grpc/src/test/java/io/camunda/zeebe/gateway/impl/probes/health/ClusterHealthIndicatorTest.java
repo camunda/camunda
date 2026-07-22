@@ -47,8 +47,8 @@ public class ClusterHealthIndicatorTest {
   }
 
   @Test
-  public void shouldReportDownIfOnlyNonDefaultTenantIsKnown() {
-    // given the indicator only considers the default physical tenant
+  public void shouldReportUpIfOnlyNonDefaultTenantIsKnownAndHealthy() {
+    // given
     final BrokerClusterState mockClusterState = mock(BrokerClusterState.class);
     when(mockClusterState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
     when(mockClusterState.getPartitions()).thenReturn(List.of(1));
@@ -58,6 +58,71 @@ public class ClusterHealthIndicatorTest {
 
     final Supplier<Map<String, BrokerClusterState>> stateSupplier =
         () -> Map.of("other-tenant", mockClusterState);
+    final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
+
+    // when
+    final var actualHealth = sutHealthIndicator.health();
+
+    // then
+    assertThat(actualHealth).isNotNull();
+    assertThat(actualHealth.getStatus()).isEqualTo(Status.UP);
+  }
+
+  @Test
+  public void shouldReportDegradedIfOneTenantIsDownAndAnotherIsHealthy() {
+    // given
+    final BrokerClusterState downState = mock(BrokerClusterState.class);
+    when(downState.getBrokers()).thenReturn(List.of());
+    final BrokerClusterState healthyState = mock(BrokerClusterState.class);
+    when(healthyState.getBrokers()).thenReturn(List.of(BrokerMemberId.from(1)));
+    when(healthyState.getPartitions()).thenReturn(List.of(1));
+    when(healthyState.getLeaderForPartition(1)).thenReturn(BrokerMemberId.from(1));
+    when(healthyState.getPartitionHealth(BrokerMemberId.from(1), 1))
+        .thenReturn(PartitionHealthStatus.HEALTHY);
+
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier =
+        () ->
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                downState,
+                "other-tenant",
+                healthyState);
+    final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
+
+    // when
+    final var actualHealth = sutHealthIndicator.health();
+
+    // then
+    assertThat(actualHealth).isNotNull();
+    assertThat(actualHealth.getStatus()).isEqualTo(new Status("DEGRADED"));
+    assertThat(actualHealth.getDetails())
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                Map.of("status", "DOWN", "partitions", Map.of()),
+                "other-tenant",
+                Map.of(
+                    "status",
+                    "UP",
+                    "partitions",
+                    Map.of("Partition 1", PartitionHealthStatus.HEALTHY))));
+  }
+
+  @Test
+  public void shouldReportDownIfAllTenantsAreDown() {
+    // given
+    final BrokerClusterState downState = mock(BrokerClusterState.class);
+    when(downState.getBrokers()).thenReturn(List.of());
+    final BrokerClusterState otherDownState = mock(BrokerClusterState.class);
+    when(otherDownState.getBrokers()).thenReturn(List.of());
+
+    final Supplier<Map<String, BrokerClusterState>> stateSupplier =
+        () ->
+            Map.of(
+                PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                downState,
+                "other-tenant",
+                otherDownState);
     final var sutHealthIndicator = new ClusterHealthIndicator(stateSupplier);
 
     // when
