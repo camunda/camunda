@@ -12,11 +12,12 @@ import static io.camunda.zeebe.backup.management.BackupMetadataSyncer.MAPPER;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.restore.RestorePointResolver;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.Preconditions;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
@@ -27,12 +28,14 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +46,7 @@ import org.slf4j.LoggerFactory;
  */
 @NullMarked
 public final class RestoreValidator
-    implements ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest> {
+    implements ClusterConfigurationRequestValidator<RestoreRequest, RestoreResolvedRequest> {
   private static final List<String> RANGE_AVAILABLE_TYPES = List.of("rdbms", "none");
   private static final Logger LOG = LoggerFactory.getLogger(RestoreValidator.class);
   private final @Nullable BackupStore backupStore;
@@ -65,20 +68,21 @@ public final class RestoreValidator
   }
 
   @Override
-  public Either<Exception, RestoreRequest> validate(final RestoreRequest request) {
+  public Either<Exception, RestoreResolvedRequest> validate(final RestoreRequest request) {
     if (backupStore == null) {
       return Either.left(
           new InvalidRequest("Cannot restore: no backup store is configured on this broker."));
     }
+    final RestoreResolvedRequest resolvedRequest;
     try {
       validateParameters(request);
+      final var partitionBackups = resolveBackups(request);
+      resolvedRequest = new RestoreResolvedRequest(partitionBackups, request.dryRun());
     } catch (final IllegalArgumentException e) {
       return Either.left(new InvalidRequest(e.getMessage()));
     }
-    if (RANGE_AVAILABLE_TYPES.contains(request.databaseType())) {
-      resolveRdbmsBackups(request);
-    }
-    return Either.right(request);
+
+    return Either.right(resolvedRequest);
   }
 
   @VisibleForTesting
@@ -112,6 +116,13 @@ public final class RestoreValidator
       default ->
           throw new IllegalArgumentException("Invalid database type: " + request.databaseType());
     }
+  }
+
+  private Map<Integer, long[]> resolveBackups(final RestoreRequest request) {
+    if (RANGE_AVAILABLE_TYPES.contains(request.databaseType())) {
+      return resolveRdbmsBackups(request);
+    }
+    return Map.of();
   }
 
   private Map<Integer, long[]> resolveRdbmsBackups(final RestoreRequest request) {
@@ -177,10 +188,12 @@ public final class RestoreValidator
 
   private CompletableFuture<List<BackupMetadata>> loadMetadataForAllPartitions(
       final int partitionCount) {
+    final var store =
+        Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
     return FuturesUtil.parTraverse(
         IntStream.rangeClosed(1, partitionCount).boxed().toList(),
         partition ->
-            backupStore
+            store
                 .loadBackupMetadata(partition)
                 .thenApply(
                     optBytes ->

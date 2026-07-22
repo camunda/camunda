@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.NullMarked;
@@ -157,5 +158,8 @@ public sealed interface ClusterConfigurationManagementRequest {
       String databaseType,
       boolean continuousBackups,
       boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
+  record RestoreResolvedRequest(Map<Integer, long[]> backups, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 }
