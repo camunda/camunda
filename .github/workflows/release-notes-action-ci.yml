@@ -49,3 +49,12 @@ jobs:
           test -n "$phrase" || { echo "::error::OPT_OUT_PHRASE not found in src/parser/index.ts"; exit 1; }
           grep -iqF "$phrase" ../../pull_request_template.md \
             || { echo "::error::PR template is missing the opt-out phrase: '$phrase'"; exit 1; }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
