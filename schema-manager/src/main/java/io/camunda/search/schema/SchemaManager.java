@@ -236,6 +236,11 @@ public class SchemaManager implements CloseableSilently {
    * check itself.
    */
   public void validateClusterId() {
+    if (!config.schemaManager().isClusterIdCheckRestrictionEnabled()) {
+      LOG.debug(
+          "Cluster ID check restriction is disabled, skipping cluster ID compatibility check");
+      return;
+    }
     if (clusterId == null || clusterId.isBlank()) {
       LOG.debug("No local cluster ID available, skipping cluster ID compatibility check");
       return;
@@ -300,8 +305,8 @@ public class SchemaManager implements CloseableSilently {
   }
 
   /**
-   * @return {@code true} if the caller should (re-)store {@code currentClusterId}, i.e. there was
-   *     no previous value, or there was a mismatch that got ignored per configuration.
+   * @return {@code true} if the caller should store {@code currentClusterId}, i.e. there was no
+   *     previous value recorded yet.
    */
   private boolean checkClusterIdCompatibility(
       final String previousClusterId, final String currentClusterId) {
@@ -316,18 +321,12 @@ public class SchemaManager implements CloseableSilently {
       return false;
     }
 
-    final var errorMsg =
+    throw new IncompatibleClusterIdException(
         ("Secondary storage schema was previously initialized by cluster '%s', but this "
                 + "cluster's ID is '%s'. Pointing a cluster at storage belonging to a different "
                 + "installation can corrupt data. If this is an intentional re-pointing, set "
                 + "clusterIdCheckRestrictionEnabled=false to bypass this check.")
-            .formatted(previousClusterId, currentClusterId);
-    if (config.schemaManager().isClusterIdCheckRestrictionEnabled()) {
-      throw new IncompatibleClusterIdException(errorMsg);
-    } else {
-      LOG.warn("Detected cluster ID mismatch, but ignoring as configured. Details: '{}'", errorMsg);
-      return true;
-    }
+            .formatted(previousClusterId, currentClusterId));
   }
 
   private void createLifecyclePolicies() {

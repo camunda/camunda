@@ -126,6 +126,7 @@ public class SecondaryStorageRdbmsTest {
             + ASYNC_REPLICATION_MAX_LAG,
         "camunda.data.secondary-storage.rdbms.async-replication.pause-on-max-lag-exceeded=true",
         "camunda.data.secondary-storage.rdbms.max-varchar-field-length=200",
+        "camunda.data.secondary-storage.rdbms.cluster-id-check-restriction-enabled=false",
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -213,6 +214,7 @@ public class SecondaryStorageRdbmsTest {
       assertThat(exporterConfiguration.getAsyncReplication().getMaxLag())
           .isEqualTo(Duration.parse(ASYNC_REPLICATION_MAX_LAG));
       assertThat(exporterConfiguration.getAsyncReplication().isPauseOnMaxLagExceeded()).isTrue();
+      assertThat(exporterConfiguration.isClusterIdCheckRestrictionEnabled()).isFalse();
     }
 
     @Test

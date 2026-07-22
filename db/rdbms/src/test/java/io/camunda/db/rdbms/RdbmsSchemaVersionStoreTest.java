@@ -219,12 +219,14 @@ class RdbmsSchemaVersionStoreTest {
   }
 
   @Test
-  void shouldWarnOnClusterIdMismatchWhenRestrictionDisabled() throws Exception {
+  void shouldSkipClusterIdCheckEntirelyWhenRestrictionDisabled() throws Exception {
     // given
-    final var store = clusterIdStore("other-cluster");
+    final var dataSource = mock(DataSource.class);
+    final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
 
-    // when / then - no exception; the new value is adopted going forward
-    assertThat(store.checkClusterIdCompatibility("this-cluster", false)).isTrue();
+    // when / then - no exception, no read or write ever happens
+    assertThat(store.checkClusterIdCompatibility("this-cluster", false)).isFalse();
+    verify(dataSource, never()).getConnection();
   }
 
   @Test

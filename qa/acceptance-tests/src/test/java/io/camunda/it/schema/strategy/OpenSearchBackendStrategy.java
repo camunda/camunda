@@ -171,6 +171,8 @@ public final class OpenSearchBackendStrategy implements SearchBackendStrategy {
                       "history",
                       Map.of("waitPeriodBeforeArchiving", "1s"),
                       "createSchema",
+                      false,
+                      "clusterIdCheckRestrictionEnabled",
                       false));
             })
         .withExporter(

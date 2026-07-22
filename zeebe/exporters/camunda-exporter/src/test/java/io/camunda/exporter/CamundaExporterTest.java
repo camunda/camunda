@@ -12,9 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -255,7 +260,7 @@ final class CamundaExporterTest {
     }
 
     @Test
-    void shouldNotThrowOnOpenWhenClusterIdMismatchIsDetectedButRestrictionDisabled() {
+    void shouldSkipClusterIdCheckEntirelyWhenRestrictionDisabled() {
       // given
       testContext.setClusterId("cluster-b");
       mockPreviouslyRecordedClusterId("cluster-a");
@@ -267,8 +272,42 @@ final class CamundaExporterTest {
       // when
       exporter.configure(testContext);
 
-      // then — with the restriction disabled, the mismatch is only logged, not thrown
+      // then
       assertThatCode(() -> exporter.open(testController)).doesNotThrowAnyException();
+      final var metadataIndex =
+          new MetadataIndex(
+              configuration.getConnect().getIndexPrefix(),
+              configuration.getConnect().getTypeEnum().isElasticSearch());
+      final var searchEngineClient = stubbedClientAdapterInUse.getSearchEngineClient();
+      verify(searchEngineClient, never())
+          .getDocument(metadataIndex.getFullQualifiedName(), "cluster-id");
+      verify(searchEngineClient, never())
+          .upsertDocument(eq(metadataIndex.getFullQualifiedName()), eq("cluster-id"), any());
+    }
+
+    @Test
+    void shouldOnlyValidateClusterIdOnceAcrossRetriedOpenCalls() {
+      // given
+      testContext.setClusterId("cluster-a");
+      exporter =
+          new CamundaExporter(
+              resourceProvider, new ExporterMetadata(TestObjectMapper.objectMapper()));
+      exporter.configure(testContext);
+
+      // when
+      exporter.open(testController);
+      exporter.close();
+      exporter.open(testController);
+
+      // then
+      final var metadataIndex =
+          new MetadataIndex(
+              configuration.getConnect().getIndexPrefix(),
+              configuration.getConnect().getTypeEnum().isElasticSearch());
+      final var searchEngineClient = stubbedClientAdapterInUse.getSearchEngineClient();
+      verify(searchEngineClient, times(1)).indexExists(metadataIndex.getFullQualifiedName());
+      verify(searchEngineClient, times(1))
+          .upsertDocument(eq(metadataIndex.getFullQualifiedName()), eq("cluster-id"), any());
     }
 
     /**

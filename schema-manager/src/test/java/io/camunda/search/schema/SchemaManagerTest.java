@@ -21,6 +21,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.schema.config.IndexConfiguration;
@@ -341,7 +342,7 @@ class SchemaManagerTest {
   }
 
   @Test
-  void shouldIgnoreClusterIdMismatchWhenRestrictionDisabled() {
+  void shouldSkipClusterIdCheckEntirelyWhenRestrictionDisabled() {
     // Given
     config.schemaManager().setClusterIdCheckRestrictionEnabled(false);
     schemaManager = createSpySchemaManager("8.9.0", "this-cluster");
@@ -350,12 +351,8 @@ class SchemaManagerTest {
     // When: should not throw despite the mismatch
     schemaManager.validateClusterId();
 
-    // Then: the mismatched value is still (re-)recorded, matching the ES/OS bootstrap semantics
-    verify(searchEngineClient)
-        .upsertDocument(
-            metadataIndex.getFullQualifiedName(),
-            CLUSTER_ID_METADATA_ID,
-            Map.of(MetadataIndex.ID, CLUSTER_ID_METADATA_ID, MetadataIndex.VALUE, "this-cluster"));
+    // Then: no read or write ever happens, matching a disabled check exactly
+    verifyNoInteractions(searchEngineClient);
   }
 
   @Test

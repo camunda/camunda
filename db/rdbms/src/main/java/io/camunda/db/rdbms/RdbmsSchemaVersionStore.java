@@ -215,11 +215,18 @@ public class RdbmsSchemaVersionStore {
    * Unlike {@link #checkCompatibility()}, this is called lazily by the RDBMS exporter itself, not
    * during the Liquibase migration: only the exporter has access to the resolved cluster ID.
    *
-   * @return {@code true} if the caller should (re-)record {@code clusterId}: no previous value
-   *     existed, or a mismatch was detected but ignored per configuration.
+   * @return {@code true} if the caller should record {@code clusterId}: no previous value existed
+   *     yet.
    */
   public boolean checkClusterIdCompatibility(
       final String clusterId, final boolean restrictionEnabled) {
+    if (!restrictionEnabled) {
+      LOG.debug(
+          "[RDBMS Schema] Cluster ID check restriction is disabled, skipping cluster ID "
+              + "compatibility check for prefix '{}'.",
+          prefix);
+      return false;
+    }
     if (clusterId == null || clusterId.isBlank()) {
       LOG.debug(
           "[RDBMS Schema] No local cluster ID available, skipping cluster ID compatibility check "
@@ -255,16 +262,7 @@ public class RdbmsSchemaVersionStore {
       return false;
     }
 
-    if (restrictionEnabled) {
-      throw new RdbmsClusterIdIncompatibleException(previousClusterId, clusterId);
-    }
-    LOG.warn(
-        "[RDBMS Schema] Detected cluster ID mismatch for prefix '{}': schema was previously "
-            + "initialized by cluster '{}', but this cluster's ID is '{}'. Ignoring as configured.",
-        prefix,
-        previousClusterId,
-        clusterId);
-    return true;
+    throw new RdbmsClusterIdIncompatibleException(previousClusterId, clusterId);
   }
 
   /**

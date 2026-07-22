@@ -993,6 +993,7 @@ public class BrokerBasedPropertiesOverride {
     config.setFlushInterval(database.getFlushInterval());
     config.setExportBatchOperationItemsOnCreation(database.isExportBatchOperationItemsOnCreation());
     config.setBatchOperationItemInsertBlockSize(database.getBatchOperationItemInsertBlockSize());
+    config.setClusterIdCheckRestrictionEnabled(database.isClusterIdCheckRestrictionEnabled());
     config.setAuditLog(camunda.getData().getAuditLog().toConfiguration());
     config.setWaitState(camunda.getData().getWaitStates().toConfiguration());
     config.setHistoryDeletion(camunda.getData().getHistoryDeletion().toConfiguration());

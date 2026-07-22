@@ -71,6 +71,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   private int batchOperationItemInsertBlockSize =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
 
+  /**
+   * If true, startup fails when the cluster ID recorded in the database schema does not match this
+   * cluster's ID. Disable only if intentionally re-pointing this cluster at storage belonging to a
+   * different installation.
+   */
+  private boolean clusterIdCheckRestrictionEnabled = true;
+
   @NestedConfigurationProperty private RdbmsHistory history = new RdbmsHistory();
 
   @NestedConfigurationProperty private RdbmsMetrics metrics = new RdbmsMetrics();
@@ -165,6 +172,14 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setBatchOperationItemInsertBlockSize(final int batchOperationItemInsertBlockSize) {
     this.batchOperationItemInsertBlockSize = batchOperationItemInsertBlockSize;
+  }
+
+  public boolean isClusterIdCheckRestrictionEnabled() {
+    return clusterIdCheckRestrictionEnabled;
+  }
+
+  public void setClusterIdCheckRestrictionEnabled(final boolean clusterIdCheckRestrictionEnabled) {
+    this.clusterIdCheckRestrictionEnabled = clusterIdCheckRestrictionEnabled;
   }
 
   @Override

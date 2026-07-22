@@ -97,6 +97,7 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private boolean clusterIdValidated;
   private long lastFlushTimestamp = 0L;
 
   private long flushDelayMs;
@@ -140,7 +141,10 @@ public class CamundaExporter implements Exporter {
       searchEngineClient = clientAdapter.getSearchEngineClient();
 
       try (final var schemaManager = createSchemaManager()) {
-        schemaManager.validateClusterId();
+        if (!clusterIdValidated) {
+          schemaManager.validateClusterId();
+          clusterIdValidated = true;
+        }
         if (!schemaManager.isSchemaReadyForUse()) {
           throw new ExporterException("Schema is not ready for use");
         }

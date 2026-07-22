@@ -176,6 +176,8 @@ public final class ElasticsearchBackendStrategy implements SearchBackendStrategy
                       "history",
                       Map.of("waitPeriodBeforeArchiving", "1s"),
                       "createSchema",
+                      false,
+                      "clusterIdCheckRestrictionEnabled",
                       false));
             })
         .withExporter(
