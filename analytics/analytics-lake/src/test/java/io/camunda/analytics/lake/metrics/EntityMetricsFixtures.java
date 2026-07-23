@@ -31,6 +31,7 @@ final class EntityMetricsFixtures {
                 true,
                 TableSchema.LogicalType.TIMESTAMPTZ),
             new TableSchema.Column("work_time_ms", ColumnType.LONG, 4, false, -1, false),
-            new TableSchema.Column("retry_count", ColumnType.INT, 5, true, -1, false)));
+            new TableSchema.Column("retry_count", ColumnType.INT, 5, true, -1, false),
+            new TableSchema.Column("value", ColumnType.DOUBLE, 6, true, -1, false)));
   }
 }

@@ -42,7 +42,7 @@ import java.util.List;
  * which is cheap whenever the touched bins cluster away from the top of the range, as real duration
  * distributions do.
  */
-public final class ExpHistogramAlgebra implements Algebra {
+public final class ExpHistogramAlgebra implements Algebra, PercentileHistogramAlgebra {
 
   /**
    * Values are never tracked past this; sizes the bin-count array (see {@link #maxBins}). Not an

@@ -10,6 +10,7 @@ package io.camunda.analytics.lake.sink.algebra;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sun.management.ThreadMXBean;
+import io.camunda.analytics.lake.sink.ColumnType;
 import java.lang.management.ManagementFactory;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -17,16 +18,20 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Guards each algebra's hot-side promise: {@link Algebra.Accumulator#add(long)} allocates
- * (effectively) nothing at steady state, including through periodic {@link
- * Algebra.Accumulator#drain} calls. Same measuring technique as {@code
+ * Guards each algebra's hot-side promise: {@link Algebra.Accumulator#add(long)}/{@link
+ * Algebra.Accumulator#addDouble(double)} allocates (effectively) nothing at steady state, including
+ * through periodic {@link Algebra.Accumulator#drain} calls. Same measuring technique as {@code
  * io.camunda.analytics.lake.sink.batch.SinkBatchAllocationGuardTest}: {@code
  * ThreadMXBean#getThreadAllocatedBytes(long)}.
  */
 class AlgebraAllocationGuardTest {
 
   private static Stream<Algebra> algebras() {
-    return Stream.of(Algebras.scalarStats(), Algebras.expHistogram(3));
+    return Stream.of(
+        Algebras.scalarStats(),
+        Algebras.expHistogram(3),
+        Algebras.doubleScalarStats(),
+        Algebras.signedDoubleExpHistogram(3));
   }
 
   @ParameterizedTest
@@ -37,6 +42,7 @@ class AlgebraAllocationGuardTest {
     final Algebra.Accumulator accumulator = algebra.create();
     final NoopRowWriter writer = new NoopRowWriter();
     final Random random = new Random(42);
+    final boolean isDouble = algebra.valueType() == ColumnType.DOUBLE;
 
     final ThreadMXBean threadMxBean = (ThreadMXBean) ManagementFactory.getThreadMXBean();
     assertThat(threadMxBean.isThreadAllocatedMemorySupported()).isTrue();
@@ -44,11 +50,11 @@ class AlgebraAllocationGuardTest {
     final long threadId = Thread.currentThread().threadId();
 
     // warm up: run the same loop shape once before measuring so the JIT compiles the hot methods
-    runAddDrainLoop(accumulator, writer, random, 10_000);
+    runAddDrainLoop(accumulator, writer, random, 10_000, isDouble);
 
-    // when running 100k more add() calls (with periodic drains) on the now-warm thread
+    // when running 100k more add()/addDouble() calls (with periodic drains) on the now-warm thread
     final long allocatedBefore = threadMxBean.getThreadAllocatedBytes(threadId);
-    runAddDrainLoop(accumulator, writer, random, 100_000);
+    runAddDrainLoop(accumulator, writer, random, 100_000, isDouble);
     final long allocatedBytes = threadMxBean.getThreadAllocatedBytes(threadId) - allocatedBefore;
 
     // then: steady-state folding allocates effectively nothing (same 64 KB JIT-noise epsilon as
@@ -64,9 +70,16 @@ class AlgebraAllocationGuardTest {
       final Algebra.Accumulator accumulator,
       final Algebra.RowWriter writer,
       final Random random,
-      final int iterations) {
+      final int iterations,
+      final boolean isDouble) {
     for (int i = 0; i < iterations; i++) {
-      accumulator.add(Math.abs(random.nextLong() % 1_000_000));
+      if (isDouble) {
+        // occasionally exercise the non-finite path too -- it must stay allocation-free as well
+        accumulator.addDouble(
+            i % 997 == 0 ? Double.POSITIVE_INFINITY : random.nextDouble() * 1_000_000);
+      } else {
+        accumulator.add(Math.abs(random.nextLong() % 1_000_000));
+      }
       if (i % 500 == 499) {
         accumulator.drain(writer);
       }
@@ -83,6 +96,12 @@ class AlgebraAllocationGuardTest {
 
     @Override
     public void writeLong(final int columnIndex, final long value) {}
+
+    @Override
+    public void writeDouble(final int columnIndex, final double value) {}
+
+    @Override
+    public void writeNull(final int columnIndex) {}
 
     @Override
     public void endRow() {}
