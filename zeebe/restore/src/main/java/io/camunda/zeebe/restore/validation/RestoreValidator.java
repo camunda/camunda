@@ -129,7 +129,8 @@ public final class RestoreValidator
         Preconditions.test(!hasBackupIds, "No backupId specified");
         Preconditions.test(
             request.backupIds().size() > 1,
-            "Cannot restore from multiple backups against this database type");
+            "Cannot restore from multiple backups against database type %s"
+                .formatted(databaseType));
       }
       default ->
           throw new IllegalStateException("Invalid database type: " + request.databaseType());

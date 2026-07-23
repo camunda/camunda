@@ -30,8 +30,6 @@ final class RestoreParameterValidatorTest {
   private static final String CONTINUOUS_MESSAGE =
       "Time range restore (from/to) is only supported for continuous backups.";
   private static final String NO_BACKUP_ID_MESSAGE = "No backupId specified";
-  private static final String MULTIPLE_BACKUP_IDS_MESSAGE =
-      "Cannot restore from multiple backups against this database type";
 
   private final RestoreValidator validator = new RestoreValidator(1, null, partitionId -> 1L);
 
@@ -191,13 +189,24 @@ final class RestoreParameterValidatorTest {
     }
 
     @Test
-    void shouldRejectMultipleBackupIds() {
+    void shouldRejectMultipleBackupIdsForElasticsearch() {
       // when / then
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
                   validator.validateParameters(request(MULTIPLE_BACKUP_IDS, null, null, DB, false)))
-          .withMessage(MULTIPLE_BACKUP_IDS_MESSAGE);
+          .withMessage("Cannot restore from multiple backups against database type elasticsearch");
+    }
+
+    @Test
+    void shouldRejectMultipleBackupIdsForOpensearch() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validator.validateParameters(
+                      request(MULTIPLE_BACKUP_IDS, null, null, "opensearch", false)))
+          .withMessage("Cannot restore from multiple backups against database type opensearch");
     }
   }
 

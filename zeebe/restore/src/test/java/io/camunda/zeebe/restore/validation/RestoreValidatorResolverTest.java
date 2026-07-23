@@ -483,7 +483,23 @@ final class RestoreValidatorResolverTest {
 
       // then
       assertThat(assertInvalid(result))
-          .hasMessage("Cannot restore from multiple backups against this database type");
+          .hasMessage("Cannot restore from multiple backups against database type elasticsearch");
+      verifyNoInteractions(backupStore);
+    }
+
+    @Test
+    void shouldRejectMultipleBackupIdsForOpensearch() {
+      // given
+      final var validator = new RestoreValidator(2, backupStore, null);
+      final var request =
+          new RestoreRequest("default", List.of(1L, 2L), null, null, "opensearch", false, false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertThat(assertInvalid(result))
+          .hasMessage("Cannot restore from multiple backups against database type opensearch");
       verifyNoInteractions(backupStore);
     }
 
