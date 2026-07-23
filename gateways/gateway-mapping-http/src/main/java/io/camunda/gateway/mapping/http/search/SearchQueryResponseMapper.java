@@ -917,9 +917,8 @@ public final class SearchQueryResponseMapper {
         .tenantId(entity.tenantId())
         .hasStartForm(StringUtils.isNotBlank(entity.formId()))
         .state(
-            entity.state() == ProcessDefinitionState.DELETED
-                ? ProcessDefinitionResult.StateEnum.DELETED
-                : ProcessDefinitionResult.StateEnum.ACTIVE)
+            ProcessDefinitionResult.StateEnum.fromValue(
+                requireNonNullElse(entity.state(), ProcessDefinitionState.ACTIVE).name()))
         .build();
   }
 
