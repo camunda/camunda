@@ -9,34 +9,34 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthIndexRouteImport } from './routes/_auth/index'
-import { Route as AuthTasklistRouteRouteImport } from './routes/_auth/tasklist/route'
-import { Route as AuthOperateRouteRouteImport } from './routes/_auth/operate/route'
 import { Route as AuthAdminRouteRouteImport } from './routes/_auth/admin/route'
-import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
+import { Route as AuthOperateRouteRouteImport } from './routes/_auth/operate/route'
+import { Route as AuthTasklistRouteRouteImport } from './routes/_auth/tasklist/route'
 import { Route as AuthAdminIndexRouteImport } from './routes/_auth/admin/index'
-import { Route as AuthTasklistProcessesRouteImport } from './routes/_auth/tasklist/processes'
-import { Route as AuthOperateProcessesRouteImport } from './routes/_auth/operate/processes'
-import { Route as AuthOperateOperationsLogRouteImport } from './routes/_auth/operate/operations-log'
-import { Route as AuthOperateDecisionsRouteImport } from './routes/_auth/operate/decisions'
+import { Route as AuthOperateIndexRouteImport } from './routes/_auth/operate/index'
 import { Route as AuthOperateBatchOperationsRouteImport } from './routes/_auth/operate/batch-operations'
+import { Route as AuthOperateDecisionsRouteImport } from './routes/_auth/operate/decisions'
+import { Route as AuthOperateOperationsLogRouteImport } from './routes/_auth/operate/operations-log'
+import { Route as AuthOperateProcessesRouteImport } from './routes/_auth/operate/processes'
 import { Route as AuthTasklistTasksRouteRouteImport } from './routes/_auth/tasklist/_tasks/route'
+import { Route as AuthTasklistProcessesRouteImport } from './routes/_auth/tasklist/processes'
 import { Route as AuthTasklistTasksIndexRouteImport } from './routes/_auth/tasklist/_tasks/index'
 import { Route as AuthTasklistTasksUserTaskKeyRouteRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/route'
 import { Route as AuthTasklistTasksUserTaskKeyIndexRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/index'
-import { Route as AuthTasklistTasksUserTaskKeyProcessRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/process'
 import { Route as AuthTasklistTasksUserTaskKeyHistoryRouteRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/history/route'
+import { Route as AuthTasklistTasksUserTaskKeyProcessRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/process'
 import { Route as AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRouteImport } from './routes/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey'
 
+const AuthRouteRoute = AuthRouteRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRouteRoute = AuthRouteRouteImport.update({
-  id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
@@ -44,9 +44,9 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-const AuthTasklistRouteRoute = AuthTasklistRouteRouteImport.update({
-  id: '/tasklist',
-  path: '/tasklist',
+const AuthAdminRouteRoute = AuthAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthOperateRouteRoute = AuthOperateRouteRouteImport.update({
@@ -54,40 +54,19 @@ const AuthOperateRouteRoute = AuthOperateRouteRouteImport.update({
   path: '/operate',
   getParentRoute: () => AuthRouteRoute,
 } as any)
-const AuthAdminRouteRoute = AuthAdminRouteRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const AuthTasklistRouteRoute = AuthTasklistRouteRouteImport.update({
+  id: '/tasklist',
+  path: '/tasklist',
   getParentRoute: () => AuthRouteRoute,
-} as any)
-const AuthOperateIndexRoute = AuthOperateIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthOperateRouteRoute,
 } as any)
 const AuthAdminIndexRoute = AuthAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthAdminRouteRoute,
 } as any)
-const AuthTasklistProcessesRoute = AuthTasklistProcessesRouteImport.update({
-  id: '/processes',
-  path: '/processes',
-  getParentRoute: () => AuthTasklistRouteRoute,
-} as any)
-const AuthOperateProcessesRoute = AuthOperateProcessesRouteImport.update({
-  id: '/processes',
-  path: '/processes',
-  getParentRoute: () => AuthOperateRouteRoute,
-} as any)
-const AuthOperateOperationsLogRoute =
-  AuthOperateOperationsLogRouteImport.update({
-    id: '/operations-log',
-    path: '/operations-log',
-    getParentRoute: () => AuthOperateRouteRoute,
-  } as any)
-const AuthOperateDecisionsRoute = AuthOperateDecisionsRouteImport.update({
-  id: '/decisions',
-  path: '/decisions',
+const AuthOperateIndexRoute = AuthOperateIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => AuthOperateRouteRoute,
 } as any)
 const AuthOperateBatchOperationsRoute =
@@ -96,8 +75,29 @@ const AuthOperateBatchOperationsRoute =
     path: '/batch-operations',
     getParentRoute: () => AuthOperateRouteRoute,
   } as any)
+const AuthOperateDecisionsRoute = AuthOperateDecisionsRouteImport.update({
+  id: '/decisions',
+  path: '/decisions',
+  getParentRoute: () => AuthOperateRouteRoute,
+} as any)
+const AuthOperateOperationsLogRoute =
+  AuthOperateOperationsLogRouteImport.update({
+    id: '/operations-log',
+    path: '/operations-log',
+    getParentRoute: () => AuthOperateRouteRoute,
+  } as any)
+const AuthOperateProcessesRoute = AuthOperateProcessesRouteImport.update({
+  id: '/processes',
+  path: '/processes',
+  getParentRoute: () => AuthOperateRouteRoute,
+} as any)
 const AuthTasklistTasksRouteRoute = AuthTasklistTasksRouteRouteImport.update({
   id: '/_tasks',
+  getParentRoute: () => AuthTasklistRouteRoute,
+} as any)
+const AuthTasklistProcessesRoute = AuthTasklistProcessesRouteImport.update({
+  id: '/processes',
+  path: '/processes',
   getParentRoute: () => AuthTasklistRouteRoute,
 } as any)
 const AuthTasklistTasksIndexRoute = AuthTasklistTasksIndexRouteImport.update({
@@ -117,16 +117,16 @@ const AuthTasklistTasksUserTaskKeyIndexRoute =
     path: '/',
     getParentRoute: () => AuthTasklistTasksUserTaskKeyRouteRoute,
   } as any)
-const AuthTasklistTasksUserTaskKeyProcessRoute =
-  AuthTasklistTasksUserTaskKeyProcessRouteImport.update({
-    id: '/process',
-    path: '/process',
-    getParentRoute: () => AuthTasklistTasksUserTaskKeyRouteRoute,
-  } as any)
 const AuthTasklistTasksUserTaskKeyHistoryRouteRoute =
   AuthTasklistTasksUserTaskKeyHistoryRouteRouteImport.update({
     id: '/history',
     path: '/history',
+    getParentRoute: () => AuthTasklistTasksUserTaskKeyRouteRoute,
+  } as any)
+const AuthTasklistTasksUserTaskKeyProcessRoute =
+  AuthTasklistTasksUserTaskKeyProcessRouteImport.update({
+    id: '/process',
+    path: '/process',
     getParentRoute: () => AuthTasklistTasksUserTaskKeyRouteRoute,
   } as any)
 const AuthTasklistTasksUserTaskKeyHistoryAuditLogKeyRoute =
@@ -263,18 +263,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_auth': {
       id: '/_auth'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth/': {
@@ -284,11 +284,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_auth/tasklist': {
-      id: '/_auth/tasklist'
-      path: '/tasklist'
-      fullPath: '/tasklist'
-      preLoaderRoute: typeof AuthTasklistRouteRouteImport
+    '/_auth/admin': {
+      id: '/_auth/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthAdminRouteRouteImport
       parentRoute: typeof AuthRouteRoute
     }
     '/_auth/operate': {
@@ -298,19 +298,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthOperateRouteRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_auth/admin': {
-      id: '/_auth/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthAdminRouteRouteImport
+    '/_auth/tasklist': {
+      id: '/_auth/tasklist'
+      path: '/tasklist'
+      fullPath: '/tasklist'
+      preLoaderRoute: typeof AuthTasklistRouteRouteImport
       parentRoute: typeof AuthRouteRoute
-    }
-    '/_auth/operate/': {
-      id: '/_auth/operate/'
-      path: '/'
-      fullPath: '/operate/'
-      preLoaderRoute: typeof AuthOperateIndexRouteImport
-      parentRoute: typeof AuthOperateRouteRoute
     }
     '/_auth/admin/': {
       id: '/_auth/admin/'
@@ -319,32 +312,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthAdminIndexRouteImport
       parentRoute: typeof AuthAdminRouteRoute
     }
-    '/_auth/tasklist/processes': {
-      id: '/_auth/tasklist/processes'
-      path: '/processes'
-      fullPath: '/tasklist/processes'
-      preLoaderRoute: typeof AuthTasklistProcessesRouteImport
-      parentRoute: typeof AuthTasklistRouteRoute
-    }
-    '/_auth/operate/processes': {
-      id: '/_auth/operate/processes'
-      path: '/processes'
-      fullPath: '/operate/processes'
-      preLoaderRoute: typeof AuthOperateProcessesRouteImport
-      parentRoute: typeof AuthOperateRouteRoute
-    }
-    '/_auth/operate/operations-log': {
-      id: '/_auth/operate/operations-log'
-      path: '/operations-log'
-      fullPath: '/operate/operations-log'
-      preLoaderRoute: typeof AuthOperateOperationsLogRouteImport
-      parentRoute: typeof AuthOperateRouteRoute
-    }
-    '/_auth/operate/decisions': {
-      id: '/_auth/operate/decisions'
-      path: '/decisions'
-      fullPath: '/operate/decisions'
-      preLoaderRoute: typeof AuthOperateDecisionsRouteImport
+    '/_auth/operate/': {
+      id: '/_auth/operate/'
+      path: '/'
+      fullPath: '/operate/'
+      preLoaderRoute: typeof AuthOperateIndexRouteImport
       parentRoute: typeof AuthOperateRouteRoute
     }
     '/_auth/operate/batch-operations': {
@@ -354,11 +326,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthOperateBatchOperationsRouteImport
       parentRoute: typeof AuthOperateRouteRoute
     }
+    '/_auth/operate/decisions': {
+      id: '/_auth/operate/decisions'
+      path: '/decisions'
+      fullPath: '/operate/decisions'
+      preLoaderRoute: typeof AuthOperateDecisionsRouteImport
+      parentRoute: typeof AuthOperateRouteRoute
+    }
+    '/_auth/operate/operations-log': {
+      id: '/_auth/operate/operations-log'
+      path: '/operations-log'
+      fullPath: '/operate/operations-log'
+      preLoaderRoute: typeof AuthOperateOperationsLogRouteImport
+      parentRoute: typeof AuthOperateRouteRoute
+    }
+    '/_auth/operate/processes': {
+      id: '/_auth/operate/processes'
+      path: '/processes'
+      fullPath: '/operate/processes'
+      preLoaderRoute: typeof AuthOperateProcessesRouteImport
+      parentRoute: typeof AuthOperateRouteRoute
+    }
     '/_auth/tasklist/_tasks': {
       id: '/_auth/tasklist/_tasks'
       path: ''
       fullPath: '/tasklist'
       preLoaderRoute: typeof AuthTasklistTasksRouteRouteImport
+      parentRoute: typeof AuthTasklistRouteRoute
+    }
+    '/_auth/tasklist/processes': {
+      id: '/_auth/tasklist/processes'
+      path: '/processes'
+      fullPath: '/tasklist/processes'
+      preLoaderRoute: typeof AuthTasklistProcessesRouteImport
       parentRoute: typeof AuthTasklistRouteRoute
     }
     '/_auth/tasklist/_tasks/': {
@@ -382,18 +382,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthTasklistTasksUserTaskKeyIndexRouteImport
       parentRoute: typeof AuthTasklistTasksUserTaskKeyRouteRoute
     }
-    '/_auth/tasklist/_tasks/$userTaskKey/process': {
-      id: '/_auth/tasklist/_tasks/$userTaskKey/process'
-      path: '/process'
-      fullPath: '/tasklist/$userTaskKey/process'
-      preLoaderRoute: typeof AuthTasklistTasksUserTaskKeyProcessRouteImport
-      parentRoute: typeof AuthTasklistTasksUserTaskKeyRouteRoute
-    }
     '/_auth/tasklist/_tasks/$userTaskKey/history': {
       id: '/_auth/tasklist/_tasks/$userTaskKey/history'
       path: '/history'
       fullPath: '/tasklist/$userTaskKey/history'
       preLoaderRoute: typeof AuthTasklistTasksUserTaskKeyHistoryRouteRouteImport
+      parentRoute: typeof AuthTasklistTasksUserTaskKeyRouteRoute
+    }
+    '/_auth/tasklist/_tasks/$userTaskKey/process': {
+      id: '/_auth/tasklist/_tasks/$userTaskKey/process'
+      path: '/process'
+      fullPath: '/tasklist/$userTaskKey/process'
+      preLoaderRoute: typeof AuthTasklistTasksUserTaskKeyProcessRouteImport
       parentRoute: typeof AuthTasklistTasksUserTaskKeyRouteRoute
     }
     '/_auth/tasklist/_tasks/$userTaskKey/history/$auditLogKey': {
