@@ -709,6 +709,82 @@ class CurrentClusterConfigurationTest {
   }
 
   @Nested
+  class ToLegacyDefault {
+
+    @Test
+    void shouldRoundTripMembersAndClusterFields() {
+      // given — an active member with a partition and a member that has left with no partitions
+      final var active =
+          new MemberState(4, Instant.EPOCH, MemberState.State.ACTIVE, Map.of(1, partition()));
+      final var left = new MemberState(2, Instant.EPOCH, MemberState.State.LEFT, Map.of());
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(7)
+              .members(Map.of(MEMBER_0, active, MEMBER_1, left))
+              .clusterId(Optional.of("cluster-x"))
+              .partitionDistributorConfig(Optional.of(new RoundRobinConfig()))
+              .incarnationNumber(3)
+              .build();
+
+      // when — migrate to the new model and project back
+      final var projected = CurrentClusterConfiguration.fromLegacy(legacy).toLegacyDefault();
+
+      // then — the projection reproduces the original legacy configuration
+      assertThat(projected.members()).isEqualTo(legacy.members());
+      assertThat(projected.clusterId()).contains("cluster-x");
+      assertThat(projected.partitionDistributorConfig()).contains(new RoundRobinConfig());
+      assertThat(projected.incarnationNumber()).isEqualTo(3);
+      assertThat(projected.version()).isEqualTo(7);
+    }
+
+    @Test
+    void shouldProjectRecoveringModeToRecoveringState() {
+      // given
+      final var recovering =
+          new MemberState(5, Instant.EPOCH, MemberState.State.RECOVERING, Map.of(1, partition()));
+      final var legacy =
+          ClusterConfiguration.builder().version(1).members(Map.of(MEMBER_0, recovering)).build();
+
+      // when
+      final var projected = CurrentClusterConfiguration.fromLegacy(legacy).toLegacyDefault();
+
+      // then — the recovering member is projected back to the legacy RECOVERING state
+      assertThat(projected.getMember(MEMBER_0).state()).isEqualTo(MemberState.State.RECOVERING);
+      assertThat(projected.getMember(MEMBER_0).partitions()).containsOnlyKeys(1);
+    }
+
+    @Test
+    void shouldProjectLastCompletedChange() {
+      // given
+      final var last =
+          new CompletedChange(3, ClusterChangePlan.Status.FAILED, Instant.EPOCH, Instant.EPOCH);
+      final var legacy =
+          ClusterConfiguration.builder()
+              .version(5)
+              .members(Map.of(MEMBER_0, activeMember()))
+              .lastChange(Optional.of(last))
+              .build();
+
+      // when
+      final var projected = CurrentClusterConfiguration.fromLegacy(legacy).toLegacyDefault();
+
+      // then
+      assertThat(projected.lastChange()).contains(last);
+    }
+
+    @Test
+    void shouldProjectEmptyDefaultGroupWhenAbsent() {
+      // given — a wrapper with only a global configuration and no partition groups
+      final var config = CurrentClusterConfiguration.init();
+
+      // when / then — projecting does not fail and yields an empty legacy configuration
+      final var projected = config.toLegacyDefault();
+      assertThat(projected.members()).isEmpty();
+      assertThat(projected.hasPendingChanges()).isFalse();
+    }
+  }
+
+  @Nested
   class Validation {
 
     @Test
