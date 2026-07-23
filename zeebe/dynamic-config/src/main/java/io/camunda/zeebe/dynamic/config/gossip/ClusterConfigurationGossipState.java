@@ -57,8 +57,8 @@ public final class ClusterConfigurationGossipState {
 
   @Override
   public String toString() {
-    return "ClusterTopologyGossipState{"
-        + "clusterTopology="
+    return "ClusterConfigurationGossipState{"
+        + "clusterConfiguration="
         + clusterConfiguration
         + ", currentClusterConfiguration="
         + currentClusterConfiguration
