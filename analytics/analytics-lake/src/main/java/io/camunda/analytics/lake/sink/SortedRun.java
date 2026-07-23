@@ -37,6 +37,8 @@ public interface SortedRun {
 
   int copyBinaryTo(int column, int i, byte[] dst, int dstOffset);
 
+  double doubleAt(int column, int i);
+
   /**
    * Contiguous index ranges per family day, ascending. The sorter orders by (family day, then the
    * schema's sort key columns) — day is always the implicit leading component, mirroring the future

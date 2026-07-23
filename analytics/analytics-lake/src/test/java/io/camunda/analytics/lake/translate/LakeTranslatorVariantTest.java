@@ -388,6 +388,12 @@ class LakeTranslatorVariantTest {
     }
 
     @Override
+    public RowAppender putDouble(final int column, final double value) {
+      current.put(column, value);
+      return this;
+    }
+
+    @Override
     public RowAppender putNull(final int column) {
       current.put(column, null);
       return this;

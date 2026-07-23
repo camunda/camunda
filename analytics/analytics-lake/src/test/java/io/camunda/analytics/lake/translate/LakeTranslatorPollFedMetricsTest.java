@@ -483,6 +483,11 @@ class LakeTranslatorPollFedMetricsTest {
     }
 
     @Override
+    public RowAppender putDouble(final int column, final double value) {
+      return this;
+    }
+
+    @Override
     public RowAppender putNull(final int column) {
       return this;
     }

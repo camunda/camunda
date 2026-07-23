@@ -360,4 +360,54 @@ class IcebergParquetEncoderTest {
       assertThat(rs.next()).isFalse();
     }
   }
+
+  @Test
+  void shouldRoundTripDoubleValuesThroughDuckDb() throws Exception {
+    // given a schema with a nullable DOUBLE column alongside its LONG family-day source
+    final TableSchema schema =
+        new TableSchema(
+            "profiles",
+            List.of(
+                new TableSchema.Column("key", ColumnType.LONG, 1, false, 0, false),
+                new TableSchema.Column("ts", ColumnType.LONG, 2, false, -1, true),
+                new TableSchema.Column("value_sum", ColumnType.DOUBLE, 3, true, -1, false)));
+    final Schema icebergSchema = EncodeTestFixtures.icebergSchema(schema);
+    final LocalFileSink fileSink = new LocalFileSink(tempDir);
+    final IcebergParquetEncoderFactory factory =
+        new IcebergParquetEncoderFactory(icebergSchema, fileSink, 10, Set.of());
+
+    final Object[][] columns = new Object[3][3];
+    columns[0] = new Object[] {1L, 2L, 3L};
+    columns[1] = new Object[] {1_000L, 1_000L, 1_000L};
+    columns[2] = new Object[] {12.5, null, -0.001};
+    final FakeSortedRun run = new FakeSortedRun(schema, columns, new long[] {5, 5, 5});
+
+    // when
+    final BatchEncoder encoder = factory.newFile(schema, 5L);
+    encoder.append(run, 0, 3);
+    final DataFileResult result = encoder.finish();
+
+    // then: DuckDB reads the exact double values back, null preserved
+    final Path physicalPath = LocalFileIO.toFilesystemPath(result.path());
+    try (Connection duckdb = DriverManager.getConnection("jdbc:duckdb:");
+        Statement statement = duckdb.createStatement();
+        ResultSet rs =
+            statement.executeQuery(
+                "SELECT key, value_sum FROM read_parquet('" + physicalPath + "') ORDER BY key")) {
+      assertThat(rs.next()).isTrue();
+      assertThat(rs.getLong("key")).isEqualTo(1L);
+      assertThat(rs.getDouble("value_sum")).isEqualTo(12.5);
+
+      assertThat(rs.next()).isTrue();
+      assertThat(rs.getLong("key")).isEqualTo(2L);
+      rs.getDouble("value_sum");
+      assertThat(rs.wasNull()).isTrue();
+
+      assertThat(rs.next()).isTrue();
+      assertThat(rs.getLong("key")).isEqualTo(3L);
+      assertThat(rs.getDouble("value_sum")).isEqualTo(-0.001);
+
+      assertThat(rs.next()).isFalse();
+    }
+  }
 }

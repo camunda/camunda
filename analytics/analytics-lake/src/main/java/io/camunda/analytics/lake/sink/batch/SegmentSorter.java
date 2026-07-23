@@ -69,6 +69,17 @@ public final class SegmentSorter implements SortedRun {
     this.dictInterner = dictInterner;
     sortKeyColumns = schema.sortKeyColumns();
     familyDayColumn = schema.familyDayColumn();
+    for (final int sortKeyColumn : sortKeyColumns) {
+      if (schema.columns().get(sortKeyColumn).type() == ColumnType.DOUBLE) {
+        throw new IllegalArgumentException(
+            "schema "
+                + schema.table()
+                + ": column '"
+                + schema.columns().get(sortKeyColumn).name()
+                + "' is DOUBLE and cannot be part of a sort key -- profile-shaped measures never"
+                + " sort on values (see ColumnType.DOUBLE's own javadoc)");
+      }
+    }
 
     permutation = new int[rowCapacity];
     epochDayByRow = new long[rowCapacity];
@@ -84,6 +95,7 @@ public final class SegmentSorter implements SortedRun {
             case INT -> new int[rowCapacity];
             case STRING_DICT -> new int[rowCapacity];
             case BINARY -> new BinaryScratch(rowCapacity * binaryAvgBytesPerRow[i], rowCapacity);
+            case DOUBLE -> new double[rowCapacity];
           };
       if (column.nullable()) {
         nullScratch[i] = NullBitset.allocate(rowCapacity);
@@ -218,6 +230,9 @@ public final class SegmentSorter implements SortedRun {
       case BINARY ->
           throw new UnsupportedOperationException(
               "BINARY column " + column + " cannot be part of a sort key");
+      case DOUBLE ->
+          throw new UnsupportedOperationException(
+              "DOUBLE column " + column + " cannot be part of a sort key");
     };
   }
 
@@ -298,6 +313,20 @@ public final class SegmentSorter implements SortedRun {
           }
         }
       }
+      case DOUBLE -> {
+        final double[] scratch = (double[]) columnScratch[column];
+        final ColumnVector.DoubleColumn typed = (ColumnVector.DoubleColumn) vector;
+        for (int i = 0; i < size; i++) {
+          final int row = permutation[i];
+          if (typed.isNull(row)) {
+            if (nulls != null) {
+              NullBitset.set(nulls, i);
+            }
+          } else {
+            scratch[i] = typed.get(row);
+          }
+        }
+      }
     }
   }
 
@@ -366,6 +395,11 @@ public final class SegmentSorter implements SortedRun {
     final int len = scratch.offsets[i + 1] - scratch.offsets[i];
     System.arraycopy(scratch.arena, scratch.offsets[i], dst, dstOffset, len);
     return len;
+  }
+
+  @Override
+  public double doubleAt(final int column, final int i) {
+    return ((double[]) columnScratch[column])[i];
   }
 
   @Override

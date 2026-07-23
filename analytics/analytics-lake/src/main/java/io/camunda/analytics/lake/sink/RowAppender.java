@@ -42,6 +42,8 @@ public interface RowAppender {
 
   RowAppender putBinary(int column, byte[] src, int offset, int len);
 
+  RowAppender putDouble(int column, double value);
+
   RowAppender putNull(int column);
 
   /** Completes the row; may seal the segment (SEGMENT_FULL) as a side effect. */

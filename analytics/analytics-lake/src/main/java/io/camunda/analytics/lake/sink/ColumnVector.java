@@ -69,4 +69,11 @@ public interface ColumnVector {
     /** Copies the row's bytes into {@code dst} at {@code dstOffset}; returns the length. */
     int copyTo(int row, byte[] dst, int dstOffset);
   }
+
+  /** {@link ColumnType#DOUBLE} storage. */
+  interface DoubleColumn extends ColumnVector {
+    double get(int row);
+
+    void set(int row, double value);
+  }
 }
