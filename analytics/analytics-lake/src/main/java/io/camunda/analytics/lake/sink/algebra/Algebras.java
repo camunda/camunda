@@ -23,6 +23,15 @@ public final class Algebras {
   }
 
   /**
+   * A plain row count, unprefixed and measure-less — see {@link CountAlgebra}. Backs {@code
+   * io.camunda.analytics.lake.metrics.EntityMetrics.Builder#count()}; not intended to be declared
+   * directly as a {@code .measure(...)} algebra (a count has no raw column to fold).
+   */
+  public static Algebra count() {
+    return new CountAlgebra();
+  }
+
+  /**
    * A base-2 log-linear histogram at the given scale (higher scale = finer bins = smaller relative
    * error, at the cost of more bins) — see {@link ExpHistogramAlgebra}.
    *

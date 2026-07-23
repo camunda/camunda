@@ -43,4 +43,50 @@ public interface SealRider {
 
   /** Discards accumulated state and aborts any open files (pipeline failure path). */
   default void abortWindow() {}
+
+  /**
+   * Poll-thread hook: fired at the exact moment the host {@link
+   * io.camunda.analytics.lake.sink.pipeline.SinkPipeline} seals a file boundary (TIME_DUE /
+   * SIZE_CAP / SHUTDOWN) — see {@code SinkPipeline#trySeal}/{@code SinkPipeline#close}, called
+   * strictly <em>before</em> the ring's own seal so it is published (in program order, on the same
+   * thread) no later than the {@code io.camunda.analytics.lake.sink.pipeline.SealSnapshot} the
+   * boundary itself captures — matching that snapshot's own "enqueue before seal" ordering rule,
+   * for the same reason: the flush thread must never be able to observe the sealed segment before
+   * this hook's effects are visible.
+   *
+   * <p>A <em>poll-fed</em> rider (one that folds directly from records on the poll thread, rather
+   * than from raw rows at flush time — see {@code io.camunda.analytics.lake.metrics.PollFedRider})
+   * uses this to freeze its currently-active accumulator set and start a fresh, empty one, so the
+   * frozen set's increments align exactly with this boundary's descriptor offset range: everything
+   * folded before the boundary is in the frozen set, everything folded after is in the new active
+   * one. Default no-op: a fold-at-flush rider (see {@code
+   * io.camunda.analytics.lake.metrics.MetricsRider}) accumulates only from {@link #onSealed}, which
+   * already only ever runs on real raw-row data at the right time, so it has nothing to freeze
+   * here.
+   */
+  default void onPollBoundary() {}
+
+  /**
+   * Undoes the effect of the immediately preceding {@link #onPollBoundary()} call: fired when the
+   * boundary attempt it was speculatively taken for turns out not to have happened after all (the
+   * ring was full — see {@code SinkPipeline#trySeal}'s own rollback). Never called except
+   * immediately after a matching {@link #onPollBoundary()}, with no other call to this rider (poll
+   * thread only, never reentrant) in between — an implementation may rely on undoing exactly the
+   * swap it just performed.
+   */
+  default void rollbackPollBoundary() {}
+
+  /**
+   * Whether this rider holds accumulated state that must still be drained even though the host
+   * pipeline's own raw-row window is currently empty — see {@code FlushLoop#drainShutdown}, which
+   * would otherwise skip finalizing an empty window (and thus skip calling {@link #onWindowClose}
+   * on every rider) at shutdown. Only ever {@code true} for a poll-fed rider (see {@link
+   * #onPollBoundary}'s own javadoc): its accumulators are not gated on raw row appends the way
+   * {@link #onSealed}-driven state is, so it can hold real data the host window knows nothing
+   * about. The default ({@code false}) matches every fold-at-flush rider, whose state is
+   * necessarily empty exactly when the raw window is.
+   */
+  default boolean hasPendingPollFedData() {
+    return false;
+  }
 }

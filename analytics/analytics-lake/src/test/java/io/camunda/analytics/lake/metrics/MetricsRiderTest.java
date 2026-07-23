@@ -191,6 +191,49 @@ final class MetricsRiderTest {
     assertThat(encoders.rows("activities_metrics")).hasSize(500);
   }
 
+  @Test
+  void shouldIncrementCntOncePerFoldedRowRegardlessOfMeasureNulls() {
+    // given a counted declaration alongside a measure that is sometimes null
+    final CompiledEntityMetrics counted =
+        EntityMetrics.declare("activities", RAW)
+            .dims("process_id", "element_id")
+            .window(Duration.ofMinutes(1), "ended_at")
+            .measure("duration_ms", Algebras.scalarStats())
+            .count()
+            .build();
+    final RecordingEncoderFactory countedEncoders = new RecordingEncoderFactory();
+    final MetricsRider countedRider = new MetricsRider(counted, countedEncoders, 128);
+
+    // when -- three rows in the same group, one with a null measure
+    countedRider.onSealed(
+        run(
+            row("order", "approve", SLOT_A + 1, 100L),
+            row("order", "approve", SLOT_A + 2, null),
+            row("order", "approve", SLOT_A + 3, 300L)));
+    countedRider.onWindowClose();
+
+    // then -- cnt counts every row that reached the group; duration_ms_cnt only the non-null ones
+    final Map<String, Object> approve = countedEncoders.rows("activities_metrics").get(0);
+    assertThat(approve).containsEntry("cnt", 3L).containsEntry("duration_ms_cnt", 2L);
+  }
+
+  @Test
+  void shouldNotProduceAHistTableForACountOnlyDeclaration() {
+    // given a declaration with no histogram-shaped measure at all
+    final CompiledEntityMetrics countOnly =
+        EntityMetrics.declare("activities", RAW).dims("process_id").count().build();
+    final RecordingEncoderFactory countOnlyEncoders = new RecordingEncoderFactory();
+    final MetricsRider countOnlyRider = new MetricsRider(countOnly, countOnlyEncoders, 128);
+
+    // when
+    countOnlyRider.onSealed(run(row("order", "approve", SLOT_A + 1, 100L)));
+    final Map<String, List<DataFileResult>> derived = countOnlyRider.onWindowClose();
+
+    // then -- only the metrics table is ever produced; no _hist entry, no _hist rows anywhere
+    assertThat(derived).containsOnlyKeys("activities_metrics");
+    assertThat(countOnlyEncoders.rows("activities_hist")).isEmpty();
+  }
+
   // ------------------------------------------------------------------
   // fixtures
   // ------------------------------------------------------------------

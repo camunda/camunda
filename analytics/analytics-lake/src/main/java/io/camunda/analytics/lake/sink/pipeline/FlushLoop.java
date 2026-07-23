@@ -162,7 +162,11 @@ final class FlushLoop implements Runnable {
    * pipeline is allowed to stop.
    */
   private void drainShutdown() {
-    if (!window.hasData()) {
+    // A poll-fed rider's accumulated state is not gated on raw row appends the way this window's
+    // own hasData() is (see SealRider#hasPendingPollFedData's javadoc): a pipeline whose raw table
+    // never got a single row this run can still have real poll-fed data waiting to be drained, and
+    // skipping the close here (as the raw-only check alone would) would silently lose it forever.
+    if (!window.hasData() && !anyRiderHasPendingPollFedData()) {
       return;
     }
     try {
@@ -170,6 +174,15 @@ final class FlushLoop implements Runnable {
     } catch (final RuntimeException e) {
       onFailure(e);
     }
+  }
+
+  private boolean anyRiderHasPendingPollFedData() {
+    for (final SealRider rider : riders) {
+      if (rider.hasPendingPollFedData()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** Merges every rider's window drain; disjoint by contract (one rider per derived table set). */

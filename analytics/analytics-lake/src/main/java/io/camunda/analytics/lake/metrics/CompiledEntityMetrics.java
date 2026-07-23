@@ -10,6 +10,7 @@ package io.camunda.analytics.lake.metrics;
 import io.camunda.analytics.lake.sink.ColumnType;
 import io.camunda.analytics.lake.sink.TableSchema;
 import io.camunda.analytics.lake.sink.algebra.Algebra;
+import io.camunda.analytics.lake.sink.algebra.Algebras;
 import io.camunda.analytics.lake.sink.algebra.ExpHistogramAlgebra;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -45,12 +46,21 @@ public final class CompiledEntityMetrics {
   private static final String MEASURE_COLUMN = "measure";
   private static final String SCHEME_COLUMN = "scheme";
 
+  /**
+   * The single {@link Algebra} backing every declaration's {@code count()} — see {@link
+   * io.camunda.analytics.lake.sink.algebra.CountAlgebra}'s own javadoc. One shared, stateless
+   * instance suffices: {@link Algebra#create()} is the only per-declaration thing it does, and
+   * every declaration gets its own fresh {@link Algebra.Accumulator}s from it.
+   */
+  private static final Algebra COUNT_ALGEBRA = Algebras.count();
+
   private final String entityName;
   private final TableSchema rawSchema;
   private final List<String> dims;
   private final long windowMicros;
   private final List<MeasureDeclaration> measures;
   private final RiderPlan riderPlan;
+  private final boolean counted;
 
   CompiledEntityMetrics(
       final String entityName,
@@ -58,13 +68,15 @@ public final class CompiledEntityMetrics {
       final List<String> dims,
       final long windowMicros,
       final List<MeasureDeclaration> measures,
-      final RiderPlan riderPlan) {
+      final RiderPlan riderPlan,
+      final boolean counted) {
     this.entityName = entityName;
     this.rawSchema = rawSchema;
     this.dims = List.copyOf(dims);
     this.windowMicros = windowMicros;
     this.measures = List.copyOf(measures);
     this.riderPlan = riderPlan;
+    this.counted = counted;
   }
 
   /** The precomputed, per-record-interpretation-free folding plan — see {@link RiderPlan}. */
@@ -92,6 +104,31 @@ public final class CompiledEntityMetrics {
     return measures;
   }
 
+  /** Whether this declaration includes a {@code count()} — see {@code EntityMetrics.Builder}. */
+  public boolean counted() {
+    return counted;
+  }
+
+  /**
+   * Whether any declared measure folds through a {@link Algebra.PartialsShape#TALL} algebra (a
+   * histogram, today) — i.e. whether {@link #histSchema()} has any rows to ever hold. Callers use
+   * this to skip creating/registering the {@code _hist} table and its drain machinery entirely for
+   * a declaration that has nothing to put there (a {@code count()}-only declaration, or one whose
+   * only measures are {@code WIDE}-shaped): {@link #histSchema()} itself still happily generates
+   * the (permanently empty) schema either way — see that method's own javadoc for why it is
+   * generated unconditionally rather than made to depend on this flag.
+   */
+  public boolean hasHistogram() {
+    for (final MeasureDeclaration measure : measures) {
+      for (final Algebra algebra : measure.algebras()) {
+        if (algebra.shape() == Algebra.PartialsShape.TALL) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   /** The wide {@code <entity>_metrics} partials schema — see this class's own javadoc. */
   public TableSchema metricsSchema() {
     final List<TableSchema.Column> columns = new ArrayList<>();
@@ -107,6 +144,16 @@ public final class CompiledEntityMetrics {
             TableSchema.LogicalType.TIMESTAMPTZ));
     for (int i = 0; i < dims.size(); i++) {
       columns.add(dimColumn(dims.get(i), i, fieldId));
+    }
+    if (counted) {
+      // Right after the dims, before any measure's own columns -- a count is not a measure, so it
+      // has no natural position relative to them; leading with it keeps every declaration's
+      // "count column, if any" at the same fixed offset regardless of how many measures follow.
+      for (final Algebra.PartialColumn column : COUNT_ALGEBRA.partialColumns("")) {
+        columns.add(
+            new TableSchema.Column(
+                column.name(), ColumnType.LONG, fieldId[0]++, column.nullable(), -1, false));
+      }
     }
     for (final MeasureDeclaration measure : measures) {
       for (final Algebra algebra : measure.algebras()) {
@@ -166,10 +213,10 @@ public final class CompiledEntityMetrics {
    * 12 hex characters of {@code SHA-256} over a canonical string answering exactly one question:
    * "do stored partial rows produced under this declaration mean the same thing as one produced
    * under that declaration" — i.e. can they ever be merged together. Folds in the entity name, dims
-   * (sorted — declaration order does not change meaning), window duration, and every (measure,
-   * scheme) pair (sorted), plus the literal {@code "nulls=skip"} marking today's fixed choice to
-   * never emit a partial row for an empty group (see {@link Algebra.Accumulator#drain}'s javadoc)
-   * as part of what the fingerprint answers for.
+   * (sorted — declaration order does not change meaning), window duration, whether {@code count()}
+   * was declared, and every (measure, scheme) pair (sorted), plus the literal {@code "nulls=skip"}
+   * marking today's fixed choice to never emit a partial row for an empty group (see {@link
+   * Algebra.Accumulator#drain}'s javadoc) as part of what the fingerprint answers for.
    *
    * <p>Deliberately <b>excluded</b>: anything that changes only <em>how</em> rows are produced, not
    * what they mean — declared dim/measure order (a reordering test asserts this), sort order, flush
@@ -191,6 +238,7 @@ public final class CompiledEntityMetrics {
                 ? "-"
                 : rawSchema.columns().get(riderPlan.windowSourceColumn()).name())
         .append('|');
+    canonical.append(counted ? "count" : "-").append('|');
     final List<String> measureSchemePairs = new ArrayList<>();
     for (final MeasureDeclaration measure : measures) {
       for (final Algebra algebra : measure.algebras()) {
@@ -226,6 +274,9 @@ public final class CompiledEntityMetrics {
     final String dimList = String.join(", ", dims);
     final String windowExpr = coarsenExpr(targetWindowMicros);
     final List<String> projections = new ArrayList<>();
+    if (counted) {
+      projections.add(COUNT_ALGEBRA.mergeProjection(""));
+    }
     for (final MeasureDeclaration measure : measures) {
       for (final Algebra algebra : measure.algebras()) {
         if (algebra.shape() == Algebra.PartialsShape.WIDE) {
@@ -288,6 +339,9 @@ public final class CompiledEntityMetrics {
   public String finalizeMetricsSql(final String sourceTable) {
     final String dimList = String.join(", ", dims);
     final List<String> projections = new ArrayList<>();
+    if (counted) {
+      projections.add(COUNT_ALGEBRA.finalizeProjection(""));
+    }
     for (final MeasureDeclaration measure : measures) {
       for (final Algebra algebra : measure.algebras()) {
         if (algebra.shape() == Algebra.PartialsShape.WIDE) {
