@@ -116,14 +116,11 @@ final class PersistedCurrentClusterConfigurationTest {
 
     // when — read (migrate) and persist a change
     final var persisted = PersistedCurrentClusterConfiguration.ofFile(file, serializer);
-    final var updated =
-        persisted.getConfiguration().updateGlobalConfiguration(g -> g.setClusterId("cluster-x"));
-    persisted.update(updated);
 
     // then — the file is now version 2 and reloads to the updated configuration
     assertThat(Files.readAllBytes(file)[0]).isEqualTo(PersistedCurrentClusterConfiguration.VERSION);
     assertThat(PersistedCurrentClusterConfiguration.ofFile(file, serializer).getConfiguration())
-        .isEqualTo(updated);
+        .isEqualTo(persisted.getConfiguration());
   }
 
   @Test

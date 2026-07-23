@@ -32,10 +32,9 @@ import java.util.zip.CRC32C;
  *
  * <ul>
  *   <li>Header version {@value #VERSION_LEGACY}: a legacy {@link
- *       io.camunda.zeebe.dynamic.config.state.ClusterConfiguration} body. On read it is migrated to
- *       the new model via {@link CurrentClusterConfiguration#fromLegacy}. The migrated value is
- *       written back as version {@value #VERSION} on the next {@link
- *       #update(CurrentClusterConfiguration)}.
+ *       io.camunda.zeebe.dynamic.config.state.ClusterConfiguration} body. On read, it is migrated
+ *       to the new model via {@link CurrentClusterConfiguration#fromLegacy}. The migrated value is
+ *       written back as version {@value #VERSION} immediately.
  *   <li>Header version {@value #VERSION}: a {@link CurrentClusterConfiguration} body.
  * </ul>
  *
@@ -92,7 +91,7 @@ public final class PersistedCurrentClusterConfiguration {
     if (configuration.equals(updatedConfiguration)) {
       return;
     }
-    writeToFile(updatedConfiguration);
+    writeToFile(updatedConfiguration, configurationFile, serializer);
     configuration = updatedConfiguration;
   }
 
@@ -130,16 +129,23 @@ public final class PersistedCurrentClusterConfiguration {
       case VERSION ->
           serializer.decodeCurrentClusterConfiguration(
               content, HEADER_LENGTH, content.length - HEADER_LENGTH);
-      case VERSION_LEGACY ->
-          CurrentClusterConfiguration.fromLegacy(
-              serializer.decodeClusterTopology(
-                  content, HEADER_LENGTH, content.length - HEADER_LENGTH));
+      case VERSION_LEGACY -> {
+        final var migratedConfig =
+            CurrentClusterConfiguration.fromLegacy(
+                serializer.decodeClusterTopology(
+                    content, HEADER_LENGTH, content.length - HEADER_LENGTH));
+        writeToFile(migratedConfig, configurationFile, serializer);
+        yield migratedConfig;
+      }
       default ->
           throw new PersistedClusterConfiguration.UnexpectedVersion(configurationFile, version);
     };
   }
 
-  private void writeToFile(final CurrentClusterConfiguration updatedConfiguration)
+  private static void writeToFile(
+      final CurrentClusterConfiguration updatedConfiguration,
+      final Path configurationFile,
+      final ClusterConfigurationSerializer serializer)
       throws IOException {
     final var body = serializer.encodeCurrentClusterConfiguration(updatedConfiguration);
     final var checksum = checksum(body, 0, body.length);
