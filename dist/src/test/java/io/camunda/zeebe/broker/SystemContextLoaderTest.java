@@ -9,20 +9,21 @@ package io.camunda.zeebe.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.NoopSecretStore;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.system.PhysicalTenantContext;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -32,9 +33,7 @@ import io.camunda.zeebe.dynamic.nodeid.Version;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -138,6 +137,60 @@ final class SystemContextLoaderTest {
         .isSameAs(rootBrokerCfg);
   }
 
+  @Test
+  void shouldThreadSecretStoreRegistryOfEachTenant() {
+    // given - a registry configured for one of the two tenants
+    final var rootCamunda = new Camunda();
+    final var tenantCamunda = new Camunda();
+    final var tenantRegistry = new SecretStoreRegistry(Map.of("main", new NoopSecretStore()));
+    final var loader =
+        newLoader(
+                rootCamunda,
+                new BrokerCfg(),
+                Map.of(
+                    PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
+                    rootCamunda,
+                    "tenanta",
+                    tenantCamunda))
+            .withSecretStoreRegistries(
+                new SecretStoreRegistries(Map.of("tenanta", tenantRegistry)));
+
+    // when
+    final SystemContext systemContext = loader.createSystemContext();
+
+    // then - the tenant gets its configured registry, the other tenant an empty one
+    assertThat(systemContext.getPhysicalTenantContext("tenanta").secretStoreRegistry())
+        .isSameAs(tenantRegistry);
+    assertThat(
+            systemContext
+                .getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .secretStoreRegistry()
+                .getStores())
+        .isEmpty();
+  }
+
+  @Test
+  void shouldDefaultToEmptySecretStoreRegistryWhenNoneProvided() {
+    // given
+    final var rootCamunda = new Camunda();
+    final var loader =
+        newLoader(
+            rootCamunda,
+            new BrokerCfg(),
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rootCamunda));
+
+    // when
+    final SystemContext systemContext = loader.createSystemContext();
+
+    // then
+    assertThat(
+            systemContext
+                .getPhysicalTenantContext(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+                .secretStoreRegistry()
+                .getStores())
+        .isEmpty();
+  }
+
   private SystemContextLoader newLoader(
       final Camunda rootCamunda,
       final BrokerCfg rootBrokerCfg,
@@ -146,15 +199,6 @@ final class SystemContextLoaderTest {
     when(nodeIdProvider.currentNodeInstance()).thenReturn(new NodeInstance(0, Version.zero()));
     final var physicalTenantResolver = mock(PhysicalTenantResolver.class);
     when(physicalTenantResolver.getAll()).thenReturn(physicalTenants);
-    when(physicalTenantResolver.mapValues(any()))
-        .thenAnswer(
-            invocation -> {
-              final Function<Camunda, PhysicalTenantContext> mapper = invocation.getArgument(0);
-              final Map<String, PhysicalTenantContext> out = new LinkedHashMap<>();
-              physicalTenants.forEach(
-                  (tenantId, camunda) -> out.put(tenantId, mapper.apply(camunda)));
-              return out;
-            });
 
     return new SystemContextLoader()
         .withShutdownTimeout(SystemContext.DEFAULT_SHUTDOWN_TIMEOUT)
