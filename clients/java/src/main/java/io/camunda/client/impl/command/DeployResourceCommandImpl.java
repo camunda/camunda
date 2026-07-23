@@ -59,8 +59,6 @@ public final class DeployResourceCommandImpl
   private static final String RESOURCES_FIELD_NAME = "resources";
   private static final String TENANT_FIELD_NAME = "tenantId";
 
-  private final MultipartEntityBuilder multipartEntityBuilder =
-      MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
   private final DeployResourceRequest.Builder requestBuilder = DeployResourceRequest.newBuilder();
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
@@ -92,13 +90,6 @@ public final class DeployResourceCommandImpl
   @Override
   public DeployResourceCommandStep2 addResourceBytes(
       final byte[] resource, final String resourceName) {
-
-    if (useRest) {
-      multipartEntityBuilder.addBinaryBody(
-          RESOURCES_FIELD_NAME, resource, ContentType.APPLICATION_OCTET_STREAM, resourceName);
-      return this;
-    }
-
     requestBuilder.addResources(
         Resource.newBuilder()
             .setName(resourceName)
@@ -178,6 +169,11 @@ public final class DeployResourceCommandImpl
   }
 
   @Override
+  public DeployResourceCommandStep2 batch() {
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<DeploymentEvent> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -186,9 +182,11 @@ public final class DeployResourceCommandImpl
 
   @Override
   public CamundaFuture<DeploymentEvent> send() {
+    if (requestBuilder.getResourcesCount() == 0) {
+      throw new IllegalStateException(
+          "At least one resource must be added before sending the command");
+    }
     if (useRest) {
-      // adding here the tenantId because in the multipart request fields are only appended
-      multipartEntityBuilder.addTextBody(TENANT_FIELD_NAME, tenantId);
       return sendRestRequest();
     } else {
       return sendGrpcRequest();
@@ -215,6 +213,17 @@ public final class DeployResourceCommandImpl
   }
 
   private CamundaFuture<DeploymentEvent> sendRestRequest() {
+    final MultipartEntityBuilder multipartEntityBuilder =
+        MultipartEntityBuilder.create().setContentType(ContentType.MULTIPART_FORM_DATA);
+    for (final Resource resource : requestBuilder.getResourcesList()) {
+      multipartEntityBuilder.addBinaryBody(
+          RESOURCES_FIELD_NAME,
+          resource.getContent().toByteArray(),
+          ContentType.APPLICATION_OCTET_STREAM,
+          resource.getName());
+    }
+    multipartEntityBuilder.addTextBody(TENANT_FIELD_NAME, tenantId);
+
     final HttpCamundaFuture<DeploymentEvent> result = new HttpCamundaFuture<>();
     httpClient.postMultipart(
         "/deployments",
