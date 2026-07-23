@@ -259,7 +259,6 @@ public interface ClusterConfigurationInitializer {
       implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
-    private static final Duration DEFAULT_BOOTSTRAP_TIMEOUT = Duration.ofSeconds(30);
     private final Duration syncDelay;
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final ActorFuture<ClusterConfiguration> initialized;
@@ -271,21 +270,6 @@ public interface ClusterConfigurationInitializer {
     private ScheduledTimer bootstrapTimeoutTimer;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester;
-
-    public SyncInitializer(
-        final Duration syncDelay,
-        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
-        final Supplier<List<MemberId>> knownMembersToSync,
-        final ConcurrencyControl executor,
-        final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester) {
-      this(
-          syncDelay,
-          clusterConfigurationUpdateNotifier,
-          knownMembersToSync,
-          executor,
-          syncRequester,
-          DEFAULT_BOOTSTRAP_TIMEOUT);
-    }
 
     SyncInitializer(
         final Duration syncDelay,
@@ -351,17 +335,14 @@ public interface ClusterConfigurationInitializer {
         scheduleRetry();
       } else if (configuration == null) {
         LOGGER.trace("Received null cluster configuration from {}. Will retry.", memberId);
+        // A null response (e.g. from a gateway member, which never gossips an explicit
+        // uninitialized configuration) must still count towards the bootstrap timeout. Otherwise
+        // a cluster with only such members would poll forever without ever falling back.
+        armBootstrapTimeout();
         scheduleRetry();
       } else if (configuration.isUninitialized()) {
         LOGGER.trace("Cluster configuration is uninitialized in {}", memberId);
-
-        // start timeout after first uninitialized
-        if (bootstrapTimeoutTimer == null && uninitializedMembers.isEmpty()) {
-          bootstrapTimeoutTimer =
-              executor.schedule(
-                  bootstrapTimeout,
-                  () -> completeAsUninitialized("sync timeout (%s)".formatted(bootstrapTimeout)));
-        }
+        armBootstrapTimeout();
         uninitializedMembers.add(memberId);
         final var members = knownMembersToSync.get();
         if (uninitializedMembers.containsAll(members)
@@ -398,6 +379,15 @@ public interface ClusterConfigurationInitializer {
         initialized.complete(ClusterConfiguration.uninitialized());
         cancelBootstrapTimeout();
         clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+      }
+    }
+
+    private void armBootstrapTimeout() {
+      if (bootstrapTimeoutTimer == null) {
+        bootstrapTimeoutTimer =
+            executor.schedule(
+                bootstrapTimeout,
+                () -> completeAsUninitialized("sync timeout (%s)".formatted(bootstrapTimeout)));
       }
     }
 

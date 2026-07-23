@@ -138,7 +138,8 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterConfiguration))
+                clusterConfigurationGossiper::queryClusterConfiguration,
+                gossiperConfig.bootstrapTimeout()))
         .orThen(
             new GossipInitializer(
                 clusterConfigurationGossiper,
@@ -170,7 +171,8 @@ public final class ClusterConfigurationManagerService
                 clusterConfigurationGossiper,
                 otherKnownMembers,
                 managerActor,
-                clusterConfigurationGossiper::queryClusterConfiguration))
+                clusterConfigurationGossiper::queryClusterConfiguration,
+                gossiperConfig.bootstrapTimeout()))
         .orThen(new StaticInitializer(staticConfiguration))
         .andThen(
             new ExporterStateInitializer(

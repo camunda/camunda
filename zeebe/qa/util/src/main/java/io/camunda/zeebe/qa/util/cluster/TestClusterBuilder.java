@@ -14,6 +14,7 @@ import io.camunda.configuration.Partitioning.Scheme;
 import io.camunda.configuration.Zone;
 import io.camunda.configuration.ZoneAware;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.stream.IntStream;
 public final class TestClusterBuilder {
 
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
+  private static final Duration MULTI_ZONE_BOOTSTRAP_TIMEOUT = Duration.ofSeconds(15);
 
   private String name = DEFAULT_CLUSTER_NAME;
 
@@ -391,6 +393,9 @@ public final class TestClusterBuilder {
         .getPartitioning()
         .setZoneAware(
             new ZoneAware(IntStream.range(0, zoneCount).mapToObj(this::zoneConfig).toList()));
+    // cross-zone gossip during bootstrap needs more headroom than the 5s default used for
+    // single-zone test clusters
+    cluster.getMetadata().setBootstrapTimeout(MULTI_ZONE_BOOTSTRAP_TIMEOUT);
   }
 
   private Zone zoneConfig(final int zoneIndex) {

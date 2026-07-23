@@ -22,6 +22,7 @@ cluster.membership.probe-interval
 cluster.membership.probe-timeout
 cluster.membership.suspect-probes
 cluster.membership.sync-interval
+cluster.metadata.bootstrap-timeout
 cluster.metadata.gossip-fanout
 cluster.metadata.sync-delay
 cluster.metadata.sync-initializer-delay
