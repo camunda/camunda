@@ -15,10 +15,12 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import java.util.function.Consumer;
 
@@ -102,8 +104,10 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
-  public ProcessDefinitionFilter isDeleted(final boolean isDeleted) {
-    filter.setIsDeleted(isDeleted);
+  public ProcessDefinitionFilter state(final ProcessDefinitionState state) {
+    filter.setState(
+        EnumUtil.convert(
+            state, io.camunda.client.protocol.rest.ProcessDefinitionFilter.StateEnum.class));
     return this;
   }
 
