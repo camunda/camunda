@@ -256,30 +256,50 @@ runs:
         inputs.dockerhub == 'true' ||
         inputs.dockerhub-readonly == 'true'
       )
-    uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.dockerhub-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.dockerhub-token }}
     with:
-      username: ${{ steps.secrets.outputs.dockerhub-username }}
-      password: ${{ steps.secrets.outputs.dockerhub-token }}
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        printf '%s' "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin
   - name: Logs on to Harbor
     # Harbor login is disabled for fork PRs
     if: >-
       steps.is-fork.outputs.is-fork != 'true' &&
       inputs.harbor == 'true'
-    uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.ci-account-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.ci-account-password }}
     with:
-      registry: registry.camunda.cloud
-      username: ${{ steps.secrets.outputs.ci-account-username }}
-      password: ${{ steps.secrets.outputs.ci-account-password }}
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        printf '%s' "${DOCKER_PASSWORD}" | docker login registry.camunda.cloud \
+          --username "${DOCKER_USERNAME}" --password-stdin
   - name: Logs on to Minimus
     # Minimus login is disabled for fork PRs
     if: >-
       steps.is-fork.outputs.is-fork != 'true' &&
       inputs.minimus == 'true'
-    uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.minimus-token }}
     with:
-      registry: reg.mini.dev
-      username: minimus
-      password: ${{ steps.secrets.outputs.minimus-token }}
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        printf '%s' "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
+          --username minimus --password-stdin
   - name: Authenticate to GCS build-cache
     # GCS build-cache auth is disabled for fork PRs (no Vault access)
     if: >-
