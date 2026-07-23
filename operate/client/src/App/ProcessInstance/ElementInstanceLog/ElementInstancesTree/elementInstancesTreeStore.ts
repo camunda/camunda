@@ -105,14 +105,23 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
     });
     this.state.abortControllers.clear();
 
-    this.state.nodes.clear();
-    this.state.expandedNodes.clear();
     this.sortOrder = nextSortOrder;
-    this.state.rootScopeKey = processInstanceKey;
 
-    this.state.expandedNodes.add(processInstanceKey);
+    if (isNewRoot) {
+      this.state.nodes.clear();
+      this.state.expandedNodes.clear();
+      this.state.rootScopeKey = processInstanceKey;
+      this.state.expandedNodes.add(processInstanceKey);
 
-    await this.fetchFirstPage(processInstanceKey);
+      await this.fetchFirstPage(processInstanceKey);
+    } else {
+      const expandedScopeKeys = Array.from(this.state.expandedNodes);
+      this.state.nodes.clear();
+
+      await Promise.all(
+        expandedScopeKeys.map((scopeKey) => this.fetchFirstPage(scopeKey)),
+      );
+    }
 
     if (isPollingEnabled) {
       this.startPolling();
