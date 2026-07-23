@@ -256,7 +256,6 @@ public interface ClusterConfigurationInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
     private static final Duration SYNC_QUERY_RETRY_DELAY = Duration.ofSeconds(5);
-    private static final Duration DEFAULT_BOOTSTRAP_TIMEOUT = Duration.ofSeconds(30);
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final ActorFuture<ClusterConfiguration> initialized;
     private final Supplier<List<MemberId>> knownMembersToSync;
@@ -267,19 +266,6 @@ public interface ClusterConfigurationInitializer {
     private ScheduledTimer bootstrapTimeoutTimer;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester;
-
-    public SyncInitializer(
-        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
-        final Supplier<List<MemberId>> knownMembersToSync,
-        final ConcurrencyControl executor,
-        final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester) {
-      this(
-          clusterConfigurationUpdateNotifier,
-          knownMembersToSync,
-          executor,
-          syncRequester,
-          DEFAULT_BOOTSTRAP_TIMEOUT);
-    }
 
     SyncInitializer(
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
