@@ -58,6 +58,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBufferedCommandIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -105,6 +106,7 @@ public final class EventAppliers implements EventApplier {
     registerProcessInstanceModificationAppliers(state);
     registerProcessInstanceMigrationAppliers();
     registerProcessInstanceBusinessIdAppliers(state);
+    registerProcessInstanceBufferedCommandAppliers(state);
     register(ProcessInstanceResultIntent.COMPLETED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.ACTIVATED, NOOP_EVENT_APPLIER);
     register(ProcessInstanceBatchIntent.TERMINATED, NOOP_EVENT_APPLIER);
@@ -416,8 +418,12 @@ public final class EventAppliers implements EventApplier {
         RuntimeInstructionIntent.INTERRUPTED,
         new RuntimeInstructionInterruptedApplier(elementInstanceState));
     register(ProcessInstanceIntent.CANCELING, NOOP_EVENT_APPLIER);
-    register(ProcessInstanceIntent.RESUMED, new ProcessInstanceResumedApplier());
-    register(ProcessInstanceIntent.SUSPENDED, new ProcessInstanceSuspendedApplier());
+    register(
+        ProcessInstanceIntent.RESUMED,
+        new ProcessInstanceResumedApplier(state.getSuspensionState()));
+    register(
+        ProcessInstanceIntent.SUSPENDED,
+        new ProcessInstanceSuspendedApplier(state.getSuspensionState()));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
@@ -452,6 +458,16 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceBusinessIdIntent.ASSIGNED,
         1,
         new ProcessInstanceBusinessIdAssignedV1Applier(state.getElementInstanceState()));
+  }
+
+  private void registerProcessInstanceBufferedCommandAppliers(final MutableProcessingState state) {
+    final var suspensionState = state.getSuspensionState();
+    register(
+        ProcessInstanceBufferedCommandIntent.BUFFERED,
+        new ProcessInstanceBufferedCommandBufferedApplier(suspensionState));
+    register(
+        ProcessInstanceBufferedCommandIntent.DRAINED,
+        new ProcessInstanceBufferedCommandDrainedApplier(suspensionState));
   }
 
   private void registerJobIntentEventAppliers(final MutableProcessingState state) {

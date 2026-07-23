@@ -53,6 +53,32 @@ public final class SuspendProcessInstanceTest {
   }
 
   @Test
+  public void shouldRejectSuspendIfAlreadySuspended() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<ProcessInstanceRecordValue> rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectSuspendRejection()
+            .suspend();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(ProcessInstanceIntent.SUSPEND)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
   public void shouldRejectSuspendIfProcessInstanceNotFound() {
     // given
     final long nonExistentKey = -1L;
