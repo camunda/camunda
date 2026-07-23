@@ -30,6 +30,7 @@ import io.camunda.optimize.rest.security.oauth.ScopeValidator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.SessionService;
+import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
@@ -85,12 +86,14 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
+  private static final String ORIGINAL_USER_ID_CLAIM = "https://camunda.com/originalUserId";
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSaaSSecurityConfigurerAdapter.class);
   private static final List<String> ALLOWED_ORG_ROLES =
       Arrays.asList("admin", "analyst", "owner", "supportagent");
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
+  private final UserIdMigrationService userIdMigrationService;
 
   public CCSaaSSecurityConfigurerAdapter(
       final ConfigurationService configurationService,
@@ -98,7 +101,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
       final SessionService sessionService,
       final AuthCookieService authCookieService,
       final ClientRegistrationRepository clientRegistrationRepository,
-      final OAuth2AuthorizedClientService oAuth2AuthorizedClientService) {
+      final OAuth2AuthorizedClientService oAuth2AuthorizedClientService,
+      final UserIdMigrationService userIdMigrationService) {
     super(
         configurationService,
         preAuthenticatedAuthenticationProvider,
@@ -106,6 +110,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         authCookieService);
     this.clientRegistrationRepository = clientRegistrationRepository;
     this.oAuth2AuthorizedClientService = oAuth2AuthorizedClientService;
+    this.userIdMigrationService = userIdMigrationService;
   }
 
   @Bean
@@ -307,6 +312,11 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
       final String sessionToken = sessionService.createAuthToken(userId);
 
       if (hasAccess(user)) {
+        if (user.getIdToken().getClaim(ORIGINAL_USER_ID_CLAIM) instanceof String originalUserId
+            && !originalUserId.equals(userId)) {
+          userIdMigrationService.migrateUserIdIfNeeded(userId, originalUserId);
+        }
+
         // spring security internally stores the access token as an authorized client, we retrieve
         // it here to store it
         // in a cookie to allow potential other Optimize webapps to reuse it and keep the server
