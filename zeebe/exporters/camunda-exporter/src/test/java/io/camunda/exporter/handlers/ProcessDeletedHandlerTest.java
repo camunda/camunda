@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.ProcessDefinitionState;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -98,11 +99,11 @@ class ProcessDeletedHandlerTest {
     // then
     assertThat(entity).isNotNull();
     assertThat(entity.getId()).isEqualTo("456");
-    assertThat(entity.getIsDeleted()).isFalse();
+    assertThat(entity.getState()).isEqualTo(ProcessDefinitionState.ACTIVE);
   }
 
   @Test
-  void shouldSetIsDeletedTrueOnUpdateEntity() {
+  void shouldSetStateDeletedOnUpdateEntity() {
     // given
     final Record<Process> record =
         factory.generateRecord(ValueType.PROCESS, r -> r.withIntent(ProcessIntent.DELETED));
@@ -112,11 +113,11 @@ class ProcessDeletedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getIsDeleted()).isTrue();
+    assertThat(entity.getState()).isEqualTo(ProcessDefinitionState.DELETED);
   }
 
   @Test
-  void shouldFlushPartialUpdateWithIsDeletedTrue() throws Exception {
+  void shouldFlushPartialUpdateWithStateDeleted() throws Exception {
     // given
     final ProcessEntity entity = new ProcessEntity().setId("789");
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -125,6 +126,7 @@ class ProcessDeletedHandlerTest {
     underTest.flush(entity, mockRequest);
 
     // then
-    verify(mockRequest).update(indexName, "789", Map.of(ProcessIndex.IS_DELETED, true));
+    verify(mockRequest)
+        .update(indexName, "789", Map.of(ProcessIndex.STATE, ProcessDefinitionState.DELETED));
   }
 }

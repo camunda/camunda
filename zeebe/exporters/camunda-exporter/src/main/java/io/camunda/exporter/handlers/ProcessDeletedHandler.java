@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.ProcessDefinitionState;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -53,13 +54,14 @@ public class ProcessDeletedHandler implements ExportHandler<ProcessEntity, Proce
 
   @Override
   public void updateEntity(final Record<Process> record, final ProcessEntity entity) {
-    entity.setIsDeleted(true);
+    entity.setState(ProcessDefinitionState.DELETED);
   }
 
   @Override
   public void flush(final ProcessEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.update(indexName, entity.getId(), Map.of(ProcessIndex.IS_DELETED, true));
+    batchRequest.update(
+        indexName, entity.getId(), Map.of(ProcessIndex.STATE, ProcessDefinitionState.DELETED));
   }
 
   @Override
