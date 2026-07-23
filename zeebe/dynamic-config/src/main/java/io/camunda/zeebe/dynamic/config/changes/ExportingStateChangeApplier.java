@@ -71,6 +71,8 @@ final class ExportingStateChangeApplier implements MemberOperationApplier {
       return result;
     }
 
+    // remaining/failed track the fan-out: the member config is only updated once every partition
+    // has replied, and only if none of them failed (result can only be completed once).
     final var remaining = new AtomicInteger(partitions.size());
     final var failed = new AtomicBoolean(false);
 
