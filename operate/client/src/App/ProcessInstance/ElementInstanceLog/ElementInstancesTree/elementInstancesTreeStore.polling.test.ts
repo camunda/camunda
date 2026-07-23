@@ -8,11 +8,9 @@
 
 import {elementInstancesTreeStore} from './elementInstancesTreeStore';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
-import type {
-  ElementInstance,
-  QueryElementInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.10';
 import {waitFor} from '@testing-library/react';
+import {searchResult} from 'modules/testUtils';
 
 const mockProcessInstanceKey = '2251799813685625';
 const mockChildScopeKey1 = '2251799813685630';
@@ -38,25 +36,11 @@ const createMockElementInstance = (
   ...overrides,
 });
 
-const createMockResponse = (
-  items: ElementInstance[],
-  totalItems: number,
-): QueryElementInstancesResponseBody => ({
-  items,
-  page: {
-    totalItems,
-    startCursor: null,
-    endCursor: null,
-    hasMoreTotalItems: false,
-  },
-});
-
 describe('elementInstancesTreeStore - polling', () => {
   afterEach(() => {
     elementInstancesTreeStore.reset();
     vi.clearAllTimers();
     vi.useRealTimers();
-    vi.unstubAllGlobals();
   });
 
   it('should keep polling an expanded scope that is still active even when all its loaded children are completed', async () => {
@@ -70,9 +54,7 @@ describe('elementInstancesTreeStore - polling', () => {
       state: 'ACTIVE',
     });
 
-    mockSearchElementInstances().withSuccess(
-      createMockResponse([activeSubProcess], 1),
-    );
+    mockSearchElementInstances().withSuccess(searchResult([activeSubProcess]));
 
     await elementInstancesTreeStore.setRootNode(mockProcessInstanceKey, {
       enablePolling: true,
@@ -91,9 +73,7 @@ describe('elementInstancesTreeStore - polling', () => {
       state: 'COMPLETED',
     });
 
-    mockSearchElementInstances().withSuccess(
-      createMockResponse([completedChild], 1),
-    );
+    mockSearchElementInstances().withSuccess(searchResult([completedChild]));
 
     await elementInstancesTreeStore.expandNode(mockChildScopeKey1);
 
@@ -110,11 +90,9 @@ describe('elementInstancesTreeStore - polling', () => {
     });
 
     mockSearchElementInstances().withSuccess(
-      createMockResponse([completedChild, newChild], 2),
+      searchResult([completedChild, newChild]),
     );
-    mockSearchElementInstances().withSuccess(
-      createMockResponse([activeSubProcess], 1),
-    );
+    mockSearchElementInstances().withSuccess(searchResult([activeSubProcess]));
 
     vi.advanceTimersByTime(5000);
 
