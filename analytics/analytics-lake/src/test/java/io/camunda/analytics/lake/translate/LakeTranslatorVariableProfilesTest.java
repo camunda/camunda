@@ -368,6 +368,7 @@ class LakeTranslatorVariableProfilesTest {
     private final Map<Long, VariantAccumulator> variantAccumulators = new HashMap<>();
     private final Map<String, VariantName> variantNames = new HashMap<>();
     private final Map<Long, ObjectSightingList> objectSightings = new HashMap<>();
+    private final Map<String, ObjectLifecycle> objectLifecycle = new HashMap<>();
 
     @Override
     public void putVariantAccumulator(
@@ -478,6 +479,29 @@ class LakeTranslatorVariableProfilesTest {
     @Override
     public void deleteObjectSightings(final long instanceKey) {
       objectSightings.remove(instanceKey);
+    }
+
+    @Override
+    public void putObjectLifecycle(
+        final String objectType, final String objectId, final ObjectLifecycle lifecycle) {
+      objectLifecycle.put(objectType + '#' + objectId, lifecycle);
+    }
+
+    @Override
+    public ObjectLifecycle getObjectLifecycle(final String objectType, final String objectId) {
+      return objectLifecycle.get(objectType + '#' + objectId);
+    }
+
+    @Override
+    public int sweepObjectLifecycleTombstones(final long cutoffMs) {
+      final int before = objectLifecycle.size();
+      objectLifecycle
+          .values()
+          .removeIf(
+              lifecycle ->
+                  lifecycle.status() == TranslatorState.LifecycleStatus.CLOSED_TOMBSTONE
+                      && lifecycle.closedAtMs() < cutoffMs);
+      return before - objectLifecycle.size();
     }
 
     @Override

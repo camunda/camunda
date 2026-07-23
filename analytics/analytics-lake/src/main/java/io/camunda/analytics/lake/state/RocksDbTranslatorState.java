@@ -9,6 +9,7 @@ package io.camunda.analytics.lake.state;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.camunda.analytics.lake.state.TranslatorState.ObjectLifecycle;
 import io.camunda.analytics.lake.state.TranslatorState.ObjectSightingList;
 import io.camunda.analytics.lake.state.TranslatorState.VariantAccumulator;
 import io.camunda.analytics.lake.state.TranslatorState.VariantName;
@@ -52,6 +53,7 @@ public final class RocksDbTranslatorState implements TranslatorState {
 
   private final KeyValueStore<DbBytes, FlowEndpointsValue> flowEndpoints;
   private final KeyValueStore<DbLong, ObjectSightingListValue> objectSightings;
+  private final KeyValueStore<DbBytes, ObjectLifecycleValue> objectLifecycle;
 
   // Mutation flyweights — reused across calls on the single translator thread.
   private final DbLong instanceKey = new DbLong();
@@ -70,6 +72,8 @@ public final class RocksDbTranslatorState implements TranslatorState {
   private final FlowEndpointsValue flowEndpointsValue = new FlowEndpointsValue();
   private final DbLong objectSightingsInstanceKey = new DbLong();
   private final ObjectSightingListValue objectSightingListValue = new ObjectSightingListValue();
+  private final DbBytes objectLifecycleKey = new DbBytes();
+  private final ObjectLifecycleValue objectLifecycleValue = new ObjectLifecycleValue();
 
   public RocksDbTranslatorState(final Path stateDir) {
     provider = RocksDbStateStoreProvider.open(stateDir.toFile(), new SimpleMeterRegistry());
@@ -94,6 +98,9 @@ public final class RocksDbTranslatorState implements TranslatorState {
     objectSightings =
         provider.keyValueStore(
             LakeColumnFamilies.OBJECT_SIGHTINGS, new DbLong(), new ObjectSightingListValue());
+    objectLifecycle =
+        provider.keyValueStore(
+            LakeColumnFamilies.OBJECT_LIFECYCLE, new DbBytes(), new ObjectLifecycleValue());
   }
 
   @Override
@@ -230,6 +237,42 @@ public final class RocksDbTranslatorState implements TranslatorState {
   }
 
   @Override
+  public void putObjectLifecycle(
+      final String objectType, final String objectId, final ObjectLifecycle lifecycle) {
+    objectLifecycleKey.wrapBytes(objectLifecycleKey(objectType, objectId));
+    objectLifecycle.put(objectLifecycleKey, objectLifecycleValue.set(lifecycle));
+  }
+
+  @Override
+  public ObjectLifecycle getObjectLifecycle(final String objectType, final String objectId) {
+    objectLifecycleKey.wrapBytes(objectLifecycleKey(objectType, objectId));
+    return objectLifecycle.get(objectLifecycleKey).map(ObjectLifecycleValue::toRecord).orElse(null);
+  }
+
+  @Override
+  public int sweepObjectLifecycleTombstones(final long cutoffMs) {
+    // Collect first, then delete -- the scan iterator must not be mutated mid-iteration (same
+    // pattern as #deleteVariablesOf). A fresh ObjectLifecycleValue per matching entry: the
+    // provider's own flyweight is only valid until the next store call, and #wrap has already run
+    // by the time the visitor sees it, so reading its fields here (not holding the flyweight
+    // itself) is safe.
+    final List<byte[]> toDelete = new ArrayList<>();
+    objectLifecycle.forEach(
+        (key, value) -> {
+          final ObjectLifecycle lifecycle = value.toRecord();
+          if (lifecycle.status() == TranslatorState.LifecycleStatus.CLOSED_TOMBSTONE
+              && lifecycle.closedAtMs() < cutoffMs) {
+            toDelete.add(key.getBytes().clone());
+          }
+        });
+    for (final byte[] key : toDelete) {
+      objectLifecycleKey.wrapBytes(key);
+      objectLifecycle.delete(objectLifecycleKey);
+    }
+    return toDelete.size();
+  }
+
+  @Override
   public void forEachOpenInstance(final BiConsumer<Long, OpenInstance> consumer) {
     instances.forEach((key, value) -> consumer.accept(key.getValue(), value.toRecord()));
   }
@@ -273,6 +316,26 @@ public final class RocksDbTranslatorState implements TranslatorState {
     return ByteBuffer.allocate(Long.BYTES + nameUtf8.length)
         .putLong(instanceKey)
         .put(nameUtf8)
+        .array();
+  }
+
+  /**
+   * {@code length(objectType)(4) ++ objectTypeUtf8 ++ objectIdUtf8}: only the first component is
+   * length-prefixed. That suffices for an unambiguous key even though both components are
+   * variable-length, because {@code objectId} is the LAST field — once the prefix says exactly how
+   * many bytes belong to {@code objectType}, every remaining byte in the key (whatever its length)
+   * belongs to {@code objectId} by construction; there is no second variable-length field after it
+   * that a missing length prefix could ever be ambiguous with. Mirrors {@link #variantNameKey}'s
+   * own reasoning for why that key needs no prefix at all (a fixed-width suffix), just for a
+   * variable-width suffix instead of a fixed one.
+   */
+  private static byte[] objectLifecycleKey(final String objectType, final String objectId) {
+    final byte[] typeUtf8 = objectType.getBytes(UTF_8);
+    final byte[] idUtf8 = objectId.getBytes(UTF_8);
+    return ByteBuffer.allocate(Integer.BYTES + typeUtf8.length + idUtf8.length)
+        .putInt(typeUtf8.length)
+        .put(typeUtf8)
+        .put(idUtf8)
         .array();
   }
 

@@ -66,7 +66,20 @@ public enum LakeColumnFamilies implements EnumValue, ScopedColumnFamily {
    * instance completion (see {@code io.camunda.analytics.lake.translate.LakeTranslator}'s "Object
    * fabric capture" javadoc section).
    */
-  OBJECT_SIGHTINGS(7, ColumnFamilyScope.PARTITION_LOCAL);
+  OBJECT_SIGHTINGS(7, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Object lifecycle accumulators, keyed by {@code objectType(utf8, length-prefixed) ++
+   * objectId(utf8) -> ObjectLifecycle}: one entry per distinct object ever sighted, created OPEN at
+   * its first sighting and never deleted — a closed object is flipped to a {@code CLOSED_TOMBSTONE}
+   * in place, not removed, so a later replayed sighting or a second closing instance can recognize
+   * it is already accounted for (see {@code io.camunda.analytics.lake.translate.LakeTranslator}'s
+   * "Object lifecycle capture" javadoc section). Unlike {@link #OBJECT_SIGHTINGS}
+   * (open-instance-scoped, evicted on completion), this column family's entries outlive any single
+   * instance and are only ever removed by the tombstone-retention sweep ({@code
+   * TranslatorState#sweepObjectLifecycleTombstones}).
+   */
+  OBJECT_LIFECYCLE(8, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

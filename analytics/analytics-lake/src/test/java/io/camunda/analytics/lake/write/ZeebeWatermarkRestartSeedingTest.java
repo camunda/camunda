@@ -218,6 +218,7 @@ class ZeebeWatermarkRestartSeedingTest {
 
     private final Map<Long, Map<String, FlowEndpoints>> flowEndpoints = new HashMap<>();
     private final Map<Long, ObjectSightingList> objectSightings = new HashMap<>();
+    private final Map<String, ObjectLifecycle> objectLifecycle = new HashMap<>();
 
     @Override
     public void putInstance(final long instanceKey, final OpenInstance instance) {
@@ -326,6 +327,29 @@ class ZeebeWatermarkRestartSeedingTest {
     @Override
     public void deleteObjectSightings(final long instanceKey) {
       objectSightings.remove(instanceKey);
+    }
+
+    @Override
+    public void putObjectLifecycle(
+        final String objectType, final String objectId, final ObjectLifecycle lifecycle) {
+      objectLifecycle.put(objectType + '#' + objectId, lifecycle);
+    }
+
+    @Override
+    public ObjectLifecycle getObjectLifecycle(final String objectType, final String objectId) {
+      return objectLifecycle.get(objectType + '#' + objectId);
+    }
+
+    @Override
+    public int sweepObjectLifecycleTombstones(final long cutoffMs) {
+      final int before = objectLifecycle.size();
+      objectLifecycle
+          .values()
+          .removeIf(
+              lifecycle ->
+                  lifecycle.status() == TranslatorState.LifecycleStatus.CLOSED_TOMBSTONE
+                      && lifecycle.closedAtMs() < cutoffMs);
+      return before - objectLifecycle.size();
     }
 
     @Override

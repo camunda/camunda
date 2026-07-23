@@ -111,6 +111,49 @@ public interface TranslatorState extends AutoCloseable {
     }
   }
 
+  /**
+   * Whether a distinct object's lifecycle accumulator is still open or has been closed and left as
+   * a tombstone — see {@code io.camunda.analytics.lake.translate.LakeTranslator}'s "Object
+   * lifecycle capture" javadoc section. Never any other value: v1 has no interim states between
+   * birth and close.
+   */
+  enum LifecycleStatus {
+    OPEN,
+    CLOSED_TOMBSTONE
+  }
+
+  /**
+   * How an object's birth timestamp was determined — v1 has exactly one source (see {@code
+   * LakeTranslator}'s "Object lifecycle capture" javadoc section); kept as an enum, not a bare
+   * constant, so a later v2 birth qualifier (e.g. a declared "created" event distinct from mere
+   * sighting) is an additive enum constant, not a wire-format break.
+   */
+  enum BirthQualifier {
+    FIRST_SIGHTING
+  }
+
+  /**
+   * One distinct object's lifecycle accumulator — one entry per (object type, object id) ever
+   * sighted, created the moment it is first sighted and never deleted (a closed object becomes a
+   * {@link LifecycleStatus#CLOSED_TOMBSTONE} in place; see {@code LakeTranslator}'s own javadoc
+   * section for the full scheme and {@code RocksDbTranslatorState}'s own key-encoding javadoc for
+   * why {@code (objectType, objectId)} needs a length prefix on only the first component).
+   *
+   * @param nSightings count of distinct (instance, scope) sightings accepted into the object's
+   *     lifetime CF-7 relations-derivation lists while OPEN (see {@code
+   *     LakeTranslator#recordObjectSightingForRelations}'s own return value) — never incremented
+   *     for a duplicate, and frozen once {@code status} becomes {@link
+   *     LifecycleStatus#CLOSED_TOMBSTONE}
+   * @param closedAtMs only meaningful when {@code status} is {@link
+   *     LifecycleStatus#CLOSED_TOMBSTONE}; {@code 0} while {@link LifecycleStatus#OPEN}
+   */
+  record ObjectLifecycle(
+      LifecycleStatus status,
+      long birthTsMs,
+      BirthQualifier birthQualifier,
+      int nSightings,
+      long closedAtMs) {}
+
   void putInstance(long instanceKey, OpenInstance instance);
 
   /** Returns the open instance or {@code null} when unknown (e.g. replay of a finished one). */
@@ -181,6 +224,28 @@ public interface TranslatorState extends AutoCloseable {
 
   /** Removes the instance's object-sighting list (called on instance eviction). */
   void deleteObjectSightings(long instanceKey);
+
+  /** Stores (replaces) {@code (objectType, objectId)}'s lifecycle accumulator. */
+  void putObjectLifecycle(String objectType, String objectId, ObjectLifecycle lifecycle);
+
+  /**
+   * Returns {@code (objectType, objectId)}'s lifecycle accumulator, or {@code null} if this object
+   * has never been sighted (the birth check — see {@code LakeTranslator}'s own "Object lifecycle
+   * capture" javadoc section: {@code null} here is exactly the signal a fresh sighting is a birth).
+   */
+  ObjectLifecycle getObjectLifecycle(String objectType, String objectId);
+
+  /**
+   * Sweeps every {@link LifecycleStatus#CLOSED_TOMBSTONE} entry whose {@code closedAtMs} is
+   * strictly less than {@code cutoffMs}, deleting it outright (unlike every other delete on this
+   * store, this one is not preceded by an emit — a swept tombstone has already done its job of
+   * blocking a re-birth/double-close for as long as {@code lake.objectTombstoneRetentionMs}
+   * configures; see {@code LakePocApp}'s own housekeeping-tick wiring for when this runs and why a
+   * bounded full-column-family scan is an acceptable cost there).
+   *
+   * @return the number of entries removed
+   */
+  int sweepObjectLifecycleTombstones(long cutoffMs);
 
   /**
    * Full scan of the open instance set, keyed by process instance key. The caller is the single
