@@ -212,6 +212,30 @@ jobs:
             fi
           }
 
+          # Bounds each individual `snyk` call so a single stuck/slow call to the Snyk API cannot
+          # consume the whole job's 15m timeout and take the remaining projects down with it (see
+          # INC-6630 for the same class of issue with unbounded external network calls in CI).
+          function runSnykWithRetry() {
+            local maxAttempts=2
+            local perAttemptTimeoutSecs=120
+            local retryDelaySecs=10
+            local attempt=1
+
+            while true; do
+              if timeout "${perAttemptTimeoutSecs}s" snyk "$@"; then
+                return 0
+              fi
+              local status=$?
+              if [ "${attempt}" -ge "${maxAttempts}" ]; then
+                echo "::error::snyk $* failed after ${maxAttempts} attempts (exit ${status})"
+                return "${status}"
+              fi
+              echo "snyk $* failed or timed out (attempt ${attempt}/${maxAttempts}), retrying in ${retryDelaySecs}s..."
+              sleep "${retryDelaySecs}"
+              attempt=$((attempt + 1))
+            done
+          }
+
           # Print out command if debug logging is enabled
           set -x
 
@@ -224,14 +248,14 @@ jobs:
             PROJECT_NAME="zeebe(${TARGET}):${project}/pom.xml"
             ensureExists "${project}/pom.xml"
             # shellcheck disable=SC2153
-            snyk "${SNYK_COMMAND}" --file="${project}/pom.xml" "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" "${project/\//-}")" || exitCode=1
+            runSnykWithRetry "${SNYK_COMMAND}" --file="${project}/pom.xml" "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" "${project/\//-}")" || exitCode=1
           done
 
           # The `container` command does not yet support setting a target reference, as this is a beta
           # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
           PROJECT_NAME="zeebe(${TARGET}):camunda.Dockerfile"
           ensureExists "camunda.Dockerfile"
-          snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=camunda.Dockerfile "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" 'docker')" || exitCode=1
+          runSnykWithRetry container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=camunda.Dockerfile "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" 'docker')" || exitCode=1
 
           # Only fail if we entirely failed to parse the projects
           if [[ $exitCode -gt 1 ]]; then
