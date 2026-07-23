@@ -129,9 +129,9 @@ public interface ClusterConfigurationRequestsSerializer {
 
   ModeChangeRequest decodeModeChangeRequest(byte[] encodedRequest);
 
-  byte[] encodeExporterStateChangeRequest(ExportingStateChangeRequest request);
+  byte[] encodeExportingStateChangeRequest(ExportingStateChangeRequest request);
 
-  ExportingStateChangeRequest decodeExporterStateChangeRequest(byte[] encodedRequest);
+  ExportingStateChangeRequest decodeExportingStateChangeRequest(byte[] encodedRequest);
 
   byte[] encodeRestoreRequest(RestoreRequest request);
 

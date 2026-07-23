@@ -153,17 +153,17 @@ final class ProtoBufSerializerTest {
   }
 
   @Test
-  void shouldEncodeAndDecodeExporterStateChangeRequest() {
+  void shouldEncodeAndDecodeExportingStateChangeRequest() {
     // given
     final var request =
         new ExportingStateChangeRequest(
             io.camunda.zeebe.dynamic.config.state.ExportingState.SOFT_PAUSED, false);
 
     // when
-    final var encodedRequest = protoBufSerializer.encodeExporterStateChangeRequest(request);
+    final var encodedRequest = protoBufSerializer.encodeExportingStateChangeRequest(request);
 
     // then
-    final var decodedRequest = protoBufSerializer.decodeExporterStateChangeRequest(encodedRequest);
+    final var decodedRequest = protoBufSerializer.decodeExportingStateChangeRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(request);
   }
 

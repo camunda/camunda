@@ -5,7 +5,7 @@ import "google/protobuf/timestamp.proto";
 
 option java_package = "io.camunda.zeebe.dynamic.config.protocol";
 
-message GossipState { ClusterTopology clusterTopology = 1; }
+message GossipState {ClusterTopology clusterTopology = 1;}
 
 // ---- New multi-partition-group configuration model (8.10) ----
 
@@ -137,7 +137,7 @@ message PartitionGroupChangeOperation {
     UpdateIncarnationNumberOperation updateIncarnationNumber = 15;
     ModeChangeOperation modeChange = 16;
     AwaitModeChangeOperation awaitModeChange = 17;
-    ExporterStateChangeOperation exporterStateChange = 18;
+    ExportingStateChangeOperation exporterStateChange = 18;
   }
 }
 
@@ -155,7 +155,7 @@ message ClusterTopology {
 
 message RoutingState {
   int64  version = 1;
-  repeated sint32 activePartitions = 2 [deprecated=true];
+  repeated sint32 activePartitions = 2 [deprecated = true];
   MessageCorrelation messageCorrelation = 3;
   RequestHandling requestHandling = 4;
 }
@@ -166,7 +166,7 @@ message RequestHandling {
     ActivePartitions activePartitions = 2;
   }
 
-  message AllPartitions { sint32 partitionCount = 1; }
+  message AllPartitions {sint32 partitionCount = 1;}
   message ActivePartitions {
     sint32 basePartitionCount = 1;
     repeated sint32 additionalActivePartitions = 2;
@@ -175,9 +175,9 @@ message RequestHandling {
 }
 
 message MessageCorrelation {
-  oneof correlation { HashMod hashMod = 1; }
+  oneof correlation {HashMod hashMod = 1;}
 
-  message HashMod { sint32 partitionCount = 1; }
+  message HashMod {sint32 partitionCount = 1;}
 }
 
 message MemberState {
@@ -193,7 +193,7 @@ message PartitionState {
   PartitionConfig config = 3;
 }
 
-message PartitionConfig { ExportingConfig exporting = 1; }
+message PartitionConfig {ExportingConfig exporting = 1;}
 
 message ExportingConfig {
   map<string, ExporterState> exporters = 1;
@@ -247,7 +247,7 @@ message TopologyChangeOperation {
     UpdatePartitionDistributorConfigOperation updatePartitionDistributorConfig = 21;
     ModeChangeOperation modeChange = 24;
     AwaitModeChangeOperation awaitModeChange = 25;
-    ExporterStateChangeOperation exporterStateChange = 26;
+    ExportingStateChangeOperation exporterStateChange = 26;
   }
 }
 
@@ -303,7 +303,7 @@ message PartitionBootstrapOperation {
   bool initializeFromConfig = 4;
 }
 
-message StartPartitionScaleUpOperation { int32 desiredPartitionCount = 2; }
+message StartPartitionScaleUpOperation {int32 desiredPartitionCount = 2;}
 
 message AwaitRedistributionCompletion {
   int32 desiredPartitionCount = 1;
@@ -329,7 +329,7 @@ message PostScalingOperation {
   repeated string clusterMembers = 1;
 }
 
-message DeleteHistoryOperation { int32 memberId = 1; }
+message DeleteHistoryOperation {int32 memberId = 1;}
 
 message PartitionDistributorConfig {
   oneof kind {
@@ -353,13 +353,13 @@ message MemberJoinOperation {}
 
 message MemberLeaveOperation {}
 
-message MemberRemoveOperation { string memberToRemove = 1; }
+message MemberRemoveOperation {string memberToRemove = 1;}
 
 message ModeChangeOperation {
   Mode mode = 1;
 }
 
-message ExporterStateChangeOperation {
+message ExportingStateChangeOperation {
   ExportingStateEnum state = 1;
 }
 

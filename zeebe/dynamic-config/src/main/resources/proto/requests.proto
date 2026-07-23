@@ -102,7 +102,7 @@ enum Mode {
   PROCESSING = 2;
 }
 
-message ExporterStateChangeRequest {
+message ExportingStateChangeRequest {
   topology_protocol.ExportingStateEnum state = 1;
   bool dryRun = 2;
 }

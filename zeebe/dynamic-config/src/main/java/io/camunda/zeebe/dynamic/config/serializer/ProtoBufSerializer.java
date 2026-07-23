@@ -578,7 +578,7 @@ public class ProtoBufSerializer
                   .build());
       case final ExportingStateChangeOperation exportingStateChangeOperation ->
           builder.setExporterStateChange(
-              Topology.ExporterStateChangeOperation.newBuilder()
+              Topology.ExportingStateChangeOperation.newBuilder()
                   .setState(encodeExportingState(exportingStateChangeOperation.state()))
                   .build());
     }
@@ -1458,8 +1458,8 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encodeExporterStateChangeRequest(final ExportingStateChangeRequest request) {
-    return Requests.ExporterStateChangeRequest.newBuilder()
+  public byte[] encodeExportingStateChangeRequest(final ExportingStateChangeRequest request) {
+    return Requests.ExportingStateChangeRequest.newBuilder()
         .setState(encodeExportingState(request.state()))
         .setDryRun(request.dryRun())
         .build()
@@ -1467,9 +1467,10 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public ExportingStateChangeRequest decodeExporterStateChangeRequest(final byte[] encodedRequest) {
+  public ExportingStateChangeRequest decodeExportingStateChangeRequest(
+      final byte[] encodedRequest) {
     try {
-      final var request = Requests.ExporterStateChangeRequest.parseFrom(encodedRequest);
+      final var request = Requests.ExportingStateChangeRequest.parseFrom(encodedRequest);
       return new ExportingStateChangeRequest(
           decodeExportingState(request.getState()), request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
@@ -2060,7 +2061,7 @@ public class ProtoBufSerializer
                   .build());
       case final ExportingStateChangeOperation op ->
           builder.setExporterStateChange(
-              Topology.ExporterStateChangeOperation.newBuilder()
+              Topology.ExportingStateChangeOperation.newBuilder()
                   .setState(encodeExportingState(op.state()))
                   .build());
       case StartPartitionScaleUp(final var ignoredMemberId, final var desiredPartitionCount) ->
