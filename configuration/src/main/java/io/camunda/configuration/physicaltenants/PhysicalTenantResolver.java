@@ -10,22 +10,17 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
+import io.camunda.spring.utils.PhysicalTenantIdDiscovery;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
-import org.springframework.boot.context.properties.source.ConfigurationPropertyName.Form;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
-import org.springframework.boot.context.properties.source.IterableConfigurationPropertySource;
 import org.springframework.core.env.Environment;
 
 /**
@@ -53,13 +48,8 @@ import org.springframework.core.env.Environment;
  */
 public final class PhysicalTenantResolver implements PhysicalTenantIds {
 
-  static final int MAX_TENANT_ID_LENGTH = 64;
+  static final int MAX_TENANT_ID_LENGTH = PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH;
   static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
-  static final ConfigurationPropertyName PREFIX_NAME =
-      ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
-  // Mirrored in PhysicalTenantScopeProvider (authentication module) — see the note there for why
-  // this is duplicated rather than shared. Keep the two in sync.
-  private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
   /**
    * Cross-tenant rules run at the end of {@link #of(Environment, Camunda)} so a multi-tenant
@@ -147,43 +137,19 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
    * tenant-a} vs. {@code tenanta}). Forbidding dashes makes the two forms collapse into one id.
    */
   private static Set<String> discover(final Environment environment) {
-    final Set<String> tenants = new LinkedHashSet<>();
-    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
-      if (source instanceof final IterableConfigurationPropertySource iter) {
-        iter.stream()
-            .filter(PREFIX_NAME::isAncestorOf)
-            .forEach(
-                name -> {
-                  if (name.getNumberOfElements() > PREFIX_NAME.getNumberOfElements()) {
-                    final String tenantId =
-                        name.getElement(PREFIX_NAME.getNumberOfElements(), Form.UNIFORM);
-                    if (tenantId != null && !tenantId.isEmpty()) {
-                      tenants.add(tenantId);
-                    }
-                  }
-                });
-      }
+    try {
+      return PhysicalTenantIdDiscovery.discover(environment);
+    } catch (final InvalidPhysicalTenantIdException e) {
+      throw new UnifiedConfigurationException(e.getMessage());
     }
-    tenants.forEach(PhysicalTenantResolver::validateTenantId);
-    return tenants;
   }
 
   @VisibleForTesting
   static void validateTenantId(final String tenantId) {
-    if (tenantId.length() > MAX_TENANT_ID_LENGTH) {
-      throw new UnifiedConfigurationException(
-          String.format(
-              "Invalid physical tenant id '%s' under '%s.*'. "
-                  + "Tenant ids must not exceed %d characters.",
-              tenantId, PHYSICAL_TENANTS_PREFIX, MAX_TENANT_ID_LENGTH));
-    }
-    if (!VALID_TENANT_ID.matcher(tenantId).matches()) {
-      throw new UnifiedConfigurationException(
-          String.format(
-              "Invalid physical tenant id '%s' under '%s.*'. "
-                  + "Tenant ids must be lowercase alphanumeric (matching %s) — no dashes, so "
-                  + "yaml and environment-variable forms resolve to the same tenant.",
-              tenantId, PHYSICAL_TENANTS_PREFIX, VALID_TENANT_ID.pattern()));
+    try {
+      PhysicalTenantIdDiscovery.validateTenantId(tenantId);
+    } catch (final InvalidPhysicalTenantIdException e) {
+      throw new UnifiedConfigurationException(e.getMessage());
     }
   }
 }
