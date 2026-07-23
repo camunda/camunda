@@ -296,6 +296,7 @@ test.describe('AI agent details', () => {
       processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
 
+    await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
     await processInstancePage.aiAgentDetails.agentSelector.click();
 
     await expect(page).toHaveScreenshot();
