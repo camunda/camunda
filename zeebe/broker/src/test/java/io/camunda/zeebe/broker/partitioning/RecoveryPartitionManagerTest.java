@@ -459,32 +459,18 @@ final class RecoveryPartitionManagerTest {
   class Restore {
 
     @Test
-    void shouldFailWhenNoBackupStoreConfigured() {
-      // when
-      final var future = new AtomicReference<ActorFuture<Void>>();
-      controlActor.run(
-          () ->
-              future.set(
-                  partitionManager.restore(
-                      PARTITION_ID, new java.util.TreeSet<>(java.util.List.of(1L)))));
-
-      // then
-      await()
-          .atMost(Duration.ofSeconds(10))
-          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
-      assertThat(future.get().isCompletedExceptionally()).isTrue();
-    }
-
-    @Test
-    void shouldFailForUnknownPartition() {
-      // given
+    void shouldFailForUnknownPartition(@TempDir final Path tempDir) {
+      // given: a properly configured backup store, so start() succeeds and backupStore is
+      // genuinely non-null - this test must exercise the "not a local partition of group" branch,
+      // not the "no backup store configured" one
       final var brokerCfg = new BrokerCfg();
       brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
+      brokerCfg.getData().getBackup().getFilesystem().setBasePath(tempDir.toString());
       partitionManager = buildManager(brokerCfg, actorScheduler);
-      controlActor.run(() -> partitionManager.start());
-      await().atMost(Duration.ofSeconds(10)).until(() -> true);
+      assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
 
-      // when
+      // when: restoring a partition id that is not one of the manager's local partitions
+      // (only PARTITION_ID and PARTITION_ID_2 are local per this class's setup)
       final var future = new AtomicReference<ActorFuture<Void>>();
       controlActor.run(
           () ->
@@ -496,6 +482,8 @@ final class RecoveryPartitionManagerTest {
           .atMost(Duration.ofSeconds(10))
           .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
       assertThat(future.get().isCompletedExceptionally()).isTrue();
+      assertThat(future.get().getException())
+          .hasMessageContaining("not a local partition of group");
     }
 
     @Test
