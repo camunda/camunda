@@ -13,9 +13,9 @@ import {
   endpoints,
   type ElementInstance,
   type QueryElementInstancesRequestBody,
-  type QueryElementInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {waitFor} from '@testing-library/react';
+import {searchResult} from 'modules/testUtils';
 
 const mockProcessInstanceKey = '2251799813685625';
 const mockChildScopeKey = '2251799813685630';
@@ -39,18 +39,6 @@ const createMockElementInstance = (
   rootProcessInstanceKey: null,
   incidentKey: null,
   ...overrides,
-});
-
-const createMockResponse = (
-  items: ElementInstance[],
-): QueryElementInstancesResponseBody => ({
-  items,
-  page: {
-    totalItems: items.length,
-    startCursor: null,
-    endCursor: null,
-    hasMoreTotalItems: false,
-  },
 });
 
 const rootChild = createMockElementInstance();
@@ -83,7 +71,7 @@ describe('elementInstancesTreeStore - sortOrder changes', () => {
               ? [grandchild]
               : [];
 
-        return HttpResponse.json(createMockResponse(items));
+        return HttpResponse.json(searchResult(items));
       }),
     );
   });
