@@ -48,6 +48,7 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RuntimeBackupServices;
 import io.camunda.service.SecretServices;
 import io.camunda.service.SignalServices;
 import io.camunda.service.TenantServices;
@@ -61,6 +62,9 @@ import io.camunda.service.registry.DefaultServiceRegistry;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.DatabaseTypeUtils;
+import io.camunda.zeebe.backup.client.api.BackupRequestHandler;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
+import io.camunda.zeebe.backup.schedule.Schedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
@@ -179,6 +183,18 @@ public class CamundaServicesConfiguration {
                   new DecisionRequirementsServices(
                       tenantId, brokerClient, securityContextProvider, search, executor, converter);
 
+              // -- per-tenant runtime backup wiring --
+              final var backupCfg = tenantConfig.getData().getPrimaryStorage().getBackup();
+              final var backupIdGenerated =
+                  backupCfg.isContinuous()
+                      || !(Schedule.parseSchedule(backupCfg.getSchedule())
+                          instanceof Schedule.NoneSchedule)
+                      || (backupCfg.getCheckpointInterval() != null
+                          && !backupCfg.getCheckpointInterval().isZero());
+              final var backupApi =
+                  new BackupRequestHandler(
+                      brokerClient, new CheckpointIdGenerator(backupCfg.getOffset()));
+
               // -- mid-tier services (depend on leaf services) --
               final var elementInstance =
                   new ElementInstanceServices(
@@ -260,6 +276,18 @@ public class CamundaServicesConfiguration {
                           brokerClient,
                           securityContextProvider,
                           search,
+                          executor,
+                          converter))
+                  .backupServices(
+                      tenantId,
+                      new RuntimeBackupServices(
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          backupApi,
+                          authorizationChecker,
+                          cslProperties.getAuthorizations(),
+                          backupIdGenerated,
                           executor,
                           converter))
                   .batchOperationServices(
