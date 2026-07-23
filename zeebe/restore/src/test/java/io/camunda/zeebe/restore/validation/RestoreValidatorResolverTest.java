@@ -315,6 +315,26 @@ final class RestoreValidatorResolverTest {
     }
 
     @Test
+    void shouldCollectAllPartitionsMissingBackupMetadata() {
+      // given - partitions 1 and 3 have no metadata, only partition 2 does; the error should
+      // report every missing partition, not just the first one encountered
+      when(backupStore.loadBackupMetadata(1))
+          .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+      stubMetadata(2, singleCheckpointMetadata(2));
+      when(backupStore.loadBackupMetadata(3))
+          .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+      final var validator = new RestoreValidator(3, backupStore, EXPORTED_POSITIONS);
+
+      // when
+      final var result = validator.validate(rdbmsRequest());
+
+      // then
+      assertThat(assertInvalid(result))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessage("No backup metadata found for partition(s): [1, 3]");
+    }
+
+    @Test
     void shouldFailWhenExportedPositionIsMissingForAPartition() {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));

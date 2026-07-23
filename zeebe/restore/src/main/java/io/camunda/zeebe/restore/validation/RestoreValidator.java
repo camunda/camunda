@@ -24,9 +24,11 @@ import io.camunda.zeebe.util.Preconditions;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,7 +36,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -51,6 +55,9 @@ import org.slf4j.LoggerFactory;
 public final class RestoreValidator
     implements ClusterConfigurationRequestValidator<RestoreRequest, RestoreResolvedRequest> {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreValidator.class);
+  // The request sender's timeout is 10sec, fail validation fast if backup store is
+  // unavailable to release resources.
+  private static final Duration BACKUP_RESOLUTION_TIMEOUT = Duration.ofSeconds(10);
   private final @Nullable BackupStore backupStore;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private final int partitionCount;
@@ -137,28 +144,21 @@ public final class RestoreValidator
     final var ids = backupIds.stream().mapToLong(Long::longValue).sorted().toArray();
     final var store =
         Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
-    try {
-      return FuturesUtil.parTraverse(
-              IntStream.rangeClosed(1, partitionCount).boxed().toList(),
-              partition -> verifyBackupsExist(store, partition, ids))
-          .join()
-          .stream()
-          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    } catch (final CompletionException e) {
-      if (e.getCause() instanceof final RuntimeException exception) {
-        throw exception;
-      }
-      throw e;
-    }
+    return awaitResult(
+            FuturesUtil.parTraverse(
+                IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+                partition -> verifyBackupsExist(store, partition, ids)))
+        .stream()
+        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
   private CompletableFuture<Entry<Integer, long[]>> verifyBackupsExist(
       final BackupStore store, final int partitionId, final long[] backupIds) {
-    var chain = CompletableFuture.completedFuture((Void) null);
-    for (final long backupId : backupIds) {
-      chain = chain.thenCompose(ignored -> verifyBackupExists(store, partitionId, backupId));
-    }
-    return chain.thenApply(ignored -> Map.entry(partitionId, backupIds));
+    return FuturesUtil.traverseIgnoring(
+            Arrays.stream(backupIds).boxed().toList(),
+            backupId -> verifyBackupExists(store, partitionId, backupId),
+            Runnable::run)
+        .thenApply(ignored -> Map.entry(partitionId, backupIds));
   }
 
   private CompletableFuture<Void> verifyBackupExists(
@@ -181,21 +181,7 @@ public final class RestoreValidator
   }
 
   private Map<Integer, long[]> resolveRdbmsRangeBackups(final RestoreRequest request) {
-    final RestorableBackups backups;
-    try {
-      backups = findBackups(request);
-    } catch (final CompletionException e) {
-      if (e.getCause() instanceof final IllegalStateException cause) {
-        throw new InvalidState(cause.getMessage(), cause);
-      }
-      if (e.getCause() instanceof final RuntimeException exception) {
-        throw exception;
-      }
-      throw e;
-    } catch (final IllegalStateException e) {
-      throw new InvalidState(e.getMessage(), e);
-    }
-
+    final var backups = findBackups(request);
     return backups.backupsByPartitionId().entrySet().stream()
         .collect(
             Collectors.toMap(
@@ -214,7 +200,7 @@ public final class RestoreValidator
             ? null
             : exportedPositions(exportedPositionSupplier, partitionCount);
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
-    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
+    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount);
     return RestorePointResolver.resolve(
         metadataByPartition, instantFrom, instantTo, exportedPositions);
   }
@@ -236,32 +222,56 @@ public final class RestoreValidator
                 }));
   }
 
-  private CompletableFuture<List<BackupMetadata>> loadMetadataForAllPartitions(
-      final int partitionCount) {
+  private List<BackupMetadata> loadMetadataForAllPartitions(final int partitionCount) {
     final var store =
         Objects.requireNonNull(backupStore, "Backup store must be configured to load backups");
-    return FuturesUtil.parTraverse(
-        IntStream.rangeClosed(1, partitionCount).boxed().toList(),
-        partition ->
-            store
-                .loadBackupMetadata(partition)
-                .thenApply(
-                    optBytes ->
-                        optBytes.flatMap(
-                            bytes -> {
-                              try {
-                                return Optional.of(MAPPER.readValue(bytes, BackupMetadata.class));
-                              } catch (final IOException e) {
-                                LOG.warn("Failed to parse backup metadata", e);
-                                return Optional.empty();
-                              }
-                            }))
-                .thenApply(
-                    opt ->
-                        opt.orElseThrow(
-                            () ->
-                                new InvalidState(
-                                    "No backup metadata found for partition " + partition))));
+    final var metadataByPartition =
+        awaitResult(
+            FuturesUtil.parTraverse(
+                IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+                partition ->
+                    store
+                        .loadBackupMetadata(partition)
+                        .thenApply(
+                            optBytes -> optBytes.flatMap(bytes -> parseMetadata(partition, bytes)))
+                        .thenApply(metadata -> Map.entry(partition, metadata))));
+
+    final var missingPartitions =
+        metadataByPartition.stream()
+            .filter(entry -> entry.getValue().isEmpty())
+            .map(Entry::getKey)
+            .toList();
+    if (!missingPartitions.isEmpty()) {
+      throw new IllegalStateException(
+          "No backup metadata found for partition(s): " + missingPartitions);
+    }
+    return metadataByPartition.stream().map(entry -> entry.getValue().orElseThrow()).toList();
+  }
+
+  private static Optional<BackupMetadata> parseMetadata(final int partitionId, final byte[] bytes) {
+    try {
+      return Optional.of(MAPPER.readValue(bytes, BackupMetadata.class));
+    } catch (final IOException e) {
+      LOG.warn("Failed to parse backup metadata for partition {}", partitionId, e);
+      return Optional.empty();
+    }
+  }
+
+  private static <T> T awaitResult(final CompletableFuture<T> future) {
+    try {
+      return future.get(BACKUP_RESOLUTION_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
+    } catch (final ExecutionException e) {
+      if (e.getCause() instanceof final RuntimeException cause) {
+        throw cause;
+      }
+      throw new IllegalStateException("Failed to resolve backups", e.getCause());
+    } catch (final TimeoutException e) {
+      throw new IllegalStateException(
+          "Timed out after %s waiting to resolve backups".formatted(BACKUP_RESOLUTION_TIMEOUT), e);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new IllegalStateException("Interrupted while resolving backups", e);
+    }
   }
 
   private static boolean hasTimeRange(@Nullable final Instant from, @Nullable final Instant to) {
