@@ -80,6 +80,10 @@ public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements 
     }
   }
 
+  public void updateName(final long flowNodeInstanceKey, final String flowNodeName) {
+    // no-op stub; real set-if-null behavior added in the green step
+  }
+
   public void createIncident(final long flowNodeInstanceKey, final long incidentKey) {
     updateIncident(flowNodeInstanceKey, incidentKey);
   }
