@@ -2,6 +2,119 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 573:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GithubCommentApi = exports.STICKY_MARKER = void 0;
+exports.renderStickyComment = renderStickyComment;
+exports.syncStickyComment = syncStickyComment;
+/**
+ * The single sticky PR comment the gate maintains. One marked comment per PR,
+ * upserted by a hidden marker so re-runs never stack duplicates.
+ *
+ * Split like the resolver (types.ts): the body render + upsert logic are pure /
+ * injectable (unit-tested for idempotency), and only GithubCommentApi touches
+ * the network — plain fetch, no octokit, same rationale as GithubResolver.
+ */
+/** Hidden HTML marker identifying our comment. Never change it — it is how
+ * every future run finds the comment it already posted. */
+exports.STICKY_MARKER = '<!-- release-notes-pr-gate -->';
+/** Build the comment body (pure). Always carries the marker on the first line. */
+function renderStickyComment(decision) {
+    const title = decision.outcome === 'pass'
+        ? '### ✅ Release-notes: PR-issue link resolved'
+        : '### ❌ Release-notes: PR-issue link check';
+    const reasons = decision.reasons.map((reason) => `- ${reason}`).join('\n');
+    const footer = decision.outcome === 'pass'
+        ? '_This check now passes — no action needed._'
+        : '_Warn-only during rollout: this does not block merge yet. Fix the link (or tick the opt-out) so release notes attribute this change._';
+    return `${exports.STICKY_MARKER}\n${title}\n\n${reasons}\n\n${footer}\n`;
+}
+/**
+ * Idempotently reconcile the PR's single sticky comment against the decision.
+ *
+ *  - fail: update the existing comment, or create one if none exists.
+ *  - pass: if a comment exists (the PR failed earlier), update it to the
+ *          resolved body; if none exists, do nothing — a PR that never failed
+ *          stays comment-free, so the gate adds no noise across ~800 PRs.
+ */
+async function syncStickyComment(api, decision) {
+    const existing = (await api.list()).find((comment) => comment.body.includes(exports.STICKY_MARKER));
+    const body = renderStickyComment(decision);
+    if (decision.outcome === 'fail') {
+        if (existing) {
+            await api.update(existing.id, body);
+            return 'updated';
+        }
+        await api.create(body);
+        return 'created';
+    }
+    if (existing) {
+        await api.update(existing.id, body);
+        return 'resolved';
+    }
+    return 'noop';
+}
+/**
+ * issue-comments API over plain fetch (Node global). Same reasoning as
+ * GithubResolver: a handful of endpoints, so octokit's bundle cost is not worth
+ * paying. Reuses the injected MONOREPO_RELEASE_APP token (bot identity, so the
+ * comment triggers downstream automations that GITHUB_TOKEN events would not).
+ */
+class GithubCommentApi {
+    token;
+    issueNumber;
+    repoUrl;
+    constructor(token, owner, repo, issueNumber) {
+        this.token = token;
+        this.issueNumber = issueNumber;
+        this.repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+    }
+    headers() {
+        return {
+            authorization: `Bearer ${this.token}`,
+            accept: 'application/vnd.github+json',
+            'content-type': 'application/json',
+            'x-github-api-version': '2022-11-28',
+            'user-agent': 'camunda-release-notes-gate',
+        };
+    }
+    async list() {
+        // The comment is posted on the first gate run and stays put, so the first
+        // page (100) always contains it — no pagination needed.
+        const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=100`, {
+            headers: this.headers(),
+        });
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} listing comments on #${this.issueNumber}`);
+        return (await res.json());
+    }
+    async create(body) {
+        const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments`, {
+            method: 'POST',
+            headers: this.headers(),
+            body: JSON.stringify({ body }),
+        });
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} creating comment on #${this.issueNumber}`);
+    }
+    async update(commentId, body) {
+        const res = await fetch(`${this.repoUrl}/issues/comments/${commentId}`, {
+            method: 'PATCH',
+            headers: this.headers(),
+            body: JSON.stringify({ body }),
+        });
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} updating comment ${commentId}`);
+    }
+}
+exports.GithubCommentApi = GithubCommentApi;
+
+
+/***/ }),
+
 /***/ 93:
 /***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
@@ -105,26 +218,30 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const node_fs_1 = __nccwpck_require__(24);
+const comment_1 = __nccwpck_require__(573);
 const core = __importStar(__nccwpck_require__(93));
 const parser_1 = __nccwpck_require__(883);
 const policy_1 = __nccwpck_require__(86);
 const resolver_1 = __nccwpck_require__(306);
 /**
- * PR-gate lint entrypoint (spike / warn-only).
+ * PR-gate lint entrypoint (warn-only rollout).
  *
  * Security: runs on pull_request_target, metadata-only. The PR body is read
  * from the event payload — never by checking out the PR head. The privileged
  * token comes in as an input (reused MONOREPO_RELEASE_APP).
  *
- * ponytail: warn-only for now — reports the decision to the job summary and
- * outputs; the sticky comment, label sync, and enforce mode ship in follow-up
- * PRs. `enforce=true` flips a fail into a non-zero exit.
+ * ponytail: warn-only for now — reports the decision to the job summary, the
+ * outputs, and a single sticky PR comment (created only when the check fails,
+ * flipped to resolved once fixed). Label sync and enforce mode ship in
+ * follow-up PRs. `enforce=true` flips a fail into a non-zero exit.
  */
 async function run() {
     const token = core.getInput('token', { required: true });
     const enforce = core.getBooleanInput('enforce');
     const eventPath = process.env.GITHUB_EVENT_PATH;
-    const event = eventPath ? JSON.parse((0, node_fs_1.readFileSync)(eventPath, 'utf8')) : {};
+    const event = eventPath
+        ? JSON.parse((0, node_fs_1.readFileSync)(eventPath, 'utf8'))
+        : {};
     const pr = event.pull_request;
     if (!pr) {
         core.info('No pull_request in payload; nothing to lint.');
@@ -145,6 +262,18 @@ async function run() {
         .addHeading(heading, 3)
         .addList(decision.reasons.slice())
         .write();
+    // Sticky PR comment (D24: comments from day one). A comment sync failure must
+    // never fail the gate — warn or not, the decision above stands.
+    if (pr.number) {
+        try {
+            const comments = new comment_1.GithubCommentApi(token, owner ?? '', repo ?? '', pr.number);
+            const action = await (0, comment_1.syncStickyComment)(comments, decision);
+            core.info(`Sticky comment: ${action}.`);
+        }
+        catch (err) {
+            core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+        }
+    }
     if (decision.outcome === 'fail') {
         const msg = decision.reasons.join(' ');
         if (enforce)
