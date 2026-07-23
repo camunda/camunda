@@ -21,10 +21,21 @@ public final class SecretStoreRegistry {
   private final Map<String, SecretCache> caches;
 
   public SecretStoreRegistry(final Map<String, SecretStore> stores) {
-    this.stores = stores;
-    this.caches =
+    this(
+        stores,
         stores.keySet().stream()
-            .collect(Collectors.toUnmodifiableMap(name -> name, name -> new InMemorySecretCache()));
+            .collect(
+                Collectors.toUnmodifiableMap(name -> name, name -> new InMemorySecretCache())));
+  }
+
+  /**
+   * Creates a registry with the given caches instead of one in-memory cache per store. Primarily
+   * for tests that need custom cache behavior.
+   */
+  public SecretStoreRegistry(
+      final Map<String, SecretStore> stores, final Map<String, SecretCache> caches) {
+    this.stores = stores;
+    this.caches = caches;
   }
 
   /** Returns all configured secret stores, keyed by store ID. */
