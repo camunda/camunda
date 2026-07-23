@@ -60,6 +60,8 @@ public class ClusterAdminOidcAuthenticationIT {
   private static final String CLIENT_BY_GROUP = "cluster-admin-by-group";
   private static final String CLIENT_BY_CLAIM = "cluster-admin-by-claim";
   private static final String CLIENT_STRANGER = "stranger";
+  // Emits a groups claim as a number instead of a string/array, so extraction fails.
+  private static final String CLIENT_MALFORMED_GROUP = "malformed-group";
   private static final String CONFIGURED_GROUP = "cluster-admins";
 
   private static final ObjectMapper JSON = new ObjectMapper();
@@ -171,6 +173,19 @@ public class ClusterAdminOidcAuthenticationIT {
   }
 
   @Test
+  void shouldForbidNotErrorWhenGroupsClaimIsMalformed() throws Exception {
+    // when — a valid token whose groups claim is a number instead of a string/array, so extraction
+    // fails
+    final HttpResponse<String> response =
+        get(clusterUri(), bearer(accessToken(CLIENT_MALFORMED_GROUP)));
+
+    // then — the failure is handled, not surfaced as a 500: the token matches no dimension and is
+    // denied with a clean 403 (problem+json), exactly like a token that matches nothing
+    assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_FORBIDDEN);
+    assertThat(response.body()).contains("\"status\":403");
+  }
+
+  @Test
   void shouldRejectMissingToken() throws Exception {
     // when
     final HttpResponse<String> response = get(clusterUri(), null);
@@ -203,6 +218,7 @@ public class ClusterAdminOidcAuthenticationIT {
             client(CLIENT_BY_ID),
             client(CLIENT_BY_GROUP, hardcodedClaim(GROUPS_CLAIM, CONFIGURED_GROUP)),
             client(CLIENT_BY_CLAIM, hardcodedClaim(GENERIC_CLAIM_NAME, GENERIC_CLAIM_VALUE)),
+            client(CLIENT_MALFORMED_GROUP, hardcodedClaim(GROUPS_CLAIM, "123", "int")),
             client(CLIENT_STRANGER)));
     try (final var admin = KEYCLOAK.getKeycloakAdminClient()) {
       admin.realms().create(realm);
@@ -225,6 +241,11 @@ public class ClusterAdminOidcAuthenticationIT {
 
   private static ProtocolMapperRepresentation hardcodedClaim(
       final String claimName, final String claimValue) {
+    return hardcodedClaim(claimName, claimValue, "String");
+  }
+
+  private static ProtocolMapperRepresentation hardcodedClaim(
+      final String claimName, final String claimValue, final String jsonType) {
     final ProtocolMapperRepresentation mapper = new ProtocolMapperRepresentation();
     mapper.setName(claimName + "-mapper");
     mapper.setProtocol("openid-connect");
@@ -233,7 +254,7 @@ public class ClusterAdminOidcAuthenticationIT {
         Map.of(
             "claim.name", claimName,
             "claim.value", claimValue,
-            "jsonType.label", "String",
+            "jsonType.label", jsonType,
             "access.token.claim", "true",
             "id.token.claim", "true"));
     return mapper;
