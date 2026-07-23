@@ -35,6 +35,7 @@ Given a PR body:
 3. Resolve each ref against the API (`resolver`): is it an issue, a PR, or
    missing? Is it cross-repo?
 4. Decide PASS/FAIL (`policy`).
+5. Reconcile a single sticky PR comment (`comment`) explaining the decision.
 
 ### Decision table
 
@@ -47,6 +48,21 @@ Given a PR body:
 
 Cross-repo refs (`owner/repo#N`) and the `Backport of #N` marker never satisfy
 the requirement on their own. A bare `#N` **does** count (contributor ref).
+
+### Sticky comment
+
+The gate keeps **one** sticky comment per PR, identified by a hidden marker so
+re-runs never stack duplicates (`src/comment`):
+
+- **fail** → create the comment (or update the existing one) with the reasons
+  and the fix.
+- **fixed** (fail → pass) → flip that same comment to a resolved note.
+- **never failed** → no comment at all, so the gate stays silent on the ~800
+  PRs that already link correctly.
+
+Comment sync is best-effort: an API failure is logged and never fails the gate.
+It posts under the app identity (not `GITHUB_TOKEN`) so it triggers the same
+downstream automations a human comment would.
 
 ## Architecture — pure core + injected IO
 
@@ -71,6 +87,7 @@ ParsedRef  ──►  ResolvedRef  ──►  PolicyDecision
 | `src/parser/`   | Pure section-scoped reference extraction (shared with the generator)           |
 | `src/policy/`   | Pure PASS/FAIL decision from resolved refs + opt-out state                     |
 | `src/resolver/` | GitHub-API adapter (issue vs PR vs missing, cross-repo)                        |
+| `src/comment/`  | Sticky-comment render + idempotent upsert (pure logic + `fetch` adapter)       |
 | `src/gha.ts`    | Minimal `@actions/core` replacement                                            |
 | `src/lint.ts`   | The gate entrypoint (warn-only)                                                |
 
