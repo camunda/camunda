@@ -77,3 +77,16 @@ export async function completeUserTask(
     timeout: 60_000,
   });
 }
+
+export async function searchUserTasks(
+  request: APIRequestContext,
+  filter: Record<string, unknown>,
+  sort?: Record<string, unknown>[],
+) {
+  const res = await request.post(buildUrl('/user-tasks/search'), {
+    headers: jsonHeaders(),
+    data: {filter, ...(sort ? {sort} : {})},
+  });
+  await assertStatusCode(res, 200);
+  return res.json();
+}
