@@ -11,11 +11,13 @@
 # `detached-<short-sha>` for a detached HEAD.
 #
 # Two cleanup modes are offered:
-#   --stale-branches   remove trees whose <branch> is no longer a local git branch
+#   --stale-branches   remove trees whose branch doesn't exist anymore
 #   --older-than[=N]   remove trees untouched for more than N days (default 7)
 #
 # Dry-run by default; pass --delete to actually remove anything.
 #
+# Compatible with bash 3.2 (stock macOS /bin/bash): no associative arrays,
+# no mapfile, and no expansion of potentially-empty arrays under `set -u`.
 # Requires: git, GNU or BSD `find` with -newermt (both supported).
 set -euo pipefail
 
@@ -95,18 +97,20 @@ if [[ ! -d "$INSTALLED" ]]; then
   exit 0
 fi
 
-# --- resolve live branches (stale mode) -----------------------------------
-declare -A LIVE=()
+# --- resolve the branch source repo (stale mode) ---------------------------
 if [[ "$MODE" == stale ]]; then
   if [[ -z "$REPO" ]]; then
     script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     REPO="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null || true)"
   fi
-  [[ -n "$REPO" ]] && git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1 \
-    || die "--stale-branches needs a git repo; pass --repo <path> or run inside the checkout"
-  while IFS= read -r b; do LIVE["$b"]=1; done \
-    < <(git -C "$REPO" for-each-ref --format='%(refname:short)' refs/heads)
+  if [[ -z "$REPO" ]] || ! git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1; then
+    die "--stale-branches needs a git repo; pass --repo <path> or run inside the checkout"
+  fi
 fi
+
+branch_exists() {
+  git -C "$REPO" show-ref --verify --quiet "refs/heads/$1"
+}
 
 # --- compute the age cutoff (age mode) ------------------------------------
 CUTOFF=""
@@ -116,42 +120,37 @@ if [[ "$MODE" == age ]]; then
   else
     CUTOFF="$(date -v-"${DAYS}"d '+%Y-%m-%d %H:%M:%S')"        # BSD/macOS date
   fi
+  # The age check treats "find produced no output" as "tree is old", so a find
+  # without -newermt support would silently flag EVERYTHING for deletion.
+  # Probe once and fail loudly instead (GNU and BSD find both support it).
+  find "$INSTALLED" -maxdepth 0 -newermt "$CUTOFF" >/dev/null 2>&1 \
+    || die "this 'find' does not support -newermt (or cutoff '$CUTOFF' is unparsable); refusing to run --older-than"
 fi
 
 # --- enumerate install trees ("units") ------------------------------------
 # Find the shallowest groupId-root dir on each path; the segment(s) before it
 # are the branch. -prune stops descent so we get one hit per coordinate root.
-find_expr=()
-for g in "${GROUP_ROOTS[@]}"; do
-  [[ ${#find_expr[@]} -gt 0 ]] && find_expr+=( -o )
-  find_expr+=( -name "$g" )
+# Emit one tab-separated record per unit -- "<flat>\t<branch>\t<path>" -- and
+# `sort -u` to collapse branches containing several groupId roots into one unit.
+find_expr=(-name "${GROUP_ROOTS[0]}")
+for g in "${GROUP_ROOTS[@]:1}"; do
+  find_expr+=(-o -name "$g")
 done
 
-mapfile -t group_dirs < <(
-  find "$INSTALLED" -type d \( "${find_expr[@]}" \) -prune -print 2>/dev/null | sort
-)
-
-declare -A seen=()
-declare -A unit_flat=()    # unit path -> 1 if a flat (non-branch-scoped) install
-declare -A unit_branch=()  # unit path -> branch label
-units=()
-flat_count=0
-for g in "${group_dirs[@]}"; do
-  rel="${g#"$INSTALLED"/}"
-  branch="$(dirname "$rel")"
-  if [[ "$branch" == "." ]]; then
-    path="$g"; flat=1          # legacy flat install: unit is the groupId dir itself
-  else
-    path="$INSTALLED/$branch"; flat=0
-  fi
-  if [[ -z "${seen[$path]:-}" ]]; then
-    seen["$path"]=1
-    units+=("$path")
-    unit_flat["$path"]=$flat
-    unit_branch["$path"]="$branch"
-    [[ $flat -eq 1 ]] && flat_count=$((flat_count + 1))
-  fi
-done
+unit_records="$(
+  find "$INSTALLED" -type d \( "${find_expr[@]}" \) -prune -print 2>/dev/null \
+    | while IFS= read -r group_dir; do
+        rel="${group_dir#"$INSTALLED"/}"
+        branch="$(dirname "$rel")"
+        if [[ "$branch" == "." ]]; then
+          # legacy flat install: unit is the groupId dir itself
+          printf '1\t-\t%s\n' "$group_dir"
+        else
+          printf '0\t%s\t%s/%s\n' "$branch" "$INSTALLED" "$branch"
+        fi
+      done \
+    | sort -u
+)"
 
 # --- header ---------------------------------------------------------------
 echo "Branch-scoped Maven repository cleanup"
@@ -167,22 +166,29 @@ echo
 # --- select units to remove -----------------------------------------------
 to_remove=()
 reasons=()
-for path in "${units[@]}"; do
-  flat="${unit_flat[$path]}"
-  branch="${unit_branch[$path]}"
-  if [[ "$MODE" == stale ]]; then
-    [[ "$flat" -eq 1 ]] && continue   # flat installs have no branch to check
-    if [[ -z "${LIVE[$branch]:-}" ]]; then
+flat_count=0
+while IFS=$'\t' read -r flat branch path; do
+  [[ -n "$path" ]] || continue
+  if [[ "$flat" == 1 ]]; then
+    flat_count=$((flat_count + 1))
+    # flat installs have no branch to check
+    [[ "$MODE" == stale ]] && continue
+  elif [[ "$MODE" == stale ]]; then
+    if ! branch_exists "$branch"; then
       to_remove+=("$path"); reasons+=("branch '$branch' not found")
     fi
-  else # age
-    # Stale when no file in the tree is newer than the cutoff.
-    if [[ -z "$(find "$path" -type f -newermt "$CUTOFF" -print -quit 2>/dev/null || true)" ]]; then
-      to_remove+=("$path"); reasons+=("no changes in >${DAYS}d")
-    fi
+    continue
   fi
-done
+  # age mode: stale when no file in the tree is newer than the cutoff
+  if [[ -z "$(find "$path" -type f -newermt "$CUTOFF" -print 2>/dev/null | head -n 1)" ]]; then
+    to_remove+=("$path"); reasons+=("no changes in >${DAYS}d")
+  fi
+done <<EOF
+$unit_records
+EOF
 
+# NB: expanding an empty array under `set -u` errors on bash < 4.4, so check
+# ${#to_remove[@]} (always safe) before any "${to_remove[@]}" expansion.
 if [[ ${#to_remove[@]} -eq 0 ]]; then
   echo "Nothing to clean."
   [[ "$MODE" == stale && $flat_count -gt 0 ]] \
@@ -194,9 +200,11 @@ fi
 total="$(du -shc "${to_remove[@]}" 2>/dev/null | tail -1 | cut -f1 || true)"
 
 # --- act ------------------------------------------------------------------
-for i in "${!to_remove[@]}"; do
+i=0
+while [[ $i -lt ${#to_remove[@]} ]]; do
   path="${to_remove[$i]}"
   why="${reasons[$i]}"
+  i=$((i + 1))
   size="$(du -sh "$path" 2>/dev/null | cut -f1 || true)"
   label="${path#"$INSTALLED"/}"
   if $DO_DELETE; then

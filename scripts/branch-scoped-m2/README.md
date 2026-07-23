@@ -52,5 +52,7 @@ scripts/branch-scoped-m2/clean-installed.sh --older-than=7 --delete
 - `--stale-branches` checks **local** branches only (`refs/heads`). A tree for a
   branch you deleted locally but that still exists on the remote is treated as
   stale.
-- Requires `git` and a `find` supporting `-newermt` (GNU and BSD both do).
+- Compatible with bash 3.2 (stock macOS `/bin/bash`); requires `git` and a `find`
+  supporting `-newermt` (GNU and BSD both do — `--older-than` refuses to run,
+  rather than over-deleting, if `find` lacks it).
 
