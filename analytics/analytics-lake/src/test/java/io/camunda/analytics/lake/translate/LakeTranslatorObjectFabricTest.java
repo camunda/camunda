@@ -117,6 +117,23 @@ class LakeTranslatorObjectFabricTest {
   private static final CompiledObjectTypes FULL_DEMO_OBJECT_TYPES =
       CompiledObjectTypes.of(CUSTOMER_TYPE, DISPUTE_TYPE, ORDER_TYPE, ITEM_TYPE);
 
+  /**
+   * A distinct "order" declaration (kept separate from {@link #ORDER_TYPE} so none of the tests
+   * above are affected) that declares {@code belongsTo("customer")} -- mirrors {@code
+   * LakePocApp#demoObjectTypes}'s real declaration: {@code order-intake}'s start event sets {@code
+   * orderId} and {@code customerId} at the SAME (root) scope, so the root×non-root relation rule
+   * alone can never pair them (see {@link CompiledObjectTypes#belongsToParentTypes}'s own javadoc
+   * and {@code LakeTranslator}'s "Declared containment" javadoc section).
+   */
+  private static final CompiledObjectType ORDER_BELONGS_TO_CUSTOMER_TYPE =
+      ObjectTypes.declare("order")
+          .identifiedBy(ObjectTypes.variable("orderId"))
+          .belongsTo("customer")
+          .build();
+
+  private static final CompiledObjectTypes BELONGS_TO_OBJECT_TYPES =
+      CompiledObjectTypes.of(CUSTOMER_TYPE, ORDER_BELONGS_TO_CUSTOMER_TYPE);
+
   // ---- sightings: VARIABLE source ------------------------------------------------------------
 
   @Test
@@ -686,6 +703,141 @@ class LakeTranslatorObjectFabricTest {
 
     // then: only the first instance's completion produced a relation row
     assertThat(relations.rows).hasSize(1);
+  }
+
+  // ---- object relations at completion: belongsTo declared containment -------------------------
+
+  @Test
+  void shouldEmitABelongsToRelationForCoRootedSightingsOfBothTypes() {
+    // given: "customer" and "order" both sighted at ROOT scope of the same instance -- the
+    // root×non-root rule alone could never pair these (both are root), only the belongsTo
+    // declaration can
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final CapturingRowAppender relations = new CapturingRowAppender();
+    final LakeTranslator translator =
+        newTranslator(state, null, null, relations, BELONGS_TO_OBJECT_TYPES);
+    translator.onRecord(activateRoot(1L, 100L, 1L));
+    translator.onRecord(variableRecord(1L, "customerId", "\"cust-1\"", 1L, 101L, 2L));
+    translator.onRecord(variableRecord(1L, "orderId", "\"ORD-1\"", 1L, 102L, 3L));
+
+    // when
+    translator.onRecord(completeRoot(1L, 200L, 4L));
+
+    // then
+    assertThat(relations.rows).hasSize(1);
+    final Map<Integer, Object> row = relations.rows.get(0);
+    assertThat(row.get(ObjectRelationColumns.PARENT_TYPE)).isEqualTo("customer");
+    assertThat(row.get(ObjectRelationColumns.PARENT_ID)).isEqualTo("cust-1");
+    assertThat(row.get(ObjectRelationColumns.CHILD_TYPE)).isEqualTo("order");
+    assertThat(row.get(ObjectRelationColumns.CHILD_ID)).isEqualTo("ORD-1");
+  }
+
+  @Test
+  void shouldNotEmitABelongsToRelationWhenOnlyTheChildTypeIsSighted() {
+    // given: only "order" is sighted -- no "customer" root sighting to pair it with
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final CapturingRowAppender relations = new CapturingRowAppender();
+    final LakeTranslator translator =
+        newTranslator(state, null, null, relations, BELONGS_TO_OBJECT_TYPES);
+    translator.onRecord(activateRoot(1L, 100L, 1L));
+    translator.onRecord(variableRecord(1L, "orderId", "\"ORD-1\"", 1L, 101L, 2L));
+
+    // when
+    translator.onRecord(completeRoot(1L, 200L, 3L));
+
+    // then
+    assertThat(relations.rows).isEmpty();
+  }
+
+  @Test
+  void shouldNotEmitABelongsToRelationWhenOnlyTheParentTypeIsSighted() {
+    // given: only "customer" is sighted -- no "order" root sighting to pair it with
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final CapturingRowAppender relations = new CapturingRowAppender();
+    final LakeTranslator translator =
+        newTranslator(state, null, null, relations, BELONGS_TO_OBJECT_TYPES);
+    translator.onRecord(activateRoot(1L, 100L, 1L));
+    translator.onRecord(variableRecord(1L, "customerId", "\"cust-1\"", 1L, 101L, 2L));
+
+    // when
+    translator.onRecord(completeRoot(1L, 200L, 3L));
+
+    // then
+    assertThat(relations.rows).isEmpty();
+  }
+
+  @Test
+  void shouldPairAllCombinationsWhenMultipleRootIdsOfOneTypeAreSighted() {
+    // given: a rare "k overwrites" case -- two distinct "order" ids both sighted at root scope of
+    // the same instance (consistent with how the scope-nesting rule already tolerates multiple
+    // sightings of one type)
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final CapturingRowAppender relations = new CapturingRowAppender();
+    final LakeTranslator translator =
+        newTranslator(state, null, null, relations, BELONGS_TO_OBJECT_TYPES);
+    translator.onRecord(activateRoot(1L, 100L, 1L));
+    translator.onRecord(variableRecord(1L, "customerId", "\"cust-1\"", 1L, 101L, 2L));
+    translator.onRecord(variableRecord(1L, "orderId", "\"ORD-1\"", 1L, 102L, 3L));
+    translator.onRecord(variableRecord(1L, "orderId", "\"ORD-2\"", 1L, 103L, 4L));
+
+    // when
+    translator.onRecord(completeRoot(1L, 200L, 5L));
+
+    // then: both order ids pair with the single customer id
+    assertThat(relations.rows)
+        .extracting(
+            row -> row.get(ObjectRelationColumns.PARENT_ID),
+            row -> row.get(ObjectRelationColumns.CHILD_ID))
+        .containsExactlyInAnyOrder(Tuple.tuple("cust-1", "ORD-1"), Tuple.tuple("cust-1", "ORD-2"));
+  }
+
+  @Test
+  void shouldNotEmitABelongsToRelationWhenObjectTypesIsUnwired() {
+    // given: objectTypes == null disables everything -- including the belongsTo derivation
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final CapturingRowAppender relations = new CapturingRowAppender();
+    final LakeTranslator translator = newTranslator(state, null, null, relations, null);
+    translator.onRecord(activateRoot(1L, 100L, 1L));
+
+    // when
+    translator.onRecord(completeRoot(1L, 200L, 2L));
+
+    // then
+    assertThat(relations.rows).isEmpty();
+  }
+
+  @Test
+  void shouldNotDoubleEmitWhenBothTheScopeNestingRuleAndBelongsToWouldMatch() {
+    // given: the FULL_DEMO_OBJECT_TYPES-style registry but using the belongsTo-declaring order
+    // type, plus an ITEM_TYPE-style non-root sighting -- exercises that the belongsTo pass and the
+    // root×non-root pass share the SAME dedupe cache and never double-emit an edge neither could
+    // produce alone anyway (order/customer are both root here, so only belongsTo produces that
+    // edge; the non-root item pairs with both via the pre-existing rule)
+    final CompiledObjectTypes registry =
+        CompiledObjectTypes.of(CUSTOMER_TYPE, ORDER_BELONGS_TO_CUSTOMER_TYPE, ITEM_TYPE);
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final CapturingRowAppender relations = new CapturingRowAppender();
+    final LakeTranslator translator = newTranslator(state, null, null, relations, registry);
+    translator.onRecord(activateRoot(1L, 100L, 1L));
+    translator.onRecord(variableRecord(1L, "customerId", "\"cust-1\"", 1L, 101L, 2L));
+    translator.onRecord(variableRecord(1L, "orderId", "\"ORD-1\"", 1L, 102L, 3L));
+    translator.onRecord(variableRecord(1L, "itemId", "\"ITM-1\"", 55L, 103L, 4L));
+
+    // when
+    translator.onRecord(completeRoot(1L, 200L, 5L));
+
+    // then: customer⊃order (belongsTo), customer⊃item and order⊃item (root×non-root) -- three
+    // distinct edges, each emitted exactly once
+    assertThat(relations.rows)
+        .extracting(
+            row -> row.get(ObjectRelationColumns.PARENT_TYPE),
+            row -> row.get(ObjectRelationColumns.PARENT_ID),
+            row -> row.get(ObjectRelationColumns.CHILD_TYPE),
+            row -> row.get(ObjectRelationColumns.CHILD_ID))
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("customer", "cust-1", "order", "ORD-1"),
+            Tuple.tuple("customer", "cust-1", "item", "ITM-1"),
+            Tuple.tuple("order", "ORD-1", "item", "ITM-1"));
   }
 
   @Test
