@@ -53,7 +53,7 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
     } else {
       return Either.left(
           new InvalidRequest(
-              "Failback requires a persisted zone-aware partition distribution config, but was %s. Failback restores a previously failed-over zone; bootstrapping a zoned config from a non-zoned cluster is not supported here."
+              "Adding a zone requires a persisted zone-aware partition distribution config, but was %s. Bootstrapping a zoned config from a non-zoned cluster is not supported here."
                   .formatted(
                       partitionDistributorConfig
                           .map(c -> c.getClass().getSimpleName())
@@ -63,7 +63,7 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
     if (currentZones.stream().anyMatch(zone -> zone.name().equals(zoneId))) {
       return Either.left(
           new InvalidRequest(
-              "Cannot fail back zone '"
+              "Cannot add back zone '"
                   + zoneId
                   + "' because it is already present in the partition distribution config."));
     }
@@ -76,7 +76,7 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
     if (!brokersNotInZone.isEmpty()) {
       return Either.left(
           new InvalidRequest(
-              "Failback request brokers must belong to zone '"
+              "Requested brokers must belong to zone '"
                   + zoneId
                   + "', but got brokers not in that zone: "
                   + brokersNotInZone));
@@ -86,7 +86,7 @@ public final class AddZoneTransformer implements ConfigurationChangeRequest {
       return Either.left(
           new InvalidRequest(
               String.format(
-                  "Failback request provided %d broker(s), which is less than the requested number"
+                  "Request provided %d broker(s), which is less than the requested number"
                       + " of replicas [%d] for zone '%s'.",
                   brokers.size(), numberOfReplicas, zoneId)));
     }
