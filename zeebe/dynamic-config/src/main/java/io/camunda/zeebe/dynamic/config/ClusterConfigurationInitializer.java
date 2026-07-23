@@ -13,13 +13,17 @@ import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.Cluste
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,11 +38,11 @@ import org.slf4j.LoggerFactory;
  * <p>Both coordinator and other members first check the local persisted configuration to determine
  * the configuration. If one exists, that is used to initialize the configuration. See {@link
  * FileInitializer}. On bootstrap of the cluster, the local persisted configuration is empty.
- * <li>When the local configuration is empty, all members query cluster members in the static
- *     configuration for the current configuration. See {@link SyncInitializer}. If any member
- *     replies with a valid configuration, it uses that one. If all members reply with an
- *     uninitialized configuration, the coordinator generates a new configuration from the provided
- *     static configuration. See {@link StaticInitializer}.
+ * <li>When the local configuration is empty, all members query known cluster members for the
+ *     current configuration. See {@link SyncInitializer}. If any member replies with a valid
+ *     configuration, it uses that one. If no initialized configuration is found before the
+ *     bootstrap timeout, the coordinator generates a new configuration from the provided static
+ *     configuration. See {@link StaticInitializer}.
  * <li>When the local configuration is empty, a non-coordinating member waits until it receives a
  *     valid configuration from the coordinator via gossip. See {@link GossipInitializer}.
  * <li>After initialization, the configuration can be modified using {@link
@@ -246,78 +250,162 @@ public interface ClusterConfigurationInitializer {
   }
 
   /**
-   * Initializes configuration by sending sync requests to other members. If any of them return a
-   * valid configuration, it will be initialized. If any of them returns an uninitialized
-   * configuration, the future returned by initialize completes as failed.
+   * Initializes configuration by sending sync requests to other members. If any of them returns a
+   * valid configuration, it will be initialized. Uninitialized or failed responses are retried
+   * until the bootstrap timeout, after which this initializer completes with an uninitialized
+   * configuration, letting the caller's initializer chain decide how to proceed.
    */
   class SyncInitializer
       implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
+    private static final Duration DEFAULT_BOOTSTRAP_TIMEOUT = Duration.ofSeconds(30);
     private final Duration syncDelay;
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final ActorFuture<ClusterConfiguration> initialized;
-    private final List<MemberId> knownMembersToSync;
+    private final Supplier<List<MemberId>> knownMembersToSync;
+    private final Duration bootstrapTimeout;
+    private final Set<MemberId> uninitializedMembers = new HashSet<>();
+    private final Set<MemberId> requestsInFlight = new HashSet<>();
+    private boolean retryScheduled;
+    private ScheduledTimer bootstrapTimeoutTimer;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester;
 
     public SyncInitializer(
         final Duration syncDelay,
         final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
-        final List<MemberId> knownMembersToSync,
+        final Supplier<List<MemberId>> knownMembersToSync,
         final ConcurrencyControl executor,
         final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester) {
+      this(
+          syncDelay,
+          clusterConfigurationUpdateNotifier,
+          knownMembersToSync,
+          executor,
+          syncRequester,
+          DEFAULT_BOOTSTRAP_TIMEOUT);
+    }
+
+    SyncInitializer(
+        final Duration syncDelay,
+        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
+        final Supplier<List<MemberId>> knownMembersToSync,
+        final ConcurrencyControl executor,
+        final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester,
+        final Duration bootstrapTimeout) {
       this.syncDelay = syncDelay;
       this.clusterConfigurationUpdateNotifier = clusterConfigurationUpdateNotifier;
       this.knownMembersToSync = knownMembersToSync;
       this.executor = executor;
       this.syncRequester = syncRequester;
+      this.bootstrapTimeout = bootstrapTimeout;
       initialized = new CompletableActorFuture<>();
     }
 
     @Override
     public ActorFuture<ClusterConfiguration> initialize() {
-      if (knownMembersToSync.isEmpty()) {
-        initialized.complete(ClusterConfiguration.uninitialized());
+      if (knownMembersToSync.get().isEmpty()) {
+        completeAsUninitialized("no known members to sync");
       } else {
         LOGGER.debug(
-            "Querying members {} before initializing ClusterConfiguration", knownMembersToSync);
+            "Querying members {} before initializing ClusterConfiguration",
+            knownMembersToSync.get());
         clusterConfigurationUpdateNotifier.addUpdateListener(this);
-        knownMembersToSync.forEach(this::tryInitializeFrom);
+        refreshAndSync();
       }
       return initialized;
     }
 
+    private void refreshAndSync() {
+      if (initialized.isDone()) {
+        return;
+      }
+      final var members = knownMembersToSync.get();
+      uninitializedMembers.retainAll(members);
+      members.forEach(this::tryInitializeFrom);
+    }
+
     private void tryInitializeFrom(final MemberId memberId) {
+      if (initialized.isDone() || !requestsInFlight.add(memberId)) {
+        return;
+      }
+
       requestSync(memberId)
           .onComplete(
-              (configuration, error) -> {
-                if (initialized.isDone()) {
-                  return;
-                }
-                if (error != null) {
-                  LOGGER.trace(
-                      "Failed to get a response for cluster configuration sync query to {}. Will retry.",
-                      memberId,
-                      error);
-                } else if (configuration == null) {
-                  LOGGER.trace(
-                      "Received null cluster configuration from {}. Will retry.", memberId);
-                } else if (configuration.isUninitialized()) {
-                  LOGGER.trace("Cluster configuration is uninitialized in {}", memberId);
-                  initialized.complete(configuration);
-                  return;
-                } else {
-                  LOGGER.debug(
-                      "Received cluster configuration {} from {}", configuration, memberId);
-                  onClusterConfigurationUpdated(configuration);
-                  return;
-                }
-                // retry
-                if (!initialized.isDone()) {
-                  executor.schedule(syncDelay, () -> tryInitializeFrom(memberId));
-                }
-              });
+              (configuration, error) ->
+                  executor.run(() -> handleSyncResponse(memberId, configuration, error)));
+    }
+
+    private void handleSyncResponse(
+        final MemberId memberId, final ClusterConfiguration configuration, final Throwable error) {
+      requestsInFlight.remove(memberId);
+      if (initialized.isDone()) {
+        return;
+      }
+      if (error != null) {
+        LOGGER.trace(
+            "Failed to get a response for cluster configuration sync query to {}. Will retry.",
+            memberId,
+            error);
+        scheduleRetry();
+      } else if (configuration == null) {
+        LOGGER.trace("Received null cluster configuration from {}. Will retry.", memberId);
+        scheduleRetry();
+      } else if (configuration.isUninitialized()) {
+        LOGGER.trace("Cluster configuration is uninitialized in {}", memberId);
+
+        // start timeout after first uninitialized
+        if (bootstrapTimeoutTimer == null && uninitializedMembers.isEmpty()) {
+          bootstrapTimeoutTimer =
+              executor.schedule(
+                  bootstrapTimeout,
+                  () -> completeAsUninitialized("sync timeout (%s)".formatted(bootstrapTimeout)));
+        }
+        uninitializedMembers.add(memberId);
+        final var members = knownMembersToSync.get();
+        if (uninitializedMembers.containsAll(members)
+            && requestsInFlight.stream().noneMatch(members::contains)) {
+          completeAsUninitialized("Polled all members and none of them is initialized");
+        } else {
+          scheduleRetry();
+        }
+      } else {
+        LOGGER.debug("Received cluster configuration {} from {}", configuration, memberId);
+        onClusterConfigurationUpdated(configuration);
+      }
+    }
+
+    private void scheduleRetry() {
+      if (initialized.isDone() || retryScheduled) {
+        return;
+      }
+      retryScheduled = true;
+      executor.schedule(
+          syncDelay,
+          () -> {
+            retryScheduled = false;
+            refreshAndSync();
+          });
+    }
+
+    private void completeAsUninitialized(final String cause) {
+      if (!initialized.isDone()) {
+        LOGGER.debug(
+            "No initialized cluster configuration found: {}. Completing as uninitialized; "
+                + "the initializer chain will decide how to proceed.",
+            cause);
+        initialized.complete(ClusterConfiguration.uninitialized());
+        cancelBootstrapTimeout();
+        clusterConfigurationUpdateNotifier.removeUpdateListener(this);
+      }
+    }
+
+    private void cancelBootstrapTimeout() {
+      if (bootstrapTimeoutTimer != null) {
+        bootstrapTimeoutTimer.cancel();
+        bootstrapTimeoutTimer = null;
+      }
     }
 
     private ActorFuture<ClusterConfiguration> requestSync(final MemberId memberId) {
@@ -333,6 +421,7 @@ public interface ClusterConfigurationInitializer {
             }
             if (!clusterConfiguration.isUninitialized()) {
               initialized.complete(clusterConfiguration);
+              cancelBootstrapTimeout();
               clusterConfigurationUpdateNotifier.removeUpdateListener(this);
             }
           });
