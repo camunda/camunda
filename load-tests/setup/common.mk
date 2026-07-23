@@ -130,6 +130,17 @@ install_es_prom_exporter = false
 # Disable Optimize if not enabled
 ifneq ($(enable_optimize),true)
 	platform_values += --set optimize.enabled=false
+
+	ifeq ($(secondary_storage),opensearch)
+	    install_es_prom_exporter = true
+	    es_prom_exporter_es_uri = http://opensearch:9200
+	    _load_test_setup_flags += --set metricsExporter.database.url=$(es_prom_exporter_es_uri)
+	else ifeq ($(secondary_storage),elasticsearch)
+	    install_es_prom_exporter = true
+	    es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
+	    _load_test_setup_flags += --set metricsExporter.database.url=$(es_prom_exporter_es_uri)
+	endif
+
 else
 	platform_values += -f camunda-platform-values-optimize.yaml
 
@@ -142,7 +153,7 @@ else
 
         install_es_prom_exporter = true
         es_prom_exporter_es_uri = http://opensearch:9200
-        _load_test_setup_flags += --set metricsExporter.database.url=http://opensearch:9200
+        _load_test_setup_flags += --set metricsExporter.database.url=$(es_prom_exporter_es_uri)
     else ifeq ($(secondary_storage),elasticsearch)
         # When deploying the Elasticsearch secondary storage, Optimize needs the
         # Elasticsearch-specific exporter/client configuration.
@@ -150,7 +161,7 @@ else
 
         install_es_prom_exporter = true
         es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
-        _load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
+        _load_test_setup_flags += --set metricsExporter.database.url=$(es_prom_exporter_es_uri)
     else
         ifeq ($(filter $(secondary_storage),$(optimize_self_sufficient_storages)),)
             # If we are not using Elasticsearch/OpenSearch as a secondary storage, Optimize will
@@ -162,7 +173,7 @@ else
             platform_values += -f camunda-platform-values-optimize-elasticsearch.yaml
             install_es_prom_exporter = true
             es_prom_exporter_es_uri = http://elasticsearch-es-http:9200
-            _load_test_setup_flags += --set metricsExporter.database.url=http://elasticsearch-es-http:9200
+            _load_test_setup_flags += --set metricsExporter.database.url=$(es_prom_exporter_es_uri)
         endif
     endif
 endif
