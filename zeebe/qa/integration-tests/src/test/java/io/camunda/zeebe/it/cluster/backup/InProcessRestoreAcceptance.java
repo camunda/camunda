@@ -145,18 +145,33 @@ public interface InProcessRestoreAcceptance {
 
     final var totalInstances = 2 * PARTITIONS_COUNT;
     final List<Long> processInstanceKeys = new ArrayList<>();
-    for (int i = 0; i < totalInstances; i++) {
-      final var result =
-          client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().send().join();
-      processInstanceKeys.add(result.getProcessInstanceKey());
-    }
+    Awaitility.await("every partition has at least one process instance with a pending job")
+        .timeout(Duration.ofSeconds(60))
+        // might throw exception when a partition has not yet received deployment distribution
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              while (processInstanceKeys.size() < totalInstances) {
+                final var result =
+                    client
+                        .newCreateInstanceCommand()
+                        .bpmnProcessId(PROCESS_ID)
+                        .latestVersion()
+                        .send()
+                        .join();
+                processInstanceKeys.add(result.getProcessInstanceKey());
+              }
 
-    final var partitionsWithInstance =
-        processInstanceKeys.stream().map(Protocol::decodePartitionId).collect(Collectors.toSet());
-    assertThat(partitionsWithInstance)
-        .describedAs("every partition has at least one process instance with a pending job")
-        .containsExactlyInAnyOrderElementsOf(
-            IntStream.rangeClosed(1, PARTITIONS_COUNT).boxed().toList());
+              final var partitionsWithInstance =
+                  processInstanceKeys.stream()
+                      .map(Protocol::decodePartitionId)
+                      .collect(Collectors.toSet());
+              assertThat(partitionsWithInstance)
+                  .describedAs(
+                      "every partition has at least one process instance with a pending job")
+                  .containsExactlyInAnyOrderElementsOf(
+                      IntStream.rangeClosed(1, PARTITIONS_COUNT).boxed().toList());
+            });
 
     return processInstanceKeys;
   }
