@@ -9,6 +9,7 @@
 - `event-bridge/event-bridge-broker/pom.xml`: Added `micrometer-core` as a test-scope dependency — required by `RaftLog.builder(meterRegistry)` in tests.
 
 - `event-bridge/event-bridge-broker/src/test/java/io/camunda/eventbridge/broker/logstream/EventBridgeLogStorageTest.java`: New test class covering all three concerns of the bridge in three `@Nested` groups:
+
   - **`ReaderTest`** (9 tests) — seek semantics (first, last, exact match, range-spanning, gap), iteration, empty-log, and post-append detection
   - **`CommitListenerTest`** (3 tests) — registration, removal, multiple listeners
   - **`AppendListenerBridgeTest`** (2 tests) — `onWrite` / `onCommit` forwarding through `AppendListenerAdapter`

@@ -154,15 +154,15 @@ the move safely **stalls/retries** rather than dropping survivors — degraded a
 
 ## Key files
 
-| Concern | File |
-|---|---|
-| Change-coordinator (drive committed→target, retry) | `event-bridge-cluster-metadata/.../MetadataManager.java` (`scheduleReconfiguration`, `driveReconfiguration`) |
-| Step planning (grow-before-shrink) | `event-bridge-cluster-metadata/.../reconfig/ReconfigurationPlanner.java` |
-| Step execution wiring (send to broker, reply-on-confirm) | `event-bridge-broker/.../bootstrap/BrokerBootstrap.java` (`reconfigurationExecutor`, `comm.replyToAsync(ReconfigurationCommand.SUBJECT)`) |
-| Heal decision (sets target off non-active brokers) | `event-bridge-cluster-metadata/.../processing/PlacementHealTask.java` |
-| Broker-side join/leave | `event-bridge-broker/.../bootstrap/TopicReconciler.java` (`join`/`leave`) → `PartitionBootstrapper.java` (`joinDataPartition`/`leaveDataPartition`/`startDataPartition`) |
-| **Proven retry template (mirror for #18)** | `PartitionBootstrapper.joinMetadataAsPassiveWithRetry` / `schedulePassiveJoinRetry` / `passiveJoinRetryDelay` |
-| Atomix join/leave (the `leave()` self-only limit, #17) | `zeebe/atomix/.../raft/partition/RaftPartition.java`, `.../impl/ReconfigurationHelper.java`, `.../impl/DefaultRaftServer.java` |
+|                         Concern                          |                                                                                   File                                                                                   |
+|----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Change-coordinator (drive committed→target, retry)       | `event-bridge-cluster-metadata/.../MetadataManager.java` (`scheduleReconfiguration`, `driveReconfiguration`)                                                             |
+| Step planning (grow-before-shrink)                       | `event-bridge-cluster-metadata/.../reconfig/ReconfigurationPlanner.java`                                                                                                 |
+| Step execution wiring (send to broker, reply-on-confirm) | `event-bridge-broker/.../bootstrap/BrokerBootstrap.java` (`reconfigurationExecutor`, `comm.replyToAsync(ReconfigurationCommand.SUBJECT)`)                                |
+| Heal decision (sets target off non-active brokers)       | `event-bridge-cluster-metadata/.../processing/PlacementHealTask.java`                                                                                                    |
+| Broker-side join/leave                                   | `event-bridge-broker/.../bootstrap/TopicReconciler.java` (`join`/`leave`) → `PartitionBootstrapper.java` (`joinDataPartition`/`leaveDataPartition`/`startDataPartition`) |
+| **Proven retry template (mirror for #18)**               | `PartitionBootstrapper.joinMetadataAsPassiveWithRetry` / `schedulePassiveJoinRetry` / `passiveJoinRetryDelay`                                                            |
+| Atomix join/leave (the `leave()` self-only limit, #17)   | `zeebe/atomix/.../raft/partition/RaftPartition.java`, `.../impl/ReconfigurationHelper.java`, `.../impl/DefaultRaftServer.java`                                           |
 
 ## Repro & validation
 
@@ -184,3 +184,4 @@ the move safely **stalls/retries** rather than dropping survivors — degraded a
   (the joinWithRetry / `openFutureRef` analysis), [[event-bridge-runtime-smoke]] (local launch).
 - The whole event-bridge architecture still lacks an ADR — consider drafting one for the per-topic
   Raft model + its bounded-topic-count constraint before the Atomix #17 change.
+

@@ -59,6 +59,15 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
+    <!--
+      Parses a deployed process's BPMN XML (from a PROCESS/CREATED record's own resource bytes) to
+      resolve a sequence flow's source/target element ids: see LakeTranslator's own PROCESS/CREATED
+      handling and TranslatorState#putFlowEndpoints.
+    -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>

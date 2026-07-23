@@ -32,3 +32,4 @@
 26. Unit tests for gateway components (router, topology service) (depends on: 17)
 27. Unit tests for client library (depends on: 21)
 28. Integration test (StandaloneEventBridgeIT) (depends on: 23)
+

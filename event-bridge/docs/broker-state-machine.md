@@ -19,10 +19,10 @@
 A broker talks to the metadata leader over two independent channels carrying different
 things in opposite directions:
 
-| Channel | Direction | Carries | Transport | Hits the log? |
-|---|---|---|---|---|
-| **Observe** | leader → broker | the topic registry (assignments) | Raft replication (pull) + replay | yes — it *is* the log |
-| **Liveness** | broker → leader | register / heartbeat | coordinate-request RPC | only registration + fence/drain transitions |
+|   Channel    |    Direction    |             Carries              |            Transport             |                Hits the log?                |
+|--------------|-----------------|----------------------------------|----------------------------------|---------------------------------------------|
+| **Observe**  | leader → broker | the topic registry (assignments) | Raft replication (pull) + replay | yes — it *is* the log                       |
+| **Liveness** | broker → leader | register / heartbeat             | coordinate-request RPC           | only registration + fence/drain transitions |
 
 A broker learns **which partitions to host** purely by observing the replicated registry and
 reconciling (`TopicReconciler` filters `TopicRecord.assignment` by its own node id) — never
@@ -34,15 +34,15 @@ membership/session split.
 ## The FSM
 
 ```
-                register(incarnation)          (re-register, same incarnation = retry)
-   (absent) ───────────────────────────► ACTIVE ◄───────────────────────────────────┐
-       ▲                                  │  ▲                                        │
-       │ deregister                       │  │ heartbeat(epoch)                       │ re-register
-       │                  session lapses  │  │ within timeout                         │ (bumped epoch)
-   (absent) ◄── DEREGISTERED ◄────────────┼──┼──────────────── FENCED ────────────────┘
-                    ▲                      │  │                                         
-                    │ drained              ▼  │  draining heartbeat                     
-                    └──────────────── DRAINING ┘                                        
+             register(incarnation)          (re-register, same incarnation = retry)
+(absent) ───────────────────────────► ACTIVE ◄───────────────────────────────────┐
+    ▲                                  │  ▲                                        │
+    │ deregister                       │  │ heartbeat(epoch)                       │ re-register
+    │                  session lapses  │  │ within timeout                         │ (bumped epoch)
+(absent) ◄── DEREGISTERED ◄────────────┼──┼──────────────── FENCED ────────────────┘
+                 ▲                      │  │                                         
+                 │ drained              ▼  │  draining heartbeat                     
+                 └──────────────── DRAINING ┘                                        
 ```
 
 - **Broker epoch** — server-assigned, monotonic, bumped on each genuine (re-)registration; a
@@ -180,7 +180,8 @@ Validated on `run-local-cluster.sh` (3 `StandaloneEventBridge` nodes):
   `joinWithRetry` give-up if it runs before the group is reachable; unlike the startup passive join it
   isn't yet wrapped in a retry. A bootstrap-style retry (close → recreate → re-join) like the metadata
   fix would cover it, or the orchestration retry could live in the reassignment driver. Tracked with
-  #17 (the LEAVE side still needs leader-driven remote removal in Atomix).
+
+  # 17 (the LEAVE side still needs leader-driven remote removal in Atomix).
 
 **Conclusion:** the broker liveness FSM, broker-side loop, placement, fencing, the (non-eager) heal,
 same-broker recovery, **metadata-leader failover, and passive-observer provisioning (including the
@@ -251,10 +252,10 @@ drive the config change**, because Atomix's `RaftPartition` exposes only self-me
 step relies on the departing broker removing itself, which fails for a killed broker (can't act)
 and for a drained one (it shuts down before the `LEAVE` commits). The fix is two parts:
 1. add a leader-driven remote-removal API to Atomix `RaftPartition`/`RaftServer` (the leader
-   proposes a configuration change removing the dead member; commits with the surviving quorum) —
-   a sensitive consensus-layer change, postponed to its own session;
+proposes a configuration change removing the dead member; commits with the surviving quorum) —
+a sensitive consensus-layer change, postponed to its own session;
 2. route the `LEAVE` of a gone broker to a **surviving** member (the leader) instead of the
-   departing one.
+departing one.
 
 This is the single capability the smoke test showed missing, and it resolves both the kill and the
 drain paths. (For drain, with leader-driven removal the broker no longer has to stay alive through

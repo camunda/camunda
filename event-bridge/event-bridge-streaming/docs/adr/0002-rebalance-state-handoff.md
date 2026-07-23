@@ -89,3 +89,11 @@ attempt a big-bang snapshot-transfer implementation.
 - Runtime: on assign-without-state, drive a bounded replay-to-rebuild for the
   shard.
 - Later: partition snapshot/restore + shared snapshot storage (Phase 2).
+
+> **Update (2026-07-08):** Phase 1 (replay-to-rebuild on assign-without-state) is implemented in
+> `SourceLoop.materialize`, but it is sound only while the source's retained window still covers
+> the partition's full relevant history — retention compacts independent of consumer progress, so
+> long-lived in-flight state can outlive the log. Warm failover and the retention-safe snapshot
+> bootstrap (Phase 2, now required rather than optional) are specified in
+> [ADR 0006 — standby tasks](0006-standby-tasks-warm-failover.md).
+

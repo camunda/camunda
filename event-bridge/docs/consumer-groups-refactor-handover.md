@@ -19,6 +19,7 @@ kept deliberately — `MetadataStream` does the same).
 ## What was cleaned up, by component
 
 ### Appliers (`state/appliers/`)
+
 `MemberJoined / MemberLeft / OffsetCommitted / GroupRebalanced / MemberReconciled / GroupDeleted`
 
 - Now **pure writers**: they write the event's value verbatim — no decisions, no
@@ -27,6 +28,7 @@ kept deliberately — `MetadataStream` does the same).
   index a group belongs in, `emptySince`) moved up into the processors.
 
 ### Processors (`processing/`)
+
 `JoinGroup / LeaveGroup / OffsetCommit / Rebalance / ReconcileMember / DeleteGroup`
 
 - Own **all** validation (via validators) plus value resolution/stamping: resolve the
@@ -35,6 +37,7 @@ kept deliberately — `MetadataStream` does the same).
   that emits the durable event makes the decision.
 
 ### Validators (`processing/`)
+
 - `CoordinationValidator` — client commands, returns `Either<Rejection, T>` with a
   `CoordinationErrorCode`.
 - `TransitionValidator` — internal state-machine commands (reconcile/rebalance/delete),
@@ -42,6 +45,7 @@ kept deliberately — `MetadataStream` does the same).
 - `Rejection` record. Validation lives here, not in processors or appliers.
 
 ### State (`state/`)
+
 - **Removed the in-memory group mirror** — groups are read from replicated state.
 - Engine-style split: immutable (`ConsumerGroupState`, `OffsetState`) / mutable
   (`Mutable*`) / concrete (`DbConsumerGroupState`, `DbOffsetState`).
@@ -57,16 +61,19 @@ kept deliberately — `MetadataStream` does the same).
   delegating wrappers, each built lazily on its **own** ZeebeDb context per reader actor.
 
 ### Scheduled tasks (`processing/`)
+
 - `RebalanceAssignorTask`, `GroupRetentionTask` — **stateless**, clock-driven, read
   their work-list from the replicated indexes (`rebalancesDueBy(now)`, `emptyGroups()`).
 - `SessionEvictionTask` runs as a stream task off the liveness mirror.
 
 ### Records (`record/`)
+
 - event-bridge has **first-class value types** now
   (`ValueType.EVENT_BRIDGE_MEMBERSHIP / OFFSET / REBALANCE`) instead of borrowing the
   engine's.
 
 ### Request actors (`membership/`) — three symmetric per-leader actors
+
 - `ConsumerGroupCoordinator` (writes) — writes the **wire-supplied record straight to
   the log**, no request→record mapping; stamps the server-assigned member id on join only.
 - `HeartbeatHandler` (liveness) — own actor, own query services, reconciliation
@@ -76,15 +83,18 @@ kept deliberately — `MetadataStream` does the same).
   symmetry, not write safety.
 
 ### Transport (`transport/`)
+
 - `CoordinationRequestHandler` owns decode + dispatch + **response framing** (mirrors
   the engine's `AsyncApiRequestHandler`); business code returns raw payloads.
 - `CoordinationResponseEncoder` collapsed to `encode / encodeValue / serialize / encodeRejection`.
 
 ### Gateway
+
 - Kept **one** deliberate mapping (`RequestMapper` → DTO → `Broker*Request` builds the
   record), pending a later gateway/service split.
 
 ## Most recent session's concrete changes
+
 - **feat**: OffsetFetch optional `(topic, partition)` filter — point reads, `-1` for
   uncommitted, empty filter = whole group; exposed as repeated `?partition=topic:id`.
 - **docs**: removed all Kafka/KIP references from comments across the event-bridge tree.
@@ -94,6 +104,7 @@ kept deliberately — `MetadataStream` does the same).
 - 50 tests green in consumer-groups.
 
 ## Conventions to carry into the metadata module
+
 1. Appliers pure writers · processors validate + resolve · validators own validation ·
    `Db*State` dumb storage.
 2. No in-memory mirror for unbounded state; reader actors hold query services on private
@@ -105,3 +116,4 @@ kept deliberately — `MetadataStream` does the same).
 6. Transport layer owns decode + frame; business code returns raw results.
 7. Style: no Kafka/KIP in comments, no inline imports (always import), simple comments —
    not everywhere.
+

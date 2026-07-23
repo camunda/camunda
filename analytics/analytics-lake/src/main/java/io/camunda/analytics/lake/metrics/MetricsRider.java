@@ -16,6 +16,7 @@ import io.camunda.analytics.lake.sink.Segment;
 import io.camunda.analytics.lake.sink.SortedRun;
 import io.camunda.analytics.lake.sink.TableSchema;
 import io.camunda.analytics.lake.sink.algebra.Algebra;
+import io.camunda.analytics.lake.sink.algebra.Algebras;
 import io.camunda.analytics.lake.sink.batch.Interner;
 import io.camunda.analytics.lake.sink.batch.SegmentFactory;
 import io.camunda.analytics.lake.sink.batch.SegmentSorter;
@@ -62,6 +63,13 @@ public final class MetricsRider implements SealRider {
 
   // --- drain machinery (reused across windows) ---
   private final DrainTarget metricsTarget;
+
+  /**
+   * {@code null} when {@link CompiledEntityMetrics#hasHistogram()} is false: a declaration with no
+   * {@code TALL}-shaped measure has nothing to ever put in a {@code _hist} table, so this rider
+   * skips constructing its drain machinery entirely rather than building (and forever leaving
+   * empty) one — see {@link CompiledEntityMetrics#hasHistogram()}'s own javadoc.
+   */
   private final DrainTarget histTarget;
 
   public MetricsRider(
@@ -86,7 +94,10 @@ public final class MetricsRider implements SealRider {
     }
 
     metricsTarget = new DrainTarget(compiled.metricsSchema(), encoderFactory, drainRowCapacity);
-    histTarget = new DrainTarget(compiled.histSchema(), encoderFactory, drainRowCapacity);
+    histTarget =
+        compiled.hasHistogram()
+            ? new DrainTarget(compiled.histSchema(), encoderFactory, drainRowCapacity)
+            : null;
 
     final List<FlatAlgebra> flatList = new ArrayList<>();
     final List<MeasureDeclaration> measures = compiled.measures();
@@ -102,6 +113,19 @@ public final class MetricsRider implements SealRider {
                     ? resolveColumns(compiled.metricsSchema(), algebra, measure.name())
                     : resolveColumns(compiled.histSchema(), algebra, measure.name())));
       }
+    }
+    if (compiled.counted()) {
+      // A count is not a measure: it has no raw column to read/null-check (see FlatAlgebra's own
+      // NO_COLUMN javadoc) and folds unconditionally, once per row that reaches a group, in
+      // onSealed below. Reusing the same FlatAlgebra/pool machinery still lets drainWideRow drain
+      // it through the exact same generic per-flat loop as every other WIDE algebra.
+      final Algebra countAlgebra = Algebras.count();
+      flatList.add(
+          new FlatAlgebra(
+              "",
+              FlatAlgebra.NO_COLUMN,
+              countAlgebra,
+              resolveColumns(compiled.metricsSchema(), countAlgebra, "")));
     }
     flats = flatList.toArray(FlatAlgebra[]::new);
   }
@@ -158,7 +182,11 @@ public final class MetricsRider implements SealRider {
       }
       final int group = groups.findOrAdd(slot, dimCodeScratch);
       for (final FlatAlgebra flat : flats) {
-        if (!run.isNullAt(flat.rawColumn, i)) {
+        if (flat.rawColumn == FlatAlgebra.NO_COLUMN) {
+          // count(): no raw column, no null to skip -- increments once per row that reached a
+          // group, unconditionally (see FlatAlgebra's own NO_COLUMN javadoc).
+          flat.accumulatorFor(group).add(0L);
+        } else if (!run.isNullAt(flat.rawColumn, i)) {
           flat.accumulatorFor(group).add(run.longAt(flat.rawColumn, i));
         }
       }
@@ -177,16 +205,20 @@ public final class MetricsRider implements SealRider {
     final int groupCount = groups.count();
     for (int g = 0; g < groupCount; g++) {
       drainWideRow(g);
-      drainTallRows(g);
+      if (histTarget != null) {
+        drainTallRows(g);
+      }
     }
     final Map<String, List<DataFileResult>> files = new LinkedHashMap<>();
     final List<DataFileResult> metricsFiles = metricsTarget.finish();
     if (!metricsFiles.isEmpty()) {
       files.put(compiled.metricsSchema().table(), metricsFiles);
     }
-    final List<DataFileResult> histFiles = histTarget.finish();
-    if (!histFiles.isEmpty()) {
-      files.put(compiled.histSchema().table(), histFiles);
+    if (histTarget != null) {
+      final List<DataFileResult> histFiles = histTarget.finish();
+      if (!histFiles.isEmpty()) {
+        files.put(compiled.histSchema().table(), histFiles);
+      }
     }
     resetWindow();
     return files;
@@ -195,7 +227,9 @@ public final class MetricsRider implements SealRider {
   @Override
   public void abortWindow() {
     metricsTarget.abort();
-    histTarget.abort();
+    if (histTarget != null) {
+      histTarget.abort();
+    }
     resetWindow();
   }
 
@@ -217,12 +251,22 @@ public final class MetricsRider implements SealRider {
       }
       final Algebra.Accumulator accumulator = flat.accumulatorFor(group);
       if (accumulator.isEmpty()) {
-        // a group exists because SOME measure folded a value; THIS measure saw none. cnt/sum are
-        // honest zeros; min/max are the nullable columns the generated schema reserves for this.
-        ((ColumnVector.LongColumn) segment.vector(flat.absoluteColumns[0])).set(row, 0L);
-        ((ColumnVector.LongColumn) segment.vector(flat.absoluteColumns[1])).set(row, 0L);
-        segment.vector(flat.absoluteColumns[2]).setNull(row);
-        segment.vector(flat.absoluteColumns[3]).setNull(row);
+        // a group exists because SOME other flat folded something (a measure, or count()); THIS
+        // one saw nothing -- an Accumulator must never be drained while empty (see
+        // Algebra.Accumulator#drain's own contract), so every one of its columns is written
+        // directly here instead: nullable columns (e.g. ScalarStatsAlgebra's min/max) get the
+        // honest "nothing observed" NULL, non-nullable ones (cnt/sum, or count()'s own single
+        // column) get an honest zero. Schema-driven rather than hardcoded to a fixed column count
+        // so this generalizes to every WIDE algebra's own column shape, not just
+        // ScalarStatsAlgebra's four.
+        for (final int absoluteColumn : flat.absoluteColumns) {
+          final TableSchema.Column column = segment.schema().columns().get(absoluteColumn);
+          if (column.nullable()) {
+            segment.vector(absoluteColumn).setNull(row);
+          } else {
+            ((ColumnVector.LongColumn) segment.vector(absoluteColumn)).set(row, 0L);
+          }
+        }
         continue;
       }
       metricsTarget.wideWriter.arm(row, flat.absoluteColumns);
@@ -271,6 +315,14 @@ public final class MetricsRider implements SealRider {
 
   /** One (measure, algebra) pair with its per-group accumulator pool. */
   private static final class FlatAlgebra {
+
+    /**
+     * Sentinel {@code rawColumn} for the {@code count()} flat: it folds no raw value at all (see
+     * {@link io.camunda.analytics.lake.sink.algebra.CountAlgebra}'s own javadoc), so {@link
+     * MetricsRider#onSealed}'s per-row loop must not attempt to read (or null-check) a raw column
+     * for it — the one thing every other {@code FlatAlgebra} always has.
+     */
+    static final int NO_COLUMN = -1;
 
     final String measureName;
     final int rawColumn;

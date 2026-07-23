@@ -69,3 +69,4 @@ already-durable store, not a new change-log.
   read-through queryable table view, still change-log-free).
 - A domain requirement to correlate two independent streams within a time window (→ stream–stream
   windowed join; the genuine gap).
+

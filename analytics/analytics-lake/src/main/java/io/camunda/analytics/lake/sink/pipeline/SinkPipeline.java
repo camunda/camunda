@@ -53,6 +53,13 @@ public final class SinkPipeline {
   private final FlushLoop flushLoop;
   private final ThreadFactory threadFactory;
 
+  // Poll-thread-only copy of the same riders FlushLoop was built with -- needed so trySeal()/
+  // close() can fire SealRider#onPollBoundary/#rollbackPollBoundary here (poll thread), alongside
+  // FlushLoop's own onSealed/onWindowClose/abortWindow calls (flush thread). See SealRider's own
+  // javadoc for why every rider (not just poll-fed ones) is called uniformly here; the default
+  // no-op covers every fold-at-flush rider.
+  private final List<SealRider> riders;
+
   // A Deque (not a Queue) is deliberate: the speculative-add/roll-back-on-failure dance in
   // trySeal()/close() must undo exactly the element it just added, by position — not by value
   // equality, which a same-valued-but-distinct SealSnapshot elsewhere in the queue could satisfy
@@ -149,6 +156,7 @@ public final class SinkPipeline {
 
     ring = new ColumnarSegmentRing(segments, new MeteringGate(gate));
     metrics = new SinkMetrics(meterRegistry, config.tableName(), config.sourcePartition(), ring);
+    this.riders = List.copyOf(riders);
     flushLoop =
         new FlushLoop(
             this,
@@ -242,6 +250,10 @@ public final class SinkPipeline {
         new SealSnapshot(
             pendingFirstOffset, pendingLastOffset, currentFrontierMs, currentZeebeWatermarks);
     boundarySnapshots.addLast(snapshot);
+    // Poll-fed riders must freeze their active accumulator set at this exact moment too, for the
+    // exact same "publish before seal" reason as the snapshot above -- see SealRider#onPollBoundary
+    // javadoc. Every rider is called uniformly; the default no-op covers every fold-at-flush rider.
+    riders.forEach(SealRider::onPollBoundary);
     if (ring.seal(reason)) {
       pendingFirstOffsetSet = false;
       lastFlushCheckMs = now;
@@ -249,8 +261,11 @@ public final class SinkPipeline {
       // ring full: the gate is already paused by ring.seal() itself; this tick's boundary attempt
       // never happened, so undo the speculative snapshot and retry on a later tick. removeLast(),
       // not remove(snapshot): nothing else appends concurrently (poll thread only), so the tail is
-      // always exactly the element just added.
+      // always exactly the element just added. Symmetrically, undo the speculative rider swap too
+      // -- safe because nothing can run between the swap above and this rollback (poll thread only,
+      // never reentrant).
       boundarySnapshots.removeLast();
+      riders.forEach(SealRider::rollbackPollBoundary);
     }
   }
 
@@ -276,13 +291,22 @@ public final class SinkPipeline {
                 currentZeebeWatermarks);
         boundarySnapshots.addLast(snapshot);
         pendingFirstOffsetSet = false;
+        riders.forEach(SealRider::onPollBoundary);
         while (!ring.seal(SealReason.SHUTDOWN)) {
           if (failed) {
             boundarySnapshots.removeLast();
+            riders.forEach(SealRider::rollbackPollBoundary);
             break;
           }
           LockSupport.parkNanos(PARK_NANOS_WHEN_RING_FULL);
         }
+      } else {
+        // Nothing new to seal, but a poll-fed rider (see SealRider#onPollBoundary's javadoc) may
+        // still hold state accumulated since the last boundary -- freeze it unconditionally so
+        // FlushLoop's shutdown-fallback drain (see FlushLoop#drainShutdown and
+        // SealRider#hasPendingPollFedData) can pick it up even though the raw window itself has
+        // nothing left to close.
+        riders.forEach(SealRider::onPollBoundary);
       }
     }
     flushLoop.requestStop();

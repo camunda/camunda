@@ -18,7 +18,7 @@
 > `CoordinationResponseEncoder.encodeValue`; and async tasks had to be scheduled in
 > `onRecovered` (not `init`). See the `event-bridge-stream-dispatch-gotchas` note. The clean
 > fix is the deferred #8 (stop borrowing engine ValueTypes).
-
+>
 > Focused brief for picking this up in a fresh session. It is the **one remaining**
 > piece of the event-bridge "full engine model" refactor (tracked as task #14). It is
 > deliberately scoped, behavior-sensitive, and **must be validated on a running cluster**,
@@ -60,9 +60,9 @@ The engine framework is done and committed (module `event-bridge-stream`):
 ## The decision: what goes through the stream vs request/response
 
 | Through the stream (commands, validated in processor, replicated) | Request/response (in-memory, no log write) |
-|---|---|
-| `JOIN_GROUP`, `LEAVE_GROUP`, `REBALANCE` (internal) | `HEARTBEAT` |
-| (`COMMIT_OFFSET` — already done)                    | |
+|-------------------------------------------------------------------|--------------------------------------------|
+| `JOIN_GROUP`, `LEAVE_GROUP`, `REBALANCE` (internal)               | `HEARTBEAT`                                |
+| (`COMMIT_OFFSET` — already done)                                  |                                            |
 
 **Heartbeat stays R/R** — confirmed against both Kafka protocols: the heartbeat RPC never writes
 to the log for liveness; only state transitions do. So the heartbeat reads the member's target from
@@ -93,6 +93,7 @@ HEARTBEAT   (R/R) --> read member target + epochs from mirror --> compute assign
 ```
 
 ### Replicated state (coordinator `ZeebeDb`)
+
 - group: `groupId -> { groupEpoch, assignmentEpoch, partitionCount }`
 - member: `(groupId, memberId) -> { instanceId(nullable=dynamic), memberEpoch, targetPartitions }`
 - **thread-safe membership mirror** (`groupId -> snapshot`) maintained by the appliers, for the
@@ -105,6 +106,7 @@ lowest churn), **or** introduce proper per-member column families (cleaner, more
 reuse is the faster path; first-class column families are the cleaner long-term shape.
 
 ### Reuse, don't rewrite
+
 - `assignor/BalancedStickyAssignor` + `PartitionAssignment` — call from the async task unchanged.
 - The **reconciliation logic** in `ConsumerGroup.reconcileAssignment` (assign/revoke deltas,
   `pendingRevocations`, `stableConsumers`, `restoreToConfirmedAssignment`) and **eviction** — keep
@@ -131,6 +133,7 @@ reuse is the faster path; first-class column families are the cleaner long-term 
    leader *and* replay), or replace it with the durable state + an in-memory reconciliation tracker.
 
 ## Hazards — be careful here (this code is fragile)
+
 - **Static-member rejoin idempotency.** A static member re-joining while its session is live must
   NOT bump the epoch or add a second session (see `registerMember` + the comment about the
   "perpetual rejoin storm" it caused). Preserve this exactly.
@@ -146,20 +149,26 @@ reuse is the faster path; first-class column families are the cleaner long-term 
   (no code change to the validator).
 
 ## Validation (REQUIRED before merge — unit tests will not catch the regressions)
+
 Run the local cluster and exercise the full lifecycle:
 - `event-bridge/run-local-cluster.sh` (3 nodes; see the `event-bridge-runtime-smoke` memory note).
 - Join several consumers → observe a single debounced rebalance → assignment delivered via heartbeat
-  → commit offsets (fenced by ownership) → leave → re-rebalance.
+→ commit offsets (fenced by ownership) → leave → re-rebalance.
 - Kill the coordinator leader → confirm the new leader replays membership + target and consumers
-  re-attach **without** a rejoin storm.
+re-attach **without** a rejoin storm.
 
 ## Related follow-ups (separate tasks)
+
 - Command **rejection capability is now available** (engine-aligned, two parts): pair
   `Writers.rejection().appendRejection(command, type, reason)` (logs a `COMMAND_REJECTION` record)
   with `Writers.response().writeRejection(command, type, reason)` (fails the request future with a
   `CommandRejectionException`). Use it for genuine join/leave rejections (fenced epoch, unknown
   group) instead of a success-shaped response. Still deferred: mapping a rejection to an HTTP status
   + reason in the gateway/client.
-- #8 remove the reused-engine-`ValueType` hack.
+- 
+
+# 8 remove the reused-engine-`ValueType` hack.
+
 - KIP-848 parity: persist each member's reconciled epoch (durable reconciliation progress); we keep
   it ephemeral initially.
+

@@ -11,6 +11,7 @@ import io.camunda.analytics.lake.catalog.LakeCommitCoordinator;
 import io.camunda.analytics.lake.metrics.CompiledEntityMetrics;
 import io.camunda.analytics.lake.metrics.EntityMetrics;
 import io.camunda.analytics.lake.metrics.MetricsRider;
+import io.camunda.analytics.lake.metrics.PollFedRider;
 import io.camunda.analytics.lake.sink.BackpressureGate;
 import io.camunda.analytics.lake.sink.BatchEncoder;
 import io.camunda.analytics.lake.sink.ColumnType;
@@ -327,22 +328,36 @@ public final class LakePocApp {
             .window(Duration.ofMinutes(1), "ended_at")
             .measure("duration_ms", Algebras.scalarStats(), Algebras.expHistogram(3))
             .build();
-    final Table activityMetricsTable =
-        writer.partialsTableOrCreate(
-            activityMetrics.metricsSchema(), activityMetrics.fingerprint());
-    final Table activityHistTable =
-        writer.partialsTableOrCreate(activityMetrics.histSchema(), activityMetrics.fingerprint());
-    final Table instanceMetricsTable =
-        writer.partialsTableOrCreate(
-            instanceMetrics.metricsSchema(), instanceMetrics.fingerprint());
-    final Table instanceHistTable =
-        writer.partialsTableOrCreate(instanceMetrics.histSchema(), instanceMetrics.fingerprint());
-    final Table instanceVariantMetricsTable =
-        writer.partialsTableOrCreate(
-            instanceVariantMetrics.metricsSchema(), instanceVariantMetrics.fingerprint());
-    final Table instanceVariantHistTable =
-        writer.partialsTableOrCreate(
-            instanceVariantMetrics.histSchema(), instanceVariantMetrics.fingerprint());
+    // Record-fed: dims(process_id, version, flow_id, source_element_id, target_element_id)
+    // resolved by LakeTranslator from a sequence-flow-taken record plus its definition's own
+    // deployed BPMN (see LakeTranslator#onProcess/#resolveFlowEndpoints); a purely logical row
+    // shape backing no real raw table (see EntityMetrics#declare's own javadoc) and PollFedRider's
+    // own class javadoc). count()-only: these events carry nothing worth measuring, only counting.
+    final CompiledEntityMetrics flowMetrics =
+        EntityMetrics.declare("flows", flowsVirtualSchema())
+            .dims("process_id", "version", "flow_id", "source_element_id", "target_element_id")
+            .window(Duration.ofMinutes(1), "taken_at")
+            .count()
+            .build();
+    // Record-fed, same idea, for process-instance-started events (see LakeTranslator's own
+    // ELEMENT_ACTIVATED/root handling).
+    final CompiledEntityMetrics instanceStartMetrics =
+        EntityMetrics.declare("instance_starts", instanceStartsVirtualSchema())
+            .dims("process_id", "version")
+            .window(Duration.ofMinutes(1), "started_at")
+            .count()
+            .build();
+    // Row-fed, same MetricsRider machinery as instanceMetrics/activityMetrics above -- rides the
+    // instances raw table's own completion rows, keyed by the instance's OWN start slot (not its
+    // completion slot) so a cohort's started_cnt (live, from instanceStartMetrics above) and this
+    // entity's completed cnt/histogram (at completion) together give survival/cohort analysis with
+    // correct censoring: still-running per cohort = started_cnt - instance_cohorts_metrics.cnt.
+    final CompiledEntityMetrics instanceCohortMetrics =
+        EntityMetrics.declare("instance_cohorts", instancesSchema)
+            .dims("process_id")
+            .window(Duration.ofHours(1), "started_at")
+            .measure("duration_ms", Algebras.scalarStats(), Algebras.expHistogram(3))
+            .build();
 
     // Mirrors the "<table.location()>/data/<fileName>" convention IcebergLakeWriter's own legacy
     // path uses -- see LocalFileSink's javadoc.
@@ -359,45 +374,26 @@ public final class LakePocApp {
     final IcebergParquetEncoderFactory variantsEncoderFactory =
         new IcebergParquetEncoderFactory(
             variantsTable.schema(), fileSink, VARIANT_SEGMENT_ROWS, Set.of());
-    // The rider's one factory dispatches by generated-schema table name -- each partials table has
-    // its own iceberg schema and thus its own underlying encoder factory.
-    final Map<String, BatchEncoder.Factory> partialsFactories =
-        Map.of(
-            activityMetrics.metricsSchema().table(),
-            new IcebergParquetEncoderFactory(
-                activityMetricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
-            activityMetrics.histSchema().table(),
-            new IcebergParquetEncoderFactory(
-                activityHistTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
-            instanceMetrics.metricsSchema().table(),
-            new IcebergParquetEncoderFactory(
-                instanceMetricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
-            instanceMetrics.histSchema().table(),
-            new IcebergParquetEncoderFactory(
-                instanceHistTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
-            instanceVariantMetrics.metricsSchema().table(),
-            new IcebergParquetEncoderFactory(
-                instanceVariantMetricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
-            instanceVariantMetrics.histSchema().table(),
-            new IcebergParquetEncoderFactory(
-                instanceVariantHistTable.schema(), fileSink, SEGMENT_ROWS, Set.of()));
-    final BatchEncoder.Factory partialsEncoderFactory =
-        (schema, epochDay) -> partialsFactories.get(schema.table()).newFile(schema, epochDay);
 
     // Every pipeline commits through the one coordinator: raw-only descriptors are a batch of one,
     // rider-carrying descriptors fan out atomically -- a single commit path either way.
     final LakeCommitCoordinator coordinator = new LakeCommitCoordinator(writer.jdbcUrl(), "lake");
-    final Map<String, Table> tablesByName =
-        Map.ofEntries(
-            Map.entry("instances", instancesTable),
-            Map.entry("activities", activitiesTable),
-            Map.entry("variants", variantsTable),
-            Map.entry(activityMetrics.metricsSchema().table(), activityMetricsTable),
-            Map.entry(activityMetrics.histSchema().table(), activityHistTable),
-            Map.entry(instanceMetrics.metricsSchema().table(), instanceMetricsTable),
-            Map.entry(instanceMetrics.histSchema().table(), instanceHistTable),
-            Map.entry(instanceVariantMetrics.metricsSchema().table(), instanceVariantMetricsTable),
-            Map.entry(instanceVariantMetrics.histSchema().table(), instanceVariantHistTable));
+    final Map<String, Table> tablesByName = new HashMap<>();
+    tablesByName.put("instances", instancesTable);
+    tablesByName.put("activities", activitiesTable);
+    tablesByName.put("variants", variantsTable);
+    // The rider's one factory dispatches by generated-schema table name -- each partials table has
+    // its own iceberg schema and thus its own underlying encoder factory.
+    final Map<String, BatchEncoder.Factory> partialsFactories = new HashMap<>();
+    registerPartials(writer, activityMetrics, fileSink, tablesByName, partialsFactories);
+    registerPartials(writer, instanceMetrics, fileSink, tablesByName, partialsFactories);
+    registerPartials(writer, instanceVariantMetrics, fileSink, tablesByName, partialsFactories);
+    registerPartials(writer, flowMetrics, fileSink, tablesByName, partialsFactories);
+    registerPartials(writer, instanceStartMetrics, fileSink, tablesByName, partialsFactories);
+    registerPartials(writer, instanceCohortMetrics, fileSink, tablesByName, partialsFactories);
+    final BatchEncoder.Factory partialsEncoderFactory =
+        (schema, epochDay) -> partialsFactories.get(schema.table()).newFile(schema, epochDay);
+
     final CoordinatedDescriptorSink commitSink =
         new CoordinatedDescriptorSink(coordinator, Namespace.of("lake"), tablesByName::get);
 
@@ -414,10 +410,84 @@ public final class LakePocApp {
         instanceMetrics,
         activityMetrics,
         instanceVariantMetrics,
+        flowMetrics,
+        instanceStartMetrics,
+        instanceCohortMetrics,
         partialsEncoderFactory,
         coordinator,
         config.flushIntervalMs(),
         new SimpleMeterRegistry());
+  }
+
+  /**
+   * Creates (or loads) {@code compiled}'s {@code _metrics} table, and its {@code _hist} table too —
+   * but only when {@link CompiledEntityMetrics#hasHistogram()} says there is one — registering each
+   * under its own generated table name in both maps every partition's riders and the shared commit
+   * sink share.
+   */
+  private static void registerPartials(
+      final IcebergLakeWriter writer,
+      final CompiledEntityMetrics compiled,
+      final LocalFileSink fileSink,
+      final Map<String, Table> tablesByName,
+      final Map<String, BatchEncoder.Factory> partialsFactories) {
+    final Table metricsTable =
+        writer.partialsTableOrCreate(compiled.metricsSchema(), compiled.fingerprint());
+    tablesByName.put(compiled.metricsSchema().table(), metricsTable);
+    partialsFactories.put(
+        compiled.metricsSchema().table(),
+        new IcebergParquetEncoderFactory(metricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()));
+    if (compiled.hasHistogram()) {
+      final Table histTable =
+          writer.partialsTableOrCreate(compiled.histSchema(), compiled.fingerprint());
+      tablesByName.put(compiled.histSchema().table(), histTable);
+      partialsFactories.put(
+          compiled.histSchema().table(),
+          new IcebergParquetEncoderFactory(histTable.schema(), fileSink, SEGMENT_ROWS, Set.of()));
+    }
+  }
+
+  /**
+   * A purely logical row shape (see {@code io.camunda.analytics.lake.metrics.EntityMetrics#declare}
+   * and {@code io.camunda.analytics.lake.metrics.PollFedRider}'s own class javadocs) for one
+   * qualifying {@code SEQUENCE_FLOW_TAKEN} record — no {@link SinkPipeline} ever materializes rows
+   * of it. Field ids/sort order are meaningless here (never encoded, never sorted) and are set to
+   * harmless placeholders.
+   */
+  private static TableSchema flowsVirtualSchema() {
+    return new TableSchema(
+        "flows",
+        List.of(
+            new TableSchema.Column("process_id", ColumnType.STRING_DICT, 1, false, -1, false),
+            new TableSchema.Column("version", ColumnType.INT, 2, false, -1, false),
+            new TableSchema.Column("flow_id", ColumnType.STRING_DICT, 3, false, -1, false),
+            new TableSchema.Column("source_element_id", ColumnType.STRING_DICT, 4, true, -1, false),
+            new TableSchema.Column("target_element_id", ColumnType.STRING_DICT, 5, true, -1, false),
+            new TableSchema.Column(
+                "taken_at",
+                ColumnType.LONG,
+                6,
+                false,
+                -1,
+                true,
+                TableSchema.LogicalType.TIMESTAMPTZ)));
+  }
+
+  /** Same idea as {@link #flowsVirtualSchema()}, for one process-instance-started record. */
+  private static TableSchema instanceStartsVirtualSchema() {
+    return new TableSchema(
+        "instance_starts",
+        List.of(
+            new TableSchema.Column("process_id", ColumnType.STRING_DICT, 1, false, -1, false),
+            new TableSchema.Column("version", ColumnType.INT, 2, false, -1, false),
+            new TableSchema.Column(
+                "started_at",
+                ColumnType.LONG,
+                3,
+                false,
+                -1,
+                true,
+                TableSchema.LogicalType.TIMESTAMPTZ)));
   }
 
   private static void runLoop(
@@ -604,10 +674,18 @@ public final class LakePocApp {
     final PartitionBackpressureGate gate = new PartitionBackpressureGate(consumer, topicPartition);
     // Riders are per-pipeline state (accumulators keyed by this partition's flush windows), so
     // each partition gets its own instances -- unlike the commit sink, which is shared. The
-    // instances pipeline carries TWO riders (instance-level metrics and per-variant metrics):
-    // FlushLoop's rider list is a List<SealRider>, and its drainRiders() already merges disjoint
-    // per-rider derived-table sets (throwing on a clash) -- two riders on one pipeline is
-    // supported machinery already, not something bolted on here.
+    // instances pipeline hosts FIVE: three row-fed MetricsRiders (instance-completion metrics,
+    // per-variant metrics, and cohort metrics -- the last rides completion rows keyed by the
+    // instance's own start slot) plus the two poll-fed riders (branch counts, started counters)
+    // whose records never produce a raw row at all -- see PollFedRider's own class javadoc for
+    // the boundary alignment this relies on. FlushLoop's rider list is a List<SealRider>, and
+    // its drainRiders() already merges disjoint per-rider derived-table sets (throwing on a
+    // clash) -- many riders on one pipeline is supported machinery, not something bolted on here.
+    final PollFedRider flowCountsRider =
+        new PollFedRider(wiring.flowMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS);
+    final PollFedRider startedCountsRider =
+        new PollFedRider(
+            wiring.instanceStartMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS);
     final SinkPipeline instancesPipeline =
         newPipeline(
             wiring.instancesSchema(),
@@ -619,9 +697,11 @@ public final class LakePocApp {
                 new MetricsRider(
                     wiring.instanceMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS),
                 new MetricsRider(
-                    wiring.instanceVariantMetrics(),
-                    wiring.partialsEncoderFactory(),
-                    SEGMENT_ROWS)),
+                    wiring.instanceVariantMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS),
+                new MetricsRider(
+                    wiring.instanceCohortMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS),
+                flowCountsRider,
+                startedCountsRider),
             wiring.flushIntervalMs(),
             wiring.meterRegistry(),
             SEGMENT_ROWS,
@@ -661,7 +741,13 @@ public final class LakePocApp {
     final RowAppender activityAppender = new SegmentRowAppender(activitiesPipeline.ring());
     final RowAppender variantsAppender = new SegmentRowAppender(variantsPipeline.ring());
     final LakeTranslator translator =
-        new LakeTranslator(state, instanceAppender, activityAppender, variantsAppender);
+        new LakeTranslator(
+            state,
+            instanceAppender,
+            activityAppender,
+            variantsAppender,
+            flowCountsRider,
+            startedCountsRider);
     return new PartitionPipelines(
         instancesPipeline, activitiesPipeline, variantsPipeline, translator);
   }
@@ -747,6 +833,9 @@ public final class LakePocApp {
       CompiledEntityMetrics instanceMetrics,
       CompiledEntityMetrics activityMetrics,
       CompiledEntityMetrics instanceVariantMetrics,
+      CompiledEntityMetrics flowMetrics,
+      CompiledEntityMetrics instanceStartMetrics,
+      CompiledEntityMetrics instanceCohortMetrics,
       BatchEncoder.Factory partialsEncoderFactory,
       LakeCommitCoordinator coordinator,
       long flushIntervalMs,

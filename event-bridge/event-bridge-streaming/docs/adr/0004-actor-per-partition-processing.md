@@ -40,14 +40,14 @@ advance chained to its completion. The decode-ahead source stage from ADR 0003 i
 unchanged.
 
 ```
-  source thread (plain, blocking)         per-partition actor (cpu-bound)         sink IO executor (blocking)
-  ───────────────────────────────         ───────────────────────────────         ───────────────────────────
-  poll → decode → route to queue   ──▶  onWork: drain queue, process (fold)
-  (bounded put = back-pressure)          runAtFixedRate: punctuate / commit tick
-  materialize/revoke partitions          on commit tick, if pending:
-                                            offload committer.commit(p, offset) ──▶ flush sink + checkpoint +
-                                            actor.runOnCompletion(future, …)  ◀───   consumer.commitOffset  (durable)
-                                            → clear pending, resume folding
+source thread (plain, blocking)         per-partition actor (cpu-bound)         sink IO executor (blocking)
+───────────────────────────────         ───────────────────────────────         ───────────────────────────
+poll → decode → route to queue   ──▶  onWork: drain queue, process (fold)
+(bounded put = back-pressure)          runAtFixedRate: punctuate / commit tick
+materialize/revoke partitions          on commit tick, if pending:
+                                          offload committer.commit(p, offset) ──▶ flush sink + checkpoint +
+                                          actor.runOnCompletion(future, …)  ◀───   consumer.commitOffset  (durable)
+                                          → clear pending, resume folding
 ```
 
 ### Delegation, not inheritance
@@ -222,4 +222,7 @@ multi-consumer/multi-node scale-out.
 - **Make `DatasetWriter.flush()` return a future (true async ES/OS).** More power,
   but pushes async into sink authors and does nothing for JDBC (no async driver).
   Deferred until the IO-offload is shown insufficient.
+
 ```
+```
+

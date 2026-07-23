@@ -38,7 +38,17 @@ public final class EntityMetrics {
   /**
    * @param entityName a non-empty name identifying this entity (e.g. {@code user_tasks}); used to
    *     name the generated partials tables ({@code <entityName>_metrics}/{@code <entityName>_hist})
-   * @param rawSchema the raw table schema dims/measures are resolved against
+   * @param rawSchema the row shape dims/measures are resolved against — a {@link TableSchema} is
+   *     used purely as a typed column catalog here, and need not back a physical sink table. A
+   *     row-fed entity (see {@code io.camunda.analytics.lake.metrics.MetricsRider}) naturally
+   *     passes an actual raw pipeline's own schema, since its rows really do live in that table. A
+   *     record-fed entity (see {@code io.camunda.analytics.lake.metrics.PollFedRider}) instead
+   *     declares a purely <b>logical</b> row shape — the tuple of typed fields one qualifying Zeebe
+   *     record contributes — with no {@link io.camunda.analytics.lake.sink.pipeline.SinkPipeline}
+   *     ever materializing rows of it: this is the intended generalization, not a workaround, and
+   *     is why every method here validates against {@code rawSchema} by column name/type alone,
+   *     never against anything that would require a real backing table (segments, a ring, a sorter)
+   *     to exist.
    */
   public static Builder declare(final String entityName, final TableSchema rawSchema) {
     return new Builder(entityName, rawSchema);
@@ -53,6 +63,7 @@ public final class EntityMetrics {
     private Duration window; // null == NONE
     private String windowSource; // null == default to the raw schema's familyDaySource column
     private final Map<String, List<Algebra>> measures = new LinkedHashMap<>();
+    private boolean counted;
 
     private Builder(final String entityName, final TableSchema rawSchema) {
       this.entityName = entityName;
@@ -95,6 +106,30 @@ public final class EntityMetrics {
     }
 
     /**
+     * Declares a plain row count alongside (or instead of) any measures: the entity's {@code
+     * _metrics} row gains an unprefixed, non-nullable {@code cnt} column counting every row that
+     * reached a group (see {@link io.camunda.analytics.lake.sink.algebra.CountAlgebra}'s own
+     * javadoc for why it needs no raw column and no measure-name prefix). At most once per
+     * declaration — a count either exists or doesn't, there is nothing to disambiguate a second
+     * call from the first.
+     *
+     * <p>A declaration may combine {@code count()} with one or more {@code measure(...)} calls (a
+     * count is orthogonal to any measure), or declare {@code count()} alone with no measures at all
+     * — the latter is exactly what a record-fed entity with nothing to measure but "how many" needs
+     * (see {@code io.camunda.analytics.lake.metrics.PollFedRider}'s own class javadoc).
+     *
+     * @throws IllegalStateException if called twice on the same builder
+     */
+    public Builder count() {
+      if (counted) {
+        throw new IllegalStateException(
+            "entity '" + entityName + "': count() was already declared");
+      }
+      counted = true;
+      return this;
+    }
+
+    /**
      * Validates the declaration against the raw schema and compiles it.
      *
      * @throws IllegalArgumentException with a precise message identifying which rule failed
@@ -107,9 +142,11 @@ public final class EntityMetrics {
         throw new IllegalArgumentException(
             "entity '" + entityName + "' declares no dims — at least one is required");
       }
-      if (measures.isEmpty()) {
+      if (measures.isEmpty() && !counted) {
         throw new IllegalArgumentException(
-            "entity '" + entityName + "' declares no measures — at least one is required");
+            "entity '"
+                + entityName
+                + "' declares no measures and no count() — at least one is required");
       }
 
       final int[] dimColumnIndexes = new int[dims.size()];
@@ -227,7 +264,7 @@ public final class EntityMetrics {
               runPrefixLength);
 
       return new CompiledEntityMetrics(
-          entityName, rawSchema, dims, windowMicros, measureDeclarations, riderPlan);
+          entityName, rawSchema, dims, windowMicros, measureDeclarations, riderPlan, counted);
     }
 
     /**

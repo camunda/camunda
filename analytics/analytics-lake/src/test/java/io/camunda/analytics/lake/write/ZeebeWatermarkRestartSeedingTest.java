@@ -211,6 +211,8 @@ class ZeebeWatermarkRestartSeedingTest {
     private final Map<Long, VariantAccumulator> variantAccumulators = new HashMap<>();
     private final Map<String, VariantName> variantNames = new HashMap<>();
 
+    private final Map<Long, Map<String, FlowEndpoints>> flowEndpoints = new HashMap<>();
+
     @Override
     public void putInstance(final long instanceKey, final OpenInstance instance) {
       instances.put(instanceKey, instance);
@@ -290,6 +292,19 @@ class ZeebeWatermarkRestartSeedingTest {
     @Override
     public void forEachOpenElement(final BiConsumer<Long, OpenElement> consumer) {
       elements.forEach(consumer);
+    }
+
+    @Override
+    public void putFlowEndpoints(
+        final long processDefinitionKey, final String flowId, final FlowEndpoints endpoints) {
+      flowEndpoints
+          .computeIfAbsent(processDefinitionKey, k -> new HashMap<>())
+          .put(flowId, endpoints);
+    }
+
+    @Override
+    public FlowEndpoints flowEndpoints(final long processDefinitionKey, final String flowId) {
+      return flowEndpoints.getOrDefault(processDefinitionKey, Map.of()).get(flowId);
     }
 
     @Override

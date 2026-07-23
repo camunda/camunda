@@ -412,6 +412,18 @@ class LakeTranslatorVariantTest {
     private final Map<Long, Map<String, String>> variables = new HashMap<>();
     private final Map<Long, VariantAccumulator> variantAccumulators = new HashMap<>();
     private final Map<String, VariantName> variantNames = new HashMap<>();
+    private final Map<String, FlowEndpoints> flowEndpointsByKey = new HashMap<>();
+
+    @Override
+    public void putFlowEndpoints(
+        final long processDefinitionKey, final String flowId, final FlowEndpoints endpoints) {
+      flowEndpointsByKey.put(processDefinitionKey + "#" + flowId, endpoints);
+    }
+
+    @Override
+    public FlowEndpoints flowEndpoints(final long processDefinitionKey, final String flowId) {
+      return flowEndpointsByKey.get(processDefinitionKey + "#" + flowId);
+    }
 
     @Override
     public void putInstance(final long instanceKey, final OpenInstance instance) {

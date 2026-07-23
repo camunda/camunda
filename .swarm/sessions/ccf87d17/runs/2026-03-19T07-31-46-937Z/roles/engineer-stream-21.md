@@ -14,5 +14,7 @@ All changes are clean (the module is untracked, not modified from a prior commit
 - `ConsumerTest.java` — added 4 new regression tests: `shouldNotAdvanceNextPositionForPartitionsPolleddBeforeRebalance`, `shouldSendCurrentGenerationInCommitRequest`, `shouldUpdateGenerationFromHeartbeatResponse`, `shouldKeepGenerationUnchangedWhenHeartbeatResponseOmitsIt`.
 
 ## Verification
+
 - Tests: ✅ 49/49 pass (was 45)
 - Formatting: ✅ Spotless applied cleanly
+

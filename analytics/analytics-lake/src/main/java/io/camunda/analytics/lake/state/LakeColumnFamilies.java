@@ -46,7 +46,18 @@ public enum LakeColumnFamilies implements EnumValue, ScopedColumnFamily {
    * big-endian) -> VariantName}. The fixed-width {@code h32} suffix makes the key unambiguous
    * without a length prefix (see {@code RocksDbTranslatorState#variantNameKey}'s own javadoc).
    */
-  VARIANT_NAMES(5, ColumnFamilyScope.PARTITION_LOCAL);
+  VARIANT_NAMES(5, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Resolved sequence-flow endpoints: {@code processDefinitionKey(8, big-endian) ++ flowIdUtf8 ->
+   * FlowEndpoints}, parsed once from a process definition's deployed BPMN and persisted so it
+   * survives a restart (the deployment record itself is not re-read after bootstrap — see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator}'s own {@code ValueType.PROCESS}/{@code
+   * CREATED} handling). Renumbered from the lane's original {@code 4} at merge time: {@code 4}/
+   * {@code 5} were concurrently claimed by the variant column families above, and ids must be
+   * unique and stable per state directory (both lanes require a fresh warehouse anyway).
+   */
+  FLOW_ENDPOINTS(6, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

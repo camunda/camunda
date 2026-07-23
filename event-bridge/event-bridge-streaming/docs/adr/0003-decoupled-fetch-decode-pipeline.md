@@ -78,14 +78,14 @@ per-partition queues, keeping **single-writer per partition** as the load-bearin
 invariant:
 
 ```
-   Stage 1: fetch/decode (1 thread)         per-partition queues       Stage 2: executor pool (N threads)
-   ────────────────────────────────         ──────────────────         ──────────────────────────────────
-   consumer.poll(maxPoll, budget)   ──▶  [ p0 | decoded, bounded ] ──▶  executor leases a *runnable* partition
-   group by partition                    [ p1 | decoded, bounded ]        decode already done upstream
-   decode each event                     [ p2 | decoded, bounded ]        process a bounded batch
-   (or wrap as DecodeFailure)            [ .. | ...             ]         punctuate / commit if due
-   route to that partition's queue                                        release the lease
-   backpressure on aggregate fill                                    control thread: rebalance apply, lease-coordinated revoke
+Stage 1: fetch/decode (1 thread)         per-partition queues       Stage 2: executor pool (N threads)
+────────────────────────────────         ──────────────────         ──────────────────────────────────
+consumer.poll(maxPoll, budget)   ──▶  [ p0 | decoded, bounded ] ──▶  executor leases a *runnable* partition
+group by partition                    [ p1 | decoded, bounded ]        decode already done upstream
+decode each event                     [ p2 | decoded, bounded ]        process a bounded batch
+(or wrap as DecodeFailure)            [ .. | ...             ]         punctuate / commit if due
+route to that partition's queue                                        release the lease
+backpressure on aggregate fill                                    control thread: rebalance apply, lease-coordinated revoke
 ```
 
 ### 1. Stage 1 — fetch / decode / route (one thread)
@@ -294,4 +294,7 @@ approximate with more consumers. The two are orthogonal and compose.
   every partition away from its executor to commit/punctuate. Rejected: the barrier
   is already per-partition, so self-commit under the existing lease is simpler and
   keeps partitions independent.
+
 ```
+```
+

@@ -77,6 +77,15 @@ public interface TranslatorState extends AutoCloseable {
    */
   record VariantName(String id, VariantElementKind kind) {}
 
+  /**
+   * A sequence flow's source/target element ids, resolved once from its process definition's
+   * deployed BPMN (see {@code io.camunda.analytics.lake.translate.LakeTranslator}'s own {@code
+   * ValueType.PROCESS}/{@code CREATED} handling) and persisted so branch-count folding can resolve
+   * them by id lookup alone, with no BPMN model kept in memory and no adjacency guessed from record
+   * ordering (unreliable under parallel-gateway interleaving).
+   */
+  record FlowEndpoints(String sourceElementId, String targetElementId) {}
+
   void putInstance(long instanceKey, OpenInstance instance);
 
   /** Returns the open instance or {@code null} when unknown (e.g. replay of a finished one). */
@@ -121,6 +130,21 @@ public interface TranslatorState extends AutoCloseable {
    * null}.
    */
   VariantName getVariantName(String bpmnProcessId, int h32);
+
+  /**
+   * Persists {@code flowId}'s resolved source/target element ids for {@code processDefinitionKey}.
+   * Last-write-wins, like every other put on this store — parsing the same deployment record twice
+   * (a replay) produces the identical result, so re-persisting it is idempotent, not merely safe.
+   */
+  void putFlowEndpoints(long processDefinitionKey, String flowId, FlowEndpoints endpoints);
+
+  /**
+   * Returns {@code flowId}'s resolved endpoints for {@code processDefinitionKey}, or {@code null}
+   * when unknown — most commonly because that definition's own deployment record was never seen by
+   * this translator (e.g. the source log's head was retention-trimmed before this translator's
+   * bootstrap offset). Never guessed, never inferred — {@code null} is the honest answer.
+   */
+  FlowEndpoints flowEndpoints(long processDefinitionKey, String flowId);
 
   /**
    * Full scan of the open instance set, keyed by process instance key. The caller is the single

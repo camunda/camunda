@@ -13,3 +13,4 @@ All green. Here's what was fixed:
 **Cosmetic/clarity fixes:**
 
 3. **SBE field IDs renumbered** — `PublishBatchResponse`, `PollResponse`, and `SubscribeResponse` had non-sequential field IDs (e.g. id=2 declared after id=3). Declaration order was actually valid SBE (fields → groups → data), so the build never failed, but the out-of-order IDs were confusing. Renumbered to be sequential.
+
