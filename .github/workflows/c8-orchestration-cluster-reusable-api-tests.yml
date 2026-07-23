@@ -34,6 +34,9 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.branch }}
+          # Nothing later in this job needs the short-lived GITHUB_TOKEN left
+          # in .git/config (zizmor: artipacked).
+          persist-credentials: false
 
       - name: Set CAMUNDA_DOCKER_IMAGE
         run: |
@@ -213,6 +216,32 @@ jobs:
           echo "Running API tests"
           npm run test -- --project=api-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      # Analytics exporter tests manage their own throwaway broker/collector
+      # stack via utils/dockerComposeControl.ts, so they run separately from
+      # api-tests above. Main-only, permanently — not backporting, the
+      # exporter's config differs too much on stable/8.7/8.8/8.9.
+      - name: Run analytics-exporter isolated tests
+        if: inputs.branch == 'main'
+        shell: bash
+        run: npm run test -- --project=analytics-exporter-isolated
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Clean up analytics-exporter isolated environment
+        if: always() && inputs.branch == 'main'
+        shell: bash
+        env:
+          # Combining with docker-compose.yml means Compose validates the
+          # whole merged service graph, including the shared camunda
+          # service's ${DATABASE} reference — override the job-wide
+          # "Elasticsearch" (capitalized) here, matching
+          # dockerComposeControl.ts's lowercasing, so this doesn't fail
+          # config validation and get silently skipped by `|| true`.
+          DATABASE: elasticsearch
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.analytics-isolated.yml \
+            -p analytics-isolated down -v || true
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Publish test results to TestRail
         if: always()

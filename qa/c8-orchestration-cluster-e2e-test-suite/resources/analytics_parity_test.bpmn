@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_AnalyticsParityTest" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.49.0-rc.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.10.0">
+  <bpmn:process id="analytics_parity_test" name="Analytics Parity Test" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_AnalyticsParityTest" name="Start">
+      <bpmn:outgoing>Flow_StartToReviewTask</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="EndEvent_AnalyticsParityTest" name="End">
+      <bpmn:incoming>Flow_ReviewTaskToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_StartToReviewTask" sourceRef="StartEvent_AnalyticsParityTest" targetRef="UserTask_ReviewAnalyticsParityInstance" />
+    <bpmn:sequenceFlow id="Flow_ReviewTaskToEnd" sourceRef="UserTask_ReviewAnalyticsParityInstance" targetRef="EndEvent_AnalyticsParityTest" />
+    <bpmn:userTask id="UserTask_ReviewAnalyticsParityInstance" name="Review instance">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition externalReference="123" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_StartToReviewTask</bpmn:incoming>
+      <bpmn:outgoing>Flow_ReviewTaskToEnd</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="analytics_parity_test">
+      <bpmndi:BPMNShape id="StartEvent_AnalyticsParityTest_di" bpmnElement="StartEvent_AnalyticsParityTest">
+        <dc:Bounds x="182" y="82" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_AnalyticsParityTest_di" bpmnElement="EndEvent_AnalyticsParityTest">
+        <dc:Bounds x="362" y="92" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_ReviewAnalyticsParityInstance_di" bpmnElement="UserTask_ReviewAnalyticsParityInstance">
+        <dc:Bounds x="240" y="70" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_StartToReviewTask_di" bpmnElement="Flow_StartToReviewTask">
+        <di:waypoint x="218" y="100" />
+        <di:waypoint x="240" y="100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ReviewTaskToEnd_di" bpmnElement="Flow_ReviewTaskToEnd">
+        <di:waypoint x="340" y="110" />
+        <di:waypoint x="362" y="110" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
