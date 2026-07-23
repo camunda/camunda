@@ -26,22 +26,24 @@ function defaultRequest(): CohortCompareRequest {
 }
 
 /** Manual "cohort-compare" tool panel: splits instances into a slow/fast cohort (threshold on a
- * measure, or a before/after window split) and ranks attributes by lift. */
-export function CohortComparePanel({ prefill }: { prefill?: Partial<CohortCompareRequest> }) {
+ * measure, or a before/after window split) and ranks attributes by lift. `autoRun` fetches
+ * immediately once a `prefill` arrives -- see {@link SeriesPanel}'s doc comment for why. */
+export function CohortComparePanel({
+  prefill,
+  autoRun,
+}: {
+  prefill?: Partial<CohortCompareRequest>;
+  autoRun?: boolean;
+}) {
   const [req, setReq] = useState<CohortCompareRequest>({ ...defaultRequest(), ...prefill });
   const [result, setResult] = useState<CohortCompareResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setReq((r) => ({ ...r, ...prefill }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(prefill)]);
-
-  const run = () => {
+  const runRequest = (r: CohortCompareRequest) => {
     setLoading(true);
     setError(null);
-    api.tools.cohortCompare(req).then((res) => {
+    api.tools.cohortCompare(r).then((res) => {
       if (!res.ok) {
         setError(res.message);
         setResult(null);
@@ -51,6 +53,17 @@ export function CohortComparePanel({ prefill }: { prefill?: Partial<CohortCompar
       setLoading(false);
     });
   };
+
+  useEffect(() => {
+    const merged = { ...req, ...prefill };
+    setReq(merged);
+    if (autoRun && prefill && merged.entity) {
+      runRequest(merged);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(prefill)]);
+
+  const run = () => runRequest(req);
 
   return (
     <div className="flex flex-col gap-3">

@@ -17,22 +17,24 @@ function defaultRequest(): SeriesRequest {
 }
 
 /** Manual "changepoint" tool panel -- same request shape as series (per the contract), rendered as
- * a plain-language summary of the detected shape/confidence/before-after. */
-export function ChangepointPanel({ prefill }: { prefill?: Partial<SeriesRequest> }) {
+ * a plain-language summary of the detected shape/confidence/before-after. `autoRun` fetches
+ * immediately once a `prefill` arrives -- see {@link SeriesPanel}'s doc comment for why. */
+export function ChangepointPanel({
+  prefill,
+  autoRun,
+}: {
+  prefill?: Partial<SeriesRequest>;
+  autoRun?: boolean;
+}) {
   const [req, setReq] = useState<SeriesRequest>({ ...defaultRequest(), ...prefill });
   const [result, setResult] = useState<ChangepointResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setReq((r) => ({ ...r, ...prefill }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(prefill)]);
-
-  const run = () => {
+  const runRequest = (r: SeriesRequest) => {
     setLoading(true);
     setError(null);
-    api.tools.changepoint(req).then((res) => {
+    api.tools.changepoint(r).then((res) => {
       if (!res.ok) {
         setError(res.message);
         setResult(null);
@@ -42,6 +44,17 @@ export function ChangepointPanel({ prefill }: { prefill?: Partial<SeriesRequest>
       setLoading(false);
     });
   };
+
+  useEffect(() => {
+    const merged = { ...req, ...prefill };
+    setReq(merged);
+    if (autoRun && prefill && merged.entity) {
+      runRequest(merged);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(prefill)]);
+
+  const run = () => runRequest(req);
 
   return (
     <div className="flex flex-col gap-3">

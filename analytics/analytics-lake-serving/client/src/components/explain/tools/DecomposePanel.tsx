@@ -35,22 +35,24 @@ function defaultRequest(): DecomposeRequest {
 }
 
 /** Manual "decompose" tool panel: window-vs-baseline contribution breakdown by dimension, rendered
- * as contribution-share bars (per the spec: "decompose → contribution bars"). */
-export function DecomposePanel({ prefill }: { prefill?: Partial<DecomposeRequest> }) {
+ * as contribution-share bars (per the spec: "decompose → contribution bars"). `autoRun` fetches
+ * immediately once a `prefill` arrives -- see {@link SeriesPanel}'s doc comment for why. */
+export function DecomposePanel({
+  prefill,
+  autoRun,
+}: {
+  prefill?: Partial<DecomposeRequest>;
+  autoRun?: boolean;
+}) {
   const [req, setReq] = useState<DecomposeRequest>({ ...defaultRequest(), ...prefill });
   const [result, setResult] = useState<DecomposeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setReq((r) => ({ ...r, ...prefill }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(prefill)]);
-
-  const run = () => {
+  const runRequest = (r: DecomposeRequest) => {
     setLoading(true);
     setError(null);
-    api.tools.decompose(req).then((res) => {
+    api.tools.decompose(r).then((res) => {
       if (!res.ok) {
         setError(res.message);
         setResult(null);
@@ -60,6 +62,17 @@ export function DecomposePanel({ prefill }: { prefill?: Partial<DecomposeRequest
       setLoading(false);
     });
   };
+
+  useEffect(() => {
+    const merged = { ...req, ...prefill };
+    setReq(merged);
+    if (autoRun && prefill && merged.entity && merged.dim) {
+      runRequest(merged);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(prefill)]);
+
+  const run = () => runRequest(req);
 
   const data = (result?.rows ?? []).map((r) => ({ ...r, sharePct: r.contributionShare * 100 }));
 

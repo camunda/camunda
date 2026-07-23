@@ -22,22 +22,18 @@ function defaultRequest(): ScreenRequest {
 }
 
 /** Manual "screen" tool panel: scans candidate series that moved in lockstep with the target
- * series (candidates is always "auto" per the contract -- no other mode is documented). */
-export function ScreenPanel({ prefill }: { prefill?: Partial<ScreenRequest> }) {
+ * series (candidates is always "auto" per the contract -- no other mode is documented). `autoRun`
+ * fetches immediately once a `prefill` arrives -- see {@link SeriesPanel}'s doc comment for why. */
+export function ScreenPanel({ prefill, autoRun }: { prefill?: Partial<ScreenRequest>; autoRun?: boolean }) {
   const [req, setReq] = useState<ScreenRequest>({ ...defaultRequest(), ...prefill });
   const [result, setResult] = useState<ScreenResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setReq((r) => ({ ...r, ...prefill }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(prefill)]);
-
-  const run = () => {
+  const runRequest = (r: ScreenRequest) => {
     setLoading(true);
     setError(null);
-    api.tools.screen(req).then((res) => {
+    api.tools.screen(r).then((res) => {
       if (!res.ok) {
         setError(res.message);
         setResult(null);
@@ -47,6 +43,17 @@ export function ScreenPanel({ prefill }: { prefill?: Partial<ScreenRequest> }) {
       setLoading(false);
     });
   };
+
+  useEffect(() => {
+    const merged = { ...req, ...prefill };
+    setReq(merged);
+    if (autoRun && prefill && merged.targetSeries.entity) {
+      runRequest(merged);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(prefill)]);
+
+  const run = () => runRequest(req);
 
   return (
     <div className="flex flex-col gap-3">
