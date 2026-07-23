@@ -11,7 +11,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockDownloadDocument} from 'modules/mocks/api/v2/documents/downloadDocument';
 import {PreviewDocumentButton} from './PreviewDocumentButton';
-import type {DocumentInfo} from '../DocumentValueCell/parseDocumentVariable';
+import type {DocumentInfo} from '../documentInfo';
 import {tracking} from 'modules/tracking';
 
 const createWrapper = (): React.FC<{children?: React.ReactNode}> => {

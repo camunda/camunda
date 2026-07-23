@@ -8,11 +8,9 @@
 
 import {Tag} from '@carbon/react';
 import {Document} from '@carbon/react/icons';
-import {
-  toHumanReadableBytes,
-  type DocumentParseResult,
-} from './parseDocumentVariable';
-import {middleTruncate} from './middleTruncate';
+import type {DocumentParseResult} from '../parseDocumentVariable';
+import {toHumanReadableBytes} from 'App/ProcessInstance/DocumentsView/humanReadableBytes';
+import {middleTruncate} from 'App/ProcessInstance/DocumentsView/middleTruncate';
 import {
   DocumentCellContainer,
   DocumentIcon,

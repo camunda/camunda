@@ -36,10 +36,10 @@ import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIs
 import {useVariables} from 'modules/queries/variables/useVariables';
 import {useDebouncedValue} from 'modules/hooks/useDebouncedValue';
 import {VariableValueCell} from './VariableValueCell';
-import {parseDocumentVariable} from './DocumentValueCell/parseDocumentVariable';
-import {DownloadDocumentButton} from './DownloadDocumentButton';
-import {PreviewDocumentButton} from './DocumentPreview/PreviewDocumentButton';
-import {ViewDocumentListButton} from './DocumentList/ViewDocumentListButton';
+import {parseDocumentVariable} from './parseDocumentVariable';
+import {DownloadDocumentButton} from 'App/ProcessInstance/DocumentsView/DownloadDocumentButton';
+import {PreviewDocumentButton} from 'App/ProcessInstance/DocumentsView/DocumentPreview/PreviewDocumentButton';
+import {ViewDocumentListButton} from './ViewDocumentListButton';
 
 type Props = {
   scopeId: string | null;

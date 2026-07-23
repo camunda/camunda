@@ -9,7 +9,7 @@
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {InlineJsonEditor} from 'modules/components/InlineJsonEditor';
 import {useVariable} from 'modules/queries/variables/useVariable';
-import type {DocumentParseResult} from './DocumentValueCell/parseDocumentVariable';
+import type {DocumentParseResult} from './parseDocumentVariable';
 import {DocumentValueCell} from './DocumentValueCell';
 
 type Props = {
