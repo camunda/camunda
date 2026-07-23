@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication.pt;
 
+import static io.camunda.spring.utils.PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -737,7 +738,7 @@ class PhysicalTenantAuthConfigurationsTest {
     // given a tenant id exceeding the 64-char length limit — today this is silently dropped
     // instead of failing fast (a format-invalid id like "Tenant_A" cannot be used here: it is
     // normalized to a valid id under ConfigurationPropertyName.Form.UNIFORM before validation runs)
-    final String tooLongTenantId = "a".repeat(65);
+    final String tooLongTenantId = "a".repeat(MAX_TENANT_ID_LENGTH + 1);
     final MockEnvironment environment =
         env(
             Map.of(

@@ -7,6 +7,7 @@
  */
 package io.camunda.spring.utils;
 
+import static io.camunda.spring.utils.PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -70,19 +71,19 @@ class PhysicalTenantIdDiscoveryTest {
   @Test
   void shouldRejectTenantIdExceeding64Characters() {
     // given a tenant id that is exactly one character over the limit
-    final String tooLong = "a".repeat(PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH + 1);
+    final String tooLong = "a".repeat(MAX_TENANT_ID_LENGTH + 1);
 
     // when / then
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
         .isThrownBy(() -> PhysicalTenantIdDiscovery.validateTenantId(tooLong))
         .withMessageContaining("Invalid physical tenant id")
-        .withMessageContaining("must not exceed " + PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH);
+        .withMessageContaining("must not exceed " + MAX_TENANT_ID_LENGTH);
   }
 
   @Test
   void shouldAcceptTenantIdOfExactly64Characters() {
     // given a tenant id at exactly the maximum allowed length — must not throw
-    final String maxLength = "a".repeat(PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH);
+    final String maxLength = "a".repeat(MAX_TENANT_ID_LENGTH);
 
     // when / then no exception
     PhysicalTenantIdDiscovery.validateTenantId(maxLength);
@@ -96,7 +97,12 @@ class PhysicalTenantIdDiscoveryTest {
         .getPropertySources()
         .addFirst(
             new MapPropertySource(
-                "test", Map.of("camunda.physical-tenants." + "a".repeat(65) + ".cluster.size", 4)));
+                "test",
+                Map.of(
+                    "camunda.physical-tenants."
+                        + "a".repeat(MAX_TENANT_ID_LENGTH + 1)
+                        + ".cluster.size",
+                    4)));
 
     // when / then
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)

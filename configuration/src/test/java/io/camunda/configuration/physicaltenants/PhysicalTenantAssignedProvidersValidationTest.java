@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.physicaltenants;
 
+import static io.camunda.spring.utils.PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -558,7 +559,7 @@ class PhysicalTenantAssignedProvidersValidationTest {
     // given a tenant id one character over the shared length limit — the only discovery-reachable
     // invalid case, since Form.UNIFORM normalizes any format-invalid segment (e.g. dashes/upper
     // case) into a valid id before the shared validation runs
-    final String tooLong = "a".repeat(65);
+    final String tooLong = "a".repeat(MAX_TENANT_ID_LENGTH + 1);
     final Environment environment =
         environmentWith(Map.of("camunda.physical-tenants." + tooLong + ".cluster.size", 4));
 
