@@ -42,6 +42,8 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Exercises {@link RestoreValidator#validate(RestoreRequest)} against a mocked {@link BackupStore}.
@@ -439,14 +441,15 @@ final class RestoreValidatorResolverTest {
   @Nested
   final class NonRdbmsDatabaseTypes {
 
-    @Test
-    void shouldBroadcastExplicitBackupIdToAllPartitionsForElasticsearch() {
+    @ParameterizedTest
+    @ValueSource(strings = {"elasticsearch", "opensearch"})
+    void shouldBroadcastExplicitBackupIdToAllPartitions(final String databaseType) {
       // given
       stubBackupExists(1, 1L);
       stubBackupExists(2, 1L);
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
-          new RestoreRequest("default", List.of(1L), null, null, "elasticsearch", false, false);
+          new RestoreRequest("default", List.of(1L), null, null, databaseType, false, false);
 
       // when
       final var result = validator.validate(request);
@@ -455,51 +458,20 @@ final class RestoreValidatorResolverTest {
       assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
     }
 
-    @Test
-    void shouldBroadcastExplicitBackupIdToAllPartitionsForOpensearch() {
-      // given
-      stubBackupExists(1, 1L);
-      stubBackupExists(2, 1L);
-      final var validator = new RestoreValidator(2, backupStore, null);
-      final var request =
-          new RestoreRequest("default", List.of(1L), null, null, "opensearch", false, false);
-
-      // when
-      final var result = validator.validate(request);
-
-      // then
-      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
-    }
-
-    @Test
-    void shouldRejectMultipleBackupIdsForElasticsearch() {
+    @ParameterizedTest
+    @ValueSource(strings = {"elasticsearch", "opensearch"})
+    void shouldRejectMultipleBackupIdsWithoutQueryingBackupStore(final String databaseType) {
       // given
       final var validator = new RestoreValidator(2, backupStore, null);
       final var request =
-          new RestoreRequest("default", List.of(1L, 2L), null, null, "elasticsearch", false, false);
+          new RestoreRequest("default", List.of(1L, 2L), null, null, databaseType, false, false);
 
       // when
       final var result = validator.validate(request);
 
       // then
       assertThat(assertInvalid(result))
-          .hasMessage("Cannot restore from multiple backups against database type elasticsearch");
-      verifyNoInteractions(backupStore);
-    }
-
-    @Test
-    void shouldRejectMultipleBackupIdsForOpensearch() {
-      // given
-      final var validator = new RestoreValidator(2, backupStore, null);
-      final var request =
-          new RestoreRequest("default", List.of(1L, 2L), null, null, "opensearch", false, false);
-
-      // when
-      final var result = validator.validate(request);
-
-      // then
-      assertThat(assertInvalid(result))
-          .hasMessage("Cannot restore from multiple backups against database type opensearch");
+          .hasMessage("Cannot restore from multiple backups against database type " + databaseType);
       verifyNoInteractions(backupStore);
     }
 
