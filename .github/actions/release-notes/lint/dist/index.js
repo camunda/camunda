@@ -243,6 +243,133 @@ exports.summary = new Summary();
 
 /***/ }),
 
+/***/ 855:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GithubLabelApi = exports.NO_ISSUE_LABEL_DESCRIPTION = exports.NO_ISSUE_LABEL_COLOR = exports.NO_ISSUE_LABEL = void 0;
+exports.decideLabelAction = decideLabelAction;
+exports.syncNoIssueLabel = syncNoIssueLabel;
+/**
+ * Syncs the display-only `no-issue` label to mirror the PR-issue-link check
+ * only (not the title check — the label answers one question: "does this PR
+ * link a tracked issue?"). Best-effort like the sticky comment: a sync
+ * failure never fails the gate, and it runs regardless of `enforce` — the
+ * label is informational, not a blocking mechanism.
+ */
+/** The label the gate syncs. Single source of truth — do not rename without
+ *  updating any saved searches/dashboards that filter on it. */
+exports.NO_ISSUE_LABEL = 'no-issue';
+/** Created on demand (see GithubLabelApi.ensureLabelExists) if the repo does
+ *  not already have this label — keeps rollout self-contained. */
+exports.NO_ISSUE_LABEL_COLOR = 'e4e669';
+exports.NO_ISSUE_LABEL_DESCRIPTION = 'Release-notes gate: this PR does not link a tracked issue (warn-only).';
+/** Pure decision: given the PR's current labels and the link check's
+ * outcome, decide whether to add/remove the no-issue label. */
+function decideLabelAction(currentLabels, linkOutcome) {
+    const has = currentLabels.includes(exports.NO_ISSUE_LABEL);
+    if (linkOutcome === 'fail')
+        return has ? 'noop' : 'added';
+    return has ? 'removed' : 'noop';
+}
+/**
+ * Reconcile the no-issue label against the gate's PR-issue-link check.
+ * Reads the check by label rather than gate.outcome so a title-only failure
+ * never adds a label whose name specifically means "no linked issue".
+ */
+async function syncNoIssueLabel(api, gate) {
+    const link = gate.checks.find((check) => check.label === 'PR-issue link');
+    if (!link)
+        return 'noop'; // defensive — the link check is always present today
+    const current = await api.list();
+    const action = decideLabelAction(current, link.outcome);
+    if (action === 'added')
+        await api.add(exports.NO_ISSUE_LABEL);
+    if (action === 'removed')
+        await api.remove(exports.NO_ISSUE_LABEL);
+    return action;
+}
+/**
+ * issue-labels API over plain fetch. Same rationale as GithubCommentApi /
+ * GithubResolver: a handful of endpoints, so octokit's bundle cost isn't
+ * worth paying.
+ */
+class GithubLabelApi {
+    token;
+    issueNumber;
+    repoUrl;
+    constructor(token, owner, repo, issueNumber) {
+        this.token = token;
+        this.issueNumber = issueNumber;
+        this.repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+    }
+    headers() {
+        return {
+            authorization: `Bearer ${this.token}`,
+            accept: 'application/vnd.github+json',
+            'content-type': 'application/json',
+            'x-github-api-version': '2022-11-28',
+            'user-agent': 'camunda-release-notes-gate',
+        };
+    }
+    async list() {
+        const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels?per_page=100`, {
+            headers: this.headers(),
+        });
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} listing labels on #${this.issueNumber}`);
+        const data = (await res.json());
+        return data.map((label) => label.name);
+    }
+    async add(label) {
+        const res = await this.postLabel(label);
+        if (res.status === 404) {
+            // Repo doesn't have this label defined yet — create it once, then retry.
+            await this.ensureLabelExists(label);
+            const retry = await this.postLabel(label);
+            if (!retry.ok) {
+                throw new Error(`GitHub API ${retry.status} adding label "${label}" to #${this.issueNumber} after creating it`);
+            }
+            return;
+        }
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} adding label "${label}" to #${this.issueNumber}`);
+    }
+    async remove(label) {
+        const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels/${encodeURIComponent(label)}`, {
+            method: 'DELETE',
+            headers: this.headers(),
+        });
+        // 404 means the label is already gone (e.g. a concurrent run removed it) — not an error.
+        if (!res.ok && res.status !== 404) {
+            throw new Error(`GitHub API ${res.status} removing label "${label}" from #${this.issueNumber}`);
+        }
+    }
+    postLabel(label) {
+        return fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels`, {
+            method: 'POST',
+            headers: this.headers(),
+            body: JSON.stringify({ labels: [label] }),
+        });
+    }
+    async ensureLabelExists(label) {
+        const res = await fetch(`${this.repoUrl}/labels`, {
+            method: 'POST',
+            headers: this.headers(),
+            body: JSON.stringify({ name: label, color: exports.NO_ISSUE_LABEL_COLOR, description: exports.NO_ISSUE_LABEL_DESCRIPTION }),
+        });
+        // 422 means another concurrent run already created it — not an error.
+        if (!res.ok && res.status !== 422) {
+            throw new Error(`GitHub API ${res.status} creating label "${label}"`);
+        }
+    }
+}
+exports.GithubLabelApi = GithubLabelApi;
+
+
+/***/ }),
+
 /***/ 554:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -285,6 +412,7 @@ const node_fs_1 = __nccwpck_require__(24);
 const comment_1 = __nccwpck_require__(573);
 const gate_1 = __nccwpck_require__(155);
 const core = __importStar(__nccwpck_require__(93));
+const labels_1 = __nccwpck_require__(855);
 const resolver_1 = __nccwpck_require__(306);
 /**
  * PR-gate lint entrypoint (warn-only rollout).
@@ -294,9 +422,11 @@ const resolver_1 = __nccwpck_require__(306);
  * privileged token comes in as an input (reused MONOREPO_RELEASE_APP).
  *
  * ponytail: warn-only for now — reports the combined gate outcome (PR-issue
- * link + title lint, with a backport hop) to the job summary, the outputs, and
- * a single sticky PR comment (created only on failure, flipped to resolved once
- * fixed). Label sync and enforce mode ship in follow-up PRs. `enforce=true`
+ * link + title lint, with a backport hop) to the job summary, the outputs, a
+ * single sticky PR comment (created only on failure, flipped to resolved once
+ * fixed), and the display-only `no-issue` label. Both the comment and the
+ * label sync regardless of `enforce` — they're informational, not the
+ * enforcement mechanism. Enforce mode ships in a follow-up PR. `enforce=true`
  * flips a fail into a non-zero exit.
  */
 async function run() {
@@ -336,6 +466,18 @@ async function run() {
         }
         catch (err) {
             core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+        }
+        // Display-only `no-issue` label, mirroring the PR-issue-link check. Runs
+        // during warn-only rollout too, so the label is already trustworthy by the
+        // time enforce mode lands — a sync failure never fails the gate.
+        try {
+            const labels = new labels_1.GithubLabelApi(token, owner ?? '', repo ?? '', pr.number);
+            const action = await (0, labels_1.syncNoIssueLabel)(labels, gate);
+            core.setOutput('label-action', action);
+            core.info(`no-issue label: ${action}.`);
+        }
+        catch (err) {
+            core.warning(`Label sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
         }
     }
     if (gate.outcome === 'fail') {
