@@ -44,7 +44,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -108,7 +108,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-            .setMetrics(LongPollingMetrics.noop())
+            .setMetricsFactory(LongPollingMetricsFactory.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -328,7 +328,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-            .setMetrics(LongPollingMetrics.noop())
+            .setMetricsFactory(LongPollingMetricsFactory.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -358,7 +358,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-            .setMetrics(LongPollingMetrics.noop())
+            .setMetricsFactory(LongPollingMetricsFactory.noop())
             .build();
     submitActorToActivateJobs(handler);
 
@@ -1033,7 +1033,7 @@ public final class LongPollingActivateJobsTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-            .setMetrics(LongPollingMetrics.noop())
+            .setMetricsFactory(LongPollingMetricsFactory.noop())
             .build();
     submitActorToActivateJobs(customHandler);
 
