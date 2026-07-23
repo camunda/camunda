@@ -17,6 +17,7 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
+import java.util.Map;
 
 public interface ClusterVariable {
 
@@ -41,6 +42,9 @@ public interface ClusterVariable {
    * false} for get-by-name operations, which always return full values.
    */
   Boolean isTruncated();
+
+  /* The metadata attached to the cluster variable. Values are strings or numbers. */
+  Map<String, Object> getMetadata();
 
   /* The kind of the cluster variable */
   ClusterVariableKind getKind();

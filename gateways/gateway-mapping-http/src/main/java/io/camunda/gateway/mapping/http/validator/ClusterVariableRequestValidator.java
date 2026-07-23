@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_METADATA_VALUE_TYPE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_METADATA_TOO_LARGE;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_METADATA_KEY;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_TOO_MANY_METADATA_ENTRIES;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 
@@ -106,6 +107,9 @@ public class ClusterVariableRequestValidator {
 
     metadata.forEach(
         (key, value) -> {
+          if (key == null) {
+            violations.add(ERROR_MESSAGE_NULL_METADATA_KEY);
+          }
           if (!(value instanceof String) && !(value instanceof Number)) {
             violations.add(
                 ERROR_MESSAGE_INVALID_METADATA_VALUE_TYPE.formatted(

@@ -22,11 +22,13 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.ClusterVariableKind;
 import io.camunda.client.api.search.enums.ClusterVariableScope;
+import io.camunda.client.protocol.rest.AdvancedMetadataValueFilter;
 import io.camunda.client.protocol.rest.ClusterVariableKindEnum;
 import io.camunda.client.protocol.rest.ClusterVariableSearchQueryRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 public class SearchClusterVariableTest extends ClientRestTest {
@@ -220,5 +222,129 @@ public class SearchClusterVariableTest extends ClientRestTest {
         RestGatewayService.getLastRequest().getQueryParams().get("truncateValues");
     assertThat(param.isSingleValued()).isTrue();
     assertThat(param.firstValue()).isEqualTo("false");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataEquality() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata(Collections.singletonMap("env", "prod")))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("env").get$Eq()).isEqualTo("prod");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataNumericEquality() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata(Collections.singletonMap("count", 42)))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("count").get$Eq()).isEqualTo(42);
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataAdvancedFilter() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("count", m -> m.gt(5).lt(100)))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    final AdvancedMetadataValueFilter count = request.getFilter().getMetadata().get("count");
+    assertThat(count.get$Gt()).isEqualByComparingTo("5");
+    assertThat(count.get$Lt()).isEqualByComparingTo("100");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataIn() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("region", m -> m.in("eu", "us")))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("region").get$In())
+        .containsExactly("eu", "us");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataExists() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("env", m -> m.exists(true)))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("env").get$Exists()).isTrue();
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataGte() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("count", m -> m.gte(5)))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("count").get$Gte()).isEqualByComparingTo("5");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataLte() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("count", m -> m.lte(100)))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("count").get$Lte())
+        .isEqualByComparingTo("100");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataLike() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("region", m -> m.like("eu-*")))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("region").get$Like()).isEqualTo("eu-*");
   }
 }

@@ -54,6 +54,8 @@ public final class ErrorMessages {
       "When using isLatestVersion filter, sorting is limited to 'processDefinitionId' and 'tenantId' fields only. The field '%s' is not supported.";
   public static final String ERROR_MESSAGE_INVALID_METADATA_VALUE_TYPE =
       "The metadata value for key '%s' is of type '%s' but must be a string or a number";
+  public static final String ERROR_MESSAGE_NULL_METADATA_KEY =
+      "The provided metadata must not contain a null key";
   public static final String ERROR_MESSAGE_TOO_MANY_METADATA_ENTRIES =
       "The provided metadata has %d entries but must not exceed %d entries";
   public static final String ERROR_MESSAGE_METADATA_TOO_LARGE =
