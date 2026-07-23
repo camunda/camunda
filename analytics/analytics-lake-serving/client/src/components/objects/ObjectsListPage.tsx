@@ -28,8 +28,8 @@ import { EmptyTile, LoadingTile } from "../common/EmptyTile";
 const PAGE_SIZE = 50;
 
 function ageLabel(row: ObjectRow): string {
-  const end = row.closedAt ?? Date.now();
-  return formatDuration(end - row.firstSeen);
+  const end = row.closedAt != null ? new Date(row.closedAt).getTime() : Date.now();
+  return formatDuration(end - new Date(row.firstSeen).getTime());
 }
 
 export function ObjectsListPage() {

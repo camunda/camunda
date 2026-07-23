@@ -64,9 +64,11 @@ public class DecomposeService {
 
   public DecomposeResult decompose(final DecomposeQuery query) {
     final EntityCatalog entity = metricRegistry.require(query.entity());
-    // Same normalization as SeriesService#series: "cnt" is the client's spelling of the bare row
-    // count, meaning the null-measure SUM(cnt) path.
-    final String measureName = "cnt".equals(query.measure()) ? null : query.measure();
+    // Same normalization and defaulting as the series tool ("cnt" = the bare row count; a quantile
+    // with no measure = the entity's first declared measure) — previously the quantile was
+    // silently dropped here and the tile showed counts mislabeled as a percentile.
+    final String measureName =
+        SeriesService.resolveMeasureName(entity, query.measure(), query.quantile());
     final boolean needsHist = measureName != null && query.quantile() != null;
     if (needsHist) {
       viewRegistry.ensureAvailable(entity.metricsView(), entity.histView());
@@ -78,10 +80,6 @@ public class DecomposeService {
           "Unknown dim '" + query.dim() + "' for entity '" + entity.name() + "'");
     }
     final MeasureCatalog measure = requireMeasureIfSet(entity, measureName);
-    if (measure == null && !entity.hasCnt()) {
-      throw new IllegalArgumentException(
-          "Entity '" + entity.name() + "' has no bare row count (cnt); a measure is required");
-    }
     if (needsHist && !measure.hasHist()) {
       throw new IllegalArgumentException(
           "Measure '"
@@ -90,7 +88,12 @@ public class DecomposeService {
               + entity.name()
               + "' has no histogram data");
     }
-    final String weightColumn = entity.hasCnt() ? "cnt" : measure.name() + "_cnt";
+    final String weightExpr =
+        entity.hasCnt()
+            ? "SUM(cnt)"
+            : measure != null
+                ? "SUM(" + SqlText.identifier(measure.name() + "_cnt") + ")"
+                : SeriesService.countExpr(entity);
     final String filterSql = FilterClause.toSql(query.filters(), entity.dimNames());
 
     final List<String> sql = new ArrayList<>();
@@ -109,18 +112,9 @@ public class DecomposeService {
       final double aggregateDelta = aggregateCurrent - aggregateBaseline;
 
       final Map<String, Double> weightByDim =
-          groupedAggregate(
-              entity.metricsView(),
-              query.dim(),
-              "SUM(" + SqlText.identifier(weightColumn) + ")",
-              windowWhere,
-              sql);
+          groupedAggregate(entity.metricsView(), query.dim(), weightExpr, windowWhere, sql);
       final double totalWeight =
-          scalarAggregate(
-              entity.metricsView(),
-              "SUM(" + SqlText.identifier(weightColumn) + ")",
-              windowWhere,
-              sql);
+          scalarAggregate(entity.metricsView(), weightExpr, windowWhere, sql);
 
       final List<DecomposeRow> rows = new ArrayList<>();
       for (final String dimValue : currentByDim.keySet()) {
@@ -173,7 +167,8 @@ public class DecomposeService {
       final List<String> sql)
       throws SQLException {
     if (measureName == null) {
-      return groupedAggregate(entity.metricsView(), dim, "SUM(cnt)", whereSql, sql);
+      return groupedAggregate(
+          entity.metricsView(), dim, SeriesService.countExpr(entity), whereSql, sql);
     }
     if (quantile == null) {
       return groupedAggregate(entity.metricsView(), dim, avgExpr(measureName), whereSql, sql);
@@ -189,7 +184,7 @@ public class DecomposeService {
       final List<String> sql)
       throws SQLException {
     if (measureName == null) {
-      return scalarAggregate(entity.metricsView(), "SUM(cnt)", whereSql, sql);
+      return scalarAggregate(entity.metricsView(), SeriesService.countExpr(entity), whereSql, sql);
     }
     if (quantile == null) {
       return scalarAggregate(entity.metricsView(), avgExpr(measureName), whereSql, sql);

@@ -26,9 +26,15 @@ function groupByInstance(activities: JourneyActivity[]): { instanceKey: string; 
     .map(([instanceKey, list]) => ({
       instanceKey,
       processId: list[0]?.processId ?? "",
-      activities: [...list].sort((x, y) => x.startedAt - y.startedAt),
+      activities: [...list].sort(
+        (x, y) => new Date(x.startedAt).getTime() - new Date(y.startedAt).getTime(),
+      ),
     }))
-    .sort((a, b) => a.activities[0].startedAt - b.activities[0].startedAt);
+    .sort(
+      (a, b) =>
+        new Date(a.activities[0].startedAt).getTime() -
+        new Date(b.activities[0].startedAt).getTime(),
+    );
 }
 
 export function ObjectDetailPage() {

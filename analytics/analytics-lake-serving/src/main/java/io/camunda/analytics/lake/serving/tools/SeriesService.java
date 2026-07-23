@@ -56,9 +56,7 @@ public class SeriesService {
 
   public SeriesResult series(final SeriesQuery query) {
     final EntityCatalog entity = metricRegistry.require(query.entity());
-    // The client names the bare row count as measure "cnt" (that's how the registry surfaces it);
-    // normalize to the null-measure count path — both spellings mean SUM(cnt).
-    final String measureName = "cnt".equals(query.measure()) ? null : query.measure();
+    final String measureName = resolveMeasureName(entity, query.measure(), query.quantile());
     final boolean needsHist = measureName != null && query.quantile() != null;
     if (needsHist) {
       viewRegistry.ensureAvailable(entity.metricsView(), entity.histView());
@@ -81,16 +79,9 @@ public class SeriesService {
     final List<String> executedSql = new ArrayList<>();
     try {
       if (measureName == null) {
-        if (!entity.hasCnt()) {
-          throw new IllegalArgumentException(
-              "Entity '" + entity.name() + "' has no bare row count (cnt); a measure is required");
-        }
-        if (query.quantile() != null) {
-          throw new IllegalArgumentException(
-              "quantile requires a real measure, not the bare row count");
-        }
         return new SeriesResult(
-            runBucketQuery(entity.metricsView(), bucketExpr, "SUM(cnt)", whereSql, executedSql),
+            runBucketQuery(
+                entity.metricsView(), bucketExpr, countExpr(entity), whereSql, executedSql),
             executedSql);
       }
 
@@ -151,6 +142,49 @@ public class SeriesService {
     } catch (final SQLException e) {
       throw new IllegalStateException("Series query failed: " + e.getMessage(), e);
     }
+  }
+
+  /**
+   * The measure the query actually means. Two client spellings are normalized here: {@code "cnt"}
+   * is the bare row count (the registry's own name for it), meaning the null-measure {@code
+   * SUM(cnt)} path; and a quantile with no measure means "the entity's obvious measure" (the
+   * dashboard's duration-percentile tiles ask this way) — defaulted to the first declared measure,
+   * the same rule {@code ScreenService} applies to its own targetSeries. An explicit {@code "cnt"}
+   * with a quantile is rejected rather than silently switched to a different measure.
+   */
+  static String resolveMeasureName(
+      final EntityCatalog entity, final String requestedMeasure, final Double quantile) {
+    final String normalized = "cnt".equals(requestedMeasure) ? null : requestedMeasure;
+    if (normalized != null || quantile == null) {
+      return normalized;
+    }
+    if ("cnt".equals(requestedMeasure)) {
+      throw new IllegalArgumentException("quantile cannot apply to the bare row count");
+    }
+    if (entity.measures().isEmpty()) {
+      throw new IllegalArgumentException(
+          "Entity '" + entity.name() + "' has no measures; a quantile requires one");
+    }
+    return entity.measures().get(0).name();
+  }
+
+  /**
+   * The entity's row-count aggregate: the bare {@code cnt} when it has one, else the first named
+   * counter's column, else the first measure's {@code _cnt} sibling (every row contributes to it,
+   * so it IS the row count — this is what lets the "completed instances" tile count an entity like
+   * {@code instances}, whose only count column is {@code duration_ms_cnt}).
+   */
+  static String countExpr(final EntityCatalog entity) {
+    if (entity.hasCnt()) {
+      return "SUM(cnt)";
+    }
+    if (!entity.counters().isEmpty()) {
+      return "SUM(" + SqlText.identifier(entity.counters().get(0) + "_cnt") + ")";
+    }
+    if (!entity.measures().isEmpty()) {
+      return "SUM(" + SqlText.identifier(entity.measures().get(0).name() + "_cnt") + ")";
+    }
+    throw new IllegalArgumentException("Entity '" + entity.name() + "' has no count column at all");
   }
 
   private List<SeriesPoint> runBucketQuery(

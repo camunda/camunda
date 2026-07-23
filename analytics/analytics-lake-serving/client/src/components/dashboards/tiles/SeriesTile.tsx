@@ -34,7 +34,8 @@ export interface SeriesSpec {
 }
 
 interface Row {
-  t: number;
+  /** ISO-8601 window start, straight off the backend's SeriesPoint. */
+  t: string;
   label: string;
   [seriesKey: string]: number | string;
 }
@@ -96,7 +97,7 @@ export function SeriesTile({
         setLoading(false);
         return;
       }
-      const byT = new Map<number, Row>();
+      const byT = new Map<string, Row>();
       results.forEach((result, i) => {
         if (!result.ok) {
           return;
@@ -110,7 +111,9 @@ export function SeriesTile({
           row[`s${i}`] = p.value;
         }
       });
-      setRows([...byT.values()].sort((a, b) => a.t - b.t));
+      setRows(
+        [...byT.values()].sort((a, b) => new Date(a.t).getTime() - new Date(b.t).getTime()),
+      );
       setLoading(false);
     });
 

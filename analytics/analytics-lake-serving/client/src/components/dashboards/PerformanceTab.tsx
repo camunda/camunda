@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { PROCESSES_PERSPECTIVE } from "../../lib/appData";
+import { PROCESSES_PERSPECTIVE, useAppData } from "../../lib/appData";
 import { formatDuration } from "../../lib/format";
+import { objectTypeFilter } from "../../lib/registryHelpers";
 import type { DashboardRange } from "./DashboardRangePicker";
 import { DecomposeByDimTile } from "./tiles/DecomposeByDimTile";
 import { SeriesTile } from "./tiles/SeriesTile";
@@ -19,6 +20,7 @@ export function PerformanceTab({
   range: DashboardRange;
 }) {
   const { from, to, grainMinutes } = range;
+  const { entities } = useAppData();
 
   if (perspective === PROCESSES_PERSPECTIVE) {
     return (
@@ -81,7 +83,7 @@ export function PerformanceTab({
             quantile: 0.95,
             label: "p95",
             colorIndex: 1,
-            filters: { type: perspective },
+            filters: objectTypeFilter(entities, "object_cohorts", perspective),
           },
         ]}
         from={from}

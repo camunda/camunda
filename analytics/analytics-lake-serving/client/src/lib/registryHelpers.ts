@@ -17,17 +17,39 @@ import type { EntityDescriptor } from "./api";
  * tile's informative empty state instead of guessing wrong and mislabeling a chart.
  */
 
-export function findMeasure(entity: EntityDescriptor | undefined, candidates: string[]): string | undefined {
+/** Every name the entity accepts as a series/decompose `measure`: real measures, named counters,
+ * and the bare row count's "cnt" spelling when the entity has one. */
+export function measureNames(entity: EntityDescriptor | undefined): string[] {
   if (!entity) {
-    return undefined;
+    return [];
   }
+  return [...entity.measures.map((m) => m.name), ...entity.counters, ...(entity.hasCnt ? ["cnt"] : [])];
+}
+
+export function findMeasure(entity: EntityDescriptor | undefined, candidates: string[]): string | undefined {
+  const names = measureNames(entity);
   for (const candidate of candidates) {
-    const match = entity.measures.find((m) => m.toLowerCase().includes(candidate.toLowerCase()));
+    const match = names.find((name) => name.toLowerCase().includes(candidate.toLowerCase()));
     if (match) {
       return match;
     }
   }
   return undefined;
+}
+
+/** Builds the dim filter an object-perspective tile needs: resolves the entity's object-type dim
+ * (e.g. `object_type`) against the registry and keys the filter by its real name -- an empty
+ * filter (rather than a guessed key the backend would 400 on) when the entity or dim is absent. */
+export function objectTypeFilter(
+  entities: EntityDescriptor[],
+  entityName: string,
+  objectType: string,
+): Record<string, string> {
+  const dim = findDim(
+    entities.find((e) => e.name === entityName),
+    ["object_type", "objecttype", "type"],
+  );
+  return dim ? { [dim]: objectType } : {};
 }
 
 export function findDim(entity: EntityDescriptor | undefined, candidates: string[]): string | undefined {

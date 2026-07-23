@@ -89,6 +89,23 @@ public final class StepScenarioFixtures {
             + "CAST((CASE WHEN i < 20 THEN 500 ELSE 1500 END) AS BIGINT) AS duration_ms_max "
             + "FROM range(40) t(i), (SELECT unnest(['task1', 'task2']) AS element) e");
 
+    // The hist twin of activities_metrics (same dims, one bin per window covering the avg
+    // exactly), so quantile queries against `activities` resolve just like production, where
+    // every measure declaration ships its _hist table.
+    ParquetFixtures.writeTableFromQuery(
+        warehouseDir,
+        "activities_hist",
+        "SELECT "
+            + "CAST(TIMESTAMP '2024-01-01 00:00:00' + (INTERVAL '1 minute' * i) AS TIMESTAMPTZ) AS window_start, "
+            + "'"
+            + ORDER_PROCESS
+            + "' AS process_id, element AS element_id, 'duration_ms' AS measure, "
+            + "'exp2ll-3' AS scheme, "
+            + "CAST((CASE WHEN i < 20 THEN 400 ELSE 1400 END) AS BIGINT) AS bin_lo, "
+            + "CAST((CASE WHEN i < 20 THEN 600 ELSE 1600 END) AS BIGINT) AS bin_hi, "
+            + "4 AS cnt "
+            + "FROM range(40) t(i), (SELECT unnest(['task1', 'task2']) AS element) e");
+
     // A count()-only entity (matching the real `instance_starts` shape: no measures, just a bare
     // `cnt`), for exercising the series/screen "measure == null" default path.
     ParquetFixtures.writeTableFromQuery(

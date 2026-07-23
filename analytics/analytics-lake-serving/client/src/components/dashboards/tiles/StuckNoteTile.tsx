@@ -53,7 +53,9 @@ function StuckObjects({ type }: { type: string }) {
         setError(result.message);
       } else {
         setRows(
-          [...result.data.rows].sort((a, b) => a.firstSeen - b.firstSeen).slice(0, 5),
+          [...result.data.rows]
+            .sort((a, b) => new Date(a.firstSeen).getTime() - new Date(b.firstSeen).getTime())
+            .slice(0, 5),
         );
       }
       setLoading(false);
@@ -64,7 +66,7 @@ function StuckObjects({ type }: { type: string }) {
   }, [type]);
 
   const now = Date.now();
-  const stuck = rows?.filter((r) => now - r.firstSeen > STUCK_AGE_MS) ?? [];
+  const stuck = rows?.filter((r) => now - new Date(r.firstSeen).getTime() > STUCK_AGE_MS) ?? [];
 
   return (
     <ChartCard

@@ -83,7 +83,8 @@ export interface SeriesRequest {
 }
 
 export interface SeriesPoint {
-  t: number;
+  /** ISO-8601 window start, as the backend sends it. */
+  t: string;
   value: number;
 }
 
@@ -98,7 +99,7 @@ export interface SeriesResponse {
 // ---------------------------------------------------------------------------------------------
 
 export interface ChangepointResponse {
-  at: number;
+  at: string;
   shape: ChangepointShape;
   confidence: number;
   before: number;
@@ -151,7 +152,7 @@ export interface ScreenRow {
   series: string;
   shiftSlots: number;
   correlation: number;
-  movedAt: number;
+  movedAt: string;
 }
 
 export interface ScreenResponse {
@@ -199,7 +200,7 @@ export interface ExemplarsRequest {
 export interface ExemplarRow {
   instanceKey: string;
   durationMs: number;
-  startedAt: number;
+  startedAt: string;
   variantHash: string;
 }
 
@@ -271,14 +272,31 @@ export interface InvestigateResponse {
 
 export interface EntityDim {
   name: string;
-  kind: string;
+  /** Semantic kind from the registry's dim-kind overlay (PROCESS, ELEMENT, VARIANT, ...); null
+   * for dims the overlay doesn't know. */
+  kind: string | null;
 }
 
+/** One measure column group, mirroring the backend's MeasureCatalog record exactly. */
+export interface EntityMeasure {
+  name: string;
+  hasSum: boolean;
+  hasMin: boolean;
+  hasMax: boolean;
+  hasNonfiniteCnt: boolean;
+  hasHist: boolean;
+}
+
+/** Mirrors the backend's EntityCatalog record exactly (GET /api/registry) -- measures are objects,
+ * the bare row count is the `hasCnt` flag (requested as measure "cnt"), and count-only column
+ * groups are listed in `counters` by their unsuffixed name. */
 export interface EntityDescriptor {
   name: string;
   dims: EntityDim[];
-  measures: string[];
-  hasHistogram: boolean;
+  hasCnt: boolean;
+  counters: string[];
+  measures: EntityMeasure[];
+  hasHistTable: boolean;
 }
 
 export interface RegistryResponse {
@@ -303,12 +321,14 @@ export interface ObjectListRequest {
   offset: number;
 }
 
+/** Mirrors the backend's ObjectRow record: timestamps travel as ISO-8601 strings (convert with
+ * `new Date(...)` before arithmetic), never as epoch numbers. */
 export interface ObjectRow {
   objectId: string;
-  firstSeen: number;
-  lastSeen: number;
+  firstSeen: string;
+  lastSeen: string;
   nInstances: number;
-  closedAt: number | null;
+  closedAt: string | null;
   outcome: string | null;
   durationMs: number | null;
 }
@@ -326,8 +346,8 @@ export interface JourneyActivity {
   instanceKey: string;
   processId: string;
   elementId: string;
-  startedAt: number;
-  endedAt: number | null;
+  startedAt: string;
+  endedAt: string | null;
   durationMs: number | null;
   attributedVia: "ROOT" | "SCOPE";
 }

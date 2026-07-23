@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { PROCESSES_PERSPECTIVE, useAppData } from "../../lib/appData";
-import { findMeasure } from "../../lib/registryHelpers";
+import { findMeasure, objectTypeFilter } from "../../lib/registryHelpers";
 import { ChartCard } from "../common/ChartCard";
 import { EmptyTile } from "../common/EmptyTile";
 import type { DashboardRange } from "./DashboardRangePicker";
@@ -49,6 +49,7 @@ function NullRateTile({ from, to }: { from: number; to: number }) {
 
 export function QualityTab({ perspective, range }: { perspective: string; range: DashboardRange }) {
   const { from, to, grainMinutes } = range;
+  const { entities } = useAppData();
 
   if (perspective === PROCESSES_PERSPECTIVE) {
     return (
@@ -72,7 +73,7 @@ export function QualityTab({ perspective, range }: { perspective: string; range:
         to={to}
         grainMinutes={grainMinutes}
         mode="line"
-        filters={{ type: perspective }}
+        filters={objectTypeFilter(entities, "object_cohorts", perspective)}
       />
       <StuckNoteTile perspective={perspective} />
     </div>

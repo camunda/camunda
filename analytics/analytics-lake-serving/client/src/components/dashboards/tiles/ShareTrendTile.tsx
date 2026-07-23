@@ -104,7 +104,7 @@ export function ShareTrendTile({
         return;
       }
       const [totalResult, ...bandResults] = results;
-      const byT = new Map<number, Record<string, number | string>>();
+      const byT = new Map<string, Record<string, number | string>>();
       if (totalResult.ok) {
         for (const p of totalResult.data.points) {
           byT.set(p.t, { t: p.t, label: formatWindow(p.t), total: p.value });
@@ -122,7 +122,11 @@ export function ShareTrendTile({
           }
         }
       });
-      setRows([...byT.values()].sort((a, b) => (a.t as number) - (b.t as number)));
+      setRows(
+        [...byT.values()].sort(
+          (a, b) => new Date(a.t as string).getTime() - new Date(b.t as string).getTime(),
+        ),
+      );
       setLoading(false);
     });
 

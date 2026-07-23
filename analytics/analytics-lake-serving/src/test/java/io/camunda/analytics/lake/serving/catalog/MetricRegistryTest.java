@@ -68,11 +68,14 @@ class MetricRegistryTest {
 
   @Test
   void shouldReportNoHistForAMeasureWithNoHistView() {
-    final EntityCatalog activities = metricRegistry.require("activities");
+    // given: variable_profiles' `value` measure ships metrics only in this fixture -- no _hist
+    // twin (activities gained one when the fixture grew production-shaped histograms)
+    final EntityCatalog profiles = metricRegistry.require("variable_profiles");
 
-    assertThat(activities.hasHistTable()).isFalse();
-    assertThat(activities.measures()).hasSize(1);
-    assertThat(activities.measures().get(0).hasHist()).isFalse();
+    // when / then
+    assertThat(profiles.hasHistTable()).isFalse();
+    assertThat(profiles.measure("value")).isPresent();
+    assertThat(profiles.measure("value").orElseThrow().hasHist()).isFalse();
   }
 
   @Test

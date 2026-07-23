@@ -17,6 +17,7 @@ import {
 } from "@camunda/design-system";
 import type { Filters, InvestigateRequest } from "../../lib/api";
 import { useAppData } from "../../lib/appData";
+import { measureNames } from "../../lib/registryHelpers";
 import { DashboardRangePicker, defaultRange } from "../dashboards/DashboardRangePicker";
 
 export interface EntryFormValue extends InvestigateRequest {}
@@ -94,7 +95,7 @@ export function EntryForm({
           </label>
           <div className="flex gap-1">
             {mode === "measure" ? (
-              selectedEntity && selectedEntity.measures.length > 0 ? (
+              selectedEntity && measureNames(selectedEntity).length > 0 ? (
                 <Select
                   value={value.measure ?? ""}
                   onValueChange={(v) => setValue((s) => ({ ...s, measure: v }))}
@@ -103,7 +104,7 @@ export function EntryForm({
                     <SelectValue placeholder="Measure" />
                   </SelectTrigger>
                   <SelectContent>
-                    {selectedEntity.measures.map((m) => (
+                    {measureNames(selectedEntity).map((m) => (
                       <SelectItem key={m} value={m}>
                         {m}
                       </SelectItem>

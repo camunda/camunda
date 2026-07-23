@@ -26,8 +26,9 @@ export function formatDuration(ms: number): string {
   return `${hours.toFixed(1)} h`;
 }
 
-/** A window-start epoch-ms as a short local-time clock label (HH:MM). */
-export function formatWindow(ms: number): string {
+/** A window start (epoch-ms or ISO-8601 string, as the backend sends it) as a short local-time
+ * clock label (HH:MM). */
+export function formatWindow(ms: number | string): string {
   const d = new Date(ms);
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
@@ -53,8 +54,9 @@ export function formatCount(n: number | null | undefined): string {
   return n == null ? "–" : n.toLocaleString("en-US");
 }
 
-/** An epoch-ms timestamp as a local date + time (used in Objects tables/detail, not chart axes). */
-export function formatDateTime(ms: number | null | undefined): string {
+/** A timestamp (epoch-ms or ISO-8601 string) as a local date + time (used in Objects
+ * tables/detail, not chart axes). */
+export function formatDateTime(ms: number | string | null | undefined): string {
   if (ms == null) {
     return "–";
   }

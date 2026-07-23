@@ -5,7 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { PROCESSES_PERSPECTIVE } from "../../lib/appData";
+import { PROCESSES_PERSPECTIVE, useAppData } from "../../lib/appData";
+import { objectTypeFilter } from "../../lib/registryHelpers";
 import type { DashboardRange } from "./DashboardRangePicker";
 import { DecomposeByDimTile } from "./tiles/DecomposeByDimTile";
 import { OpenCountTile } from "./tiles/OpenCountTile";
@@ -14,6 +15,7 @@ import { ShareTrendTile } from "./tiles/ShareTrendTile";
 
 export function KpiTab({ perspective, range }: { perspective: string; range: DashboardRange }) {
   const { from, to, grainMinutes } = range;
+  const { entities } = useAppData();
 
   if (perspective === PROCESSES_PERSPECTIVE) {
     return (
@@ -65,14 +67,14 @@ export function KpiTab({ perspective, range }: { perspective: string; range: Das
             measure: "cnt",
             label: "Born",
             colorIndex: 3,
-            filters: { type: perspective },
+            filters: objectTypeFilter(entities, "objects_born", perspective),
           },
           {
             entity: "object_cohorts",
             measure: "cnt",
             label: "Closed",
             colorIndex: 2,
-            filters: { type: perspective },
+            filters: objectTypeFilter(entities, "object_cohorts", perspective),
           },
         ]}
         from={from}
