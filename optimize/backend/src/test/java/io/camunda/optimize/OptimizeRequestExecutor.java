@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.security.CredentialsRequestDto;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import io.camunda.optimize.dto.optimize.rest.PublicAgenticDashboardEvaluationRequestDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
 import io.camunda.optimize.rest.PublicApiRestService;
 import io.camunda.optimize.service.security.AuthCookieService;
@@ -239,6 +240,23 @@ public class OptimizeRequestExecutor {
     path = PublicApiRestService.PUBLIC_PATH + PublicApiRestService.LABELS_SUB_PATH;
     method = POST;
     body = Entity.json(definitionVariableLabelsDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicGetAgenticDashboardRequest() {
+    path = PublicApiRestService.PUBLIC_PATH + PublicApiRestService.AGENTIC_DASHBOARD_SUB_PATH;
+    method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPublicEvaluateAgenticDashboardReportRequest(
+      final String reportId, final PublicAgenticDashboardEvaluationRequestDto evaluationRequest) {
+    path =
+        PublicApiRestService.PUBLIC_PATH
+            + PublicApiRestService.AGENTIC_DASHBOARD_REPORT_EVALUATE_SUB_PATH.replace(
+                "{reportId}", reportId);
+    method = POST;
+    body = Entity.json(evaluationRequest);
     return this;
   }
 

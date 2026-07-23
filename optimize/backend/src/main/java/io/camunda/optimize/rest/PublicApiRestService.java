@@ -8,6 +8,7 @@
 package io.camunda.optimize.rest;
 
 import static io.camunda.optimize.rest.SharingRestService.SHARE_PATH;
+import static io.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.dto.optimize.SettingsDto;
@@ -16,13 +17,32 @@ import io.camunda.optimize.dto.optimize.query.IdResponseDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import io.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
+import io.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
+import io.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
+import io.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.FilterApplicationLevel;
+import io.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
+import io.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
+import io.camunda.optimize.dto.optimize.rest.PublicAgenticDashboardEvaluationRequestDto;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
+import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import io.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableRequestDto;
+import io.camunda.optimize.dto.optimize.rest.report.AuthorizedReportEvaluationResponseDto;
 import io.camunda.optimize.rest.exceptions.BadRequestException;
+import io.camunda.optimize.rest.exceptions.NotAuthorizedException;
+import io.camunda.optimize.rest.mapper.DashboardRestMapper;
+import io.camunda.optimize.rest.mapper.ReportRestMapper;
 import io.camunda.optimize.service.SettingsService;
 import io.camunda.optimize.service.collection.CollectionScopeService;
 import io.camunda.optimize.service.collection.CollectionService;
@@ -31,8 +51,10 @@ import io.camunda.optimize.service.entities.EntityExportService;
 import io.camunda.optimize.service.entities.EntityImportService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.export.JsonReportResultExportService;
+import io.camunda.optimize.service.report.ReportEvaluationService;
 import io.camunda.optimize.service.report.ReportService;
 import io.camunda.optimize.service.variable.ProcessVariableLabelService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -41,6 +63,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -78,6 +103,9 @@ public class PublicApiRestService {
   private static final String REPORT_EXPORT_DATA_SUB_PATH =
       REPORT_EXPORT_BY_ID_PATH + "/result/json";
   private static final String DASHBOARD_BY_ID_PATH = DASHBOARD_SUB_PATH + "/{dashboardId}";
+  public static final String AGENTIC_DASHBOARD_SUB_PATH = DASHBOARD_SUB_PATH + "/agentic";
+  public static final String AGENTIC_DASHBOARD_REPORT_EVALUATE_SUB_PATH =
+      AGENTIC_DASHBOARD_SUB_PATH + "/report/{reportId}/evaluate";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(PublicApiRestService.class);
 
   private final JsonReportResultExportService jsonReportResultExportService;
@@ -89,6 +117,9 @@ public class PublicApiRestService {
   private final SettingsService settingsService;
   private final CollectionService collectionService;
   private final CollectionScopeService collectionScopeService;
+  private final DashboardRestMapper dashboardRestMapper;
+  private final ReportEvaluationService reportEvaluationService;
+  private final ReportRestMapper reportRestMapper;
 
   public PublicApiRestService(
       final JsonReportResultExportService jsonReportResultExportService,
@@ -99,7 +130,10 @@ public class PublicApiRestService {
       final ProcessVariableLabelService processVariableLabelService,
       final SettingsService settingsService,
       final CollectionService collectionService,
-      final CollectionScopeService collectionScopeService) {
+      final CollectionScopeService collectionScopeService,
+      final DashboardRestMapper dashboardRestMapper,
+      final ReportEvaluationService reportEvaluationService,
+      final ReportRestMapper reportRestMapper) {
     this.jsonReportResultExportService = jsonReportResultExportService;
     this.entityExportService = entityExportService;
     this.entityImportService = entityImportService;
@@ -109,6 +143,9 @@ public class PublicApiRestService {
     this.settingsService = settingsService;
     this.collectionService = collectionService;
     this.collectionScopeService = collectionScopeService;
+    this.dashboardRestMapper = dashboardRestMapper;
+    this.reportEvaluationService = reportEvaluationService;
+    this.reportRestMapper = reportRestMapper;
   }
 
   @GetMapping(REPORT_SUB_PATH)
@@ -123,6 +160,42 @@ public class PublicApiRestService {
       final @RequestParam(name = "collectionId", required = false) String collectionId) {
     validateCollectionIdNotNull(collectionId);
     return dashboardService.getAllDashboardIdsInCollection(collectionId);
+  }
+
+  @GetMapping(AGENTIC_DASHBOARD_SUB_PATH)
+  public AuthorizedDashboardDefinitionResponseDto getAgenticDashboard(
+      final HttpServletRequest request) {
+    final AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
+        dashboardService.getAgenticDashboard();
+    dashboardRestMapper.prepareRestResponse(
+        dashboardDefinition, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
+    return dashboardDefinition;
+  }
+
+  @PostMapping(AGENTIC_DASHBOARD_REPORT_EVALUATE_SUB_PATH)
+  public AuthorizedReportEvaluationResponseDto<?> evaluateAgenticDashboardReport(
+      @PathVariable("reportId") final String reportId,
+      @Valid final PaginationRequestDto paginationRequestDto,
+      final @RequestBody(required = false) PublicAgenticDashboardEvaluationRequestDto
+              evaluationRequest,
+      final HttpServletRequest request) {
+    validateReportIsAgenticControlReport(reportId);
+    // The report is evaluated with the authorization of the user whose bearer token was forwarded
+    // (e.g. by the Camunda Hub). This resolves the user's authorized process definitions and
+    // enforces per-user authorization, without enabling api.jwtAuthForApiEnabled globally.
+    final String userId = extractRequestUserFromBearerToken();
+    final AdditionalProcessReportEvaluationFilterDto additionalFilters =
+        toAdditionalFilters(evaluationRequest);
+    final ZoneId timezone = ZoneId.of("UTC");
+    final AuthorizedReportEvaluationResult evaluationResult =
+        reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
+            userId,
+            timezone,
+            reportId,
+            additionalFilters,
+            PaginationDto.fromPaginationRequest(paginationRequestDto));
+    return reportRestMapper.mapToLocalizedEvaluationResponseDto(
+        evaluationResult, request.getHeader(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   @GetMapping(REPORT_EXPORT_DATA_SUB_PATH)
@@ -182,6 +255,68 @@ public class PublicApiRestService {
     if (collectionId == null) {
       throw new BadRequestException("Must specify a collection ID for this request.");
     }
+  }
+
+  /**
+   * Resolves the id of the user whose bearer token was used to authenticate the public API request.
+   *
+   * <p>On the public API filter chain ({@code /api/public/**}) every request is authenticated by
+   * Spring's OAuth2 resource server, which populates the {@link SecurityContextHolder} with a
+   * {@link JwtAuthenticationToken}. Reading the subject from that token lets the agentic endpoints
+   * run with the identity of the forwarded user (e.g. the Camunda Hub user) without relying on
+   * {@code api.jwtAuthForApiEnabled}, which would broaden bearer authentication to all internal
+   * APIs.
+   */
+  private String extractRequestUserFromBearerToken() {
+    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
+      final String subject = jwtAuthenticationToken.getToken().getSubject();
+      if (subject != null && !subject.isBlank()) {
+        return subject;
+      }
+    }
+    throw new NotAuthorizedException(
+        "Could not resolve the authenticated user from the request token.");
+  }
+
+  private void validateReportIsAgenticControlReport(final String reportId) {
+    final ReportDefinitionDto<ReportDataDto> report = reportService.getReportDefinition(reportId);
+    final ReportDataDto data = report.getData();
+    if (!(data instanceof ProcessReportDataDto)
+        || !((ProcessReportDataDto) data).isAgenticControlReport()) {
+      throw new BadRequestException(
+          "Report [" + reportId + "] is not an agentic control dashboard report.");
+    }
+  }
+
+  private AdditionalProcessReportEvaluationFilterDto toAdditionalFilters(
+      final PublicAgenticDashboardEvaluationRequestDto request) {
+    final AdditionalProcessReportEvaluationFilterDto filters =
+        new AdditionalProcessReportEvaluationFilterDto();
+    if (request == null) {
+      return filters;
+    }
+    final List<String> processDefinitionKeys = request.getProcessDefinitionKeys();
+    if (processDefinitionKeys != null && !processDefinitionKeys.isEmpty()) {
+      filters.setDefinitions(
+          processDefinitionKeys.stream()
+              .map(ReportDataDefinitionDto::new)
+              .collect(Collectors.toList()));
+    }
+    final Long rollingValue = request.getEndDateRollingValue();
+    final DateUnit rollingUnit = request.getEndDateRollingUnit();
+    if (rollingValue != null || rollingUnit != null) {
+      if (rollingValue == null || rollingUnit == null) {
+        throw new BadRequestException(
+            "Both endDateRollingValue and endDateRollingUnit must be provided together.");
+      }
+      final InstanceEndDateFilterDto endDateFilter = new InstanceEndDateFilterDto();
+      endDateFilter.setData(
+          new RollingDateFilterDataDto(new RollingDateFilterStartDto(rollingValue, rollingUnit)));
+      endDateFilter.setFilterLevel(FilterApplicationLevel.INSTANCE);
+      filters.setFilter(List.of(endDateFilter));
+    }
+    return filters;
   }
 
   @PostMapping(SHARE_PATH + "/enable")
