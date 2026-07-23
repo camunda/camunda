@@ -18,6 +18,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private JobsCfg jobs = new JobsCfg();
   private ValidatorsCfg validators = new ValidatorsCfg();
   private BatchOperationCfg batchOperations = new BatchOperationCfg();
+  private SecretResolutionCfg secretResolution = new SecretResolutionCfg();
   private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
   private JobMetricsCfg jobMetrics = new JobMetricsCfg();
   private DistributionCfg distribution = new DistributionCfg();
@@ -34,6 +35,7 @@ public final class EngineCfg implements ConfigurationEntry {
     jobs.init(globalConfig, brokerBase);
     jobMetrics.init(globalConfig, brokerBase);
     batchOperations.init(globalConfig, brokerBase);
+    secretResolution.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
     distribution.init(globalConfig, brokerBase);
     usageMetrics.init(globalConfig, brokerBase);
@@ -81,6 +83,14 @@ public final class EngineCfg implements ConfigurationEntry {
 
   public void setBatchOperations(final BatchOperationCfg batchOperations) {
     this.batchOperations = batchOperations;
+  }
+
+  public SecretResolutionCfg getSecretResolution() {
+    return secretResolution;
+  }
+
+  public void setSecretResolution(final SecretResolutionCfg secretResolution) {
+    this.secretResolution = secretResolution;
   }
 
   public UsageMetricsCfg getUsageMetrics() {
@@ -164,6 +174,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + jobMetrics
         + ", batchOperations="
         + batchOperations
+        + ", secretResolution="
+        + secretResolution
         + ", usageMetrics="
         + usageMetrics
         + ", distribution="
@@ -205,6 +217,11 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationQueryRetryInitialDelay(batchOperations.getQueryRetryInitialDelay())
         .setBatchOperationQueryRetryMaxDelay(batchOperations.getQueryRetryMaxDelay())
         .setBatchOperationQueryRetryBackoffFactor(batchOperations.getQueryRetryBackoffFactor())
+        .setSecretResolutionInterval(secretResolution.getInterval())
+        .setSecretResolutionRetryMaxAttempts(secretResolution.getRetryMaxAttempts())
+        .setSecretResolutionRetryInitialDelay(secretResolution.getRetryInitialDelay())
+        .setSecretResolutionRetryMaxDelay(secretResolution.getRetryMaxDelay())
+        .setSecretResolutionRetryBackoffFactor(secretResolution.getRetryBackoffFactor())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
         .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setJobMetricsExportEnabled(jobMetrics.isEnabled())
