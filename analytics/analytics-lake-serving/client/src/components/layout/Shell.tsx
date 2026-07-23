@@ -14,11 +14,18 @@ import {
 } from "@camunda/design-system";
 import { NavLink, Outlet } from "react-router";
 import { PROCESSES_PERSPECTIVE, useAppData } from "../../lib/appData";
+import { useGlobalRange } from "../../lib/rangeContext";
+import { DashboardRangePicker } from "../dashboards/DashboardRangePicker";
 
+// Nav labels per the design sketch's information architecture; `to` targets stay on the paths the
+// backend's SpaForwardController already forwards wherever a new one hasn't landed yet (Today ->
+// /dashboards, Ask why -> /explain -- see the doc comment on App.tsx). Processes is a new
+// destination without a backend-forwarded path yet (/processes); flagged in the lane report.
 const NAV_ITEMS = [
-  { to: "/dashboards", label: "Dashboards" },
-  { to: "/explain", label: "Explain" },
+  { to: "/dashboards", label: "Today" },
+  { to: "/processes", label: "Processes" },
   { to: "/objects", label: "Objects" },
+  { to: "/explain", label: "Ask why" },
   { to: "/data", label: "Data" },
 ];
 
@@ -59,21 +66,32 @@ function PerspectiveSwitcher() {
   );
 }
 
-/** The app shell: header with the primary nav and the perspective switcher, and the routed page
- * body below. */
+/** The one global time-range control (design sketch: "Time range -- one picker in the header,
+ * shared by Today/Processes/Objects"). Consumed via context, so every page that reads it re-renders
+ * on a change without prop-drilling the range down through the router. */
+function GlobalRangePicker() {
+  const { range, setRange } = useGlobalRange();
+  return <DashboardRangePicker selected={range.label} onSelect={setRange} />;
+}
+
+/** The app shell: header with the primary nav, the perspective switcher, and the global time range,
+ * and the routed page body below. */
 export function Shell() {
   return (
     <div className="min-h-full bg-neutral-background-subtle text-neutral-foreground">
       <header className="border-b border-border bg-neutral-background">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-col gap-1">
               <span className="text-lg font-semibold">Camunda · Analytics Lake</span>
               <span className="text-xs text-neutral-foreground-muted">
                 Read-only serving over the lake warehouse
               </span>
             </div>
-            <PerspectiveSwitcher />
+            <div className="flex flex-wrap items-center gap-3">
+              <GlobalRangePicker />
+              <PerspectiveSwitcher />
+            </div>
           </div>
           <nav className="flex gap-6">
             {NAV_ITEMS.map((item) => (
