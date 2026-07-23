@@ -140,7 +140,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     try {
       return PhysicalTenantIdDiscovery.discover(environment);
     } catch (final InvalidPhysicalTenantIdException e) {
-      throw new UnifiedConfigurationException(e.getMessage());
+      throw new UnifiedConfigurationException(e);
     }
   }
 
@@ -149,7 +149,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     try {
       PhysicalTenantIdDiscovery.validateTenantId(tenantId);
     } catch (final InvalidPhysicalTenantIdException e) {
-      throw new UnifiedConfigurationException(e.getMessage());
+      throw new UnifiedConfigurationException(e);
     }
   }
 }
