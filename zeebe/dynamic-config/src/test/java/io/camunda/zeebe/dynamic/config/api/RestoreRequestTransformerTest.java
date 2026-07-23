@@ -15,6 +15,8 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InternalError;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
@@ -22,6 +24,7 @@ import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 
 final class RestoreRequestTransformerTest {
@@ -118,6 +121,87 @@ final class RestoreRequestTransformerTest {
         .isInstanceOf(InvalidRequest.class)
         .extracting(Exception::getMessage)
         .isEqualTo("backupId and time range are mutually exclusive");
+  }
+
+  @Test
+  void shouldMapIllegalArgumentExceptionToInvalidRequest() {
+    // given - the registered validator reports malformed requests as plain exceptions
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.left(new IllegalArgumentException("bad request parameters")))));
+
+    // when
+    final var result = transformer.operations(recoveringTopology());
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidRequest.class)
+        .extracting(Exception::getMessage)
+        .isEqualTo("bad request parameters");
+  }
+
+  @Test
+  void shouldMapIllegalStateExceptionToInvalidState() {
+    // given
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(
+                    Either.left(new IllegalStateException("no common checkpoint")))));
+
+    // when
+    final var result = transformer.operations(recoveringTopology());
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(InvalidState.class)
+        .extracting(Exception::getMessage)
+        .isEqualTo("no common checkpoint");
+  }
+
+  @Test
+  void shouldMapNoSuchElementExceptionToNotFound() {
+    // given
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(Either.left(new NoSuchElementException("backup not found")))));
+
+    // when
+    final var result = transformer.operations(recoveringTopology());
+
+    // then
+    EitherAssert.assertThat(result)
+        .isLeft()
+        .left()
+        .isInstanceOf(NotFound.class)
+        .extracting(Exception::getMessage)
+        .isEqualTo("backup not found");
+  }
+
+  @Test
+  void shouldMapUnrecognizedExceptionToInternalError() {
+    // given - a failure mode the validator was not expected to produce
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(),
+            registryWithValidator(
+                validatorReturning(Either.left(new RuntimeException("unexpected")))));
+
+    // when
+    final var result = transformer.operations(recoveringTopology());
+
+    // then
+    EitherAssert.assertThat(result).isLeft().left().isInstanceOf(InternalError.class);
   }
 
   @Test

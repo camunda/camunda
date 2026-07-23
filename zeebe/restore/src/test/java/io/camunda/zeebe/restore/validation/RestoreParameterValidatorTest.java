@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import java.time.Instant;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -123,7 +121,7 @@ final class RestoreParameterValidatorTest {
     @Test
     void shouldRejectInvalidTimestamp() {
       // when / then
-      assertThatExceptionOfType(InvalidRequest.class)
+      assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
                   validator.validateParameters(
@@ -143,7 +141,10 @@ final class RestoreParameterValidatorTest {
               () ->
                   validatorWithoutExportedPositions.validateParameters(
                       request(NO_BACKUP_IDS, null, null, DB, false)))
-          .withMessage("Expected either backupIds or exportedPositionSupplier to be registered");
+          .withMessage(
+              "Cannot resolve a restore point: no backupId was specified and no "
+                  + "exported-position data is available. Configure RDBMS as the secondary "
+                  + "storage to enable time-range restores, or specify a backupId.");
     }
   }
 
@@ -193,7 +194,7 @@ final class RestoreParameterValidatorTest {
     @Test
     void shouldRejectUnknownDatabaseType() {
       // when / then
-      assertThatExceptionOfType(InvalidState.class)
+      assertThatExceptionOfType(IllegalStateException.class)
           .isThrownBy(
               () -> validator.validateParameters(request(BACKUP_ID, null, null, "mongodb", false)))
           .withMessage("Invalid database type: mongodb");

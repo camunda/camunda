@@ -16,9 +16,6 @@ import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestValidator;
 import io.camunda.zeebe.restore.RestorePointResolver;
 import io.camunda.zeebe.restore.RestorePointResolver.RestorableBackups;
@@ -33,6 +30,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -75,7 +73,8 @@ public final class RestoreValidator
   public Either<Exception, RestoreResolvedRequest> validate(final RestoreRequest request) {
     if (backupStore == null) {
       return Either.left(
-          new InvalidRequest("Cannot restore: no backup store is configured on this broker."));
+          new IllegalStateException(
+              "Cannot restore: no backup store is configured on this broker."));
     }
     final RestoreResolvedRequest resolvedRequest;
     try {
@@ -120,7 +119,8 @@ public final class RestoreValidator
             "Time range restore (from/to) is not supported for %s.".formatted(databaseType));
         Preconditions.test(!hasBackupIds, "No backupId specified");
       }
-      default -> throw new InvalidState("Invalid database type: " + request.databaseType());
+      default ->
+          throw new IllegalStateException("Invalid database type: " + request.databaseType());
     }
   }
 
@@ -167,16 +167,15 @@ public final class RestoreValidator
     return store
         .list(searchPattern)
         .thenAccept(
-            statuses -> {
-              final var exists =
-                  statuses.stream()
-                      .anyMatch(status -> status.statusCode() == BackupStatusCode.COMPLETED);
-              if (!exists) {
-                throw new NotFound(
-                    "No completed backup found for partition %d with backup id %d"
-                        .formatted(partitionId, backupId));
-              }
-            });
+            statuses ->
+                statuses.stream()
+                    .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
+                    .findAny()
+                    .orElseThrow(
+                        () ->
+                            new NoSuchElementException(
+                                "Could not find a completed backup with id %d for partition %d."
+                                    .formatted(backupId, partitionId))));
   }
 
   private Map<Integer, long[]> resolveRdbmsRangeBackups(final RestoreRequest request) {
@@ -228,7 +227,7 @@ public final class RestoreValidator
                 partition -> {
                   final var position = positionSupplier.apply(partition);
                   if (position == null) {
-                    throw new InvalidState(
+                    throw new IllegalStateException(
                         "No exported position found for partition " + partition + " in RDBMS");
                   }
                   return position;
@@ -275,7 +274,7 @@ public final class RestoreValidator
     try {
       return OffsetDateTime.parse(value).toInstant();
     } catch (final DateTimeParseException e) {
-      throw new InvalidRequest(
+      throw new IllegalArgumentException(
           "Invalid %s timestamp '%s': must be an ISO 8601 date-time.".formatted(field, value));
     }
   }

@@ -25,9 +25,6 @@ import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -35,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
@@ -45,11 +43,9 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Exercises {@link RestoreValidator#validate(RestoreRequest)} against a mocked {@link BackupStore}.
- * {@code validate} reports every failure as an {@link Either.Left} rather than throwing: malformed
- * requests as {@link InvalidRequest}, missing backups/metadata as {@link NotFound}, and other
- * resolution failures (e.g. no common checkpoint across partitions) as {@link InvalidState}. On
- * success, it resolves the request into a {@link RestoreResolvedRequest} carrying the checkpoint
- * ids to restore per partition.
+ * {@code validate} reports every failure as an {@link Either.Left}. On success, it resolves the
+ * request into a {@link RestoreResolvedRequest} carrying the checkpoint ids to restore per
+ * partition.
  */
 final class RestoreValidatorResolverTest {
 
@@ -75,7 +71,7 @@ final class RestoreValidatorResolverTest {
 
     // then
     assertThat(assertInvalid(result))
-        .isInstanceOf(InvalidRequest.class)
+        .isInstanceOf(IllegalStateException.class)
         .hasMessage("Cannot restore: no backup store is configured on this broker.");
   }
 
@@ -300,7 +296,7 @@ final class RestoreValidatorResolverTest {
 
       // then
       assertThat(assertInvalid(result))
-          .isInstanceOf(InvalidState.class)
+          .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("Could not find common checkpoint across partitions");
     }
 
@@ -314,8 +310,8 @@ final class RestoreValidatorResolverTest {
       // when / then
       final var result = validator.validate(rdbmsRequest());
       assertThat(assertInvalid(result))
-          .isInstanceOf(InvalidState.class)
-          .hasMessageContaining("No backup metadata found for partition 1");
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("No backup metadata found for partition(s): [1]");
     }
 
     @Test
@@ -330,7 +326,7 @@ final class RestoreValidatorResolverTest {
 
       // then
       assertThat(assertInvalid(result))
-          .isInstanceOf(InvalidState.class)
+          .isInstanceOf(IllegalStateException.class)
           .hasMessage("No exported position found for partition 1 in RDBMS");
     }
 
@@ -375,9 +371,7 @@ final class RestoreValidatorResolverTest {
 
       // when / then
       final var result = validator.validate(request);
-      assertThat(assertInvalid(result))
-          .isInstanceOf(NotFound.class)
-          .hasMessageContaining("No completed backup found for partition");
+      assertThat(assertInvalid(result)).isInstanceOf(NoSuchElementException.class);
     }
   }
 }
