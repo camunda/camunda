@@ -69,6 +69,14 @@ class PhysicalTenantIdDiscoveryTest {
   }
 
   @Test
+  void shouldRejectNullTenantIdWithoutNpe() {
+    // given a null tenant id — must fail with the documented exception, not a NullPointerException
+    assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
+        .isThrownBy(() -> PhysicalTenantIdDiscovery.validateTenantId(null))
+        .withMessageContaining("Invalid physical tenant id");
+  }
+
+  @Test
   void shouldRejectTenantIdExceeding64Characters() {
     // given a tenant id that is exactly one character over the limit
     final String tooLong = "a".repeat(MAX_TENANT_ID_LENGTH + 1);

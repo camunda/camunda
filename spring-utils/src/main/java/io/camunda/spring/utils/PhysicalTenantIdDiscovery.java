@@ -75,6 +75,12 @@ public final class PhysicalTenantIdDiscovery {
    * @throws InvalidPhysicalTenantIdException if the id is invalid
    */
   public static void validateTenantId(final String tenantId) {
+    if (tenantId == null) {
+      throw new InvalidPhysicalTenantIdException(
+          String.format(
+              "Invalid physical tenant id under '%s.*'. Tenant ids must not be null.",
+              PHYSICAL_TENANTS_PREFIX));
+    }
     if (tenantId.length() > MAX_TENANT_ID_LENGTH) {
       throw new InvalidPhysicalTenantIdException(
           String.format(

@@ -145,6 +145,10 @@ final class PhysicalTenantOverridePolicyValidation {
       return;
     }
     final String tenantId = name.getElement(tenantIdIndex, Form.UNIFORM);
+    if (tenantId == null || tenantId.isEmpty()) {
+      // mirror the other physical-tenant walks — never treat a blank tenant id as a tenant
+      return;
+    }
     PhysicalTenantIdDiscovery.validateTenantId(tenantId);
     final ConfigurationPropertyName relative = name.subName(tenantIdIndex + 1);
     if (isNonOverridable(relative)) {
