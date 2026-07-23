@@ -8,8 +8,10 @@
 import { useState } from "react";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@camunda/design-system";
 import { api, type CohortCompareRequest, type CohortCompareRow, type Finding } from "../../lib/api";
-import { describeFinding } from "../../lib/findingText";
+import { BoldNumbers } from "../common/BoldNumbers";
+import { confidenceLabel, describeFinding, TOOL_LABELS } from "../../lib/findingText";
 import { formatCount, formatLift, formatPercent } from "../../lib/format";
+import { EvidencePanel } from "./EvidencePanel";
 import { NumbersTable } from "./NumbersTable";
 import { RungBadge } from "./RungBadge";
 
@@ -111,6 +113,14 @@ export function LiftTable({ rows }: { rows: CohortCompareRow[] }) {
   );
 }
 
+/**
+ * One ranked finding as an asserted sentence, per the design sketch's Exhibit C: the claim leads
+ * (numbers bolded, via {@link BoldNumbers}), a quiet meta line names the underlying tool + a
+ * confidence word derived from the rung, and the actual chart/table sits behind a single "see
+ * evidence" click -- {@link EvidencePanel} reuses the same seven tool panels the Advanced section
+ * shows, prefilled and auto-run from this finding's own `toolParams`. "Numbers"/"SQL" stay as a
+ * quieter secondary escape hatch for the raw claim/numbers bag and the generated SQL.
+ */
 export function FindingCard({
   finding,
   onEditRerun,
@@ -118,34 +128,47 @@ export function FindingCard({
   finding: Finding;
   onEditRerun: (finding: Finding) => void;
 }) {
+  const [showEvidence, setShowEvidence] = useState(false);
   const [showNumbers, setShowNumbers] = useState(false);
   const [showSql, setShowSql] = useState(false);
+  const isDeferred = finding.kind === "SCAN_DEFERRED";
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-base font-normal">
-            {finding.kind === "SCAN_DEFERRED" ? "Deferred finding" : describeFinding(finding)}
-          </CardTitle>
+          <div className="flex flex-col gap-1">
+            <CardTitle className="text-base font-normal">
+              {isDeferred ? "Deferred finding" : <BoldNumbers text={describeFinding(finding)} />}
+            </CardTitle>
+            {!isDeferred ? (
+              <span className="text-xs text-neutral-foreground-muted">
+                {TOOL_LABELS[finding.tool]} · {confidenceLabel(finding.rung)}
+              </span>
+            ) : null}
+          </div>
           <RungBadge rung={finding.rung} />
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        {finding.kind === "SCAN_DEFERRED" ? <ScanDeferredBody finding={finding} /> : null}
+        {isDeferred ? <ScanDeferredBody finding={finding} /> : null}
 
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" onClick={() => setShowNumbers((s) => !s)}>
-            {showNumbers ? "Hide numbers" : "Show numbers"}
+          <Button size="sm" variant="secondary" onClick={() => setShowEvidence((s) => !s)}>
+            {showEvidence ? "Hide evidence" : "See evidence"}
           </Button>
           <Button size="sm" variant="secondary" onClick={() => onEditRerun(finding)}>
             Edit & rerun
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setShowNumbers((s) => !s)}>
+            {showNumbers ? "Hide numbers" : "Numbers"}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setShowSql((s) => !s)}>
             {showSql ? "Hide SQL" : "SQL"}
           </Button>
         </div>
 
+        {showEvidence ? <EvidencePanel finding={finding} /> : null}
         {showNumbers ? <NumbersTable numbers={finding.numbers} /> : null}
         {showSql ? (
           <pre className="overflow-x-auto rounded bg-neutral-background-subtle p-3 text-xs">

@@ -14,9 +14,11 @@ import {
   type ObjectInstanceLink,
   type ObjectJourneyResponse,
   type ObjectRelation,
+  type ObjectRow,
 } from "../../lib/api";
-import { formatDateTime, formatDuration } from "../../lib/format";
+import { formatCount, formatDateTime, formatDuration } from "../../lib/format";
 import { EmptyTile, LoadingTile } from "../common/EmptyTile";
+import { useClosingBehavior } from "../common/useClosingBehavior";
 import { EgoGraphCard } from "./EgoGraphCard";
 import { distinctElementCount, JourneyMiniMap, MAX_MINI_MAP_NODES } from "./JourneyMiniMap";
 import { JourneyDiagramView } from "./JourneyDiagramView";
@@ -272,6 +274,140 @@ function JourneyLane({ lane }: { lane: Lane }) {
 
 type JourneyView = "timeline" | "map" | "diagram";
 
+const ROW_LOOKUP_LIMIT = 5000;
+
+/**
+ * The story header (design sketch Exhibit D) needs born/closed/outcome, and neither the journey
+ * response's sightings (only `firstSeen`) nor any single-object endpoint carries those -- only the
+ * type's own list rows do (see ObjectRow). No lookup-by-id endpoint exists yet, so this pages
+ * through the type's list (status ALL, bounded by {@link ROW_LOOKUP_LIMIT}) and finds this object
+ * client-side. An object outside that first page has no known order/position guarantee from the
+ * backend, so it simply degrades to `row: null` -- the header below already renders gracefully
+ * without it (journey-derived facts only: process count, contains/part-of).
+ */
+function useObjectRow(type: string, id: string): { row: ObjectRow | null; loading: boolean } {
+  const [row, setRow] = useState<ObjectRow | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!type || !id) {
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    api.objects.list({ type, status: "ALL", limit: ROW_LOOKUP_LIMIT, offset: 0 }).then((result) => {
+      if (cancelled) {
+        return;
+      }
+      setRow(result.ok ? (result.data.rows.find((r) => r.objectId === id) ?? null) : null);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [type, id]);
+
+  return { row, loading };
+}
+
+function pluralize(n: number, noun: string): string {
+  return n === 1 || noun.endsWith("s") ? noun : `${noun}s`;
+}
+
+/** Groups this object's relations by direction (what it contains vs. what it's part of) and by the
+ * related type, e.g. `{ item: 4 }` -- mirrors {@link RelationsCard}'s own split, kept separate
+ * since the header needs counts-by-type as short clauses ("carried 4 items"), not chip lists. */
+function relationCountsByType(
+  relations: ObjectRelation[],
+  type: string,
+  id: string,
+): { contains: Map<string, number>; partOf: Map<string, number> } {
+  const contains = new Map<string, number>();
+  const partOf = new Map<string, number>();
+  for (const r of relations) {
+    if (r.parentType === type && r.parentId === id) {
+      contains.set(r.childType, (contains.get(r.childType) ?? 0) + 1);
+    }
+    if (r.childType === type && r.childId === id) {
+      partOf.set(r.parentType, (partOf.get(r.parentType) ?? 0) + 1);
+    }
+  }
+  return { contains, partOf };
+}
+
+function groupsToClause(groups: Map<string, number>, verb: string): string | null {
+  if (groups.size === 0) {
+    return null;
+  }
+  const parts = [...groups.entries()].map(([relatedType, n]) => `${formatCount(n)} ${pluralize(n, relatedType)}`);
+  return `${verb} ${parts.join(", ")}`;
+}
+
+/**
+ * The story header (Exhibit D): "{type} {id} · [closed chip] · born {t} [· closed {t} (dur)] ·
+ * traveled through N processes · carried K items · part of ...". Every clause is independently
+ * optional and omitted gracefully when its source data isn't available -- there is no single
+ * "journey has enough data" gate.
+ */
+function ObjectStoryHeader({
+  type,
+  id,
+  row,
+  processCount,
+  relations,
+}: {
+  type: string;
+  id: string;
+  row: ObjectRow | null;
+  processCount: number;
+  relations: ObjectRelation[];
+}) {
+  // A type with no rows in objects/stats' outcomes has no closing rule at all (e.g. "customer") --
+  // showing an "open"/"closed" chip for it would just be confusing, so the status chip and the
+  // "closed ..." clause are both skipped entirely for that heuristic (see useClosingBehavior's doc
+  // comment for why this is a heuristic, not a real capability flag).
+  const closing = useClosingBehavior(type);
+  const { contains, partOf } = relationCountsByType(relations, type, id);
+  const containsClause = groupsToClause(contains, "carried");
+  const partOfClause = groupsToClause(partOf, "part of");
+
+  const isClosed = closing !== "never-closes" && row?.closedAt != null;
+  const isOpen = closing !== "never-closes" && row != null && row.closedAt == null;
+
+  const clauses: string[] = [];
+  if (row?.firstSeen) {
+    clauses.push(`born ${formatDateTime(row.firstSeen)}`);
+  }
+  if (isClosed && row?.closedAt) {
+    const durationPart = row.durationMs != null ? ` (${formatDuration(row.durationMs)})` : "";
+    clauses.push(`closed ${formatDateTime(row.closedAt)}${durationPart}`);
+  }
+  if (processCount > 0) {
+    clauses.push(`traveled through ${formatCount(processCount)} process${processCount === 1 ? "" : "es"}`);
+  }
+  if (containsClause) {
+    clauses.push(containsClause);
+  }
+  if (partOfClause) {
+    clauses.push(partOfClause);
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-medium uppercase tracking-wide text-neutral-foreground-muted">{type}</span>
+        <span className="font-mono text-lg font-semibold">{id}</span>
+        {isClosed ? (
+          <Badge variant="success">closed{row?.outcome ? ` · outcome: ${row.outcome}` : ""}</Badge>
+        ) : isOpen ? (
+          <Badge variant="neutral">open</Badge>
+        ) : null}
+      </div>
+      {clauses.length > 0 ? <p className="text-sm text-neutral-foreground-muted">{clauses.join(" · ")}</p> : null}
+    </div>
+  );
+}
+
 export function ObjectDetailPage() {
   const { type = "", id = "" } = useParams<{ type: string; id: string }>();
   const [journey, setJourney] = useState<ObjectJourneyResponse | null>(null);
@@ -303,26 +439,29 @@ export function ObjectDetailPage() {
     };
   }, [type, id]);
 
+  const { row } = useObjectRow(type, id);
   const lanes = journey ? groupByInstance(journey.activities) : [];
-  const firstSeen = journey?.sightings.find((s) => s.firstSeen != null)?.firstSeen ?? null;
+  const processCount = useMemo(() => new Set(lanes.map((l) => l.processId)).size, [lanes]);
   const elementCount = useMemo(() => (journey ? distinctElementCount(journey.activities) : 0), [journey]);
   const mapTooLarge = elementCount > MAX_MINI_MAP_NODES;
   const showMap = journeyView === "map" && !mapTooLarge;
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
+      <div className="flex flex-col gap-1">
         <Link to={`/objects/${encodeURIComponent(type)}`} className="text-xs text-primary underline">
           ← Back to {type}
         </Link>
-        <h1 className="text-xl font-semibold">
-          {type} · <span className="font-mono">{id}</span>
-        </h1>
+        <ObjectStoryHeader
+          type={type}
+          id={id}
+          row={row}
+          processCount={processCount}
+          relations={journey?.relations ?? []}
+        />
         {journey && (
-          <p className="text-sm text-neutral-foreground-muted">
-            Seen by {lanes.length} instance{lanes.length === 1 ? "" : "s"} ·{" "}
-            {journey.activities.length} activities
-            {firstSeen != null ? ` · first seen ${formatDateTime(firstSeen)}` : ""}
+          <p className="text-xs text-neutral-foreground-muted">
+            Seen by {lanes.length} instance{lanes.length === 1 ? "" : "s"} · {journey.activities.length} activities
           </p>
         )}
       </div>

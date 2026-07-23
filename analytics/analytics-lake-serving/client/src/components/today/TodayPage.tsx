@@ -14,15 +14,18 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@camunda/design-system";
-import { api, type Filters, type Finding } from "../../lib/api";
-import { useExplainNavigate } from "../../lib/explainNav";
-import { describeFinding } from "../../lib/findingText";
+import { api, type Filters, type Finding, type ObjectRow } from "../../lib/api";
+import { useExplainNavigate, type ExplainPrefill } from "../../lib/explainNav";
+import { composeDigestSentence, confidenceLabel } from "../../lib/findingText";
 import { formatCount, formatDuration, formatPercent1 } from "../../lib/format";
 import { useAppData } from "../../lib/appData";
 import type { DashboardRange } from "../../lib/range";
 import { useGlobalRange } from "../../lib/rangeContext";
 import { findDim, findMeasure } from "../../lib/registryHelpers";
+import { BoldNumbers } from "../common/BoldNumbers";
 import { EmptyTile, LoadingTile } from "../common/EmptyTile";
+import { FindingCard } from "../explain/FindingCard";
+import { useClosingBehavior } from "../common/useClosingBehavior";
 
 /** How the digest picks which processes to look at, and how many investigate calls it's allowed
  * to make -- capped per the spec ("cap total requests (3 investigates max), run them in
@@ -190,6 +193,20 @@ interface ProcessDigestCard {
   error?: string;
 }
 
+/** Left-border severity stripe, banded off the leading finding's rung -- the design sketch's
+ * `.finding` (strong/accent) vs `.finding.quiet` (structural/muted) distinction, extended to three
+ * bands since a digest card's rung already has three meaningful levels (see RungBadge/
+ * confidenceLabel's own banding, kept in lockstep with this). */
+function severityStripeClass(rung: number): string {
+  if (rung >= 3) {
+    return "border-red-400 dark:border-red-500";
+  }
+  if (rung === 2) {
+    return "border-primary";
+  }
+  return "border-blue-300 dark:border-blue-800";
+}
+
 function DigestCardRow({
   card,
   range,
@@ -202,33 +219,74 @@ function DigestCardRow({
   durationMeasure: string;
 }) {
   const goToExplain = useExplainNavigate();
-  const top = card.findings ? [...card.findings].sort((a, b) => b.rung - a.rung)[0] : undefined;
+  const [showEvidence, setShowEvidence] = useState(false);
+
+  const cardPrefill: ExplainPrefill = {
+    entity: "instances",
+    measure: durationMeasure,
+    filters: { [instancesProcessDim]: card.processId } as Filters,
+    from: range.from,
+    to: range.to,
+  };
+  // Every finding in this card came from the same investigate call, so "edit & rerun" on any of
+  // them is exactly "open in Ask why" with this card's own context -- no per-finding toolParams
+  // parsing needed.
+  const editRerun = () => goToExplain(cardPrefill);
+
+  if (card.error) {
+    return (
+      <div className="border-l-2 border-border py-1.5 pl-3">
+        <div className="text-xs font-medium text-neutral-foreground-muted">{card.processId}</div>
+        <p className="text-sm text-neutral-foreground-muted">Not available: {card.error}</p>
+      </div>
+    );
+  }
+  if (!card.findings || card.findings.length === 0) {
+    return (
+      <div className="border-l-2 border-border py-1.5 pl-3">
+        <div className="text-xs font-medium text-neutral-foreground-muted">{card.processId}</div>
+        <p className="text-sm text-neutral-foreground-muted">No notable shifts for this process.</p>
+      </div>
+    );
+  }
+
+  const composition = composeDigestSentence(card.findings);
+
+  // Rule 5 (see composeDigestSentence): nothing stitched -- render every finding as its own card
+  // rather than forcing a narrative out of weak material.
+  if (!composition) {
+    return (
+      <div className="border-l-2 border-border py-1.5 pl-3">
+        <div className="text-xs font-medium text-neutral-foreground-muted">{card.processId}</div>
+        <div className="mt-2 flex flex-col gap-2">
+          {card.findings.map((f) => (
+            <FindingCard key={f.id} finding={f} onEditRerun={editRerun} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`border-l-2 py-1 pl-3 ${top ? "border-primary" : "border-border"}`}>
+    <div className={`border-l-2 py-1.5 pl-3 ${severityStripeClass(composition.confidenceFrom.rung)}`}>
       <div className="text-xs font-medium text-neutral-foreground-muted">{card.processId}</div>
-      {card.error ? (
-        <p className="text-sm text-neutral-foreground-muted">Not available: {card.error}</p>
-      ) : !card.findings || card.findings.length === 0 ? (
-        <p className="text-sm text-neutral-foreground-muted">No notable shifts for this process.</p>
-      ) : top ? (
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm">{describeFinding(top)}</p>
-          <button
-            type="button"
-            className="shrink-0 text-xs text-primary underline"
-            onClick={() =>
-              goToExplain({
-                entity: "instances",
-                measure: durationMeasure,
-                filters: { [instancesProcessDim]: card.processId } as Filters,
-                from: range.from,
-                to: range.to,
-              })
-            }
-          >
-            open in Ask why
-          </button>
+      <p className="text-sm">
+        <BoldNumbers text={composition.sentence} />
+      </p>
+      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-neutral-foreground-muted">
+        <span>{confidenceLabel(composition.confidenceFrom.rung)}</span>
+        <button type="button" className="underline" onClick={() => setShowEvidence((s) => !s)}>
+          {showEvidence ? "hide evidence" : "see evidence"}
+        </button>
+        <button type="button" className="text-primary underline" onClick={editRerun}>
+          open in Ask why
+        </button>
+      </div>
+      {showEvidence ? (
+        <div className="mt-2 flex flex-col gap-2">
+          {composition.parts.map((f) => (
+            <FindingCard key={f.id} finding={f} onEditRerun={editRerun} />
+          ))}
         </div>
       ) : null}
     </div>
@@ -376,36 +434,56 @@ function NeedsAttentionDigest({ range }: { range: DashboardRange }) {
 
 const OBJECT_CARD_PAGE_SIZE = 1000;
 
+/**
+ * One object-type card in the sketch's compact form: label, big count line, then a quieter
+ * "oldest ... · view" line (Exhibit A: `<span class="v">593 open</span><br>oldest 46 min ·
+ * <u>view</u>`). "Open" only means something for a type with an actual closing rule -- see
+ * {@link useClosingBehavior}'s doc comment for the heuristic that swaps in "known" and drops the
+ * status filter for a type that's never observed closing (e.g. customers).
+ */
 function ObjectTypeCard({ type }: { type: string }) {
-  const [count, setCount] = useState<number | null>(null);
+  const closing = useClosingBehavior(type);
+  const [rows, setRows] = useState<ObjectRow[] | null>(null);
   const [atLimit, setAtLimit] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for the closing-behavior heuristic before picking a status -- avoids firing the list
+    // call twice (once guessing OPEN, then again once "never-closes" is known).
+    if (closing === "loading") {
+      return;
+    }
     let cancelled = false;
-    setLoading(true);
-    api.objects.list({ type, status: "OPEN", limit: OBJECT_CARD_PAGE_SIZE, offset: 0 }).then((result) => {
+    setError(null);
+    const status = closing === "never-closes" ? "ALL" : "OPEN";
+    api.objects.list({ type, status, limit: OBJECT_CARD_PAGE_SIZE, offset: 0 }).then((result) => {
       if (cancelled) {
         return;
       }
       if (!result.ok) {
         setError(result.message);
       } else {
-        setCount(result.data.rows.length);
+        setRows(result.data.rows);
         setAtLimit(result.data.rows.length >= OBJECT_CARD_PAGE_SIZE);
       }
-      setLoading(false);
     });
     return () => {
       cancelled = true;
     };
-  }, [type]);
+  }, [type, closing]);
+
+  const loading = closing === "loading" || (rows == null && error == null);
+  const label = closing === "never-closes" ? "known" : "open";
+  const oldestAge =
+    rows && rows.length > 0
+      ? formatDuration(Date.now() - Math.min(...rows.map((r) => new Date(r.firstSeen).getTime())))
+      : null;
+  const statusParam = closing === "never-closes" ? "" : "?status=OPEN";
 
   return (
-    <Link to={`/objects/${encodeURIComponent(type)}?status=OPEN`} className="block">
+    <Link to={`/objects/${encodeURIComponent(type)}${statusParam}`} className="block">
       <Card className="transition-colors hover:bg-neutral-background-subtle">
-        <CardContent className="flex flex-col gap-1.5 p-4">
+        <CardContent className="flex flex-col gap-1 p-4">
           <span className="text-xs font-medium uppercase tracking-wide text-neutral-foreground-muted">
             {type}
           </span>
@@ -414,9 +492,15 @@ function ObjectTypeCard({ type }: { type: string }) {
           ) : error ? (
             <span className="text-sm text-neutral-foreground-muted">Not available</span>
           ) : (
-            <span className="text-2xl font-semibold tabular-nums">
-              {atLimit ? `${formatCount(count)}+` : formatCount(count)} open
-            </span>
+            <>
+              <span className="text-2xl font-semibold tabular-nums">
+                {atLimit ? `${formatCount(rows?.length)}+` : formatCount(rows?.length)} {label}
+              </span>
+              <span className="text-xs text-neutral-foreground-muted">
+                {oldestAge != null ? `oldest ${oldestAge} · ` : ""}
+                <span className="text-primary underline">view</span>
+              </span>
+            </>
           )}
         </CardContent>
       </Card>

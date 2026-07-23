@@ -37,22 +37,25 @@ function renderList(label: string, items: unknown[]) {
  * Manual "conditions" tool panel: a variant's BPMN footprint (elements/flows/firstSeen). The
  * contract doesn't detail elements'/flows' item shapes, so each renders defensively as a plain
  * chip list (a stringified object if the item is one) rather than assuming a specific record.
+ * `autoRun` fetches immediately once a `prefill` arrives -- see {@link SeriesPanel}'s doc comment
+ * for why.
  */
-export function ConditionsPanel({ prefill }: { prefill?: Partial<ConditionsRequest> }) {
+export function ConditionsPanel({
+  prefill,
+  autoRun,
+}: {
+  prefill?: Partial<ConditionsRequest>;
+  autoRun?: boolean;
+}) {
   const [req, setReq] = useState<ConditionsRequest>({ ...defaultRequest(), ...prefill });
   const [result, setResult] = useState<ConditionsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setReq((r) => ({ ...r, ...prefill }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(prefill)]);
-
-  const run = () => {
+  const runRequest = (r: ConditionsRequest) => {
     setLoading(true);
     setError(null);
-    api.tools.conditions(req).then((res) => {
+    api.tools.conditions(r).then((res) => {
       if (!res.ok) {
         setError(res.message);
         setResult(null);
@@ -62,6 +65,17 @@ export function ConditionsPanel({ prefill }: { prefill?: Partial<ConditionsReque
       setLoading(false);
     });
   };
+
+  useEffect(() => {
+    const merged = { ...req, ...prefill };
+    setReq(merged);
+    if (autoRun && prefill && merged.variantHash && merged.processId) {
+      runRequest(merged);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(prefill)]);
+
+  const run = () => runRequest(req);
 
   return (
     <div className="flex flex-col gap-3">

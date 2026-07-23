@@ -20,23 +20,25 @@ function defaultRequest(): ExemplarsRequest {
  * list linking to Objects/journey where applicable" -- ExemplarRow only carries
  * instanceKey/durationMs/startedAt/variantHash, with no objectId the contract guarantees links
  * back to any object, so there is nothing to link to here; rows render as a plain table rather
- * than a fabricated link.
+ * than a fabricated link. `autoRun` fetches immediately once a `prefill` arrives -- see {@link
+ * SeriesPanel}'s doc comment for why.
  */
-export function ExemplarsPanel({ prefill }: { prefill?: Partial<ExemplarsRequest> }) {
+export function ExemplarsPanel({
+  prefill,
+  autoRun,
+}: {
+  prefill?: Partial<ExemplarsRequest>;
+  autoRun?: boolean;
+}) {
   const [req, setReq] = useState<ExemplarsRequest>({ ...defaultRequest(), ...prefill });
   const [result, setResult] = useState<ExemplarsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setReq((r) => ({ ...r, ...prefill }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(prefill)]);
-
-  const run = () => {
+  const runRequest = (r: ExemplarsRequest) => {
     setLoading(true);
     setError(null);
-    api.tools.exemplars(req).then((res) => {
+    api.tools.exemplars(r).then((res) => {
       if (!res.ok) {
         setError(res.message);
         setResult(null);
@@ -46,6 +48,17 @@ export function ExemplarsPanel({ prefill }: { prefill?: Partial<ExemplarsRequest
       setLoading(false);
     });
   };
+
+  useEffect(() => {
+    const merged = { ...req, ...prefill };
+    setReq(merged);
+    if (autoRun && prefill && merged.entity) {
+      runRequest(merged);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(prefill)]);
+
+  const run = () => runRequest(req);
 
   return (
     <div className="flex flex-col gap-3">

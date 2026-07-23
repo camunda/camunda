@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Input,
@@ -15,39 +15,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@camunda/design-system";
-import type { Filters, InvestigateRequest } from "../../lib/api";
+import type { Filters } from "../../lib/api";
 import { useAppData } from "../../lib/appData";
 import { measureNames } from "../../lib/registryHelpers";
-import { DashboardRangePicker, defaultRange } from "../dashboards/DashboardRangePicker";
+import { DashboardRangePicker } from "../dashboards/DashboardRangePicker";
+import type { AskAboutContext } from "./questions";
 
-export interface EntryFormValue extends InvestigateRequest {}
-
-function defaultValue(): EntryFormValue {
-  const r = defaultRange();
-  return { entity: "", measure: null, quantile: null, filters: {}, from: r.from, to: r.to };
-}
-
-/** The Explain entry form: entity/measure/window, arriving either blank or pre-filled from a
- * dashboard tile's ⌕ or a finding's "edit & rerun" (see lib/explainNav.ts and ExplainPage). */
-export function EntryForm({
-  initial,
-  onSubmit,
-  submitting,
+/**
+ * The "ask about" context editor -- entity/measure-or-quantile/window/filters, per the design
+ * sketch's Exhibit C "ask about" box. Controlled (`value`/`onApply`) rather than owning the
+ * committed context itself: ExplainPage renders this behind the "change…" chip and only commits a
+ * draft into the page's `askAbout` state (and re-collapses back to the summary chip) once the
+ * reader hits Apply -- it never fires a request itself (compare the old EntryForm this replaces,
+ * which posted straight to investigate on submit; picking a question chip is now what runs
+ * anything).
+ */
+export function AskAboutEditor({
+  value,
+  onApply,
+  onCancel,
 }: {
-  initial?: Partial<EntryFormValue>;
-  onSubmit: (value: EntryFormValue) => void;
-  submitting: boolean;
+  value: AskAboutContext;
+  onApply: (value: AskAboutContext) => void;
+  onCancel: () => void;
 }) {
   const { entities, entitiesLoaded } = useAppData();
-  const [value, setValue] = useState<EntryFormValue>({ ...defaultValue(), ...initial });
-  const [mode, setMode] = useState<"measure" | "quantile">(
-    initial?.quantile != null ? "quantile" : "measure",
-  );
+  const [draft, setDraft] = useState<AskAboutContext>(value);
+  const [mode, setMode] = useState<"measure" | "quantile">(value.quantile != null ? "quantile" : "measure");
   const [filterRows, setFilterRows] = useState<{ key: string; value: string }[]>(
-    Object.entries(initial?.filters ?? {}).map(([key, v]) => ({ key, value: String(v) })),
+    Object.entries(value.filters).map(([key, v]) => ({ key, value: String(v) })),
   );
 
-  const selectedEntity = entities.find((e) => e.name === value.entity);
+  useEffect(() => {
+    setDraft(value);
+    setMode(value.quantile != null ? "quantile" : "measure");
+    setFilterRows(Object.entries(value.filters).map(([key, v]) => ({ key, value: String(v) })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const selectedEntity = entities.find((e) => e.name === draft.entity);
 
   const filtersFromRows = (): Filters => {
     const filters: Filters = {};
@@ -59,11 +65,11 @@ export function EntryForm({
     return filters;
   };
 
-  const submit = () => {
-    if (!value.entity) {
+  const apply = () => {
+    if (!draft.entity) {
       return;
     }
-    onSubmit({ ...value, filters: filtersFromRows() });
+    onApply({ ...draft, filters: filtersFromRows() });
   };
 
   return (
@@ -74,7 +80,7 @@ export function EntryForm({
           {entitiesLoaded && entities.length === 0 ? (
             <span className="text-xs text-destructive-foreground">Registry unavailable</span>
           ) : (
-            <Select value={value.entity} onValueChange={(v) => setValue((s) => ({ ...s, entity: v }))}>
+            <Select value={draft.entity} onValueChange={(v) => setDraft((s) => ({ ...s, entity: v }))}>
               <SelectTrigger size="sm">
                 <SelectValue placeholder="Select entity" />
               </SelectTrigger>
@@ -97,8 +103,8 @@ export function EntryForm({
             {mode === "measure" ? (
               selectedEntity && measureNames(selectedEntity).length > 0 ? (
                 <Select
-                  value={value.measure ?? ""}
-                  onValueChange={(v) => setValue((s) => ({ ...s, measure: v }))}
+                  value={draft.measure ?? ""}
+                  onValueChange={(v) => setDraft((s) => ({ ...s, measure: v }))}
                 >
                   <SelectTrigger size="sm" className="flex-1">
                     <SelectValue placeholder="Measure" />
@@ -114,8 +120,8 @@ export function EntryForm({
               ) : (
                 <Input
                   placeholder="measure name"
-                  value={value.measure ?? ""}
-                  onChange={(e) => setValue((s) => ({ ...s, measure: e.target.value }))}
+                  value={draft.measure ?? ""}
+                  onChange={(e) => setDraft((s) => ({ ...s, measure: e.target.value }))}
                 />
               )
             ) : (
@@ -125,9 +131,9 @@ export function EntryForm({
                 max={1}
                 step={0.01}
                 placeholder="0.95"
-                value={value.quantile ?? ""}
+                value={draft.quantile ?? ""}
                 onChange={(e) =>
-                  setValue((s) => ({ ...s, quantile: e.target.value === "" ? null : Number(e.target.value) }))
+                  setDraft((s) => ({ ...s, quantile: e.target.value === "" ? null : Number(e.target.value) }))
                 }
               />
             )}
@@ -137,7 +143,7 @@ export function EntryForm({
               type="button"
               onClick={() => {
                 setMode((m) => (m === "measure" ? "quantile" : "measure"));
-                setValue((s) => ({ ...s, measure: null, quantile: null }));
+                setDraft((s) => ({ ...s, measure: null, quantile: null }));
               }}
               title="Switch between a named measure and a quantile"
             >
@@ -150,13 +156,16 @@ export function EntryForm({
           <label className="text-xs font-medium text-neutral-foreground-muted">Window</label>
           <DashboardRangePicker
             selected=""
-            onSelect={(r) => setValue((s) => ({ ...s, from: r.from, to: r.to }))}
+            onSelect={(r) => setDraft((s) => ({ ...s, from: r.from, to: r.to }))}
           />
         </div>
 
-        <div className="flex items-end">
-          <Button onClick={submit} disabled={!value.entity || submitting}>
-            {submitting ? "Investigating…" : "Investigate"}
+        <div className="flex items-end gap-2">
+          <Button onClick={apply} disabled={!draft.entity}>
+            Apply
+          </Button>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
           </Button>
         </div>
       </div>

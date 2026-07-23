@@ -27,22 +27,20 @@ function defaultRequest(): SeriesRequest {
 }
 
 /** Manual "series" tool panel: typed form mirroring {@link SeriesRequest} exactly, rendered as a
- * line chart -- the tool-panel counterpart to the auto-generated series-backed dashboard tiles. */
-export function SeriesPanel({ prefill }: { prefill?: Partial<SeriesRequest> }) {
+ * line chart -- the tool-panel counterpart to the auto-generated series-backed dashboard tiles.
+ * `autoRun` fetches immediately once a `prefill` arrives (rather than waiting for a manual "Run"
+ * click) -- used when this panel renders as a finding's "see evidence" body, where the click that
+ * expanded the evidence should be the only click needed. */
+export function SeriesPanel({ prefill, autoRun }: { prefill?: Partial<SeriesRequest>; autoRun?: boolean }) {
   const [req, setReq] = useState<SeriesRequest>({ ...defaultRequest(), ...prefill });
   const [result, setResult] = useState<SeriesResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setReq((r) => ({ ...r, ...prefill }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(prefill)]);
-
-  const run = () => {
+  const runRequest = (r: SeriesRequest) => {
     setLoading(true);
     setError(null);
-    api.tools.series(req).then((res) => {
+    api.tools.series(r).then((res) => {
       if (!res.ok) {
         setError(res.message);
         setResult(null);
@@ -52,6 +50,17 @@ export function SeriesPanel({ prefill }: { prefill?: Partial<SeriesRequest> }) {
       setLoading(false);
     });
   };
+
+  useEffect(() => {
+    const merged = { ...req, ...prefill };
+    setReq(merged);
+    if (autoRun && prefill && merged.entity) {
+      runRequest(merged);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(prefill)]);
+
+  const run = () => runRequest(req);
 
   const span = req.to - req.from;
   const data = result?.points.map((p) => ({ label: formatWindowForSpan(p.t, span), value: p.value })) ?? [];

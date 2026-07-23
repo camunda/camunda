@@ -29,10 +29,13 @@ const NAV_ITEMS = [
   { to: "/data", label: "Data" },
 ];
 
+// The sketch's navbar (Exhibit A): a continuous structural underline the whole strip sits on, with
+// the active item's own accent-colored underline drawn on top of it (`-mb-px` pulls each link's own
+// border down onto the nav's shared one instead of doubling it).
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return isActive
-    ? "border-b-2 border-primary px-1 pb-2 text-sm font-medium text-neutral-foreground"
-    : "border-b-2 border-transparent px-1 pb-2 text-sm text-neutral-foreground-muted hover:text-neutral-foreground";
+    ? "-mb-px border-b-2 border-primary px-1 pb-2 text-sm font-medium text-neutral-foreground"
+    : "-mb-px border-b-2 border-transparent px-1 pb-2 text-sm text-neutral-foreground-muted hover:text-neutral-foreground";
 }
 
 /** The global perspective switcher: "processes" or one of the discovered object types. Object
@@ -93,7 +96,7 @@ export function Shell() {
               <PerspectiveSwitcher />
             </div>
           </div>
-          <nav className="flex gap-6">
+          <nav className="flex gap-6 border-b border-border">
             {NAV_ITEMS.map((item) => (
               <NavLink key={item.to} to={item.to} className={navLinkClass}>
                 {item.label}
