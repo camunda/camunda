@@ -454,4 +454,81 @@ final class RecoveryPartitionManagerTest {
       }
     }
   }
+
+  @Nested
+  class Restore {
+
+    @Test
+    void shouldFailWhenNoBackupStoreConfigured() {
+      // when
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(
+          () ->
+              future.set(
+                  partitionManager.restore(
+                      PARTITION_ID, new java.util.TreeSet<>(java.util.List.of(1L)))));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
+      assertThat(future.get().isCompletedExceptionally()).isTrue();
+    }
+
+    @Test
+    void shouldFailForUnknownPartition() {
+      // given
+      final var brokerCfg = new BrokerCfg();
+      brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
+      partitionManager = buildManager(brokerCfg, actorScheduler);
+      controlActor.run(() -> partitionManager.start());
+      await().atMost(Duration.ofSeconds(10)).until(() -> true);
+
+      // when
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(
+          () ->
+              future.set(
+                  partitionManager.restore(999, new java.util.TreeSet<>(java.util.List.of(1L)))));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
+      assertThat(future.get().isCompletedExceptionally()).isTrue();
+    }
+
+    @Test
+    void shouldDeletePartitionDataWhenRestoreFails(@TempDir final Path tempDir) {
+      // given: a filesystem backup store with no backups taken, so restore is guaranteed to fail
+      final var brokerCfg = new BrokerCfg();
+      brokerCfg.getData().setDirectory(tempDir.toString());
+      brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
+      brokerCfg
+          .getData()
+          .getBackup()
+          .getFilesystem()
+          .setBasePath(tempDir.resolve("backups").toString());
+      partitionManager = buildManager(brokerCfg, actorScheduler);
+      controlActor.run(() -> partitionManager.start());
+      await().atMost(Duration.ofSeconds(10)).until(() -> true);
+      final var partitionDir =
+          tempDir.resolve(GROUP).resolve("partitions").resolve(String.valueOf(PARTITION_ID));
+
+      // when
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(
+          () ->
+              future.set(
+                  partitionManager.restore(
+                      PARTITION_ID, new java.util.TreeSet<>(java.util.List.of(1L)))));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
+      assertThat(future.get().isCompletedExceptionally()).isTrue();
+      assertThat(partitionDir).isEmptyDirectory();
+    }
+  }
 }
