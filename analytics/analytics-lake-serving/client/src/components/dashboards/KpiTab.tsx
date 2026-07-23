@@ -8,8 +8,10 @@
 import { PROCESSES_PERSPECTIVE, useAppData } from "../../lib/appData";
 import { objectTypeFilter } from "../../lib/registryHelpers";
 import type { DashboardRange } from "./DashboardRangePicker";
+import { BirthsByProcessTile } from "./tiles/BirthsByProcessTile";
 import { DecomposeByDimTile } from "./tiles/DecomposeByDimTile";
 import { OpenCountTile } from "./tiles/OpenCountTile";
+import { RelationFanoutTile } from "./tiles/RelationFanoutTile";
 import { SeriesTile } from "./tiles/SeriesTile";
 import { ShareTrendTile } from "./tiles/ShareTrendTile";
 
@@ -82,6 +84,8 @@ export function KpiTab({ perspective, range }: { perspective: string; range: Das
         grainMinutes={grainMinutes}
       />
       <OpenCountTile type={perspective} />
+      <BirthsByProcessTile type={perspective} />
+      <RelationFanoutTile type={perspective} />
     </div>
   );
 }

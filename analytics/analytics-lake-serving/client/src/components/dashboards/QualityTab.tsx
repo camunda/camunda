@@ -11,6 +11,7 @@ import { ChartCard } from "../common/ChartCard";
 import { EmptyTile } from "../common/EmptyTile";
 import type { DashboardRange } from "./DashboardRangePicker";
 import { DecomposeByDimTile } from "./tiles/DecomposeByDimTile";
+import { OutcomeSplitTile } from "./tiles/OutcomeSplitTile";
 import { ShareTrendTile } from "./tiles/ShareTrendTile";
 import { StuckNoteTile } from "./tiles/StuckNoteTile";
 import { TerminationRateTile } from "./tiles/TerminationRateTile";
@@ -76,6 +77,7 @@ export function QualityTab({ perspective, range }: { perspective: string; range:
         filters={objectTypeFilter(entities, "object_cohorts", perspective)}
       />
       <StuckNoteTile perspective={perspective} />
+      <OutcomeSplitTile type={perspective} />
     </div>
   );
 }

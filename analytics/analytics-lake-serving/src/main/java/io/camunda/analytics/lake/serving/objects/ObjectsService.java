@@ -83,6 +83,7 @@ public class ObjectsService {
     }
     final int limit = query.limit() == null ? 50 : query.limit();
     final int offset = query.offset() == null ? 0 : query.offset();
+    final boolean sortByDuration = lifecycleAvailable && "DURATION_DESC".equals(query.sort());
 
     final StringBuilder sqlText =
         new StringBuilder(
@@ -113,7 +114,9 @@ public class ObjectsService {
           .append("OPEN".equals(status) ? "NULL" : "NOT NULL");
     }
     sqlText
-        .append(" ORDER BY first_seen DESC LIMIT ")
+        .append(" ORDER BY ")
+        .append(sortByDuration ? "duration_ms DESC NULLS LAST" : "first_seen DESC")
+        .append(" LIMIT ")
         .append(limit)
         .append(" OFFSET ")
         .append(offset);
@@ -318,8 +321,26 @@ public class ObjectsService {
   /** {@code GET /api/objects/types} response. */
   public record ObjectTypesResult(List<String> types, boolean closedSupported, List<String> sql) {}
 
-  /** {@code POST /api/objects/list} request. */
-  public record ObjectListQuery(String type, String status, Integer limit, Integer offset) {}
+  /**
+   * {@code POST /api/objects/list} request. {@code sort} is optional: {@code "FIRST_SEEN_DESC"}
+   * (the default, and the only ordering when {@code null}) or {@code "DURATION_DESC"} (by {@code
+   * duration_ms} descending, {@code NULLS LAST}) -- silently falls back to {@code FIRST_SEEN_DESC}
+   * when {@code object_lifecycle} isn't available, since {@code duration_ms} doesn't exist without
+   * it (never an error; same open/closed graceful-degradation rule as the rest of this class).
+   */
+  public record ObjectListQuery(
+      String type, String status, Integer limit, Integer offset, String sort) {
+
+    /**
+     * Pre-{@code sort} 4-arg shape, kept so every existing caller (including other test files
+     * outside this change's scope) keeps compiling unchanged -- equivalent to passing {@code
+     * sort=null} (the default ordering).
+     */
+    public ObjectListQuery(
+        final String type, final String status, final Integer limit, final Integer offset) {
+      this(type, status, limit, offset, null);
+    }
+  }
 
   /** One {@code POST /api/objects/list} result row. */
   public record ObjectRow(
