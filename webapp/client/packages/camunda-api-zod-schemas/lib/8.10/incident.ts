@@ -35,6 +35,7 @@ const incidentErrorTypeSchema = z.enum([
 	'DECISION_EVALUATION_ERROR',
 	'FORM_NOT_FOUND',
 	'RESOURCE_NOT_FOUND',
+	'SECRET_RESOLUTION_ERROR',
 ]);
 type IncidentErrorType = z.infer<typeof incidentErrorTypeSchema>;
 
