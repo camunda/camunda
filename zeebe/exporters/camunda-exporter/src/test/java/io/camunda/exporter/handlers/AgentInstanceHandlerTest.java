@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
@@ -353,10 +354,11 @@ final class AgentInstanceHandlerTest {
     final var entity = new AgentInstanceEntity().setId("1");
     underTest.updateEntity(record, entity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then — updateFields keys match template constants; values come from entity (not hardcoded)
     final var expectedUpdateFields = new LinkedHashMap<String, Object>();
@@ -372,7 +374,7 @@ final class AgentInstanceHandlerTest {
     // payload is identical across intents (no-op when null overwrites null in the index).
     expectedUpdateFields.put(COMPLETION_DATE, null);
 
-    verify(mockRequest, times(1)).upsert(indexName, entity.getId(), entity, expectedUpdateFields);
+    verify(mockRequest, times(1)).upsert(index, entity.getId(), entity, expectedUpdateFields);
   }
 
   @Test
@@ -387,15 +389,16 @@ final class AgentInstanceHandlerTest {
             .setCompletionDate(completionDate)
             .setLastUpdatedDate(completionDate);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsert(
-            Mockito.eq(indexName),
+            Mockito.eq(index),
             Mockito.eq(entityId),
             Mockito.eq(entity),
             Mockito.argThat(

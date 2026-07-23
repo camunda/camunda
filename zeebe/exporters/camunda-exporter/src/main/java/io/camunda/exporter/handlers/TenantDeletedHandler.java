@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
@@ -65,9 +66,10 @@ public class TenantDeletedHandler implements ExportHandler<TenantEntity, TenantR
   }
 
   @Override
-  public void flush(final TenantEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final TenantEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override

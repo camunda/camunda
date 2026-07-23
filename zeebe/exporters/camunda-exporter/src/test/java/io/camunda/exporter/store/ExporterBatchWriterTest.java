@@ -22,6 +22,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.exporter.entities.TestExporterEntity;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.ExportHandler.IdAndIndex;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.protocol.TestRecord;
 import io.camunda.protocol.TestValue;
 import java.util.List;
@@ -60,6 +62,7 @@ class ExporterBatchWriterTest {
 
     verify(handler).handlesRecord(eq(record));
 
+    verify(handler, never()).extractIdAndIndexes(any(), eq(record));
     verify(handler, never()).generateIds(eq(record));
     verify(handler, never()).createNewEntity(anyString());
     verify(handler, never()).updateEntity(any(), any());
@@ -73,7 +76,8 @@ class ExporterBatchWriterTest {
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
     when(handler.handlesRecord(eq(record))).thenReturn(true);
-    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.extractIdAndIndexes(any(), eq(record)))
+        .thenReturn(List.of(new IdAndIndex(id, TargetIndex.mainIndex("test-index"))));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
     // when
@@ -81,7 +85,7 @@ class ExporterBatchWriterTest {
 
     // then
     verify(handler).handlesRecord(eq(record));
-    verify(handler).generateIds(eq(record));
+    verify(handler).extractIdAndIndexes(any(), eq(record));
     verify(handler).createNewEntity(eq(id));
     verify(handler).updateEntity(eq(record), eq(entity));
     assertThat(batchWriter.getBatchSize()).isEqualTo(1);
@@ -94,7 +98,8 @@ class ExporterBatchWriterTest {
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
     when(handler.handlesRecord(eq(record))).thenReturn(true).thenReturn(true);
-    when(handler.generateIds(eq(record))).thenReturn(List.of(id)).thenReturn(List.of(id));
+    when(handler.extractIdAndIndexes(any(), eq(record)))
+        .thenReturn(List.of(new IdAndIndex(id, TargetIndex.mainIndex("test-index"))));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
     // Add the record
@@ -118,7 +123,8 @@ class ExporterBatchWriterTest {
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
     when(handler.handlesRecord(eq(record))).thenReturn(true);
-    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.extractIdAndIndexes(any(), eq(record)))
+        .thenReturn(List.of(new IdAndIndex(id, TargetIndex.mainIndex("test-index"))));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
     batchWriter.addRecord(record);
@@ -131,7 +137,7 @@ class ExporterBatchWriterTest {
 
     // then
 
-    verify(handler).flush(entity, batchRequest);
+    verify(handler).flush(TargetIndex.mainIndex("test-index"), entity, batchRequest);
     verify(batchRequest).execute(any());
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
     assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
@@ -144,7 +150,8 @@ class ExporterBatchWriterTest {
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
     when(handler.handlesRecord(eq(record))).thenReturn(true);
-    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.extractIdAndIndexes(any(), eq(record)))
+        .thenReturn(List.of(new IdAndIndex(id, TargetIndex.mainIndex("test-index"))));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
     // duplicate the record
@@ -156,7 +163,7 @@ class ExporterBatchWriterTest {
     batchWriter.flush(batchRequest);
 
     // then
-    verify(handler).flush(entity, batchRequest);
+    verify(handler).flush(TargetIndex.mainIndex("test-index"), entity, batchRequest);
     verify(batchRequest).execute(any());
     assertThat(batchWriter.getBatchSize()).isEqualTo(0);
     assertThat(batchWriter.getEntitiesToFlushSize()).isEqualTo(0);
@@ -169,7 +176,8 @@ class ExporterBatchWriterTest {
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
     when(handler.handlesRecord(eq(record))).thenReturn(true);
-    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.extractIdAndIndexes(any(), eq(record)))
+        .thenReturn(List.of(new IdAndIndex(id, TargetIndex.mainIndex("test-index"))));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
     // when
@@ -186,7 +194,8 @@ class ExporterBatchWriterTest {
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
     when(handler.handlesRecord(eq(record))).thenReturn(true);
-    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.extractIdAndIndexes(any(), eq(record)))
+        .thenReturn(List.of(new IdAndIndex(id, TargetIndex.mainIndex("test-index"))));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
     batchWriter.addRecord(record);
@@ -207,8 +216,10 @@ class ExporterBatchWriterTest {
     final TestExporterEntity entity1 = new TestExporterEntity().setId("1");
     final TestExporterEntity entity2 = new TestExporterEntity().setId("2");
     when(handler.handlesRecord(any())).thenReturn(true);
-    when(handler.generateIds(eq(record1))).thenReturn(List.of("1"));
-    when(handler.generateIds(eq(record2))).thenReturn(List.of("2"));
+    when(handler.extractIdAndIndexes(any(), eq(record1)))
+        .thenReturn(List.of(new IdAndIndex("1", TargetIndex.mainIndex("test-index"))));
+    when(handler.extractIdAndIndexes(any(), eq(record2)))
+        .thenReturn(List.of(new IdAndIndex("2", TargetIndex.mainIndex("test-index"))));
     when(handler.createNewEntity(eq("1"))).thenReturn(entity1);
     when(handler.createNewEntity(eq("2"))).thenReturn(entity2);
 
@@ -229,7 +240,8 @@ class ExporterBatchWriterTest {
     final String id = "1";
     final TestExporterEntity entity = new TestExporterEntity().setId(id);
     when(handler.handlesRecord(eq(record))).thenReturn(true);
-    when(handler.generateIds(eq(record))).thenReturn(List.of(id));
+    when(handler.extractIdAndIndexes(any(), eq(record)))
+        .thenReturn(List.of(new IdAndIndex(id, TargetIndex.mainIndex("test-index"))));
     when(handler.createNewEntity(eq(id))).thenReturn(entity);
 
     batchWriter.addRecord(record);

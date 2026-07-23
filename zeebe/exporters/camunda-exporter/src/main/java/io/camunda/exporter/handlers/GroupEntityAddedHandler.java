@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity;
@@ -68,9 +69,10 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupMemberEntity,
   }
 
   @Override
-  public void flush(final GroupMemberEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final GroupMemberEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, String.valueOf(entity.getJoin().parent()));
+    batchRequest.addWithRouting(index, entity, String.valueOf(entity.getJoin().parent()));
   }
 
   @Override

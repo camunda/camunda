@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -156,6 +157,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
   @Test
   void shouldFlushEntity() {
     // given
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
     final Record<BatchOperationChunkRecordValue> record =
         factory.generateRecordWithIntent(
@@ -167,11 +169,11 @@ class BatchOperationChunkCreatedItemHandlerTest {
     underTest.updateEntity(record, entity);
 
     // when
-    underTest.flush(entity, mockRequest); // Assuming null is acceptable for this test
+    underTest.flush(index, entity, mockRequest); // Assuming null is acceptable for this test
 
     // then
     final var entityCaptor = ArgumentCaptor.forClass(OperationEntity.class);
-    verify(mockRequest).add(eq(indexName), entityCaptor.capture());
+    verify(mockRequest).add(eq(index), entityCaptor.capture());
     final var capturedEntity = entityCaptor.getValue();
     assertThat(capturedEntity).isEqualTo(entity);
   }
@@ -181,6 +183,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
     // given
     when(batchOperationCache.get("42")).thenReturn(Optional.empty());
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final var mockRequest = mock(BatchRequest.class);
     final Record<BatchOperationChunkRecordValue> record = aChunkRecordWithMultipleItems(42L, 1);
     final var item = record.getValue().getItems().getFirst();
@@ -190,12 +193,12 @@ class BatchOperationChunkCreatedItemHandlerTest {
     underTest.updateEntity(record, entity);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
     verify(batchOperationCache).get("42"); // verify cache was consulted
     final var entityCaptor = ArgumentCaptor.forClass(OperationEntity.class);
-    verify(mockRequest).add(eq(indexName), entityCaptor.capture());
+    verify(mockRequest).add(eq(index), entityCaptor.capture());
     final var capturedEntity = entityCaptor.getValue();
     assertThat(capturedEntity.getType()).isNull();
     assertThat(capturedEntity.getState()).isEqualTo(OperationState.SCHEDULED);

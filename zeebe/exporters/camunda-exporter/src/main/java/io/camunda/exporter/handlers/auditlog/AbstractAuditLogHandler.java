@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers.auditlog;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
@@ -56,8 +57,9 @@ abstract class AbstractAuditLogHandler<T extends ExporterEntity<T>, R extends Re
   }
 
   @Override
-  public void flush(final T entity, final BatchRequest batchRequest) throws PersistenceException {
-    batchRequest.add(indexName, entity);
+  public void flush(final TargetIndex index, final T entity, final BatchRequest batchRequest)
+      throws PersistenceException {
+    batchRequest.add(index, entity);
   }
 
   @Override

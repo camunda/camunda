@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
@@ -95,13 +96,14 @@ public class ProcessHandlerTest {
   void shouldAddEntityOnFlush() {
     // given
     final ProcessEntity inputEntity = new ProcessEntity().setId("111");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).add(index, inputEntity);
   }
 
   @Test

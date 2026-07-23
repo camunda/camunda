@@ -12,6 +12,7 @@ import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OP
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.index.TargetIndexLocator;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.test.utils.SearchClientAdapter;
@@ -89,7 +90,7 @@ public class AuditLogsIT {
 
     final var resourceProvider = new DefaultExporterResourceProvider();
 
-    final var exporter = new CamundaExporter(resourceProvider);
+    final var exporter = new CamundaExporter(new TargetIndexLocator(), resourceProvider);
     try {
       final var context =
           new ExporterTestContext()

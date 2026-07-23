@@ -9,6 +9,7 @@ package io.camunda.exporter.store;
 
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.Map;
@@ -22,47 +23,48 @@ public interface BatchRequest {
 
   BatchRequest withMaxBytes(long maxBulkBytes);
 
-  BatchRequest add(String index, ExporterEntity entity);
+  BatchRequest add(TargetIndex index, ExporterEntity entity);
 
-  BatchRequest addWithId(String index, String id, ExporterEntity entity);
+  BatchRequest addWithId(TargetIndex index, String id, ExporterEntity entity);
 
-  BatchRequest addWithRouting(String index, ExporterEntity entity, String routing);
+  BatchRequest addWithRouting(TargetIndex index, ExporterEntity entity, String routing);
 
   BatchRequest upsert(
-      String index, String id, ExporterEntity entity, Map<String, Object> updateFields);
+      TargetIndex index, String id, ExporterEntity entity, Map<String, Object> updateFields);
 
   BatchRequest upsertWithRouting(
-      String index,
+      TargetIndex index,
       String id,
       ExporterEntity entity,
       Map<String, Object> updateFields,
       String routing);
 
   BatchRequest upsertWithScript(
-      String index,
+      TargetIndex index,
       String id,
       ExporterEntity entity,
       String script,
       Map<String, Object> parameters);
 
   BatchRequest upsertWithScriptAndRouting(
-      String index,
+      TargetIndex index,
       String id,
       ExporterEntity entity,
       String script,
       Map<String, Object> parameters,
       String routing);
 
-  BatchRequest update(String index, String id, Map<String, Object> updateFields);
+  BatchRequest update(TargetIndex index, String id, Map<String, Object> updateFields);
 
-  BatchRequest update(String index, String id, ExporterEntity entity) throws PersistenceException;
+  BatchRequest update(TargetIndex index, String id, ExporterEntity entity)
+      throws PersistenceException;
 
   BatchRequest updateWithScript(
-      String index, String id, String script, Map<String, Object> parameters);
+      TargetIndex index, String id, String script, Map<String, Object> parameters);
 
-  BatchRequest delete(String index, String id);
+  BatchRequest delete(TargetIndex index, String id);
 
-  BatchRequest deleteWithRouting(String index, String id, String routing);
+  BatchRequest deleteWithRouting(TargetIndex index, String id, String routing);
 
   /**
    * Applies all updates in this batch.

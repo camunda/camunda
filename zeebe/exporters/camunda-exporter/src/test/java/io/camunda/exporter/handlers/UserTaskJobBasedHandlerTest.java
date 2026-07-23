@@ -17,6 +17,7 @@ import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -300,17 +301,18 @@ public class UserTaskJobBasedHandlerTest {
             .setKey(recordKey)
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             String.valueOf(flowNodeInstanceKey),
             inputEntity,
             updateFieldsMap,
@@ -333,10 +335,11 @@ public class UserTaskJobBasedHandlerTest {
             .setState(TaskState.CREATED)
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
@@ -344,7 +347,7 @@ public class UserTaskJobBasedHandlerTest {
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName,
+            index,
             String.valueOf(recordKey),
             inputEntity,
             updateFieldsMap,
@@ -608,10 +611,11 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_ID, taskEntity.getProcessDefinitionId());
     expectedUpdates.put(TaskTemplate.BPMN_PROCESS_ID, taskEntity.getBpmnProcessId());
@@ -625,7 +629,7 @@ public class UserTaskJobBasedHandlerTest {
     assertThat(taskEntity.getBpmnProcessId()).isEqualTo(jobRecordValue.getBpmnProcessId());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -648,17 +652,18 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.COMPLETED);
     expectedUpdates.put(TaskTemplate.COMPLETION_TIME, taskEntity.getCompletionTime());
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -710,16 +715,17 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.FAILED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -773,16 +779,17 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.FAILED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -836,16 +843,17 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 
   @Test
@@ -893,6 +901,7 @@ public class UserTaskJobBasedHandlerTest {
                     .withKey(legacyJobKey)
                     .withValue(migrationCancelValue));
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when: process the migration cancel through the handler
@@ -902,15 +911,15 @@ public class UserTaskJobBasedHandlerTest {
         id -> {
           final var entity = underTest.createNewEntity(id);
           underTest.updateEntity(migrationCancelRecord, entity);
-          underTest.flush(entity, mockRequest);
+          underTest.flush(index, entity, mockRequest);
         });
 
     // then — the stale legacy task doc (keyed by jobKey) must be deleted; no upsert should occur
     verify(mockRequest, times(1))
-        .deleteWithRouting(indexName, String.valueOf(legacyJobKey), String.valueOf(legacyJobKey));
+        .deleteWithRouting(index, String.valueOf(legacyJobKey), String.valueOf(legacyJobKey));
     verify(mockRequest, never())
         .upsertWithRouting(
-            org.mockito.ArgumentMatchers.eq(indexName),
+            org.mockito.ArgumentMatchers.eq(index),
             org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)),
             org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any(),
@@ -952,21 +961,22 @@ public class UserTaskJobBasedHandlerTest {
                     .withKey(legacyJobKey)
                     .withValue(migrationCancelValue));
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
     final TaskEntity sharedEntity = underTest.createNewEntity(String.valueOf(legacyJobKey));
 
     // simulate same-batch processing: CREATED first, then CANCELED+migration on the same entity
     underTest.updateEntity(createdRecord, sharedEntity);
     underTest.updateEntity(migrationCancelRecord, sharedEntity);
-    underTest.flush(sharedEntity, mockRequest);
+    underTest.flush(index, sharedEntity, mockRequest);
 
     // then — the migration-cancel must mark the entity for deletion so the delete path is taken
     assertThat(sharedEntity.isMarkedForDeletion()).isTrue();
     verify(mockRequest, times(1))
-        .deleteWithRouting(indexName, String.valueOf(legacyJobKey), String.valueOf(legacyJobKey));
+        .deleteWithRouting(index, String.valueOf(legacyJobKey), String.valueOf(legacyJobKey));
     verify(mockRequest, never())
         .upsertWithRouting(
-            org.mockito.ArgumentMatchers.eq(indexName),
+            org.mockito.ArgumentMatchers.eq(index),
             org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)),
             org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any(),
@@ -1024,6 +1034,7 @@ public class UserTaskJobBasedHandlerTest {
                     .withKey(legacyJobKey)
                     .withValue(normalCancelValue));
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when: non-migration cancel is handled normally (state update, not delete)
@@ -1033,7 +1044,7 @@ public class UserTaskJobBasedHandlerTest {
         id -> {
           final var entity = underTest.createNewEntity(id);
           underTest.updateEntity(normalCancelRecord, entity);
-          underTest.flush(entity, mockRequest);
+          underTest.flush(index, entity, mockRequest);
         });
 
     // then — normal cancel issues an upsert (state update), never a delete
@@ -1044,7 +1055,7 @@ public class UserTaskJobBasedHandlerTest {
             org.mockito.ArgumentMatchers.any());
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            org.mockito.ArgumentMatchers.eq(indexName),
+            org.mockito.ArgumentMatchers.eq(index),
             org.mockito.ArgumentMatchers.eq(String.valueOf(legacyJobKey)),
             org.mockito.ArgumentMatchers.any(),
             org.mockito.ArgumentMatchers.any(),
@@ -1071,15 +1082,16 @@ public class UserTaskJobBasedHandlerTest {
     final TaskEntity taskEntity = new TaskEntity().setId("111");
     underTest.updateEntity(jobRecord, taskEntity);
 
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(taskEntity, mockRequest);
+    underTest.flush(index, taskEntity, mockRequest);
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
 
     verify(mockRequest, times(1))
         .upsertWithRouting(
-            indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+            index, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
   }
 }

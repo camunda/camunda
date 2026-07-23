@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -64,9 +65,10 @@ public class UserDeletedHandler implements ExportHandler<UserEntity, UserRecordV
   }
 
   @Override
-  public void flush(final UserEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final UserEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.util.GlobalListenerUtil;
 import io.camunda.webapps.schema.entities.globallistener.GlobalListenerEntity;
@@ -62,9 +63,10 @@ public class GlobalListenerDeletedHandler
   }
 
   @Override
-  public void flush(final GlobalListenerEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final GlobalListenerEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.delete(index, entity.getId());
   }
 
   @Override

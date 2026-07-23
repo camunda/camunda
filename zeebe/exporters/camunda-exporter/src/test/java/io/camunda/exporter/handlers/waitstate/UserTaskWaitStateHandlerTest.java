@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.WaitStateTemplate;
 import io.camunda.webapps.schema.entities.waitstate.WaitStateEntity;
@@ -172,26 +173,28 @@ class UserTaskWaitStateHandlerTest {
   void shouldFlushAddEntityToIndex() throws PersistenceException {
     // given
     final var entity = new WaitStateEntity().setId(String.valueOf(USER_TASK_KEY));
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
-    addHandler.flush(entity, batchRequest);
+    addHandler.flush(index, entity, batchRequest);
 
     // then
-    verify(batchRequest).add(eq(INDEX_NAME), eq(entity));
+    verify(batchRequest).add(eq(index), eq(entity));
   }
 
   @Test
   void shouldFlushRemoveDeleteFromIndexBySameId() throws PersistenceException {
     // given
     final var entity = new WaitStateEntity().setId(String.valueOf(USER_TASK_KEY));
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
-    removeHandler.flush(entity, batchRequest);
+    removeHandler.flush(index, entity, batchRequest);
 
     // then
-    verify(batchRequest).delete(INDEX_NAME, String.valueOf(USER_TASK_KEY));
+    verify(batchRequest).delete(index, String.valueOf(USER_TASK_KEY));
   }
 
   @Test
@@ -222,15 +225,16 @@ class UserTaskWaitStateHandlerTest {
     // given — elementId null means no migration, only task metadata changed
     final var id = String.valueOf(USER_TASK_KEY);
     final var entity = new WaitStateEntity().setId(id).setDetails("{\"taskKey\":999}");
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
-    updateHandler.flush(entity, batchRequest);
+    updateHandler.flush(index, entity, batchRequest);
 
     // then — only DETAILS in the update map; ELEMENT_ID is skipped
     verify(batchRequest)
         .upsert(
-            eq(INDEX_NAME),
+            eq(index),
             eq(id),
             eq(entity),
             argThat(map -> map.containsKey(WaitStateTemplate.DETAILS) && map.size() == 1));
@@ -247,15 +251,16 @@ class UserTaskWaitStateHandlerTest {
             .setElementId("task-after-migration")
             .setBpmnProcessId("target-process")
             .setDetails("{\"taskKey\":999}");
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
 
     // when
-    updateHandler.flush(entity, batchRequest);
+    updateHandler.flush(index, entity, batchRequest);
 
     // then — ELEMENT_ID, BPMN_PROCESS_ID and DETAILS are all sent
     verify(batchRequest)
         .upsert(
-            eq(INDEX_NAME),
+            eq(index),
             eq(id),
             eq(entity),
             argThat(
