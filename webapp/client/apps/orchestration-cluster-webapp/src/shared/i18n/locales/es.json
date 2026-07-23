@@ -482,6 +482,29 @@
 			"decisions": {
 				"title": "Decisiones"
 			},
+			"decisionInstance": {
+				"title": "Instancia de decisión de Operate",
+				"pageTitle": "Operate: Instancia de decisión {{decisionInstanceId}} de {{name}}",
+				"notFoundNotificationTitle": "No se pudo encontrar la instancia de decisión {{decisionInstanceId}}",
+				"header": {
+					"decisionInstanceKeyColumn": "Clave de instancia de decisión",
+					"versionColumn": "Versión",
+					"businessIdColumn": "ID de negocio",
+					"tenantColumn": "Arrendatario",
+					"evaluationDateColumn": "Fecha de evaluación",
+					"processInstanceColumn": "Clave de instancia de proceso",
+					"versionLinkTitle": "Ver instancias de la decisión \"{{name}} versión {{version}}\"",
+					"versionLinkTitleWithTenant": "Ver instancias de la decisión \"{{name}} versión {{version}}\" - {{tenant}}",
+					"processInstanceLinkTitle": "Ver instancia de proceso {{processInstanceKey}}",
+					"noProcessInstance": "Ninguna",
+					"openDrdButton": "Abrir diagrama de requisitos de decisión"
+				},
+				"forbidden": {
+					"heading": "403 - No tiene permiso para ver esta información",
+					"description": "Póngase en contacto con su administrador para obtener acceso.",
+					"learnMoreLink": "Más información sobre los permisos"
+				}
+			},
 			"operations": {
 				"title": "Operaciones"
 			},

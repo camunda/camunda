@@ -22,6 +22,7 @@ import {
 	type UserTask,
 	type ProcessDefinition,
 	type AuditLog,
+	type DecisionInstance,
 } from '@camunda/camunda-api-zod-schemas/8.10';
 import {getBootConfig} from '#/shared/config/getBootConfig';
 import {mergePathname} from './mergePathname';
@@ -220,6 +221,13 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.getAuditLog.getUrl({auditLogKey})), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.getAuditLog.method,
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	getDecisionInstance: ({decisionEvaluationInstanceKey}: Pick<DecisionInstance, 'decisionEvaluationInstanceKey'>) =>
+		new Request(getFullURL(unifiedAPIEndpoints.getDecisionInstance.getUrl({decisionEvaluationInstanceKey})), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.getDecisionInstance.method,
 			headers: {'Content-Type': 'application/json'},
 		}),
 };

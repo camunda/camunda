@@ -42,4 +42,3 @@ const InstanceHeaderSkeleton: React.FC<Props> = ({headerColumns}) => {
 };
 
 export {InstanceHeaderSkeleton};
-export type {Props as InstanceHeaderSkeletonProps};

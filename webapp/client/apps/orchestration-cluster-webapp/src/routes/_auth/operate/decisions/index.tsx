@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {createFileRoute} from '@tanstack/react-router';
 
-export const Route = createFileRoute('/_auth/operate/decisions')({
-	component: () => <Outlet />,
+export const Route = createFileRoute('/_auth/operate/decisions/')({
+	component: () => null,
 });

@@ -103,4 +103,4 @@ const InstanceHeader: React.FC<InstanceHeaderProps> = ({
 };
 
 export {InstanceHeader};
-export type {Column, InstanceHeaderProps};
+export type {Column};

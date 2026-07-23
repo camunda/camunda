@@ -482,6 +482,29 @@
 			"decisions": {
 				"title": "Entscheidungen"
 			},
+			"decisionInstance": {
+				"title": "Operate Entscheidungsinstanz",
+				"pageTitle": "Operate: Entscheidungsinstanz {{decisionInstanceId}} von {{name}}",
+				"notFoundNotificationTitle": "Entscheidungsinstanz {{decisionInstanceId}} konnte nicht gefunden werden",
+				"header": {
+					"decisionInstanceKeyColumn": "Entscheidungsinstanzschlüssel",
+					"versionColumn": "Version",
+					"businessIdColumn": "Geschäfts-ID",
+					"tenantColumn": "Mandant",
+					"evaluationDateColumn": "Auswertungsdatum",
+					"processInstanceColumn": "Prozessinstanzschlüssel",
+					"versionLinkTitle": "Instanzen der Entscheidung \"{{name}} Version {{version}}\" anzeigen",
+					"versionLinkTitleWithTenant": "Instanzen der Entscheidung \"{{name}} Version {{version}}\" anzeigen - {{tenant}}",
+					"processInstanceLinkTitle": "Prozessinstanz {{processInstanceKey}} anzeigen",
+					"noProcessInstance": "Keine",
+					"openDrdButton": "Entscheidungsanforderungsdiagramm öffnen"
+				},
+				"forbidden": {
+					"heading": "403 - Sie haben keine Berechtigung, diese Informationen anzuzeigen",
+					"description": "Wenden Sie sich an Ihren Administrator, um Zugriff zu erhalten.",
+					"learnMoreLink": "Mehr über Berechtigungen erfahren"
+				}
+			},
 			"operations": {
 				"title": "Operationen"
 			},

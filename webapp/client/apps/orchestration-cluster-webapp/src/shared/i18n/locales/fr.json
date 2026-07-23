@@ -485,6 +485,29 @@
 			"decisions": {
 				"title": "Décisions"
 			},
+			"decisionInstance": {
+				"title": "Instance de décision Operate",
+				"pageTitle": "Operate : Instance de décision {{decisionInstanceId}} de {{name}}",
+				"notFoundNotificationTitle": "L'instance de décision {{decisionInstanceId}} n'a pas pu être trouvée",
+				"header": {
+					"decisionInstanceKeyColumn": "Clé d'instance de décision",
+					"versionColumn": "Version",
+					"businessIdColumn": "ID métier",
+					"tenantColumn": "Client",
+					"evaluationDateColumn": "Date d'évaluation",
+					"processInstanceColumn": "Clé d'instance de processus",
+					"versionLinkTitle": "Afficher les instances de la décision \"{{name}} version {{version}}\"",
+					"versionLinkTitleWithTenant": "Afficher les instances de la décision \"{{name}} version {{version}}\" - {{tenant}}",
+					"processInstanceLinkTitle": "Afficher l'instance de processus {{processInstanceKey}}",
+					"noProcessInstance": "Aucune",
+					"openDrdButton": "Ouvrir le diagramme des exigences de décision"
+				},
+				"forbidden": {
+					"heading": "403 - Vous n'avez pas la permission de consulter ces informations",
+					"description": "Contactez votre administrateur pour obtenir l'accès.",
+					"learnMoreLink": "En savoir plus sur les autorisations"
+				}
+			},
 			"operations": {
 				"title": "Opérations"
 			},
