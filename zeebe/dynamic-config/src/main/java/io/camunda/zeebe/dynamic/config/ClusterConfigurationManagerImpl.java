@@ -645,7 +645,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
     onGoingGlobalOperation = true;
     shouldRetryGlobal = false;
-    final var operation = (GlobalChangeOperation) pending.orElseThrow();
+    final var operation = pending.orElseThrow();
     final var observer = topologyMetrics.observeOperation(operation);
     LOG.info("Applying global configuration change operation {}", operation);
     final var applier = globalChangeAppliers.getApplier(operation);
@@ -728,7 +728,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
 
     onGoingGroupOperation.put(groupId, true);
     shouldRetryGroup.put(groupId, false);
-    final var operation = (PartitionGroupOperation) pending.orElseThrow();
+    final var operation = pending.orElseThrow();
     final var observer = topologyMetrics.observeOperation(operation);
     LOG.info("Applying partition group '{}' configuration change operation {}", groupId, operation);
     final var applier = appliers.getApplier(operation);

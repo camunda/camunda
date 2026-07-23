@@ -262,18 +262,18 @@ public record GlobalConfiguration(
    * operation (if any) is not applicable to that member. Mirrors {@code
    * ClusterConfiguration#pendingChangesFor(MemberId)}.
    */
-  public Optional<ClusterConfigurationChangeOperation> pendingChangesFor(final MemberId memberId) {
+  public Optional<GlobalChangeOperation> pendingChangesFor(final MemberId memberId) {
     if (pendingChanges.isEmpty() || !pendingChanges.get().hasPendingChangesFor(memberId)) {
       return Optional.empty();
     }
-    return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
+    return Optional.of((GlobalChangeOperation) pendingChanges.orElseThrow().nextPendingOperation());
   }
 
-  public ClusterConfigurationChangeOperation nextPendingOperation() {
+  public GlobalChangeOperation nextPendingOperation() {
     if (!hasPendingChanges()) {
       throw new NoSuchElementException();
     }
-    return pendingChanges.orElseThrow().nextPendingOperation();
+    return (GlobalChangeOperation) pendingChanges.orElseThrow().nextPendingOperation();
   }
 
   /**
