@@ -23,10 +23,14 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobSecretReference;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
@@ -79,6 +83,10 @@ public final class JobSecretInjector {
   private final Map<SecretReference, String> values = new HashMap<>();
   private final List<JobWithCachedSecrets> jobsWithCachedSecrets = new ArrayList<>();
 
+  // jobs skipped for a non-cached secret reference, grouped by reference so the processor can emit
+  // one RESOLUTION_REQUESTED event per reference; insertion-ordered for a deterministic emission
+  private final Map<SecretReference, List<Long>> jobsWithNonCachedSecrets = new LinkedHashMap<>();
+
   public JobSecretInjector(final SecretStoreRegistry secretStoreRegistry) {
     caches = secretStoreRegistry.getCaches();
   }
@@ -87,6 +95,7 @@ public final class JobSecretInjector {
   public void reset() {
     values.clear();
     jobsWithCachedSecrets.clear();
+    jobsWithNonCachedSecrets.clear();
   }
 
   /**
@@ -95,9 +104,9 @@ public final class JobSecretInjector {
    * even after the first miss, so the caller sees all non-cached references of the job. A cache
    * lookup failure propagates to the caller and fails the activation command.
    *
-   * <p>TODO(https://github.com/camunda/camunda/issues/57846): the skipped jobs stay activatable,
-   * which can make a long poll collect them again right away. Instead, mark them as waiting for
-   * secret resolution and request the background resolution of their non-cached references.
+   * <p>The collector skips a job with any non-cached reference and registers it via {@link
+   * #registerForResolution}, so the processor can request the background resolution of the
+   * non-cached references and park the job until it is resolved.
    */
   public SecretCheckResult checkSecrets(final JobRecord job) {
     if (!job.hasSecretReferences()) {
@@ -129,9 +138,35 @@ public final class JobSecretInjector {
     }
   }
 
+  /**
+   * Registers a job skipped by the collector because some of its secret references have no cached
+   * value, grouping the job's key under each of its non-cached references. The processor emits one
+   * {@code RESOLUTION_REQUESTED} event per reference with the keys of the jobs waiting on it. A
+   * reference that occurs more than once for the same job (e.g. at two paths) records the job once.
+   */
+  public void registerForResolution(final SecretCheckResult check, final long jobKey) {
+    final Set<SecretReference> seen = new HashSet<>();
+    for (final Secret secret : check.nonCachedSecrets()) {
+      if (seen.add(secret.reference())) {
+        jobsWithNonCachedSecrets
+            .computeIfAbsent(secret.reference(), reference -> new ArrayList<>())
+            .add(jobKey);
+      }
+    }
+  }
+
   /** Returns whether any job registered since the last reset has cached secret values to inject. */
   public boolean hasSecretsToInject() {
     return !jobsWithCachedSecrets.isEmpty();
+  }
+
+  /**
+   * Returns the keys of the jobs waiting on each non-cached secret reference, grouped by reference
+   * in registration order. The processor consumes this before {@link #injectSecretValues} resets
+   * the injector.
+   */
+  public Map<SecretReference, List<Long>> jobsWithNonCachedSecrets() {
+    return Collections.unmodifiableMap(jobsWithNonCachedSecrets);
   }
 
   /**
@@ -350,8 +385,6 @@ public final class JobSecretInjector {
     return secrets;
   }
 
-  record Secret(SecretReference reference, String path, String placeholder) {}
-
   /**
    * The result of {@link #checkSecrets} for one job: the job's secrets with a cached value and
    * those without one, each materialized once (both empty for a job without secret references). A
@@ -359,16 +392,6 @@ public final class JobSecretInjector {
    */
   public record SecretCheckResult(List<Secret> cachedSecrets, List<Secret> nonCachedSecrets) {
     static final SecretCheckResult NO_SECRETS = new SecretCheckResult(List.of(), List.of());
-  }
-
-  /** A registered job: its index in the batch, the job, and its cached secrets. */
-  record JobWithCachedSecrets(int index, JobRecord job, List<Secret> cachedSecrets) {}
-
-  /** A job dropped from the activation batch that the processor must raise an incident for. */
-  public sealed interface DroppedJob permits OversizedJob, FailedInjectionJob {
-    long jobKey();
-
-    JobRecord job();
   }
 
   /**
@@ -380,6 +403,18 @@ public final class JobSecretInjector {
   /** A job dropped from the batch because injecting its secret values failed. */
   public record FailedInjectionJob(long jobKey, JobRecord job) implements DroppedJob {}
 
+  record Secret(SecretReference reference, String path, String placeholder) {}
+
+  /** A registered job: its index in the batch, the job, and its cached secrets. */
+  record JobWithCachedSecrets(int index, JobRecord job, List<Secret> cachedSecrets) {}
+
   /** The first job removed by {@link #dropJobsFromIndex}, i.e. the one at the given index. */
   private record RemovedJob(long jobKey, JobRecord job) {}
+
+  /** A job dropped from the activation batch that the processor must raise an incident for. */
+  public sealed interface DroppedJob permits OversizedJob, FailedInjectionJob {
+    long jobKey();
+
+    JobRecord job();
+  }
 }
