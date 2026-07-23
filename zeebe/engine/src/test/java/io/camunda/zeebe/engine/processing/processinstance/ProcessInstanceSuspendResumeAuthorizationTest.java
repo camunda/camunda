@@ -31,7 +31,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ProcessInstanceResumeAuthorizationTest {
+/**
+ * Suspend and resume are gated by the same {@link PermissionType#SUSPEND_PROCESS_INSTANCE}
+ * permission on {@link AuthorizationResourceType#PROCESS_DEFINITION}, so both are covered here
+ * instead of in separate, near-identical test classes.
+ */
+public class ProcessInstanceSuspendResumeAuthorizationTest {
   private static final String PROCESS_ID = "processId";
   private static final String TENANT = "custom-tenant";
 
@@ -65,6 +70,70 @@ public class ProcessInstanceResumeAuthorizationTest {
             "process.bpmn",
             Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask().endEvent().done())
         .deploy(DEFAULT_USER.getUsername());
+  }
+
+  @Test
+  public void shouldBeAuthorizedToSuspendInstanceWithDefaultUser() {
+    // given
+    final var processInstanceKey = createProcessInstance();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .suspend(DEFAULT_USER.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SUSPENDED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeAuthorizedToSuspendInstanceWithUser() {
+    // given
+    final var processInstanceKey = createProcessInstance();
+    final var user = createUser();
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.SUSPEND_PROCESS_INSTANCE,
+        AuthorizationResourceMatcher.ID,
+        PROCESS_ID);
+
+    // when
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend(user.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.SUSPENDED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToSuspendInstanceIfNoPermissions() {
+    // given
+    final var processInstanceKey = createProcessInstance();
+    final var user = createUser();
+
+    // when
+    final var rejection =
+        engine
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectSuspendRejection()
+            .suspend(user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .hasRejectionReason(
+            "Insufficient permissions to perform operation 'SUSPEND_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                .formatted(PROCESS_ID));
   }
 
   @Test
