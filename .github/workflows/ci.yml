@@ -1034,7 +1034,7 @@ jobs:
     steps:
       - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
