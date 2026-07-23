@@ -57,7 +57,16 @@ public enum LakeColumnFamilies implements EnumValue, ScopedColumnFamily {
    * {@code 5} were concurrently claimed by the variant column families above, and ids must be
    * unique and stable per state directory (both lanes require a fresh warehouse anyway).
    */
-  FLOW_ENDPOINTS(6, ColumnFamilyScope.PARTITION_LOCAL);
+  FLOW_ENDPOINTS(6, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Per-instance object sightings accumulated so far, keyed by {@code processInstanceKey ->
+   * ObjectSightingList} — evicted the moment the instance completes, mirroring {@link
+   * #VARIANT_ACCUMULATORS}'s own open/evict lifecycle. Backs the object-relations derivation at
+   * instance completion (see {@code io.camunda.analytics.lake.translate.LakeTranslator}'s "Object
+   * fabric capture" javadoc section).
+   */
+  OBJECT_SIGHTINGS(7, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

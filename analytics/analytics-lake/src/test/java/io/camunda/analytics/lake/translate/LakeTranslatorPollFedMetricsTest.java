@@ -353,6 +353,7 @@ class LakeTranslatorPollFedMetricsTest {
     private final Map<Long, Map<String, FlowEndpoints>> flowEndpoints = new HashMap<>();
     private final Map<Long, VariantAccumulator> variantAccumulators = new HashMap<>();
     private final Map<String, VariantName> variantNames = new HashMap<>();
+    private final Map<Long, ObjectSightingList> objectSightings = new HashMap<>();
 
     @Override
     public void putVariantAccumulator(
@@ -448,6 +449,21 @@ class LakeTranslatorPollFedMetricsTest {
     public void forEachOpenElement(
         final java.util.function.BiConsumer<Long, OpenElement> consumer) {
       elements.forEach(consumer);
+    }
+
+    @Override
+    public void putObjectSightings(final long instanceKey, final ObjectSightingList sightings) {
+      objectSightings.put(instanceKey, sightings);
+    }
+
+    @Override
+    public ObjectSightingList getObjectSightings(final long instanceKey) {
+      return objectSightings.get(instanceKey);
+    }
+
+    @Override
+    public void deleteObjectSightings(final long instanceKey) {
+      objectSightings.remove(instanceKey);
     }
 
     @Override
