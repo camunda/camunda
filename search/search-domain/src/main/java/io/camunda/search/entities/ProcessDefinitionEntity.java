@@ -20,7 +20,7 @@ public record ProcessDefinitionEntity(
     @Nullable String versionTag,
     String tenantId,
     @Nullable String formId,
-    @Nullable Boolean isDeleted)
+    @Nullable ProcessDefinitionState state)
     implements TenantOwnedEntity {
 
   public ProcessDefinitionEntity {
@@ -29,5 +29,10 @@ public record ProcessDefinitionEntity(
     Objects.requireNonNull(resourceName, "resourceName");
     Objects.requireNonNull(version, "version");
     Objects.requireNonNull(tenantId, "tenantId");
+  }
+
+  public enum ProcessDefinitionState {
+    ACTIVE,
+    DELETED
   }
 }

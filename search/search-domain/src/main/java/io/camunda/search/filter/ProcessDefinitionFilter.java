@@ -10,6 +10,7 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
@@ -26,7 +27,7 @@ public record ProcessDefinitionFilter(
     List<String> versionTags,
     List<String> tenantIds,
     Boolean hasStartForm,
-    Boolean isDeleted)
+    ProcessDefinitionState state)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessDefinitionFilter> {
@@ -40,7 +41,7 @@ public record ProcessDefinitionFilter(
     private List<Integer> versions;
     private List<String> versionTags;
     private Boolean hasStartForm;
-    private Boolean isDeleted;
+    private ProcessDefinitionState state;
 
     public Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
@@ -128,8 +129,8 @@ public record ProcessDefinitionFilter(
       return this;
     }
 
-    public Builder isDeleted(final Boolean isDeleted) {
-      this.isDeleted = isDeleted;
+    public Builder state(final ProcessDefinitionState state) {
+      this.state = state;
       return this;
     }
 
@@ -145,7 +146,7 @@ public record ProcessDefinitionFilter(
           Objects.requireNonNullElse(versionTags, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           hasStartForm,
-          isDeleted);
+          state);
     }
   }
 }
