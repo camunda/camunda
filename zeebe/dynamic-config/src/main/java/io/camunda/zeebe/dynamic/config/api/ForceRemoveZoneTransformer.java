@@ -23,11 +23,11 @@ import java.util.stream.Collectors;
  * Force-evicts a failed zone's brokers from the member set (no data movement, since the zone is
  * down) and drops the zone from the persisted {@link ZoneAwareConfig}, in one atomic change.
  */
-public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
+public final class ForceRemoveZoneTransformer implements ConfigurationChangeRequest {
 
   private final String zoneId;
 
-  public RemoveZoneTransformer(final String zoneId) {
+  public ForceRemoveZoneTransformer(final String zoneId) {
     this.zoneId = zoneId;
   }
 
@@ -42,7 +42,7 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
     } else {
       return Either.left(
           new InvalidRequest(
-              "Failover requires a persisted zone-aware partition distribution config, but was %s."
+              "ForceRemove requires a persisted zone-aware partition distribution config, but was %s."
                   .formatted(
                       partitionDistributorConfig
                           .map(c -> c.getClass().getSimpleName())
@@ -52,7 +52,7 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
     final var zones = zoneAwareConfig.zones();
     if (zones.stream().noneMatch(zone -> zone.name().equals(zoneId))) {
       return Either.left(
-          new InvalidRequest("Failover request targets unknown zone '" + zoneId + "'."));
+          new InvalidRequest("Force Remove request targets unknown zone '" + zoneId + "'."));
     }
 
     final var zoneMembers =
@@ -62,14 +62,14 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
     if (zoneMembers.isEmpty()) {
       return Either.left(
           new InvalidRequest(
-              "Failover request targets zone '" + zoneId + "' which has no current members."));
+              "Force Remove request targets zone '" + zoneId + "' which has no current members."));
     }
 
     final var remainingZones = zones.stream().filter(zone -> !zone.name().equals(zoneId)).toList();
     if (remainingZones.isEmpty()) {
       return Either.left(
           new InvalidRequest(
-              "Cannot fail over zone '"
+              "Cannot force remove zone '"
                   + zoneId
                   + "' because it is the last remaining zone in the partition distribution config."));
     }
@@ -79,7 +79,7 @@ public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
     if (retain.isEmpty()) {
       return Either.left(
           new InvalidRequest(
-              "Cannot fail over zone '"
+              "Cannot force remove zone '"
                   + zoneId
                   + "' because it would leave the cluster with no brokers."));
     }

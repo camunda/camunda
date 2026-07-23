@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
-final class RemoveZoneTransformerTest {
+final class ForceRemoveZoneTransformerTest {
 
   private static final DynamicPartitionConfig PARTITION_CONFIG = DynamicPartitionConfig.init();
 
@@ -60,7 +60,7 @@ final class RemoveZoneTransformerTest {
     final var expectedConfig = new ZoneAwareConfig(List.of(new ZoneSpec(ZONE_A, 1, 1000)));
 
     // when
-    final var result = new RemoveZoneTransformer(ZONE_B).operations(currentTopology);
+    final var result = new ForceRemoveZoneTransformer(ZONE_B).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -74,7 +74,7 @@ final class RemoveZoneTransformerTest {
 
   @Test
   void shouldReturnForced() {
-    assertThat(new RemoveZoneTransformer(ZONE_B).isForced()).isTrue();
+    assertThat(new ForceRemoveZoneTransformer(ZONE_B).isForced()).isTrue();
   }
 
   @Test
@@ -88,7 +88,7 @@ final class RemoveZoneTransformerTest {
             .setPartitionDistributorConfig(new RoundRobinConfig());
 
     // when
-    final var result = new RemoveZoneTransformer(ZONE_A).operations(roundRobinTopology);
+    final var result = new ForceRemoveZoneTransformer(ZONE_A).operations(roundRobinTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -103,7 +103,7 @@ final class RemoveZoneTransformerTest {
     final var currentTopology = buildTopology(DUAL_ZONE_CONFIG, DUAL_ZONE_MEMBERS);
 
     // when
-    final var result = new RemoveZoneTransformer(ZONE_C).operations(currentTopology);
+    final var result = new ForceRemoveZoneTransformer(ZONE_C).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -123,7 +123,7 @@ final class RemoveZoneTransformerTest {
             .setPartitionDistributorConfig(ghostZoneConfig);
 
     // when
-    final var result = new RemoveZoneTransformer(ZONE_B).operations(currentTopology);
+    final var result = new ForceRemoveZoneTransformer(ZONE_B).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -139,7 +139,7 @@ final class RemoveZoneTransformerTest {
     final var currentTopology = buildTopology(singleZoneConfig, Set.of(ZONE_A_0));
 
     // when
-    final var result = new RemoveZoneTransformer(ZONE_A).operations(currentTopology);
+    final var result = new ForceRemoveZoneTransformer(ZONE_A).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
