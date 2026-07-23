@@ -315,6 +315,7 @@ public record CurrentClusterConfiguration(
       throw new IllegalArgumentException(
           "Expected to init a plan with at least one phase, but the phase list is empty");
     }
+
     final var newState = phasedChangeState.initPlan(phases);
     final var plan = newState.pending().orElseThrow();
     return withPhasedChangeState(newState).applyPhase(plan);

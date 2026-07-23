@@ -33,6 +33,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -446,10 +447,7 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
           clusterTopologyManager
               .updateMultiConfiguration(
                   config -> {
-                    if (config.phasedChangeState().pending().isPresent()) {
-                      throw new ConcurrentModificationException(
-                          "Cannot apply configuration change. Another configuration change is in progress.");
-                    }
+                    checkConcurrentModification(config, currentConfiguration, phases);
                     return config.initPlan(phases);
                   })
               .onComplete(
@@ -469,6 +467,47 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
                   },
                   executor);
         });
+  }
+
+  private void checkConcurrentModification(
+      final CurrentClusterConfiguration latestConfig,
+      final CurrentClusterConfiguration configUsedForGeneratingOperations,
+      final List<Phase> phases) {
+
+    if (latestConfig.phasedChangeState().pending().isPresent()) {
+      throw new ConcurrentModificationException(
+          "Cannot apply configuration change. Another configuration change is in progress.");
+    }
+
+    // simple equality check on the whole configuration is not enough, because we allow concurrent
+    // changes to different partition groups.
+
+    // for each phase check if the corresponding state in latestConfig is the same as in
+    // configUsedForGeneratingOperations
+    for (final var phase : phases) {
+      switch (phase) {
+        case final GlobalPhase globalPhase -> {
+          final var latestGlobalConfig = latestConfig.globalConfiguration();
+          final var usedGlobalConfig = configUsedForGeneratingOperations.globalConfiguration();
+          if (!Objects.equals(latestGlobalConfig, usedGlobalConfig)) {
+            throw new ConcurrentModificationException(
+                "Cannot apply configuration change. The global configuration has changed since the request was generated.");
+          }
+        }
+        case final PartitionGroupParallelPhase parallelPhase -> {
+          for (final var groupId : parallelPhase.groupOperations().keySet()) {
+            final var latestGroupConfig = latestConfig.partitionGroup(groupId);
+            final var usedGroupConfig = configUsedForGeneratingOperations.partitionGroup(groupId);
+            if (!Objects.equals(latestGroupConfig, usedGroupConfig)) {
+              throw new ConcurrentModificationException(
+                  String.format(
+                      "Cannot apply configuration change. The partition group '%s' configuration has changed since the request was generated.",
+                      groupId));
+            }
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -494,8 +533,12 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
           validationFuture,
           new ConcurrentModificationException(
               String.format(
-                  "Cannot apply configuration change. Another configuration change [%s] is in progress.",
-                  currentConfiguration)));
+                  "Cannot apply configuration change. Another configuration change [%d] is in progress.",
+                  currentConfiguration
+                      .phasedChangeState()
+                      .pending()
+                      .map(PhasedChangePlan::id)
+                      .orElseThrow())));
     } else {
       final var globalSimulator =
           new GlobalConfigurationChangeAppliersImpl(
@@ -506,8 +549,12 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
               new NoopPartitionScalingChangeExecutor(),
               new NoopClusterChangeExecutor(),
               new NoopModeChangeExecutor());
-      final var withPlan = currentConfiguration.initPlan(phases);
-      simulateNewModelChange(withPlan, globalSimulator, groupSimulator, validationFuture);
+      try {
+        final var withPlan = currentConfiguration.initPlan(phases);
+        simulateNewModelChange(withPlan, globalSimulator, groupSimulator, validationFuture);
+      } catch (final Exception e) {
+        failFuture(validationFuture, e);
+      }
     }
     return validationFuture;
   }
