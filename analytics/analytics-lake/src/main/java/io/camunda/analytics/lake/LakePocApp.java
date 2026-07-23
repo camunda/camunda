@@ -358,6 +358,29 @@ public final class LakePocApp {
             .window(Duration.ofHours(1), "started_at")
             .measure("duration_ms", Algebras.scalarStats(), Algebras.expHistogram(3))
             .build();
+    // Record-fed, same idea as flowMetrics/instanceStartMetrics: dims(process_id, var_name), one
+    // row per (process id, variable name, minute) -- minutes, not hours, matching every other
+    // declaration in this app (all 1m): minute partials merge into hours forever via the generated
+    // coarsening SQL, hours can never be split back down, and a drift-correlation read (this
+    // variable's own series against the minute-slotted duration p95 series above) needs no
+    // resolution mismatch to line up. Sparse per-minute counts are not a statistical concern either
+    // way: readers always merge ranges, and 60 merged minute-increments equal one stored hour.
+    // count() is the per-group instance total; the five named counters are the type-mix (see
+    // LakeTranslator#foldVariableProfiles's own PROFILE_COUNTER_* ordering, which this declaration
+    // order must match); the "value" measure folds only when the variable's final value was a
+    // number (LakeTranslator's own null-measure-skip path covers every other type).
+    final CompiledEntityMetrics profileMetrics =
+        EntityMetrics.declare("variable_profiles", variableProfilesVirtualSchema())
+            .dims("process_id", "var_name")
+            .window(Duration.ofMinutes(1), "completed_at")
+            .count()
+            .counter("type_number_cnt")
+            .counter("type_string_cnt")
+            .counter("type_boolean_cnt")
+            .counter("type_null_cnt")
+            .counter("type_object_or_array_cnt")
+            .measure("value", Algebras.doubleScalarStats(), Algebras.signedDoubleExpHistogram(3))
+            .build();
 
     // Mirrors the "<table.location()>/data/<fileName>" convention IcebergLakeWriter's own legacy
     // path uses -- see LocalFileSink's javadoc.
@@ -391,6 +414,7 @@ public final class LakePocApp {
     registerPartials(writer, flowMetrics, fileSink, tablesByName, partialsFactories);
     registerPartials(writer, instanceStartMetrics, fileSink, tablesByName, partialsFactories);
     registerPartials(writer, instanceCohortMetrics, fileSink, tablesByName, partialsFactories);
+    registerPartials(writer, profileMetrics, fileSink, tablesByName, partialsFactories);
     final BatchEncoder.Factory partialsEncoderFactory =
         (schema, epochDay) -> partialsFactories.get(schema.table()).newFile(schema, epochDay);
 
@@ -413,6 +437,7 @@ public final class LakePocApp {
         flowMetrics,
         instanceStartMetrics,
         instanceCohortMetrics,
+        profileMetrics,
         partialsEncoderFactory,
         coordinator,
         config.flushIntervalMs(),
@@ -488,6 +513,29 @@ public final class LakePocApp {
                 -1,
                 true,
                 TableSchema.LogicalType.TIMESTAMPTZ)));
+  }
+
+  /**
+   * Same idea as {@link #flowsVirtualSchema()}, for one completed instance's own final root
+   * variable — see {@code LakeTranslator#foldVariableProfiles}'s own javadoc for the fold. {@code
+   * value} is the only {@code DOUBLE} column any virtual schema in this app declares: nullable,
+   * since most folded records (non-numeric variable values) never stage it.
+   */
+  private static TableSchema variableProfilesVirtualSchema() {
+    return new TableSchema(
+        "variable_profiles",
+        List.of(
+            new TableSchema.Column("process_id", ColumnType.STRING_DICT, 1, false, -1, false),
+            new TableSchema.Column("var_name", ColumnType.STRING_DICT, 2, false, -1, false),
+            new TableSchema.Column(
+                "completed_at",
+                ColumnType.LONG,
+                3,
+                false,
+                -1,
+                true,
+                TableSchema.LogicalType.TIMESTAMPTZ),
+            new TableSchema.Column("value", ColumnType.DOUBLE, 4, true, -1, false)));
   }
 
   private static void runLoop(
@@ -674,18 +722,21 @@ public final class LakePocApp {
     final PartitionBackpressureGate gate = new PartitionBackpressureGate(consumer, topicPartition);
     // Riders are per-pipeline state (accumulators keyed by this partition's flush windows), so
     // each partition gets its own instances -- unlike the commit sink, which is shared. The
-    // instances pipeline hosts FIVE: three row-fed MetricsRiders (instance-completion metrics,
+    // instances pipeline hosts SIX: three row-fed MetricsRiders (instance-completion metrics,
     // per-variant metrics, and cohort metrics -- the last rides completion rows keyed by the
-    // instance's own start slot) plus the two poll-fed riders (branch counts, started counters)
-    // whose records never produce a raw row at all -- see PollFedRider's own class javadoc for
-    // the boundary alignment this relies on. FlushLoop's rider list is a List<SealRider>, and
-    // its drainRiders() already merges disjoint per-rider derived-table sets (throwing on a
-    // clash) -- many riders on one pipeline is supported machinery, not something bolted on here.
+    // instance's own start slot) plus three poll-fed riders (branch counts, started counters,
+    // variable profiles) whose records never produce a raw row at all -- see PollFedRider's own
+    // class javadoc for the boundary alignment this relies on. FlushLoop's rider list is a
+    // List<SealRider>, and its drainRiders() already merges disjoint per-rider derived-table sets
+    // (throwing on a clash) -- many riders on one pipeline is supported machinery, not something
+    // bolted on here.
     final PollFedRider flowCountsRider =
         new PollFedRider(wiring.flowMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS);
     final PollFedRider startedCountsRider =
         new PollFedRider(
             wiring.instanceStartMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS);
+    final PollFedRider profilesRider =
+        new PollFedRider(wiring.profileMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS);
     final SinkPipeline instancesPipeline =
         newPipeline(
             wiring.instancesSchema(),
@@ -701,7 +752,8 @@ public final class LakePocApp {
                 new MetricsRider(
                     wiring.instanceCohortMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS),
                 flowCountsRider,
-                startedCountsRider),
+                startedCountsRider,
+                profilesRider),
             wiring.flushIntervalMs(),
             wiring.meterRegistry(),
             SEGMENT_ROWS,
@@ -747,7 +799,8 @@ public final class LakePocApp {
             activityAppender,
             variantsAppender,
             flowCountsRider,
-            startedCountsRider);
+            startedCountsRider,
+            profilesRider);
     return new PartitionPipelines(
         instancesPipeline, activitiesPipeline, variantsPipeline, translator);
   }
@@ -836,6 +889,7 @@ public final class LakePocApp {
       CompiledEntityMetrics flowMetrics,
       CompiledEntityMetrics instanceStartMetrics,
       CompiledEntityMetrics instanceCohortMetrics,
+      CompiledEntityMetrics profileMetrics,
       BatchEncoder.Factory partialsEncoderFactory,
       LakeCommitCoordinator coordinator,
       long flushIntervalMs,

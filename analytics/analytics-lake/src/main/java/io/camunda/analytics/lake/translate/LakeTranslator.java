@@ -182,6 +182,17 @@ import org.slf4j.LoggerFactory;
  * duplicates across restarts/partitions are expected and harmless (rows are deterministic given the
  * key). See {@link #emitVariantDictionaryRowIfNew} for that emission, and {@link
  * #variantsAppender}'s own field javadoc for why it may be {@code null}.
+ *
+ * <h2>Variable profiling</h2>
+ *
+ * <p>At the exact moment an instance completes — {@link #emitInstance}, after its row's {@code
+ * endRow()} and state eviction, on the success path only (see that method's own ordering comment) —
+ * every one of its final root variables folds once into {@link #profilesRider}: dims (process id,
+ * variable name), classified by the JSON value's own first token into a type-mix counter
+ * (number/string/boolean/null/object-or-array), plus — for a numeric value only — the parsed double
+ * folded as the {@code value} measure. See {@link #foldVariableProfiles} for the fold itself. No
+ * string variable <em>value</em> is ever persisted, only its classification and (when numeric) its
+ * parsed number — a deliberate privacy boundary, not an oversight.
  */
 public final class LakeTranslator {
 
@@ -228,6 +239,17 @@ public final class LakeTranslator {
   private static final int FLOW_DIM_TARGET_ELEMENT_ID = 4;
   private static final int STARTED_DIM_PROCESS_ID = 0;
   private static final int STARTED_DIM_VERSION = 1;
+  private static final int PROFILE_DIM_PROCESS_ID = 0;
+  private static final int PROFILE_DIM_VAR_NAME = 1;
+  private static final int PROFILE_MEASURE_VALUE = 0;
+
+  // ---- variable-profile named counters (declaration order -- see LakePocApp's own entity
+  // declaration and PollFedRider#incrementCounter's own javadoc) ----
+  private static final int PROFILE_COUNTER_NUMBER = 0;
+  private static final int PROFILE_COUNTER_STRING = 1;
+  private static final int PROFILE_COUNTER_BOOLEAN = 2;
+  private static final int PROFILE_COUNTER_NULL = 3;
+  private static final int PROFILE_COUNTER_OBJECT_OR_ARRAY = 4;
 
   private final TranslatorState state;
   private final RowAppender instanceAppender;
@@ -268,6 +290,15 @@ public final class LakeTranslator {
   private final PollFedRider startedCountsRider;
 
   /**
+   * Folds each completed instance's final root variables into per-(process id, variable name,
+   * window) profiles — see this class's "Variable profiling" section for the fold itself, and
+   * {@code io.camunda.analytics.lake.metrics.PollFedRider}'s own class javadoc for the rider
+   * mechanics. {@code null} disables profiling entirely (e.g. a test exercising unrelated
+   * behavior), mirroring {@link #flowCountsRider}/{@link #startedCountsRider}'s own optionality.
+   */
+  private final PollFedRider profilesRider;
+
+  /**
    * Heap cache of {@link #onProcess}'s own persisted state, warmed two ways: eagerly, in full, the
    * moment a definition's own {@code PROCESS}/{@code CREATED} record is folded; lazily, one flow at
    * a time, on a cache miss in {@link #resolveFlowEndpoints} (the path a restart takes — the
@@ -295,7 +326,7 @@ public final class LakeTranslator {
       final TranslatorState state,
       final RowAppender instanceAppender,
       final RowAppender activityAppender) {
-    this(state, instanceAppender, activityAppender, null, null, null);
+    this(state, instanceAppender, activityAppender, null, null, null, null);
   }
 
   /**
@@ -308,7 +339,7 @@ public final class LakeTranslator {
       final RowAppender instanceAppender,
       final RowAppender activityAppender,
       final RowAppender variantsAppender) {
-    this(state, instanceAppender, activityAppender, variantsAppender, null, null);
+    this(state, instanceAppender, activityAppender, variantsAppender, null, null, null);
   }
 
   /**
@@ -323,13 +354,15 @@ public final class LakeTranslator {
       final RowAppender activityAppender,
       final PollFedRider flowCountsRider,
       final PollFedRider startedCountsRider) {
-    this(state, instanceAppender, activityAppender, null, flowCountsRider, startedCountsRider);
+    this(
+        state, instanceAppender, activityAppender, null, flowCountsRider, startedCountsRider, null);
   }
 
   /**
    * The full constructor: raw-row appenders plus every optional metric hook — the variants
-   * dictionary appender (see its field javadoc) and the two poll-fed riders (see theirs). Any of
-   * the three may be {@code null} to disable that capture without disturbing the others.
+   * dictionary appender (see its field javadoc), the two poll-fed riders (see theirs), and the
+   * variable profiles rider (see {@link #profilesRider}). Any of the four may be {@code null} to
+   * disable that capture without disturbing the others.
    */
   public LakeTranslator(
       final TranslatorState state,
@@ -337,13 +370,15 @@ public final class LakeTranslator {
       final RowAppender activityAppender,
       final RowAppender variantsAppender,
       final PollFedRider flowCountsRider,
-      final PollFedRider startedCountsRider) {
+      final PollFedRider startedCountsRider,
+      final PollFedRider profilesRider) {
     this.state = state;
     this.instanceAppender = instanceAppender;
     this.activityAppender = activityAppender;
     this.variantsAppender = variantsAppender;
     this.flowCountsRider = flowCountsRider;
     this.startedCountsRider = startedCountsRider;
+    this.profilesRider = profilesRider;
     zeebeWatermarks = newWatermarkArray(INITIAL_WATERMARK_CAPACITY);
   }
 
@@ -627,8 +662,11 @@ public final class LakeTranslator {
     if (!instanceAppender.begin()) {
       return false; // ring full — caller must retry this same record
     }
-    final byte[] varsJson =
-        varsJson(state.variablesOf(processInstanceKey)).getBytes(StandardCharsets.UTF_8);
+    // Captured once and reused for both vars_json and the variable-profile fold below (see this
+    // class's "Variable profiling" section) -- state.variablesOf is a RocksDB scan, so reading it
+    // twice would double that cost for no reason.
+    final Map<String, String> variables = state.variablesOf(processInstanceKey);
+    final byte[] varsJson = varsJson(variables).getBytes(StandardCharsets.UTF_8);
     // variant-k1: read (never recompute) the accumulator's hash -- see class javadoc's "Variant
     // capture" section. null when state loss left no live accumulator; the column is nullable
     // exactly for this case.
@@ -654,6 +692,12 @@ public final class LakeTranslator {
     instanceAppender.endRow();
     state.deleteInstance(processInstanceKey);
     state.deleteVariablesOf(processInstanceKey);
+    // Variable profiling: sits strictly after endRow() (the row is already durable-bound to this
+    // segment), never before -- see this class's "Variable profiling" section for why a
+    // backpressure retry of this exact record must never double-fold.
+    if (profilesRider != null) {
+      foldVariableProfiles(instance.processId(), variables, timestamp);
+    }
     if (variantAccumulator != null) {
       state.deleteVariantAccumulator(processInstanceKey);
       emitVariantDictionaryRowIfNew(instance, variantAccumulator, variantHashHex, timestamp);
@@ -835,6 +879,77 @@ public final class LakeTranslator {
     out.append(HEX_DIGITS[(c >> 8) & 0xF]);
     out.append(HEX_DIGITS[(c >> 4) & 0xF]);
     out.append(HEX_DIGITS[c & 0xF]);
+  }
+
+  // ===========================================================================================
+  // Variable profiling -- see class javadoc's own section. Grouped as one block, called only from
+  // the single "profilesRider != null" hook point in emitInstance, mirroring the variant-capture
+  // block below for the same isolate-for-merge reason.
+  // ===========================================================================================
+
+  /**
+   * Folds {@code instance}'s just-finished final root variables into the {@code profilesRider} (see
+   * {@link #profilesRider}'s own field javadoc): one fold per variable, dims (process id, variable
+   * name), classified by the JSON value's own first token into exactly one of {@link
+   * #PROFILE_COUNTER_NUMBER}/{@link #PROFILE_COUNTER_STRING}/{@link #PROFILE_COUNTER_BOOLEAN}/
+   * {@link #PROFILE_COUNTER_NULL}/{@link #PROFILE_COUNTER_OBJECT_OR_ARRAY} — a cheap check that
+   * never fully parses a non-numeric value. Only a numeric value additionally stages the {@code
+   * value} measure (see {@code io.camunda.analytics.lake.sink.algebra.DoubleScalarStatsAlgebra}/
+   * {@code SignedDoubleExpHistogramAlgebra}'s own non-finite rule for why {@code "1e999"} — which
+   * {@link Double#parseDouble} parses to {@link Double#POSITIVE_INFINITY}, not an exception — is a
+   * real, correctly-handled path here, not an edge case this method needs to special-case itself).
+   *
+   * <p><b>No string variable VALUES are ever stored</b> — a privacy decision baked into this fold:
+   * only the classification and (for numeric values) the parsed number ever reach the rider: a
+   * string variable's own content is read only long enough to inspect its first character.
+   *
+   * <p>Allocation: bounded by the number of distinct variables on one completed instance, which is
+   * exactly the same "per completed instance, not per record" budget {@link #emitInstance}'s own
+   * {@code vars_json} build already spends (see class javadoc's allocation note) — this method
+   * reuses the same {@code variables} map {@link #emitInstance} already read, allocating nothing
+   * beyond what iterating it and (for a numeric value) {@link Double#parseDouble} themselves cost.
+   */
+  private void foldVariableProfiles(
+      final String processId, final Map<String, String> variables, final long completedAtMs) {
+    if (variables.isEmpty()) {
+      return;
+    }
+    final long eventTimeMicros = millisToMicros(completedAtMs);
+    for (final Map.Entry<String, String> entry : variables.entrySet()) {
+      final String valueJson = entry.getValue();
+      profilesRider
+          .putDict(PROFILE_DIM_PROCESS_ID, processId)
+          .putDict(PROFILE_DIM_VAR_NAME, entry.getKey());
+      switch (valueJson.charAt(0)) {
+        case '"' -> profilesRider.incrementCounter(PROFILE_COUNTER_STRING);
+        case 't', 'f' -> profilesRider.incrementCounter(PROFILE_COUNTER_BOOLEAN);
+        case 'n' -> profilesRider.incrementCounter(PROFILE_COUNTER_NULL);
+        case '{', '[' -> profilesRider.incrementCounter(PROFILE_COUNTER_OBJECT_OR_ARRAY);
+        default -> {
+          profilesRider.incrementCounter(PROFILE_COUNTER_NUMBER);
+          stageNumericValue(valueJson);
+        }
+      }
+      profilesRider.fold(eventTimeMicros);
+    }
+  }
+
+  /**
+   * Parses {@code valueJson}'s numeric token and stages it as the {@code value} measure — see
+   * {@link #foldVariableProfiles}'s own javadoc for the non-finite path this deliberately does not
+   * special-case. A parse failure (never expected for validated JSON, but not this method's job to
+   * assume) simply leaves the measure unstaged for this record — {@code
+   * io.camunda.analytics.lake.metrics.PollFedRider}'s own "null measure = skip that measure, not
+   * the row" rule already covers it, so the variable is still counted under {@link
+   * #PROFILE_COUNTER_NUMBER}, just without a numeric value contribution this one time.
+   */
+  private void stageNumericValue(final String valueJson) {
+    try {
+      profilesRider.putDoubleMeasure(PROFILE_MEASURE_VALUE, Double.parseDouble(valueJson));
+    } catch (final NumberFormatException e) {
+      LOG.debug(
+          "Variable value '{}' looked numeric but failed to parse; skipping its value", valueJson);
+    }
   }
 
   // ===========================================================================================
