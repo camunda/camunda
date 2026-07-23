@@ -17,6 +17,7 @@ import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTempla
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOLS;
 import static io.camunda.webapps.schema.descriptors.template.AgentInstanceTemplate.TOOL_CALLS;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.agentinstance.AgentInstanceEntity;
@@ -120,7 +121,8 @@ public class AgentInstanceHandler
   }
 
   @Override
-  public void flush(final AgentInstanceEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final TargetIndex index, final AgentInstanceEntity entity, final BatchRequest batchRequest) {
     // `creationDate` is intentionally excluded: it is handler-derived from
     // `record.getTimestamp()` and only populated by `updateEntity()` on the CREATED
     // intent. Including it here would overwrite the existing index value with null on
@@ -135,7 +137,7 @@ public class AgentInstanceHandler
     updateFields.put(ELEMENT_INSTANCE_KEYS, entity.getElementInstanceKeys());
     updateFields.put(LAST_UPDATED_DATE, entity.getLastUpdatedDate());
     updateFields.put(COMPLETION_DATE, entity.getCompletionDate());
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.upsert(index, entity.getId(), entity, updateFields);
   }
 
   @Override

@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -112,13 +113,14 @@ class ListViewFromChunkItemHandlerTest {
     entity.setBatchOperationIds(List.of(batchOperationKey));
 
     // when
+    final var index = TargetIndex.mainIndex("test-index");
     final var batchRequest = mock(BatchRequest.class);
-    underTest.flush(entity, batchRequest);
+    underTest.flush(index, entity, batchRequest);
 
     // then - the ES document ID is just the processInstanceKey, extracted from the composite ID
     Mockito.verify(batchRequest)
         .updateWithScript(
-            eq(underTest.getIndexName()),
+            eq(index),
             eq(processInstanceKey),
             anyString(),
             eq(Map.of("batchOperationId", batchOperationKey)));

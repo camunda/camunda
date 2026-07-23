@@ -15,6 +15,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.debug.cli.Main;
 import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -158,7 +159,7 @@ public class RecoverProcessDefinitionsMultiDbIT {
       throws Exception {
     try (final ClientAdapter adapter = ClientAdapter.of(connectConfiguration)) {
       final var batchRequest = adapter.createBatchRequest();
-      batchRequest.delete(indexName, String.valueOf(key));
+      batchRequest.delete(TargetIndex.mainIndex(indexName), String.valueOf(key));
       batchRequest.executeWithRefresh();
     }
   }

@@ -10,6 +10,7 @@ package io.camunda.exporter.handlers;
 import static io.camunda.exporter.utils.ExporterUtil.emptyToNull;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -80,10 +81,12 @@ public class ListViewProcessInstanceBusinessIdFromProcessInstanceBusinessIdHandl
 
   @Override
   public void flush(
-      final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest) {
+      final TargetIndex index,
+      final ProcessInstanceForListViewEntity entity,
+      final BatchRequest batchRequest) {
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ListViewTemplate.BUSINESS_ID, emptyToNull(entity.getBusinessId()));
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    batchRequest.update(index, entity.getId(), updateFields);
   }
 
   @Override

@@ -22,6 +22,7 @@ import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.util.BinaryData;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.exporter.utils.NdJsonSizeUtil;
@@ -69,12 +70,13 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest add(final String index, final ExporterEntity entity) {
+  public BatchRequest add(final TargetIndex index, final ExporterEntity entity) {
     return addWithId(index, entity.getId(), entity);
   }
 
   @Override
-  public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity) {
+  public BatchRequest addWithId(
+      final TargetIndex index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
     addIndexOp(index, id, null, entity);
     return this;
@@ -82,7 +84,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest addWithRouting(
-      final String index, final ExporterEntity entity, final String routing) {
+      final TargetIndex index, final ExporterEntity entity, final String routing) {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
     addIndexOp(index, entity.getId(), routing, entity);
@@ -91,7 +93,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsert(
-      final String index,
+      final TargetIndex index,
       final String id,
       final ExporterEntity entity,
       final Map<String, Object> updateFields) {
@@ -100,7 +102,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsertWithRouting(
-      final String index,
+      final TargetIndex index,
       final String id,
       final ExporterEntity entity,
       final Map<String, Object> updateFields,
@@ -118,7 +120,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsertWithScript(
-      final String index,
+      final TargetIndex index,
       final String id,
       final ExporterEntity entity,
       final String script,
@@ -128,7 +130,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest upsertWithScriptAndRouting(
-      final String index,
+      final TargetIndex index,
       final String id,
       final ExporterEntity entity,
       final String script,
@@ -152,7 +154,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest update(
-      final String index, final String id, final Map<String, Object> updateFields) {
+      final TargetIndex index, final String id, final Map<String, Object> updateFields) {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
     addUpdateOp(index, id, null, a -> a.doc(updateFields));
@@ -160,7 +162,8 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest update(final String index, final String id, final ExporterEntity entity) {
+  public BatchRequest update(
+      final TargetIndex index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add update request for index {} id {} and entity {}", index, id, entity);
     addUpdateOp(index, id, null, a -> a.doc(entity));
     return this;
@@ -168,7 +171,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   @Override
   public BatchRequest updateWithScript(
-      final String index,
+      final TargetIndex index,
       final String id,
       final String script,
       final Map<String, Object> parameters) {
@@ -184,14 +187,15 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest delete(final String index, final String id) {
+  public BatchRequest delete(final TargetIndex index, final String id) {
     LOGGER.debug("Add delete request for index {} and id {}", index, id);
     addDeleteOp(index, id, null);
     return this;
   }
 
   @Override
-  public BatchRequest deleteWithRouting(final String index, final String id, final String routing) {
+  public BatchRequest deleteWithRouting(
+      final TargetIndex index, final String id, final String routing) {
     LOGGER.debug(
         "Add delete index request with routing {} for index {} and entity {} ", routing, index, id);
     addDeleteOp(index, id, routing);
@@ -210,15 +214,15 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   private void addIndexOp(
-      final String index, final String id, final String routing, final ExporterEntity entity) {
+      final TargetIndex index, final String id, final String routing, final ExporterEntity entity) {
     final BinaryData binaryDoc = BinaryData.of(entity, jsonpMapper);
     final IndexOperation<Object> indexOp =
-        IndexOperation.of(i -> i.index(index).id(id).routing(routing).document(binaryDoc));
+        IndexOperation.of(i -> i.index(index.name()).id(id).routing(routing).document(binaryDoc));
     addOperation(BulkOperation.of(b -> b.index(indexOp)), binaryDoc.size());
   }
 
   private void addUpdateOp(
-      final String index,
+      final TargetIndex index,
       final String id,
       final String routing,
       final Function<Builder<Object, Object>, ?> actionBuilder) {
@@ -234,7 +238,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
             b ->
                 b.update(
                     u ->
-                        u.index(index)
+                        u.index(index.name())
                             .id(id)
                             .routing(routing)
                             .retryOnConflict(UPDATE_RETRY_COUNT)
@@ -242,9 +246,9 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     addOperation(op, binaryAction.size());
   }
 
-  private void addDeleteOp(final String index, final String id, final String routing) {
+  private void addDeleteOp(final TargetIndex index, final String id, final String routing) {
     final BulkOperation op =
-        BulkOperation.of(b -> b.delete(d -> d.index(index).id(id).routing(routing)));
+        BulkOperation.of(b -> b.delete(d -> d.index(index.name()).id(id).routing(routing)));
     addOperation(op, 0L);
   }
 

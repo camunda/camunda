@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperat
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.batchoperation.AbstractOperationHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -66,7 +67,10 @@ public abstract class AbstractProcessInstanceFromOperationItemHandler<
   }
 
   @Override
-  public void flush(final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index,
+      final ProcessInstanceForListViewEntity entity,
+      final BatchRequest batchRequest)
       throws PersistenceException {
     // Extract just the processInstanceKey from the composite cache ID
     // (processInstanceKey:batchOperationReference).
@@ -78,7 +82,7 @@ public abstract class AbstractProcessInstanceFromOperationItemHandler<
             + "ctx._source.batchOperationIds.add(params.batchOperationId);"
             + "}";
     batchRequest.updateWithScript(
-        indexName,
+        index,
         processInstanceKey,
         script,
         Map.of("batchOperationId", entity.getBatchOperationIds().getFirst()));

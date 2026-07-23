@@ -16,6 +16,7 @@ import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -162,16 +163,17 @@ public class UserTaskCreatingHandlerTest {
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setKey(recordKey)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
 
     verify(mockRequest, times(1))
-        .addWithRouting(indexName, inputEntity, String.valueOf(processInstanceKey));
+        .addWithRouting(index, inputEntity, String.valueOf(processInstanceKey));
   }
 
   @Test
@@ -189,15 +191,16 @@ public class UserTaskCreatingHandlerTest {
             .setProcessInstanceId(String.valueOf(processInstanceKey))
             .setKey(recordKey)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceKey));
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     // then
     final Map<String, Object> updateFieldsMap = new HashMap<>();
 
-    verify(mockRequest, times(1)).addWithRouting(indexName, inputEntity, String.valueOf(recordKey));
+    verify(mockRequest, times(1)).addWithRouting(index, inputEntity, String.valueOf(recordKey));
   }
 
   @Test

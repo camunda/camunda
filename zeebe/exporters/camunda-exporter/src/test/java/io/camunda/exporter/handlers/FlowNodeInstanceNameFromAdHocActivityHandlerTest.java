@@ -14,6 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -142,15 +143,16 @@ public class FlowNodeInstanceNameFromAdHocActivityHandlerTest {
     // given
     final FlowNodeInstanceEntity entity =
         new FlowNodeInstanceEntity().setId("111").setFlowNodeName("List users");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
-    underTest.flush(entity, mockRequest);
+    underTest.flush(index, entity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
         .upsertWithScript(
-            eq(indexName),
+            eq(index),
             eq("111"),
             eq(entity),
             eq(FlowNodeInstanceNameFromAdHocActivityHandler.SET_IF_NULL_NAME_SCRIPT),

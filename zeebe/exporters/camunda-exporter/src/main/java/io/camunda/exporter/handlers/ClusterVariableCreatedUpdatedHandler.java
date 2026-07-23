@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.util.ClusterVariableUtil;
 import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableEntity;
@@ -102,14 +103,15 @@ public class ClusterVariableCreatedUpdatedHandler
                     new MetadataEntry(
                         e.getKey(),
                         String.valueOf(e.getValue()),
-                        e.getValue() instanceof Number n ? n.doubleValue() : null))
+                        e.getValue() instanceof final Number n ? n.doubleValue() : null))
             .toList());
   }
 
   @Override
-  public void flush(final ClusterVariableEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final ClusterVariableEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.add(index, entity);
   }
 
   @Override

@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers.batchoperation;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.index.TargetIndex;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -81,14 +82,15 @@ public class BatchOperationChunkCreatedHandler
   }
 
   @Override
-  public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
+  public void flush(
+      final TargetIndex index, final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
     // Atomically increment the total and reset endDate so the BatchOperationUpdateTask
     // re-processes the counts. Extract the batchKey from the composite cache ID (batchKey:chunk).
     final String batchOperationKey = entity.getId().split(":")[0];
 
     batchRequest.updateWithScript(
-        indexName,
+        index,
         batchOperationKey,
         """
             ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount;
