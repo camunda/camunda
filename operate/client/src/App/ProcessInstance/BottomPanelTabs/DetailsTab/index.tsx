@@ -64,6 +64,7 @@ const DetailsTab: React.FC = () => {
     selectedElementId,
     selectedAnchorElementId,
     selectedInstancesCount,
+    isSelectedInstanceMultiInstanceBody,
     isFetchingElement,
   } = useProcessInstanceElementSelection();
 
@@ -172,6 +173,13 @@ const DetailsTab: React.FC = () => {
 
   const messageSubscription = messageSubscriptionResult?.items?.[0] ?? null;
 
+  // Multi-instance bodies have no agent instance associated with the multi-instance
+  // element instance. Agents are assigned to the spawned inner instances.
+  // Fall back to elementId-only filtering when multi-instance body is selected.
+  const agentElementInstanceKey = isSelectedInstanceMultiInstanceBody
+    ? null
+    : elementInstanceKey;
+
   const {
     data: agentInstancesResult,
     isLoading: isAgentLoading,
@@ -179,7 +187,7 @@ const DetailsTab: React.FC = () => {
   } = useAgentInstancesForElement({
     processInstanceKey: processInstance?.processInstanceKey ?? '',
     elementId: effectiveElementId ?? '',
-    elementInstanceKey,
+    elementInstanceKey: agentElementInstanceKey,
     enabled: !!processInstance?.processInstanceKey && !!effectiveElementId,
     enablePeriodicRefetch: isProcessInstanceRunning,
   });
@@ -559,7 +567,7 @@ const DetailsTab: React.FC = () => {
           }
           isLoading={isAgentLoading}
           isError={isAgentError}
-          selectedElementInstanceKey={elementInstanceKey}
+          selectedElementInstanceKey={agentElementInstanceKey}
         />
       )}
       {!showAgentInstance && clientConfig.waitStatesEnabled && (
