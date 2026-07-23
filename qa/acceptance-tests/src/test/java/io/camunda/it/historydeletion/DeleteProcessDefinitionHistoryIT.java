@@ -22,6 +22,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.api.search.enums.MessageSubscriptionType;
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -186,19 +187,25 @@ public class DeleteProcessDefinitionHistoryIT {
               final var deleted =
                   camundaClient
                       .newProcessDefinitionSearchRequest()
-                      .filter(f -> f.processDefinitionKey(processDefinitionKey).isDeleted(true))
+                      .filter(
+                          f ->
+                              f.processDefinitionKey(processDefinitionKey)
+                                  .state(ProcessDefinitionState.DELETED))
                       .send()
                       .join()
                       .items();
               assertThat(deleted).hasSize(1);
-              assertThat(deleted.getFirst().isDeleted()).isTrue();
+              assertThat(deleted.getFirst().getState()).isEqualTo(ProcessDefinitionState.DELETED);
             });
 
-    // and - searching with isDeleted=false should not return the deleted definition
+    // and - searching with state=ACTIVE should not return the deleted definition
     final var nonDeleted =
         camundaClient
             .newProcessDefinitionSearchRequest()
-            .filter(f -> f.processDefinitionKey(processDefinitionKey).isDeleted(false))
+            .filter(
+                f ->
+                    f.processDefinitionKey(processDefinitionKey)
+                        .state(ProcessDefinitionState.ACTIVE))
             .send()
             .join()
             .items();
