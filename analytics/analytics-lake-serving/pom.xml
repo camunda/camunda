@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>analytics-parent</artifactId>
+    <version>8.10.0-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>analytics-lake-serving</artifactId>
+  <packaging>jar</packaging>
+  <name>Analytics Lake Serving</name>
+  <description>Read-only serving application (REST + React UI) over the analytics lake warehouse:
+    an embedded DuckDB instance discovers and queries the Parquet tables the lake writer produces.
+    Ingest, folding and compaction live entirely in analytics-lake; this module never writes to the
+    warehouse.</description>
+
+  <properties>
+    <!-- The design-system engine requires Node >= 24.15.0; pin above the repo-wide version.node,
+         matching analytics-webapp's own client. -->
+    <analytics.node.version>v24.16.0</analytics.node.version>
+    <skip.fe.build>false</skip.fe.build>
+    <!-- Not parent-managed: pinned to the exact version analytics-lake already pins its own
+         duckdb_jdbc dependency to, so both modules read the same warehouse layout with one
+         known-good DuckDB build. -->
+    <version.duckdb>1.3.2.0</version.duckdb>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!-- Declared directly (not just pulled in transitively via the starter above) because this
+         module's own classes import them directly: LakeServingApplication -> spring-boot +
+         spring-boot-autoconfigure; LakeController -> spring-web; the @Configuration/@Service/
+         @Component beans -> spring-context; LakeViewRegistry's @PostConstruct ->
+         jakarta.annotation-api. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
+    <!-- Embedded read layer's JDBC driver: registered via the standard JDBC SPI (no class of ours
+         imports org.duckdb classes directly), a genuine runtime-only dependency; see the
+         maven-dependency-plugin config below. -->
+    <dependency>
+      <groupId>org.duckdb</groupId>
+      <artifactId>duckdb_jdbc</artifactId>
+      <version>${version.duckdb}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <!-- Test -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- TestRestTemplate moved out of spring-boot-test into its own module as of Spring Boot 4;
+         its auto-configuration in turn needs RestTemplateBuilder from spring-boot-restclient,
+         which spring-boot-starter-web does not pull in on its own. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-resttestclient</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-restclient</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <!-- Starter POMs and JDBC-SPI-registered drivers are packaged but never referenced by an
+               import statement; see load-tests/load-tester and zeebe/gateway-rest for the same
+               "usedDependencies" idiom applied to their own starters. -->
+          <usedDependencies>
+            <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
+            <dependency>org.duckdb:duckdb_jdbc</dependency>
+            <!-- Only needed so TestRestTemplateTestAutoConfiguration can resolve
+                 RestTemplateBuilder by reflection; no test class imports it directly. -->
+            <dependency>org.springframework.boot:spring-boot-restclient</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+
+      <!-- Repackage into a runnable jar (classifier "exec", mirroring load-tests/load-tester) so
+           `java -jar target/analytics-lake-serving-*-exec.jar` runs the app standalone. -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>io.camunda.analytics.lake.serving.LakeServingApplication</mainClass>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+            <configuration>
+              <classifier>exec</classifier>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Build the React/Vite client into target/classes/static so the jar serves the UI.
+           COPIED VERBATIM from analytics-webapp/pom.xml (see that module's frontend-maven-plugin
+           block), adjusted only for this module's own client/ directory. -->
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <version>1.15.1</version>
+        <configuration>
+          <skip>${skip.fe.build}</skip>
+          <workingDirectory>${project.basedir}/client</workingDirectory>
+          <installDirectory>${project.basedir}/client/.node</installDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <id>install node and npm</id>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
+            <configuration>
+              <nodeVersion>${analytics.node.version}</nodeVersion>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm install</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <configuration>
+              <arguments>install</arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm build</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <!-- After process-resources so the resource copy never clobbers the Vite output. -->
+            <phase>process-classes</phase>
+            <configuration>
+              <arguments>run build</arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>skipFrontendBuild</id>
+      <properties>
+        <skip.fe.build>true</skip.fe.build>
+      </properties>
+    </profile>
+  </profiles>
+
+</project>
