@@ -53,7 +53,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
 
   public MessageCorrelationRecord() {
-    super(8);
+    super(9);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp)
