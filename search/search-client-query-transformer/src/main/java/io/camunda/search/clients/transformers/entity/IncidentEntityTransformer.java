@@ -19,6 +19,7 @@ import static io.camunda.search.entities.IncidentEntity.ErrorType.IO_MAPPING_ERR
 import static io.camunda.search.entities.IncidentEntity.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.MESSAGE_SIZE_EXCEEDED;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.RESOURCE_NOT_FOUND;
+import static io.camunda.search.entities.IncidentEntity.ErrorType.SECRET_RESOLUTION_ERROR;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.TASK_LISTENER_NO_RETRIES;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.UNHANDLED_ERROR_EVENT;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.UNKNOWN;
@@ -91,6 +92,7 @@ public class IncidentEntityTransformer
       case DECISION_EVALUATION_ERROR -> DECISION_EVALUATION_ERROR;
       case FORM_NOT_FOUND -> FORM_NOT_FOUND;
       case RESOURCE_NOT_FOUND -> RESOURCE_NOT_FOUND;
+      case SECRET_RESOLUTION_ERROR -> SECRET_RESOLUTION_ERROR;
     };
   }
 }

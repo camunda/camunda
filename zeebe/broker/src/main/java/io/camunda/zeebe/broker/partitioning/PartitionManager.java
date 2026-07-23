@@ -107,6 +107,7 @@ public interface PartitionManager {
         brokerStartupContext.getSearchClientsProxy(),
         physicalTenantContext.authorizationConverter(),
         physicalTenantContext.featureFlags(),
+        physicalTenantContext.secretStoreRegistry(),
         topologyManager);
   }
 

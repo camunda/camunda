@@ -32,7 +32,7 @@ class SecretStoreConfigurationTest {
     final var resolver = resolverFor(Map.of());
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver);
+    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
     // then
     assertThat(registries).containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -48,7 +48,7 @@ class SecretStoreConfigurationTest {
         resolverFor(Map.of("camunda.secrets.stores.file.main.path", "/etc/camunda/secrets"));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver);
+    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
     // then
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -91,7 +91,7 @@ class SecretStoreConfigurationTest {
         resolverFor(Map.of("camunda.secrets.stores.file.MyStore.path", "/etc/camunda/secrets"));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver);
+    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
     // then
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -105,7 +105,7 @@ class SecretStoreConfigurationTest {
         resolverFor(Map.of("camunda.secrets.stores.file.main.path", "/etc/camunda/secrets"));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver);
+    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
     // then
     final var registry = registries.get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -125,7 +125,7 @@ class SecretStoreConfigurationTest {
                 "mytenant"));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver);
+    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
     // then
     assertThat(registries).containsKey("mytenant");
@@ -154,7 +154,7 @@ class SecretStoreConfigurationTest {
                 "tenantb"));
 
     // when
-    final var registries = CONFIG.secretStoreRegistries(resolver);
+    final var registries = CONFIG.secretStoreRegistries(resolver).byPhysicalTenant();
 
     // then each tenant has its own registry with its own store
     assertThat(registries).containsKeys("tenanta", "tenantb");

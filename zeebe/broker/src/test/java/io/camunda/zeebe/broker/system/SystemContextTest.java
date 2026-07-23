@@ -16,6 +16,7 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.authz.AuthorizationOwnerType;
 import io.camunda.security.api.model.authz.AuthorizationResourceType;
@@ -576,7 +577,8 @@ final class SystemContextTest {
                     mock(BrokerRequestAuthorizationConverter.class),
                     flags,
                     new BrokerCfg(),
-                    new ExporterRepository())),
+                    new ExporterRepository(),
+                    new SecretStoreRegistry(Map.of()))),
             ignored -> mock(UserServices.class),
             mock(PasswordEncoder.class),
             authConfig -> mock(JwtDecoder.class),
@@ -647,7 +649,8 @@ final class SystemContextTest {
                         convertersByTenant.get(tenantId),
                         FeatureFlags.createDefaultForTests(),
                         brokerCfg,
-                        new ExporterRepository())));
+                        new ExporterRepository(),
+                        new SecretStoreRegistry(Map.of()))));
     return new SystemContext(
         SystemContext.DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
