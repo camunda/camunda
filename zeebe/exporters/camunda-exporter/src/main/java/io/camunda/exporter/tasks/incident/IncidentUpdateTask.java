@@ -28,13 +28,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.agrona.LangUtil;
@@ -137,13 +139,13 @@ public final class IncidentUpdateTask implements BackgroundTask {
    * </ul>
    */
   private CompletableFuture<Integer> processNextBatch() {
-    final var data = new AdditionalData();
-    final var batch = getPendingIncidentsBatch(data);
+    final var state = new IncidentsState();
+    final var batch = getPendingIncidentsBatch(state);
     if (batch.newIncidentStates().isEmpty()) {
       return CompletableFuture.completedFuture(0);
     }
     logger.trace("Applying the following pending incident updates: {}", batch.newIncidentStates());
-    final var check = searchForInstances(data);
+    final var check = searchForInstances(state);
     final int incidentCount = batch.newIncidentStates().size();
     if (check != InstancesCheck.OK) {
       // there was missing data, but this is often transient, so we just skip this batch for now.
@@ -153,15 +155,16 @@ public final class IncidentUpdateTask implements BackgroundTask {
       return CompletableFuture.completedFuture(incidentCount);
     }
 
-    data.incidents()
+    state
+        .getIncidentDocuments()
         .forEach(
-            (key, incidentDocument) -> {
+            (incidentDocument) -> {
               if (incidentDocument.incident().getTreePath() == null) {
-                final var treePath = data.incidentTreePaths().get(key);
+                final var treePath = state.incidentTreePaths().get(incidentDocument.id());
                 incidentDocument.incident().setTreePath(treePath);
               }
             });
-    return CompletableFuture.completedFuture(processIncidents(data, batch))
+    return CompletableFuture.completedFuture(processIncidents(state, batch))
         .thenComposeAsync(
             documentsUpdated -> {
               logger.trace(
@@ -181,43 +184,40 @@ public final class IncidentUpdateTask implements BackgroundTask {
             executor);
   }
 
-  private InstancesCheck searchForInstances(final AdditionalData data) {
-    final var incidents = data.incidents().values();
-
-    queryData(incidents, data);
-    if (checkDataAndCollectParentTreePaths(incidents, data, false) != InstancesCheck.OK) {
+  private InstancesCheck searchForInstances(final IncidentsState state) {
+    queryData(state);
+    if (checkDataAndCollectParentTreePaths(state, false) != InstancesCheck.OK) {
       // if it failed once we want to give it a chance and to import more data
       // next failure will fail in case ignoring of missing data is not configured
       uncheckedThreadSleep();
-      queryData(incidents, data);
-      final var check = checkDataAndCollectParentTreePaths(incidents, data, ignoreMissingData);
+      queryData(state);
+      final var check = checkDataAndCollectParentTreePaths(state, ignoreMissingData);
       if (check != InstancesCheck.OK) {
         return check;
       }
     }
 
     final var flowNodeKeys =
-        incidents.stream()
+        state.getIncidentDocuments().stream()
             .map(IncidentDocument::incident)
             .map(IncidentEntity::getFlowNodeInstanceKey)
             .map(String::valueOf)
+            .distinct()
             .toList();
-    repository
-        .getFlowNodesInListView(flowNodeKeys)
-        .toCompletableFuture()
-        .join()
-        .forEach(doc -> data.addFlowNodeInstanceInListView(doc.id(), doc.index()));
+
+    final var flowNodes =
+        repository.getFlowNodesInListView(flowNodeKeys).toCompletableFuture().join();
+
+    flowNodes.forEach(doc -> state.addFlowNodeInstanceInListView(doc.id(), doc.index()));
 
     return InstancesCheck.OK;
   }
 
   private InstancesCheck checkDataAndCollectParentTreePaths(
-      final Collection<IncidentDocument> incidents,
-      final AdditionalData data,
-      final boolean forceIgnoreMissingData) {
-
+      final IncidentsState state, final boolean forceIgnoreMissingData) {
+    final var incidentDocuments = state.getIncidentDocuments();
     final Set<Long> processInstanceKeys =
-        incidents.stream()
+        incidentDocuments.stream()
             .map(IncidentDocument::incident)
             .map(IncidentEntity::getProcessInstanceKey)
             .collect(Collectors.toSet());
@@ -225,9 +225,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
     final Set<Long> deletedProcessInstances =
         repository.deletedProcessInstances(processInstanceKeys).toCompletableFuture().join();
 
-    for (final Iterator<IncidentDocument> iterator = incidents.iterator(); iterator.hasNext(); ) {
-      final IncidentEntity incident = iterator.next().incident();
-      String piTreePath = data.processInstanceTreePaths().get(incident.getProcessInstanceKey());
+    for (final var incidentDocument : incidentDocuments) {
+      final IncidentEntity incident = incidentDocument.incident();
+      String piTreePath = state.processInstanceTreePaths().get(incident.getProcessInstanceKey());
       if (piTreePath == null || piTreePath.isEmpty()) {
         if (deletedProcessInstances.contains(incident.getProcessInstanceKey())) {
           logger.debug(
@@ -237,8 +237,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
               incident.getProcessInstanceKey(),
               incident.getId());
 
-          // Concurrent modify operation: the underlying map is concurrent
-          iterator.remove();
+          state.skipIncident(incidentDocument);
           continue;
         }
         if (!forceIgnoreMissingData) {
@@ -266,7 +265,8 @@ public final class IncidentUpdateTask implements BackgroundTask {
         }
       }
 
-      data.incidentTreePaths()
+      state
+          .incidentTreePaths()
           .put(
               incident.getId(),
               new TreePath(piTreePath)
@@ -277,20 +277,27 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return InstancesCheck.OK;
   }
 
-  private void queryData(final Collection<IncidentDocument> incidents, final AdditionalData data) {
+  private void queryData(final IncidentsState state) {
+    final var incidents = state.getIncidentDocuments();
     final var processInstanceIds =
         incidents.stream()
             .map(IncidentDocument::incident)
             .map(IncidentEntity::getProcessInstanceKey)
             .map(String::valueOf)
+            .distinct()
             .toList();
 
     final var instances =
         repository.getProcessInstances(processInstanceIds).toCompletableFuture().join();
 
+    recordDuplicationMetrics(
+        instances.stream().map(IncidentUpdateRepository.ProcessInstanceDocument::id).toList(),
+        "process instance",
+        metrics::recordIncidentUpdatesDuplicateProcessInstances);
+
     instances.forEach(
         instance -> {
-          data.processInstanceIndices().put(instance.id(), instance.index());
+          state.addProcessInstance(instance.id(), instance.index());
           // An imported process instance may have a null/empty treePath (e.g. migrated 8.7 data, or
           // a partial list-view document re-created via upsert after archival, where
           // ListViewProcessInstanceFromProcessInstanceHandler only writes treePath when non-null).
@@ -308,20 +315,20 @@ public final class IncidentUpdateTask implements BackgroundTask {
                 "Process instance {} has no treePath. Falling back to the sparse tree path {} so incident updates can make progress.",
                 instance.key(),
                 sparseTreePath);
-            data.processInstanceTreePaths().put(instance.key(), sparseTreePath);
+            state.processInstanceTreePaths().put(instance.key(), sparseTreePath);
           } else {
-            data.processInstanceTreePaths().put(instance.key(), treePath);
+            state.processInstanceTreePaths().put(instance.key(), treePath);
           }
         });
   }
 
   private int processIncidents(
-      final AdditionalData data, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
+      final IncidentsState state, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
     final var bulkUpdate = new IncidentBulkUpdate();
-    return mapActiveIncidentsToAffectedInstances(data)
+    return mapActiveIncidentsToAffectedInstances(state)
         .thenApplyAsync(
             ignored -> {
-              seedResolvedIncidentsAsActive(data, batch);
+              seedResolvedIncidentsAsActive(state, batch);
               return null;
             },
             executor)
@@ -329,26 +336,27 @@ public final class IncidentUpdateTask implements BackgroundTask {
             ignored ->
                 // processIncident one at a time, stopping if an error is raised
                 FuturesUtil.traverseIgnoring(
-                    data.incidents().values(),
-                    incident -> processIncidentInBatch(data, incident, batch, bulkUpdate),
+                    state.getIncidentDocuments(),
+                    incident -> processIncidentInBatch(state, incident, batch, bulkUpdate),
                     executor),
             executor)
         .thenCompose(ignored -> repository.bulkUpdate(bulkUpdate))
         .thenCompose(
             updatedIds ->
-                notifyIncidents(updatedIds, bulkUpdate.incidentRequests(), data.incidents()))
+                notifyIncidents(
+                    updatedIds, bulkUpdate.incidentRequests(), state.getIncidentDocuments()))
         .join();
   }
 
   private void seedResolvedIncidentsAsActive(
-      final AdditionalData data, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
-    for (final var incident : data.incidents().values()) {
+      final IncidentsState state, final IncidentUpdateRepository.PendingIncidentUpdateBatch batch) {
+    for (final var incident : state.getIncidentDocuments()) {
       final var newState = batch.newIncidentStates().get(incident.incident().getKey());
       if (newState != IncidentState.RESOLVED) {
         continue;
       }
 
-      final var treePath = data.incidentTreePaths().get(incident.id());
+      final var treePath = state.incidentTreePaths().get(incident.id());
       if (treePath == null) {
         continue;
       }
@@ -356,24 +364,24 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final var parsedTreePath = new TreePath(treePath);
       parsedTreePath
           .extractProcessInstanceIds()
-          .forEach(id -> data.addPiIdsWithIncidentIds(id, incident.id()));
+          .forEach(id -> state.addPiIdsWithIncidentIds(id, incident.id()));
       parsedTreePath
           .extractFlowNodeInstanceIds()
-          .forEach(id -> data.addFniIdsWithIncidentIds(id, incident.id()));
+          .forEach(id -> state.addFniIdsWithIncidentIds(id, incident.id()));
     }
   }
 
   private CompletableFuture<Void> processIncidentInBatch(
-      final AdditionalData data,
+      final IncidentsState state,
       final IncidentDocument incident,
       final IncidentUpdateRepository.PendingIncidentUpdateBatch batch,
       final IncidentBulkUpdate bulkUpdate) {
     final var processInstanceKey = incident.incident().getProcessInstanceKey();
-    final var treePath = data.incidentTreePaths().get(incident.id());
+    final var treePath = state.incidentTreePaths().get(incident.id());
     final var newState = batch.newIncidentStates().get(incident.incident().getKey());
 
     final CompletableFuture<?> future;
-    if (!data.processInstanceTreePaths().containsKey(processInstanceKey)) {
+    if (!state.processInstanceTreePaths().containsKey(processInstanceKey)) {
       if (!ignoreMissingData) {
         return CompletableFuture.failedFuture(
             new ExporterException(
@@ -396,18 +404,16 @@ public final class IncidentUpdateTask implements BackgroundTask {
           removeProcessInstanceIds(parsedTreePath.extractFlowNodeInstanceIds(), piIds);
 
       future =
-          createProcessInstanceUpdates(data, incident, newState, piIds, bulkUpdate)
+          createProcessInstanceUpdates(state, incident, newState, piIds, bulkUpdate)
               .thenComposeAsync(
                   unused ->
-                      createFlowNodeInstanceUpdates(data, incident, newState, fniIds, bulkUpdate),
+                      createFlowNodeInstanceUpdates(state, incident, newState, fniIds, bulkUpdate),
                   executor);
     }
 
     return future.thenApplyAsync(
         unused -> {
-          bulkUpdate
-              .incidentRequests()
-              .put(incident.id(), newIncidentUpdate(incident, newState, treePath));
+          bulkUpdate.incidentRequests().add(newIncidentUpdate(incident, newState, treePath));
           return null;
         },
         executor);
@@ -428,7 +434,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private CompletableFuture<Void> createFlowNodeInstanceUpdates(
-      final AdditionalData data,
+      final IncidentsState state,
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> fniIds,
@@ -436,7 +442,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     final CompletableFuture<?>[] futures = {
       CompletableFuture.completedFuture(null), CompletableFuture.completedFuture(null)
     };
-    if (!data.flowNodeInstanceIndices().keySet().containsAll(fniIds)) {
+    if (!state.flowNodeInstanceIndices().keySet().containsAll(fniIds)) {
       futures[0] =
           repository
               .getFlowNodeInstances(fniIds)
@@ -444,13 +450,13 @@ public final class IncidentUpdateTask implements BackgroundTask {
               .thenApply(
                   documents -> {
                     for (final var document : documents) {
-                      data.addFlowNodeInstance(document.id(), document.index());
+                      state.addFlowNodeInstance(document.id(), document.index());
                     }
                     return null;
                   });
     }
 
-    if (!data.flowNodeInstanceInListViewIndices().keySet().containsAll(fniIds)) {
+    if (!state.flowNodeInstanceInListViewIndices().keySet().containsAll(fniIds)) {
       futures[1] =
           repository
               .getFlowNodesInListView(fniIds)
@@ -458,7 +464,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
               .thenApply(
                   documents -> {
                     for (final var document : documents) {
-                      data.addFlowNodeInstanceInListView(document.id(), document.index());
+                      state.addFlowNodeInstanceInListView(document.id(), document.index());
                     }
                     return null;
                   });
@@ -467,15 +473,16 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return CompletableFuture.allOf(futures)
         .thenComposeAsync(
             ignored -> {
+              recordFlownodeDuplicationMetrics(state);
               for (final var fniId : fniIds) {
-                final var listViewIndices = data.flowNodeInstanceInListViewIndices().get(fniId);
-                final var flowNodeIndices = data.flowNodeInstanceIndices().get(fniId);
+                final var listViewIndices = state.flowNodeInstanceInListViewIndices().get(fniId);
+                final var flowNodeIndices = state.flowNodeInstanceIndices().get(fniId);
                 if (listViewIndices != null
                     && !listViewIndices.isEmpty()
                     && flowNodeIndices != null
                     && !flowNodeIndices.isEmpty()) {
                   createFlowNodeInstanceUpdate(
-                      data, incident, newState, fniId, flowNodeIndices, updates, listViewIndices);
+                      state, incident, newState, fniId, flowNodeIndices, updates, listViewIndices);
                 } else {
                   if (!ignoreMissingData) {
                     return CompletableFuture.failedFuture(
@@ -501,7 +508,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private void createFlowNodeInstanceUpdate(
-      final AdditionalData data,
+      final IncidentsState state,
       final IncidentDocument incident,
       final IncidentState newState,
       final String fniId,
@@ -511,9 +518,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
     final var hasIncident = IncidentState.ACTIVE == newState;
     final boolean changedState;
     if (hasIncident) {
-      changedState = data.addFniIdsWithIncidentIds(fniId, incident.id());
+      changedState = state.addFniIdsWithIncidentIds(fniId, incident.id());
     } else {
-      changedState = data.removeIncidentIdByFniId(fniId, incident.id());
+      changedState = state.removeIncidentIdByFniId(fniId, incident.id());
     }
 
     final var treePath = new TreePath(incident.incident().getTreePath());
@@ -526,23 +533,23 @@ public final class IncidentUpdateTask implements BackgroundTask {
           index ->
               updates
                   .flowNodeInstanceRequests()
-                  .put(fniId, newFlowNodeInstanceUpdate(fniId, index, hasIncident)));
+                  .add(newFlowNodeInstanceUpdate(fniId, index, hasIncident)));
       listViewIndices.forEach(
           index ->
               updates
                   .listViewRequests()
-                  .put(fniId, newListViewInstanceUpdate(fniId, index, hasIncident, routing)));
+                  .add(newListViewInstanceUpdate(fniId, index, hasIncident, routing)));
     }
   }
 
   private CompletableFuture<Void> createProcessInstanceUpdates(
-      final AdditionalData data,
+      final IncidentsState state,
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> piIds,
       final IncidentBulkUpdate updates) {
     var fetchMissingProcessInstances = CompletableFuture.completedFuture(null);
-    if (!data.processInstanceIndices().keySet().containsAll(piIds)) {
+    if (!state.processInstanceIndices().keySet().containsAll(piIds)) {
       fetchMissingProcessInstances =
           repository
               .getProcessInstances(piIds)
@@ -550,8 +557,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
               .thenApply(
                   processInstances -> {
                     for (final var processInstance : processInstances) {
-                      data.processInstanceIndices()
-                          .put(processInstance.id(), processInstance.index());
+                      state.addProcessInstance(processInstance.id(), processInstance.index());
                     }
                     return null;
                   });
@@ -560,9 +566,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
     return fetchMissingProcessInstances.thenComposeAsync(
         ignored -> {
           for (final var piId : piIds) {
-            final var index = data.processInstanceIndices().get(piId);
-            if (index != null) {
-              createProcessInstanceUpdate(data, incident.id(), newState, piId, updates, index);
+            final var indexes = state.processInstanceIndices().get(piId);
+            if (indexes != null) {
+              createProcessInstanceUpdate(state, incident.id(), newState, piId, updates, indexes);
             } else {
               if (!ignoreMissingData) {
                 return CompletableFuture.failedFuture(
@@ -588,37 +594,43 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private void createProcessInstanceUpdate(
-      final AdditionalData data,
+      final IncidentsState state,
       final String incidentId,
       final IncidentState newState,
       final String piId,
       final IncidentBulkUpdate updates,
-      final String index) {
+      final List<String> indexes) {
     final var hasIncident = IncidentState.ACTIVE == newState;
     final boolean changedState;
     if (hasIncident) {
-      changedState = data.addPiIdsWithIncidentIds(piId, incidentId);
+      changedState = state.addPiIdsWithIncidentIds(piId, incidentId);
     } else {
-      changedState = data.removeIncidentIdByPiId(piId, incidentId);
+      changedState = state.removeIncidentIdByPiId(piId, incidentId);
     }
-
     if (changedState) {
-      updates
-          .listViewRequests()
-          .put(piId, newListViewInstanceUpdate(piId, index, hasIncident, piId));
+      for (final var index : indexes) {
+        updates.listViewRequests().add(newListViewInstanceUpdate(piId, index, hasIncident, piId));
+      }
     }
   }
 
   private CompletableFuture<Integer> notifyIncidents(
       final List<String> updatedIds,
-      final Map<String, DocumentUpdate> incidentUpdates,
-      final Map<String, IncidentDocument> incidents) {
+      final Collection<DocumentUpdate> incidentUpdates,
+      final Collection<IncidentDocument> incidentDocuments) {
+    final var incidentsById =
+        incidentDocuments.stream()
+            .map(IncidentDocument::incident)
+            .collect(Collectors.groupingBy(IncidentEntity::getId));
+    final var incidentUpdatesById =
+        incidentUpdates.stream().collect(Collectors.groupingBy(DocumentUpdate::id));
     final var incidentsToNotify =
         updatedIds.stream()
-            .filter(incidentUpdates::containsKey)
-            .filter(id -> shouldNotifyAboutUpdate(incidentUpdates.get(id)))
-            .map(incidents::get)
-            .map(IncidentDocument::incident)
+            .filter(incidentUpdatesById::containsKey)
+            .filter(id -> shouldNotifyAboutUpdate(incidentUpdatesById.get(id).getFirst()))
+            .distinct()
+            .map(incidentsById::get)
+            .map(List::getFirst)
             .toList();
     if (incidentsToNotify.isEmpty()) {
       return CompletableFuture.completedFuture(updatedIds.size());
@@ -656,10 +668,11 @@ public final class IncidentUpdateTask implements BackgroundTask {
         id, index, Map.of(FlowNodeInstanceTemplate.INCIDENT, hasIncident), null);
   }
 
-  private CompletableFuture<Void> mapActiveIncidentsToAffectedInstances(final AdditionalData data) {
+  private CompletableFuture<Void> mapActiveIncidentsToAffectedInstances(
+      final IncidentsState state) {
     final CompletableFuture<List<String>> treePathTermsFutures =
         FuturesUtil.parTraverse(
-                data.incidentTreePaths().values(),
+                state.incidentTreePaths().values(),
                 treePath -> repository.analyzeTreePath(treePath).toCompletableFuture())
             .thenApply(lists -> lists.stream().flatMap(List::stream).collect(Collectors.toList()));
 
@@ -675,9 +688,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
                 final var piIds = treePath.extractProcessInstanceIds();
                 final var fniIds = treePath.extractFlowNodeInstanceIds();
 
-                piIds.forEach(id -> data.addPiIdsWithIncidentIds(id, activeIncidentTreePath.id()));
+                piIds.forEach(id -> state.addPiIdsWithIncidentIds(id, activeIncidentTreePath.id()));
                 fniIds.forEach(
-                    id -> data.addFniIdsWithIncidentIds(id, activeIncidentTreePath.id()));
+                    id -> state.addFniIdsWithIncidentIds(id, activeIncidentTreePath.id()));
               }
               return null;
             },
@@ -685,7 +698,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private IncidentUpdateRepository.PendingIncidentUpdateBatch getPendingIncidentsBatch(
-      final AdditionalData data) {
+      final IncidentsState state) {
     final IncidentUpdateRepository.PendingIncidentUpdateBatch pendingIncidentsBatch =
         repository
             .getPendingIncidentsBatch(metadata.getLastIncidentUpdatePosition(), batchSize)
@@ -701,14 +714,15 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
     final var incidentIds =
         pendingIncidentsBatch.newIncidentStates().keySet().stream().map(String::valueOf).toList();
-    final Map<String, IncidentDocument> incidents =
+    final Collection<IncidentDocument> incidents =
         repository.getIncidentDocuments(incidentIds).toCompletableFuture().join();
-    data.incidents().putAll(incidents);
+    final var absentIncidents = new HashSet<>(pendingIncidentsBatch.newIncidentStates().keySet());
+    for (final var incident : incidents) {
+      state.addIncidentDocument(incident);
+      absentIncidents.remove(incident.incident().getKey());
+    }
 
-    if (pendingIncidentsBatch.newIncidentStates().size() > incidents.size()) {
-      final var absentIncidents = new HashSet<>(pendingIncidentsBatch.newIncidentStates().keySet());
-      absentIncidents.removeAll(
-          incidents.values().stream().map(i -> i.incident().getKey()).collect(Collectors.toSet()));
+    if (!absentIncidents.isEmpty()) {
       if (!ignoreMissingData) {
         throw new ExporterException(
             """
@@ -725,7 +739,75 @@ public final class IncidentUpdateTask implements BackgroundTask {
           absentIncidents);
     }
 
+    if (incidentIds.size() < incidents.size()) {
+      recordDuplicationMetrics(
+          incidents.stream().map(IncidentDocument::id).toList(),
+          "incident",
+          metrics::recordIncidentUpdatesDuplicateIncidents);
+    }
+
     return pendingIncidentsBatch;
+  }
+
+  private <T> void recordDuplicationMetrics(
+      final List<T> ids, final String type, final Consumer<Integer> recordDuplicatesMetric) {
+    final var frequencies =
+        ids.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+    var totalDuplicates = 0;
+    final var duplicates = new LinkedHashSet<>();
+    for (final var entry : frequencies.entrySet()) {
+      if (entry.getValue() > 1L) {
+        duplicates.add(entry.getKey());
+        totalDuplicates += (entry.getValue().intValue() - 1);
+      }
+    }
+
+    recordDuplication(totalDuplicates, duplicates, type, recordDuplicatesMetric);
+  }
+
+  private void recordFlownodeDuplicationMetrics(final IncidentsState state) {
+    var totalDuplicates = 0;
+    final var duplicates = new LinkedHashSet<>();
+
+    for (final var entry : state.flowNodeInstanceIndices().entrySet()) {
+      final var numIndexes = entry.getValue().size();
+      if (numIndexes > 1) {
+        duplicates.add(entry.getKey());
+        totalDuplicates += (numIndexes - 1);
+      }
+    }
+
+    for (final var entry : state.flowNodeInstanceInListViewIndices().entrySet()) {
+      final var numIndexes = entry.getValue().size();
+      if (numIndexes > 1) {
+        duplicates.add(entry.getKey());
+        totalDuplicates += (numIndexes - 1);
+      }
+    }
+
+    recordDuplication(
+        totalDuplicates,
+        duplicates,
+        "flow node instance",
+        metrics::recordIncidentUpdatesDuplicateFlowNodeInstances);
+  }
+
+  private <T> void recordDuplication(
+      final int totalDuplicates,
+      final Set<T> duplicates,
+      final String type,
+      final Consumer<Integer> recordDuplicatesMetric) {
+    if (totalDuplicates > 0) {
+      logger.warn(
+          """
+        Found {} duplicate {} documents - will update all duplicates. Example IDs: {}.
+        This may indicate a problem with archiving.
+      """,
+          totalDuplicates,
+          type,
+          duplicates.stream().limit(10).collect(Collectors.toList()));
+      recordDuplicatesMetric.accept(totalDuplicates);
+    }
   }
 
   private void uncheckedThreadSleep() {

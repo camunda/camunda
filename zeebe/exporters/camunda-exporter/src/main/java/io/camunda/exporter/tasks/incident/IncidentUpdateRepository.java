@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 
 /**
@@ -42,9 +42,9 @@ public interface IncidentUpdateRepository extends AutoCloseable {
    * documents may not be visible yet.
    *
    * @param incidentIds the IDs to filter on
-   * @return a map of {@link IncidentDocument} indexed by ID
+   * @return a collection of {@link IncidentDocument}
    */
-  CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+  CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
       final List<String> incidentIds);
 
   /**
@@ -149,18 +149,21 @@ public interface IncidentUpdateRepository extends AutoCloseable {
    * execute.
    */
   record IncidentBulkUpdate(
-      Map<String, DocumentUpdate> listViewRequests,
-      Map<String, DocumentUpdate> flowNodeInstanceRequests,
-      Map<String, DocumentUpdate> incidentRequests) {
+      Collection<DocumentUpdate> listViewRequests,
+      Collection<DocumentUpdate> flowNodeInstanceRequests,
+      Collection<DocumentUpdate> incidentRequests) {
     public IncidentBulkUpdate() {
-      this(new ConcurrentHashMap<>(), new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
+      this(
+          new ConcurrentLinkedQueue<>(),
+          new ConcurrentLinkedQueue<>(),
+          new ConcurrentLinkedQueue<>());
     }
 
     public Stream<DocumentUpdate> stream() {
       return Stream.concat(
-          Stream.concat(
-              listViewRequests.values().stream(), flowNodeInstanceRequests.values().stream()),
-          incidentRequests.values().stream());
+              Stream.concat(listViewRequests.stream(), flowNodeInstanceRequests.stream()),
+              incidentRequests.stream())
+          .distinct();
     }
   }
 
@@ -181,9 +184,9 @@ public interface IncidentUpdateRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+    public CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
         final List<String> incidentIds) {
-      return CompletableFuture.completedFuture(Map.of());
+      return CompletableFuture.completedFuture(List.of());
     }
 
     @Override

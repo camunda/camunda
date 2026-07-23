@@ -111,9 +111,10 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+  public CompletionStage<Collection<IncidentDocument>> getIncidentDocuments(
       final List<String> incidentIds) {
     final var request = createIncidentDocumentsRequest(incidentIds);
+
     try {
       return client
           .search(request, IncidentEntity.class)
@@ -381,18 +382,16 @@ public final class OpenSearchIncidentUpdateRepository extends OpensearchReposito
         .allowNoIndices(true)
         .ignoreUnavailable(true)
         .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)))
-        .size(incidentIds.size())
+        // ask for more documents in case there are duplicates
+        .size(5 * incidentIds.size())
         .build();
   }
 
-  private Map<String, IncidentDocument> createIncidentDocuments(
+  private Collection<IncidentDocument> createIncidentDocuments(
       final SearchResponse<IncidentEntity> response) {
-    final Map<String, IncidentDocument> documents = new HashMap<>();
-    for (final var hit : response.hits().hits()) {
-      documents.put(hit.id(), new IncidentDocument(hit.id(), hit.index(), hit.source()));
-    }
-
-    return documents;
+    return response.hits().hits().stream()
+        .map(hit -> new IncidentDocument(hit.id(), hit.index(), hit.source()))
+        .toList();
   }
 
   private SearchRequest createPendingIncidentsBatchRequest(final int size, final Query query) {
