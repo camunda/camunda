@@ -22,7 +22,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 /**
  * Pins the behaviour that the synthetic <em>inner instance</em> of an ad-hoc subprocess surfaces in
@@ -33,18 +32,11 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  * "List users". The name must also survive completion of the inner instance / process instance
  * (guarding the null-clobber regression where a later write could overwrite the resolved name).
  *
- * <p>Disabled on RDBMS: the naming lives only in the camunda-exporter (Elasticsearch/OpenSearch).
- * The RDBMS exporter has no equivalent handler, so the inner instance name stays null there and
- * this test's await would time out. RDBMS parity is out of scope for 8.10.
+ * <p>The naming applies across all supported databases, so this test runs on the full multi-db
+ * matrix (Elasticsearch/OpenSearch and RDBMS alike).
  */
 @MultiDbTest
 @CompatibilityTest
-@DisabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "rdbms.*$",
-    disabledReason =
-        "Inner-instance naming is implemented only in the camunda-exporter (ES/OS); "
-            + "the RDBMS exporter has no equivalent, so the name stays null on RDBMS.")
 public class AdHocSubProcessInnerInstanceNameIT {
 
   private static CamundaClient camundaClient;
