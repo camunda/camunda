@@ -17,6 +17,7 @@ import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
@@ -54,6 +55,7 @@ public final class RocksDbTranslatorState implements TranslatorState {
   private final KeyValueStore<DbBytes, FlowEndpointsValue> flowEndpoints;
   private final KeyValueStore<DbLong, ObjectSightingListValue> objectSightings;
   private final KeyValueStore<DbBytes, ObjectLifecycleValue> objectLifecycle;
+  private final KeyValueStore<DbLong, DbNil> processDefinitions;
 
   // Mutation flyweights — reused across calls on the single translator thread.
   private final DbLong instanceKey = new DbLong();
@@ -74,6 +76,7 @@ public final class RocksDbTranslatorState implements TranslatorState {
   private final ObjectSightingListValue objectSightingListValue = new ObjectSightingListValue();
   private final DbBytes objectLifecycleKey = new DbBytes();
   private final ObjectLifecycleValue objectLifecycleValue = new ObjectLifecycleValue();
+  private final DbLong processDefinitionKey = new DbLong();
 
   public RocksDbTranslatorState(final Path stateDir) {
     provider = RocksDbStateStoreProvider.open(stateDir.toFile(), new SimpleMeterRegistry());
@@ -101,6 +104,12 @@ public final class RocksDbTranslatorState implements TranslatorState {
     objectLifecycle =
         provider.keyValueStore(
             LakeColumnFamilies.OBJECT_LIFECYCLE, new DbBytes(), new ObjectLifecycleValue());
+    // DbNil.INSTANCE is a stateless singleton (no fields to bind per-store), unlike every other
+    // value flyweight above -- see its own javadoc; safe to pass directly rather than "new
+    // DbNil()".
+    processDefinitions =
+        provider.keyValueStore(
+            LakeColumnFamilies.PROCESS_DEFINITIONS, new DbLong(), DbNil.INSTANCE);
   }
 
   @Override
@@ -270,6 +279,18 @@ public final class RocksDbTranslatorState implements TranslatorState {
       objectLifecycle.delete(objectLifecycleKey);
     }
     return toDelete.size();
+  }
+
+  @Override
+  public boolean hasProcessDefinition(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    return processDefinitions.exists(this.processDefinitionKey);
+  }
+
+  @Override
+  public void markProcessDefinition(final long processDefinitionKey) {
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    processDefinitions.put(this.processDefinitionKey, DbNil.INSTANCE);
   }
 
   @Override

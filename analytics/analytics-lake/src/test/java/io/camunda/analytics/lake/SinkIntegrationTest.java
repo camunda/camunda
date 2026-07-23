@@ -64,6 +64,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -922,6 +923,7 @@ class SinkIntegrationTest {
     private final Map<Long, Map<String, FlowEndpoints>> flowEndpoints = new HashMap<>();
     private final Map<Long, ObjectSightingList> objectSightings = new HashMap<>();
     private final Map<String, ObjectLifecycle> objectLifecycle = new HashMap<>();
+    private final Set<Long> processDefinitions = new HashSet<>();
 
     @Override
     public void putInstance(final long instanceKey, final OpenInstance instance) {
@@ -1055,6 +1057,16 @@ class SinkIntegrationTest {
           });
       toRemove.forEach(objectLifecycle::remove);
       return toRemove.size();
+    }
+
+    @Override
+    public boolean hasProcessDefinition(final long processDefinitionKey) {
+      return processDefinitions.contains(processDefinitionKey);
+    }
+
+    @Override
+    public void markProcessDefinition(final long processDefinitionKey) {
+      processDefinitions.add(processDefinitionKey);
     }
 
     @Override

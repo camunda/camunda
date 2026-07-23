@@ -44,8 +44,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import org.apache.iceberg.Metrics;
 import org.junit.jupiter.api.Test;
@@ -881,6 +883,7 @@ class LakeTranslatorObjectLifecycleTest {
     private final Map<String, FlowEndpoints> flowEndpointsByKey = new HashMap<>();
     private final Map<Long, ObjectSightingList> objectSightings = new HashMap<>();
     private final Map<String, ObjectLifecycle> objectLifecycle = new HashMap<>();
+    private final Set<Long> processDefinitions = new HashSet<>();
 
     @Override
     public void putFlowEndpoints(
@@ -1010,6 +1013,16 @@ class LakeTranslatorObjectLifecycleTest {
     @Override
     public void forEachOpenElement(final BiConsumer<Long, OpenElement> consumer) {
       elements.forEach(consumer);
+    }
+
+    @Override
+    public boolean hasProcessDefinition(final long processDefinitionKey) {
+      return processDefinitions.contains(processDefinitionKey);
+    }
+
+    @Override
+    public void markProcessDefinition(final long processDefinitionKey) {
+      processDefinitions.add(processDefinitionKey);
     }
 
     @Override

@@ -29,6 +29,7 @@ import io.camunda.analytics.lake.translate.RawTableSchemas.InstanceLinkColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.ObjectColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.ObjectLifecycleColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.ObjectRelationColumns;
+import io.camunda.analytics.lake.translate.RawTableSchemas.ProcessDefinitionColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.VariantColumns;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -325,6 +326,22 @@ import org.slf4j.LoggerFactory;
  * only by the checkpoint-at-cut work globally, not by anything local to this scheme (see this
  * class's own "Evict after emit" rule in the class javadoc's introduction for the same caveat
  * already accepted everywhere else).
+ *
+ * <h2>Process definitions capture</h2>
+ *
+ * <p>{@link #onProcess} (a {@code ValueType.PROCESS}/{@code CREATED} deployment record) lands one
+ * {@code process_definitions} dictionary row per distinct process definition, holding its BPMN 2.0
+ * XML verbatim (see {@code RawTableSchemas#processDefinitions}'s own javadoc). Zeebe distributes a
+ * deployment to every partition of the process's own topic, so the identical definition is folded
+ * once per source partition — each copy a genuinely distinct Zeebe record (its own {@code
+ * position}) the origin-position dedup gate above cannot and does not collapse. {@link
+ * TranslatorState#hasProcessDefinition}/{@link TranslatorState#markProcessDefinition} (a durable
+ * write-once marker, not a heap cache — see {@link
+ * io.camunda.analytics.lake.state.LakeColumnFamilies#PROCESS_DEFINITIONS}'s own javadoc) is what
+ * actually suppresses every copy after the first. See {@link
+ * #emitProcessDefinitionDictionaryRowIfNew} for the emission itself, including the oversized-
+ * resource skip and the backpressure-absorb judgment call shared with every other dictionary
+ * appender in this class.
  */
 public final class LakeTranslator {
 
@@ -405,6 +422,15 @@ public final class LakeTranslator {
   private static final String OBJECT_QUALIFIER_MESSAGE_START = "MESSAGE_START";
 
   private static final String INSTANCE_LINK_TYPE_CALL_ACTIVITY = "CALL_ACTIVITY";
+
+  /**
+   * Cap on a deployment's BPMN resource size for the {@code process_definitions} dictionary row —
+   * see {@link #emitProcessDefinitionDictionaryRowIfNew}'s own javadoc for what crossing it does. A
+   * PoC-tuned guess: real-world BPMN documents run from a few KB to tens of KB; 1 MiB is generous
+   * headroom over that while still bounding the dictionary ring's per-row cost (see {@code
+   * LakePocApp}'s own ring-sizing javadoc for the byte-budget knob this caps against).
+   */
+  private static final int MAX_BPMN_XML_BYTES = 1024 * 1024;
 
   private static final Logger LOG = LoggerFactory.getLogger(LakeTranslator.class);
 
@@ -536,6 +562,15 @@ public final class LakeTranslator {
   private final PollFedRider objectsBornRider;
 
   /**
+   * The {@code process_definitions} dictionary table's {@link RowAppender}, or {@code null} to
+   * disable that table's row emission entirely — see {@link #objectsAppender}'s own precedent for
+   * what {@code null} means here. Unlike every other object-fabric appender, this one is written
+   * from {@link #onProcess} (a {@code ValueType.PROCESS}/{@code CREATED} deployment record), not
+   * from the {@code PROCESS_INSTANCE}/{@code VARIABLE} paths those siblings ride.
+   */
+  private final RowAppender processDefinitionsAppender;
+
+  /**
    * Heap cache of {@link #onProcess}'s own persisted state, warmed two ways: eagerly, in full, the
    * moment a definition's own {@code PROCESS}/{@code CREATED} record is folded; lazily, one flow at
    * a time, on a cache miss in {@link #resolveFlowEndpoints} (the path a restart takes — the
@@ -659,10 +694,9 @@ public final class LakeTranslator {
   }
 
   /**
-   * The full constructor: every raw-row appender, every optional metric hook, every object-fabric
-   * capture hook, and the two object-lifecycle hooks ({@link #objectLifecycleAppender}, {@link
-   * #objectsBornRider}). Any of the thirteen may be {@code null} (where nullable) to disable that
-   * capture without disturbing the others.
+   * Same as the 14-arg constructor below, with {@link #processDefinitionsAppender} disabled — kept
+   * so every pre-existing 13-arg caller (and, transitively, every shorter overload above) keeps
+   * compiling and behaving unchanged. See the 14-arg constructor below for the full picture.
    */
   public LakeTranslator(
       final TranslatorState state,
@@ -678,6 +712,44 @@ public final class LakeTranslator {
       final CompiledObjectTypes objectTypes,
       final RowAppender objectLifecycleAppender,
       final PollFedRider objectsBornRider) {
+    this(
+        state,
+        instanceAppender,
+        activityAppender,
+        variantsAppender,
+        flowCountsRider,
+        startedCountsRider,
+        profilesRider,
+        objectsAppender,
+        instanceLinksAppender,
+        objectRelationsAppender,
+        objectTypes,
+        objectLifecycleAppender,
+        objectsBornRider,
+        null);
+  }
+
+  /**
+   * The full constructor: every raw-row appender, every optional metric hook, every object-fabric
+   * capture hook, the two object-lifecycle hooks ({@link #objectLifecycleAppender}, {@link
+   * #objectsBornRider}), and {@link #processDefinitionsAppender}. Any of the fourteen may be {@code
+   * null} (where nullable) to disable that capture without disturbing the others.
+   */
+  public LakeTranslator(
+      final TranslatorState state,
+      final RowAppender instanceAppender,
+      final RowAppender activityAppender,
+      final RowAppender variantsAppender,
+      final PollFedRider flowCountsRider,
+      final PollFedRider startedCountsRider,
+      final PollFedRider profilesRider,
+      final RowAppender objectsAppender,
+      final RowAppender instanceLinksAppender,
+      final RowAppender objectRelationsAppender,
+      final CompiledObjectTypes objectTypes,
+      final RowAppender objectLifecycleAppender,
+      final PollFedRider objectsBornRider,
+      final RowAppender processDefinitionsAppender) {
     this.state = state;
     this.instanceAppender = instanceAppender;
     this.activityAppender = activityAppender;
@@ -691,6 +763,7 @@ public final class LakeTranslator {
     this.objectTypes = objectTypes;
     this.objectLifecycleAppender = objectLifecycleAppender;
     this.objectsBornRider = objectsBornRider;
+    this.processDefinitionsAppender = processDefinitionsAppender;
     zeebeWatermarks = newWatermarkArray(INITIAL_WATERMARK_CAPACITY);
   }
 
@@ -745,8 +818,10 @@ public final class LakeTranslator {
     } else if (valueType == ValueType.VARIABLE) {
       onVariable(record);
     } else if (valueType == ValueType.PROCESS) {
-      // Deployment metadata, not instance data -- never touches a RowAppender, so it never reports
-      // backpressure; see #onProcess's own javadoc for what this feeds.
+      // Deployment metadata, not instance data. May touch processDefinitionsAppender, but never
+      // reports backpressure from it -- ring-full is absorbed inside
+      // #emitProcessDefinitionDictionaryRowIfNew, the same judgment call every other dictionary
+      // appender in this class makes; see #onProcess's own javadoc for what this feeds.
       onProcess(record);
     } else if (valueType == ValueType.PROCESS_MESSAGE_SUBSCRIPTION
         && record.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED) {
@@ -1132,6 +1207,65 @@ public final class LakeTranslator {
       state.putFlowEndpoints(processDefinitionKey, flow.getId(), endpoints);
     }
     flowEndpointsCache.put(processDefinitionKey, parsed);
+
+    emitProcessDefinitionDictionaryRowIfNew(value, processDefinitionKey, record.getTimestamp());
+  }
+
+  /**
+   * Emits one {@code process_definitions} dictionary row for {@code value}'s deployment, unless
+   * {@link #processDefinitionsAppender} is unwired or this definition's row was already appended —
+   * by this translator or a prior one, per {@link TranslatorState#hasProcessDefinition}'s own
+   * durable (not merely heap-cached) marker. Zeebe distributes a deployment to every partition of
+   * the process's own topic, so this method runs once per source partition for the SAME definition;
+   * only the first copy folded actually appends a row.
+   *
+   * <p>A resource over {@link #MAX_BPMN_XML_BYTES} is WARNed and skipped, never appended. The
+   * definition is still marked seen despite being skipped: its resource bytes never change between
+   * partition copies (or across a restart, since a definition is never re-deployed under the same
+   * key), so marking it now suppresses every later copy's otherwise-identical, otherwise-repeated
+   * warning — the cheaper choice over re-evaluating (and re-WARNing on) the same oversized resource
+   * once per remaining partition copy.
+   *
+   * <p>Ring backpressure ({@code begin()} returning {@code false}) is absorbed exactly like every
+   * other dictionary appender in this class (see {@link #emitVariantDictionaryRowIfNew}'s own
+   * javadoc for the shared judgment call): the definition is deliberately NOT marked seen on that
+   * path, so the next partition copy (each carries its own distinct Zeebe {@code position}, so the
+   * origin-position dedup gate never blocks any of them as duplicates of each other — see this
+   * method's own class-javadoc cross-reference above) gets another chance to append the row.
+   */
+  private void emitProcessDefinitionDictionaryRowIfNew(
+      final Process value, final long processDefinitionKey, final long timestamp) {
+    if (processDefinitionsAppender == null) {
+      return; // dictionary pipeline not wired -- see #processDefinitionsAppender's own field
+      // javadoc
+    }
+    if (state.hasProcessDefinition(processDefinitionKey)) {
+      return; // already appended by this or a prior partition copy
+    }
+    final byte[] resource = value.getResource();
+    if (resource.length > MAX_BPMN_XML_BYTES) {
+      LOG.warn(
+          "BPMN resource for process definition {} ({}) is {} bytes, over the {}-byte cap;"
+              + " skipping its process_definitions dictionary row",
+          processDefinitionKey,
+          value.getBpmnProcessId(),
+          resource.length,
+          MAX_BPMN_XML_BYTES);
+      state.markProcessDefinition(processDefinitionKey); // see this method's own javadoc
+      return;
+    }
+    if (!processDefinitionsAppender.begin()) {
+      return; // ring full -- absorbed, not marked seen; see this method's own javadoc
+    }
+    processDefinitionsAppender
+        .putLong(ProcessDefinitionColumns.PROCESS_DEFINITION_KEY, processDefinitionKey)
+        .putDict(ProcessDefinitionColumns.PROCESS_ID, value.getBpmnProcessId())
+        .putInt(ProcessDefinitionColumns.VERSION, value.getVersion())
+        .putDict(ProcessDefinitionColumns.TENANT_ID, value.getTenantId())
+        .putBinary(ProcessDefinitionColumns.BPMN_XML, resource, 0, resource.length)
+        .putLong(ProcessDefinitionColumns.DEPLOYED_AT, millisToMicros(timestamp));
+    processDefinitionsAppender.endRow();
+    state.markProcessDefinition(processDefinitionKey);
   }
 
   /**

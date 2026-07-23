@@ -33,6 +33,7 @@ public final class RawTableSchemas {
   public static final String INSTANCE_LINKS_TABLE = "instance_links";
   public static final String OBJECT_RELATIONS_TABLE = "object_relations";
   public static final String OBJECT_LIFECYCLE_TABLE = "object_lifecycle";
+  public static final String PROCESS_DEFINITIONS_TABLE = "process_definitions";
 
   private RawTableSchemas() {}
 
@@ -293,6 +294,47 @@ public final class RawTableSchemas {
             column(icebergSchema, "n_sightings", ColumnType.INT, -1, false)));
   }
 
+  /**
+   * The process-definitions dictionary table: one row per distinct process definition ever
+   * deployed, holding its BPMN 2.0 XML verbatim (see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator}'s {@code ValueType.PROCESS}/{@code CREATED}
+   * handling). Not a partials table, same reasoning as {@link #objects(Schema)}: a row's content is
+   * fully determined by its key (the process definition), so there is nothing for a fingerprint to
+   * guard against.
+   *
+   * <p>{@code bpmn_xml} is {@link ColumnType#BINARY}, not {@link ColumnType#STRING_DICT} — same
+   * choice {@link #instances(Schema)} makes for {@code vars_json}: the value is large (a full BPMN
+   * document, not a short interned token) and unique per row, so dictionary-encoding it would only
+   * grow the segment's dictionary without ever deduplicating anything. The column still carries a
+   * UTF-8 string logically; {@code LakeTranslator} writes it as raw UTF-8 bytes and readers decode
+   * it back the same way {@code vars_json} already is.
+   *
+   * <p>Zeebe distributes a deployment to every partition of the process's own topic, so the same
+   * {@code PROCESS}/{@code CREATED} record for one definition arrives once per source partition,
+   * each copy carrying different origin coordinates the segment-level origin dedup cannot collapse
+   * (they are genuinely different records, not replays of the same one) — see {@code
+   * LakeTranslator}'s own handling for the state-backed marker ({@code
+   * TranslatorState#hasProcessDefinition}/{@code #markProcessDefinition}) that instead makes sure
+   * only the first copy folded ever appends a row. Sort key {@code (process_definition_key)};
+   * family day source is {@code deployed_at} (the deployment record's own timestamp).
+   */
+  public static TableSchema processDefinitions(final Schema icebergSchema) {
+    return new TableSchema(
+        PROCESS_DEFINITIONS_TABLE,
+        List.of(
+            column(
+                icebergSchema,
+                "process_definition_key",
+                ColumnType.LONG,
+                ProcessDefinitionColumns.SORT_PROCESS_DEFINITION_KEY,
+                false),
+            column(icebergSchema, "process_id", ColumnType.STRING_DICT, -1, false),
+            column(icebergSchema, "version", ColumnType.INT, -1, false),
+            column(icebergSchema, "tenant_id", ColumnType.STRING_DICT, -1, false),
+            column(icebergSchema, "bpmn_xml", ColumnType.BINARY, -1, false),
+            timestamptzColumn(icebergSchema, "deployed_at", -1, true)));
+  }
+
   private static TableSchema.Column column(
       final Schema icebergSchema,
       final String name,
@@ -497,5 +539,22 @@ public final class RawTableSchemas {
     private static final int SORT_OBJECT_ID = 1;
 
     private ObjectLifecycleColumns() {}
+  }
+
+  /**
+   * See {@link InstanceColumns}; same idea for the {@code process_definitions} dictionary table —
+   * {@code LakeTranslator} appends deployment rows by these positions.
+   */
+  public static final class ProcessDefinitionColumns {
+    public static final int PROCESS_DEFINITION_KEY = 0;
+    public static final int PROCESS_ID = 1;
+    public static final int VERSION = 2;
+    public static final int TENANT_ID = 3;
+    public static final int BPMN_XML = 4;
+    public static final int DEPLOYED_AT = 5;
+
+    private static final int SORT_PROCESS_DEFINITION_KEY = 0;
+
+    private ProcessDefinitionColumns() {}
   }
 }

@@ -154,6 +154,23 @@ public final class LakePocApp {
    */
   private static final int DICTIONARY_BINARY_AVG_BYTES_PER_ROW = 2048;
 
+  /**
+   * Bytes budgeted per row for the {@code process_definitions} table's {@code bpmn_xml} column —
+   * shares {@link #DICTIONARY_SEGMENT_ROWS}/{@link #DICTIONARY_RING_SEGMENTS}' ring geometry (a
+   * dictionary-kind table like every other one {@link #DICTIONARY_BINARY_AVG_BYTES_PER_ROW}
+   * budgets), but needs its own, much larger byte budget: a full BPMN 2.0 document, not a short
+   * joined id list. {@code newPipeline}'s {@code binaryAvgBytesPerRowValue} parameter is applied
+   * per-pipeline (see its own javadoc), so this table's ring can be sized independently without
+   * inflating every other dictionary pipeline's arena. Real-world BPMN documents run from a few KB
+   * to tens of KB (see {@code LakeTranslator#MAX_BPMN_XML_BYTES}'s own javadoc for the hard 1 MiB
+   * cap on any single row); this budget is generous headroom over that typical range, not the cap
+   * itself — the arena is a per-segment total shared across up to {@link #DICTIONARY_SEGMENT_ROWS}
+   * rows (see {@code HeapBinaryColumn}'s own javadoc), so a burst of unusually many, unusually
+   * large distinct definitions folded before a single flush could still exhaust it and throw; raise
+   * this further if that happens in practice.
+   */
+  private static final int PROCESS_DEFINITIONS_BINARY_AVG_BYTES_PER_ROW = 65536;
+
   private static final long PARK_NANOS_ON_BACKPRESSURE = 1_000_000L; // 1ms
 
   private LakePocApp() {}
@@ -384,6 +401,7 @@ public final class LakePocApp {
     final Table instanceLinksTable = writer.instanceLinksTable();
     final Table objectRelationsTable = writer.objectRelationsTable();
     final Table objectLifecycleTable = writer.objectLifecycleTable();
+    final Table processDefinitionsTable = writer.processDefinitionsTable();
     final TableSchema instancesSchema = RawTableSchemas.instances(instancesTable.schema());
     final TableSchema activitiesSchema = RawTableSchemas.activities(activitiesTable.schema());
     final TableSchema variantsSchema = RawTableSchemas.variants(variantsTable.schema());
@@ -394,6 +412,8 @@ public final class LakePocApp {
         RawTableSchemas.objectRelations(objectRelationsTable.schema());
     final TableSchema objectLifecycleSchema =
         RawTableSchemas.objectLifecycle(objectLifecycleTable.schema());
+    final TableSchema processDefinitionsSchema =
+        RawTableSchemas.processDefinitions(processDefinitionsTable.schema());
 
     // OCPM object-type declarations for this demo -- configuration-as-code, mirroring the
     // EntityMetrics declarations below. See ObjectTypes' own javadoc and the "customer"/"dispute"
@@ -530,6 +550,11 @@ public final class LakePocApp {
     final IcebergParquetEncoderFactory objectLifecycleEncoderFactory =
         new IcebergParquetEncoderFactory(
             objectLifecycleTable.schema(), fileSink, DICTIONARY_SEGMENT_ROWS, Set.of());
+    // Dictionary-kind like every table above, but its own byte budget -- see
+    // PROCESS_DEFINITIONS_BINARY_AVG_BYTES_PER_ROW's own javadoc for why bpmn_xml needs one.
+    final IcebergParquetEncoderFactory processDefinitionsEncoderFactory =
+        new IcebergParquetEncoderFactory(
+            processDefinitionsTable.schema(), fileSink, DICTIONARY_SEGMENT_ROWS, Set.of());
 
     // Every pipeline commits through the one coordinator: raw-only descriptors are a batch of one,
     // rider-carrying descriptors fan out atomically -- a single commit path either way.
@@ -542,6 +567,7 @@ public final class LakePocApp {
     tablesByName.put("instance_links", instanceLinksTable);
     tablesByName.put("object_relations", objectRelationsTable);
     tablesByName.put("object_lifecycle", objectLifecycleTable);
+    tablesByName.put("process_definitions", processDefinitionsTable);
     // The rider's one factory dispatches by generated-schema table name -- each partials table has
     // its own iceberg schema and thus its own underlying encoder factory.
     final Map<String, BatchEncoder.Factory> partialsFactories = new HashMap<>();
@@ -568,6 +594,7 @@ public final class LakePocApp {
         instanceLinksSchema,
         objectRelationsSchema,
         objectLifecycleSchema,
+        processDefinitionsSchema,
         instancesEncoderFactory,
         activitiesEncoderFactory,
         variantsEncoderFactory,
@@ -575,6 +602,8 @@ public final class LakePocApp {
         instanceLinksEncoderFactory,
         objectRelationsEncoderFactory,
         objectLifecycleEncoderFactory,
+        processDefinitionsEncoderFactory,
+        commitSink,
         commitSink,
         commitSink,
         commitSink,
@@ -1105,6 +1134,23 @@ public final class LakePocApp {
             DICTIONARY_SEGMENT_ROWS,
             DICTIONARY_RING_SEGMENTS,
             DICTIONARY_BINARY_AVG_BYTES_PER_ROW);
+    // Dictionary-kind ring like objectsPipeline/instanceLinksPipeline/objectRelationsPipeline
+    // above, no riders -- but its own byte budget (see
+    // PROCESS_DEFINITIONS_BINARY_AVG_BYTES_PER_ROW's own javadoc), since bpmn_xml rows run far
+    // larger than any other dictionary table's columns.
+    final SinkPipeline processDefinitionsPipeline =
+        newPipeline(
+            wiring.processDefinitionsSchema(),
+            partition,
+            gate,
+            wiring.processDefinitionsEncoderFactory(),
+            wiring.processDefinitionsSink(),
+            List.of(),
+            wiring.flushIntervalMs(),
+            wiring.meterRegistry(),
+            DICTIONARY_SEGMENT_ROWS,
+            DICTIONARY_RING_SEGMENTS,
+            PROCESS_DEFINITIONS_BINARY_AVG_BYTES_PER_ROW);
     final RowAppender instanceAppender = new SegmentRowAppender(instancesPipeline.ring());
     final RowAppender activityAppender = new SegmentRowAppender(activitiesPipeline.ring());
     final RowAppender variantsAppender = new SegmentRowAppender(variantsPipeline.ring());
@@ -1114,6 +1160,8 @@ public final class LakePocApp {
         new SegmentRowAppender(objectRelationsPipeline.ring());
     final RowAppender objectLifecycleAppender =
         new SegmentRowAppender(objectLifecyclePipeline.ring());
+    final RowAppender processDefinitionsAppender =
+        new SegmentRowAppender(processDefinitionsPipeline.ring());
     final LakeTranslator translator =
         new LakeTranslator(
             state,
@@ -1128,7 +1176,8 @@ public final class LakePocApp {
             objectRelationsAppender,
             wiring.objectTypes(),
             objectLifecycleAppender,
-            objectsBornRider);
+            objectsBornRider,
+            processDefinitionsAppender);
     return new PartitionPipelines(
         instancesPipeline,
         activitiesPipeline,
@@ -1137,6 +1186,7 @@ public final class LakePocApp {
         instanceLinksPipeline,
         objectRelationsPipeline,
         objectLifecyclePipeline,
+        processDefinitionsPipeline,
         translator);
   }
 
@@ -1218,6 +1268,7 @@ public final class LakePocApp {
       TableSchema instanceLinksSchema,
       TableSchema objectRelationsSchema,
       TableSchema objectLifecycleSchema,
+      TableSchema processDefinitionsSchema,
       IcebergParquetEncoderFactory instancesEncoderFactory,
       IcebergParquetEncoderFactory activitiesEncoderFactory,
       IcebergParquetEncoderFactory variantsEncoderFactory,
@@ -1225,6 +1276,7 @@ public final class LakePocApp {
       IcebergParquetEncoderFactory instanceLinksEncoderFactory,
       IcebergParquetEncoderFactory objectRelationsEncoderFactory,
       IcebergParquetEncoderFactory objectLifecycleEncoderFactory,
+      IcebergParquetEncoderFactory processDefinitionsEncoderFactory,
       DescriptorSink instancesSink,
       DescriptorSink activitiesSink,
       DescriptorSink variantsSink,
@@ -1232,6 +1284,7 @@ public final class LakePocApp {
       DescriptorSink instanceLinksSink,
       DescriptorSink objectRelationsSink,
       DescriptorSink objectLifecycleSink,
+      DescriptorSink processDefinitionsSink,
       CompiledEntityMetrics instanceMetrics,
       CompiledEntityMetrics activityMetrics,
       CompiledEntityMetrics instanceVariantMetrics,
@@ -1260,6 +1313,7 @@ public final class LakePocApp {
     private final SinkPipeline instanceLinksPipeline;
     private final SinkPipeline objectRelationsPipeline;
     private final SinkPipeline objectLifecyclePipeline;
+    private final SinkPipeline processDefinitionsPipeline;
     private final LakeTranslator translator;
 
     private PartitionPipelines(
@@ -1270,6 +1324,7 @@ public final class LakePocApp {
         final SinkPipeline instanceLinksPipeline,
         final SinkPipeline objectRelationsPipeline,
         final SinkPipeline objectLifecyclePipeline,
+        final SinkPipeline processDefinitionsPipeline,
         final LakeTranslator translator) {
       this.instancesPipeline = instancesPipeline;
       this.activitiesPipeline = activitiesPipeline;
@@ -1278,6 +1333,7 @@ public final class LakePocApp {
       this.instanceLinksPipeline = instanceLinksPipeline;
       this.objectRelationsPipeline = objectRelationsPipeline;
       this.objectLifecyclePipeline = objectLifecyclePipeline;
+      this.processDefinitionsPipeline = processDefinitionsPipeline;
       this.translator = translator;
     }
 
@@ -1289,6 +1345,7 @@ public final class LakePocApp {
       instanceLinksPipeline.start();
       objectRelationsPipeline.start();
       objectLifecyclePipeline.start();
+      processDefinitionsPipeline.start();
     }
 
     boolean translate(final ZeebeRecord record) {
@@ -1307,6 +1364,7 @@ public final class LakePocApp {
       instanceLinksPipeline.onPollTick(lastOffset, frontierMs, watermarks);
       objectRelationsPipeline.onPollTick(lastOffset, frontierMs, watermarks);
       objectLifecyclePipeline.onPollTick(lastOffset, frontierMs, watermarks);
+      processDefinitionsPipeline.onPollTick(lastOffset, frontierMs, watermarks);
     }
 
     /** See {@code LakePocApp#seedWatermarks}. */
@@ -1321,7 +1379,8 @@ public final class LakePocApp {
           || objectsPipeline.isFailed()
           || instanceLinksPipeline.isFailed()
           || objectRelationsPipeline.isFailed()
-          || objectLifecyclePipeline.isFailed();
+          || objectLifecyclePipeline.isFailed()
+          || processDefinitionsPipeline.isFailed();
     }
 
     void close() {
@@ -1332,6 +1391,7 @@ public final class LakePocApp {
       instanceLinksPipeline.close();
       objectRelationsPipeline.close();
       objectLifecyclePipeline.close();
+      processDefinitionsPipeline.close();
     }
   }
 

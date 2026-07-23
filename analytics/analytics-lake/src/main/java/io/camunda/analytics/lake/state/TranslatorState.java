@@ -248,6 +248,22 @@ public interface TranslatorState extends AutoCloseable {
   int sweepObjectLifecycleTombstones(long cutoffMs);
 
   /**
+   * Whether {@code processDefinitionKey}'s {@code process_definitions} dictionary row has already
+   * been appended by this (or a prior) translator run — see {@link
+   * LakeColumnFamilies#PROCESS_DEFINITIONS}'s own javadoc for why this marker exists (Zeebe
+   * delivers the same deployment once per source partition) and {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator#onProcess} for how it is used.
+   */
+  boolean hasProcessDefinition(long processDefinitionKey);
+
+  /**
+   * Records that {@code processDefinitionKey}'s dictionary row has been appended — idempotent, like
+   * every other put on this store. Never undone by a delete: see {@link
+   * LakeColumnFamilies#PROCESS_DEFINITIONS}'s own javadoc for why.
+   */
+  void markProcessDefinition(long processDefinitionKey);
+
+  /**
    * Full scan of the open instance set, keyed by process instance key. The caller is the single
    * writer thread, so iteration is consistent with the last applied record.
    */
