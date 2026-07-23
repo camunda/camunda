@@ -41,6 +41,8 @@ import io.camunda.analytics.lake.ui.LakeUiServer;
 import io.camunda.analytics.lake.write.IcebergLakeWriter;
 import io.camunda.analytics.lake.write.LakeCompactor;
 import io.camunda.analytics.lake.write.LocalFileIO;
+import io.camunda.analytics.lake.write.OpenInstancesGaugeSampler;
+import io.camunda.analytics.lake.write.OpenInstancesGaugeWriter;
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.client.RebalanceListener;
@@ -199,7 +201,8 @@ public final class LakePocApp {
   public static Handle start(final LakeConfig config) {
     LOG.info(
         "Starting lake PoC translator: gateway={} topic={} group={} warehouse={} state={} "
-            + "flushIntervalMs={} stateDumpIntervalMs={} compactIntervalMs={} uiPort={}",
+            + "flushIntervalMs={} stateDumpIntervalMs={} compactIntervalMs={} uiPort={} "
+            + "gaugeFlushIntervalMs={}",
         config.contactPoint(),
         config.topic(),
         config.consumerGroup(),
@@ -208,7 +211,8 @@ public final class LakePocApp {
         config.flushIntervalMs(),
         config.stateDumpIntervalMs(),
         config.compactIntervalMs(),
-        config.uiPort());
+        config.uiPort(),
+        config.gaugeFlushIntervalMs());
 
     final EventBridgeClient client = EventBridgeClient.create(config.contactPoint());
     final IcebergLakeWriter icebergWriter = new IcebergLakeWriter(config);
@@ -216,6 +220,17 @@ public final class LakePocApp {
     final StateSnapshotDumper stateSnapshotDumper =
         new StateSnapshotDumper(state, config.stateDir().resolve("_snapshot"));
     final LakeCompactor compactor = new LakeCompactor(icebergWriter);
+    // Not registered with LakeCompactor's per-table pass -- see this app's own start()/Handle
+    // javadoc note near its construction below for why open_instances_gauge is deliberately left
+    // out of compaction for now.
+    final OpenInstancesGaugeWriter gaugeWriter = new OpenInstancesGaugeWriter(icebergWriter);
+    final long appStartMs = System.currentTimeMillis();
+    final OpenInstancesGaugeSampler gaugeSampler =
+        new OpenInstancesGaugeSampler(gaugeWriter, config.gaugeFlushIntervalMs(), appStartMs);
+    // Emit a sample immediately at startup -- a standalone scan (see
+    // StateSnapshotDumper#countOpenInstancesByProcess's own javadoc), so a fresh stack has a first
+    // gauge data point instead of waiting for the first periodic stateDumpIntervalMs tick.
+    gaugeSampler.tick(appStartMs, stateSnapshotDumper.countOpenInstancesByProcess());
 
     final SinkWiring wiring = buildSinkWiring(config, icebergWriter);
 
@@ -307,11 +322,20 @@ public final class LakePocApp {
                     state,
                     config.stateDumpIntervalMs(),
                     config.compactIntervalMs(),
-                    config.objectTombstoneRetentionMs()),
+                    config.objectTombstoneRetentionMs(),
+                    gaugeSampler),
             "lake-poll-loop");
     pollThread.start();
     return new Handle(
-        client, icebergWriter, state, uiServer, consumer, partitionPipelines, running, pollThread);
+        client,
+        icebergWriter,
+        state,
+        uiServer,
+        consumer,
+        partitionPipelines,
+        running,
+        pollThread,
+        gaugeSampler);
   }
 
   /**
@@ -330,6 +354,7 @@ public final class LakePocApp {
     private final Map<Integer, PartitionPipelines> partitionPipelines;
     private final AtomicBoolean running;
     private final Thread pollThread;
+    private final OpenInstancesGaugeSampler gaugeSampler;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     private Handle(
@@ -340,7 +365,8 @@ public final class LakePocApp {
         final ZeebeRecordConsumer consumer,
         final Map<Integer, PartitionPipelines> partitionPipelines,
         final AtomicBoolean running,
-        final Thread pollThread) {
+        final Thread pollThread,
+        final OpenInstancesGaugeSampler gaugeSampler) {
       this.client = client;
       this.icebergWriter = icebergWriter;
       this.state = state;
@@ -349,6 +375,7 @@ public final class LakePocApp {
       this.partitionPipelines = partitionPipelines;
       this.running = running;
       this.pollThread = pollThread;
+      this.gaugeSampler = gaugeSampler;
     }
 
     /** Blocks until the poll loop exits (normally only on {@link #close()}). */
@@ -384,6 +411,12 @@ public final class LakePocApp {
       if (uiServer != null) {
         uiServer.close();
       }
+      // Flushes any buffered-but-not-yet-committed gauge samples -- must happen before the writer
+      // (and its shared DuckDB connection/catalog) closes, since OpenInstancesGaugeWriter reuses
+      // that same connection and Table handle (see IcebergLakeWriter#openInstancesGaugeTable's own
+      // javadoc). Safe to run after the poll thread has already stopped calling tick(): the poll
+      // loop is the sampler's only other caller (see runLoop), and it has already exited by now.
+      gaugeSampler.close();
       state.close();
       icebergWriter.close();
       consumer.close();
@@ -813,7 +846,8 @@ public final class LakePocApp {
       final TranslatorState state,
       final long stateDumpIntervalMs,
       final long compactIntervalMs,
-      final long objectTombstoneRetentionMs) {
+      final long objectTombstoneRetentionMs,
+      final OpenInstancesGaugeSampler gaugeSampler) {
     // Single-threaded: only this loop mutates these, so plain HashMaps (not the ConcurrentHashMaps
     // used for cachedCommittedOffset/partitionPipelines, which the rebalance-listener thread also
     // touches) suffice.
@@ -866,12 +900,19 @@ public final class LakePocApp {
 
       // stateDumpIntervalMs == 0 disables the dump entirely. Runs on this same poll-loop thread --
       // no background thread -- so the dump's forEach scan never races a concurrent state mutation.
+      // This is also the open_instances_gauge sampling cadence (see OpenInstancesGaugeSampler's own
+      // javadoc): a stateDumpIntervalMs of 0 disables gauge sampling too, since the sample
+      // piggybacks
+      // on this same scan rather than paying for a second one.
       if (stateDumpIntervalMs > 0
           && System.currentTimeMillis() - lastStateDumpAtMs >= stateDumpIntervalMs) {
+        final long tickNowMs = System.currentTimeMillis();
         // Capture offsets BEFORE the dumper iterates the open state -- see StateSnapshotDumper's
         // class javadoc for why that order is the whole consistency contract.
-        stateSnapshotDumper.dump(Map.copyOf(lastAppliedOffset));
-        lastStateDumpAtMs = System.currentTimeMillis();
+        final Map<String, Long> openCountsByProcessId =
+            stateSnapshotDumper.dump(Map.copyOf(lastAppliedOffset));
+        gaugeSampler.tick(tickNowMs, openCountsByProcessId);
+        lastStateDumpAtMs = tickNowMs;
       }
       // compactIntervalMs == 0 disables compaction entirely. Runs on this same poll-loop thread,
       // between poll ticks, never concurrently with a commit from within this process -- see
@@ -1249,7 +1290,8 @@ public final class LakePocApp {
         Integer.getInteger("lake.uiPort", 8091),
         bpmnDirProperty == null ? null : Path.of(bpmnDirProperty),
         Long.getLong(
-            "lake.objectTombstoneRetentionMs", LakeConfig.DEFAULT_OBJECT_TOMBSTONE_RETENTION_MS));
+            "lake.objectTombstoneRetentionMs", LakeConfig.DEFAULT_OBJECT_TOMBSTONE_RETENTION_MS),
+        Long.getLong("lake.gaugeFlushIntervalMs", LakeConfig.DEFAULT_GAUGE_FLUSH_INTERVAL_MS));
   }
 
   /**

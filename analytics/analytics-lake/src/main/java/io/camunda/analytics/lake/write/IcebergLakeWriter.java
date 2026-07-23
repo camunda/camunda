@@ -384,6 +384,36 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(5, "bpmn_xml", Types.BinaryType.get()),
               Types.NestedField.required(6, "deployed_at", Types.TimestampType.withZone())));
 
+  /**
+   * The {@code open_instances_gauge} table's schema — one row per (sample tick, process with more
+   * than zero open instances); see {@code io.camunda.analytics.lake.write.OpenInstancesGaugeWriter}
+   * and {@code OpenInstancesGaugeSampler}'s own javadoc for the full mechanics. Created via the
+   * same plain {@link #tableOrCreate} path as {@link #OBJECT_SCHEMA} — no declaration fingerprint,
+   * for the same reason: nothing here is a windowed fold of a declaration that could drift.
+   *
+   * <p><b>This is the lake's first wall-clock, not source-log-derived, table.</b> Every other table
+   * this class creates is populated by folding Zeebe records read from the Event Bridge source log,
+   * so every row traces back to a source offset the {@link #OFFSET_PROPERTY_PREFIX}/{@link
+   * #FRONTIER_PROPERTY_PREFIX}/{@link #ZBPOS_PROPERTY_PREFIX} carry-forward machinery protects.
+   * {@code open_instances_gauge} rows are periodic wall-clock <em>observations</em> of {@link
+   * TranslatorState}'s current open-instance count instead: they carry no source offsets, are never
+   * stamped with any of those three properties, are <b>not</b> covered by origin-position dedup,
+   * and are <b>not</b> reproduced by a replay/rebuild from the source log — a fresh warehouse
+   * simply starts its gauge history at its own first sample. That gap is accepted and intentional
+   * (see {@code OpenInstancesGaugeSampler}'s own javadoc); this table's rows are informational
+   * work-in-progress-over-time data, not a durability-bearing fact stream.
+   *
+   * <p>The total open-instance count across every process at a given tick is derivable by summing
+   * {@code open_instances} over rows sharing the same {@code sampled_at} — this table deliberately
+   * carries no separate "all processes" total row.
+   */
+  private static final Schema OPEN_INSTANCES_GAUGE_SCHEMA =
+      new Schema(
+          List.of(
+              Types.NestedField.required(1, "sampled_at", Types.TimestampType.withZone()),
+              Types.NestedField.required(2, "process_id", Types.StringType.get()),
+              Types.NestedField.required(3, "open_instances", Types.LongType.get())));
+
   private static final Logger LOG = LoggerFactory.getLogger(IcebergLakeWriter.class);
 
   private final JdbcCatalog catalog;
@@ -396,6 +426,7 @@ public final class IcebergLakeWriter implements LakeWriter {
   private final Table objectRelationsTable;
   private final Table objectLifecycleTable;
   private final Table processDefinitionsTable;
+  private final Table openInstancesGaugeTable;
   private final Connection duckdb;
 
   // One commit mutex per raw table (never a single shared lock across both) -- see #commitLock's
@@ -474,6 +505,11 @@ public final class IcebergLakeWriter implements LakeWriter {
             TableIdentifier.of(namespace, "process_definitions"),
             PROCESS_DEFINITION_SCHEMA,
             PartitionSpec.builderFor(PROCESS_DEFINITION_SCHEMA).day("deployed_at").build());
+    openInstancesGaugeTable =
+        tableOrCreate(
+            TableIdentifier.of(namespace, "open_instances_gauge"),
+            OPEN_INSTANCES_GAUGE_SCHEMA,
+            PartitionSpec.builderFor(OPEN_INSTANCES_GAUGE_SCHEMA).day("sampled_at").build());
 
     try {
       // One embedded, in-process DuckDB instance for the life of this writer. It never persists
@@ -977,6 +1013,19 @@ public final class IcebergLakeWriter implements LakeWriter {
    */
   public Table processDefinitionsTable() {
     return processDefinitionsTable;
+  }
+
+  /**
+   * The {@code open_instances_gauge} table — see {@link #OPEN_INSTANCES_GAUGE_SCHEMA}'s own
+   * javadoc. Unlike every other table accessor here, this one is never registered with {@link
+   * #commitLock(Table)}: it is written exclusively by {@code
+   * io.camunda.analytics.lake.write.OpenInstancesGaugeWriter}, which is only ever driven from the
+   * single poll-loop thread (piggybacking on the same cadence as {@code
+   * io.camunda.analytics.lake.state.StateSnapshotDumper}'s own periodic tick), so no concurrent
+   * committer against this table can exist and no lock is needed.
+   */
+  public Table openInstancesGaugeTable() {
+    return openInstancesGaugeTable;
   }
 
   /**
