@@ -95,9 +95,18 @@ public final class DbSuspensionState implements MutableSuspensionState {
           final var stored =
               bufferedCommandColumnFamily.get(
                   bufferedCommandKey, DbProcessInstanceBufferedCommand::new);
-          if (stored != null) {
-            visitor.visit(bufferedKey, stored.getRecord());
+          if (stored == null) {
+            // the secondary index and the primary CF are written and deleted together in a single
+            // transaction (see #bufferCommand / #removeBufferedCommand), so a secondary-index entry
+            // with no matching primary record is a broken invariant. Fail loud rather than silently
+            // dropping a buffered command, which would lose forward progress on resume.
+            throw new IllegalStateException(
+                String.format(
+                    "Expected to find buffered command with key '%d' for process instance '%d', "
+                        + "but none was stored; the buffered-command index is inconsistent",
+                    bufferedKey, key));
           }
+          visitor.visit(bufferedKey, stored.getRecord());
         });
   }
 

@@ -24,6 +24,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 @ExtendWith(ProcessingStateExtension.class)
 public final class SuspensionStateTest {
@@ -48,16 +50,18 @@ public final class SuspensionStateTest {
     assertThat(state).isNull();
   }
 
-  @Test
-  public void shouldSetAndGetSuspensionState() {
+  @ParameterizedTest
+  @EnumSource(State.class)
+  public void shouldSetAndGetSuspensionState(final State state) {
     // given
     final long processInstanceKey = 1L;
 
     // when
-    suspensionState.setSuspensionState(processInstanceKey, State.SUSPENDED);
+    suspensionState.setSuspensionState(processInstanceKey, state);
 
     // then
-    assertThat(suspensionState.getSuspensionState(processInstanceKey)).isEqualTo(State.SUSPENDED);
+    assertThat(suspensionState.getSuspensionState(processInstanceKey)).isEqualTo(state);
+    assertThat(suspensionState.isSuspended(processInstanceKey)).isTrue();
   }
 
   @Test
@@ -71,19 +75,6 @@ public final class SuspensionStateTest {
 
     // then
     assertThat(suspensionState.getSuspensionState(processInstanceKey)).isEqualTo(State.RESUMING);
-  }
-
-  @Test
-  public void shouldSetAndGetResumingSuspensionState() {
-    // given
-    final long processInstanceKey = 1L;
-
-    // when
-    suspensionState.setSuspensionState(processInstanceKey, State.RESUMING);
-
-    // then
-    assertThat(suspensionState.getSuspensionState(processInstanceKey)).isEqualTo(State.RESUMING);
-    assertThat(suspensionState.isSuspended(processInstanceKey)).isTrue();
   }
 
   @Test
