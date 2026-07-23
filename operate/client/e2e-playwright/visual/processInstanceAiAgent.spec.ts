@@ -163,12 +163,15 @@ test.describe('AI agent details', () => {
       selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
 
+    const messageExpandButton =
+      processInstancePage.aiAgentDetails.conversationHistorySection
+        .getByLabel('Assistant message')
+        .nth(1)
+        .getByRole('button', {name: 'Expand'});
+
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
-    await processInstancePage.aiAgentDetails.conversationHistorySection
-      .getByLabel('Assistant message')
-      .nth(1)
-      .getByRole('button', {name: 'Expand'})
-      .click();
+    await messageExpandButton.focus();
+    await messageExpandButton.click();
 
     const modal = page.getByRole('dialog', {name: 'Assistant message'});
     await expect(modal).toBeVisible();
@@ -192,11 +195,14 @@ test.describe('AI agent details', () => {
       selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
 
+    const resultExpandButton =
+      processInstancePage.aiAgentDetails.conversationHistorySection
+        .getByLabel('Result for "get_order_status" tool call')
+        .getByRole('button', {name: 'Expand'});
+
     await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
-    await processInstancePage.aiAgentDetails.conversationHistorySection
-      .getByLabel('Result for "get_order_status" tool call')
-      .getByRole('button', {name: 'Expand'})
-      .click();
+    await resultExpandButton.focus();
+    await resultExpandButton.click();
 
     const modal = page.getByRole('dialog', {
       name: 'Tool call: get_order_status',
@@ -227,12 +233,14 @@ test.describe('AI agent details', () => {
       selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
     });
 
-    await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
+    const viewDocumentsButton =
+      processInstancePage.aiAgentDetails.conversationHistorySection
+        .getByLabel('User message')
+        .getByRole('button', {name: 'View documents'});
 
-    await processInstancePage.aiAgentDetails.conversationHistorySection
-      .getByLabel('User message')
-      .getByRole('button', {name: 'View documents'})
-      .click();
+    await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
+    await viewDocumentsButton.focus();
+    await viewDocumentsButton.click();
 
     const modal = page.getByRole('dialog', {
       name: '4 documents in conversation message',
