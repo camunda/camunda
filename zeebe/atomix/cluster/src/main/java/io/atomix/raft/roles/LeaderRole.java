@@ -82,15 +82,13 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private ApplicationEntry lastZbEntry = null;
   private CompletableFuture<ReconfigureResponse> ongoingReconfigurationRequestFuture;
 
-  // --- Coordinated leadership transfer: paused mode ---
-  // The leader keeps its term and keeps replicating; the write freeze and processing pause are
-  // applied by the broker. This role only owns the watchdog that guarantees the partition is never
-  // left paused: if not resumed in time it steps down, which forces a role transition.
-  // rebalanceMetrics itself is partition-lifetime (owned by RaftContext, see there for why); this
-  // role only ever reads it via raft.getRebalanceMetrics().
-  private Scheduled transferPauseWatchdog;
-  private boolean transferPaused;
+  // Paused mode for coordinated leadership transfers: leader keeps term and continues replicating
+  // but writes/processing are frozen. Pauses should be bounded by the caller and terminated by
+  // resumeFromTransfer(), but we also set a watchdog to step down to follower if resume isn't
+  // called within a deadline.
+  private boolean pausedForTransfer;
   private long transferPauseStartMs;
+  private Scheduled transferPauseWatchdog;
 
   public LeaderRole(final RaftContext context) {
     super(context);
@@ -422,12 +420,12 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
    */
   public long pauseForTransfer(final Duration resumeTimeout, final long pausedSinceMs) {
     raft.checkThread();
-    if (transferPaused) {
+    if (pausedForTransfer) {
       // Idempotent: the watchdog is already armed. Report the current head so a repeat caller still
       // gets a usable target.
       return raft.getLog().getLastIndex();
     }
-    transferPaused = true;
+    pausedForTransfer = true;
     transferPauseStartMs = pausedSinceMs;
     // The broker has frozen write admission and paused (and drained) the stream processor before
     // this Raft-thread task runs, so by FIFO ordering every write admitted before the freeze has
@@ -445,19 +443,19 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   /** Leaves paused mode after a coordinated leadership transfer. Must run on the Raft thread. */
   public void resumeFromTransfer() {
     raft.checkThread();
-    if (transferPaused) {
+    if (pausedForTransfer) {
       log.info("Resuming partition after leadership transfer");
     }
     clearTransferPause();
   }
 
-  public boolean isTransferPaused() {
-    return transferPaused;
+  public boolean isPausedForTransfer() {
+    return pausedForTransfer;
   }
 
   private void onTransferPauseDeadline() {
     raft.checkThread();
-    if (!transferPaused || !isRunning()) {
+    if (!pausedForTransfer || !isRunning()) {
       return;
     }
     log.warn(
@@ -472,8 +470,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       transferPauseWatchdog.cancel();
       transferPauseWatchdog = null;
     }
-    if (transferPaused) {
-      transferPaused = false;
+    if (pausedForTransfer) {
+      pausedForTransfer = false;
       raft.getRebalanceMetrics().setPartitionPaused(false);
       raft.getRebalanceMetrics()
           .observePauseDuration(

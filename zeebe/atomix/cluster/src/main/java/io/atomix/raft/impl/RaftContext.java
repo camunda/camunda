@@ -134,12 +134,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       new CopyOnWriteArraySet<>();
   private final Set<FailureListener> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
-  // Transfer/pause metrics are a partition-level concept, not a leader-term-level one: a
-  // successful coordinated leadership transfer steps this node down before its completion
-  // continuation records the transfer-duration metric, so a role-scoped instance would either
-  // record against meters already removed by the role stopping, or re-register orphaned ones.
-  // Owning it here, for the RaftContext's whole lifetime, keeps operational history across terms
-  // and sidesteps that race entirely; only the paused gauge is reset by the outgoing LeaderRole.
   private final RebalanceMetrics rebalanceMetrics;
   private final RaftReplicationMetrics replicationMetrics;
   private final MetaStore meta;

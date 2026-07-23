@@ -17,8 +17,7 @@ import io.micrometer.core.instrument.Meter.Type;
 public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
   /**
    * How long a partition stayed paused (declining writes, processing paused) while its current
-   * leader waited for the desired leader to catch up during a coordinated leadership transfer.
-   * Useful for calibrating the rebalancing configuration.
+   * leader waited for the desired leader to catch up during a leadership transfer.
    */
   PARTITION_PAUSE_DURATION {
     @Override
@@ -38,7 +37,7 @@ public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Duration a partition was paused during a coordinated leadership transfer";
+      return "Duration a partition was paused during a leadership transfer";
     }
 
     @Override
@@ -48,10 +47,10 @@ public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   /**
-   * Whether a partition is currently paused for a coordinated leadership transfer: {@code 1} only
-   * while write admission is frozen <em>and</em> processing is paused for the transfer, {@code 0}
-   * otherwise. Distinct from {@code zeebe.stream.processor.state}, which reports processing paused
-   * for any reason.
+   * Whether a partition is currently paused for a leadership transfer: {@code 1} only while write
+   * admission is frozen <em>and</em> processing is paused for the transfer, {@code 0} otherwise.
+   * Distinct from {@code zeebe.stream.processor.state}, which reports processing paused for any
+   * reason.
    */
   PARTITION_PAUSED {
     @Override
@@ -66,7 +65,7 @@ public enum RebalanceMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "1 while a partition is paused for a coordinated leadership transfer, 0 otherwise";
+      return "1 while a partition is paused for a leadership transfer, 0 otherwise";
     }
 
     @Override

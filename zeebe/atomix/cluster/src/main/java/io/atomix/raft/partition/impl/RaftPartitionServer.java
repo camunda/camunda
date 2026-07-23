@@ -294,22 +294,28 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   /**
-   * Pauses this partition for a coordinated leadership transfer if it is currently the leader. Runs
-   * on the Raft thread and arms a watchdog that steps the leader down if not resumed within {@code
-   * resumeTimeout}. The caller is responsible for freezing writes and pausing processing; this only
-   * guarantees the partition cannot be left paused forever.
+   * Pauses this partition for a leadership transfer (if it is currently the leader).
+   *
+   * <p>Runs on the Raft thread and sets a watchdog that steps the leader down if not resumed within
+   * {@code resumeTimeout}. The caller is responsible for freezing writes and pausing processing;
+   * this only guarantees the partition cannot be left paused forever.
+   *
+   * <p>TODO: what do you mean the caller is responsible? is that a precondition for calling this
+   * method, or something to be done after? I assume it is either done by this method or is a
+   * precondition since we return a frozen log index. If it's a precondition we should be explicit
+   * about that.
    *
    * @param pausedSinceMs epoch millis at which the caller froze write admission, so the pause
    *     metric covers the full availability window
    * @return a future completing with the frozen last log index (the catch-up target) once the pause
-   *     is armed, or failing if this node is not the leader
+   *     is applied, or failing if this node is not the leader
    */
   public CompletableFuture<Long> pauseForTransfer(
       final Duration resumeTimeout, final long pausedSinceMs) {
     return runOnLeaderRole(leader -> leader.pauseForTransfer(resumeTimeout, pausedSinceMs));
   }
 
-  /** Resumes this partition after a coordinated leadership transfer, if it is still the leader. */
+  /** Resumes this partition after a leadership transfer, if it is still the leader. */
   public CompletableFuture<Void> resumeFromTransfer() {
     return runOnLeaderRole(
         leader -> {

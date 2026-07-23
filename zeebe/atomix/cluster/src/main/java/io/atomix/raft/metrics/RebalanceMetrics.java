@@ -13,16 +13,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 
-/**
- * Metrics for coordinated leadership transfer (rebalancing). Transfer and pause are partition-level
- * concepts, not leader-term-level ones, so this is owned by {@link io.atomix.raft.impl.RaftContext}
- * for its whole lifetime rather than by each {@link io.atomix.raft.roles.LeaderRole} term: a
- * successful transfer steps the leader down before its completion continuation records the
- * transfer-duration metric, so a role-scoped instance would either record against meters a
- * role-scoped close() already removed, or re-register orphaned ones; it would also reset
- * operational history on every election. Only the paused gauge reflects the current role, reset by
- * the outgoing {@code LeaderRole} on stop.
- */
+/** Metrics for coordinated leadership transfer (rebalancing). */
 public class RebalanceMetrics extends RaftMetrics {
 
   private final Timer partitionPauseDuration;
@@ -49,10 +40,6 @@ public class RebalanceMetrics extends RaftMetrics {
     partitionPauseDuration.record(duration);
   }
 
-  /**
-   * Sets the paused gauge to 1 only while write admission is frozen and processing is paused for
-   * the transfer, and back to 0 once those restrictions are removed or leadership is lost.
-   */
   public void setPartitionPaused(final boolean paused) {
     partitionPaused.set(paused ? 1 : 0);
   }
