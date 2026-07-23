@@ -59,6 +59,16 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
   }
 
   @Override
+  public T get(final int index) {
+    return value.get(index);
+  }
+
+  @Override
+  public T remove(final int index) {
+    return value.remove(index);
+  }
+
+  @Override
   public Stream<T> stream() {
     // ArrayValue is not a thread-safe Iterable
     final var parallel = false;
@@ -69,6 +79,7 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
     return value.isEmpty();
   }
 
+  @Override
   public int size() {
     return value.size();
   }
