@@ -213,9 +213,7 @@ public final class DbJobState implements JobState, MutableJobState {
   public void makeActivatableAfterSecretResolution(final long key) {
     final JobRecord record = getJob(key);
     if (record != null) {
-      updateJobState(key, State.ACTIVATABLE);
-      makeJobActivatableByPriority(
-          record.getTypeBuffer(), key, record.getTenantId(), record.getPriority());
+      updateJob(key, record, State.ACTIVATABLE);
     }
   }
 
@@ -288,16 +286,8 @@ public final class DbJobState implements JobState, MutableJobState {
     if (job == null) {
       return;
     }
-    final int oldPriority = job.getPriority();
     job.setPriority(newPriority);
-
-    if (getState(jobKey) == State.ACTIVATABLE) {
-      makeJobNotActivatable(job.getTypeBuffer(), job.getTenantId(), oldPriority);
-      updateJobRecord(jobKey, job);
-      makeJobActivatable(job.getTypeBuffer(), jobKey, job.getTenantId(), newPriority);
-    } else {
-      updateJobRecord(jobKey, job);
-    }
+    updateJobRecord(jobKey, job);
   }
 
   @Override
