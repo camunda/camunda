@@ -13,7 +13,6 @@ import io.camunda.analytics.lake.serving.duckdb.LakeViewRegistry;
 import io.camunda.analytics.lake.serving.sql.SqlText;
 import io.camunda.analytics.lake.serving.sql.ViewDescribe;
 import java.sql.SQLException;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -210,10 +209,19 @@ public class ObjectsService {
 
       final String linksSql = linksSql(instanceKeys);
       sql.add(linksSql);
-      final List<Map<String, Object>> links = rowsAsMaps(queryService.execute(linksSql));
+      final QueryResult linksResult = queryService.execute(linksSql);
+      final List<JourneyLink> links = new ArrayList<>(linksResult.rows().size());
+      for (final List<Object> row : linksResult.rows()) {
+        links.add(
+            new JourneyLink(
+                ((Number) row.get(0)).longValue(),
+                ((Number) row.get(1)).longValue(),
+                (String) row.get(2),
+                SqlText.toIsoString(row.get(3))));
+      }
 
       final String relationsSql =
-          "SELECT * FROM "
+          "SELECT parent_type, parent_id, child_type, child_id, first_seen FROM "
               + SqlText.identifier(OBJECT_RELATIONS)
               + " WHERE (parent_type = "
               + SqlText.literal(query.type())
@@ -225,7 +233,17 @@ public class ObjectsService {
               + SqlText.literal(query.id())
               + ")";
       sql.add(relationsSql);
-      final List<Map<String, Object>> relations = rowsAsMaps(queryService.execute(relationsSql));
+      final QueryResult relationsResult = queryService.execute(relationsSql);
+      final List<JourneyRelation> relations = new ArrayList<>(relationsResult.rows().size());
+      for (final List<Object> row : relationsResult.rows()) {
+        relations.add(
+            new JourneyRelation(
+                (String) row.get(0),
+                (String) row.get(1),
+                (String) row.get(2),
+                (String) row.get(3),
+                SqlText.toIsoString(row.get(4))));
+      }
 
       return new JourneyResult(sightings, activities, links, relations, sql);
     } catch (final SQLException e) {
@@ -261,33 +279,21 @@ public class ObjectsService {
   }
 
   private String linksSql(final List<Long> instanceKeys) {
+    final String columns = "parent_instance_key, child_instance_key, link_type, linked_at";
     if (instanceKeys.isEmpty()) {
-      return "SELECT * FROM " + SqlText.identifier(INSTANCE_LINKS) + " WHERE FALSE";
+      return "SELECT " + columns + " FROM " + SqlText.identifier(INSTANCE_LINKS) + " WHERE FALSE";
     }
     final String inList =
         instanceKeys.stream().map(String::valueOf).reduce((a, b) -> a + ", " + b).orElse("");
-    return "SELECT * FROM "
+    return "SELECT "
+        + columns
+        + " FROM "
         + SqlText.identifier(INSTANCE_LINKS)
         + " WHERE parent_instance_key IN ("
         + inList
         + ") OR child_instance_key IN ("
         + inList
         + ")";
-  }
-
-  private List<Map<String, Object>> rowsAsMaps(final QueryResult result) {
-    final List<Map<String, Object>> maps = new ArrayList<>(result.rows().size());
-    for (final List<Object> row : result.rows()) {
-      final Map<String, Object> map = new LinkedHashMap<>();
-      for (int i = 0; i < result.columns().size(); i++) {
-        final Object value = row.get(i);
-        map.put(
-            result.columns().get(i),
-            value instanceof OffsetDateTime ? SqlText.toIsoString(value) : value);
-      }
-      maps.add(map);
-    }
-    return maps;
   }
 
   /** One instance's sighting of an object (a row in the {@code objects} dictionary table). */
@@ -331,11 +337,22 @@ public class ObjectsService {
   /** {@code POST /api/objects/journey} request. */
   public record JourneyQuery(String type, String id) {}
 
+  /**
+   * One call-activity edge between two of this object's instances (an {@code instance_links} row):
+   * the parent spawned the child via a call activity.
+   */
+  public record JourneyLink(
+      long parentInstanceKey, long childInstanceKey, String linkType, String linkedAt) {}
+
+  /** One object-to-object edge (an {@code object_relations} row); this object is on one side. */
+  public record JourneyRelation(
+      String parentType, String parentId, String childType, String childId, String firstSeen) {}
+
   /** {@code POST /api/objects/journey} response. */
   public record JourneyResult(
       List<Sighting> sightings,
       List<JourneyActivity> activities,
-      List<Map<String, Object>> links,
-      List<Map<String, Object>> relations,
+      List<JourneyLink> links,
+      List<JourneyRelation> relations,
       List<String> sql) {}
 }

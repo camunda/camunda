@@ -343,7 +343,7 @@ export interface ObjectJourneyRequest {
 }
 
 export interface JourneyActivity {
-  instanceKey: string;
+  instanceKey: number;
   processId: string;
   elementId: string;
   startedAt: string;
@@ -352,21 +352,37 @@ export interface JourneyActivity {
   attributedVia: "ROOT" | "SCOPE";
 }
 
-/** Best-effort read of "links"/"relations" -- the contract names them without a shape. Read as: a
- * relation = another object this one contains ("contained objects as links"); a link = a process
- * instance related to this object ("instance links panel"). Rendered defensively. */
-export interface ObjectRelation {
-  type?: string;
-  objectId: string;
+/** One instance's sighting of the object -- mirrors the backend's Sighting record. */
+export interface ObjectSighting {
+  instanceKey: number;
+  processId: string;
+  version: number;
+  scopeKey: number | null;
+  qualifier: string;
+  firstSeen: string | null;
 }
 
+/** One object-to-object edge (an object_relations row); this object is on one side -- mirrors the
+ * backend's JourneyRelation record. */
+export interface ObjectRelation {
+  parentType: string;
+  parentId: string;
+  childType: string;
+  childId: string;
+  firstSeen: string | null;
+}
+
+/** One call-activity edge between two of this object's instances -- mirrors the backend's
+ * JourneyLink record. */
 export interface ObjectInstanceLink {
-  instanceKey: string;
-  processId?: string;
+  parentInstanceKey: number;
+  childInstanceKey: number;
+  linkType: string;
+  linkedAt: string | null;
 }
 
 export interface ObjectJourneyResponse {
-  sightings: number;
+  sightings: ObjectSighting[];
   activities: JourneyActivity[];
   links: ObjectInstanceLink[];
   relations: ObjectRelation[];

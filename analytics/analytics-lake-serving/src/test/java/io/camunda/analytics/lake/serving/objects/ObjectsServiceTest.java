@@ -97,11 +97,11 @@ class ObjectsServiceTest {
         .allSatisfy(a -> assertThat(a.attributedVia()).isEqualTo("ROOT"));
 
     assertThat(result.links()).hasSize(1);
-    assertThat(result.links().get(0))
-        .containsEntry("child_instance_key", ObjectFabricFixtures.CHILD_INSTANCE_KEY);
+    assertThat(result.links().get(0).childInstanceKey())
+        .isEqualTo(ObjectFabricFixtures.CHILD_INSTANCE_KEY);
 
     assertThat(result.relations()).hasSize(1);
-    assertThat(result.relations().get(0)).containsEntry("child_id", "LI-1");
+    assertThat(result.relations().get(0).childId()).isEqualTo("LI-1");
   }
 
   @Test
