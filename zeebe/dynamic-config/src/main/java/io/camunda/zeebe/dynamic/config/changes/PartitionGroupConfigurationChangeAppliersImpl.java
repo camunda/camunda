@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitRelocationCompletio
 import io.camunda.zeebe.dynamic.config.changes.appliers.DeleteHistoryApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.EnterRecoveryApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.ExitRecoveryApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.ExportingStateChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionBootstrapApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDeleteExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDisableExporterApplier;
@@ -121,10 +122,8 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
           };
       case final AwaitModeChangeOperation op ->
           new AwaitModeChangeApplier(op.memberId(), op.mode(), modeChangeExecutor);
-      case final ExportingStateChangeOperation exporterStateChangeOperation ->
-          // TODO(#39743): replace with the real ExporterStateChangeApplier
-          throw new UnsupportedOperationException(
-              "ExportingStateChangeOperation not yet implemented");
+      case final ExportingStateChangeOperation op ->
+          new ExportingStateChangeApplier(op.memberId(), op.state(), partitionChangeExecutor);
     };
   }
 }
