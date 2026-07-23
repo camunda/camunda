@@ -181,6 +181,85 @@ final class CslAuthorizationCheckTest {
     verifyNoInteractions(claimsConverter, authCheckPort);
   }
 
+  @Test
+  void shouldSkipTenantsCheckWhenMultiTenancyDisabled() {
+    // given — multi-tenancy checks disabled
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, false);
+    final var rejection = new Rejection(RejectionType.UNAUTHORIZED, "not authorized");
+
+    // when
+    final var result =
+        cslCheck.checkTenants(command, List.of("tenant-a", "tenant-b"), "ok", rejection);
+
+    // then — no tenant resolution happens; the claims converter is never invoked
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get()).isEqualTo("ok");
+    verifyNoInteractions(claimsConverter, authCheckPort);
+  }
+
+  @Test
+  void shouldAllowWhenPrincipalIsAssignedToAllTenants() {
+    // given — multi-tenancy on and a principal assigned to tenant-a and tenant-b
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, true);
+    when(command.getAuthorizations()).thenReturn(Map.of(Authorization.AUTHORIZED_USERNAME, "user"));
+    when(authentication.anonymousUser()).thenReturn(false);
+    when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-a", "tenant-b"));
+    when(claimsConverter.resolve(Map.of(Authorization.AUTHORIZED_USERNAME, "user")))
+        .thenReturn(authentication);
+
+    // when
+    final var result =
+        cslCheck.checkTenants(
+            command,
+            List.of("tenant-a", "tenant-b"),
+            "ok",
+            new Rejection(RejectionType.UNAUTHORIZED, "denied"));
+
+    // then
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get()).isEqualTo("ok");
+  }
+
+  @Test
+  void shouldRejectWhenPrincipalIsNotAssignedToAllTenants() {
+    // given — multi-tenancy on and a principal assigned only to tenant-a
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, true);
+    when(command.getAuthorizations()).thenReturn(Map.of(Authorization.AUTHORIZED_USERNAME, "user"));
+    when(authentication.anonymousUser()).thenReturn(false);
+    when(authentication.authenticatedTenantIds()).thenReturn(List.of("tenant-a"));
+    when(claimsConverter.resolve(Map.of(Authorization.AUTHORIZED_USERNAME, "user")))
+        .thenReturn(authentication);
+    final var rejection = new Rejection(RejectionType.UNAUTHORIZED, "not authorized for tenant-b");
+
+    // when — tenant-b is requested in addition to tenant-a
+    final var result =
+        cslCheck.checkTenants(command, List.of("tenant-a", "tenant-b"), "ok", rejection);
+
+    // then — the caller-supplied rejection is returned verbatim
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isEqualTo(rejection);
+  }
+
+  @Test
+  void shouldAllowAnonymousUserForAnyTenants() {
+    // given — multi-tenancy on but the request is anonymous
+    final var cslCheck = cslCheck(/* authorizationsEnabled= */ true, true);
+    when(command.getAuthorizations())
+        .thenReturn(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+
+    // when
+    final var result =
+        cslCheck.checkTenants(
+            command,
+            List.of("tenant-a", "tenant-b"),
+            "ok",
+            new Rejection(RejectionType.UNAUTHORIZED, "denied"));
+
+    // then — anonymous access is authorized for every tenant; no claims conversion needed
+    assertThat(result.isRight()).isTrue();
+    verifyNoInteractions(claimsConverter, authCheckPort);
+  }
+
   private CslAuthorizationCheck cslCheck(
       final boolean authorizationsEnabled, final boolean multiTenancyChecksEnabled) {
     final var securityConfig =

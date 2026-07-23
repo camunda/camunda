@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util.client;
 
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.function.BiFunction;
 
 public final class JobActivationClient {
@@ -131,6 +133,20 @@ public final class JobActivationClient {
     final long position =
         writer.writeCommandOnPartition(
             partitionId, JobBatchIntent.ACTIVATE, jobBatchRecord, username);
+
+    return expectation.apply(partitionId, position);
+  }
+
+  public Record<JobBatchRecordValue> activate(final AuthInfo authorizations) {
+    final long position =
+        writer.writeCommandOnPartition(
+            partitionId,
+            r ->
+                r.intent(JobBatchIntent.ACTIVATE)
+                    .event(jobBatchRecord)
+                    .authorizations(authorizations)
+                    .requestId(new Random().nextLong())
+                    .requestStreamId(new Random().nextInt()));
 
     return expectation.apply(partitionId, position);
   }

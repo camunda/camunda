@@ -105,6 +105,15 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       return authorizedTenantIds.getAuthorizedTenantIds();
     }
 
+    return resolveProvidedTenantIds(value);
+  }
+
+  // An empty PROVIDED tenant-ID list is treated as "the default tenant" both here and in
+  // validateTenantAuthorization, so the tenant-authorization check and the tenants actually used
+  // for activation can never diverge (isAuthorizedForTenantIds([]) is vacuously true, so checking
+  // the raw empty list would silently authorize a caller not actually assigned to the default
+  // tenant).
+  private List<String> resolveProvidedTenantIds(final JobBatchRecord value) {
     final var providedTenantIds = value.getTenantIds();
     return providedTenantIds.isEmpty()
         ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -117,7 +126,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
     // Skip tenant authorization check when using ASSIGNED filter
     if (TenantFilter.PROVIDED.equals(value.getTenantFilter())) {
-      final var tenantAuthResult = validateTenantAuthorization(value, authorizedTenantIds);
+      final var tenantAuthResult = validateTenantAuthorization(record, value, authorizedTenantIds);
       if (tenantAuthResult.isLeft()) {
         return tenantAuthResult;
       }
@@ -127,18 +136,25 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private Either<Rejection, Void> validateTenantAuthorization(
-      final JobBatchRecord record, final AuthorizedTenants authorizedTenantIds) {
-    final var tenantIds = record.getTenantIds();
-
-    if (!authorizedTenantIds.isAuthorizedForTenantIds(tenantIds)) {
-      return Either.left(
-          new Rejection(
-              RejectionType.UNAUTHORIZED,
-              "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
-                  .formatted(tenantIds, authorizedTenantIds.getAuthorizedTenantIds())));
-    }
-
-    return Either.right(null);
+      final TypedRecord<JobBatchRecord> record,
+      final JobBatchRecord value,
+      final AuthorizedTenants authorizedTenantIds) {
+    final var tenantIds = resolveProvidedTenantIds(value);
+    // Rejection is a method argument, so it's always evaluated eagerly, even when checkTenants
+    // ends up allowing the request; getAuthorizedTenantIds() throws for an anonymous principal, so
+    // it can't be called unconditionally here.
+    final var authorizedTenantIdsForMessage =
+        authorizedTenantIds.isAnonymous()
+            ? List.of()
+            : authorizedTenantIds.getAuthorizedTenantIds();
+    return cslCheck.checkTenants(
+        record,
+        tenantIds,
+        null,
+        new Rejection(
+            RejectionType.UNAUTHORIZED,
+            "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
+                .formatted(tenantIds, authorizedTenantIdsForMessage)));
   }
 
   private Either<Rejection, Void> validateCommandFields(final JobBatchRecord record) {
