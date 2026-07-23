@@ -76,7 +76,8 @@ public final class CamundaExporterConfigurationApplier {
 
     if (source instanceof final Opensearch opensearch) {
       target.setAwsEnabled(opensearch.isAwsEnabled());
-      SearchEngineConnectPropertiesOverride.Converter.populateAws(camunda.getAws(), target.aws());
+      SearchEngineConnectPropertiesOverride.Converter.populateAws(
+          camunda.getProviderAuth().getAws(), target.aws());
       target.aws().setRegion(opensearch.getRegion());
     }
 

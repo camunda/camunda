@@ -69,12 +69,12 @@ class PhysicalTenantAwsTest {
     // given
     setProperties(
         Map.of(
-            "camunda.aws.access-key", "key",
-            "camunda.aws.secret-key", "secret",
-            "camunda.aws.session-token", "token"));
+            "camunda.provider-auth.aws.access-key", "key",
+            "camunda.provider-auth.aws.secret-key", "secret",
+            "camunda.provider-auth.aws.session-token", "token"));
 
     // when
-    final Aws aws = newResolver().forPhysicalTenant("default").getAws();
+    final Aws aws = newResolver().forPhysicalTenant("default").getProviderAuth().getAws();
 
     // then
     assertThat(aws.getAccessKey()).isEqualTo("key");
@@ -89,13 +89,15 @@ class PhysicalTenantAwsTest {
     // given a root web identity, and a tenant overriding only the role
     setProperties(
         Map.of(
-            "camunda.aws.role-arn", "arn:aws:iam::111:role/default-tenant",
-            "camunda.aws.web-identity-token-file", "/var/run/secrets/default-token",
-            "camunda.physical-tenants.tenantb.aws.role-arn", "arn:aws:iam::222:role/tenant-b"),
+            "camunda.provider-auth.provider-auth.aws.role-arn",
+                "arn:aws:iam::111:role/default-tenant",
+            "camunda.provider-auth.aws.web-identity-token-file", "/var/run/secrets/default-token",
+            "camunda.physical-tenants.tenantb.provider-auth.aws.role-arn",
+                "arn:aws:iam::222:role/tenant-b"),
         "tenantb");
 
     // when
-    final Aws aws = newResolver().forPhysicalTenant("tenantb").getAws();
+    final Aws aws = newResolver().forPhysicalTenant("tenantb").getProviderAuth().getAws();
 
     // then the role is the tenant's while the token file is inherited from the root
     assertThat(aws.getRoleArn()).isEqualTo("arn:aws:iam::222:role/tenant-b");
@@ -106,10 +108,15 @@ class PhysicalTenantAwsTest {
   void shouldInheritRootAwsSectionWhenTenantOmitsIt() {
     // given
     setProperties(
-        Map.of("camunda.aws.access-key", "key", "camunda.aws.secret-key", "secret"), "tenanta");
+        Map.of(
+            "camunda.provider-auth.aws.access-key",
+            "key",
+            "camunda.provider-auth.aws.secret-key",
+            "secret"),
+        "tenanta");
 
     // when
-    final Aws aws = newResolver().forPhysicalTenant("tenanta").getAws();
+    final Aws aws = newResolver().forPhysicalTenant("tenanta").getProviderAuth().getAws();
 
     // then
     assertThat(aws.getAccessKey()).isEqualTo("key");
@@ -121,11 +128,11 @@ class PhysicalTenantAwsTest {
     // given an all-blank section, as produced by set-but-empty env vars
     setProperties(
         Map.of(
-            "camunda.aws.access-key", "",
-            "camunda.aws.secret-key", " "));
+            "camunda.provider-auth.aws.access-key", "",
+            "camunda.provider-auth.aws.secret-key", " "));
 
     // when
-    final Aws aws = newResolver().forPhysicalTenant("default").getAws();
+    final Aws aws = newResolver().forPhysicalTenant("default").getProviderAuth().getAws();
 
     // then the section is empty and falls back to the SDK default chains
     assertThat(aws.getAccessKey()).isNull();

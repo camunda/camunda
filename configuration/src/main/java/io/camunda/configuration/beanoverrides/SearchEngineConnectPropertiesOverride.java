@@ -99,7 +99,7 @@ public class SearchEngineConnectPropertiesOverride {
                 (DocumentBasedSecondaryStorageDatabase) database, override);
             final Opensearch opensearch = (Opensearch) database;
             override.setAwsEnabled(opensearch.isAwsEnabled());
-            populateAws(camunda.getAws(), override.aws());
+            populateAws(camunda.getProviderAuth().getAws(), override.aws());
             override.aws().setRegion(opensearch.getRegion());
             break;
           }

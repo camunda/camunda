@@ -18,11 +18,6 @@ api.long-polling.timeout
 api.rest.cluster-variable.max-metadata-size
 api.rest.process-cache.expiration-idle
 api.rest.process-cache.max-size
-aws.access-key
-aws.role-arn
-aws.secret-key
-aws.session-token
-aws.web-identity-token-file
 cluster.global-listeners.user-task
 cluster.partition-count
 cluster.replication-factor
@@ -310,6 +305,11 @@ processing.max-commands-in-batch
 processing.max-recoverable-retries
 processing.scheduled-tasks-check-interval
 processing.skip-positions
+provider-auth.aws.access-key
+provider-auth.aws.role-arn
+provider-auth.aws.secret-key
+provider-auth.aws.session-token
+provider-auth.aws.web-identity-token-file
 secrets.stores.aws-secrets-manager
 secrets.stores.file
 security.authentication

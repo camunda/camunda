@@ -13,13 +13,13 @@ import org.jspecify.annotations.Nullable;
 /**
  * This section configures the AWS identity used by all AWS consumers of a tenant (e.g. OpenSearch).
  *
- * <p>Canonical unified configuration properties are under {@code camunda.aws.*}:
+ * <p>Canonical unified configuration properties are under {@code camunda.provider-auth.aws.*}:
  *
  * <ul>
- *   <li>{@code camunda.aws.access-key}, {@code camunda.aws.secret-key}, {@code
- *       camunda.aws.session-token} — static credentials
- *   <li>{@code camunda.aws.role-arn}, {@code camunda.aws.web-identity-token-file} — web identity
- *       (IRSA)
+ *   <li>{@code camunda.provider-auth.aws.access-key}, {@code camunda.provider-auth.aws.secret-key},
+ *       {@code camunda.provider-auth.aws.session-token} — static credentials
+ *   <li>{@code camunda.provider-auth.aws.role-arn}, {@code
+ *       camunda.provider-auth.aws.web-identity-token-file} — web identity (IRSA)
  * </ul>
  *
  * <p>Blank values are treated as unset. When no field is set, the AWS SDK default credentials
