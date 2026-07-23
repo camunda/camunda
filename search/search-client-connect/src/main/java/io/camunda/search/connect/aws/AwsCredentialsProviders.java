@@ -17,6 +17,8 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.auth.StsWebIdentityTokenFileCredentialsProvider;
 
 /** Builds AWS SDK credential/region providers from an {@link AwsConfiguration}. */
 public final class AwsCredentialsProviders {
@@ -53,6 +55,13 @@ public final class AwsCredentialsProviders {
               : AwsBasicCredentials.create(aws.getAccessKey(), aws.getSecretKey()));
     }
     if (hasWebIdentity) {
+      if (aws.getRegion() != null) {
+        return StsWebIdentityTokenFileCredentialsProvider.builder()
+            .stsClient(StsClient.builder().region(Region.of(aws.getRegion())).build())
+            .roleArn(aws.getRoleArn())
+            .webIdentityTokenFile(Paths.get(aws.getWebIdentityTokenFile()))
+            .build();
+      }
       return WebIdentityTokenFileCredentialsProvider.builder()
           .roleArn(aws.getRoleArn())
           .webIdentityTokenFile(Paths.get(aws.getWebIdentityTokenFile()))
