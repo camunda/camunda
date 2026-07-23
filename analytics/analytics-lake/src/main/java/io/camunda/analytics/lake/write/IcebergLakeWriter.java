@@ -266,8 +266,13 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(11, "duration_ms", Types.LongType.get()),
               // The owning instance's start -- the family date activities are partitioned and
               // retired by (see ActivityRow#instanceStartMs).
-              Types.NestedField.required(
-                  12, "instance_started_at", Types.TimestampType.withZone())));
+              Types.NestedField.required(12, "instance_started_at", Types.TimestampType.withZone()),
+              // Schema v4 -- see io.camunda.analytics.lake.translate.RawTableSchemas#activities's
+              // own javadoc paragraph for what this carries and why it's nullable. Optional (like
+              // variant_hash before it): a data file predating this field must resolve to null via
+              // name mapping, not fail to read. Never populated by this class's own legacy
+              // DuckDB-appender path below (that path stays at schema v3 field-for-field).
+              Types.NestedField.optional(13, "flow_scope_key", Types.LongType.get())));
 
   /**
    * The variant-k1 dictionary table's schema: one row per distinct (process id, version, variant
@@ -288,6 +293,54 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(5, "flows", Types.BinaryType.get()),
               Types.NestedField.required(6, "first_seen", Types.TimestampType.withZone())));
 
+  /**
+   * The object-fabric sightings dictionary table's schema — one row per distinct (object type,
+   * object id, instance, scope) ever sighted (see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator}'s "Object fabric capture" javadoc section
+   * and {@code RawTableSchemas#objects}'s own javadoc). Created via the same plain {@link
+   * #tableOrCreate} path as {@link #VARIANT_SCHEMA} — no declaration fingerprint, for the same
+   * reason: a row's content is fully determined by its key.
+   */
+  private static final Schema OBJECT_SCHEMA =
+      new Schema(
+          List.of(
+              Types.NestedField.required(1, "object_type", Types.StringType.get()),
+              Types.NestedField.required(2, "object_id", Types.StringType.get()),
+              Types.NestedField.required(3, "instance_key", Types.LongType.get()),
+              Types.NestedField.required(4, "process_id", Types.StringType.get()),
+              Types.NestedField.required(5, "version", Types.IntegerType.get()),
+              Types.NestedField.optional(6, "scope_key", Types.LongType.get()),
+              Types.NestedField.required(7, "qualifier", Types.StringType.get()),
+              Types.NestedField.required(8, "first_seen", Types.TimestampType.withZone())));
+
+  /**
+   * The call-activity instance-link dictionary table's schema — one row per child instance ever
+   * created via a call activity (see {@code LakeTranslator}'s "Object fabric capture" javadoc
+   * section and {@code RawTableSchemas#instanceLinks}'s own javadoc).
+   */
+  private static final Schema INSTANCE_LINKS_SCHEMA =
+      new Schema(
+          List.of(
+              Types.NestedField.required(1, "parent_instance_key", Types.LongType.get()),
+              Types.NestedField.required(2, "child_instance_key", Types.LongType.get()),
+              Types.NestedField.required(3, "link_type", Types.StringType.get()),
+              Types.NestedField.optional(4, "via_element_instance_key", Types.LongType.get()),
+              Types.NestedField.required(5, "linked_at", Types.TimestampType.withZone())));
+
+  /**
+   * The object-relations dictionary table's schema — one row per distinct (parent type, parent id,
+   * child type, child id) edge derived at instance completion (see {@code LakeTranslator}'s "Object
+   * fabric capture" javadoc section and {@code RawTableSchemas#objectRelations}'s own javadoc).
+   */
+  private static final Schema OBJECT_RELATIONS_SCHEMA =
+      new Schema(
+          List.of(
+              Types.NestedField.required(1, "parent_type", Types.StringType.get()),
+              Types.NestedField.required(2, "parent_id", Types.StringType.get()),
+              Types.NestedField.required(3, "child_type", Types.StringType.get()),
+              Types.NestedField.required(4, "child_id", Types.StringType.get()),
+              Types.NestedField.required(5, "first_seen", Types.TimestampType.withZone())));
+
   private static final Logger LOG = LoggerFactory.getLogger(IcebergLakeWriter.class);
 
   private final JdbcCatalog catalog;
@@ -295,6 +348,9 @@ public final class IcebergLakeWriter implements LakeWriter {
   private final Table instancesTable;
   private final Table activitiesTable;
   private final Table variantsTable;
+  private final Table objectsTable;
+  private final Table instanceLinksTable;
+  private final Table objectRelationsTable;
   private final Connection duckdb;
 
   // One commit mutex per raw table (never a single shared lock across both) -- see #commitLock's
@@ -348,6 +404,21 @@ public final class IcebergLakeWriter implements LakeWriter {
             TableIdentifier.of(namespace, "variants"),
             VARIANT_SCHEMA,
             PartitionSpec.builderFor(VARIANT_SCHEMA).day("first_seen").build());
+    objectsTable =
+        tableOrCreate(
+            TableIdentifier.of(namespace, "objects"),
+            OBJECT_SCHEMA,
+            PartitionSpec.builderFor(OBJECT_SCHEMA).day("first_seen").build());
+    instanceLinksTable =
+        tableOrCreate(
+            TableIdentifier.of(namespace, "instance_links"),
+            INSTANCE_LINKS_SCHEMA,
+            PartitionSpec.builderFor(INSTANCE_LINKS_SCHEMA).day("linked_at").build());
+    objectRelationsTable =
+        tableOrCreate(
+            TableIdentifier.of(namespace, "object_relations"),
+            OBJECT_RELATIONS_SCHEMA,
+            PartitionSpec.builderFor(OBJECT_RELATIONS_SCHEMA).day("first_seen").build());
 
     try {
       // One embedded, in-process DuckDB instance for the life of this writer. It never persists
@@ -811,6 +882,30 @@ public final class IcebergLakeWriter implements LakeWriter {
    */
   public Table variantsTable() {
     return variantsTable;
+  }
+
+  /**
+   * The object-fabric sightings dictionary table — see {@link #OBJECT_SCHEMA}'s own javadoc; same
+   * commit arrangement as {@link #variantsTable()}.
+   */
+  public Table objectsTable() {
+    return objectsTable;
+  }
+
+  /**
+   * The call-activity instance-link dictionary table — see {@link #INSTANCE_LINKS_SCHEMA}'s own
+   * javadoc; same commit arrangement as {@link #variantsTable()}.
+   */
+  public Table instanceLinksTable() {
+    return instanceLinksTable;
+  }
+
+  /**
+   * The object-relations dictionary table — see {@link #OBJECT_RELATIONS_SCHEMA}'s own javadoc;
+   * same commit arrangement as {@link #variantsTable()}.
+   */
+  public Table objectRelationsTable() {
+    return objectRelationsTable;
   }
 
   /**
