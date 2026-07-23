@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.duckdb.DuckDBAppender;
@@ -44,6 +45,13 @@ import org.slf4j.LoggerFactory;
  * replaying the source topic(s) from scratch. That possibility is why the offset stamp is not
  * optional: without it, this dump would only be an inspectable snapshot with no way to say which
  * records it does or doesn't reflect.
+ *
+ * <p><b>Also feeds the {@code open_instances_gauge} table.</b> {@link #dump} folds a per-process
+ * open-instance tally into the same {@code forEachOpenInstance} scan it already runs, and returns
+ * it — see {@code io.camunda.analytics.lake.write.OpenInstancesGaugeSampler}'s own javadoc for why
+ * those gauge rows are wall-clock <em>observations</em>, not source-log-derived facts: they carry
+ * no offsets, are never covered by this dump's own {@code offsets.json} consistency stamp, and are
+ * not reproduced by any future replay/rebuild from the source log.
  */
 public final class StateSnapshotDumper {
 
@@ -77,20 +85,27 @@ public final class StateSnapshotDumper {
    * Writes {@code open_instances.parquet}, {@code open_elements.parquet} and {@code offsets.json}
    * into the dump directory, replacing any prior dump there. See the class javadoc for the
    * consistency contract {@code lastAppliedOffsets} must satisfy.
+   *
+   * @return per-process open-instance counts, folded into the same {@code forEachOpenInstance}
+   *     iteration this method already runs to populate {@code open_instances.parquet} — a zero-
+   *     extra-scan byproduct feeding {@code
+   *     io.camunda.analytics.lake.write.OpenInstancesGaugeSampler}'s periodic tick (see its own
+   *     javadoc); a process with zero currently-open instances is simply absent from the map, not
+   *     present with a zero count
    */
-  public void dump(final Map<Integer, Long> lastAppliedOffsets) {
+  public Map<String, Long> dump(final Map<Integer, Long> lastAppliedOffsets) {
     try {
       Files.createDirectories(dumpDir);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to create snapshot dump directory " + dumpDir, e);
     }
 
-    final long instanceCount;
+    final OpenInstanceCounts instanceCounts;
     final long elementCount;
     // One embedded DuckDB connection per dump -- a PoC simplification (see the caller's javadoc);
     // this is not on any hot path.
     try (Connection duckdb = DriverManager.getConnection("jdbc:duckdb:")) {
-      instanceCount = dumpOpenInstances(duckdb);
+      instanceCounts = dumpOpenInstances(duckdb);
       elementCount = dumpOpenElements(duckdb);
     } catch (final SQLException e) {
       throw new IllegalStateException("Failed to dump translator state snapshot", e);
@@ -99,26 +114,48 @@ public final class StateSnapshotDumper {
     LOG.info(
         "Dumped state snapshot to {}: {} open instance(s), {} open element(s)",
         dumpDir,
-        instanceCount,
+        instanceCounts.total(),
         elementCount);
+    return instanceCounts.byProcessId();
   }
 
-  private long dumpOpenInstances(final Connection duckdb) throws SQLException {
+  /**
+   * Scans currently open instances and returns per-process open counts, without writing any dump
+   * files — a standalone (unbatched with {@link #dump}) scan meant to be called once at startup, to
+   * seed {@code io.camunda.analytics.lake.write.OpenInstancesGaugeSampler} with a t=0 sample before
+   * the first periodic {@link #dump} tick fires. Unlike the per-process counts {@link #dump} folds
+   * into its own existing iteration, this is an extra scan — an acceptable one-time startup cost,
+   * not a recurring one.
+   */
+  public Map<String, Long> countOpenInstancesByProcess() {
+    final Map<String, Long> counts = new HashMap<>();
+    state.forEachOpenInstance((key, instance) -> counts.merge(instance.processId(), 1L, Long::sum));
+    return counts;
+  }
+
+  private OpenInstanceCounts dumpOpenInstances(final Connection duckdb) throws SQLException {
     try (Statement ddl = duckdb.createStatement()) {
       ddl.execute(OPEN_INSTANCES_DDL);
     }
     final AtomicLong count = new AtomicLong();
+    final Map<String, Long> byProcessId = new HashMap<>();
     final DuckDBConnection duckdbConnection = (DuckDBConnection) duckdb;
     try (DuckDBAppender appender = duckdbConnection.createAppender(OPEN_INSTANCES_TABLE)) {
       state.forEachOpenInstance(
           (key, instance) -> {
             appendOpenInstanceRow(appender, key, instance);
             count.incrementAndGet();
+            byProcessId.merge(instance.processId(), 1L, Long::sum);
           });
     }
     copyToParquet(duckdb, OPEN_INSTANCES_TABLE, "open_instances");
-    return count.get();
+    return new OpenInstanceCounts(count.get(), Map.copyOf(byProcessId));
   }
+
+  /**
+   * Total open-instance count plus the same tally broken down per process id (see {@link #dump}).
+   */
+  private record OpenInstanceCounts(long total, Map<String, Long> byProcessId) {}
 
   private long dumpOpenElements(final Connection duckdb) throws SQLException {
     try (Statement ddl = duckdb.createStatement()) {

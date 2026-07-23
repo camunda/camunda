@@ -41,6 +41,11 @@ import java.nio.file.Path;
  * @param objectTombstoneRetentionMs how long a {@code CLOSED_TOMBSTONE} object-lifecycle
  *     accumulator is kept before {@code LakePocApp}'s own housekeeping tick sweeps it (see {@code
  *     TranslatorState#sweepObjectLifecycleTombstones}'s own javadoc); default 24h
+ * @param gaugeFlushIntervalMs how long {@code
+ *     io.camunda.analytics.lake.write.OpenInstancesGaugeSampler} may buffer sampled {@code
+ *     open_instances_gauge} rows in memory before flushing them as one Parquet file plus one
+ *     Iceberg commit (see that class's own javadoc for why this is decoupled from the sampling
+ *     cadence itself, which piggybacks on {@link #stateDumpIntervalMs}); default 5 minutes
  */
 public record LakeConfig(
     String contactPoint,
@@ -54,10 +59,14 @@ public record LakeConfig(
     long compactIntervalMs,
     int uiPort,
     Path bpmnDir,
-    long objectTombstoneRetentionMs) {
+    long objectTombstoneRetentionMs,
+    long gaugeFlushIntervalMs) {
 
   /** Default {@link #objectTombstoneRetentionMs}: 24 hours. */
   public static final long DEFAULT_OBJECT_TOMBSTONE_RETENTION_MS = 24L * 60 * 60 * 1000;
+
+  /** Default {@link #gaugeFlushIntervalMs}: 5 minutes. */
+  public static final long DEFAULT_GAUGE_FLUSH_INTERVAL_MS = 5L * 60 * 1000;
 
   /**
    * Convenience constructor matching this record's shape before {@link #objectTombstoneRetentionMs}
@@ -91,5 +100,40 @@ public record LakeConfig(
         uiPort,
         bpmnDir,
         DEFAULT_OBJECT_TOMBSTONE_RETENTION_MS);
+  }
+
+  /**
+   * Convenience constructor matching this record's shape before {@link #gaugeFlushIntervalMs} was
+   * added — defaults it to {@link #DEFAULT_GAUGE_FLUSH_INTERVAL_MS}. Kept so every pre-existing
+   * 12-arg positional construction keeps compiling unchanged, the same reasoning as the 11-arg
+   * constructor above.
+   */
+  public LakeConfig(
+      final String contactPoint,
+      final String topic,
+      final String consumerGroup,
+      final Path warehouseDir,
+      final Path stateDir,
+      final int flushRows,
+      final long flushIntervalMs,
+      final long stateDumpIntervalMs,
+      final long compactIntervalMs,
+      final int uiPort,
+      final Path bpmnDir,
+      final long objectTombstoneRetentionMs) {
+    this(
+        contactPoint,
+        topic,
+        consumerGroup,
+        warehouseDir,
+        stateDir,
+        flushRows,
+        flushIntervalMs,
+        stateDumpIntervalMs,
+        compactIntervalMs,
+        uiPort,
+        bpmnDir,
+        objectTombstoneRetentionMs,
+        DEFAULT_GAUGE_FLUSH_INTERVAL_MS);
   }
 }
