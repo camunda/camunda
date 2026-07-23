@@ -31,7 +31,7 @@ jobs:
       contents: read
       id-token: write  # google-github-actions/auth (WIF) mints a GitHub OIDC token
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@6f1db2426ec34a020db86cb6a6fecb5bda9f8138 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         timeout-minutes: 1
       - uses: ./.github/actions/setup-build
