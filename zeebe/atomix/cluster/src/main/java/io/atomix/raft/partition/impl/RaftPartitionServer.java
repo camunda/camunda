@@ -294,21 +294,23 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   /**
-   * Pauses this partition for a leadership transfer (if it is currently the leader).
+   * Establishes the Raft-side paused state for a coordinated leadership transfer (if this node is
+   * currently the leader) and returns the frozen last log index.
    *
-   * <p>Runs on the Raft thread and sets a watchdog that steps the leader down if not resumed within
-   * {@code resumeTimeout}. The caller is responsible for freezing writes and pausing processing;
-   * this only guarantees the partition cannot be left paused forever.
-   *
-   * <p>TODO: what do you mean the caller is responsible? is that a precondition for calling this
-   * method, or something to be done after? I assume it is either done by this method or is a
-   * precondition since we return a frozen log index. If it's a precondition we should be explicit
-   * about that.
+   * <p>Freezing write admission and pausing (and draining) the stream processor are
+   * <em>preconditions</em> the broker establishes before calling this — they are not done here.
+   * This method only runs on the Raft thread to: mark the leader paused (so subsequent
+   * leader-originated appends, including configuration entries, are rejected), capture the last log
+   * index as the catch-up target, and arm a watchdog that steps the leader down if not resumed
+   * within {@code resumeTimeout}. The returned index is stable precisely because those
+   * preconditions hold and the paused leader refuses further appends; existing entries keep
+   * replicating.
    *
    * @param pausedSinceMs epoch millis at which the caller froze write admission, so the pause
    *     metric covers the full availability window
    * @return a future completing with the frozen last log index (the catch-up target) once the pause
-   *     is applied, or failing if this node is not the leader
+   *     is applied; failing if this node is not the leader, or if it is not in a steady state
+   *     (initializing or reconfiguring), in which case the caller should retry
    */
   public CompletableFuture<Long> pauseForTransfer(
       final Duration resumeTimeout, final long pausedSinceMs) {

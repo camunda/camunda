@@ -486,6 +486,12 @@ public final class ZeebePartition extends Actor
    * it may have had in flight); and the Raft thread captures the frozen last log index and arms the
    * watchdog. The captured index is returned so the caller can use it as the catch-up target for
    * the desired leader.
+   *
+   * <p>The barrier is transactional: if any step after the initial write freeze fails (the stream
+   * processor fails to pause, or the Raft side rejects the pause because this node is not the
+   * leader or is mid-reconfiguration), the already-applied steps are rolled back via {@link
+   * #rollbackTransferPause()} before the returned future completes exceptionally, so a failed pause
+   * never leaves the partition unavailable.
    */
   public ActorFuture<Long> pauseForTransfer(final Duration resumeTimeout) {
     final CompletableActorFuture<Long> result = new CompletableActorFuture<>();
@@ -517,6 +523,7 @@ public final class ZeebePartition extends Actor
               .onComplete(
                   (ignored, error) -> {
                     if (error != null) {
+                      rollbackTransferPause();
                       result.completeExceptionally(error);
                     } else {
                       armRaftPause(resumeTimeout, pausedSinceMs, result);
@@ -524,6 +531,22 @@ public final class ZeebePartition extends Actor
                   });
         });
     return result;
+  }
+
+  /**
+   * Undoes the barrier steps applied by {@link #pauseForTransfer(Duration)} so a pause that fails
+   * partway does not leave the partition write-frozen and unavailable. The transfer-pause flag is
+   * cleared first so {@link PartitionContext#shouldProcess shouldProcess()} reflects reality before
+   * we decide whether to resume the processor; write admission and processing are then restored
+   * according to the other active pause reasons (disk/admin). Must run on the partition actor.
+   */
+  private void rollbackTransferPause() {
+    context.setPausedForTransfer(false);
+    context.getLogStream().resumeWrites();
+    final var streamProcessor = context.getStreamProcessor();
+    if (streamProcessor != null && context.shouldProcess()) {
+      streamProcessor.resumeProcessing();
+    }
   }
 
   /**
@@ -543,6 +566,7 @@ public final class ZeebePartition extends Actor
                 actor.run(
                     () -> {
                       if (error != null) {
+                        rollbackTransferPause();
                         result.completeExceptionally(error);
                       } else {
                         result.complete(targetIndex);

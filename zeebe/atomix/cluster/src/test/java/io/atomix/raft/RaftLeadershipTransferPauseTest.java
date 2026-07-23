@@ -16,8 +16,12 @@
 package io.atomix.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.atomix.raft.RaftError.Type;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.protocol.RaftResponse.Status;
+import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.roles.LeaderRole;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -124,6 +128,108 @@ public class RaftLeadershipTransferPauseTest {
 
     // then
     assertThat(captured).isEqualTo(lastIndex);
+  }
+
+  @Test
+  public void shouldRejectApplicationAppendWhilePaused() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    final long frozenIndex =
+        onRaftThread(
+            leader,
+            () ->
+                ((LeaderRole) leader.getContext().getRaftRole())
+                    .pauseForTransfer(Duration.ofSeconds(30)));
+
+    // when — an application write is submitted to the leader while paused
+    final var rejected = raftRule.appendEntryAsync();
+
+    // then — it is rejected and the frozen log head does not move
+    assertThatThrownBy(rejected::awaitCommit)
+        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("paused for a leadership transfer");
+    assertThat(onRaftThread(leader, () -> leader.getContext().getLog().getLastIndex()))
+        .as("no entry is appended past the frozen target while paused")
+        .isEqualTo(frozenIndex);
+
+    // when resumed, writes are admitted again
+    onRaftThread(
+        leader,
+        () -> {
+          ((LeaderRole) leader.getContext().getRaftRole()).resumeFromTransfer();
+          return null;
+        });
+
+    // then
+    assertThat(raftRule.appendEntry())
+        .as("appends succeed again once the transfer pause is lifted")
+        .isGreaterThan(frozenIndex);
+  }
+
+  @Test
+  public void shouldRejectReconfigurationWhilePaused() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+    onRaftThread(
+        leader,
+        () -> {
+          ((LeaderRole) leader.getContext().getRaftRole()).pauseForTransfer(Duration.ofSeconds(30));
+          return null;
+        });
+
+    // when — a reconfiguration is requested while paused
+    final var response =
+        onRaftThread(
+            leader,
+            () ->
+                ((LeaderRole) leader.getContext().getRaftRole())
+                    .onReconfigure(removeAnyFollowerRequest(leader))
+                    .getNow(null));
+
+    // then — it is rejected with a retryable configuration error, not applied
+    assertThat(response).isNotNull();
+    assertThat(response.status()).isEqualTo(Status.ERROR);
+    assertThat(response.error().type()).isEqualTo(Type.CONFIGURATION_ERROR);
+  }
+
+  @Test
+  public void shouldRejectPauseWhileReconfiguring() throws Exception {
+    // given
+    raftRule.appendEntries(5);
+    final var leader = raftRule.getLeader().orElseThrow();
+
+    // when a reconfiguration is in progress (its configuration entry is appended but not yet
+    // committed) and a transfer pause is attempted in the same Raft-thread task, then the pause is
+    // rejected so the captured target cannot be moved by the in-flight reconfiguration
+    onRaftThread(
+        leader,
+        () -> {
+          final var leaderRole = (LeaderRole) leader.getContext().getRaftRole();
+          leaderRole.onReconfigure(removeAnyFollowerRequest(leader));
+          assertThatThrownBy(() -> leaderRole.pauseForTransfer(Duration.ofSeconds(30)))
+              .isInstanceOf(IllegalStateException.class)
+              .hasMessageContaining("configuration change is in progress");
+          return null;
+        });
+  }
+
+  /** Builds a membership change that removes an arbitrary follower, so it is not a no-op. */
+  private ReconfigureRequest removeAnyFollowerRequest(final RaftServer leader) {
+    final var follower = raftRule.getFollower().orElseThrow();
+    final var followerId = follower.getContext().getCluster().getLocalMember().memberId();
+    final var configuration = leader.getContext().getCluster().getConfiguration();
+    final var updatedMembers =
+        configuration.newMembers().stream()
+            .filter(member -> !member.memberId().equals(followerId))
+            .toList();
+    return ReconfigureRequest.builder()
+        .withIndex(configuration.index())
+        .withTerm(configuration.term())
+        .withMembers(updatedMembers)
+        .from(leader.getContext().getCluster().getLocalMember().memberId().id())
+        .build();
   }
 
   private void pauseOnRaftThread(final RaftServer leader, final Duration resumeTimeout) {

@@ -303,6 +303,58 @@ public class ZeebePartitionTest {
   }
 
   @Test
+  public void shouldRollBackBarrierWhenRaftPauseFails() {
+    // given — writes are frozen and the processor paused, but the Raft side rejects the pause (e.g.
+    // this node is mid-reconfiguration or no longer the leader)
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(streamProcessor.pauseProcessing()).thenReturn(CompletableActorFuture.completed());
+    when(streamProcessor.resumeProcessing()).thenReturn(CompletableActorFuture.completed());
+    when(ctx.shouldProcess()).thenReturn(true);
+    when(raft.getServer().pauseForTransfer(any(), anyLong()))
+        .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("not the leader")));
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Long> result = partition.pauseForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // then — the pause fails and the barrier is rolled back so the partition stays available
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    verify(logStream).resumeWrites();
+    verify(ctx).setPausedForTransfer(false);
+    verify(streamProcessor).resumeProcessing();
+  }
+
+  @Test
+  public void shouldRollBackWriteFreezeWhenProcessorPauseFails() {
+    // given — the write freeze succeeds but the stream processor fails to pause
+    final var logStream = mock(LogStream.class);
+    when(ctx.getLogStream()).thenReturn(logStream);
+    final var streamProcessor = mock(StreamProcessor.class);
+    when(ctx.getStreamProcessor()).thenReturn(streamProcessor);
+    when(streamProcessor.pauseProcessing())
+        .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("boom")));
+    when(streamProcessor.resumeProcessing()).thenReturn(CompletableActorFuture.completed());
+    when(ctx.shouldProcess()).thenReturn(true);
+    schedulerRule.submitActor(partition);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Long> result = partition.pauseForTransfer(Duration.ofSeconds(5));
+    schedulerRule.workUntilDone();
+
+    // then — the freeze is rolled back and the Raft side is never armed
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    verify(logStream).resumeWrites();
+    verify(ctx).setPausedForTransfer(false);
+    verify(raft.getServer(), never()).pauseForTransfer(any(), anyLong());
+  }
+
+  @Test
   public void shouldCallOnFailureOnAddFailureListenerAndUnhealthy() {
     // given
     final var report = mock(HealthReport.class);

@@ -59,17 +59,17 @@ class PartitionProcessingStateTest {
     // given
     final var partitionProcessingState = new PartitionProcessingState(MOCK_RAFT_PARTITION);
     partitionProcessingState.setDiskSpaceAvailable(true);
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.shouldProcess()).isTrue();
+    assertThat(partitionProcessingState.shouldProcess()).isTrue();
 
     // when
     partitionProcessingState.setPausedForTransfer(true);
 
     // then
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.shouldProcess()).isFalse();
+    assertThat(partitionProcessingState.shouldProcess()).isFalse();
 
     // and when the transfer pause is cleared, processing may run again
     partitionProcessingState.setPausedForTransfer(false);
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.shouldProcess()).isTrue();
+    assertThat(partitionProcessingState.shouldProcess()).isTrue();
   }
 
   @Test
@@ -83,7 +83,7 @@ class PartitionProcessingStateTest {
     partitionProcessingState.setDiskSpaceAvailable(true);
 
     // then
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.shouldProcess()).isFalse();
+    assertThat(partitionProcessingState.shouldProcess()).isFalse();
   }
 
   @Test
@@ -98,9 +98,8 @@ class PartitionProcessingStateTest {
     partitionProcessingState.resumeProcessing();
 
     // then
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.isProcessingPaused())
-        .isFalse();
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.shouldProcess()).isFalse();
+    assertThat(partitionProcessingState.isProcessingPaused()).isFalse();
+    assertThat(partitionProcessingState.shouldProcess()).isFalse();
   }
 
   @Test
@@ -113,7 +112,7 @@ class PartitionProcessingStateTest {
     final var reloaded = new PartitionProcessingState(MOCK_RAFT_PARTITION);
 
     // then
-    org.assertj.core.api.Assertions.assertThat(reloaded.isPausedForTransfer()).isFalse();
+    assertThat(reloaded.isPausedForTransfer()).isFalse();
   }
 
   @Test

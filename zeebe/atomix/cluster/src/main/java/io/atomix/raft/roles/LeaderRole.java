@@ -160,6 +160,22 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
     }
 
+    // A coordinated leadership transfer freezes the log so the desired leader can catch up to a
+    // stable target index; appending a configuration entry would move that target. Reject with a
+    // retryable configuration error so the caller retries once the transfer has resumed. The
+    // low-level append guard in appendEntry() remains the backstop. Force reconfiguration is not
+    // gated here: it steps the leader down (see onForceConfigure), which clears the pause.
+    if (pausedForTransfer) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              ReconfigureResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(
+                      Type.CONFIGURATION_ERROR,
+                      "Cannot reconfigure while paused for a leadership transfer")
+                  .build()));
+    }
+
     // If another configuration change is already under way, reject the configuration.
     if (configuring() || jointConsensus()) {
       /*
@@ -417,6 +433,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
    * just from this arming step.
    *
    * @param pausedSinceMs epoch millis at which write admission was frozen
+   * @throws IllegalStateException if the leader is not in a steady state (still initializing, or a
+   *     configuration change is in progress); the caller should retry the transfer once it settles.
+   *     Pausing mid-reconfiguration would either strand the log in joint consensus (the append
+   *     guard rejects the finalising entry) or leave the captured target unstable, so the two
+   *     operations are kept mutually exclusive.
    */
   public long pauseForTransfer(final Duration resumeTimeout, final long pausedSinceMs) {
     raft.checkThread();
@@ -424,6 +445,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       // Idempotent: the watchdog is already armed. Report the current head so a repeat caller still
       // gets a usable target.
       return raft.getLog().getLastIndex();
+    }
+    if (initializing() || configuring() || jointConsensus()) {
+      throw new IllegalStateException(
+          "Cannot pause for a leadership transfer while a configuration change is in progress");
     }
     pausedForTransfer = true;
     transferPauseStartMs = pausedSinceMs;
@@ -746,6 +771,19 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   private IndexedRaftLogEntry appendEntry(final RaftLogEntry entry) {
+    // Safety backstop for the frozen-log invariant: while paused for a coordinated leadership
+    // transfer the last log index must stay fixed so the desired leader can catch up to a stable
+    // target. Every leader-originated entry (application, configuration, initial, member) funnels
+    // through here, so one guard freezes them all. Higher layers already prevent reaching this
+    // point while paused (the broker write gate stops application writes; onReconfigure and the
+    // pause-time readiness check keep configuration entries out), so getting here is an invariant
+    // violation rather than an expected rejection. Thrown before the try below so it is not
+    // mistaken
+    // for an append failure that steps the leader down.
+    if (pausedForTransfer) {
+      throw new IllegalStateException(
+          "Cannot append to the log while the partition is paused for a leadership transfer");
+    }
     try {
       return appendWithRetry(entry);
     } catch (final Exception e) {
