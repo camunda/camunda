@@ -564,6 +564,32 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(() -> partitionGroupChangeAppliers.remove(groupId));
   }
 
+  /**
+   * Merges a {@link CurrentClusterConfiguration} received via gossip into the local one. If the
+   * merge changes the local configuration, it is persisted, re-gossiped, and local operation
+   * application is triggered. Mirrors the legacy {@code onGossipReceived} merge behaviour.
+   */
+  void onGossipReceivedCurrent(final CurrentClusterConfiguration receivedConfiguration) {
+    executor.run(
+        () -> {
+          if (receivedConfiguration == null) {
+            return;
+          }
+          final var local = persistedCurrentConfiguration.getConfiguration();
+          final var merged = local.merge(receivedConfiguration);
+          if (!merged.equals(local)) {
+            updateLocalCurrentConfiguration(merged)
+                .ifRightOrLeft(
+                    applied -> applyNewConfigurationChangeOperation(),
+                    error ->
+                        LOG.warn(
+                            "Failed to process cluster configuration received via gossip. '{}'",
+                            receivedConfiguration,
+                            error));
+          }
+        });
+  }
+
   private Either<Exception, CurrentClusterConfiguration> updateLocalCurrentConfiguration(
       final CurrentClusterConfiguration configuration) {
     if (configuration.equals(persistedCurrentConfiguration.getConfiguration())) {
