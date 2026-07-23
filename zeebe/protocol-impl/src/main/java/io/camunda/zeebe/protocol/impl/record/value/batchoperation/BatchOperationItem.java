@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
@@ -18,12 +19,15 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
       new LongProperty("processInstanceKey", -1);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty("rootProcessInstanceKey", -1);
+  private final IntegerProperty storageOrdinalKeyProperty =
+      new IntegerProperty("storageOrdinalKey", 0);
 
   public BatchOperationItem() {
-    super(3);
+    super(4);
     declareProperty(itemKeyProperty)
         .declareProperty(processInstanceKeyProperty)
-        .declareProperty(rootProcessInstanceKeyProperty);
+        .declareProperty(rootProcessInstanceKeyProperty)
+        .declareProperty(storageOrdinalKeyProperty);
   }
 
   public BatchOperationItem(
@@ -64,10 +68,21 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
     return this;
   }
 
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProperty.getValue();
+  }
+
+  public BatchOperationItem setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+    return this;
+  }
+
   public BatchOperationItem wrap(final BatchOperationItemValue value) {
     setItemKey(value.getItemKey());
     setProcessInstanceKey(value.getProcessInstanceKey());
     setRootProcessInstanceKey(value.getRootProcessInstanceKey());
+    setStorageOrdinalKey(value.getStorageOrdinalKey());
     return this;
   }
 }

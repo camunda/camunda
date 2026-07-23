@@ -62,10 +62,11 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", -1L);
+  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
   private final StringProperty businessIdProp = new StringProperty("businessId", "");
 
   public DecisionEvaluationRecord() {
-    super(19);
+    super(20);
     declareProperty(decisionKeyProp)
         .declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
@@ -84,6 +85,7 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
         .declareProperty(failedDecisionIdProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(businessIdProp);
   }
 
@@ -287,15 +289,15 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getBusinessIdBuffer() {
-    return businessIdProp.getValue();
-  }
-
   public DecisionEvaluationRecord setEvaluationFailureMessage(
       final String evaluationFailureMessage) {
     evaluationFailureMessageProp.setValue(evaluationFailureMessage);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProp.getValue();
   }
 
   @Override
@@ -365,6 +367,16 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
 
   public DecisionEvaluationRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public DecisionEvaluationRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 }

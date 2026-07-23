@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
@@ -19,15 +20,20 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
     implements BatchOperationChunkRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
+  public static final String PROP_STORAGE_ORDINAL_KEY = "storageOrdinalKey";
   public static final String PROP_ITEMS_LIST = "items";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(PROP_STORAGE_ORDINAL_KEY, 0);
   private final ArrayProperty<BatchOperationItem> itemsProp =
       new ArrayProperty<>(PROP_ITEMS_LIST, BatchOperationItem::new);
 
   public BatchOperationChunkRecord() {
-    super(2);
-    declareProperty(batchOperationKeyProp).declareProperty(itemsProp);
+    super(3);
+    declareProperty(batchOperationKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(itemsProp);
   }
 
   @Override
@@ -38,6 +44,16 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
   public BatchOperationChunkRecord setBatchOperationKey(final Long batchOperationKey) {
     batchOperationKeyProp.reset();
     batchOperationKeyProp.setValue(batchOperationKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public BatchOperationChunkRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 
@@ -54,6 +70,7 @@ public final class BatchOperationChunkRecord extends UnifiedRecordValue
 
   public void wrap(final BatchOperationChunkRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
+    setStorageOrdinalKey(record.getStorageOrdinalKey());
     setItems(record.getItems());
   }
 }
