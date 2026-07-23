@@ -106,7 +106,12 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().match(/\/v2\/agent-instances\/\d+\/history\/search/)) {
+    if (
+      route
+        .request()
+        .url()
+        .match(/\/v2\/agent-instances\/\d+\/history\/search/)
+    ) {
       const requestBody = route.request().postDataJSON() ?? {};
       const roleFilter: string | undefined = requestBody?.filter?.role;
       const elementInstanceKeyFilter: string | undefined =
