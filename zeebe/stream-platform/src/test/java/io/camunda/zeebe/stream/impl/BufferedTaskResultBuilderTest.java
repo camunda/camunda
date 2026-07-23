@@ -40,7 +40,7 @@ class BufferedTaskResultBuilderTest {
   @Test
   void canAppendRecords() {
     final var cache = Mockito.mock(StagedScheduledCommandCache.class);
-    final var builder = new BufferedTaskResultBuilder((count, size) -> size < 1000, cache);
+    final var builder = new BufferedTaskResultBuilder((count, size) -> size < 1200, cache);
 
     final var records =
         List.of(
@@ -49,7 +49,7 @@ class BufferedTaskResultBuilderTest {
             new ProcessInstanceCreationRecord());
 
     assertThat(builder.canAppendRecords(records, FollowUpCommandMetadata.empty()))
-        .isTrue(); // size should be 801
+        .isTrue(); // size should be 1011
   }
 
   @Test
@@ -66,6 +66,6 @@ class BufferedTaskResultBuilderTest {
             new ProcessInstanceCreationRecord());
 
     assertThat(builder.canAppendRecords(records, FollowUpCommandMetadata.empty()))
-        .isFalse(); // size should be 1335
+        .isFalse(); // size should be 1685
   }
 }
