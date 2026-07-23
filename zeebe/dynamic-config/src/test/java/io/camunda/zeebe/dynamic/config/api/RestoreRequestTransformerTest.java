@@ -12,19 +12,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.MemberId;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InternalError;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidState;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.NotFound;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 
 final class RestoreRequestTransformerTest {
@@ -47,8 +57,12 @@ final class RestoreRequestTransformerTest {
         .addMember(MEMBER, MemberState.initializeAsActive(Map.of()).toRecovering());
   }
 
-  private static ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest>
-      validatorReturning(final Either<Exception, RestoreRequest> result) {
+  private static RestoreResolvedRequest resolvedRequest() {
+    return new RestoreResolvedRequest(Map.of(1, new long[] {1L}), false);
+  }
+
+  private static ClusterConfigurationRequestValidator<RestoreRequest, RestoreResolvedRequest>
+      validatorReturning(final Either<Exception, RestoreResolvedRequest> result) {
     return new ClusterConfigurationRequestValidator<>() {
       @Override
       public Class<RestoreRequest> requestType() {
@@ -56,14 +70,15 @@ final class RestoreRequestTransformerTest {
       }
 
       @Override
-      public Either<Exception, RestoreRequest> validate(final RestoreRequest request) {
+      public Either<Exception, RestoreResolvedRequest> validate(final RestoreRequest request) {
         return result;
       }
     };
   }
 
   private static RequestValidatorRegistry registryWithValidator(
-      final ClusterConfigurationRequestValidator<RestoreRequest, RestoreRequest> validator) {
+      final ClusterConfigurationRequestValidator<RestoreRequest, RestoreResolvedRequest>
+          validator) {
     final var registry = new RequestValidatorRegistry();
     registry.registerValidator(null, validator);
     return registry;
@@ -75,7 +90,7 @@ final class RestoreRequestTransformerTest {
     final var transformer =
         new RestoreRequestTransformer(
             restoreRequest(),
-            registryWithValidator(validatorReturning(Either.right(restoreRequest()))));
+            registryWithValidator(validatorReturning(Either.right(resolvedRequest()))));
 
     // when
     final var result = transformer.operations(ClusterConfiguration.init());
@@ -205,18 +220,35 @@ final class RestoreRequestTransformerTest {
   }
 
   @Test
-  void shouldProduceEmptyPlanWhenValidatorAcceptsAndClusterIsRecovering() {
-    // given
-    final var request = restoreRequest();
+  void shouldGeneratePhaseMajorRestorePlanForRecoveringMembersWithLocalPartitions() {
+    // given - two recovering members, each replicating partition 1
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var partitionState = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
+    final var topology =
+        ClusterConfiguration.init()
+            .addMember(memberOne, MemberState.initializeAsActive(partitionState).toRecovering())
+            .addMember(memberTwo, MemberState.initializeAsActive(partitionState).toRecovering());
+    final var resolved = new RestoreResolvedRequest(Map.of(1, new long[] {1L, 2L}), false);
     final var transformer =
         new RestoreRequestTransformer(
-            request, registryWithValidator(validatorReturning(Either.right(request))));
+            restoreRequest(), registryWithValidator(validatorReturning(Either.right(resolved))));
 
     // when
-    final var result = transformer.operations(recoveringTopology());
+    final var result = transformer.operations(topology);
 
-    // then
+    // then - phase-major: all PreRestore, then all Restore, then exit recovery, then incarnation
     EitherAssert.assertThat(result).isRight();
-    assertThat(result.get()).isEmpty();
+    assertThat(result.get())
+        .containsExactly(
+            new PartitionPreRestoreOperation(memberOne, 1),
+            new PartitionPreRestoreOperation(memberTwo, 1),
+            new PartitionRestoreOperation(memberOne, 1, new TreeSet<>(List.of(1L, 2L))),
+            new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
+            new ModeChangeOperation(memberOne, Mode.PROCESSING),
+            new ModeChangeOperation(memberTwo, Mode.PROCESSING),
+            new AwaitModeChangeOperation(memberOne, Mode.PROCESSING),
+            new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
+            new UpdateIncarnationNumberOperation(memberOne));
   }
 }
