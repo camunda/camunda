@@ -19,6 +19,7 @@ import { formatDateTime, formatDuration } from "../../lib/format";
 import { EmptyTile, LoadingTile } from "../common/EmptyTile";
 import { EgoGraphCard } from "./EgoGraphCard";
 import { distinctElementCount, JourneyMiniMap, MAX_MINI_MAP_NODES } from "./JourneyMiniMap";
+import { JourneyDiagramView } from "./JourneyDiagramView";
 
 /** "Activity_ManualCreditReview" / "manual-credit-review" -> "Manual Credit Review": strips the
  * modeler's element-kind prefixes and turns the id's word breaks into a readable label. The raw id
@@ -269,7 +270,7 @@ function JourneyLane({ lane }: { lane: Lane }) {
   );
 }
 
-type JourneyView = "timeline" | "map";
+type JourneyView = "timeline" | "map" | "diagram";
 
 export function ObjectDetailPage() {
   const { type = "", id = "" } = useParams<{ type: string; id: string }>();
@@ -357,6 +358,13 @@ export function ObjectDetailPage() {
                 >
                   Map
                 </Button>
+                <Button
+                  size="sm"
+                  variant={journeyView === "diagram" ? "default" : "ghost"}
+                  onClick={() => setJourneyView("diagram")}
+                >
+                  Diagram
+                </Button>
               </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -364,6 +372,8 @@ export function ObjectDetailPage() {
                 <p className="text-sm text-neutral-foreground-muted">No activities recorded.</p>
               ) : showMap ? (
                 <JourneyMiniMap activities={journey.activities} />
+              ) : journeyView === "diagram" ? (
+                <JourneyDiagramView activities={journey.activities} sightings={journey.sightings} />
               ) : (
                 <>
                   {journeyView === "map" && mapTooLarge && (

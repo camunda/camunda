@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@camunda/design-system": "^0.16.1",
+    "bpmn-js": "18.16.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^7.18.1",
