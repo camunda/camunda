@@ -286,18 +286,19 @@ public record PartitionGroupConfiguration(
    * operation (if any) is not applicable to that member. Mirrors {@code
    * ClusterConfiguration#pendingChangesFor(MemberId)}.
    */
-  public Optional<ClusterConfigurationChangeOperation> pendingChangesFor(final MemberId memberId) {
+  public Optional<PartitionGroupOperation> pendingChangesFor(final MemberId memberId) {
     if (pendingChanges.isEmpty() || !pendingChanges.get().hasPendingChangesFor(memberId)) {
       return Optional.empty();
     }
-    return Optional.of(pendingChanges.orElseThrow().nextPendingOperation());
+    return Optional.of(
+        (PartitionGroupOperation) pendingChanges.orElseThrow().nextPendingOperation());
   }
 
-  public ClusterConfigurationChangeOperation nextPendingOperation() {
+  public PartitionGroupOperation nextPendingOperation() {
     if (!hasPendingChanges()) {
       throw new NoSuchElementException();
     }
-    return pendingChanges.orElseThrow().nextPendingOperation();
+    return (PartitionGroupOperation) pendingChanges.orElseThrow().nextPendingOperation();
   }
 
   /**
