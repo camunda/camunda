@@ -12,7 +12,10 @@ import io.camunda.analytics.lake.objects.CompiledObjectType;
 import io.camunda.analytics.lake.objects.CompiledObjectTypes;
 import io.camunda.analytics.lake.sink.RowAppender;
 import io.camunda.analytics.lake.state.TranslatorState;
+import io.camunda.analytics.lake.state.TranslatorState.BirthQualifier;
 import io.camunda.analytics.lake.state.TranslatorState.FlowEndpoints;
+import io.camunda.analytics.lake.state.TranslatorState.LifecycleStatus;
+import io.camunda.analytics.lake.state.TranslatorState.ObjectLifecycle;
 import io.camunda.analytics.lake.state.TranslatorState.ObjectSighting;
 import io.camunda.analytics.lake.state.TranslatorState.ObjectSightingList;
 import io.camunda.analytics.lake.state.TranslatorState.OpenElement;
@@ -24,6 +27,7 @@ import io.camunda.analytics.lake.translate.RawTableSchemas.ActivityColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.InstanceColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.InstanceLinkColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.ObjectColumns;
+import io.camunda.analytics.lake.translate.RawTableSchemas.ObjectLifecycleColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.ObjectRelationColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.VariantColumns;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
@@ -266,6 +270,61 @@ import org.slf4j.LoggerFactory;
  * and a ring-full {@code begin()} is absorbed (seen-cache entry unmarked, record fold still reports
  * success) rather than propagated as {@link #onRecord}-level backpressure — these are small,
  * dedicated dictionary pipelines that must never hold back the primary instances/activities row.
+ *
+ * <h2>Object lifecycle capture</h2>
+ *
+ * <p><b>Working assumption (v1, stated here once for every method below that relies on it): an
+ * object's instances are partition-local.</b> Nothing in this scheme cross-checks a sighting
+ * against other Zeebe partitions. Where that assumption is violated (the same object id genuinely
+ * spans more than one partition), a birth on each partition that first sights it can double-count
+ * {@code objects_born}, and a closing instance only ever sees the sightings its own partition's
+ * CF-7 list accumulated — this is documented, not defended against.
+ *
+ * <p>{@link CompiledObjectType#closingRules()} (see {@code io.camunda.analytics.lake.objects}'s own
+ * package) optionally declares which process completions close a type's instances; a type with no
+ * closing rule simply never emits a lifecycle fact (the "default-open" case — its objects stay
+ * {@link LifecycleStatus#OPEN} forever as far as this scheme is concerned).
+ *
+ * <ul>
+ *   <li><b>Birth</b> ({@link #foldObjectLifecycleSighting}, called from {@link #foldObjectSighting}
+ *       right after {@link #recordObjectSightingForRelations} concludes — see that method's own
+ *       return value): the very first time {@link TranslatorState#getObjectLifecycle} finds no
+ *       accumulator for a (type, id), one is created {@link LifecycleStatus#OPEN} with {@code
+ *       birthTsMs} = this sighting's own record timestamp, and the {@link #objectsBornRider} folds
+ *       once. If an accumulator already exists — {@link LifecycleStatus#OPEN} or {@link
+ *       LifecycleStatus#CLOSED_TOMBSTONE} — nothing is created and nothing is folded: this single
+ *       presence check is what makes birth safe against both a replay whose {@link TranslatorState}
+ *       is durably ahead of the lake's own committed cut (see class javadoc's "Origin-position
+ *       dedup" section for the same replay exposure the CF-7 sighting list itself already has to
+ *       defend against) and a late sighting arriving after the object has already closed. While
+ *       {@link LifecycleStatus#OPEN}, {@code nSightings} increments once per sighting {@link
+ *       #recordObjectSightingForRelations} itself accepted as a genuinely new CF-7 entry (reusing
+ *       that method's own duplicate-scan, not a second one) — a duplicate sighting recounts
+ *       nothing.
+ *   <li><b>Closing</b> ({@link #emitObjectLifecycleClosingsIfDeclared}, called from {@link
+ *       #emitInstance} — see that method's own javadoc for exactly where and why): when the
+ *       completing instance's process is a declared closing process, every one of its CF-7
+ *       sightings whose object type closes on it is checked against its lifecycle accumulator; an
+ *       {@link LifecycleStatus#OPEN} one emits one {@code object_lifecycle} row (outcome from this
+ *       completion's {@code finalState}, duration from birth to this completion) and flips to
+ *       {@link LifecycleStatus#CLOSED_TOMBSTONE} — never deleted, so a later replayed sighting or a
+ *       second closing instance recognizes the object is already accounted for and skips silently.
+ *       Unlike every other object-fabric dictionary appender in this class, backpressure here is
+ *       <b>not</b> absorbed — see that method's own javadoc for why a lifecycle fact cannot be
+ *       treated as redundant the way a dictionary row can, and for why this is consequently the one
+ *       object-fabric emission in {@code emitInstance} that runs before any mutation, not after.
+ *   <li><b>Sweep</b> ({@code io.camunda.analytics.lake.LakePocApp}'s own housekeeping tick, via
+ *       {@link TranslatorState#sweepObjectLifecycleTombstones}): tombstones are not kept forever —
+ *       one older than {@code lake.objectTombstoneRetentionMs} is deleted outright, since by then
+ *       it has done its job of blocking a re-birth/double-close for as long as configured.
+ * </ul>
+ *
+ * <p>Known limitation, shared with every other state-mutating emission in this translator: a crash
+ * between a lifecycle state write (the accumulator flip) and this pipeline's own descriptor commit
+ * can lose that row's uncommitted window — systemic, not specific to lifecycle capture, and fixed
+ * only by the checkpoint-at-cut work globally, not by anything local to this scheme (see this
+ * class's own "Evict after emit" rule in the class javadoc's introduction for the same caveat
+ * already accepted everywhere else).
  */
 public final class LakeTranslator {
 
@@ -360,6 +419,7 @@ public final class LakeTranslator {
   private static final int PROFILE_DIM_PROCESS_ID = 0;
   private static final int PROFILE_DIM_VAR_NAME = 1;
   private static final int PROFILE_MEASURE_VALUE = 0;
+  private static final int OBJECT_BORN_DIM_OBJECT_TYPE = 0;
 
   // ---- variable-profile named counters (declaration order -- see LakePocApp's own entity
   // declaration and PollFedRider#incrementCounter's own javadoc) ----
@@ -457,6 +517,25 @@ public final class LakeTranslator {
       new BoundedSeenCache<>(OBJECT_RELATION_SEEN_CACHE_CAPACITY);
 
   /**
+   * The {@code object_lifecycle} fact table's {@link RowAppender}, or {@code null} to disable
+   * closing-emission entirely (birth/{@code nSightings} bookkeeping in {@link TranslatorState}
+   * still runs regardless — see this class's "Object lifecycle capture" javadoc section). Unlike
+   * {@link #objectsAppender} and its siblings, {@code null} here also skips the closing-candidate
+   * scan itself (not just the row write): with no appender to write to, there is nothing this class
+   * could safely do with a would-be candidate other than leave its accumulator {@link
+   * LifecycleStatus#OPEN} exactly as it already is.
+   */
+  private final RowAppender objectLifecycleAppender;
+
+  /**
+   * Folds an object's first-ever sighting into a birth counter — see this class's "Object lifecycle
+   * capture" javadoc section and {@link PollFedRider}'s own class javadoc for the poll-fed rider
+   * mechanics. {@code null} disables birth counting only; the lifecycle accumulator itself is still
+   * created regardless (birth counting is a metric derived from it, not a precondition for it).
+   */
+  private final PollFedRider objectsBornRider;
+
+  /**
    * Heap cache of {@link #onProcess}'s own persisted state, warmed two ways: eagerly, in full, the
    * moment a definition's own {@code PROCESS}/{@code CREATED} record is folded; lazily, one flow at
    * a time, on a cache miss in {@link #resolveFlowEndpoints} (the path a restart takes — the
@@ -546,11 +625,10 @@ public final class LakeTranslator {
   }
 
   /**
-   * The full constructor: every raw-row appender, every optional metric hook, and every
-   * object-fabric capture hook — the sightings/instance-links/object-relations dictionary appenders
-   * (see their own field javadocs) and the declared {@link CompiledObjectTypes} registry driving
-   * sighting detection (see {@link #objectTypes}). Any of the eleven may be {@code null} (where
-   * nullable) to disable that capture without disturbing the others.
+   * Same as the 11-arg constructor below, with both object-lifecycle hooks ({@link
+   * #objectLifecycleAppender}, {@link #objectsBornRider}) disabled — kept so every pre-existing
+   * 11-arg caller (and, transitively, every shorter overload above) keeps compiling and behaving
+   * unchanged. See the 13-arg constructor below for the full picture.
    */
   public LakeTranslator(
       final TranslatorState state,
@@ -564,6 +642,42 @@ public final class LakeTranslator {
       final RowAppender instanceLinksAppender,
       final RowAppender objectRelationsAppender,
       final CompiledObjectTypes objectTypes) {
+    this(
+        state,
+        instanceAppender,
+        activityAppender,
+        variantsAppender,
+        flowCountsRider,
+        startedCountsRider,
+        profilesRider,
+        objectsAppender,
+        instanceLinksAppender,
+        objectRelationsAppender,
+        objectTypes,
+        null,
+        null);
+  }
+
+  /**
+   * The full constructor: every raw-row appender, every optional metric hook, every object-fabric
+   * capture hook, and the two object-lifecycle hooks ({@link #objectLifecycleAppender}, {@link
+   * #objectsBornRider}). Any of the thirteen may be {@code null} (where nullable) to disable that
+   * capture without disturbing the others.
+   */
+  public LakeTranslator(
+      final TranslatorState state,
+      final RowAppender instanceAppender,
+      final RowAppender activityAppender,
+      final RowAppender variantsAppender,
+      final PollFedRider flowCountsRider,
+      final PollFedRider startedCountsRider,
+      final PollFedRider profilesRider,
+      final RowAppender objectsAppender,
+      final RowAppender instanceLinksAppender,
+      final RowAppender objectRelationsAppender,
+      final CompiledObjectTypes objectTypes,
+      final RowAppender objectLifecycleAppender,
+      final PollFedRider objectsBornRider) {
     this.state = state;
     this.instanceAppender = instanceAppender;
     this.activityAppender = activityAppender;
@@ -575,6 +689,8 @@ public final class LakeTranslator {
     this.instanceLinksAppender = instanceLinksAppender;
     this.objectRelationsAppender = objectRelationsAppender;
     this.objectTypes = objectTypes;
+    this.objectLifecycleAppender = objectLifecycleAppender;
+    this.objectsBornRider = objectsBornRider;
     zeebeWatermarks = newWatermarkArray(INITIAL_WATERMARK_CAPACITY);
   }
 
@@ -881,6 +997,15 @@ public final class LakeTranslator {
     final OpenInstance instance = state.getInstance(processInstanceKey);
     if (instance == null) {
       return true; // replay past evict — expected, not an error
+    }
+    // Object lifecycle capture: closing -- runs BEFORE any mutation for this record (including the
+    // primary row's own instanceAppender.begin() below), not after endRow() like every other
+    // object-fabric emission in this class -- see #emitObjectLifecycleClosingsIfDeclared's own
+    // javadoc and class javadoc's "Object lifecycle capture" section for why that positioning is
+    // load-bearing here.
+    if (!emitObjectLifecycleClosingsIfDeclared(
+        processInstanceKey, instance.processId(), timestamp, finalState)) {
+      return false; // ring full on the lifecycle fact appender -- caller must retry this record
     }
     if (!instanceAppender.begin()) {
       return false; // ring full — caller must retry this same record
@@ -1509,8 +1634,9 @@ public final class LakeTranslator {
 
   /**
    * The shared sighting fold every source above calls: seen-cache check, per-instance CF-7
-   * bookkeeping (always, regardless of {@link #objectsAppender} wiring), then the dictionary row
-   * itself (only if wired). See class javadoc's "Object fabric capture" section.
+   * bookkeeping (always, regardless of {@link #objectsAppender} wiring), the object-lifecycle
+   * birth/{@code nSightings} fold (always, regardless of wiring — see class javadoc's "Object
+   * lifecycle capture" section), then the dictionary row itself (only if wired).
    */
   private void foldObjectSighting(
       final long instanceKey,
@@ -1524,7 +1650,9 @@ public final class LakeTranslator {
     if (!objectSightingSeenCache.checkAndMarkSeen(key)) {
       return; // already sighted this translator lifetime -- see the cache's own javadoc
     }
-    recordObjectSightingForRelations(instanceKey, objectType, objectId, scopeKey);
+    final boolean acceptedNewCf7Entry =
+        recordObjectSightingForRelations(instanceKey, objectType, objectId, scopeKey);
+    foldObjectLifecycleSighting(objectType, objectId, timestamp, acceptedNewCf7Entry);
     emitObjectDictionaryRowIfWired(
         key, instanceKey, objectType, objectId, scopeKey, qualifier, timestamp);
   }
@@ -1554,30 +1682,195 @@ public final class LakeTranslator {
    * appending. Without this, a duplicate append at the {@link #MAX_OBJECT_SIGHTINGS_PER_INSTANCE}
    * boundary would silently consume a slot a genuinely new, later sighting needed — eroding the cap
    * into a missed relation, not just a harmless repeated row.
+   *
+   * @return {@code true} only on the genuine-append branch (a new entry was actually added to the
+   *     list) — {@code false} on every early-return branch (already capped, already recorded, or
+   *     hit the cap this call). Reused by {@link #foldObjectLifecycleSighting} as the signal for
+   *     whether this sighting should increment an object's {@code nSightings} — see that method's
+   *     own javadoc and class javadoc's "Object lifecycle capture" section for why recounting a
+   *     duplicate there would be wrong.
    */
-  private void recordObjectSightingForRelations(
+  private boolean recordObjectSightingForRelations(
       final long instanceKey, final String objectType, final String objectId, final long scopeKey) {
     final ObjectSightingList existing = state.getObjectSightings(instanceKey);
     if (existing != null && existing.overflowed()) {
-      return; // already capped -- see MAX_OBJECT_SIGHTINGS_PER_INSTANCE's own javadoc
+      return false; // already capped -- see MAX_OBJECT_SIGHTINGS_PER_INSTANCE's own javadoc
     }
     final List<ObjectSighting> current = existing == null ? List.of() : existing.sightings();
     for (final ObjectSighting sighting : current) {
       if (sighting.objectType().equals(objectType)
           && sighting.objectId().equals(objectId)
           && sighting.scopeKey() == scopeKey) {
-        return; // already recorded -- see this method's own javadoc on why this scan is
+        return false; // already recorded -- see this method's own javadoc on why this scan is
         // load-bearing
       }
     }
     if (current.size() >= MAX_OBJECT_SIGHTINGS_PER_INSTANCE) {
       state.putObjectSightings(instanceKey, new ObjectSightingList(current, true));
-      return;
+      return false;
     }
     final List<ObjectSighting> grown = new ArrayList<>(current.size() + 1);
     grown.addAll(current);
     grown.add(new ObjectSighting(objectType, objectId, scopeKey));
     state.putObjectSightings(instanceKey, new ObjectSightingList(grown, false));
+    return true;
+  }
+
+  /**
+   * The object-lifecycle birth/{@code nSightings} fold — see class javadoc's "Object lifecycle
+   * capture" section for the full scheme. Runs unconditionally from {@link #foldObjectSighting}
+   * (mirroring {@link #recordObjectSightingForRelations}'s own "runs regardless of wiring" rule):
+   * the lifecycle accumulator and the {@link #objectsBornRider} count are independent of whether
+   * {@link #objectLifecycleAppender} (closing emission) is ever wired at all.
+   *
+   * @param acceptedNewCf7Entry {@link #recordObjectSightingForRelations}'s own return value for
+   *     this exact sighting — {@code true} only when it actually appended a new CF-7 entry
+   */
+  private void foldObjectLifecycleSighting(
+      final String objectType,
+      final String objectId,
+      final long timestamp,
+      final boolean acceptedNewCf7Entry) {
+    final ObjectLifecycle existing = state.getObjectLifecycle(objectType, objectId);
+    if (existing == null) {
+      // FIRST sighting ever for this (type, id) -- birth. Deliberately independent of
+      // acceptedNewCf7Entry: the CF-7 per-instance cap (MAX_OBJECT_SIGHTINGS_PER_INSTANCE) can
+      // reject this exact sighting's entry while it is still this OBJECT's own genuinely first
+      // sighting anywhere -- birth is about the object, not about whether this instance's own
+      // relations-derivation list had room. If an accumulator already exists (open or tombstoned),
+      // this branch is never reached -- see class javadoc for why that single presence check alone
+      // makes birth safe against replay-with-ahead-state and late-sightings-after-close alike.
+      state.putObjectLifecycle(
+          objectType,
+          objectId,
+          new ObjectLifecycle(
+              LifecycleStatus.OPEN, timestamp, BirthQualifier.FIRST_SIGHTING, 1, 0L));
+      foldObjectsBornCounter(objectType, timestamp);
+      return;
+    }
+    if (existing.status() == LifecycleStatus.OPEN && acceptedNewCf7Entry) {
+      state.putObjectLifecycle(
+          objectType,
+          objectId,
+          new ObjectLifecycle(
+              LifecycleStatus.OPEN,
+              existing.birthTsMs(),
+              existing.birthQualifier(),
+              existing.nSightings() + 1,
+              0L));
+    }
+    // else: CLOSED_TOMBSTONE -- documented v1 behavior, a late sighting after close never reopens
+    // the object nor recounts it (see class javadoc's "Object lifecycle capture" section).
+  }
+
+  /**
+   * Folds one object's birth into {@link #objectsBornRider} — see {@link PollFedRider}'s own class
+   * javadoc for the poll-fed rider mechanics. A no-op when the rider isn't wired.
+   */
+  private void foldObjectsBornCounter(final String objectType, final long timestamp) {
+    if (objectsBornRider == null) {
+      return;
+    }
+    objectsBornRider.putDict(OBJECT_BORN_DIM_OBJECT_TYPE, objectType);
+    objectsBornRider.fold(millisToMicros(timestamp));
+  }
+
+  /**
+   * Object lifecycle capture: closing (see class javadoc's "Object lifecycle capture" section for
+   * the full scheme and, in particular, for why this method's ordering relative to {@link
+   * #emitInstance}'s own mutations is load-bearing). A no-op — {@code true}, nothing scanned — when
+   * either {@link #objectTypes} or {@link #objectLifecycleAppender} is unwired, or when {@code
+   * bpmnProcessId} is not a declared closing process for any object type, or when this instance
+   * accumulated no sightings at all: every one of those is a plain map/null lookup, so a
+   * non-closing process's completion (the overwhelming majority in any deployment) costs one cheap
+   * check and returns immediately.
+   *
+   * <p>For each of this instance's CF-7 sightings whose object type closes on {@code
+   * bpmnProcessId}: an {@link LifecycleStatus#OPEN} lifecycle accumulator emits one {@code
+   * object_lifecycle} row and flips to {@link LifecycleStatus#CLOSED_TOMBSTONE} <em>in this same
+   * per-candidate step</em> (write immediately, not batched) — a later candidate sighting the exact
+   * same (type, id) at a different scope (e.g. root and non-root) therefore re-reads its own,
+   * now-already-tombstoned accumulator and skips silently, which is what makes this loop safe to
+   * resume from the top on a retry (see below) without a separate in-loop dedup set. An accumulator
+   * that is {@code null} (an object was somehow never born — not expected, since every sighting
+   * births one) or already {@link LifecycleStatus#CLOSED_TOMBSTONE} (an earlier closing instance,
+   * or an earlier iteration of this very loop) is skipped silently — the documented double-close
+   * suppression.
+   *
+   * <p><b>Backpressure is propagated, not absorbed</b> (see class javadoc): the moment {@link
+   * #objectLifecycleAppender}'s {@code begin()} fails for a candidate, this method returns {@code
+   * false} immediately, appending and flipping nothing for that candidate. Any earlier candidate in
+   * this same call that already succeeded stays flipped — this is safe, not a partial-mutation bug,
+   * precisely because of the same idempotent-on-retry property described above: {@link
+   * #emitInstance} returns {@code false} in turn, before it has performed <em>any other</em>
+   * mutation for this record (this method runs before its own {@code instanceAppender.begin()}), so
+   * the caller's retry re-enters this exact method from the top; already-flipped candidates re-read
+   * as {@link LifecycleStatus#CLOSED_TOMBSTONE} and are skipped, and only the still-{@link
+   * LifecycleStatus#OPEN} candidate(s) — the one(s) that actually hit backpressure — are retried.
+   *
+   * @return {@code false} on backpressure — the caller ({@link #emitInstance}) must return {@code
+   *     false} immediately in turn, before touching anything else
+   */
+  private boolean emitObjectLifecycleClosingsIfDeclared(
+      final long processInstanceKey,
+      final String bpmnProcessId,
+      final long timestamp,
+      final String finalState) {
+    if (objectTypes == null || objectLifecycleAppender == null) {
+      return true;
+    }
+    final List<CompiledObjectType> closingTypes = objectTypes.closingTypesForProcess(bpmnProcessId);
+    if (closingTypes.isEmpty()) {
+      return true;
+    }
+    final ObjectSightingList sightings = state.getObjectSightings(processInstanceKey);
+    if (sightings == null || sightings.sightings().isEmpty()) {
+      return true;
+    }
+    for (final ObjectSighting sighting : sightings.sightings()) {
+      if (!closesOnThisProcess(closingTypes, sighting.objectType())) {
+        continue;
+      }
+      final ObjectLifecycle lifecycle =
+          state.getObjectLifecycle(sighting.objectType(), sighting.objectId());
+      if (lifecycle == null || lifecycle.status() != LifecycleStatus.OPEN) {
+        continue; // never born (unexpected), or already tombstoned -- see this method's own javadoc
+      }
+      if (!objectLifecycleAppender.begin()) {
+        return false; // see this method's own javadoc for why this is safe to retry from the top
+      }
+      objectLifecycleAppender
+          .putDict(ObjectLifecycleColumns.OBJECT_TYPE, sighting.objectType())
+          .putDict(ObjectLifecycleColumns.OBJECT_ID, sighting.objectId())
+          .putDict(ObjectLifecycleColumns.BIRTH_QUALIFIER, lifecycle.birthQualifier().name())
+          .putLong(ObjectLifecycleColumns.BIRTH_TS, millisToMicros(lifecycle.birthTsMs()))
+          .putLong(ObjectLifecycleColumns.CLOSED_AT, millisToMicros(timestamp))
+          .putLong(ObjectLifecycleColumns.DURATION_MS, timestamp - lifecycle.birthTsMs())
+          .putDict(ObjectLifecycleColumns.OUTCOME, finalState)
+          .putInt(ObjectLifecycleColumns.N_SIGHTINGS, lifecycle.nSightings());
+      objectLifecycleAppender.endRow();
+      state.putObjectLifecycle(
+          sighting.objectType(),
+          sighting.objectId(),
+          new ObjectLifecycle(
+              LifecycleStatus.CLOSED_TOMBSTONE,
+              lifecycle.birthTsMs(),
+              lifecycle.birthQualifier(),
+              lifecycle.nSightings(),
+              timestamp));
+    }
+    return true;
+  }
+
+  /** Whether any of {@code closingTypes} is named {@code objectType}. */
+  private static boolean closesOnThisProcess(
+      final List<CompiledObjectType> closingTypes, final String objectType) {
+    for (final CompiledObjectType type : closingTypes) {
+      if (type.name().equals(objectType)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

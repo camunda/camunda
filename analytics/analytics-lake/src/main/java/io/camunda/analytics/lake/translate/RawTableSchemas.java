@@ -32,6 +32,7 @@ public final class RawTableSchemas {
   public static final String OBJECTS_TABLE = "objects";
   public static final String INSTANCE_LINKS_TABLE = "instance_links";
   public static final String OBJECT_RELATIONS_TABLE = "object_relations";
+  public static final String OBJECT_LIFECYCLE_TABLE = "object_lifecycle";
 
   private RawTableSchemas() {}
 
@@ -256,6 +257,42 @@ public final class RawTableSchemas {
             timestamptzColumn(icebergSchema, "first_seen", -1, true)));
   }
 
+  /**
+   * The object-lifecycle fact table: one row per object closing (see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator}'s "Object lifecycle capture" javadoc
+   * section) — a FACT kind like {@code instances}, not a dictionary: created via the plain {@link
+   * io.camunda.analytics.lake.write.IcebergLakeWriter#tableOrCreate}-equivalent path with no
+   * declaration fingerprint (a closing is a one-time event, never re-derivable content the way a
+   * dictionary row is — see that class's own {@code OBJECT_LIFECYCLE_SCHEMA} javadoc). Sort key
+   * {@code (object_type, object_id)} — at most one row per object, ever (the tombstone rule
+   * enforces this); family day source is {@code birth_ts}, not {@code closed_at}: grouping by
+   * <em>birth</em> cohort (not close date) is what lets {@code object_cohorts}' survival read (born
+   * − closed per cohort) line up against {@code objects_born}'s own birth-keyed counts.
+   */
+  public static TableSchema objectLifecycle(final Schema icebergSchema) {
+    return new TableSchema(
+        OBJECT_LIFECYCLE_TABLE,
+        List.of(
+            column(
+                icebergSchema,
+                "object_type",
+                ColumnType.STRING_DICT,
+                ObjectLifecycleColumns.SORT_OBJECT_TYPE,
+                false),
+            column(
+                icebergSchema,
+                "object_id",
+                ColumnType.STRING_DICT,
+                ObjectLifecycleColumns.SORT_OBJECT_ID,
+                false),
+            column(icebergSchema, "birth_qualifier", ColumnType.STRING_DICT, -1, false),
+            timestamptzColumn(icebergSchema, "birth_ts", -1, true),
+            timestamptzColumn(icebergSchema, "closed_at", -1, false),
+            column(icebergSchema, "duration_ms", ColumnType.LONG, -1, false),
+            column(icebergSchema, "outcome", ColumnType.STRING_DICT, -1, false),
+            column(icebergSchema, "n_sightings", ColumnType.INT, -1, false)));
+  }
+
   private static TableSchema.Column column(
       final Schema icebergSchema,
       final String name,
@@ -440,5 +477,25 @@ public final class RawTableSchemas {
     private static final int SORT_CHILD_ID = 3;
 
     private ObjectRelationColumns() {}
+  }
+
+  /**
+   * See {@link InstanceColumns}; same idea for the {@code object_lifecycle} fact table — {@code
+   * LakeTranslator} appends closing rows by these positions.
+   */
+  public static final class ObjectLifecycleColumns {
+    public static final int OBJECT_TYPE = 0;
+    public static final int OBJECT_ID = 1;
+    public static final int BIRTH_QUALIFIER = 2;
+    public static final int BIRTH_TS = 3;
+    public static final int CLOSED_AT = 4;
+    public static final int DURATION_MS = 5;
+    public static final int OUTCOME = 6;
+    public static final int N_SIGHTINGS = 7;
+
+    private static final int SORT_OBJECT_TYPE = 0;
+    private static final int SORT_OBJECT_ID = 1;
+
+    private ObjectLifecycleColumns() {}
   }
 }
