@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
 
@@ -26,7 +27,8 @@ public class EngineJob {
   private static final Set<String> LEGACY_TIMEOUT_CHECKER_POLLING_INTERVAL_PROPERTIES =
       Set.of("zeebe.broker.experimental.engine.jobs.timeoutCheckerPollingInterval");
 
-  private boolean includeVariablesInJobCompletedEvent = false;
+  private boolean includeVariablesInJobCompletedEvent =
+      DEFAULT_JOBS_INCLUDE_VARIABLES_IN_JOB_COMPLETED_EVENT;
 
   /** Configures the maximum number of timed-out jobs processed per timeout check. */
   private int timeoutCheckerBatchLimit = DEFAULT_JOBS_TIMEOUT_CHECKER_BATCH_LIMIT;
