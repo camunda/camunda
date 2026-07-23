@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.lake.serving.objects;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.analytics.lake.serving.support.ParquetFixtures;
@@ -42,5 +43,10 @@ class ProcessDefinitionsServiceMissingViewTest {
   void shouldReportNotFoundWhenTheViewDoesNotExistYet() {
     assertThatThrownBy(() -> processDefinitionsService.find("orderProcess", 1))
         .isInstanceOf(NoSuchElementException.class);
+  }
+
+  @Test
+  void shouldReturnAnEmptyDefinitionsListWhenTheViewDoesNotExistYet() {
+    assertThat(processDefinitionsService.list().definitions()).isEmpty();
   }
 }

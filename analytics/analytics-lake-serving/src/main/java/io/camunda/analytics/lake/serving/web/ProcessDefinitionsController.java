@@ -18,9 +18,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * {@code GET /api/definitions?processId=...&version=...} — see {@link ProcessDefinitionsService}. A
- * missing {@code process_definitions} view or no matching row both come back as a clean 404 (the
- * frontend's Diagram tab hides itself on any error response, never surfacing a raw 500).
+ * {@code GET /api/definitions?processId=...&version=...} and {@code GET /api/definitions/list} —
+ * see {@link ProcessDefinitionsService}. For {@code /api/definitions}, a missing {@code
+ * process_definitions} view or no matching row both come back as a clean 404 (the frontend's
+ * Diagram tab hides itself on any error response, never surfacing a raw 500). {@code
+ * /api/definitions/list} never 404s -- a missing view surfaces as an empty {@code definitions}
+ * list, since its caller (the Processes page's picker) renders an empty state.
  */
 @RestController
 public class ProcessDefinitionsController {
@@ -37,6 +40,12 @@ public class ProcessDefinitionsController {
     final var result = processDefinitionsService.find(processId, version);
     return Map.of(
         "processId", result.processId(), "version", result.version(), "bpmnXml", result.bpmnXml());
+  }
+
+  @GetMapping("/api/definitions/list")
+  public Map<String, Object> list() {
+    final var result = processDefinitionsService.list();
+    return Map.of("definitions", result.definitions(), "sql", result.sql());
   }
 
   @ExceptionHandler(NoSuchElementException.class)
