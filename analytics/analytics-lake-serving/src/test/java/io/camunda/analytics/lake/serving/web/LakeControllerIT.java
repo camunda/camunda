@@ -90,6 +90,23 @@ class LakeControllerIT {
     assertThat(response.getBody()).isNotNull();
     assertThat(response.getBody().rows()).hasSize(MAX_ROWS);
     assertThat(response.getBody().columns()).contains("id", "name");
+    // Silently capping is this endpoint's documented browse contract -- still 200, but now
+    // observable via `truncated` (see LakeQueryService#execute(String, int)).
+    assertThat(response.getBody().truncated()).isTrue();
+  }
+
+  @Test
+  void shouldReportNotTruncatedWhenEveryRowFits() {
+    final ResponseEntity<QueryResponse> response =
+        restTemplate.exchange(
+            "/api/query",
+            HttpMethod.POST,
+            plainTextBody("SELECT * FROM " + TABLE + " LIMIT 1"),
+            QueryResponse.class);
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody()).isNotNull();
+    assertThat(response.getBody().truncated()).isFalse();
   }
 
   @Test

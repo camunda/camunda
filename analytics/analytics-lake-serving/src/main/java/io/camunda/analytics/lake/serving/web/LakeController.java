@@ -77,7 +77,12 @@ public class LakeController {
     }
   }
 
-  /** Plain SQL in the request body, JSON columns/rows out — capped at the configured row limit. */
+  /**
+   * Plain SQL in the request body, JSON columns/rows out — capped at the configured row limit.
+   * {@code truncated} reports whether the result actually had more rows than that cap (a silent cap
+   * at {@code maxRows} is this endpoint's documented browse contract either way — {@code truncated}
+   * is additive information, not a behavior change).
+   */
   @PostMapping(value = "/query", consumes = MediaType.TEXT_PLAIN_VALUE)
   public QueryResponse query(@RequestBody final String sql) {
     if (sql == null || sql.isBlank()) {
@@ -85,7 +90,7 @@ public class LakeController {
     }
     try {
       final QueryResult result = queryService.execute(sql);
-      return new QueryResponse(result.columns(), result.rows());
+      return new QueryResponse(result.columns(), result.rows(), result.truncated());
     } catch (final SQLException e) {
       throw new LakeQueryException(e.getMessage(), e);
     }
@@ -109,5 +114,5 @@ public class LakeController {
   public record TableInfo(String name, Long rowCount) {}
 
   /** {@code POST /api/query} response body. */
-  public record QueryResponse(List<String> columns, List<List<Object>> rows) {}
+  public record QueryResponse(List<String> columns, List<List<Object>> rows, boolean truncated) {}
 }

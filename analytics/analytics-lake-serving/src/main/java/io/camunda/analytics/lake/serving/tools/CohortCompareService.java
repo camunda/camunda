@@ -131,6 +131,20 @@ public class CohortCompareService {
       final String scanSql = select.toString();
       sql.add(scanSql);
       final QueryResult scan = queryService.execute(scanSql, SCAN_ROW_CAP);
+      if (scan.truncated()) {
+        // Marginalizing a truncated scan would silently under/over-count some (cohort_flag,
+        // attribute-combo) groups -- every slowShare/fastShare/lift computed from it would be
+        // wrong with no indication, which is worse than refusing outright. Fail loudly instead of
+        // reporting skewed numbers (see SCAN_ROW_CAP's own javadoc).
+        throw new IllegalArgumentException(
+            "cohort-compare's single scan exceeded its "
+                + SCAN_ROW_CAP
+                + "-row cap ("
+                + attributes.size()
+                + " attribute(s) x cohort flag x bucket cardinality) -- narrow the window or"
+                + " filters, or pass explicit attributes instead of \"auto\", to bring the"
+                + " combination count down");
+      }
 
       final List<CohortCompareRow> rows = marginalize(attributes, scan, supportFloor);
       rows.sort(
