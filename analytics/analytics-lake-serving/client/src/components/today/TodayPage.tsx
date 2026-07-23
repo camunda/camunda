@@ -54,10 +54,11 @@ async function fetchWindowValue(
   quantile: number | null,
   from: number,
   to: number,
+  filters: Record<string, string> = {},
 ): Promise<number | null> {
   const span = Math.max(1, to - from);
   const grainMinutes = Math.max(1, Math.ceil(span / 60_000));
-  const res = await api.tools.series({ entity, measure, quantile, filters: {}, from, to, grainMinutes });
+  const res = await api.tools.series({ entity, measure, quantile, filters, from, to, grainMinutes });
   if (!res.ok || res.data.points.length === 0) {
     return null;
   }
@@ -76,11 +77,12 @@ async function fetchWithDelta(
   quantile: number | null,
   from: number,
   to: number,
+  filters: Record<string, string> = {},
 ): Promise<WindowDelta> {
   const span = to - from;
   const [current, previous] = await Promise.all([
-    fetchWindowValue(entity, measure, quantile, from, to),
-    fetchWindowValue(entity, measure, quantile, from - span, from),
+    fetchWindowValue(entity, measure, quantile, from, to, filters),
+    fetchWindowValue(entity, measure, quantile, from - span, from, filters),
   ]);
   return { current, previous };
 }
@@ -124,6 +126,78 @@ function StatBox({
         ) : note ? (
           <span className="text-xs text-neutral-foreground-muted">{note}</span>
         ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * The object-first hero (round-2 prototype): the primary object type's business numbers lead the
+ * page — completed count, p95 born→closed, and the open count right now — with the engine's
+ * instance framing demoted to {@link HeadlineStrip}, rendered only when no object type can serve
+ * a hero (no types declared, or no cohort rows yet).
+ */
+function ObjectHero({ range, type }: { range: DashboardRange; type: string }) {
+  const { from, to } = range;
+  const [completed, setCompleted] = useState<WindowDelta>({ current: null, previous: null });
+  const [p95, setP95] = useState<WindowDelta>({ current: null, previous: null });
+  const [openNow, setOpenNow] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      fetchWithDelta("object_cohorts", "cnt", null, from, to, { object_type: type }),
+      fetchWithDelta("object_cohorts", null, 0.95, from, to, { object_type: type }),
+      api.objects.list({ type, status: "OPEN", limit: 1000, offset: 0 }),
+    ]).then(([completedResult, p95Result, openResult]) => {
+      if (cancelled) {
+        return;
+      }
+      setCompleted(completedResult);
+      setP95(p95Result);
+      setOpenNow(openResult.ok ? openResult.data.rows.length : null);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [type, from, to]);
+
+  if (!loading && completed.current == null && p95.current == null) {
+    // No cohort data for this type yet -- fall back to the instance strip rather than an empty hero.
+    return <HeadlineStrip range={range} />;
+  }
+
+  const noun = type.endsWith("s") ? type : `${type}s`;
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3 p-5">
+        <span className="text-xs font-medium uppercase tracking-widest text-neutral-foreground-muted">
+          {noun}
+        </span>
+        <div className="flex flex-wrap gap-x-10 gap-y-4">
+          <div className="flex flex-col">
+            <span className="text-3xl font-bold tabular-nums">
+              {loading ? "…" : formatCount(completed.current)} <DeltaChip {...completed} />
+            </span>
+            <span className="text-sm text-neutral-foreground-muted">completed</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-3xl font-bold tabular-nums">
+              {loading ? "…" : p95.current != null ? formatDuration(p95.current) : "–"}{" "}
+              <DeltaChip {...p95} />
+            </span>
+            <span className="text-sm text-neutral-foreground-muted">p95 born → closed</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-3xl font-bold tabular-nums">
+              {loading ? "…" : openNow != null ? (openNow >= 1000 ? "1,000+" : formatCount(openNow)) : "–"}
+            </span>
+            <span className="text-sm text-neutral-foreground-muted">open right now</span>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -530,10 +604,14 @@ function ObjectTypeCards() {
  * DashboardRange.label} plus what needs attention, before the reader has to know our schema. */
 export function TodayPage() {
   const { range } = useGlobalRange();
+  const { objectTypes } = useAppData();
+  // Business objects lead (round-2 rule): prefer "order" when declared, else the first declared
+  // type; the instance strip is the fallback, never the default.
+  const heroType = objectTypes.includes("order") ? "order" : objectTypes[0];
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-semibold">Today</h1>
-      <HeadlineStrip range={range} />
+      {heroType ? <ObjectHero range={range} type={heroType} /> : <HeadlineStrip range={range} />}
       <NeedsAttentionDigest range={range} />
       <ObjectTypeCards />
     </div>
