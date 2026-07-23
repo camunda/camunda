@@ -24,6 +24,7 @@ import { api, type ObjectRow, type ObjectStatus } from "../../lib/api";
 import { useAppData } from "../../lib/appData";
 import { formatCount, formatDateTime, formatDuration } from "../../lib/format";
 import { EmptyTile, LoadingTile } from "../common/EmptyTile";
+import { useClosingBehavior } from "../common/useClosingBehavior";
 
 const PAGE_SIZE = 50;
 
@@ -37,8 +38,13 @@ export function ObjectsListPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { objectTypes, objectTypesLoaded, closedSupported } = useAppData();
+  const closing = useClosingBehavior(type);
 
-  const status = (searchParams.get("status") as ObjectStatus | null) ?? "ALL";
+  const requestedStatus = (searchParams.get("status") as ObjectStatus | null) ?? "ALL";
+  // A type with no closing rule (see useClosingBehavior) has nothing for OPEN/CLOSED to mean --
+  // force ALL for it regardless of what the URL asked for, rather than 400ing or silently
+  // returning the same rows under a misleading status label.
+  const status = closing === "never-closes" ? "ALL" : requestedStatus;
   const [offset, setOffset] = useState(0);
   const [rows, setRows] = useState<ObjectRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +53,7 @@ export function ObjectsListPage() {
   useEffect(() => setOffset(0), [type, status]);
 
   useEffect(() => {
-    if (!type) {
+    if (!type || closing === "loading") {
       return;
     }
     let cancelled = false;
@@ -67,7 +73,7 @@ export function ObjectsListPage() {
     return () => {
       cancelled = true;
     };
-  }, [type, status, offset]);
+  }, [type, status, offset, closing]);
 
   if (objectTypesLoaded && objectTypes.length === 0) {
     return (
@@ -101,19 +107,22 @@ export function ObjectsListPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select
-            value={status}
-            onValueChange={(v) => setSearchParams({ status: v })}
-          >
-            <SelectTrigger size="sm" className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="OPEN">Open</SelectItem>
-              {closedSupported ? <SelectItem value="CLOSED">Closed</SelectItem> : null}
-              <SelectItem value="ALL">All</SelectItem>
-            </SelectContent>
-          </Select>
+          {closing === "never-closes" ? (
+            // Nothing for OPEN/CLOSED to mean for a type with no closing rule -- see
+            // useClosingBehavior's doc comment. No selector to switch, so none is shown.
+            <span className="text-xs text-neutral-foreground-muted">All {type}</span>
+          ) : (
+            <Select value={status} onValueChange={(v) => setSearchParams({ status: v })}>
+              <SelectTrigger size="sm" className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="OPEN">Open</SelectItem>
+                {closedSupported ? <SelectItem value="CLOSED">Closed</SelectItem> : null}
+                <SelectItem value="ALL">All</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
 
@@ -122,7 +131,12 @@ export function ObjectsListPage() {
       ) : error ? (
         <EmptyTile heading="Not available yet" description={error} />
       ) : !rows || rows.length === 0 ? (
-        <EmptyTile heading="No objects" description={`No ${status.toLowerCase()} ${type} objects.`} />
+        <EmptyTile
+          heading="No objects"
+          description={
+            closing === "never-closes" ? `No known ${type} objects.` : `No ${status.toLowerCase()} ${type} objects.`
+          }
+        />
       ) : (
         <Table size="sm">
           <TableHeader>
