@@ -148,6 +148,73 @@ test.describe('AI agent details', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('conversation message details modal', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      agentMockResponses(agentProcessWithOneActiveInstance),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: PROCESS_INSTANCE_KEY,
+      bottomPanel: 'details',
+      selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
+    });
+
+    await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
+    await processInstancePage.aiAgentDetails.conversationHistorySection
+      .getByLabel('Assistant message')
+      .nth(1)
+      .getByRole('button', {name: 'Expand'})
+      .click();
+
+    const modal = page.getByRole('dialog', {name: 'Assistant message'});
+    await expect(modal).toBeVisible();
+    await expect(modal.getByText(/order #12345/)).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test('conversation tool result modal', async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      agentMockResponses(agentProcessWithOneActiveInstance),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: PROCESS_INSTANCE_KEY,
+      bottomPanel: 'details',
+      selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
+    });
+
+    await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
+    await processInstancePage.aiAgentDetails.conversationHistorySection
+      .getByLabel('Result for "get_order_status" tool call')
+      .getByRole('button', {name: 'Expand'})
+      .click();
+
+    const modal = page.getByRole('dialog', {
+      name: 'Tool call: get_order_status',
+    });
+    await expect(modal).toBeVisible();
+
+    // Wait for preview editors to load.
+    await expect(
+      modal.getByTestId('tool-call-input').getByText('"orderId"'),
+    ).toBeVisible();
+    await expect(
+      modal.getByTestId('tool-call-output').getByText('"trackingNumber"'),
+    ).toBeVisible();
+    await processInstancePage.previewEditor.hideCaret();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('scoped conversation history section', async ({
     page,
     processInstancePage,
@@ -190,11 +257,10 @@ test.describe('AI agent details', () => {
     });
 
     await expect(
-      processInstancePage.aiAgentDetails.agentSelector,
-    ).toBeVisible();
-    await expect(
       processInstancePage.aiAgentDetails.statusOverlay,
     ).toBeVisible();
+
+    await processInstancePage.aiAgentDetails.agentSelector.click();
 
     await expect(page).toHaveScreenshot();
   });
