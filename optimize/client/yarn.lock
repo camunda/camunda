@@ -1450,6 +1450,14 @@
     htm "^3.1.1"
     preact "^10.11.2"
 
+"@bpmn-io/diagram-js-ui@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/diagram-js-ui/-/diagram-js-ui-0.2.4.tgz#2ca1b1108404a4306f6b411f580fe37b360f4def"
+  integrity sha512-I678ZGtoH7z7FgzFhzzppM9ThsJ3Lh83kW3GjhjG3xyYciIPYHMaHK1MABP8F69H9pFZpViM6t4qUo8dwrVz0w==
+  dependencies:
+    htm "^3.1.1"
+    preact "^10.29.2"
+
 "@bpmn-io/element-templates-icons-renderer@^0.3.0":
   version "0.3.0"
   resolved "https://registry.npmjs.org/@bpmn-io/element-templates-icons-renderer/-/element-templates-icons-renderer-0.3.0.tgz"
@@ -5348,15 +5356,6 @@ bpmn-moddle@^10.0.0:
     moddle "^8.0.0"
     moddle-xml "^12.0.0"
 
-bpmn-moddle@^7.1.2:
-  version "7.1.3"
-  resolved "https://registry.npmjs.org/bpmn-moddle/-/bpmn-moddle-7.1.3.tgz"
-  integrity sha512-ZcBfw0NSOdYTSXFKEn7MOXHItz7VfLZTrFYKO8cK6V8ZzGjCcdiLIOiw7Lctw1PJsihhLiZQS8Htj2xKf+NwCg==
-  dependencies:
-    min-dash "^3.5.2"
-    moddle "^5.0.2"
-    moddle-xml "^9.0.6"
-
 brace-expansion@^1.1.7:
   version "1.1.15"
   resolved "https://registry.yarnpkg.com/brace-expansion/-/brace-expansion-1.1.15.tgz#a6d90d54067236e5f42570a3b7378d594d9b7738"
@@ -5990,11 +5989,6 @@ component-emitter@^1.2.1:
   resolved "https://registry.npmjs.org/component-emitter/-/component-emitter-1.3.1.tgz"
   integrity sha512-T0+barUSQRTUQASh8bx02dl+DhF54GtIDY13Y3m9oWTklKbb3Wv974meRpeZ3lp1JpLVECWWNHC4vaG2XHXouQ==
 
-component-event@^0.1.4:
-  version "0.1.4"
-  resolved "https://registry.npmjs.org/component-event/-/component-event-0.1.4.tgz"
-  integrity sha512-GMwOG8MnUHP1l8DZx1ztFO0SJTFnIzZnBDkXAj8RM2ntV2A6ALlDxgbMY1Fvxlg6WPQ+5IM/a6vg4PEYbjg/Rw==
-
 compressible@~2.0.16:
   version "2.0.18"
   resolved "https://registry.npmjs.org/compressible/-/compressible-2.0.18.tgz"
@@ -6330,11 +6324,6 @@ css-what@^6.0.1, css-what@^6.1.0:
   version "6.1.0"
   resolved "https://registry.npmjs.org/css-what/-/css-what-6.1.0.tgz"
   integrity sha512-HTUrgRJ7r4dsZKU6GjmpfRK1O76h97Z8MfS1G0FozR+oF2kG6Vfe8JE6zwrkbxigziPHinCJ+gCPjA9EaBDtRw==
-
-css.escape@^1.5.1:
-  version "1.5.1"
-  resolved "https://registry.npmjs.org/css.escape/-/css.escape-1.5.1.tgz"
-  integrity sha512-YUifsXXuknHlUsmlgyY0PKzgPOr7/FjCePfHNt0jxm83wHZi44VDMQ7/fGNkjY3/jV1MC+1CmZbaHzugyeRtpg==
 
 cssdb@^7.1.0:
   version "7.11.2"
@@ -6794,14 +6783,6 @@ dezalgo@^1.0.0:
     asap "^2.0.0"
     wrappy "1"
 
-diagram-js-direct-editing@^1.6.3:
-  version "1.8.0"
-  resolved "https://registry.npmjs.org/diagram-js-direct-editing/-/diagram-js-direct-editing-1.8.0.tgz"
-  integrity sha512-B4Xj+PJfgBjbPEzT3uZQEkZI5xHFB0Izc+7BhDFuHidzrEMzQKZrFGdA3PqfWhReHf3dp+iB6Tt11G9eGNjKMw==
-  dependencies:
-    min-dash "^3.5.2"
-    min-dom "^3.1.3"
-
 diagram-js-direct-editing@^3.3.0:
   version "3.3.0"
   resolved "https://registry.npmjs.org/diagram-js-direct-editing/-/diagram-js-direct-editing-3.3.0.tgz"
@@ -6809,6 +6790,14 @@ diagram-js-direct-editing@^3.3.0:
   dependencies:
     min-dash "^5.0.0"
     min-dom "^5.2.0"
+
+diagram-js-direct-editing@^3.5.1:
+  version "3.5.1"
+  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-3.5.1.tgz#535323c3007f933f5a08f59c6821a0d6f00821dc"
+  integrity sha512-fEQCQ/x5oKVV0m7Nmgv7i85Vhw+kJkKNXF8zcV5Vm0KwF8x/8e3Ax0aJgdXt8/fDPymEkY8HmZweXIipCeeh+g==
+  dependencies:
+    min-dash "^5.0.0"
+    min-dom "^5.3.0"
 
 diagram-js@^15.14.0:
   version "15.14.0"
@@ -6825,30 +6814,25 @@ diagram-js@^15.14.0:
     path-intersection "^4.1.0"
     tiny-svg "^4.1.4"
 
-diagram-js@^7.8.2:
-  version "7.9.0"
-  resolved "https://registry.npmjs.org/diagram-js/-/diagram-js-7.9.0.tgz"
-  integrity sha512-o1yUtX5TXV1pmpevP55gxU/AEG6nCidOXGs/HLuxNXG0zMZ3jQta7kMqRxTK93rNw/XuHmP1eMOwdvdJ2RP5qA==
+diagram-js@^15.23.0:
+  version "15.23.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-15.23.0.tgz#5a830db734bf1049890a80ad442d0498ab977734"
+  integrity sha512-cCgL+4Ep0xrLe6TtdvRVgo6bWYjUbrQg+ES/9rpltqmTD2YaPoC+NYcRsKYw/fDO+1RN0q16NzErP1svVZhNQg==
   dependencies:
-    css.escape "^1.5.1"
-    didi "^5.2.1"
-    hammerjs "^2.0.1"
-    inherits "^2.0.4"
-    min-dash "^3.5.2"
-    min-dom "^3.1.3"
-    object-refs "^0.3.0"
-    path-intersection "^2.2.1"
-    tiny-svg "^2.2.2"
+    "@bpmn-io/diagram-js-ui" "^0.2.4"
+    clsx "^2.1.1"
+    didi "^11.0.0"
+    inherits-browser "^0.1.0"
+    min-dash "^5.1.0"
+    min-dom "^5.3.0"
+    object-refs "^0.4.0"
+    path-intersection "^4.1.0"
+    tiny-svg "^4.1.4"
 
 didi@^11.0.0:
   version "11.0.0"
   resolved "https://registry.npmjs.org/didi/-/didi-11.0.0.tgz"
   integrity sha512-PzCfRzQttvFpVcYMbSF7h8EsWjeJpVjWH4qDhB5LkMi1ILvHq4Ob0vhM2wLFziPkbUBi+PAo7ODbe2sacR7nJQ==
-
-didi@^5.2.1:
-  version "5.2.1"
-  resolved "https://registry.npmjs.org/didi/-/didi-5.2.1.tgz"
-  integrity sha512-IKNnajUlD4lWMy/Q9Emkk7H1qnzREgY4UyE3IhmOi/9IKua0JYtYldk928bOdt1yNxN8EiOy1sqtSozEYsmjCg==
 
 didyoumean@^1.2.2:
   version "1.2.2"
@@ -6993,11 +6977,6 @@ domhandler@^5.0.2, domhandler@^5.0.3:
   integrity sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==
   dependencies:
     domelementtype "^2.3.0"
-
-domify@^1.3.1:
-  version "1.4.2"
-  resolved "https://registry.npmjs.org/domify/-/domify-1.4.2.tgz"
-  integrity sha512-m4yreHcUWHBncGVV7U+yQzc12vIlq0jMrtHZ5mW6dQMiL/7skSYNVX9wqKwOtyO9SGCgevrAFEgOCAHmamHTUA==
 
 domify@^2.0.0:
   version "2.0.0"
@@ -8870,11 +8849,6 @@ gzip-size@^6.0.0:
   dependencies:
     duplexer "^0.1.2"
 
-hammerjs@^2.0.1:
-  version "2.0.8"
-  resolved "https://registry.npmjs.org/hammerjs/-/hammerjs-2.0.8.tgz"
-  integrity sha512-tSQXBXS/MWQOn/RKckawJ61vvsDpCom87JgxiYdGwHdOa0ht0vzUWDlfioofFCRU0L+6NGDt6XzbgoJvZkMeRQ==
-
 handle-thing@^2.0.0:
   version "2.0.1"
   resolved "https://registry.npmjs.org/handle-thing/-/handle-thing-2.0.1.tgz"
@@ -9360,11 +9334,6 @@ identity-obj-proxy@^3.0.0:
   dependencies:
     harmony-reflect "^1.4.6"
 
-ids@^1.0.0:
-  version "1.0.5"
-  resolved "https://registry.npmjs.org/ids/-/ids-1.0.5.tgz"
-  integrity sha512-XQ0yom/4KWTL29sLG+tyuycy7UmeaM/79GRtSJq6IG9cJGIPeBz5kwDCguie3TwxaMNIc3WtPi0cTa1XYHicpw==
-
 ids@^3.0.2:
   version "3.0.2"
   resolved "https://registry.npmjs.org/ids/-/ids-3.0.2.tgz"
@@ -9447,11 +9416,6 @@ indent-string@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/indent-string/-/indent-string-4.0.0.tgz#624f8f4497d619b2d9768531d58f4122854d7251"
   integrity sha512-EdDDZu4A2OyIK7Lr/2zG+w5jmbuk1DVBnEwREQvBzspBJkCEbRa8GxU1lghYcaGJCnRWibjDXlq779X1/y5xwg==
-
-indexof@0.0.1:
-  version "0.0.1"
-  resolved "https://registry.npmjs.org/indexof/-/indexof-0.0.1.tgz"
-  integrity sha512-i0G7hLJ1z0DE8dsqJa2rycj9dBmNKgXBvotXtZYXakU9oivfB9Uj2ZBC27qqef2U58/ZLwalxa1X/RDCdkHtVg==
 
 inflight@^1.0.4:
   version "1.0.6"
@@ -11458,11 +11422,6 @@ match-url-wildcard@0.0.4:
   dependencies:
     escape-string-regexp "^1.0.5"
 
-matches-selector@^1.2.0:
-  version "1.2.0"
-  resolved "https://registry.npmjs.org/matches-selector/-/matches-selector-1.2.0.tgz"
-  integrity sha512-c4vLwYWyl+Ji+U43eU/G5FwxWd4ZH0ePUsFs5y0uwD9HUEFBXUQ1zUUan+78IpRD+y4pUfG0nAzNM292K7ItvA==
-
 math-intrinsics@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/math-intrinsics/-/math-intrinsics-1.1.0.tgz#a0dd74be81e2aa5c2f27e65ce283605ee4e2b7f9"
@@ -11890,11 +11849,6 @@ mimic-response@^3.1.0:
   resolved "https://registry.npmjs.org/mimic-response/-/mimic-response-3.1.0.tgz"
   integrity sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==
 
-min-dash@^3.0.0, min-dash@^3.5.2, min-dash@^3.8.1:
-  version "3.8.1"
-  resolved "https://registry.npmjs.org/min-dash/-/min-dash-3.8.1.tgz"
-  integrity sha512-evumdlmIlg9mbRVPbC4F5FuRhNmcMS5pvuBUbqb1G9v09Ro0ImPEgz5n3khir83lFok1inKqVDjnKEg3GpDxQg==
-
 min-dash@^4.0.0:
   version "4.2.2"
   resolved "https://registry.npmjs.org/min-dash/-/min-dash-4.2.2.tgz"
@@ -11905,16 +11859,10 @@ min-dash@^5.0.0:
   resolved "https://registry.npmjs.org/min-dash/-/min-dash-5.0.0.tgz"
   integrity sha512-EGuoBnVL7/Fnv2sqakpX5WGmZehZ3YMmLayT7sM8E9DRU74kkeyMg4Rik1lsOkR2GbFNeBca4/L+UfU6gF0Edw==
 
-min-dom@^3.1.3:
-  version "3.2.1"
-  resolved "https://registry.npmjs.org/min-dom/-/min-dom-3.2.1.tgz"
-  integrity sha512-v6YCmnDzxk4rRJntWTUiwggLupPw/8ZSRqUq0PDaBwVZEO/wYzCH4SKVBV+KkEvf3u0XaWHly5JEosPtqRATZA==
-  dependencies:
-    component-event "^0.1.4"
-    domify "^1.3.1"
-    indexof "0.0.1"
-    matches-selector "^1.2.0"
-    min-dash "^3.8.1"
+min-dash@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-5.1.0.tgz#ab0d892afa7e2b6b257dfe60fa3e805e0ac73799"
+  integrity sha512-HAvN6XzmCQj+js43G9sJRRw8kj/7DvoxN7qhoIN9Xo5ZN1NMljtpyKs/NunXmw0QSWwlgZzNv6tLeEa4xaZ0tg==
 
 min-dom@^5.2.0:
   version "5.2.0"
@@ -12047,22 +11995,6 @@ moddle-xml@^12.0.0:
   dependencies:
     min-dash "^5.0.0"
     saxen "^11.0.2"
-
-moddle-xml@^9.0.6:
-  version "9.0.6"
-  resolved "https://registry.npmjs.org/moddle-xml/-/moddle-xml-9.0.6.tgz"
-  integrity sha512-tl0reHpsY/aKlLGhXeFlQWlYAQHFxTkFqC8tq8jXRYpQSnLVw13T6swMaourLd7EXqHdWsc+5ggsB+fEep6xZQ==
-  dependencies:
-    min-dash "^3.5.2"
-    moddle "^5.0.2"
-    saxen "^8.1.2"
-
-moddle@^5.0.2:
-  version "5.0.4"
-  resolved "https://registry.npmjs.org/moddle/-/moddle-5.0.4.tgz"
-  integrity sha512-Kjb+hjuzO+YlojNGxEUXvdhLYTHTtAABDlDcJTtTcn5MbJF9Zkv4I1Fyvp3Ypmfgg1EfHDZ3PsCQTuML9JD6wg==
-  dependencies:
-    min-dash "^3.0.0"
 
 moddle@^8.0.0:
   version "8.0.0"
@@ -12389,11 +12321,6 @@ object-keys@^1.1.1:
   resolved "https://registry.yarnpkg.com/object-keys/-/object-keys-1.1.1.tgz#1c47f272df277f3b1daf061677d9c82e2322c60e"
   integrity sha512-NuAESUOUMrlIXOfHKzD6bpPu3tYt3xvjNdRIQ+FeT0lNb4K8WR70CaDxhuNguS2XG+GjkyMwOzsN5ZktImfhLA==
 
-object-refs@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.npmjs.org/object-refs/-/object-refs-0.3.0.tgz"
-  integrity sha512-eP0ywuoWOaDoiake/6kTJlPJhs+k0qNm4nYRzXLNHj6vh+5M3i9R1epJTdxIPGlhWc4fNRQ7a6XJNCX+/L4FOQ==
-
 object-refs@^0.4.0:
   version "0.4.0"
   resolved "https://registry.npmjs.org/object-refs/-/object-refs-0.4.0.tgz"
@@ -12478,21 +12405,19 @@ obuf@^1.0.0, obuf@^1.1.2:
   resolved "https://registry.npmjs.org/obuf/-/obuf-1.1.2.tgz"
   integrity sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==
 
-"old-bpmn-js@npm:bpmn-js@8.10":
-  version "8.10.0"
-  resolved "https://registry.npmjs.org/bpmn-js/-/bpmn-js-8.10.0.tgz"
-  integrity sha512-NozeOi01qL0ZdVq8+5hWZcikyEvgrP1yzCBqlhSufJdHFsnEMBCwn2bJJ0B/6JgX+IBwy1sk/Uw+Ds8rQ8vfrw==
+"old-bpmn-js@npm:bpmn-js@18.22":
+  version "18.22.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-18.22.0.tgz#26d771f0c4960f478aced24434c92261ab570554"
+  integrity sha512-hM5aOiyLVdVGA80nveJLXFVQMpsaST7RilErjeKfXMhpZQJTnzU+yLDaenIJsq2f90+9inyktVPqsS1Ersik2A==
   dependencies:
-    bpmn-moddle "^7.1.2"
-    css.escape "^1.5.1"
-    diagram-js "^7.8.2"
-    diagram-js-direct-editing "^1.6.3"
-    ids "^1.0.0"
-    inherits "^2.0.4"
-    min-dash "^3.5.2"
-    min-dom "^3.1.3"
-    object-refs "^0.3.0"
-    tiny-svg "^2.2.2"
+    bpmn-moddle "^10.0.0"
+    diagram-js "^15.23.0"
+    diagram-js-direct-editing "^3.5.1"
+    ids "^3.0.2"
+    inherits-browser "^0.1.0"
+    min-dash "^5.1.0"
+    min-dom "^5.3.0"
+    tiny-svg "^4.1.4"
 
 on-finished@2.4.1:
   version "2.4.1"
@@ -12827,11 +12752,6 @@ path-exists@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/path-exists/-/path-exists-4.0.0.tgz#513bdbe2d3b95d7762e8c1137efa195c6c61b5b3"
   integrity sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==
-
-path-intersection@^2.2.1:
-  version "2.2.1"
-  resolved "https://registry.npmjs.org/path-intersection/-/path-intersection-2.2.1.tgz"
-  integrity sha512-9u8xvMcSfuOiStv9bPdnRJQhGQXLKurew94n4GPQCdH1nj9QKC9ObbNoIpiRq8skiOBxKkt277PgOoFgAt3/rA==
 
 path-intersection@^4.1.0:
   version "4.1.0"
@@ -13592,6 +13512,11 @@ preact@^10.11.2:
   version "10.24.3"
   resolved "https://registry.npmjs.org/preact/-/preact-10.24.3.tgz"
   integrity sha512-Z2dPnBnMUfyQfSQ+GBdsGa16hz35YmLmtTLhM169uW944hYL6xzTYkJjC07j+Wosz733pMWx0fgON3JNw1jJQA==
+
+preact@^10.29.2:
+  version "10.29.7"
+  resolved "https://registry.yarnpkg.com/preact/-/preact-10.29.7.tgz#b70df2eb06e982c7ac65b6df1541e5846ac0f6ba"
+  integrity sha512-DCHYrK/B10yUD3ZjLfhZ3WIE/9Vf9VFUODcRE2dRomTYDpJk6z6L9wecSfhfE6M9ZTHUdyQkoC46arIDhEV84Q==
 
 prebuild-install@^7.1.1:
   version "7.1.2"
@@ -14745,11 +14670,6 @@ saxen@^11.0.2:
   version "11.0.2"
   resolved "https://registry.npmjs.org/saxen/-/saxen-11.0.2.tgz"
   integrity sha512-WDb4gqac8uiJzOdOdVpr9NWh9NrJMm7Brn5GX2Poj+mjE/QTXqYQENr8T/mom54dDDgbd3QjwTg23TRHYiWXRA==
-
-saxen@^8.1.2:
-  version "8.1.2"
-  resolved "https://registry.npmjs.org/saxen/-/saxen-8.1.2.tgz"
-  integrity sha512-xUOiiFbc3Ow7p8KMxwsGICPx46ZQvy3+qfNVhrkwfz3Vvq45eGt98Ft5IQaA1R/7Tb5B5MKh9fUR9x3c3nDTxw==
 
 saxes@^5.0.1:
   version "5.0.1"
@@ -16210,11 +16130,6 @@ tiny-invariant@^1.0.2:
   version "1.3.3"
   resolved "https://registry.npmjs.org/tiny-invariant/-/tiny-invariant-1.3.3.tgz"
   integrity sha512-+FbBPE1o9QAYvviau/qC5SE3caw21q3xkvWKBtja5vgqOWIHHJ3ioaq1VPfn/Szqctz2bU/oYeKd9/z5BL+PVg==
-
-tiny-svg@^2.2.2:
-  version "2.2.4"
-  resolved "https://registry.npmjs.org/tiny-svg/-/tiny-svg-2.2.4.tgz"
-  integrity sha512-NOi39lBknf4UdDEahNkbEAJnzhu1ZcN2j75IS2vLRmIhsfxdZpTChfLKBcN1ShplVmPIXJAIafk6YY5/Aa80lQ==
 
 tiny-svg@^3.0.0:
   version "3.1.3"
