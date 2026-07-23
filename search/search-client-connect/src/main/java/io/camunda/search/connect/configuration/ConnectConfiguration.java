@@ -7,6 +7,7 @@
  */
 package io.camunda.search.connect.configuration;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,11 +56,13 @@ public class ConnectConfiguration {
     isAwsEnabled = awsEnabled;
   }
 
-  public AwsConfiguration getAws() {
+  @JsonProperty("aws")
+  public AwsConfiguration aws() {
     return aws;
   }
 
-  public void setAws(final AwsConfiguration aws) {
+  @JsonProperty("aws")
+  public void aws(final AwsConfiguration aws) {
     this.aws = aws;
   }
 

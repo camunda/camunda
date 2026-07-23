@@ -124,9 +124,9 @@ class OpensearchConnectorTest {
     // without any AWS environment
     final var connectConfig = new ConnectConfiguration();
     connectConfig.setAwsEnabled(true);
-    connectConfig.getAws().setAccessKey("username");
-    connectConfig.getAws().setSecretKey("password");
-    connectConfig.getAws().setRegion("eu-west-1");
+    connectConfig.aws().setAccessKey("username");
+    connectConfig.aws().setSecretKey("password");
+    connectConfig.aws().setRegion("eu-west-1");
 
     // when
     final var client = new OpensearchConnector(connectConfig).createClient();

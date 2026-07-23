@@ -98,7 +98,7 @@ public class SearchEngineConnectPropertiesOverride {
             populateFromDocumentBasedSecondaryStorageDatabase(
                 (DocumentBasedSecondaryStorageDatabase) database, override);
             override.setAwsEnabled(((Opensearch) database).isAwsEnabled());
-            populateAws(camunda.getAws(), override.getAws());
+            populateAws(camunda.getAws(), override.aws());
             break;
           }
         case rdbms:

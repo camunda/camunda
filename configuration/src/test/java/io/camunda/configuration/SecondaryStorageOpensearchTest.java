@@ -285,11 +285,11 @@ public class SecondaryStorageOpensearchTest {
       assertThat(exporterConfiguration.getConnect().getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
       assertThat(exporterConfiguration.getConnect().isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
-      assertThat(exporterConfiguration.getConnect().getAws().getAccessKey())
+      assertThat(exporterConfiguration.getConnect().aws().getAccessKey())
           .isEqualTo(EXPECTED_AWS_ACCESS_KEY);
-      assertThat(exporterConfiguration.getConnect().getAws().getSecretKey())
+      assertThat(exporterConfiguration.getConnect().aws().getSecretKey())
           .isEqualTo(EXPECTED_AWS_SECRET_KEY);
-      assertThat(exporterConfiguration.getConnect().getAws().getRegion())
+      assertThat(exporterConfiguration.getConnect().aws().getRegion())
           .isEqualTo(EXPECTED_AWS_REGION);
 
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
@@ -363,11 +363,11 @@ public class SecondaryStorageOpensearchTest {
       assertThat(searchEngineConnectProperties.getConnectTimeout())
           .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
       assertThat(searchEngineConnectProperties.isAwsEnabled()).isEqualTo(EXPECTED_AWS_ENABLED);
-      assertThat(searchEngineConnectProperties.getAws().getAccessKey())
+      assertThat(searchEngineConnectProperties.aws().getAccessKey())
           .isEqualTo(EXPECTED_AWS_ACCESS_KEY);
-      assertThat(searchEngineConnectProperties.getAws().getSecretKey())
+      assertThat(searchEngineConnectProperties.aws().getSecretKey())
           .isEqualTo(EXPECTED_AWS_SECRET_KEY);
-      assertThat(searchEngineConnectProperties.getAws().getRegion()).isEqualTo(EXPECTED_AWS_REGION);
+      assertThat(searchEngineConnectProperties.aws().getRegion()).isEqualTo(EXPECTED_AWS_REGION);
     }
 
     @Test

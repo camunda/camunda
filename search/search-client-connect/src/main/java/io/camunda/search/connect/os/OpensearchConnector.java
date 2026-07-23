@@ -58,7 +58,7 @@ public final class OpensearchConnector {
     this(
         configuration,
         new JacksonConfiguration(configuration).createObjectMapper(),
-        AwsCredentialsProviders.from(configuration.getAws()),
+        AwsCredentialsProviders.from(configuration.aws()),
         new PluginRepository());
   }
 
@@ -105,7 +105,7 @@ public final class OpensearchConnector {
 
   private OpenSearchTransport createAWSBasedTransport(final ConnectConfiguration configuration) {
     final var hostname = getHttpHosts(configuration)[0].getHostName();
-    final var region = AwsCredentialsProviders.region(configuration.getAws());
+    final var region = AwsCredentialsProviders.region(configuration.aws());
     final var httpClient = AwsCrtHttpClient.builder().build();
     return new AwsSdk2Transport(
         httpClient,

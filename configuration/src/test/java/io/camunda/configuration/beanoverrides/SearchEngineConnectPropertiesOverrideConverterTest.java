@@ -112,9 +112,9 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     assertThat(result.getPassword()).isEqualTo("os-pass");
     assertThat(result.getClusterName()).isEqualTo("os-cluster");
     assertThat(result.isAwsEnabled()).isTrue();
-    assertThat(result.getAws().getAccessKey()).isEqualTo("aws-key");
-    assertThat(result.getAws().getSecretKey()).isEqualTo("aws-secret");
-    assertThat(result.getAws().getRegion()).isEqualTo("eu-west-1");
+    assertThat(result.aws().getAccessKey()).isEqualTo("aws-key");
+    assertThat(result.aws().getSecretKey()).isEqualTo("aws-secret");
+    assertThat(result.aws().getRegion()).isEqualTo("eu-west-1");
   }
 
   @Test
