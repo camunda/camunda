@@ -21,11 +21,12 @@ const CONFIG_DIR = path.resolve(process.cwd(), 'config');
 
 // Merging docker-compose.yml pulls in the shared `camunda` service's
 // `depends_on: [${DATABASE}]`, which Compose validates even though we only
-// target the isolated services. DATABASE just needs any valid value to
-// satisfy that validation; the isolated services don't use it themselves.
+// target the isolated services. DATABASE must be a literal service name
+// (postgres/elasticsearch/opensearch) — forwarding process.env.DATABASE
+// verbatim breaks when it's e.g. "RDBMS", so hardcode a valid one.
 const COMPOSE_ENV = {
   ...process.env,
-  DATABASE: process.env.DATABASE ?? 'elasticsearch',
+  DATABASE: 'elasticsearch',
 };
 
 function composeCommand(
@@ -107,17 +108,30 @@ export async function stopIsolatedEnvironment(): Promise<void> {
   );
 }
 
+const ISOLATED_SERVICE_NAMES = [
+  'camunda-analytics-isolated',
+  'camunda-analytics-isolated-exporter',
+  'otel-collector-isolated',
+  'loki-isolated',
+  'prometheus-isolated',
+];
+
 /** Fetches recent logs from a service in the analytics-exporter isolated environment, for assertions/debugging. */
 export async function getIsolatedServiceLogs(
   serviceName: string,
 ): Promise<string> {
+  if (!ISOLATED_SERVICE_NAMES.includes(serviceName)) {
+    throw new Error(
+      `Unknown isolated service "${serviceName}" — expected one of ${ISOLATED_SERVICE_NAMES.join(', ')}`,
+    );
+  }
   const {stdout, stderr} = await execAsync(
     composeCommand(ANALYTICS_COMPOSE_FILES, ANALYTICS_PROJECT_NAME, [
       'logs',
       '--no-color',
       serviceName,
     ]),
-    {cwd: CONFIG_DIR, env: COMPOSE_ENV},
+    {cwd: CONFIG_DIR, env: COMPOSE_ENV, maxBuffer: 10 * 1024 * 1024},
   );
   return stdout + stderr;
 }
