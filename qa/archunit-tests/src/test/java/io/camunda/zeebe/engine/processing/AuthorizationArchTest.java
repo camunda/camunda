@@ -87,7 +87,10 @@ public class AuthorizationArchTest {
     return new ArchCondition<>("check authorization") {
       @Override
       public void check(final JavaClass item, final ConditionEvents events) {
-        // The processor should have delegated authorization to the JobUpdateBehaviour
+        // The processor should have delegated authorization to one of the supported pathways
+        // (JobUpdateBehaviour, PermissionsBehavior, ProcessInstanceCreationHelper,
+        // AuthorizationCheckPort/AuthorizationService, CslAuthorizationCheck, or
+        // UserTaskAuthorizationCheck)
         ArchConditions.callMethod(
                 JobUpdateBehaviour.class, "isAuthorized", TypedRecord.class, JobRecord.class)
             // Or the processor should have delegate authorization to the PermissionsBehavior
