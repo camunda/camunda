@@ -113,13 +113,13 @@ public class OpensearchEngineClient implements SearchEngineClient {
       throw new SearchEngineException(errMsg, ioe);
     } catch (final OpenSearchException ose) {
       if ("resource_already_exists_exception".equals(ose.error().type())) {
-        // we can ignore already exists exceptions
-        // as this means the index was created by another instance
+        // Index may exist without our alias (e.g. auto-created by a concurrent write).
         final var warnMsg =
             String.format(
-                "Expected to create index [%s], but already exist. Will continue, likely was created by a different instance.",
+                "Expected to create index [%s], but already exist. Will ensure alias and continue, likely was created by a different instance.",
                 indexDescriptor.getFullQualifiedName());
         LOG.debug(warnMsg, ose);
+        putIndexAlias(indexDescriptor);
         return;
       }
 
@@ -222,6 +222,30 @@ public class OpensearchEngineClient implements SearchEngineClient {
           .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().aliases().keySet()));
     } catch (final IOException | OpenSearchException e) {
       final var errMsg = String.format("Failed to retrieve aliases for index '%s'", indexNames);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void putIndexAlias(final IndexDescriptor indexDescriptor) {
+    try {
+      client
+          .indices()
+          .putAlias(
+              req ->
+                  req.index(indexDescriptor.getFullQualifiedName())
+                      .name(indexDescriptor.getAlias())
+                      .isWriteIndex(false));
+      LOG.debug(
+          "Alias [{}] was successfully attached to index [{}]",
+          indexDescriptor.getAlias(),
+          indexDescriptor.getFullQualifiedName());
+    } catch (final IOException | OpenSearchException e) {
+      final var errMsg =
+          String.format(
+              "Failed to attach alias [%s] to index [%s]",
+              indexDescriptor.getAlias(), indexDescriptor.getFullQualifiedName());
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
