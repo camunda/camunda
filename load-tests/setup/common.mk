@@ -426,11 +426,13 @@ archiver:
 
 .PHONY: clean
 clean:
-	@# Make sure to uninstall our load-test-setup Helm Chart as it also removes
-	@# the Keycloak resources which are **NOT** in the same namespace as all the
-	@# other resources.
-	@echo "Uninstalling the load-test-setup Helm Chart"
-	-helm uninstall load-test-setup --namespace $(namespace) --wait
+	@# Explicitly delete the Keycloak resources from the keycloak-operator namespace.
+	@# We could also uninstall the load-test-setup Helm Chart, but it returns a
+	@# (completely safe) error (about being "forbidden" while deleting Secrets)
+	@# due to how our Kubernetes RBACs are configured, and this error is likely
+	@# going to raise more questions.
+	@echo "Deleting Keycloak-related resources from the keycloak-operator namespace..."
+	-kubectl delete keycloak,secret --namespace keycloak-operator --selector "camunda.io/load-test-namespace=$(namespace)" --ignore-not-found
 	@# `--wait` (default) blocks until the namespace is fully gone. We intentionally
 	@# wait so that a subsequent `make install` (or `make clean install`) doesn't
 	@# race against finalizers — applying manifests into a still-terminating

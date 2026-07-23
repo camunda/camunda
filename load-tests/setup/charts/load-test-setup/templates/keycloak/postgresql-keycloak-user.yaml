@@ -46,6 +46,12 @@ metadata:
       This is used by the Keycloak instance to connect into PostgreSQL.
       This Secret is a duplicate of the Secret used to initialize the PostgreSQL cluster by the CNPG Operator in
       "{{ .Release.Namespace }}/{{ include "load-test-setup.keycloak.postgresql.cnpg-secret-name" . }}".
+  labels:
+    # Same convention as the Keycloak CR's labels, so this Secret can be found
+    # and cleaned up alongside it (it lives in the shared keycloak-operator
+    # namespace, not the load test's own namespace).
+    camunda.io/load-test-namespace: "{{ .Release.Namespace }}"
+    deadline-date: "{{ .Values.deadlineDate }}"
 type: kubernetes.io/basic-auth
 data:
   username: "{{ $keycloakDatabaseUsername | b64enc }}"

@@ -54,6 +54,39 @@ into the `keycloak-operator` namespace.
 As such, the duplicated resources mentioned previously don't have the exact same name between the
 resource in the load test namespace, and the resource in the `keycloak-operator` namespace.
 
+##### Cleanup
+
+> [!IMPORTANT]
+> Caveats #3: Deleting the load test namespace alone does **not** delete the Keycloak resources —
+> they live in the `keycloak-operator` namespace and must be deleted separately.
+
+Since the `Keycloak` custom resource and the duplicated Secrets live in the `keycloak-operator`
+namespace rather than the load test's own namespace, a plain `kubectl delete namespace
+<load-test-namespace>` leaves them behind.
+
+All these resources carry a `camunda.io/load-test-namespace: <load-test-namespace>` label
+specifically so they can be found and deleted together.
+
+Either use:
+
+* `helm uninstall` (through a load-test `make clean` command): this deletes every resource Helm
+  tracked as part of the release regardless of namespace, and correctly removes the Keycloak CR and
+  the other resources.
+* Delete the resources from the `keycloak-operator` namespace by targetting the specific `namespace`
+  label with:
+
+  ```shell
+  kubectl delete keycloak,secret -n keycloak-operator -l camunda.io/load-test-namespace=<load-test-namespace>
+  ```
+
+> [!NOTE]
+> These `keycloak-operator`namespace resources are also cleaned up by the various cleanup script
+> from this repository.
+
+If you add a new raw (non-Helm) namespace-deletion path, remember to add the same
+`kubectl delete keycloak,secret -l camunda.io/load-test-namespace=...` step, or the Keycloak
+resources for that load test will leak into `keycloak-operator` forever.
+
 ### PostgreSQL cluster
 
 Keycloak is backed by PostgreSQL (PG). The PG cluster is deployed using the [CloudNativePG Operator (CNPG)](https://cloudnative-pg.io/), which manages:

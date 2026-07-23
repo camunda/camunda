@@ -6,6 +6,12 @@ kind: Secret
 metadata:
   namespace: "keycloak-operator"
   name: "c8-golden-stable-87-elasticsearch-stable-admin"
+  labels:
+    # Same convention as the Keycloak CR's labels, so this Secret can be found
+    # and cleaned up alongside it (it lives in the shared keycloak-operator
+    # namespace, not the load test's own namespace).
+    camunda.io/load-test-namespace: "c8-golden-stable-87-elasticsearch-stable"
+    deadline-date: TEST_DATE
 type: kubernetes.io/basic-auth
 data:
   username: "YWRtaW4="

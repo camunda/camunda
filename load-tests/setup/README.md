@@ -334,7 +334,7 @@ To override the default schedule or target patterns, pass them via `additional_l
 ```sh
 make install chaos=true \
   additional_load_test_setup_configuration="--set chaosKiller.schedule='*/15 * * * *' \
-  --set chaosKiller.targetPatterns='camunda-* elastic-* postgresql-* keycloak-*'"
+  --set chaosKiller.targetPatterns='camunda-* elastic-* postgresql-*'"
 ```
 
 To preview the rendered manifests before installing:
@@ -426,13 +426,13 @@ make template-load-test scenario=max  # renders load test manifests
 
 ### Accessing Services
 
-Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works.
+Benchmark clusters have authentication enabled. Logging into Operate, Tasklist and Admin webapps requires both Camunda and Keycloak reachable locally so that the SSO redirect works. Keycloak itself runs in the shared `keycloak-operator` namespace, as a Service named after the load test namespace, not inside `<namespace>` (see [Keycloak in the load test setup chart README](charts/load-test-setup/README.md#keycloak)).
 
 1. Port-forward both Camunda and Keycloak:
 
 ```sh
 kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
-kubectl -n <namespace> port-forward svc/keycloak 18080:8080 &
+kubectl -n keycloak-operator port-forward svc/<namespace> 18080:8080 &
 wait
 ```
 
@@ -444,18 +444,27 @@ kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identi
 
 3. Open <http://localhost:8080> and log in with user `demo` and the password from the previous step.
 
+#### Keycloak admin credentials
+
+The Keycloak admin console user is `admin` (or whatever `keycloak.adminUser.username` is set to). Its password is generated the same way as every other credential in this chart (see [Where credentials come from](#where-credentials-come-from)) and stored under the `identity-keycloak-admin-password` key:
+
+```sh
+kubectl -n <namespace> get secret camunda-credentials -o jsonpath="{.data.identity-keycloak-admin-password}" | base64 --decode
+```
+
 #### Using c8ctl (CLI access)
 
 To use [c8ctl](https://github.com/camunda/c8ctl) against the cluster, port-forward the REST gateway and Keycloak, then export the credentials from the namespace secrets:
 
 ```sh
-kubectl -n <namespace> port-forward svc/camunda-gateway 8080:8080 &
-kubectl -n <namespace> port-forward svc/keycloak 18080:8080 &
+export NAMESPACE="..."
+kubectl -n $NAMESPACE port-forward svc/camunda-gateway 8080:8080 &
+kubectl -n keycloak-operator port-forward svc/$NAMESPACE 18080:18080 &
 
 export CAMUNDA_BASE_URL=http://localhost:8080
 export CAMUNDA_OAUTH_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
 export CAMUNDA_CLIENT_ID=orchestration
-export CAMUNDA_CLIENT_SECRET=$(kubectl -n <namespace> get secret camunda-credentials \
+export CAMUNDA_CLIENT_SECRET=$(kubectl -n $NAMESPACE get secret camunda-credentials \
   -o jsonpath='{.data.orchestration-security-authentication-oidc-secret}' | base64 --decode)
 export CAMUNDA_TOKEN_AUDIENCE=orchestration-api
 ```
@@ -476,6 +485,12 @@ make clean
 ```
 
 This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter + load-test-setup), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
+
+`make clean`'s `helm uninstall` also cleans up the Keycloak CR and its Secrets, which live in the
+shared `keycloak-operator` namespace rather than this one — this only works because it goes through
+Helm. If you ever delete a load test namespace by hand (`kubectl delete namespace` directly, without
+`make clean`), you must also delete those separately, or they leak forever — see
+[Cleanup in the load test setup chart README](charts/load-test-setup/README.md#cleanup).
 
 The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reinstall the load-test-setup chart, which recreates the namespace and credentials secret), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 

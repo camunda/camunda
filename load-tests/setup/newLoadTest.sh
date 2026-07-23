@@ -80,12 +80,13 @@ Examples:
   ./newLoadTest.sh ${prefix}demo
   ./newLoadTest.sh ${prefix}perf elasticsearch 3 true
 
-This script scaffolds the per-namespace folder including rendered Kubernetes
-manifests under resources/ (namespace + credentials). The cluster itself is
-unchanged by this script — namespace and secret are created on first
-\`make install\` via \`kubectl apply -f resources/...\`. Reruns of \`make install\`
-after a TTL deletion recreate both from the same baked manifests, so
-credentials stay in sync with \`load-tester-values-defaults.yaml\`.
+This script scaffolds the per-namespace folder (Makefile, values files). The
+cluster itself is unchanged by this script — the namespace and the
+\`camunda-credentials\` secret are created on first \`make install\`, via the
+\`load-test-setup\` Helm chart. Reruns of \`make install\` after a TTL deletion
+reinstall the same chart, so credentials are regenerated deterministically
+(same namespace name in, same values out) and the orchestration OIDC secret
+stays in sync with \`load-tester-values-defaults.yaml\`.
 EOF
 }
 

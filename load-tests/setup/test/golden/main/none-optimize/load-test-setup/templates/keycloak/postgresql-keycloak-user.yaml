@@ -33,6 +33,12 @@ metadata:
       This is used by the Keycloak instance to connect into PostgreSQL.
       This Secret is a duplicate of the Secret used to initialize the PostgreSQL cluster by the CNPG Operator in
       "c8-golden-main-none-optimize/postgresql-keycloak-user".
+  labels:
+    # Same convention as the Keycloak CR's labels, so this Secret can be found
+    # and cleaned up alongside it (it lives in the shared keycloak-operator
+    # namespace, not the load test's own namespace).
+    camunda.io/load-test-namespace: "c8-golden-main-none-optimize"
+    deadline-date: TEST_DATE
 type: kubernetes.io/basic-auth
 data:
   username: "a2V5Y2xvYWs="

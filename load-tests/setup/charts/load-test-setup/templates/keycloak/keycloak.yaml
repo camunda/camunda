@@ -5,6 +5,13 @@ kind: Keycloak
 metadata:
   namespace: {{ .Values.keycloak.namespace }}
   name: {{ .Release.Namespace }}
+  labels:
+    # The load test namespace this Keycloak CR belongs to (the CR itself lives
+    # in the shared keycloak-operator namespace, named after it).
+    camunda.io/load-test-namespace: "{{ .Release.Namespace }}"
+    # Same convention/key as the load test namespace's own deadline-date label,
+    # so this CR can be found/cleaned up the same way.
+    deadline-date: "{{ .Values.deadlineDate }}"
 spec:
   {{- with .Values.keycloak.image }}
   image: "{{ .registry }}/{{ .repository }}:{{ .tag }}"

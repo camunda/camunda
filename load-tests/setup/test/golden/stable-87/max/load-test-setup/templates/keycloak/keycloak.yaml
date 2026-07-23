@@ -5,6 +5,13 @@ kind: Keycloak
 metadata:
   namespace: keycloak-operator
   name: c8-golden-stable-87-max
+  labels:
+    # The load test namespace this Keycloak CR belongs to (the CR itself lives
+    # in the shared keycloak-operator namespace, named after it).
+    camunda.io/load-test-namespace: "c8-golden-stable-87-max"
+    # Same convention/key as the load test namespace's own deadline-date label,
+    # so this CR can be found/cleaned up the same way.
+    deadline-date: TEST_DATE
 spec:
   image: "europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/camunda/keycloak:quay-optimized-26.6.4"
 
