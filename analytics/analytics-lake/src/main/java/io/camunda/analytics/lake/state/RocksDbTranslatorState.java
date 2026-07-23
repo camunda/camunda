@@ -9,6 +9,8 @@ package io.camunda.analytics.lake.state;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.camunda.analytics.lake.state.TranslatorState.VariantAccumulator;
+import io.camunda.analytics.lake.state.TranslatorState.VariantName;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
 import io.camunda.eventbridge.streaming.state.rocksdb.RocksDbStateStoreProvider;
 import io.camunda.zeebe.db.impl.DbBytes;
@@ -27,11 +29,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * RocksDB-backed {@link TranslatorState} over the {@code event-bridge-streaming} state library: one
- * RocksDB under the state directory, one column family per {@link LakeColumnFamilies}. Writes are
- * per-call (each put/delete its own transaction), so durability is RocksDB's default WAL behavior —
- * no batching or checkpoint coupling, because this store persists no offsets (the lake's snapshot
- * summary is the offset authority) and every operation is a last-write-wins put or an idempotent
- * delete, so replay from the last lake-committed offset converges.
+ * RocksDB under the state directory, one column family per {@link LakeColumnFamilies} (including
+ * the variant-k1 accumulator and name-map column families). Writes are per-call (each put/delete
+ * its own transaction), so durability is RocksDB's default WAL behavior — no batching or checkpoint
+ * coupling, because this store persists no offsets (the lake's snapshot summary is the offset
+ * authority) and every operation is a last-write-wins put or an idempotent delete, so replay from
+ * the last lake-committed offset converges.
  *
  * <p>Single-threaded: the owning translator is the only caller, so the mutation flyweights are
  * reused across calls. Values returned by the store are copied out into immutable records before
@@ -43,6 +46,8 @@ public final class RocksDbTranslatorState implements TranslatorState {
   private final KeyValueStore<DbLong, OpenInstanceValue> instances;
   private final KeyValueStore<DbLong, OpenElementValue> elements;
   private final KeyValueStore<DbBytes, DbString> variables;
+  private final KeyValueStore<DbLong, VariantAccumulatorValue> variantAccumulators;
+  private final KeyValueStore<DbBytes, VariantNameValue> variantNames;
 
   // Mutation flyweights — reused across calls on the single translator thread.
   private final DbLong instanceKey = new DbLong();
@@ -52,6 +57,10 @@ public final class RocksDbTranslatorState implements TranslatorState {
   private final DbBytes variableKey = new DbBytes();
   private final DbString variableValue = new DbString();
   private final DbBytes variablePrefix = new DbBytes();
+  private final DbLong variantInstanceKey = new DbLong();
+  private final VariantAccumulatorValue variantAccumulatorValue = new VariantAccumulatorValue();
+  private final DbBytes variantNameKey = new DbBytes();
+  private final VariantNameValue variantNameValue = new VariantNameValue();
 
   public RocksDbTranslatorState(final Path stateDir) {
     provider = RocksDbStateStoreProvider.open(stateDir.toFile(), new SimpleMeterRegistry());
@@ -63,6 +72,12 @@ public final class RocksDbTranslatorState implements TranslatorState {
         provider.keyValueStore(
             LakeColumnFamilies.OPEN_ELEMENTS, new DbLong(), new OpenElementValue());
     variables = provider.keyValueStore(LakeColumnFamilies.VARIABLES, new DbBytes(), new DbString());
+    variantAccumulators =
+        provider.keyValueStore(
+            LakeColumnFamilies.VARIANT_ACCUMULATORS, new DbLong(), new VariantAccumulatorValue());
+    variantNames =
+        provider.keyValueStore(
+            LakeColumnFamilies.VARIANT_NAMES, new DbBytes(), new VariantNameValue());
   }
 
   @Override
@@ -132,6 +147,39 @@ public final class RocksDbTranslatorState implements TranslatorState {
   }
 
   @Override
+  public void putVariantAccumulator(final long instanceKey, final VariantAccumulator accumulator) {
+    variantInstanceKey.wrapLong(instanceKey);
+    variantAccumulators.put(variantInstanceKey, variantAccumulatorValue.set(accumulator));
+  }
+
+  @Override
+  public VariantAccumulator getVariantAccumulator(final long instanceKey) {
+    variantInstanceKey.wrapLong(instanceKey);
+    return variantAccumulators
+        .get(variantInstanceKey)
+        .map(VariantAccumulatorValue::toRecord)
+        .orElse(null);
+  }
+
+  @Override
+  public void deleteVariantAccumulator(final long instanceKey) {
+    variantInstanceKey.wrapLong(instanceKey);
+    variantAccumulators.delete(variantInstanceKey);
+  }
+
+  @Override
+  public void putVariantName(final String bpmnProcessId, final int h32, final VariantName name) {
+    variantNameKey.wrapBytes(variantNameKey(bpmnProcessId, h32));
+    variantNames.put(variantNameKey, variantNameValue.set(name));
+  }
+
+  @Override
+  public VariantName getVariantName(final String bpmnProcessId, final int h32) {
+    variantNameKey.wrapBytes(variantNameKey(bpmnProcessId, h32));
+    return variantNames.get(variantNameKey).map(VariantNameValue::toRecord).orElse(null);
+  }
+
+  @Override
   public void forEachOpenInstance(final BiConsumer<Long, OpenInstance> consumer) {
     instances.forEach((key, value) -> consumer.accept(key.getValue(), value.toRecord()));
   }
@@ -152,6 +200,22 @@ public final class RocksDbTranslatorState implements TranslatorState {
 
   private static byte[] instancePrefix(final long instanceKey) {
     return ByteBuffer.allocate(Long.BYTES).putLong(instanceKey).array();
+  }
+
+  /**
+   * {@code bpmnProcessId(utf8) ++ h32(4, big-endian)}. No length prefix is needed (unlike a
+   * variable-length field followed by another variable-length one, which would be genuinely
+   * ambiguous): {@code h32} is always exactly 4 bytes, so two keys can only be byte-identical if
+   * their process id portions are also the same length — at which point byte-identical keys mean
+   * byte-identical process ids and byte-identical {@code h32}s, i.e. the same pair, not a
+   * collision.
+   */
+  private static byte[] variantNameKey(final String bpmnProcessId, final int h32) {
+    final byte[] processIdUtf8 = bpmnProcessId.getBytes(UTF_8);
+    return ByteBuffer.allocate(processIdUtf8.length + Integer.BYTES)
+        .put(processIdUtf8)
+        .putInt(h32)
+        .array();
   }
 
   private static byte[] variableKey(final long instanceKey, final String name) {
