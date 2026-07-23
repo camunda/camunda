@@ -111,7 +111,7 @@ public final class ProcessInstanceResumeProcessor
       return false;
     }
 
-    if (!suspensionState.isSuspended(command.getKey())) {
+    if (suspensionState.getSuspensionState(command.getKey()) != SuspensionState.State.SUSPENDED) {
       final var reason = String.format(PROCESS_NOT_SUSPENDED_MESSAGE, command.getKey());
       enrichRejectionCommand(command, elementInstance.getValue());
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
