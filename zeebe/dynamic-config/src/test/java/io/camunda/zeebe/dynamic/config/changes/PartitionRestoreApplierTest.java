@@ -18,24 +18,26 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
-final class PartitionPreRestoreApplierTest {
+final class PartitionRestoreApplierTest {
 
   private static final MemberId MEMBER_ID = MemberId.from("1");
   private static final int PARTITION_ID = 1;
+  private static final SortedSet<Long> BACKUP_IDS = new TreeSet<>(List.of(1L, 2L));
 
   @Test
   void shouldFailInitWhenMemberNotInCluster() {
     // given
     final var applier =
-        new PartitionPreRestoreApplier(
-            MEMBER_ID, PARTITION_ID, new SucceedingRestoreChangeExecutor());
+        new PartitionRestoreApplier(
+            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
 
     // when
     final var result = applier.initMemberState(ClusterConfiguration.init());
@@ -49,8 +51,8 @@ final class PartitionPreRestoreApplierTest {
   void shouldFailInitWhenMemberIsNotRecovering() {
     // given
     final var applier =
-        new PartitionPreRestoreApplier(
-            MEMBER_ID, PARTITION_ID, new SucceedingRestoreChangeExecutor());
+        new PartitionRestoreApplier(
+            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
     final var config =
         ClusterConfiguration.init()
             .addMember(
@@ -72,8 +74,8 @@ final class PartitionPreRestoreApplierTest {
   void shouldFailInitWhenMemberDoesNotReplicatePartition() {
     // given
     final var applier =
-        new PartitionPreRestoreApplier(
-            MEMBER_ID, PARTITION_ID, new SucceedingRestoreChangeExecutor());
+        new PartitionRestoreApplier(
+            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
     final var recoveringMember = MemberState.initializeAsActive(Map.of()).toRecovering();
     final var config = ClusterConfiguration.init().addMember(MEMBER_ID, recoveringMember);
 
@@ -91,7 +93,7 @@ final class PartitionPreRestoreApplierTest {
   void shouldDelegateToExecutorAndLeaveMemberStateUnchanged() {
     // given
     final var executor = new SucceedingRestoreChangeExecutor();
-    final var applier = new PartitionPreRestoreApplier(MEMBER_ID, PARTITION_ID, executor);
+    final var applier = new PartitionRestoreApplier(MEMBER_ID, PARTITION_ID, BACKUP_IDS, executor);
     final var recoveringMember =
         MemberState.initializeAsActive(
                 Map.of(PARTITION_ID, PartitionState.active(1, DynamicPartitionConfig.init())))
@@ -103,15 +105,18 @@ final class PartitionPreRestoreApplierTest {
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
     assertThat(result.join().apply(recoveringMember)).isEqualTo(recoveringMember);
-    assertThat(executor.invokedPartitionIds).containsExactly(PARTITION_ID);
+    assertThat(executor.invokedRestores).containsExactly(Map.entry(PARTITION_ID, BACKUP_IDS));
   }
 
   @Test
   void shouldFailApplyWhenExecutorFails() {
     // given
     final var applier =
-        new PartitionPreRestoreApplier(
-            MEMBER_ID, PARTITION_ID, new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
+        new PartitionRestoreApplier(
+            MEMBER_ID,
+            PARTITION_ID,
+            BACKUP_IDS,
+            new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
 
     // when
     final var result = applier.applyOperation();
@@ -124,16 +129,16 @@ final class PartitionPreRestoreApplierTest {
   }
 
   private static final class SucceedingRestoreChangeExecutor implements RestoreChangeExecutor {
-    private final List<Integer> invokedPartitionIds = new ArrayList<>();
+    private final Map<Integer, SortedSet<Long>> invokedRestores = new HashMap<>();
 
     @Override
     public ActorFuture<Void> preRestore(final int partitionId) {
-      invokedPartitionIds.add(partitionId);
       return CompletableActorFuture.completed(null);
     }
 
     @Override
     public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
+      invokedRestores.put(partitionId, backupIds);
       return CompletableActorFuture.completed(null);
     }
   }

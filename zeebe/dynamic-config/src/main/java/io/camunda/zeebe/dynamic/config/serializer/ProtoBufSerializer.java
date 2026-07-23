@@ -80,6 +80,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateRoutingState;
@@ -587,6 +588,12 @@ public class ProtoBufSerializer
               Topology.PartitionPreRestoreOperation.newBuilder()
                   .setPartitionId(op.partitionId())
                   .build());
+      case final PartitionRestoreOperation op ->
+          builder.setPartitionRestore(
+              Topology.PartitionRestoreOperation.newBuilder()
+                  .setPartitionId(op.partitionId())
+                  .addAllBackupIds(op.backupIds())
+                  .build());
     }
     return builder.build();
   }
@@ -923,6 +930,11 @@ public class ProtoBufSerializer
     } else if (topologyChangeOperation.hasPartitionPreRestore()) {
       return new PartitionPreRestoreOperation(
           memberId, topologyChangeOperation.getPartitionPreRestore().getPartitionId());
+    } else if (topologyChangeOperation.hasPartitionRestore()) {
+      return new PartitionRestoreOperation(
+          memberId,
+          topologyChangeOperation.getPartitionRestore().getPartitionId(),
+          new TreeSet<>(topologyChangeOperation.getPartitionRestore().getBackupIdsList()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -2100,6 +2112,12 @@ public class ProtoBufSerializer
               Topology.PartitionPreRestoreOperation.newBuilder()
                   .setPartitionId(op.partitionId())
                   .build());
+      case final PartitionRestoreOperation op ->
+          builder.setPartitionRestore(
+              Topology.PartitionRestoreOperation.newBuilder()
+                  .setPartitionId(op.partitionId())
+                  .addAllBackupIds(op.backupIds())
+                  .build());
     }
     return builder.build();
   }
@@ -2196,6 +2214,11 @@ public class ProtoBufSerializer
     } else if (proto.hasPartitionPreRestore()) {
       return new PartitionPreRestoreOperation(
           memberId, proto.getPartitionPreRestore().getPartitionId());
+    } else if (proto.hasPartitionRestore()) {
+      return new PartitionRestoreOperation(
+          memberId,
+          proto.getPartitionRestore().getPartitionId(),
+          new TreeSet<>(proto.getPartitionRestore().getBackupIdsList()));
     } else {
       throw new IllegalStateException("Unknown partition group change operation: " + proto);
     }
