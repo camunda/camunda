@@ -29,6 +29,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.qa.util.compatibility.CompatibilityTest;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -40,11 +41,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
 @CompatibilityTest
@@ -1714,6 +1721,94 @@ public class ProcessInstanceSearchIT {
     assertThat(resultAsc.items().getLast().getBusinessId()).isEqualTo("order-002");
     assertThat(resultDesc.items().getFirst().getBusinessId()).isEqualTo("order-002");
     assertThat(resultDesc.items().getLast().getBusinessId()).isEqualTo("order-001");
+  }
+
+  @ParameterizedTest(name = "sorted by businessId {0}")
+  @MethodSource("businessIdSortDirections")
+  void shouldPaginateProcessInstancesAcrossNullBusinessIdBoundary(
+      final String direction, final Consumer<ProcessInstanceSort> sortByBusinessId) {
+    // given the shared fixture mixes instances with and without a businessId (asserted at its
+    // source, independent of the query under test)
+    assertThat(PROCESS_INSTANCES)
+        .as("fixture must mix null and non-null businessId instances to exercise the null boundary")
+        .anyMatch(pi -> pi.getBusinessId() == null)
+        .anyMatch(pi -> pi.getBusinessId() != null);
+
+    // and an unpaged query establishes the expected order for the current secondary storage
+    final var expected =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .sort(sortByBusinessId)
+            .page(p -> p.limit(1000))
+            .send()
+            .join()
+            .items();
+
+    // derive a page size whose first page ends exactly on the first null businessId in this
+    // backend's ordering, so the searchAfter cursor built from it necessarily carries a null - the
+    // condition that used to crash the query. This adapts automatically to each backend's null
+    // placement (nulls-first vs nulls-last).
+    final int firstNullIndex =
+        IntStream.range(0, expected.size())
+            .filter(i -> expected.get(i).getBusinessId() == null)
+            .findFirst()
+            .orElseThrow();
+    assertThat(firstNullIndex)
+        .as("a null businessId must be followed by another instance so it is carried in a cursor")
+        .isLessThan(expected.size() - 1);
+    final int pageSize = firstNullIndex + 1;
+
+    // when paginating so the first page boundary lands on the null businessId
+    final var paginated = paginateByBusinessId(sortByBusinessId, pageSize);
+
+    // then pagination reproduces the unpaged order exactly: every instance once, no crash on the
+    // cursor carrying a null, and the same ordering across the null/non-null boundary
+    assertThat(paginated)
+        .extracting(ProcessInstance::getProcessInstanceKey)
+        .containsExactlyElementsOf(
+            expected.stream().map(ProcessInstance::getProcessInstanceKey).toList());
+  }
+
+  private static Stream<Arguments> businessIdSortDirections() {
+    return Stream.of(
+        Arguments.of("ASC", (Consumer<ProcessInstanceSort>) s -> s.businessId().asc()),
+        Arguments.of("DESC", (Consumer<ProcessInstanceSort>) s -> s.businessId().desc()));
+  }
+
+  private List<ProcessInstance> paginateByBusinessId(
+      final Consumer<ProcessInstanceSort> sort, final int pageSize) {
+    final long total =
+        camundaClient.newProcessInstanceSearchRequest().send().join().page().totalItems();
+    // a correct cursor advances every page; bound the loop so a non-advancing or repeating
+    // cursor fails fast with a clear message instead of hanging the test
+    final long maxPages = total / pageSize + 2;
+
+    final List<ProcessInstance> collected = new ArrayList<>();
+    String cursor = null;
+    for (long page = 0; page <= maxPages; page++) {
+      final String after = cursor;
+      final var response =
+          camundaClient
+              .newProcessInstanceSearchRequest()
+              .sort(sort)
+              .page(
+                  p -> {
+                    p.limit(pageSize);
+                    if (after != null) {
+                      p.after(after);
+                    }
+                  })
+              .send()
+              .join();
+      collected.addAll(response.items());
+      cursor = response.page().endCursor();
+      if (response.items().size() < pageSize) {
+        return collected;
+      }
+    }
+    throw new AssertionError(
+        "Pagination did not terminate within %d pages; the cursor may not be advancing"
+            .formatted(maxPages));
   }
 
   @Test
