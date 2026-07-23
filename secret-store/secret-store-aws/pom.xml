@@ -18,11 +18,41 @@
 
   <name>Camunda Secret Store AWS Secrets Manager Implementation</name>
 
+  <properties>
+    <!-- Remove this property and the empty-javadoc-jar execution below once this module has
+         public classes to document. -->
+    <maven.javadoc.skip>true</maven.javadoc.skip>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <!-- maven.javadoc.skip disables the real javadoc jar, so attach an empty placeholder to
+           satisfy the "every non-pom artifact ships a javadoc jar" release requirement. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>empty-javadoc-jar</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <classifier>javadoc</classifier>
+              <classesDirectory>${basedir}/javadoc</classesDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
