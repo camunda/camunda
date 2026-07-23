@@ -217,5 +217,15 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
         this(memberId, partitionId, priority, Optional.empty(), initializeFromSnapshot);
       }
     }
+
+    /**
+     * Operation to drop a member's local data for a single partition in preparation for a restore.
+     * Only valid while the member is in recovery mode and already replicates the partition.
+     *
+     * @param memberId the member id of the member that will apply this operation
+     * @param partitionId id of the partition whose local data is dropped
+     */
+    record PartitionPreRestoreOperation(MemberId memberId, int partitionId)
+        implements PartitionChangeOperation {}
   }
 }

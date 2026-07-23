@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import java.util.Optional;
 import java.util.Set;
@@ -40,7 +41,7 @@ final class ConfigurationChangeAppliersImplTest {
       final ClusterConfigurationChangeOperation operation, final Class<?> expectedClass) {
     // given
     final var topologyChangeAppliers =
-        new ConfigurationChangeAppliersImpl(null, null, null, null, null);
+        new ConfigurationChangeAppliersImpl(null, null, null, null, null, null);
 
     // when
     final var applier = topologyChangeAppliers.getApplier(operation);
@@ -82,6 +83,8 @@ final class ConfigurationChangeAppliersImplTest {
         Arguments.of(
             new ModeChangeOperation(localMemberId, Mode.RECOVERING), EnterRecoveryApplier.class),
         Arguments.of(
-            new ModeChangeOperation(localMemberId, Mode.PROCESSING), ExitRecoveryApplier.class));
+            new ModeChangeOperation(localMemberId, Mode.PROCESSING), ExitRecoveryApplier.class),
+        Arguments.of(
+            new PartitionPreRestoreOperation(localMemberId, 1), PartitionPreRestoreApplier.class));
   }
 }

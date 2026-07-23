@@ -78,6 +78,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
@@ -581,6 +582,11 @@ public class ProtoBufSerializer
               Topology.ExportingStateChangeOperation.newBuilder()
                   .setState(encodeExportingState(exportingStateChangeOperation.state()))
                   .build());
+      case final PartitionPreRestoreOperation op ->
+          builder.setPartitionPreRestore(
+              Topology.PartitionPreRestoreOperation.newBuilder()
+                  .setPartitionId(op.partitionId())
+                  .build());
     }
     return builder.build();
   }
@@ -914,6 +920,9 @@ public class ProtoBufSerializer
       final var exporterStateChangeProto = topologyChangeOperation.getExporterStateChange();
       return new ExportingStateChangeOperation(
           memberId, decodeExportingState(exporterStateChangeProto.getState()));
+    } else if (topologyChangeOperation.hasPartitionPreRestore()) {
+      return new PartitionPreRestoreOperation(
+          memberId, topologyChangeOperation.getPartitionPreRestore().getPartitionId());
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -2086,6 +2095,11 @@ public class ProtoBufSerializer
         op.routingState().ifPresent(s -> routingBuilder.setRoutingState(encodeRoutingState(s)));
         builder.setUpdateRoutingState(routingBuilder);
       }
+      case final PartitionPreRestoreOperation op ->
+          builder.setPartitionPreRestore(
+              Topology.PartitionPreRestoreOperation.newBuilder()
+                  .setPartitionId(op.partitionId())
+                  .build());
     }
     return builder.build();
   }
@@ -2179,6 +2193,9 @@ public class ProtoBufSerializer
     } else if (proto.hasExporterStateChange()) {
       return new ExportingStateChangeOperation(
           memberId, decodeExportingState(proto.getExporterStateChange().getState()));
+    } else if (proto.hasPartitionPreRestore()) {
+      return new PartitionPreRestoreOperation(
+          memberId, proto.getPartitionPreRestore().getPartitionId());
     } else {
       throw new IllegalStateException("Unknown partition group change operation: " + proto);
     }

@@ -41,6 +41,7 @@ import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.List;
@@ -275,7 +276,8 @@ final class ProtoBufSerializerTest {
                 new MemberLeaveOperation(MemberId.from("1")),
                 new PartitionJoinOperation(MemberId.from("2"), 1, 2),
                 new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
-                new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING)));
+                new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+                new PartitionPreRestoreOperation(MemberId.from("1"), 1)));
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);

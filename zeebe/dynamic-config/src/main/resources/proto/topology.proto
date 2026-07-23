@@ -138,6 +138,7 @@ message PartitionGroupChangeOperation {
     ModeChangeOperation modeChange = 16;
     AwaitModeChangeOperation awaitModeChange = 17;
     ExportingStateChangeOperation exporterStateChange = 18;
+    PartitionPreRestoreOperation partitionPreRestore = 19;
   }
 }
 
@@ -248,6 +249,7 @@ message TopologyChangeOperation {
     ModeChangeOperation modeChange = 24;
     AwaitModeChangeOperation awaitModeChange = 25;
     ExportingStateChangeOperation exporterStateChange = 26;
+    PartitionPreRestoreOperation partitionPreRestore = 27;
   }
 }
 
@@ -304,6 +306,10 @@ message PartitionBootstrapOperation {
 }
 
 message StartPartitionScaleUpOperation {int32 desiredPartitionCount = 2;}
+
+message PartitionPreRestoreOperation {
+  int32 partitionId = 1;
+}
 
 message AwaitRedistributionCompletion {
   int32 desiredPartitionCount = 1;

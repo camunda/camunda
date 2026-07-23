@@ -216,7 +216,8 @@ public class ConfigurationChangeCoordinatorImpl implements ConfigurationChangeCo
               new NoopClusterMembershipChangeExecutor(),
               new NoopPartitionScalingChangeExecutor(),
               new NoopClusterChangeExecutor(),
-              new NoopModeChangeExecutor());
+              new NoopModeChangeExecutor(),
+              new RestoreChangeExecutor.NoopRestoreChangeExecutor());
       final var topologyWithPendingOperations =
           currentClusterConfiguration.startConfigurationChange(operations);
 
