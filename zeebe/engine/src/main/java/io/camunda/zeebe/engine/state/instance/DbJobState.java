@@ -307,16 +307,8 @@ public final class DbJobState implements JobState, MutableJobState {
     if (job == null) {
       return;
     }
-    final int oldPriority = job.getPriority();
     job.setPriority(newPriority);
-
-    if (getState(jobKey) == State.ACTIVATABLE) {
-      makeJobNotActivatable(job.getTypeBuffer(), job.getTenantId(), oldPriority);
-      updateJobRecord(jobKey, job);
-      makeJobActivatable(job.getTypeBuffer(), jobKey, job.getTenantId(), newPriority);
-    } else {
-      updateJobRecord(jobKey, job);
-    }
+    updateJobRecord(jobKey, job);
   }
 
   @Override
