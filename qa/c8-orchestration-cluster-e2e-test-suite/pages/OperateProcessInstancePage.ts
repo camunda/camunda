@@ -969,6 +969,10 @@ class OperateProcessInstancePage {
     await this.clickDiagramElement(elementId);
   }
 
+  async isElementSelectedInDiagram(elementId: string): Promise<boolean> {
+    return new URL(this.page.url()).searchParams.get('elementId') === elementId;
+  }
+
   getCalledProcessLink(processName: string): Locator {
     return this.page.getByRole('link', {name: processName});
   }
@@ -1002,18 +1006,30 @@ class OperateProcessInstancePage {
   }
 
   async verifyIncidents(errorTypes: string[], elementId?: string) {
-    if (elementId) {
-      await this.clickOnElementInDiagram(elementId);
-    }
+    // Open the Incidents tab BEFORE selecting a flow node. The bottom-panel tab
+    // links navigate by pathname only and drop the elementId search param, so
+    // selecting first and then switching tabs clears the scope (the header falls
+    // back to the instance-wide total). Selecting while already on the incidents
+    // view keeps the pathname and just adds the elementId filter.
     await this.clickIncidentsTab();
-    // When a flow node is selected the incidents view switches to the
-    // element-scoped query, so the header count reflects only the selected
-    // element's incidents. That query may still be resolving (the header can
-    // briefly show the stale instance-wide total), so poll the count until it
-    // settles instead of reading it once.
-    await expect
-      .poll(() => this.getIncidentCount(), {timeout: 30000})
-      .toBe(errorTypes.length);
+    if (elementId) {
+      // Scope the incidents view to the flow node by selecting it, then confirm
+      // the element-scoped count settles. On a freshly migrated instance the
+      // diagram is still settling, so re-apply until it sticks. Only click when
+      // the node is not already selected — clicking a selected node in Operate
+      // toggles the selection back off (BpmnJS #handleElementClick) — which also
+      // avoids re-clicking while the scoped query is still resolving.
+      await expect(async () => {
+        if (!(await this.isElementSelectedInDiagram(elementId))) {
+          await this.clickOnElementInDiagram(elementId);
+        }
+        expect(await this.getIncidentCount()).toBe(errorTypes.length);
+      }).toPass({timeout: 30000});
+    } else {
+      await expect
+        .poll(() => this.getIncidentCount(), {timeout: 30000})
+        .toBe(errorTypes.length);
+    }
     for (const errorType of errorTypes) {
       const incidentRow = await this.getIncidentRowByErrorType(errorType);
       await expect(incidentRow).toBeVisible({timeout: 30000});

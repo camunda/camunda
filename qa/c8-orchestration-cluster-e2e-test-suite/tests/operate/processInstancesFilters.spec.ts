@@ -618,11 +618,19 @@ test.describe('Process Instances Filters', () => {
         },
       });
 
-      await operateProcessesPage.selectAllRowsCheckbox.click();
-
-      await operateProcessesPage.clickCancelBatchOperationButton();
-
-      await operateProcessesPage.clickCancelProcessInstanceDialogButton();
+      // The two instances were just created and are still being imported, so
+      // Operate's instance-list poll can refresh the table mid-flow, clearing
+      // the row selection and detaching the batch-cancel/dialog buttons. Retry
+      // select-all -> cancel -> apply as a unit until the batch operation is
+      // actually submitted (the "Go to operation details" link appears).
+      await expect(async () => {
+        await operateProcessesPage.selectAllRowsCheckbox.click();
+        await operateProcessesPage.clickCancelBatchOperationButton();
+        await operateProcessesPage.clickApplyCancelBatchOperationDialogButton();
+        await expect(
+          operateProcessesPage.goToOperationDetailsButton,
+        ).toBeVisible({timeout: 15000});
+      }).toPass({timeout: 90000});
 
       await operateProcessesPage.clickGoToOperationDetailsButton();
 
