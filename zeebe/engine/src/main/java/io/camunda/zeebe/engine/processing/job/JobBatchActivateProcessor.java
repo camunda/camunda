@@ -105,6 +105,15 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       return authorizedTenantIds.getAuthorizedTenantIds();
     }
 
+    return resolveProvidedTenantIds(value);
+  }
+
+  // An empty PROVIDED tenant-ID list is treated as "the default tenant" both here and in
+  // validateTenantAuthorization, so the tenant-authorization check and the tenants actually used
+  // for activation can never diverge (isAuthorizedForTenantIds([]) is vacuously true, so checking
+  // the raw empty list would silently authorize a caller not actually assigned to the default
+  // tenant).
+  private List<String> resolveProvidedTenantIds(final JobBatchRecord value) {
     final var providedTenantIds = value.getTenantIds();
     return providedTenantIds.isEmpty()
         ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
@@ -130,7 +139,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final TypedRecord<JobBatchRecord> record,
       final JobBatchRecord value,
       final AuthorizedTenants authorizedTenantIds) {
-    final var tenantIds = value.getTenantIds();
+    final var tenantIds = resolveProvidedTenantIds(value);
     // Rejection is a method argument, so it's always evaluated eagerly, even when checkTenants
     // ends up allowing the request; getAuthorizedTenantIds() throws for an anonymous principal, so
     // it can't be called unconditionally here.
