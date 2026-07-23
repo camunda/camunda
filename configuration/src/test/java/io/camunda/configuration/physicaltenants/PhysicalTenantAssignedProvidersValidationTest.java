@@ -553,10 +553,6 @@ class PhysicalTenantAssignedProvidersValidationTest {
         .doesNotThrowAnyException();
   }
 
-  // -------------------------------------------------------------------------
-  // Tenant id discovery: delegated to the shared PhysicalTenantIdDiscovery utility
-  // -------------------------------------------------------------------------
-
   @Test
   void shouldRejectTenantIdExceeding64Characters() {
     // given a tenant id one character over the shared length limit — the only discovery-reachable
