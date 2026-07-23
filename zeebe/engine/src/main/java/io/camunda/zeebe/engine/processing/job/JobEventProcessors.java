@@ -129,7 +129,8 @@ public final class JobEventProcessors {
                 jobMetrics,
                 cslCheck,
                 clock,
-                incidentMetrics))
+                incidentMetrics,
+                secretStoreRegistry))
         .withListener(
             new JobTimeoutCheckScheduler(
                 scheduledTaskStateFactory.get().getJobState(),

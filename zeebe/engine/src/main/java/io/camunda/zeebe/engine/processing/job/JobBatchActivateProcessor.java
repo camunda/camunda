@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
@@ -59,6 +60,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final ProcessState processState;
   private final CslAuthorizationCheck cslCheck;
   private final IncidentMetrics incidentMetrics;
+  private final JobSecretInjector jobSecretInjector;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -67,15 +69,22 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       final JobProcessingMetrics jobMetrics,
       final CslAuthorizationCheck cslCheck,
       final InstantSource clock,
-      final IncidentMetrics incidentMetrics) {
+      final IncidentMetrics incidentMetrics,
+      final SecretStoreRegistry secretStoreRegistry) {
 
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     this.cslCheck = cslCheck;
+    jobSecretInjector = new JobSecretInjector(secretStoreRegistry);
     jobBatchCollector =
         new JobBatchCollector(
-            state, stateWriter::canWriteEventOfLength, cslCheck, clock, jobMetrics);
+            state,
+            stateWriter::canWriteEventOfLength,
+            cslCheck,
+            clock,
+            jobMetrics,
+            jobSecretInjector);
 
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;

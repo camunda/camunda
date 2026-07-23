@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.expression;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.SecretStoreRegistries;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -24,7 +25,15 @@ import org.junit.Test;
  */
 public final class SecretReferenceInputMappingTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  /**
+   * All referenced secrets resolve to a cached value, otherwise activation would remove the jobs
+   * from the batch. The activated records asserted on below always keep the placeholders: resolved
+   * values are only injected into the activation response, never the persisted records.
+   */
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecretStoreRegistry(SecretStoreRegistries.resolveAll("resolved"));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
