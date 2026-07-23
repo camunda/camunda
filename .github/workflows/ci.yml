@@ -2709,10 +2709,11 @@ jobs:
         with:
           name: fe-optimize-${{ github.run_id }}
           path: optimize/client/dist
+      # -am fixes a race with deploy-snapshots by building reactor deps from source instead of Nexus
       - name: Build zeebe-protocol from source
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -pl zeebe/protocol -Dquickly
+          parameters: install -pl zeebe/protocol -am -Dquickly
       - name: Generate Optimize production .tar.gz
         uses: ./.github/actions/run-maven
         with:
