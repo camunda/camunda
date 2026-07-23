@@ -202,11 +202,8 @@ jobs:
             # ----------------------------------------------------------------
             # Build medic pings from failure-context artifacts on the latest run.
             # ----------------------------------------------------------------
-            # Default owner: docker-build-helm-integration.yml's own TEST_OWNER
-            # is Distribution -- not monorepo-ci-medic, who has no runbook for
-            # this pipeline's plumbing and asked not to be paged case-by-case
-            # for failures they don't own (2026-07-23 #alwaysgreen-reliability
-            # thread with Christian).
+            # Default owner: this pipeline's TEST_OWNER is Distribution, not
+            # monorepo-ci-medic.
             MEDIC_PINGS="${MEDIC_DISTRIBUTION}"
 
             if [[ "${IS_STREAK}" == "true" ]]; then
