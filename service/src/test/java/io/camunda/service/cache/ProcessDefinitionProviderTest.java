@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -195,10 +196,20 @@ class ProcessDefinitionProviderTest {
     when(processDefinition.bpmnXml()).thenReturn(bpmn1);
     when(processDefinition.processDefinitionKey()).thenReturn(PROC_DEF_KEY);
     final var processDefinition2 =
+<<<<<<< HEAD
         new ProcessDefinitionEntity(2L, "Process 2", PROC_DEF_ID2, bpmn2, "", 1, "", "", "");
     final var processDefinition3 =
         new ProcessDefinitionEntity(3L, "Process 3", PROC_DEF_ID3, bpmn3, "", 1, "", "", "");
     when(processDefinitionServices.search(any(), any()))
+=======
+        new ProcessDefinitionEntity(
+            2L, "Process 2", PROC_DEF_ID2, bpmn2, "", 1, "", "", "", ProcessDefinitionState.ACTIVE);
+    final var processDefinition3 =
+        new ProcessDefinitionEntity(
+            3L, "Process 3", PROC_DEF_ID3, bpmn3, "", 1, "", "", "", ProcessDefinitionState.ACTIVE);
+
+    when(processDefinitionSearchClient.searchProcessDefinitions(any()))
+>>>>>>> 7af48743 (refactor: replace isDeleted with a state enum in the search domain)
         .thenReturn(
             new SearchQueryResult.Builder<ProcessDefinitionEntity>()
                 .items(List.of(processDefinition, processDefinition2, processDefinition3))

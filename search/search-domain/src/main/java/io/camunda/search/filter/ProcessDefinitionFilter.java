@@ -10,6 +10,7 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
@@ -25,7 +26,12 @@ public record ProcessDefinitionFilter(
     List<Integer> versions,
     List<String> versionTags,
     List<String> tenantIds,
+<<<<<<< HEAD
     Boolean hasStartForm)
+=======
+    Boolean hasStartForm,
+    ProcessDefinitionState state)
+>>>>>>> 7af48743 (refactor: replace isDeleted with a state enum in the search domain)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessDefinitionFilter> {
@@ -39,6 +45,10 @@ public record ProcessDefinitionFilter(
     private List<Integer> versions;
     private List<String> versionTags;
     private Boolean hasStartForm;
+<<<<<<< HEAD
+=======
+    private ProcessDefinitionState state;
+>>>>>>> 7af48743 (refactor: replace isDeleted with a state enum in the search domain)
 
     public Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
@@ -126,6 +136,14 @@ public record ProcessDefinitionFilter(
       return this;
     }
 
+<<<<<<< HEAD
+=======
+    public Builder state(final ProcessDefinitionState state) {
+      this.state = state;
+      return this;
+    }
+
+>>>>>>> 7af48743 (refactor: replace isDeleted with a state enum in the search domain)
     @Override
     public ProcessDefinitionFilter build() {
       return new ProcessDefinitionFilter(
@@ -137,7 +155,12 @@ public record ProcessDefinitionFilter(
           Objects.requireNonNullElse(versions, Collections.emptyList()),
           Objects.requireNonNullElse(versionTags, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
+<<<<<<< HEAD
           hasStartForm);
+=======
+          hasStartForm,
+          state);
+>>>>>>> 7af48743 (refactor: replace isDeleted with a state enum in the search domain)
     }
   }
 }

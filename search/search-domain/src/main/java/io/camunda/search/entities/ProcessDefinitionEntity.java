@@ -16,5 +16,25 @@ public record ProcessDefinitionEntity(
     Integer version,
     String versionTag,
     String tenantId,
+<<<<<<< HEAD
     String formId)
     implements TenantOwnedEntity {}
+=======
+    @Nullable String formId,
+    @Nullable ProcessDefinitionState state)
+    implements TenantOwnedEntity {
+
+  public ProcessDefinitionEntity {
+    Objects.requireNonNull(processDefinitionKey, "processDefinitionKey");
+    Objects.requireNonNull(processDefinitionId, "processDefinitionId");
+    Objects.requireNonNull(resourceName, "resourceName");
+    Objects.requireNonNull(version, "version");
+    Objects.requireNonNull(tenantId, "tenantId");
+  }
+
+  public enum ProcessDefinitionState {
+    ACTIVE,
+    DELETED
+  }
+}
+>>>>>>> 7af48743 (refactor: replace isDeleted with a state enum in the search domain)
