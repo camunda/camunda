@@ -252,6 +252,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
     this.partitionConfig = partitionConfig;
     cluster = new RaftClusterContext(localMemberId, this);
+    membershipService.addListener(cluster);
 
     replicationMetrics = new RaftReplicationMetrics(name, meterRegistry);
     replicationMetrics.setAppendIndex(raftLog.getLastIndex());
@@ -872,6 +873,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         term,
         raftLog.getCommitIndex(),
         raftLog.getLastIndex());
+    membershipService.removeListener(cluster);
     raftRoleMetrics.becomingInactive();
     started = false;
     // Unregister protocol listeners.
