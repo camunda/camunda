@@ -490,15 +490,14 @@ describe('ElementInstanceLog — search flow', () => {
       screen.queryByTestId('instance-history-skeleton'),
     );
 
-    expect(
-      screen.getByRole('button', {name: 'Latest first'}),
-    ).toBeInTheDocument();
+    const sortOrderToggle = screen.getByRole('button', {
+      name: 'Latest first',
+    });
+    expect(sortOrderToggle).toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
 
-    await waitForElementToBeRemoved(
-      screen.queryByRole('button', {name: 'Latest first'}),
-    );
+    await waitForElementToBeRemoved(sortOrderToggle);
 
     modificationsStore.reset();
   });
