@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+                  id="Definitions_order-fulfillment"
+                  targetNamespace="http://camunda.org/analytics/ocpm-showcase"
+                  modeler:executionPlatform="Camunda Cloud"
+                  modeler:executionPlatformVersion="8.10.0">
+  <bpmn:process id="order-fulfillment" name="Order fulfillment" isExecutable="true">
+    <bpmn:documentation>Order-to-cash OCPM showcase, process 2 of 3. Called by order-intake, which
+      propagates orderId/customerId/amount/region/items in. See
+      event-bridge/event-bridge-examples/docs/ocpm-showcase.md.
+
+      "Publish ship order" is a plain job worker (not a BPMN message throw event — Zeebe has no
+      throw-to-other-instance message intermediate event). On completion the driver's worker
+      publishes the `ship-order` message keyed by `region`, which the shared region-shipping
+      instance for that region is waiting on. KNOWN GAP: the load-tester's Worker only supports
+      publishing the message with a correlation key, not a variable payload (see
+      io.camunda.zeebe.worker.Worker#publishMessage, which never calls .variables(...)) — so this
+      message currently carries no orderId. See the ground-truth doc for what that means for the
+      region-shipping sighting count.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_1" name="Fulfillment requested">
+      <bpmn:outgoing>Flow_ToPickStock</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToPickStock" sourceRef="StartEvent_1" targetRef="Activity_PickStock" />
+    <bpmn:serviceTask id="Activity_PickStock" name="Pick stock">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="order_fulfillment_pick_stock" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToPickStock</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPackOrder</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToPackOrder" sourceRef="Activity_PickStock" targetRef="Activity_PackOrder" />
+    <bpmn:serviceTask id="Activity_PackOrder" name="Pack order">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="order_fulfillment_pack_order" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToPackOrder</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToPublishShipOrder</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToPublishShipOrder" sourceRef="Activity_PackOrder" targetRef="Activity_PublishShipOrder" />
+    <bpmn:serviceTask id="Activity_PublishShipOrder" name="Publish ship order">
+      <bpmn:documentation>Job worker completion publishes message `ship-order`, correlationKey =
+        region (LOAD_TESTER_WORKER_SEND_MESSAGE=true /
+        LOAD_TESTER_WORKER_CORRELATION_KEY_VARIABLE_NAME=region in the driver). See the
+        process-level documentation for the payload-variable limitation.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="order_fulfillment_publish_ship_order" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToPublishShipOrder</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToInvoicing</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToInvoicing" sourceRef="Activity_PublishShipOrder" targetRef="Activity_CallInvoicing" />
+    <bpmn:callActivity id="Activity_CallInvoicing" name="Invoice order">
+      <bpmn:documentation>Call-activity link #2 of the two-deep chain
+        (order-intake -&#62; order-fulfillment -&#62; order-invoicing).</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="order-invoicing" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToInvoicing</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="Activity_CallInvoicing" targetRef="EndEvent_1" />
+    <bpmn:endEvent id="EndEvent_1" name="Order fulfilled">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_order-fulfillment">
+    <bpmndi:BPMNPlane id="BPMNPlane_order-fulfillment" bpmnElement="order-fulfillment">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="130" y="245" width="82" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PickStock_di" bpmnElement="Activity_PickStock">
+        <dc:Bounds x="240" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PackOrder_di" bpmnElement="Activity_PackOrder">
+        <dc:Bounds x="390" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_PublishShipOrder_di" bpmnElement="Activity_PublishShipOrder">
+        <dc:Bounds x="540" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CallInvoicing_di" bpmnElement="Activity_CallInvoicing">
+        <dc:Bounds x="690" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="850" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="828" y="245" width="80" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToPickStock_di" bpmnElement="Flow_ToPickStock">
+        <di:waypoint x="188" y="220" /><di:waypoint x="240" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPackOrder_di" bpmnElement="Flow_ToPackOrder">
+        <di:waypoint x="340" y="220" /><di:waypoint x="390" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToPublishShipOrder_di" bpmnElement="Flow_ToPublishShipOrder">
+        <di:waypoint x="490" y="220" /><di:waypoint x="540" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToInvoicing_di" bpmnElement="Flow_ToInvoicing">
+        <di:waypoint x="640" y="220" /><di:waypoint x="690" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToEnd_di" bpmnElement="Flow_ToEnd">
+        <di:waypoint x="790" y="220" /><di:waypoint x="850" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

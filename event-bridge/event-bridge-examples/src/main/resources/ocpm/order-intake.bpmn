@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+                  id="Definitions_order-intake"
+                  targetNamespace="http://camunda.org/analytics/ocpm-showcase"
+                  modeler:executionPlatform="Camunda Cloud"
+                  modeler:executionPlatformVersion="8.10.0">
+  <bpmn:process id="order-intake" name="Order intake" isExecutable="true">
+    <bpmn:documentation>Order-to-cash OCPM showcase, process 1 of 3. See
+      event-bridge/event-bridge-examples/docs/ocpm-showcase.md for the object model and the
+      expected analytics ground truth this suite is built to exercise.
+
+      Root variables are entirely FEEL-derived at the start event from the single per-instance
+      value the load-tester's Starter already injects natively (its auto-incrementing
+      "business key", renamed to `seq` for this scenario via LOAD_TESTER_STARTER_BUSINESS_KEY).
+      No custom payload-pool file was needed for uniqueness — see the driver comments in
+      analytics/run-realistic-load.sh.</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_1" name="Order received">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=&#34;ORD-&#34; + string(seq)" target="orderId" />
+          <zeebe:output source="=&#34;CUST-&#34; + string(modulo(seq, 50) + 1)" target="customerId" />
+          <zeebe:output source="=if modulo(seq, 5) = 0 then 4500 + modulo(seq * 877, 3000) else 50 + modulo(seq * 1327, 2950)" target="amount" />
+          <zeebe:output source="=[&#34;EU&#34;, &#34;US&#34;, &#34;APAC&#34;, &#34;LATAM&#34;][modulo(seq, 4) + 1]" target="region" />
+          <zeebe:output source="=for i in 1..(modulo(seq, 4) + 1) return {itemId: &#34;ITM-&#34; + string(seq) + &#34;-&#34; + string(i), name: &#34;Item &#34; + string(i), qty: modulo(seq + i, 4) + 1}" target="items" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_ToRegisterItems</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRegisterItems" sourceRef="StartEvent_1" targetRef="Activity_RegisterItems" />
+    <bpmn:subProcess id="Activity_RegisterItems" name="Register items">
+      <bpmn:documentation>Multi-instance over the `items` array. `itemId` is written by the inner
+        script task's output mapping, which lands it in THIS multi-instance body's own scope (one
+        scope per array element, not the process root) — this is the load-bearing bit: it is what
+        gives the analytics pipeline scope-precise item sightings instead of one blob at root.</bpmn:documentation>
+      <bpmn:incoming>Flow_ToRegisterItems</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToCreditCheck</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics>
+        <bpmn:extensionElements>
+          <zeebe:loopCharacteristics inputCollection="=items" inputElement="item" />
+        </bpmn:extensionElements>
+      </bpmn:multiInstanceLoopCharacteristics>
+      <bpmn:startEvent id="Event_RegisterItemStart" name="item registered">
+        <bpmn:outgoing>Flow_ToSetItemId</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_ToSetItemId" sourceRef="Event_RegisterItemStart" targetRef="Activity_SetItemId" />
+      <bpmn:scriptTask id="Activity_SetItemId" name="Set item id (inner scope)">
+        <bpmn:extensionElements>
+          <zeebe:script expression="=item.itemId" resultVariable="itemId" />
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_ToSetItemId</bpmn:incoming>
+        <bpmn:outgoing>Flow_ToRegisterItemEnd</bpmn:outgoing>
+      </bpmn:scriptTask>
+      <bpmn:sequenceFlow id="Flow_ToRegisterItemEnd" sourceRef="Activity_SetItemId" targetRef="Event_RegisterItemEnd" />
+      <bpmn:endEvent id="Event_RegisterItemEnd" name="item scope closed">
+        <bpmn:incoming>Flow_ToRegisterItemEnd</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+    <bpmn:sequenceFlow id="Flow_ToCreditCheck" sourceRef="Activity_RegisterItems" targetRef="Gateway_CreditCheck" />
+    <bpmn:exclusiveGateway id="Gateway_CreditCheck" name="Credit check" default="Flow_AutoCreditCheck">
+      <bpmn:incoming>Flow_ToCreditCheck</bpmn:incoming>
+      <bpmn:outgoing>Flow_ManualCreditReview</bpmn:outgoing>
+      <bpmn:outgoing>Flow_AutoCreditCheck</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ManualCreditReview" name="amount &#62; 4000" sourceRef="Gateway_CreditCheck" targetRef="Activity_ManualCreditReview">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=amount &#62; 4000</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_AutoCreditCheck" sourceRef="Gateway_CreditCheck" targetRef="Activity_AutoCreditCheck" />
+    <bpmn:serviceTask id="Activity_ManualCreditReview" name="Manual credit review">
+      <bpmn:documentation>The planted slow variant: ~20% of orders (amount &#62; 4000) take this
+        long-running branch (driver launches this worker with a several-second completion delay
+        and a widened job-activation timeout) — the bottleneck/lift story the ground-truth doc
+        expects analytics to surface.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="order_intake_manual_credit_review" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ManualCreditReview</bpmn:incoming>
+      <bpmn:outgoing>Flow_ManualToJoin</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_AutoCreditCheck" name="Automatic credit check">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="order_intake_auto_credit_check" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_AutoCreditCheck</bpmn:incoming>
+      <bpmn:outgoing>Flow_AutoToJoin</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ManualToJoin" sourceRef="Activity_ManualCreditReview" targetRef="Gateway_CreditCheckJoin" />
+    <bpmn:sequenceFlow id="Flow_AutoToJoin" sourceRef="Activity_AutoCreditCheck" targetRef="Gateway_CreditCheckJoin" />
+    <bpmn:exclusiveGateway id="Gateway_CreditCheckJoin">
+      <bpmn:incoming>Flow_ManualToJoin</bpmn:incoming>
+      <bpmn:incoming>Flow_AutoToJoin</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToFulfillment</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_ToFulfillment" sourceRef="Gateway_CreditCheckJoin" targetRef="Activity_CallFulfillment" />
+    <bpmn:callActivity id="Activity_CallFulfillment" name="Fulfill order">
+      <bpmn:documentation>Call-activity link #1 of the two-deep chain (order-intake -&#62;
+        order-fulfillment -&#62; order-invoicing). No ioMapping is set, so all root variables
+        (orderId, customerId, amount, region, items) propagate down by default, and all
+        top-level child variables propagate back up on completion.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="order-fulfillment" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToFulfillment</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToEnd</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:sequenceFlow id="Flow_ToEnd" sourceRef="Activity_CallFulfillment" targetRef="EndEvent_1" />
+    <bpmn:endEvent id="EndEvent_1" name="Order intake complete">
+      <bpmn:incoming>Flow_ToEnd</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_order-intake">
+    <bpmndi:BPMNPlane id="BPMNPlane_order-intake" bpmnElement="order-intake">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="130" y="245" width="82" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_RegisterItems_di" bpmnElement="Activity_RegisterItems" isExpanded="true">
+        <dc:Bounds x="240" y="120" width="380" height="200" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_RegisterItemStart_di" bpmnElement="Event_RegisterItemStart">
+        <dc:Bounds x="280" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="260" y="245" width="76" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SetItemId_di" bpmnElement="Activity_SetItemId">
+        <dc:Bounds x="360" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_RegisterItemEnd_di" bpmnElement="Event_RegisterItemEnd">
+        <dc:Bounds x="510" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="490" y="245" width="80" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CreditCheck_di" bpmnElement="Gateway_CreditCheck" isMarkerVisible="true">
+        <dc:Bounds x="675" y="195" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="660" y="165" width="80" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ManualCreditReview_di" bpmnElement="Activity_ManualCreditReview">
+        <dc:Bounds x="780" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_AutoCreditCheck_di" bpmnElement="Activity_AutoCreditCheck">
+        <dc:Bounds x="780" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_CreditCheckJoin_di" bpmnElement="Gateway_CreditCheckJoin" isMarkerVisible="true">
+        <dc:Bounds x="945" y="195" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CallFulfillment_di" bpmnElement="Activity_CallFulfillment">
+        <dc:Bounds x="1050" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1210" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1188" y="245" width="80" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRegisterItems_di" bpmnElement="Flow_ToRegisterItems">
+        <di:waypoint x="188" y="220" /><di:waypoint x="240" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSetItemId_di" bpmnElement="Flow_ToSetItemId">
+        <di:waypoint x="316" y="220" /><di:waypoint x="360" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRegisterItemEnd_di" bpmnElement="Flow_ToRegisterItemEnd">
+        <di:waypoint x="460" y="220" /><di:waypoint x="510" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCreditCheck_di" bpmnElement="Flow_ToCreditCheck">
+        <di:waypoint x="620" y="220" /><di:waypoint x="675" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ManualCreditReview_di" bpmnElement="Flow_ManualCreditReview">
+        <di:waypoint x="700" y="195" /><di:waypoint x="700" y="120" /><di:waypoint x="780" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AutoCreditCheck_di" bpmnElement="Flow_AutoCreditCheck">
+        <di:waypoint x="700" y="245" /><di:waypoint x="700" y="260" /><di:waypoint x="780" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ManualToJoin_di" bpmnElement="Flow_ManualToJoin">
+        <di:waypoint x="880" y="120" /><di:waypoint x="970" y="120" /><di:waypoint x="970" y="195" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AutoToJoin_di" bpmnElement="Flow_AutoToJoin">
+        <di:waypoint x="880" y="260" /><di:waypoint x="970" y="260" /><di:waypoint x="970" y="245" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToFulfillment_di" bpmnElement="Flow_ToFulfillment">
+        <di:waypoint x="995" y="220" /><di:waypoint x="1050" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToEnd_di" bpmnElement="Flow_ToEnd">
+        <di:waypoint x="1150" y="220" /><di:waypoint x="1210" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
