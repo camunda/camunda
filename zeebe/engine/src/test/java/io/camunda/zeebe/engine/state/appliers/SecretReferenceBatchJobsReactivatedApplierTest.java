@@ -17,6 +17,8 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,7 +43,7 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
     applier = new SecretReferenceBatchJobsReactivatedApplier(processingState);
   }
 
-  private void createActivatedJob(final long jobKey) {
+  private JobRecord createActivatedJob(final long jobKey) {
     final var jobRecord =
         new JobRecord()
             .setType("test")
@@ -50,13 +52,14 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     jobState.create(jobKey, jobRecord);
     jobState.activate(jobKey, jobRecord);
+    return jobRecord;
   }
 
   @Test
   void shouldMakeJobActivatable() {
     // given
     final long jobKey = 1L;
-    createActivatedJob(jobKey);
+    final var job = createActivatedJob(jobKey);
     secretReferenceState.addPendingSecretReference(STORE_ID, SECRET_REF);
     secretReferenceState.addWaitingJob(STORE_ID, SECRET_REF, jobKey);
     final var value =
@@ -70,6 +73,15 @@ public final class SecretReferenceBatchJobsReactivatedApplierTest {
 
     // then
     assertThat(jobState.getState(jobKey)).isEqualTo(State.ACTIVATABLE);
+    final var activatableJobs = new ArrayList<>();
+    jobState.forEachActivatableJobs(
+        job.getTypeBuffer(),
+        List.of(job.getTenantId()),
+        (key, record) -> {
+          activatableJobs.add(key);
+          return true;
+        });
+    assertThat(activatableJobs).containsExactly(jobKey);
   }
 
   @Test
