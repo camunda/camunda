@@ -466,15 +466,19 @@ components:
         hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
-        isDeleted:
+        state:
           description: |
-            Filter by whether the process definition has been deleted.
-            When not set, both deleted and non-deleted process definitions are returned.
-            Set to `false` to exclude deleted definitions (recommended for most use cases).
-            Set to `true` to return only deleted definitions that are still retained in secondary storage.
-          type: boolean
+            Filter by the process definition's state.
+            When not set, process definitions in any state are returned.
+            Set to `ACTIVE` to exclude deleted definitions (recommended for most use cases).
+            Set to `DELETED` to return only definitions that have been deleted but are still
+            retained in secondary storage.
+          type: string
+          enum:
+            - ACTIVE
+            - DELETED
       x-properties-added-in-version:
-        - propertyName: isDeleted
+        - propertyName: state
           addedInVersion: "8.10"
 
     ProcessDefinitionSearchQueryResult:
@@ -501,7 +505,7 @@ components:
         - processDefinitionId
         - tenantId
         - hasStartForm
-        - isDeleted
+        - state
       properties:
         name:
           description: Name of this process definition.
@@ -533,11 +537,14 @@ components:
         hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
-        isDeleted:
-          description: Whether this process definition has been deleted but is still retained in secondary storage.
-          type: boolean
+        state:
+          description: The state of this process definition.
+          type: string
+          enum:
+            - ACTIVE
+            - DELETED
       x-properties-added-in-version:
-        - propertyName: isDeleted
+        - propertyName: state
           addedInVersion: "8.10"
 
     ProcessDefinitionElementStatisticsQuery:

@@ -215,6 +215,7 @@ import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionInstanceVersionStatisticsEntity;
 import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatisticsEntity;
@@ -915,7 +916,10 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
         .hasStartForm(StringUtils.isNotBlank(entity.formId()))
-        .isDeleted(Boolean.TRUE.equals(entity.isDeleted()))
+        .state(
+            entity.state() == ProcessDefinitionState.DELETED
+                ? ProcessDefinitionResult.StateEnum.DELETED
+                : ProcessDefinitionResult.StateEnum.ACTIVE)
         .build();
   }
 
