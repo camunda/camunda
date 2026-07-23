@@ -102,4 +102,33 @@ class ClusterConfigurationCoordinatorSupplierTest {
     // then
     assertThat(nextCoordinator).isEqualTo(MemberId.from("1"));
   }
+
+  @Test
+  void shouldSelectCoordinatorOutsideZone() {
+    // given — two-zone cluster; the zone to remove (eu) contains the default coordinator
+    final var euZone0 = MemberId.from("eu", 0);
+    final var euZone1 = MemberId.from("eu", 1);
+    final var usZone0 = MemberId.from("us", 0);
+    final var members = Set.of(euZone0, euZone1, usZone0);
+    final var supplier = ClusterConfigurationCoordinatorSupplier.ofMembers(members);
+
+    // when
+    final var coordinator = supplier.getNextCoordinatorExcludingZone("eu");
+
+    // then — us_0 is the only member outside the removed zone
+    assertThat(coordinator).contains(usZone0);
+  }
+
+  @Test
+  void shouldReturnEmptyWhenExcludingTheOnlyZone() {
+    // given — every member is in the zone being removed, i.e. it is the last remaining zone
+    final var members = Set.of(MemberId.from("eu", 0), MemberId.from("eu", 1));
+    final var supplier = ClusterConfigurationCoordinatorSupplier.ofMembers(members);
+
+    // when
+    final var coordinator = supplier.getNextCoordinatorExcludingZone("eu");
+
+    // then
+    assertThat(coordinator).isEmpty();
+  }
 }

@@ -262,12 +262,23 @@ public final class ClusterConfigurationManagementRequestSender {
 
   public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
       forceRemoveZone(final ForceZoneRemoveRequest request) {
+    final var coordinator = coordinatorSupplier.getNextCoordinatorExcludingZone(request.zoneId());
+    if (coordinator.isEmpty()) {
+      // No member outside the zone means it is the only remaining zone; removing it is invalid and
+      // there is no live coordinator to reject it, so short-circuit here.
+      return CompletableFuture.completedFuture(
+          Either.left(
+              new ErrorResponse(
+                  ErrorResponse.ErrorCode.INVALID_REQUEST,
+                  "Cannot force remove zone '%s' because it is the last remaining zone."
+                      .formatted(request.zoneId()))));
+    }
     return communicationService.send(
         ClusterConfigurationRequestTopics.FORCE_REMOVE_ZONE.topic(),
         request,
         serializer::encodeForceRemoveZoneRequest,
         serializer::decodeTopologyChangeResponse,
-        coordinatorSupplier.getDefaultCoordinator(),
+        coordinator.get(),
         TIMEOUT);
   }
 
