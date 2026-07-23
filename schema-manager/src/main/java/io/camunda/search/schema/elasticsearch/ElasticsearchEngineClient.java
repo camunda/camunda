@@ -101,7 +101,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
         // Index may exist without our alias (e.g. auto-created by a concurrent write).
         final var warnMsg =
             String.format(
-                "Expected to create index [%s], but already exist. Will ensure alias and continue, likely was created by a different instance.",
+                "Expected to create index [%s], but already exists. Will ensure alias and continue, likely was created by a different instance.",
                 indexDescriptor.getFullQualifiedName());
         LOG.debug(warnMsg, elsEx);
         putIndexAlias(indexDescriptor);
