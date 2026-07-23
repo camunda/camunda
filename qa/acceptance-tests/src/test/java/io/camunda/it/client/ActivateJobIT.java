@@ -20,6 +20,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -69,11 +70,19 @@ public class ActivateJobIT {
     // where gateway-issued FAIL commands can take longer to propagate.
     RecordingExporter.setMaximumWaitTime(Duration.ofSeconds(30).toMillis());
     grpcClient = BROKER.newClientBuilder().preferRestOverGrpc(false).build();
-    grpcClient
-        .newDeployResourceCommand()
-        .addProcessModel(BPMN_MODEL_INSTANCE, "foo.bpmn")
-        .send()
-        .join();
+    // gRPC calls are not retried and basic auth validates the demo user against secondary
+    // storage, whose export can lag behind broker start on a loaded cluster — retry until
+    // authentication is ready. Deploying the same resource twice is idempotent.
+    Awaitility.await("gRPC deploy succeeds once demo user is visible in secondary storage")
+        .timeout(Duration.ofMinutes(2))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                grpcClient
+                    .newDeployResourceCommand()
+                    .addProcessModel(BPMN_MODEL_INSTANCE, "foo.bpmn")
+                    .send()
+                    .join());
   }
 
   @AfterAll
