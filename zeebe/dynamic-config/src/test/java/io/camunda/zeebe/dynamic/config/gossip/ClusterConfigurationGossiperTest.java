@@ -100,7 +100,11 @@ final class ClusterConfigurationGossiperTest {
     // given — three upgraded brokers, all with the new-model handler wired
     final var config =
         new ClusterConfigurationGossiperConfig(
-            Duration.ofMillis(100), Duration.ofSeconds(1), 0, Duration.ofSeconds(1));
+            Duration.ofMillis(100),
+            Duration.ofSeconds(1),
+            0,
+            Duration.ofSeconds(1),
+            Duration.ofSeconds(1));
     node1 =
         new TestGossiper(
             createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
@@ -140,7 +144,11 @@ final class ClusterConfigurationGossiperTest {
     // given — node 1 is not yet upgraded (legacy handler only); node 2 is upgraded
     final var config =
         new ClusterConfigurationGossiperConfig(
-            Duration.ofMillis(100), Duration.ofSeconds(1), 0, Duration.ofSeconds(1));
+            Duration.ofMillis(100),
+            Duration.ofSeconds(1),
+            0,
+            Duration.ofSeconds(1),
+            Duration.ofSeconds(1));
     node1 =
         new TestGossiper(
             createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
@@ -164,6 +172,43 @@ final class ClusterConfigurationGossiperTest {
             () ->
                 assertThat(node2.currentClusterConfiguration)
                     .isEqualTo(CurrentClusterConfiguration.fromLegacy(node1Topology)));
+  }
+
+  @Test
+  void shouldStillGossipLegacyFieldToAnOldBrokerFromAnUpgradedBroker() {
+    // given — node 1 is upgraded (dual-write); node 2 is not yet upgraded (legacy handler only)
+    final var config =
+        new ClusterConfigurationGossiperConfig(
+            Duration.ofMillis(100),
+            Duration.ofSeconds(1),
+            0,
+            Duration.ofSeconds(1),
+            Duration.ofSeconds(1));
+    node1 =
+        new TestGossiper(
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
+    node2 =
+        new TestGossiper(
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics);
+
+    node1.start();
+    node2.start();
+    node1.enableNewModel();
+
+    final var node1Configuration =
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(node1.id(), MemberState.initializeAsActive(Map.of())));
+
+    // when — the upgraded broker gossips the new-model configuration (dual-writing both fields)
+    node1.setCurrentClusterConfiguration(node1Configuration);
+
+    // then — the not-yet-upgraded broker still receives and merges the legacy field
+    Awaitility.await("Node 2 (not upgraded) has received the legacy field via gossip")
+        .untilAsserted(
+            () ->
+                assertThat(node2.clusterConfiguration)
+                    .isEqualTo(node1Configuration.toLegacyDefault()));
   }
 
   private Node createNode(final String id) {
