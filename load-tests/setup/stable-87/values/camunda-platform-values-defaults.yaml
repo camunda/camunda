@@ -133,7 +133,8 @@ operate:
     # https://docs.camunda.io/docs/8.7/self-managed/operate-deployment/operate-configuration/#settings-for-shards-and-replicas
     - name: CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_REPLICAS
       value: "1"
-    # Enable the Archive-by-ID archiver for archiving completed process instances instead of the default archiver. Reduces archiver query cost against Elasticsearch and helps preventing the archiver backlog from growing unbounded under sustained load.
+    # Enable the Archive-by-ID archiver for archiving completed process instances instead of the default archiver.
+    # Reduces archiver query cost against Elasticsearch and helps preventing the archiver backlog from growing unbounded under sustained load.
     # See INC-5704 / INC-6250 (c8-release-8-7-x Elasticsearch disk growth from archiver backlog).
     - name: CAMUNDA_OPERATE_ARCHIVER_ARCHIVEBYIDENABLED
       value: "true"
