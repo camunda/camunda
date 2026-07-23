@@ -13,20 +13,16 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
+import io.camunda.spring.utils.PhysicalTenantIdDiscovery;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import org.springframework.boot.context.properties.bind.BindResult;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
-import org.springframework.boot.context.properties.source.IterableConfigurationPropertySource;
 import org.springframework.core.env.Environment;
 
 /**
@@ -83,18 +79,6 @@ public final class PhysicalTenantAuthConfigurations {
   private static final String PT_PREFIX_TEMPLATE =
       "camunda.physical-tenants.%s.security.authentication";
 
-  private static final String PHYSICAL_TENANTS_PREFIX = "camunda.physical-tenants";
-  private static final ConfigurationPropertyName PHYSICAL_TENANTS_PREFIX_NAME =
-      ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
-
-  // Valid tenant id: lowercase alphanumeric, no dashes — so the yaml form
-  // (camunda.physical-tenants.<id>.*) and its relaxed-binding env-var form address the same tenant.
-  // Intentionally duplicated from PhysicalTenantResolver (configuration module): it is a one-line
-  // rule, and no module that both 'configuration' and 'authentication' depend on fits a plain-Java
-  // validator (spring-utils is Spring-specific; depending on 'configuration' would invert the
-  // dependency). Keep the two in sync.
-  private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
-
   /**
    * Reserved {@code providers.assigned} id for the unnamed default slot — CSL's {@link
    * OidcConfiguration#DEFAULT_REGISTRATION_ID} ({@code "oidc"}), the registration id of the default
@@ -146,29 +130,7 @@ public final class PhysicalTenantAuthConfigurations {
    * tightened to {@code private}.
    */
   static Set<String> discoverExplicitTenantIds(final Environment environment) {
-    final Set<String> tenants = new LinkedHashSet<>();
-    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
-      if (source instanceof final IterableConfigurationPropertySource iter) {
-        iter.stream()
-            .filter(PHYSICAL_TENANTS_PREFIX_NAME::isAncestorOf)
-            .forEach(
-                name -> {
-                  if (name.getNumberOfElements()
-                      > PHYSICAL_TENANTS_PREFIX_NAME.getNumberOfElements()) {
-                    final String tenantId =
-                        name.getElement(
-                            PHYSICAL_TENANTS_PREFIX_NAME.getNumberOfElements(),
-                            ConfigurationPropertyName.Form.UNIFORM);
-                    if (tenantId != null
-                        && !tenantId.isEmpty()
-                        && VALID_TENANT_ID.matcher(tenantId).matches()) {
-                      tenants.add(tenantId);
-                    }
-                  }
-                });
-      }
-    }
-    return tenants;
+    return PhysicalTenantIdDiscovery.discover(environment);
   }
 
   /**
