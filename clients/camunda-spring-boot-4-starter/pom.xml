@@ -136,6 +136,13 @@
               <goal>jar-no-fork</goal>
             </goals>
             <phase>prepare-package</phase>
+            <!-- Build the sources jar on disk for shade (createSourcesJar) to consume, but do not
+                 attach it: the deploy command's source:jar already attaches the sources artifact and
+                 shade attaches the shaded one. Attaching here too triggers "duplicated artifacts
+                 attached" under maven-source-plugin < 3.4.0. -->
+            <configuration>
+              <attach>false</attach>
+            </configuration>
           </execution>
         </executions>
       </plugin>
