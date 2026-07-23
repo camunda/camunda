@@ -12,6 +12,7 @@ import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.zeebe.dynamic.config.RoutingStateInitializer;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -157,12 +158,13 @@ final class ClusterPatchRequestTransformerTest {
   @Test
   void shouldAddAndRemoveBrokersAndAddPartitions() {
     // given
-    final var currentTopology =
+    ClusterConfiguration currentTopology =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()))
             .addMember(id1, MemberState.initializeAsActive(Map.of()))
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+    currentTopology = new RoutingStateInitializer(true).modify(currentTopology).join();
 
     // when
     final int newPartitionCount = 4;
@@ -182,12 +184,13 @@ final class ClusterPatchRequestTransformerTest {
   @Test
   void shouldAddAndRemoveBrokersAndAddPartitionsAndChangeReplicationFactor() {
     // given
-    final var currentTopology =
+    ClusterConfiguration currentTopology =
         ClusterConfiguration.init()
             .addMember(id0, MemberState.initializeAsActive(Map.of()))
             .addMember(id1, MemberState.initializeAsActive(Map.of()))
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+    currentTopology = new RoutingStateInitializer(true).modify(currentTopology).join();
 
     // when
     final int newPartitionCount = 4;
