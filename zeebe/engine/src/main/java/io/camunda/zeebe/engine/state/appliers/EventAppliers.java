@@ -178,7 +178,9 @@ public final class EventAppliers implements EventApplier {
     register(
         SecretReferenceIntent.RESOLUTION_REQUESTED,
         new SecretReferenceResolutionRequestedApplier(state.getSecretReferenceState()));
-    register(SecretReferenceIntent.RESOLUTION_COMPLETED, NOOP_EVENT_APPLIER);
+    register(
+        SecretReferenceIntent.RESOLUTION_COMPLETED,
+        new SecretReferenceResolutionCompletedApplier(state.getSecretReferenceState()));
     register(SecretReferenceIntent.RESOLUTION_FAILED, NOOP_EVENT_APPLIER);
     register(
         SecretReferenceIntent.BATCH_JOBS_REACTIVATED,
