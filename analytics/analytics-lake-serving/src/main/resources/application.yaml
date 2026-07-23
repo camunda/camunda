@@ -1,0 +1,15 @@
+# Analytics Lake Serving — read-only serving layer over the analytics lake warehouse.
+#
+# lake.serving.warehouse-dir is REQUIRED and has no default: point it at the same warehouse
+# directory the lake writer (analytics-lake) uses, e.g.
+#   -Dlake.serving.warehouse-dir=/tmp/eb-demo/lake-preserved/warehouse
+# lake.serving.state-dir is optional, reserved for the open-state snapshot views a follow-up lane
+# adds. Neither is set here on purpose -- LakeServingProperties fails fast at startup without one.
+server:
+  port: 8092
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
