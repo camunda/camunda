@@ -34,6 +34,9 @@
          duckdb_jdbc dependency to, so both modules read the same warehouse layout with one
          known-good DuckDB build. -->
     <version.duckdb>1.3.2.0</version.duckdb>
+    <!-- Same idiom: the committed-snapshot view registry (LakeViewRegistry) reads table metadata
+         through the same Iceberg build the lake writer commits with. -->
+    <version.iceberg>1.10.2</version.iceberg>
   </properties>
 
   <dependencies>
@@ -44,6 +47,13 @@
       <groupId>io.camunda</groupId>
       <artifactId>analytics-lake</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <!-- Committed-snapshot reads: LakeViewRegistry derives every view from the CURRENT Iceberg
+         snapshot's data-file list (JdbcCatalog + planFiles) instead of a directory glob. -->
+    <dependency>
+      <groupId>org.apache.iceberg</groupId>
+      <artifactId>iceberg-core</artifactId>
+      <version>${version.iceberg}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>

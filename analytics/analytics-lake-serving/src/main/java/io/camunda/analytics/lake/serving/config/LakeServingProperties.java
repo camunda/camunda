@@ -34,6 +34,10 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param dimKinds per-dim-name overrides of the semantic-kind overlay {@link #effectiveDimKinds()}
  *     exposes over {@code GET /api/registry} — merged on top of (not replacing) the hardcoded
  *     defaults, so setting one key never drops the rest. {@code null}/unset means "no overrides".
+ * @param viewRefreshMs cadence of the background view refresh that re-derives every DuckDB view
+ *     from its table's current committed Iceberg snapshot (see {@link
+ *     io.camunda.analytics.lake.serving.duckdb.LakeViewRegistry}); {@code 0} disables it (views
+ *     then only move on {@code POST /api/refresh})
  */
 @ConfigurationProperties(prefix = "lake.serving")
 public record LakeServingProperties(
@@ -42,7 +46,11 @@ public record LakeServingProperties(
     @DefaultValue("500") int maxRows,
     @DefaultValue("15") int queryTimeoutSeconds,
     @DefaultValue("5000000") long maxExplainScanRows,
-    Map<String, String> dimKinds) {
+    Map<String, String> dimKinds,
+    @DefaultValue("15000") long viewRefreshMs) {
+
+  /** Default {@link #viewRefreshMs}: 15 seconds. */
+  public static final long DEFAULT_VIEW_REFRESH_MS = 15_000L;
 
   /**
    * Built-in dim-name -> semantic-kind mapping, overridable per key via {@link #dimKinds}. Kept as

@@ -18,21 +18,46 @@ class LakeServingPropertiesTest {
 
   @Test
   void shouldRejectMissingWarehouseDir() {
-    assertThatThrownBy(() -> new LakeServingProperties(null, null, 500, 15, 5_000_000, null))
+    assertThatThrownBy(
+            () ->
+                new LakeServingProperties(
+                    null,
+                    null,
+                    500,
+                    15,
+                    5_000_000,
+                    null,
+                    LakeServingProperties.DEFAULT_VIEW_REFRESH_MS))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("lake.serving.warehouse-dir");
   }
 
   @Test
   void shouldRejectBlankWarehouseDir() {
-    assertThatThrownBy(() -> new LakeServingProperties("   ", null, 500, 15, 5_000_000, null))
+    assertThatThrownBy(
+            () ->
+                new LakeServingProperties(
+                    "   ",
+                    null,
+                    500,
+                    15,
+                    5_000_000,
+                    null,
+                    LakeServingProperties.DEFAULT_VIEW_REFRESH_MS))
         .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
   void shouldResolveWarehouseAndStateDirPaths() {
     final LakeServingProperties properties =
-        new LakeServingProperties("/tmp/warehouse", "/tmp/state", 500, 15, 5_000_000, null);
+        new LakeServingProperties(
+            "/tmp/warehouse",
+            "/tmp/state",
+            500,
+            15,
+            5_000_000,
+            null,
+            LakeServingProperties.DEFAULT_VIEW_REFRESH_MS);
 
     assertThat(properties.warehouseDirPath()).isEqualTo(Path.of("/tmp/warehouse"));
     assertThat(properties.stateDirPath()).contains(Path.of("/tmp/state"));
@@ -41,7 +66,14 @@ class LakeServingPropertiesTest {
   @Test
   void shouldTreatMissingStateDirAsAbsent() {
     final LakeServingProperties properties =
-        new LakeServingProperties("/tmp/warehouse", null, 500, 15, 5_000_000, null);
+        new LakeServingProperties(
+            "/tmp/warehouse",
+            null,
+            500,
+            15,
+            5_000_000,
+            null,
+            LakeServingProperties.DEFAULT_VIEW_REFRESH_MS);
 
     assertThat(properties.stateDirPath()).isEmpty();
   }
@@ -50,7 +82,13 @@ class LakeServingPropertiesTest {
   void shouldOverlayDefaultDimKindsWithoutDroppingUnsetOnes() {
     final LakeServingProperties properties =
         new LakeServingProperties(
-            "/tmp/warehouse", null, 500, 15, 5_000_000, Map.of("version", "RELEASE_VERSION"));
+            "/tmp/warehouse",
+            null,
+            500,
+            15,
+            5_000_000,
+            Map.of("version", "RELEASE_VERSION"),
+            LakeServingProperties.DEFAULT_VIEW_REFRESH_MS);
 
     final Map<String, String> effective = properties.effectiveDimKinds();
 
@@ -62,7 +100,14 @@ class LakeServingPropertiesTest {
   @Test
   void shouldUseDefaultDimKindsWhenUnset() {
     final LakeServingProperties properties =
-        new LakeServingProperties("/tmp/warehouse", null, 500, 15, 5_000_000, null);
+        new LakeServingProperties(
+            "/tmp/warehouse",
+            null,
+            500,
+            15,
+            5_000_000,
+            null,
+            LakeServingProperties.DEFAULT_VIEW_REFRESH_MS);
 
     final Map<String, String> effective = properties.effectiveDimKinds();
 
