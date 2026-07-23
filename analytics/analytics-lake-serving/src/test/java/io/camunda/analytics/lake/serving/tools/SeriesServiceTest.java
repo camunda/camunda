@@ -53,6 +53,27 @@ class SeriesServiceTest {
   }
 
   @Test
+  void shouldTreatCntMeasureAsTheBareRowCount() {
+    // given: the client names the bare row count as measure "cnt" (the registry's spelling)
+
+    // when
+    final SeriesResult result =
+        seriesService.series(
+            new SeriesQuery(
+                "instance_starts",
+                "cnt",
+                null,
+                Map.of("process_id", StepScenarioFixtures.ORDER_PROCESS),
+                StepScenarioFixtures.FROM,
+                StepScenarioFixtures.TO,
+                1));
+
+    // then: identical to the measure == null series
+    assertThat(result.points()).hasSize(40);
+    assertThat(result.points().get(0).value()).isEqualTo(10.0);
+  }
+
+  @Test
   void shouldReturnWeightedAverageForAMeasureWithoutAQuantile() {
     final SeriesResult result =
         seriesService.series(

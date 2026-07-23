@@ -56,7 +56,10 @@ public class SeriesService {
 
   public SeriesResult series(final SeriesQuery query) {
     final EntityCatalog entity = metricRegistry.require(query.entity());
-    final boolean needsHist = query.measure() != null && query.quantile() != null;
+    // The client names the bare row count as measure "cnt" (that's how the registry surfaces it);
+    // normalize to the null-measure count path — both spellings mean SUM(cnt).
+    final String measureName = "cnt".equals(query.measure()) ? null : query.measure();
+    final boolean needsHist = measureName != null && query.quantile() != null;
     if (needsHist) {
       viewRegistry.ensureAvailable(entity.metricsView(), entity.histView());
     } else {
@@ -77,10 +80,14 @@ public class SeriesService {
 
     final List<String> executedSql = new ArrayList<>();
     try {
-      if (query.measure() == null) {
+      if (measureName == null) {
         if (!entity.hasCnt()) {
           throw new IllegalArgumentException(
               "Entity '" + entity.name() + "' has no bare row count (cnt); a measure is required");
+        }
+        if (query.quantile() != null) {
+          throw new IllegalArgumentException(
+              "quantile requires a real measure, not the bare row count");
         }
         return new SeriesResult(
             runBucketQuery(entity.metricsView(), bucketExpr, "SUM(cnt)", whereSql, executedSql),
@@ -89,12 +96,12 @@ public class SeriesService {
 
       final MeasureCatalog measure =
           entity
-              .measure(query.measure())
+              .measure(measureName)
               .orElseThrow(
                   () ->
                       new IllegalArgumentException(
                           "Unknown measure '"
-                              + query.measure()
+                              + measureName
                               + "' for entity '"
                               + entity.name()
                               + "'"));

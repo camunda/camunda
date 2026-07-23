@@ -64,7 +64,10 @@ public class DecomposeService {
 
   public DecomposeResult decompose(final DecomposeQuery query) {
     final EntityCatalog entity = metricRegistry.require(query.entity());
-    final boolean needsHist = query.measure() != null && query.quantile() != null;
+    // Same normalization as SeriesService#series: "cnt" is the client's spelling of the bare row
+    // count, meaning the null-measure SUM(cnt) path.
+    final String measureName = "cnt".equals(query.measure()) ? null : query.measure();
+    final boolean needsHist = measureName != null && query.quantile() != null;
     if (needsHist) {
       viewRegistry.ensureAvailable(entity.metricsView(), entity.histView());
     } else {
@@ -74,7 +77,11 @@ public class DecomposeService {
       throw new IllegalArgumentException(
           "Unknown dim '" + query.dim() + "' for entity '" + entity.name() + "'");
     }
-    final MeasureCatalog measure = requireMeasureIfSet(entity, query.measure());
+    final MeasureCatalog measure = requireMeasureIfSet(entity, measureName);
+    if (measure == null && !entity.hasCnt()) {
+      throw new IllegalArgumentException(
+          "Entity '" + entity.name() + "' has no bare row count (cnt); a measure is required");
+    }
     if (needsHist && !measure.hasHist()) {
       throw new IllegalArgumentException(
           "Measure '"
@@ -92,13 +99,13 @@ public class DecomposeService {
       final String baselineWhere = timeWhere(query.baseline()) + " AND " + filterSql;
 
       final Map<String, Double> currentByDim =
-          groupedValue(entity, query.measure(), query.quantile(), query.dim(), windowWhere, sql);
+          groupedValue(entity, measureName, query.quantile(), query.dim(), windowWhere, sql);
       final Map<String, Double> baselineByDim =
-          groupedValue(entity, query.measure(), query.quantile(), query.dim(), baselineWhere, sql);
+          groupedValue(entity, measureName, query.quantile(), query.dim(), baselineWhere, sql);
       final double aggregateCurrent =
-          scalarValue(entity, query.measure(), query.quantile(), windowWhere, sql);
+          scalarValue(entity, measureName, query.quantile(), windowWhere, sql);
       final double aggregateBaseline =
-          scalarValue(entity, query.measure(), query.quantile(), baselineWhere, sql);
+          scalarValue(entity, measureName, query.quantile(), baselineWhere, sql);
       final double aggregateDelta = aggregateCurrent - aggregateBaseline;
 
       final Map<String, Double> weightByDim =
