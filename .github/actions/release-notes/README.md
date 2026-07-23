@@ -5,7 +5,8 @@ Shared tooling for the release-notes pipeline (epic
 package with two entrypoints that import **one** reference parser:
 
 - `lint/` — the **PR-gate** ([#53593](https://github.com/camunda/camunda/issues/53593)):
-  validates that a PR links a tracked issue (or opts out). Live now, **warn-only**.
+  validates that a PR links a tracked issue (or opts out) and lints its title;
+  syncs a sticky comment and a `no-issue` label. Live now, **warn-only**.
 - `generate/` — the **release-notes generator**
   ([#57713](https://github.com/camunda/camunda/issues/57713)): builds the changelog
   from the PRs shipped in a release range. **Not built yet.**
@@ -43,7 +44,9 @@ The gate runs two checks (`gate.evaluateGate`) and reports a combined outcome.
 header ≤ length. Skipped for bot authors (D16); their link/marker is still
 validated. See [Title lint](#title-lint).
 
-Then it reconciles a single sticky PR comment (`comment`) covering both checks.
+Then it reconciles a single sticky PR comment (`comment`) covering both checks,
+and syncs the display-only `no-issue` label (`labels`) to the PR-issue-link
+check alone.
 
 ### Decision table (PR-issue link)
 
@@ -91,6 +94,22 @@ Comment sync is best-effort: an API failure is logged and never fails the gate.
 It posts under the app identity (not `GITHUB_TOKEN`) so it triggers the same
 downstream automations a human comment would.
 
+### `no-issue` label
+
+The gate also syncs a single label, `no-issue` (`src/labels`), mirroring the
+**PR-issue-link check only** — a title-only failure never touches it:
+
+- link check **fails** and the label is absent → add it.
+- link check **passes** and the label is present → remove it.
+- otherwise → no-op.
+
+This runs during warn-only rollout too (it's informational, not the
+enforcement mechanism), so the label is already accurate across the backlog
+by the time `enforce` mode ships. Label sync is best-effort like the comment;
+a sync failure never fails the gate. If the repo doesn't have the `no-issue`
+label defined yet, the first add creates it (color/description in
+`src/labels/index.ts`) and retries — no manual setup required.
+
 ## Architecture — pure core + injected IO
 
 ```
@@ -117,6 +136,7 @@ ParsedRef  ──►  ResolvedRef  ──►  PolicyDecision
 | `src/title/`    | Pure title lint (commitlint active rules) + bot-author exemption               |
 | `src/gate/`     | Orchestrates link (+ backport hop) + title into one `GateOutcome`              |
 | `src/comment/`  | Sticky-comment render + idempotent upsert (pure logic + `fetch` adapter)       |
+| `src/labels/`   | `no-issue` label sync, mirroring the PR-issue-link check (pure logic + `fetch` adapter) |
 | `src/gha.ts`    | Minimal `@actions/core` replacement                                            |
 | `src/lint.ts`   | The gate entrypoint (warn-only)                                                |
 
@@ -127,7 +147,7 @@ The gate runs on **`pull_request_target`, metadata-only**
 
 - The PR body is read from the event payload — the workflow **never checks out
   the PR head**. The only checkout takes the base ref (to load this action).
-- A privileged token (reused `MONOREPO_RELEASE_APP`) lets later versions post a
+- A privileged token (reused `MONOREPO_RELEASE_APP`) lets the gate post a
   sticky comment and sync the display-only `no-issue` label, including on fork
   PRs. `GITHUB_TOKEN` on plain `pull_request` cannot do that for forks.
 

@@ -7,8 +7,8 @@ description: >
 inputs:
   token:
     description: >
-      Token used to read issue/PR metadata and to post the sticky comment (and,
-      in later versions, sync the no-issue label). Reuses MONOREPO_RELEASE_APP.
+      Token used to read issue/PR metadata, post the sticky comment, and sync
+      the no-issue label. Reuses MONOREPO_RELEASE_APP.
     required: true
   enforce:
     description: When 'true', a failing check exits non-zero. Warn-only otherwise.
@@ -21,6 +21,8 @@ outputs:
     description: direct | backportHop — how the PR-issue link was satisfied.
   failed-checks:
     description: Comma-separated labels of the checks that failed (empty on pass).
+  label-action:
+    description: added | removed | noop — what the no-issue label sync did.
 runs:
   using: node24
   main: dist/index.js

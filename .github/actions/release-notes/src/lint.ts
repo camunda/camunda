@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { GithubCommentApi, syncStickyComment } from './comment';
 import { evaluateGate } from './gate';
 import * as core from './gha';
+import { GithubLabelApi, syncNoIssueLabel } from './labels';
 import { GithubResolver } from './resolver';
 
 /**
@@ -12,9 +13,11 @@ import { GithubResolver } from './resolver';
  * privileged token comes in as an input (reused MONOREPO_RELEASE_APP).
  *
  * ponytail: warn-only for now — reports the combined gate outcome (PR-issue
- * link + title lint, with a backport hop) to the job summary, the outputs, and
- * a single sticky PR comment (created only on failure, flipped to resolved once
- * fixed). Label sync and enforce mode ship in follow-up PRs. `enforce=true`
+ * link + title lint, with a backport hop) to the job summary, the outputs, a
+ * single sticky PR comment (created only on failure, flipped to resolved once
+ * fixed), and the display-only `no-issue` label. Both the comment and the
+ * label sync regardless of `enforce` — they're informational, not the
+ * enforcement mechanism. Enforce mode ships in a follow-up PR. `enforce=true`
  * flips a fail into a non-zero exit.
  */
 async function run(): Promise<void> {
@@ -63,6 +66,18 @@ async function run(): Promise<void> {
       core.info(`Sticky comment: ${action}.`);
     } catch (err) {
       core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+    }
+
+    // Display-only `no-issue` label, mirroring the PR-issue-link check. Runs
+    // during warn-only rollout too, so the label is already trustworthy by the
+    // time enforce mode lands — a sync failure never fails the gate.
+    try {
+      const labels = new GithubLabelApi(token, owner ?? '', repo ?? '', pr.number);
+      const action = await syncNoIssueLabel(labels, gate);
+      core.setOutput('label-action', action);
+      core.info(`no-issue label: ${action}.`);
+    } catch (err) {
+      core.warning(`Label sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
