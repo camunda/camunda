@@ -19,6 +19,10 @@ import io.camunda.process.test.api.DataDeletionMode;
 
 public final class DefaultCleanupStrategyFactory implements CleanupStrategyFactory {
 
+  public static CleanupStrategy resolve(final DataDeletionMode dataDeletionMode) {
+    return new DefaultCleanupStrategyFactory().create(dataDeletionMode);
+  }
+
   @Override
   public CleanupStrategy create(final DataDeletionMode dataDeletionMode) {
     switch (dataDeletionMode) {
