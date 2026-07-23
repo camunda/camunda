@@ -45,7 +45,6 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -60,6 +59,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class ResourceAndHistoryDeletionStrategyTest {
+
+  private static final long PROCESS_DEFINITION_KEY = 11L;
+  private static final long DECISION_REQUIREMENTS_KEY = 12L;
 
   @Mock private CamundaManagementClient managementClient;
   @Mock private Supplier<CamundaClient> clientSupplier;
@@ -110,10 +112,12 @@ class ResourceAndHistoryDeletionStrategyTest {
     // given
     final ResourceAndHistoryDeletionStrategy strategy = new ResourceAndHistoryDeletionStrategy();
     final Instant testCaseStartTime = Instant.parse("2026-01-01T00:00:00Z");
-    mockDeployment(11L, 12L, 13L);
+
+    mockDeployment();
     when(clientSupplier.get()).thenReturn(camundaClient);
     mockBatchOperationExecution(BatchOperationState.COMPLETED, BatchOperationState.COMPLETED);
     mockDeleteResourceBatchOperation("delete-resource");
+
     clearInvocations(
         camundaClient.newCreateBatchOperationCommand().processInstanceCancel(),
         camundaClient.newCreateBatchOperationCommand().deleteProcessInstance(),
@@ -126,11 +130,12 @@ class ResourceAndHistoryDeletionStrategyTest {
     // then
     verifyCancelAndDeleteFilters(testCaseStartTime.atOffset(ZoneOffset.UTC));
     verifyProcessInstancesAreCancelledBeforeDeletion();
-    verify(camundaClient).newDeleteResourceCommand(11L);
-    verify(camundaClient).newDeleteResourceCommand(12L);
-    verify(camundaClient).newDeleteResourceCommand(13L);
+
     verify(camundaClient.newCreateBatchOperationCommand(), atLeastOnce()).deleteProcessInstance();
     verify(camundaClient.newCreateBatchOperationCommand(), atLeastOnce()).deleteDecisionInstance();
+
+    verify(camundaClient).newDeleteResourceCommand(PROCESS_DEFINITION_KEY);
+    verify(camundaClient).newDeleteResourceCommand(DECISION_REQUIREMENTS_KEY);
   }
 
   @Test
@@ -191,15 +196,13 @@ class ResourceAndHistoryDeletionStrategyTest {
         .hasMessageContaining("delete decision instances");
   }
 
-  private void mockDeployment(
-      final long processDefinitionKey, final long decisionKey, final long decisionRequirementsKey) {
-    when(process.getProcessDefinitionKey()).thenReturn(processDefinitionKey);
-    when(decision.getDecisionKey()).thenReturn(decisionKey);
-    when(decisionRequirements.getDecisionRequirementsKey()).thenReturn(decisionRequirementsKey);
+  private void mockDeployment() {
+    when(process.getProcessDefinitionKey()).thenReturn(PROCESS_DEFINITION_KEY);
+    when(decisionRequirements.getDecisionRequirementsKey()).thenReturn(DECISION_REQUIREMENTS_KEY);
 
-    when(deployment.getProcesses()).thenReturn(Arrays.asList(process));
-    when(deployment.getDecisions()).thenReturn(Arrays.asList(decision));
-    when(deployment.getDecisionRequirements()).thenReturn(Arrays.asList(decisionRequirements));
+    when(deployment.getProcesses()).thenReturn(Collections.singletonList(process));
+    when(deployment.getDecisionRequirements())
+        .thenReturn(Collections.singletonList(decisionRequirements));
   }
 
   private void mockBatchOperationExecution(
@@ -328,12 +331,10 @@ class ResourceAndHistoryDeletionStrategyTest {
         .filter(anyProcessInstanceFilter());
   }
 
-  @SuppressWarnings("unchecked")
   private Consumer<DateTimeProperty> anyDateFilter() {
     return any();
   }
 
-  @SuppressWarnings("unchecked")
   private Consumer<ProcessInstanceStateProperty> anyStateFilter() {
     return any();
   }
