@@ -135,6 +135,11 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
     return ""; // not used in Optimize
   }
 
+  @Override
+  public int getStorageOrdinalKey() {
+    return -1; // not used in Optimize
+  }
+
   public void setParentElementInstanceKey(final long parentElementInstanceKey) {
     this.parentElementInstanceKey = parentElementInstanceKey;
   }

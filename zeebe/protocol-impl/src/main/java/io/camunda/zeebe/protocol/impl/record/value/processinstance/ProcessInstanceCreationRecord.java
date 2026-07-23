@@ -47,6 +47,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private static final StringValue TAGS_KEY = new StringValue("tags");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
@@ -71,10 +72,12 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
       new ArrayProperty<>(TAGS_KEY, StringValue::new);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
+  private final IntegerProperty storageOrdinalKeyProperty =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
 
   public ProcessInstanceCreationRecord() {
-    super(12);
+    super(13);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -86,6 +89,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(tenantIdProperty)
         .declareProperty(tagsProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
+        .declareProperty(storageOrdinalKeyProperty)
         .declareProperty(businessIdProperty);
   }
 
@@ -292,5 +296,15 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getBusinessIdBuffer() {
     return businessIdProperty.getValue();
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProperty.getValue();
+  }
+
+  public ProcessInstanceCreationRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
+    return this;
   }
 }

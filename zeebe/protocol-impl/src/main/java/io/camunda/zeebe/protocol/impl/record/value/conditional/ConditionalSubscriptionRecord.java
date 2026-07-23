@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -42,6 +43,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue ELEMENT_TYPE_KEY = new StringValue("elementType");
 
   // default to -1 for root level start events
@@ -64,11 +66,13 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final EnumProperty<BpmnElementType> elementTypeProp =
       new EnumProperty<>(ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   public ConditionalSubscriptionRecord() {
-    super(13);
+    super(14);
     declareProperty(scopeKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
@@ -81,6 +85,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
         .declareProperty(variableEventsProp)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(elementTypeProp);
   }
 
@@ -97,6 +102,7 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
     setVariableEvents(record.getVariableEvents());
     tenantIdProp.setValue(record.getTenantId());
     rootProcessInstanceKeyProp.setValue(record.getRootProcessInstanceKey());
+    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
     elementTypeProp.setValue(record.getElementType());
   }
 
@@ -266,6 +272,16 @@ public class ConditionalSubscriptionRecord extends UnifiedRecordValue
 
   public ConditionalSubscriptionRecord setRootProcessInstanceKey(final long key) {
     rootProcessInstanceKeyProp.setValue(key);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public ConditionalSubscriptionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 }

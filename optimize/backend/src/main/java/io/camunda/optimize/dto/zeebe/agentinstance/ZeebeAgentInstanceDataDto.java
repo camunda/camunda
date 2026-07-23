@@ -92,6 +92,11 @@ public class ZeebeAgentInstanceDataDto implements AgentInstanceRecordValue {
     return rootProcessInstanceKey;
   }
 
+  @Override
+  public int getStorageOrdinalKey() {
+    return -1; // not used in Optimize
+  }
+
   public void setRootProcessInstanceKey(final long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
   }

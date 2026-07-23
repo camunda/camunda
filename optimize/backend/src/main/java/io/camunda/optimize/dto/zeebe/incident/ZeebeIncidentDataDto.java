@@ -113,6 +113,11 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     return -1L; // Not used in Optimize
   }
 
+  @Override
+  public int getStorageOrdinalKey() {
+    return -1; // not used in Optimize
+  }
+
   public void setVariableScopeKey(final long variableScopeKey) {
     this.variableScopeKey = variableScopeKey;
   }

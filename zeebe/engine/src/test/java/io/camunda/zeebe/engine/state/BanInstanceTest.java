@@ -248,5 +248,10 @@ public final class BanInstanceTest {
     public long getProcessDefinitionKey() {
       return -1L;
     }
+
+    @Override
+    public int getStorageOrdinalKey() {
+      return 0;
+    }
   }
 }

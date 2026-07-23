@@ -77,7 +77,7 @@ final class OpensearchExporterIT {
   private static ExporterTestContext exporterTestContext;
   private static String previousTestMethod = null;
   // omit authorizations, agent, requestChannelType and requestToolName since they are removed from
-  // the records during serialization
+  // the records during serialization; storageOrdinalKey is also removed and deserializes to 0
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
           .registerRandomizer(
@@ -85,7 +85,8 @@ final class OpensearchExporterIT {
                   "agent".equals(field.getName())
                       || "requestChannelType".equals(field.getName())
                       || "requestToolName".equals(field.getName()),
-              random -> null);
+              random -> null)
+          .registerRandomizer(field -> "storageOrdinalKey".equals(field.getName()), random -> 0);
 
   @BeforeEach
   public void beforeEach(final TestInfo testInfo) {

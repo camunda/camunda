@@ -32,7 +32,7 @@ final class FaultToleranceIT {
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
   // omit authorizations, agent, requestChannelType and requestToolName since they are removed from
-  // the records during serialization
+  // the records during serialization; storageOrdinalKey is also removed and deserializes to 0
   private final ProtocolFactory factory =
       new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
           .registerRandomizer(
@@ -40,7 +40,8 @@ final class FaultToleranceIT {
                   "agent".equals(field.getName())
                       || "requestChannelType".equals(field.getName())
                       || "requestToolName".equals(field.getName()),
-              random -> null);
+              random -> null)
+          .registerRandomizer(field -> "storageOrdinalKey".equals(field.getName()), random -> 0);
   private final ExporterTestController controller = new ExporterTestController();
   private final ElasticsearchExporter exporter = new ElasticsearchExporter();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);

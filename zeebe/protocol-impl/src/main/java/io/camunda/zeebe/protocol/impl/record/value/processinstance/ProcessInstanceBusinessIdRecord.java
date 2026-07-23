@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
@@ -25,6 +26,7 @@ public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
   private static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
@@ -36,16 +38,19 @@ public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProperty =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
+  private final IntegerProperty storageOrdinalKeyProperty =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final LongProperty processDefinitionKeyProperty =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
 
   public ProcessInstanceBusinessIdRecord() {
-    super(6);
+    super(7);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(businessIdProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
+        .declareProperty(storageOrdinalKeyProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(bpmnProcessIdProperty);
   }
@@ -88,6 +93,16 @@ public final class ProcessInstanceBusinessIdRecord extends UnifiedRecordValue
   public ProcessInstanceBusinessIdRecord setRootProcessInstanceKey(
       final long rootProcessInstanceKey) {
     rootProcessInstanceKeyProperty.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProperty.getValue();
+  }
+
+  public ProcessInstanceBusinessIdRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProperty.setValue(storageOrdinalKey);
     return this;
   }
 

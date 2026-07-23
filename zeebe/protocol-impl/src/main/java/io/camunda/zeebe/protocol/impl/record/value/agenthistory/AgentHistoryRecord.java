@@ -30,6 +30,7 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty("rootProcessInstanceKey", -1L);
+  private final IntegerProperty storageOrdinalKeyProp = new IntegerProperty("storageOrdinalKey", 0);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty processDefinitionKeyProp =
       new LongProperty("processDefinitionKey", -1L);
@@ -49,12 +50,13 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
       new ObjectProperty<>("metrics", new AgentHistoryMetrics());
 
   public AgentHistoryRecord() {
-    super(16);
+    super(17);
     declareProperty(agentHistoryKeyProp)
         .declareProperty(agentInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(tenantIdProp)
@@ -119,22 +121,17 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
   }
 
   @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProp.getValue();
   }
 
   public AgentHistoryRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
-    return this;
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  public AgentHistoryRecord setBpmnProcessId(final String bpmnProcessId) {
-    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
@@ -219,11 +216,6 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentHistoryRecord addContent(final AgentHistoryMessageContent content) {
-    contentProp.add().copy(content);
-    return this;
-  }
-
   @Override
   public List<AgentHistoryEmbeddedToolCallValue> getToolCalls() {
     return toolCallsProp.stream()
@@ -245,14 +237,34 @@ public final class AgentHistoryRecord extends UnifiedRecordValue
     return this;
   }
 
-  public AgentHistoryRecord addToolCall(final AgentHistoryEmbeddedToolCall toolCall) {
-    toolCallsProp.add().copy(toolCall);
+  @Override
+  public AgentHistoryMetrics getMetrics() {
+    return metricsProp.getValue();
+  }
+
+  public AgentHistoryRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
   @Override
-  public AgentHistoryMetrics getMetrics() {
-    return metricsProp.getValue();
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public AgentHistoryRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
+    return this;
+  }
+
+  public AgentHistoryRecord addContent(final AgentHistoryMessageContent content) {
+    contentProp.add().copy(content);
+    return this;
+  }
+
+  public AgentHistoryRecord addToolCall(final AgentHistoryEmbeddedToolCall toolCall) {
+    toolCallsProp.add().copy(toolCall);
+    return this;
   }
 
   public AgentHistoryRecord ignoreLease() {

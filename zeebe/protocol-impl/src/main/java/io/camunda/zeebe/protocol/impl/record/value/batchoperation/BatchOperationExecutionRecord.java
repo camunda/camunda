@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -19,15 +20,20 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     implements BatchOperationExecutionRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
+  public static final String PROP_STORAGE_ORDINAL_KEY = "storageOrdinalKey";
   public static final String PROP_ITEM_KEY_LIST = "itemKeys";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(PROP_STORAGE_ORDINAL_KEY, 0);
   private final ArrayProperty<LongValue> itemKeysProp =
       new ArrayProperty<>(PROP_ITEM_KEY_LIST, LongValue::new);
 
   public BatchOperationExecutionRecord() {
-    super(2);
-    declareProperty(batchOperationKeyProp).declareProperty(itemKeysProp);
+    super(3);
+    declareProperty(batchOperationKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
+        .declareProperty(itemKeysProp);
   }
 
   @Override
@@ -38,6 +44,16 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
   public BatchOperationExecutionRecord setBatchOperationKey(final Long batchOperationKey) {
     batchOperationKeyProp.reset();
     batchOperationKeyProp.setValue(batchOperationKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public BatchOperationExecutionRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 
@@ -54,6 +70,7 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
 
   public BatchOperationExecutionRecord wrap(final BatchOperationExecutionRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
+    setStorageOrdinalKey(record.getStorageOrdinalKey());
     setItemKeys(record.getItemKeys());
     return this;
   }

@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.incident;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ArrayValue;
@@ -43,6 +44,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private static final StringValue PROCESS_DEFINITION_PATH_KEY =
       new StringValue("processDefinitionPath");
   private static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
+  private static final StringValue STORAGE_ORDINAL_KEY_KEY = new StringValue("storageOrdinalKey");
 
   private final EnumProperty<ErrorType> errorTypeProp =
       new EnumProperty<>(ERROR_TYPE_KEY, ErrorType.class, ErrorType.UNKNOWN);
@@ -52,6 +54,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final LongProperty processInstanceKeyProp =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(STORAGE_ORDINAL_KEY_KEY, 0);
   private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
   private final LongProperty elementInstanceKeyProp =
       new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
@@ -67,12 +71,13 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
       new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
 
   public IncidentRecord() {
-    super(13);
+    super(14);
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processInstanceKeyProp)
+        .declareProperty(storageOrdinalKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(jobKeyProp)
@@ -89,6 +94,7 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     bpmnProcessIdProp.setValue(record.getBpmnProcessIdBuffer());
     processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
+    storageOrdinalKeyProp.setValue(record.getStorageOrdinalKey());
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     jobKeyProp.setValue(record.getJobKey());
@@ -125,13 +131,8 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   }
 
   @Override
-  public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
-  }
-
-  public IncidentRecord setBpmnProcessId(final DirectBuffer directBuffer) {
-    bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
-    return this;
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -142,11 +143,6 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   public IncidentRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
     return this;
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProp.getValue();
   }
 
   @Override
@@ -164,8 +160,13 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return elementInstanceKeyProp.getValue();
   }
 
-  public IncidentRecord setElementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKeyProp.setValue(elementInstanceKey);
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public IncidentRecord setBpmnProcessId(final DirectBuffer directBuffer) {
+    bpmnProcessIdProp.setValue(directBuffer, 0, directBuffer.capacity());
     return this;
   }
 
@@ -252,6 +253,11 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     return this;
   }
 
+  public IncidentRecord setElementInstanceKey(final long elementInstanceKey) {
+    elementInstanceKeyProp.setValue(elementInstanceKey);
+    return this;
+  }
+
   public IncidentRecord setProcessInstanceKey(final long processInstanceKey) {
     processInstanceKeyProp.setValue(processInstanceKey);
     return this;
@@ -279,6 +285,16 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   public IncidentRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public IncidentRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 }
