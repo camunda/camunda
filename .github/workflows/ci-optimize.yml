@@ -272,7 +272,7 @@ jobs:
       LIMITS_CPU: 4
       TEST_TYPE: Unit
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
@@ -323,7 +323,7 @@ jobs:
     env:
       TEST_TYPE: Tool
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
@@ -382,7 +382,7 @@ jobs:
             "optimize.Dockerfile",
           ]
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -410,7 +410,7 @@ jobs:
       TEST_TYPE: E2E
 
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
@@ -570,7 +570,7 @@ jobs:
     env:
       TEST_TYPE: E2E
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Print metadata
