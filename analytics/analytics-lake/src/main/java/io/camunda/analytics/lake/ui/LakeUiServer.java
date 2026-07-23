@@ -873,22 +873,22 @@ public final class LakeUiServer implements AutoCloseable {
       <style>
         :root {
           color-scheme: light dark;
-          --bg: #f5f6f8;
-          --fg: #1b1f24;
+          --bg: oklch(98.5% 0 0);
+          --fg: oklch(21% 0.006 285.885);
           --card-bg: #ffffff;
-          --border: #d8dce1;
-          --accent: #2b6cb0;
-          --muted: #6b7280;
+          --border: color-mix(in srgb, oklch(70.5% 0.015 286.067) 20%, transparent);
+          --accent: oklch(0.646 0.222 41.116);
+          --muted: oklch(44.2% 0.017 285.786);
           --error: #b91c1c;
         }
         @media (prefers-color-scheme: dark) {
           :root {
-            --bg: #14171c;
-            --fg: #e6e8eb;
-            --card-bg: #1c2027;
-            --border: #333a45;
-            --accent: #6ea8fe;
-            --muted: #9aa4b2;
+            --bg: oklch(14.1% 0.005 285.823);
+            --fg: oklch(98.5% 0 0);
+            --card-bg: oklch(27.4% 0.006 286.033);
+            --border: color-mix(in srgb, #fff 16%, transparent);
+            --accent: oklch(0.75 0.22 41.116);
+            --muted: oklch(87.1% 0.006 286.286);
             --error: #ff8787;
           }
         }
@@ -896,7 +896,7 @@ public final class LakeUiServer implements AutoCloseable {
         body {
           margin: 0;
           padding: 1.5rem;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-family: "Geist Sans", -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
           background: var(--bg);
           color: var(--fg);
         }
@@ -940,7 +940,7 @@ public final class LakeUiServer implements AutoCloseable {
         .freeform textarea {
           width: 100%;
           min-height: 110px;
-          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
           font-size: 0.85rem;
           background: var(--card-bg);
           color: var(--fg);
@@ -1138,40 +1138,40 @@ public final class LakeUiServer implements AutoCloseable {
       <style>
         :root {
           color-scheme: light dark;
-          --page-bg: #f9f9f7;
-          --surface: #fcfcfb;
-          --ink-primary: #0b0b0b;
-          --ink-secondary: #52514e;
-          --ink-muted: #898781;
+          --page-bg: oklch(98.5% 0 0);
+          --surface: #ffffff;
+          --ink-primary: oklch(21% 0.006 285.885);
+          --ink-secondary: oklch(27.4% 0.006 286.033);
+          --ink-muted: oklch(44.2% 0.017 285.786);
           --gridline: #e1e0d9;
           --baseline: #c3c2b7;
-          --border: rgba(11,11,11,0.10);
+          --border: color-mix(in srgb, oklch(70.5% 0.015 286.067) 20%, transparent);
           --error: #d03b3b;
-          --series-1: #2a78d6;
-          --series-1-wash: rgba(42,120,214,0.10);
-          --series-2: #008300;
+          --series-1: oklch(0.646 0.222 41.116);
+          --series-1-wash: color-mix(in srgb, var(--series-1) 10%, transparent);
+          --series-2: oklch(0.6 0.118 184.704);
         }
         @media (prefers-color-scheme: dark) {
           :root {
-            --page-bg: #0d0d0d;
-            --surface: #1a1a19;
-            --ink-primary: #ffffff;
-            --ink-secondary: #c3c2b7;
-            --ink-muted: #898781;
+            --page-bg: oklch(14.1% 0.005 285.823);
+            --surface: oklch(27.4% 0.006 286.033);
+            --ink-primary: oklch(98.5% 0 0);
+            --ink-secondary: oklch(92% 0.004 286.32);
+            --ink-muted: oklch(87.1% 0.006 286.286);
             --gridline: #2c2c2a;
             --baseline: #383835;
-            --border: rgba(255,255,255,0.10);
+            --border: color-mix(in srgb, #fff 16%, transparent);
             --error: #e66767;
-            --series-1: #3987e5;
-            --series-1-wash: rgba(57,135,229,0.12);
-            --series-2: #008300;
+            --series-1: oklch(0.75 0.22 41.116);
+            --series-1-wash: color-mix(in srgb, var(--series-1) 12%, transparent);
+            --series-2: oklch(0.72 0.14 184.704);
           }
         }
         * { box-sizing: border-box; }
         body {
           margin: 0;
           padding: 1.5rem;
-          font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+          font-family: "Geist Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
           background: var(--page-bg);
           color: var(--ink-primary);
           overflow-x: hidden;
@@ -1235,7 +1235,7 @@ public final class LakeUiServer implements AutoCloseable {
         svg.chart-svg text {
           fill: var(--ink-muted);
           font-size: 11px;
-          font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+          font-family: "Geist Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
           font-variant-numeric: tabular-nums;
         }
         svg.chart-svg text.value-label { fill: var(--ink-secondary); font-weight: 600; }
@@ -1327,7 +1327,7 @@ public final class LakeUiServer implements AutoCloseable {
           border-top: 1px solid var(--border);
         }
         .chart-tooltip .tt-key-code {
-          font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+          font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
           background: var(--gridline);
           border-radius: 4px;
           padding: 0.05rem 0.4rem;
@@ -2741,34 +2741,34 @@ public final class LakeUiServer implements AutoCloseable {
       <style>
         :root {
           color-scheme: light dark;
-          --page-bg: #f9f9f7;
-          --surface: #fcfcfb;
-          --ink-primary: #0b0b0b;
-          --ink-secondary: #52514e;
-          --ink-muted: #898781;
+          --page-bg: oklch(98.5% 0 0);
+          --surface: #ffffff;
+          --ink-primary: oklch(21% 0.006 285.885);
+          --ink-secondary: oklch(27.4% 0.006 286.033);
+          --ink-muted: oklch(44.2% 0.017 285.786);
           --gridline: #e1e0d9;
-          --border: rgba(11,11,11,0.10);
+          --border: color-mix(in srgb, oklch(70.5% 0.015 286.067) 20%, transparent);
           --error: #d03b3b;
-          --series-1: #2a78d6;
+          --series-1: oklch(0.646 0.222 41.116);
         }
         @media (prefers-color-scheme: dark) {
           :root {
-            --page-bg: #0d0d0d;
-            --surface: #1a1a19;
-            --ink-primary: #ffffff;
-            --ink-secondary: #c3c2b7;
-            --ink-muted: #898781;
+            --page-bg: oklch(14.1% 0.005 285.823);
+            --surface: oklch(27.4% 0.006 286.033);
+            --ink-primary: oklch(98.5% 0 0);
+            --ink-secondary: oklch(92% 0.004 286.32);
+            --ink-muted: oklch(87.1% 0.006 286.286);
             --gridline: #2c2c2a;
-            --border: rgba(255,255,255,0.10);
+            --border: color-mix(in srgb, #fff 16%, transparent);
             --error: #e66767;
-            --series-1: #3987e5;
+            --series-1: oklch(0.75 0.22 41.116);
           }
         }
         * { box-sizing: border-box; }
         body {
           margin: 0;
           padding: 1.5rem;
-          font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+          font-family: "Geist Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
           background: var(--page-bg);
           color: var(--ink-primary);
         }
