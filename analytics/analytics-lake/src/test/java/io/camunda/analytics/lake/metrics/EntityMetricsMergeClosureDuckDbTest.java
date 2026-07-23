@@ -352,6 +352,7 @@ class EntityMetricsMergeClosureDuckDbTest {
       case INT -> "INTEGER";
       case STRING_DICT -> "VARCHAR";
       case BINARY -> "BLOB";
+      case DOUBLE -> "DOUBLE";
     };
   }
 

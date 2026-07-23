@@ -295,6 +295,11 @@ final class MetricsRiderTest {
       }
 
       @Override
+      public double doubleAt(final int column, final int i) {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
       public List<DayRange> dayRanges() {
         throw new UnsupportedOperationException("the rider never reads day ranges");
       }

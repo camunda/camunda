@@ -41,14 +41,14 @@ import org.apache.iceberg.util.DateTimeUtil;
  * of the flush path for a method the writer never actually calls.
  *
  * <p><b>This flyweight itself allocates nothing per row, but a plain (non-{@code timestamptz})
- * {@code LONG}/{@code INT} column still boxes on every row</b> — {@link #get(int, Class)}'s {@code
- * switch} branches return {@code long}/{@code int} primitives, and {@link Record#get(int, Class)}'s
- * signature forces them into {@code Object} before the caller ever downcasts, so the JIT cannot
- * elide the box. A profiled 16k-row flush measured roughly 5&nbsp;MB of Eden churn from exactly
- * this — bounded, flush-thread-only garbage, not steady-state poll-thread allocation, but real cost
- * nonetheless. Driving parquet-java's column writers directly (no {@code Record} indirection, no
- * {@code Object} return type to box through) is the escape hatch — rung 1.5 in the encoder ladder,
- * see the module backlog.
+ * {@code LONG}/{@code INT}/{@code DOUBLE} column still boxes on every row</b> — {@link #get(int,
+ * Class)}'s {@code switch} branches return {@code long}/{@code int}/{@code double} primitives, and
+ * {@link Record#get(int, Class)}'s signature forces them into {@code Object} before the caller ever
+ * downcasts, so the JIT cannot elide the box. A profiled 16k-row flush measured roughly 5&nbsp;MB
+ * of Eden churn from exactly this — bounded, flush-thread-only garbage, not steady-state
+ * poll-thread allocation, but real cost nonetheless. Driving parquet-java's column writers directly
+ * (no {@code Record} indirection, no {@code Object} return type to box through) is the escape hatch
+ * — rung 1.5 in the encoder ladder, see the module backlog.
  */
 final class BatchRowView implements Record {
 
@@ -125,6 +125,7 @@ final class BatchRowView implements Record {
           case INT -> run.intAt(column, index);
           case STRING_DICT -> run.stringAt(column, index);
           case BINARY -> copyBinary(column);
+          case DOUBLE -> run.doubleAt(column, index);
         };
     return javaClass.cast(value);
   }

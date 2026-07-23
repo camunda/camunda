@@ -71,6 +71,11 @@ final class IdentitySortedRun implements SortedRun {
   }
 
   @Override
+  public double doubleAt(final int column, final int i) {
+    return ((ColumnVector.DoubleColumn) segment.vector(column)).get(i);
+  }
+
+  @Override
   public List<DayRange> dayRanges() {
     return segment.size() == 0 ? List.of() : List.of(new DayRange(epochDay, 0, segment.size()));
   }

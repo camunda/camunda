@@ -37,7 +37,8 @@ class SinkBatchAllocationGuardTest {
             new TableSchema.Column("entity_id", ColumnType.LONG, 2, false, 0, false),
             new TableSchema.Column("kind", ColumnType.STRING_DICT, 3, false, 1, false),
             new TableSchema.Column("count", ColumnType.INT, 4, true, -1, false),
-            new TableSchema.Column("payload", ColumnType.BINARY, 5, true, -1, false)));
+            new TableSchema.Column("payload", ColumnType.BINARY, 5, true, -1, false),
+            new TableSchema.Column("value", ColumnType.DOUBLE, 6, true, -1, false)));
   }
 
   @Test
@@ -49,7 +50,7 @@ class SinkBatchAllocationGuardTest {
     final int rowCapacity = 256;
     final Segment[] segments =
         SegmentFactory.createSegments(
-            schema(), 4, rowCapacity, new int[] {0, 0, 0, 0, 32}, interner);
+            schema(), 4, rowCapacity, new int[] {0, 0, 0, 0, 32, 0}, interner);
     final ColumnarSegmentRing ring = new ColumnarSegmentRing(segments, new NoopGate());
     final RowAppender appender = new SegmentRowAppender(ring);
     final byte[] payload = "payload-bytes".getBytes(StandardCharsets.UTF_8);
@@ -111,6 +112,11 @@ class SinkBatchAllocationGuardTest {
         appender.putNull(4);
       } else {
         appender.putBinary(4, payload, 0, payload.length);
+      }
+      if (i % 5 == 0) {
+        appender.putNull(5);
+      } else {
+        appender.putDouble(5, i * 0.5);
       }
       appender.endRow();
     }

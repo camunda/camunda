@@ -90,6 +90,11 @@ final class FakeSortedRun implements SortedRun {
   }
 
   @Override
+  public double doubleAt(final int column, final int i) {
+    return (Double) columns[column][i];
+  }
+
+  @Override
   public List<DayRange> dayRanges() {
     return dayRanges;
   }

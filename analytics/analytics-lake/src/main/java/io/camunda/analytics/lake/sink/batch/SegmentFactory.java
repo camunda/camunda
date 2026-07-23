@@ -67,6 +67,7 @@ public final class SegmentFactory {
             case STRING_DICT -> new HeapDictColumn(rowCapacity, column.nullable(), dictInterner);
             case BINARY ->
                 new HeapBinaryColumn(rowCapacity, column.nullable(), binaryAvgBytesPerRow[i]);
+            case DOUBLE -> new HeapDoubleColumn(rowCapacity, column.nullable());
           };
     }
     return vectors;

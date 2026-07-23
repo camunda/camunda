@@ -46,6 +46,7 @@ final class EncodeTestFixtures {
             case INT -> Types.IntegerType.get();
             case STRING_DICT -> Types.StringType.get();
             case BINARY -> Types.BinaryType.get();
+            case DOUBLE -> Types.DoubleType.get();
           };
       fields.add(
           column.nullable()

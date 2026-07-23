@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.lake.sink.algebra;
 
+import io.camunda.analytics.lake.sink.ColumnType;
 import java.util.List;
 
 /**
@@ -63,6 +64,19 @@ public interface Algebra {
    * and reused across (dims, window) groups and across flushes, never allocated per record.
    */
   Accumulator create();
+
+  /**
+   * The raw value type this algebra's hot side folds: {@link ColumnType#LONG} (via {@link
+   * Accumulator#add(long)}) or {@link ColumnType#DOUBLE} (via {@link Accumulator#addDouble(double)}
+   * — see that method's own javadoc for the double-valued algebra family). Every algebra declared
+   * for one measure must report the same value type (the raw column can only be one type), which is
+   * what {@code io.camunda.analytics.lake.metrics.EntityMetrics.Builder#build()} validates against.
+   * Defaults to {@link ColumnType#LONG} — every long-valued algebra predating this method inherits
+   * the correct answer without needing to override it.
+   */
+  default ColumnType valueType() {
+    return ColumnType.LONG;
+  }
 
   /**
    * Which physical partials-table shape this algebra's rows fit: {@link PartialsShape#WIDE} shares
@@ -129,8 +143,19 @@ public interface Algebra {
    *
    * @param name the physical column name (see {@link Algebra#partialColumns})
    * @param nullable whether a merge/finalize reader may ever observe a {@code NULL} here
+   * @param type the column's physical shape — {@link ColumnType#LONG} for every algebra predating
+   *     this field (see the 2-arg constructor), {@link ColumnType#DOUBLE} for a double-valued
+   *     algebra's non-count columns (e.g. {@code sum}/{@code min}/{@code max}/{@code bin_lo}/{@code
+   *     bin_hi}); a count-shaped column (e.g. {@code cnt}, {@code nonfinite_cnt}) stays {@code
+   *     LONG} even on an otherwise double-valued algebra
    */
-  record PartialColumn(String name, boolean nullable) {}
+  record PartialColumn(String name, boolean nullable, ColumnType type) {
+
+    /** Same as the 3-arg constructor, defaulting {@code type} to {@link ColumnType#LONG}. */
+    public PartialColumn(final String name, final boolean nullable) {
+      this(name, nullable, ColumnType.LONG);
+    }
+  }
 
   /**
    * The hot side of an algebra: folds raw {@code long} values into partial state. Implementations
@@ -143,8 +168,25 @@ public interface Algebra {
     /** Zeroes the accumulator's state without allocating. */
     void reset();
 
-    /** Folds one raw value into the state. Allocation-free. */
-    void add(long value);
+    /**
+     * Folds one raw {@code LONG} value into the state. Allocation-free. Default: throws — only
+     * {@link ColumnType#LONG}-valued algebras (see {@link #valueType()}) override this; a {@link
+     * ColumnType#DOUBLE}-valued algebra folds through {@link #addDouble(double)} instead.
+     */
+    default void add(long value) {
+      throw new UnsupportedOperationException(
+          getClass() + " does not fold LONG values (see Algebra#valueType())");
+    }
+
+    /**
+     * Folds one raw {@code DOUBLE} value into the state. Allocation-free. Default: throws — only
+     * {@link ColumnType#DOUBLE}-valued algebras override this; see {@link #add(long)}'s own javadoc
+     * for the symmetric {@code LONG} side of this split.
+     */
+    default void addDouble(double value) {
+      throw new UnsupportedOperationException(
+          getClass() + " does not fold DOUBLE values (see Algebra#valueType())");
+    }
 
     /** True if no value has been folded in since the last {@link #reset()} or {@link #drain}. */
     boolean isEmpty();
@@ -172,13 +214,36 @@ public interface Algebra {
     void beginRow();
 
     /**
-     * Writes one column of the row started by {@link #beginRow()}.
+     * Writes one {@code LONG}-shaped column of the row started by {@link #beginRow()}. Default:
+     * throws — only a writer draining at least one {@code LONG}-shaped column overrides this (see
+     * {@link #writeDouble} for the symmetric {@code DOUBLE} side).
      *
      * @param columnIndex position into the algebra's own {@link Algebra#partialColumns} list for
      *     the measure being drained (not a raw-schema or partials-table column index — the caller
      *     assembling a full physical row is responsible for that translation)
      */
-    void writeLong(int columnIndex, long value);
+    default void writeLong(int columnIndex, long value) {
+      throw new UnsupportedOperationException(getClass() + " does not support writeLong");
+    }
+
+    /**
+     * Same as {@link #writeLong}, for a {@code DOUBLE}-shaped column (see {@link
+     * Algebra.PartialColumn#type()}). Default: throws.
+     */
+    default void writeDouble(int columnIndex, double value) {
+      throw new UnsupportedOperationException(getClass() + " does not support writeDouble");
+    }
+
+    /**
+     * Writes an explicit {@code NULL} for a nullable column of the row started by {@link
+     * #beginRow()} — needed by an accumulator that was touched (not {@link Accumulator#isEmpty()})
+     * but still has nothing to report for one of its own nullable columns (e.g. {@link
+     * DoubleScalarStatsAlgebra}'s {@code min}/{@code max} when every folded value was non-finite).
+     * Default: throws — only a writer draining such a column overrides this.
+     */
+    default void writeNull(int columnIndex) {
+      throw new UnsupportedOperationException(getClass() + " does not support writeNull");
+    }
 
     /** Completes the row started by {@link #beginRow()}. */
     void endRow();

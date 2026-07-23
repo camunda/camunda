@@ -22,6 +22,11 @@ public final class Algebras {
     return new ScalarStatsAlgebra();
   }
 
+  /** Count/sum/min/max over {@code DOUBLE} values — see {@link DoubleScalarStatsAlgebra}. */
+  public static Algebra doubleScalarStats() {
+    return new DoubleScalarStatsAlgebra();
+  }
+
   /**
    * A plain row count, unprefixed and measure-less — see {@link CountAlgebra}. Backs {@code
    * io.camunda.analytics.lake.metrics.EntityMetrics.Builder#count()}; not intended to be declared
@@ -40,5 +45,16 @@ public final class Algebras {
    */
   public static Algebra expHistogram(final int scale) {
     return new ExpHistogramAlgebra(scale);
+  }
+
+  /**
+   * A sign-mirrored, base-2 log-linear histogram over signed {@code double} values at the given
+   * scale — see {@link SignedDoubleExpHistogramAlgebra}.
+   *
+   * @param scale number of mantissa bits used to sub-divide each power-of-two range, in {@code [0,
+   *     52]}; relative bin width at or above {@code |v| == 1} is at most {@code 2^-scale}
+   */
+  public static Algebra signedDoubleExpHistogram(final int scale) {
+    return new SignedDoubleExpHistogramAlgebra(scale);
   }
 }

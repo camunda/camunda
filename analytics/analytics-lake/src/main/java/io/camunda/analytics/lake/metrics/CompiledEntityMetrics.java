@@ -12,6 +12,7 @@ import io.camunda.analytics.lake.sink.TableSchema;
 import io.camunda.analytics.lake.sink.algebra.Algebra;
 import io.camunda.analytics.lake.sink.algebra.Algebras;
 import io.camunda.analytics.lake.sink.algebra.ExpHistogramAlgebra;
+import io.camunda.analytics.lake.sink.algebra.PercentileHistogramAlgebra;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -61,6 +62,7 @@ public final class CompiledEntityMetrics {
   private final List<MeasureDeclaration> measures;
   private final RiderPlan riderPlan;
   private final boolean counted;
+  private final List<String> counters;
 
   CompiledEntityMetrics(
       final String entityName,
@@ -69,7 +71,8 @@ public final class CompiledEntityMetrics {
       final long windowMicros,
       final List<MeasureDeclaration> measures,
       final RiderPlan riderPlan,
-      final boolean counted) {
+      final boolean counted,
+      final List<String> counters) {
     this.entityName = entityName;
     this.rawSchema = rawSchema;
     this.dims = List.copyOf(dims);
@@ -77,6 +80,7 @@ public final class CompiledEntityMetrics {
     this.measures = List.copyOf(measures);
     this.riderPlan = riderPlan;
     this.counted = counted;
+    this.counters = List.copyOf(counters);
   }
 
   /** The precomputed, per-record-interpretation-free folding plan — see {@link RiderPlan}. */
@@ -107,6 +111,15 @@ public final class CompiledEntityMetrics {
   /** Whether this declaration includes a {@code count()} — see {@code EntityMetrics.Builder}. */
   public boolean counted() {
     return counted;
+  }
+
+  /**
+   * Declared named counters, in declaration order — see {@code EntityMetrics.Builder#counter}. Each
+   * contributes one unprefixed {@code LONG} WIDE column to {@link #metricsSchema()}, named exactly
+   * as declared.
+   */
+  public List<String> counters() {
+    return counters;
   }
 
   /**
@@ -152,7 +165,17 @@ public final class CompiledEntityMetrics {
       for (final Algebra.PartialColumn column : COUNT_ALGEBRA.partialColumns("")) {
         columns.add(
             new TableSchema.Column(
-                column.name(), ColumnType.LONG, fieldId[0]++, column.nullable(), -1, false));
+                column.name(), column.type(), fieldId[0]++, column.nullable(), -1, false));
+      }
+    }
+    for (final String counter : counters) {
+      // Named counters (see EntityMetrics.Builder#counter) reuse CountAlgebra's own column shape,
+      // just under the caller-chosen name instead of the fixed "cnt" -- right after count()'s own
+      // column, before any measure's, for the same fixed-offset reason as above.
+      for (final Algebra.PartialColumn column : COUNT_ALGEBRA.partialColumns(counter)) {
+        columns.add(
+            new TableSchema.Column(
+                column.name(), column.type(), fieldId[0]++, column.nullable(), -1, false));
       }
     }
     for (final MeasureDeclaration measure : measures) {
@@ -161,7 +184,7 @@ public final class CompiledEntityMetrics {
           for (final Algebra.PartialColumn column : algebra.partialColumns(measure.name())) {
             columns.add(
                 new TableSchema.Column(
-                    column.name(), ColumnType.LONG, fieldId[0]++, column.nullable(), -1, false));
+                    column.name(), column.type(), fieldId[0]++, column.nullable(), -1, false));
           }
         }
       }
@@ -196,11 +219,25 @@ public final class CompiledEntityMetrics {
     columns.add(
         new TableSchema.Column(
             SCHEME_COLUMN, ColumnType.STRING_DICT, fieldId[0]++, false, -1, false));
+    final List<Algebra.PartialColumn> binColumns = histPartialColumnsOrDefault();
+    final Algebra.PartialColumn binLo = binColumns.get(0);
+    final Algebra.PartialColumn binHi = binColumns.get(1);
+    final Algebra.PartialColumn cnt = binColumns.get(2);
+    // bin_lo is only part of the physical sort key when it is LONG: a DOUBLE bin_lo (a
+    // double-valued histogram, e.g. SignedDoubleExpHistogramAlgebra) can never be a sort key
+    // column (see ColumnType.DOUBLE's own javadoc) -- the SegmentSorter would refuse to build for
+    // this schema otherwise. Losing bin_lo's contribution to physical row adjacency in that case
+    // is a locality trade-off only: merge/finalize both operate through SQL GROUP BY, never through
+    // physical file order, so correctness is unaffected.
+    final int binLoSortOrder = binLo.type() == ColumnType.LONG ? dims.size() + 2 : -1;
     columns.add(
         new TableSchema.Column(
-            "bin_lo", ColumnType.LONG, fieldId[0]++, false, dims.size() + 2, false));
-    columns.add(new TableSchema.Column("bin_hi", ColumnType.LONG, fieldId[0]++, false, -1, false));
-    columns.add(new TableSchema.Column("cnt", ColumnType.LONG, fieldId[0]++, false, -1, false));
+            binLo.name(), binLo.type(), fieldId[0]++, binLo.nullable(), binLoSortOrder, false));
+    columns.add(
+        new TableSchema.Column(
+            binHi.name(), binHi.type(), fieldId[0]++, binHi.nullable(), -1, false));
+    columns.add(
+        new TableSchema.Column(cnt.name(), cnt.type(), fieldId[0]++, cnt.nullable(), -1, false));
     return new TableSchema(entityName + HIST_SUFFIX, columns);
   }
 
@@ -239,6 +276,7 @@ public final class CompiledEntityMetrics {
                 : rawSchema.columns().get(riderPlan.windowSourceColumn()).name())
         .append('|');
     canonical.append(counted ? "count" : "-").append('|');
+    canonical.append(String.join(",", counters.stream().sorted().toList())).append('|');
     final List<String> measureSchemePairs = new ArrayList<>();
     for (final MeasureDeclaration measure : measures) {
       for (final Algebra algebra : measure.algebras()) {
@@ -276,6 +314,9 @@ public final class CompiledEntityMetrics {
     final List<String> projections = new ArrayList<>();
     if (counted) {
       projections.add(COUNT_ALGEBRA.mergeProjection(""));
+    }
+    for (final String counter : counters) {
+      projections.add(COUNT_ALGEBRA.mergeProjection(counter));
     }
     for (final MeasureDeclaration measure : measures) {
       for (final Algebra algebra : measure.algebras()) {
@@ -342,6 +383,9 @@ public final class CompiledEntityMetrics {
     if (counted) {
       projections.add(COUNT_ALGEBRA.finalizeProjection(""));
     }
+    for (final String counter : counters) {
+      projections.add(COUNT_ALGEBRA.finalizeProjection(counter));
+    }
     for (final MeasureDeclaration measure : measures) {
       for (final Algebra algebra : measure.algebras()) {
         if (algebra.shape() == Algebra.PartialsShape.WIDE) {
@@ -368,7 +412,7 @@ public final class CompiledEntityMetrics {
    * any declared histogram algebra produces textually identical SQL here.
    */
   public String finalizeHistSql(final String sourceTable) {
-    final ExpHistogramAlgebra histAlgebra = (ExpHistogramAlgebra) anyHistAlgebra();
+    final PercentileHistogramAlgebra histAlgebra = (PercentileHistogramAlgebra) anyHistAlgebra();
     final List<String> groupByColumns = new ArrayList<>(dims);
     groupByColumns.add(WINDOW_START);
     groupByColumns.add(MEASURE_COLUMN);
@@ -378,7 +422,7 @@ public final class CompiledEntityMetrics {
 
   /** Same idea as {@link #finalizeHistSql}, packaged as a reusable DuckDB table macro. */
   public String finalizeHistMacroSql(final String macroName, final String sourceTable) {
-    final ExpHistogramAlgebra histAlgebra = (ExpHistogramAlgebra) anyHistAlgebra();
+    final PercentileHistogramAlgebra histAlgebra = (PercentileHistogramAlgebra) anyHistAlgebra();
     final List<String> groupByColumns = new ArrayList<>(dims);
     groupByColumns.add(WINDOW_START);
     groupByColumns.add(MEASURE_COLUMN);
@@ -405,5 +449,28 @@ public final class CompiledEntityMetrics {
             + entityName
             + "' declares no histogram-shaped measure; the _hist table has no"
             + " rows to merge/finalize");
+  }
+
+  /**
+   * The {@code (bin_lo, bin_hi, cnt)} column shape {@link #histSchema()} generates: taken from
+   * whichever {@link Algebra.PartialsShape#TALL} algebra the entity declares (its {@link
+   * Algebra#partialColumns} are already in exactly this order — see {@link
+   * ExpHistogramAlgebra}'s/{@link
+   * io.camunda.analytics.lake.sink.algebra.SignedDoubleExpHistogramAlgebra}'s own javadoc), or the
+   * plain {@code LONG} default when the entity declares no histogram-shaped measure at all — see
+   * {@link #histSchema()}'s own javadoc for why the table is generated unconditionally either way.
+   */
+  private List<Algebra.PartialColumn> histPartialColumnsOrDefault() {
+    for (final MeasureDeclaration measure : measures) {
+      for (final Algebra algebra : measure.algebras()) {
+        if (algebra.shape() == Algebra.PartialsShape.TALL) {
+          return algebra.partialColumns(measure.name());
+        }
+      }
+    }
+    return List.of(
+        new Algebra.PartialColumn("bin_lo", false, ColumnType.LONG),
+        new Algebra.PartialColumn("bin_hi", false, ColumnType.LONG),
+        new Algebra.PartialColumn("cnt", false, ColumnType.LONG));
   }
 }

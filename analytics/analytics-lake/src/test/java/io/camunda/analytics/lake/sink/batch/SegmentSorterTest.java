@@ -8,6 +8,7 @@
 package io.camunda.analytics.lake.sink.batch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.analytics.lake.sink.BackpressureGate;
 import io.camunda.analytics.lake.sink.ColumnType;
@@ -232,6 +233,24 @@ class SegmentSorterTest {
     }
     assertThat(secondRun.dayRanges().get(secondRun.dayRanges().size() - 1).toIndex())
         .isEqualTo(secondRows.size());
+  }
+
+  @Test
+  void shouldRejectADoubleColumnDeclaredAsASortKey() {
+    // given a schema whose sort key names a DOUBLE column -- profile-shaped measures never sort on
+    // values (see ColumnType.DOUBLE's own javadoc)
+    final TableSchema badSchema =
+        new TableSchema(
+            "bad_sort_key",
+            List.of(
+                new TableSchema.Column("ts", ColumnType.LONG, 1, false, -1, true),
+                new TableSchema.Column("value", ColumnType.DOUBLE, 2, false, 0, false)));
+
+    // when / then: rejected eagerly at construction, not lazily on first compare
+    assertThatThrownBy(() -> new SegmentSorter(badSchema, 8, new int[] {0, 0}, new Interner()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("value")
+        .hasMessageContaining("DOUBLE");
   }
 
   private static long[] extractEntityIds(final SortedRun run) {

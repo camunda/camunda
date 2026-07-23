@@ -66,6 +66,12 @@ public final class SegmentRowAppender implements RowAppender {
   }
 
   @Override
+  public RowAppender putDouble(final int column, final double value) {
+    ((ColumnVector.DoubleColumn) filling.vector(column)).set(filling.size(), value);
+    return this;
+  }
+
+  @Override
   public RowAppender putNull(final int column) {
     filling.vector(column).setNull(filling.size());
     return this;

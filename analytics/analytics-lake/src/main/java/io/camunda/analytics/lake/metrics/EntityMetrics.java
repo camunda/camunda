@@ -64,6 +64,7 @@ public final class EntityMetrics {
     private String windowSource; // null == default to the raw schema's familyDaySource column
     private final Map<String, List<Algebra>> measures = new LinkedHashMap<>();
     private boolean counted;
+    private final List<String> counters = new ArrayList<>();
 
     private Builder(final String entityName, final TableSchema rawSchema) {
       this.entityName = entityName;
@@ -130,6 +131,36 @@ public final class EntityMetrics {
     }
 
     /**
+     * Declares an additional, independently named count-shaped {@code LONG} column on the {@code
+     * _metrics} row — the "named counter" extension of {@link #count()} (see {@code
+     * io.camunda.analytics.lake.sink.algebra.CountAlgebra}'s reuse for this: the same increment-
+     * once-per-row math, just under a caller-chosen column name instead of the fixed {@code cnt}).
+     * Unlike {@link #count()}, which is at most one unnamed column per declaration, {@code
+     * counter(...)} may be called any number of times with distinct names — the natural shape for a
+     * declaration whose "how many" question has more than one independent answer per group (e.g. a
+     * variable profile's per-type instance counts: {@code type_number_cnt}, {@code
+     * type_string_cnt}, ...), all landing on the one wide row alongside {@link #count()}'s own
+     * total and any declared measures. Which specific counter increments for a given folded record
+     * is decided by the caller driving the rider (see {@code
+     * io.camunda.analytics.lake.metrics.PollFedRider#incrementCounter}), not by this declaration.
+     *
+     * @throws IllegalArgumentException if {@code name} is blank or was already declared (via {@code
+     *     counter(...)} or collides with {@link #count()}'s own {@code cnt} column)
+     */
+    public Builder counter(final String name) {
+      if (name == null || name.isBlank()) {
+        throw new IllegalArgumentException(
+            "entity '" + entityName + "': counter name must not be blank");
+      }
+      if (counters.contains(name)) {
+        throw new IllegalArgumentException(
+            "entity '" + entityName + "': counter '" + name + "' was already declared");
+      }
+      counters.add(name);
+      return this;
+    }
+
+    /**
      * Validates the declaration against the raw schema and compiles it.
      *
      * @throws IllegalArgumentException with a precise message identifying which rule failed
@@ -142,11 +173,19 @@ public final class EntityMetrics {
         throw new IllegalArgumentException(
             "entity '" + entityName + "' declares no dims — at least one is required");
       }
-      if (measures.isEmpty() && !counted) {
+      if (measures.isEmpty() && !counted && counters.isEmpty()) {
         throw new IllegalArgumentException(
             "entity '"
                 + entityName
-                + "' declares no measures and no count() — at least one is required");
+                + "' declares no measures, no count() and no counter() — at least one is"
+                + " required");
+      }
+      if (counted && counters.contains("cnt")) {
+        throw new IllegalArgumentException(
+            "entity '"
+                + entityName
+                + "': counter 'cnt' collides with count()'s own column name — choose a different"
+                + " counter name");
       }
 
       final int[] dimColumnIndexes = new int[dims.size()];
@@ -234,8 +273,9 @@ public final class EntityMetrics {
                   + rawSchema.table()
                   + "'");
         }
+        final ColumnType expectedType = commonValueType(entityName, measure, entry.getValue());
         final TableSchema.Column column = rawSchema.columns().get(rawIndex);
-        if (column.type() != ColumnType.LONG) {
+        if (column.type() != expectedType) {
           throw new IllegalArgumentException(
               "entity '"
                   + entityName
@@ -245,12 +285,15 @@ public final class EntityMetrics {
                   + column.type()
                   + " in raw schema '"
                   + rawSchema.table()
-                  + "', must be LONG");
+                  + "', must be "
+                  + expectedType);
         }
         measureColumnIndexes[m] = rawIndex;
         measureDeclarations.add(new MeasureDeclaration(measure, rawIndex, entry.getValue()));
         m++;
       }
+      validateCounters();
+      validateHistogramAlgebrasShareOneBinShape(measureDeclarations);
 
       final long windowMicros = window == null ? 0L : window.toNanos() / 1000L;
       final int windowSourceColumn = resolveWindowSource();
@@ -264,7 +307,112 @@ public final class EntityMetrics {
               runPrefixLength);
 
       return new CompiledEntityMetrics(
-          entityName, rawSchema, dims, windowMicros, measureDeclarations, riderPlan, counted);
+          entityName,
+          rawSchema,
+          dims,
+          windowMicros,
+          measureDeclarations,
+          riderPlan,
+          counted,
+          List.copyOf(counters));
+    }
+
+    /**
+     * The raw value type every algebra declared for {@code measure} must agree on — the raw column
+     * can only be one physical type, so a measure mixing a {@code LONG}-valued algebra (e.g. {@link
+     * io.camunda.analytics.lake.sink.algebra.ScalarStatsAlgebra}) with a {@code DOUBLE}-valued one
+     * (e.g. {@link io.camunda.analytics.lake.sink.algebra.DoubleScalarStatsAlgebra}) would have no
+     * single raw column to read both from.
+     */
+    private static ColumnType commonValueType(
+        final String entityName, final String measure, final List<Algebra> algebras) {
+      ColumnType expected = null;
+      for (final Algebra algebra : algebras) {
+        final ColumnType valueType = algebra.valueType();
+        if (expected == null) {
+          expected = valueType;
+        } else if (expected != valueType) {
+          throw new IllegalArgumentException(
+              "entity '"
+                  + entityName
+                  + "': measure '"
+                  + measure
+                  + "' declares algebras with mismatched raw value types ("
+                  + expected
+                  + " vs "
+                  + valueType
+                  + ") — every algebra folding one raw column must consume the same value type");
+        }
+      }
+      return expected;
+    }
+
+    /**
+     * Counter names must be non-blank (already enforced by {@link #counter(String)}) and must not
+     * collide with any declared measure's own column names — a cheap defensive check, since a
+     * counter and a measure both ultimately name a column on the generated {@code _metrics} row.
+     */
+    private void validateCounters() {
+      for (final String counter : counters) {
+        if (measures.containsKey(counter)) {
+          throw new IllegalArgumentException(
+              "entity '"
+                  + entityName
+                  + "': counter '"
+                  + counter
+                  + "' collides with a declared measure of the same name");
+        }
+      }
+    }
+
+    /**
+     * Every {@link Algebra.PartialsShape#TALL} algebra across every declared measure shares one
+     * physical {@code _hist} table (see {@link CompiledEntityMetrics#histSchema()}), so their
+     * {@code bin_lo}/{@code bin_hi}/{@code cnt} columns must agree on physical type — mixing, say,
+     * {@link io.camunda.analytics.lake.sink.algebra.ExpHistogramAlgebra}'s {@code LONG} bins with
+     * {@link io.camunda.analytics.lake.sink.algebra.SignedDoubleExpHistogramAlgebra}'s {@code
+     * DOUBLE} bins on one entity would leave the generated schema with only one of the two shapes
+     * correct.
+     */
+    private void validateHistogramAlgebrasShareOneBinShape(
+        final List<MeasureDeclaration> measureDeclarations) {
+      List<Algebra.PartialColumn> firstShape = null;
+      String firstScheme = null;
+      for (final MeasureDeclaration measure : measureDeclarations) {
+        for (final Algebra algebra : measure.algebras()) {
+          if (algebra.shape() != Algebra.PartialsShape.TALL) {
+            continue;
+          }
+          final List<Algebra.PartialColumn> shape = algebra.partialColumns(measure.name());
+          if (firstShape == null) {
+            firstShape = shape;
+            firstScheme = algebra.scheme();
+          } else if (!sameColumnTypes(firstShape, shape)) {
+            throw new IllegalArgumentException(
+                "entity '"
+                    + entityName
+                    + "': histogram-shaped measures '"
+                    + firstScheme
+                    + "' and '"
+                    + algebra.scheme()
+                    + "' declare differently-typed bin columns — one entity's _hist table cannot"
+                    + " host both shapes at once");
+          }
+        }
+      }
+    }
+
+    private static boolean sameColumnTypes(
+        final List<Algebra.PartialColumn> a, final List<Algebra.PartialColumn> b) {
+      if (a.size() != b.size()) {
+        return false;
+      }
+      for (int i = 0; i < a.size(); i++) {
+        if (a.get(i).type() != b.get(i).type()) {
+          return false;
+        }
+      }
+      return true;
     }
 
     /**

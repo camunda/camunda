@@ -25,5 +25,12 @@ public enum ColumnType {
    */
   STRING_DICT,
   /** Variable-length bytes (e.g. vars JSON), stored in a byte arena + offsets. */
-  BINARY
+  BINARY,
+  /**
+   * 64-bit IEEE 754 floating point, stored in a {@code double[]}. Never part of a sort key (see
+   * {@code SegmentSorter}'s own validation): profile-shaped measures never sort on values, and the
+   * segment sorter's comparator has no ordering defined for {@code DOUBLE} — attempting to declare
+   * one as a sort key column fails fast at pipeline construction rather than at first compare.
+   */
+  DOUBLE
 }

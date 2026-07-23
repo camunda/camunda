@@ -308,6 +308,11 @@ class LakeTranslatorTest {
     }
 
     @Override
+    public RowAppender putDouble(final int column, final double value) {
+      return this;
+    }
+
+    @Override
     public RowAppender putNull(final int column) {
       return this;
     }
@@ -358,6 +363,11 @@ class LakeTranslatorTest {
     @Override
     public RowAppender putBinary(
         final int column, final byte[] src, final int offset, final int len) {
+      return this;
+    }
+
+    @Override
+    public RowAppender putDouble(final int column, final double value) {
       return this;
     }
 
