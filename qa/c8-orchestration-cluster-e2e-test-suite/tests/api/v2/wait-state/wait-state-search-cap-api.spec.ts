@@ -16,23 +16,10 @@ import {
   createProcessInstanceWithManyWaitingTokens,
 } from '@requestHelpers';
 
-// camunda/camunda#56239: `wait-states/search` was found to silently truncate
-// results for a single element with a large number of concurrently active
-// tokens (no indication anything was cut). It was resolved by adding a
-// dedicated aggregated statistics endpoint
-// (GET /process-instances/{key}/statistics/wait-states, thoroughly covered
-// by dev's own ProcessInstanceWaitStateStatisticsIT — do not re-test that
-// here) for the diagram overlay count.
-//
-// Verified live against a real cluster before writing these assertions
-// (an earlier draft of this spec assumed the issue's "capped at 1000"
-// wording described `wait-states/search` itself — it doesn't): the default
-// page size is the standard 100, `page.totalItems` always reports the true
-// match count (not capped), and an explicit `page.limit` well above 1000
-// returns every item with no server-side ceiling. So the actual regression
-// to guard is data-completeness for a large single-element cardinality:
-// nothing errors, the true count is reported, and every token is reachable
-// either via an explicit limit or by paging through with the cursor.
+// camunda/camunda#56239: verified live there's no 1000-item cap on this
+// endpoint — default page size is 100, page.totalItems is always the true
+// count, and page.limit above 1000 returns everything. Guards
+// data-completeness for large single-element cardinality instead.
 
 test.describe
   .parallel('Wait State Search — Large Single-Element Cardinality', () => {
@@ -106,9 +93,6 @@ test.describe
         res,
       );
       const body = await res.json();
-      // The default page size is the standard 100 — not the full 1200 —
-      // but totalItems must still report the true, uncapped count so the
-      // caller knows there is more to fetch.
       expect(body.items).toHaveLength(100);
       expect(body.page.totalItems).toBe(tokenCount);
       expect(

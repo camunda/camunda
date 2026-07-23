@@ -24,9 +24,6 @@ export interface WaitStateItem {
   elementType: string;
   bpmnProcessId: string;
   tenantId: string;
-  // waitStateType lives inside `details`, alongside per-type fields
-  // (jobKey, messageName, etc.) — confirmed against a live response, not
-  // a top-level field.
   details: {waitStateType: string; [key: string]: unknown};
   [key: string]: unknown;
 }
@@ -41,11 +38,6 @@ export interface WaitStateSearchResponse {
   };
 }
 
-/**
- * Polls `wait-states/search` until it returns a 200 with a validated shape.
- * Does not assert on item count — callers assert that themselves, since some
- * negative cases (e.g. flag disabled, unknown key) expect zero items.
- */
 export async function searchWaitStatesByFilter(
   request: APIRequestContext,
   filter: Record<string, unknown>,
@@ -71,11 +63,6 @@ export async function searchWaitStatesByFilter(
   return result.body as WaitStateSearchResponse;
 }
 
-/**
- * Waits until `wait-states/search` reports at least one row for the given
- * process instance — absorbs exporter/indexing lag between instance
- * creation and the wait-state row becoming searchable.
- */
 export async function waitForWaitState(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -92,7 +79,6 @@ export async function waitForWaitState(
   return result.item as WaitStateItem;
 }
 
-/** JOB wait state: a service task whose type is never claimed by a worker. */
 export async function createProcessInstanceWaitingOnJob(): Promise<{
   processInstanceKey: string;
 }> {
@@ -100,7 +86,6 @@ export async function createProcessInstanceWaitingOnJob(): Promise<{
   return createSingleInstance('simpleServiceTaskProcess', 1);
 }
 
-/** MESSAGE wait state: a receive task with a literal correlation key. */
 export async function createProcessInstanceWaitingOnMessage(): Promise<{
   processInstanceKey: string;
 }> {
@@ -108,7 +93,6 @@ export async function createProcessInstanceWaitingOnMessage(): Promise<{
   return createSingleInstance('messageCatchEvent1', 1);
 }
 
-/** SIGNAL wait state: an intermediate catch event subscribed to Signal_220k2ur. */
 export async function createProcessInstanceWaitingOnSignal(): Promise<{
   processInstanceKey: string;
 }> {
@@ -118,7 +102,6 @@ export async function createProcessInstanceWaitingOnSignal(): Promise<{
   });
 }
 
-/** USER_TASK wait state. */
 export async function createProcessInstanceWaitingOnUserTask(): Promise<{
   processInstanceKey: string;
 }> {
@@ -126,11 +109,6 @@ export async function createProcessInstanceWaitingOnUserTask(): Promise<{
   return createSingleInstance('user_task_api_test_process', 1);
 }
 
-/**
- * TIMER wait state. `duration` is an ISO-8601 duration (e.g. `PT2S` for a
- * short-lived timer that resolves on its own, `PT1H` for one that stays
- * waiting for the duration of a test).
- */
 export async function createProcessInstanceWaitingOnTimer(
   duration: string,
 ): Promise<{processInstanceKey: string}> {
@@ -140,11 +118,8 @@ export async function createProcessInstanceWaitingOnTimer(
   });
 }
 
-/**
- * CONDITIONAL wait state. Starts with `x=1` (condition `x > 10` unmet).
- * Resolve by calling `setVariables(processInstanceKey, {x: 42})` — the same
- * mechanism dev's own WaitStateConditionalIT uses to re-trigger evaluation.
- */
+// Starts with x=1 (condition `x > 10` unmet); resolve via
+// setVariables(processInstanceKey, {x: 42}).
 export async function createProcessInstanceWaitingOnCondition(): Promise<{
   processInstanceKey: string;
 }> {
@@ -154,11 +129,6 @@ export async function createProcessInstanceWaitingOnCondition(): Promise<{
   });
 }
 
-/**
- * High-cardinality multi-instance JOB wait state, all on the same
- * elementId, for cap-behavior testing. Never claimed by a worker — the
- * `highCardinalityWaitTask` job type is dedicated to this resource.
- */
 export async function createProcessInstanceWithManyWaitingTokens(
   tokenCount: number,
 ): Promise<{processInstanceKey: string}> {

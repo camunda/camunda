@@ -12,9 +12,6 @@ import path from 'node:path';
 
 const execAsync = promisify(exec);
 
-// Resolved against the CWD Playwright is invoked from (the suite's project
-// root), matching how other specs in this repo reference relative paths
-// (e.g. deployWithSubstitutions('./resources/*.bpmn')).
 const CONFIG_DIR = path.resolve(process.cwd(), 'config');
 const COMPOSE_FILES = [
   '-f',
@@ -24,16 +21,14 @@ const COMPOSE_FILES = [
 ];
 const PROJECT_NAME = 'waitstates-isolated';
 
-// Combining docker-compose.yml with the isolated override means Compose
-// validates the *entire* merged service graph up front — including the
-// shared `camunda` service's `depends_on: [${DATABASE}]` — even when
-// targeting only the isolated service with --no-deps. DATABASE just needs
-// any valid value to satisfy that validation; the isolated service doesn't
-// use it itself (it runs its own in-memory H2, see
-// config/docker-compose.waitstates-isolated.yml).
+// Merging docker-compose.yml pulls in the shared `camunda` service's
+// `depends_on: [${DATABASE}]`, which Compose validates even though we only
+// target the isolated services. DATABASE must be a literal service name
+// (postgres/elasticsearch/opensearch) — forwarding process.env.DATABASE
+// verbatim breaks when it's e.g. "RDBMS", so hardcode a valid one.
 const COMPOSE_ENV = {
   ...process.env,
-  DATABASE: (process.env.DATABASE ?? 'elasticsearch').toLowerCase(),
+  DATABASE: 'elasticsearch',
 };
 
 function composeCommand(args: string[]): string {
@@ -42,13 +37,6 @@ function composeCommand(args: string[]): string {
   );
 }
 
-/**
- * Brings up the isolated environment with wait-state tracking disabled
- * (`camunda.data.wait-states.enabled=false`) — for the tests proving the
- * feature is fully off (no indexing, no UI surface) when the flag is off.
- * Every other wait-state test runs flag-on against the shared stack, so
- * there is no matching "with wait states" isolated variant here.
- */
 export async function startIsolatedEnvironmentWaitStatesOff(): Promise<void> {
   await execAsync(
     composeCommand([
@@ -56,6 +44,7 @@ export async function startIsolatedEnvironmentWaitStatesOff(): Promise<void> {
       '-d',
       '--no-deps',
       'camunda-waitstates-isolated-off',
+      'elasticsearch-waitstates-isolated',
     ]),
     {cwd: CONFIG_DIR, env: COMPOSE_ENV},
   );

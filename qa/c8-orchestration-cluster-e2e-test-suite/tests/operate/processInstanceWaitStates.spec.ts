@@ -26,14 +26,6 @@ import {
   findUserTask,
 } from '@requestHelpers';
 
-// Dev already covers per-type add/update/remove lifecycle and negative
-// (start/boundary not tracked) cases at the acceptance-test layer across
-// ES/OS/RDBMS (qa/acceptance-tests/.../it/waitstate/*IT.java). This spec
-// covers the two gaps dev's tests don't reach: the real, unmocked Operate UI
-// rendering path (regression for the #54983 Zod/OpenAPI-drift crash) and the
-// full lifecycle through the actual exporter delete path — dev's own
-// Playwright coverage here is mocked/static.
-
 let jobInstance: {processInstanceKey: string};
 let messageInstance: {processInstanceKey: string};
 let signalInstance: {processInstanceKey: string};
@@ -149,9 +141,6 @@ test.describe('Wait State Details Tab', () => {
   test('does not show a wait reason for a completed, non-waiting element', async ({
     operateProcessInstancePage,
   }) => {
-    // The start event on any of these instances completed immediately and is
-    // not itself a wait state — the Details tab must render cleanly with no
-    // waiting section, not crash into the global error boundary.
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: jobInstance.processInstanceKey,
     });

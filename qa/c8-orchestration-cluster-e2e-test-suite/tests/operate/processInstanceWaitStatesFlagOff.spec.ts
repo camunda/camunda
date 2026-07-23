@@ -16,14 +16,6 @@ import {
   stopIsolatedEnvironment,
 } from 'utils/dockerComposeControl';
 
-// The flag-on case (waiting indicators + Details tab wait reason render, and
-// the FE issues a wait-states/search request) is already exercised against
-// the shared, default stack by every test in processInstanceWaitStates.spec.ts
-// — the default stack always boots with camunda.data.wait-states.enabled=true.
-// This spec only needs the negative, flag-off half, which requires a broker
-// booted with the flag off from the start (see
-// config/docker-compose.waitstates-isolated.yml).
-
 const ISOLATED_BASE_URL =
   process.env.WAITSTATES_ISOLATED_BASE_URL ?? 'http://localhost:29080';
 const authHeader = `Basic ${encode('demo:demo')}`;
@@ -101,10 +93,6 @@ test.describe.serial('Wait States Flag Off', () => {
     });
 
     await test.step('Log in against the isolated stack', async () => {
-      // Set via the page's own browser-context request API so the response's
-      // Set-Cookie header lands in the same context page.goto() will use —
-      // the worker-scoped loginState fixture only authenticates against the
-      // shared stack's CORE_APPLICATION_URL, not this isolated broker.
       const loginRes = await page
         .context()
         .request.post(`${ISOLATED_BASE_URL}/login`, {
@@ -121,9 +109,6 @@ test.describe.serial('Wait States Flag Off', () => {
 
       await expect(page.getByTestId('waiting-state-overlay')).toBeHidden();
 
-      // The Details tab only appears once a specific element is selected —
-      // select the waiting service task before opening it, matching every
-      // other Operate spec's convention (e.g. processInstanceJobPriority.spec.ts).
       await page.getByRole('treeitem', {name: 'task', exact: true}).click();
       const detailsTabButton = page
         .getByLabel('Process Instance Bottom Panel Tabs')

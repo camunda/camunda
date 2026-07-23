@@ -22,17 +22,6 @@ import {
   createProcessInstanceWaitingOnJob,
 } from '@requestHelpers';
 
-// Per-type filter/sort/pagination correctness across all six wait-state
-// types is already exhaustively covered by dev's acceptance ITs
-// (qa/acceptance-tests/.../it/waitstate/WaitState*IT.java, it/client/
-// WaitStateSearchIT.java) and by the Java client's
-// SearchElementInstanceWaitStatesTest. This spec only fills the black-box
-// request-validation gap dev's controller unit test doesn't reach (it
-// covers just an empty body and one filter). Malformed-body / enum-violation
-// cases will be auto-generated once this endpoint lands in
-// v2-stateless-tests/request-validation-test-generator's regenerated specs —
-// they are intentionally not hand-duplicated here.
-
 test.describe.parallel('Wait State Search Validation', () => {
   const processInstanceKeys: string[] = [];
 

@@ -14,15 +14,6 @@ import {
   stopIsolatedEnvironment,
 } from '../../../../../utils/dockerComposeControl';
 
-// The flag-on baseline (a process reaching a wait state gets indexed and is
-// searchable) is already the behavior every other wait-state-search test in
-// this suite relies on, running against the shared stack — which always
-// boots with camunda.data.wait-states.enabled=true. This spec only proves
-// the flag-off half, which needs a broker booted with the flag off from the
-// start (see config/docker-compose.waitstates-isolated.yml). Dev's own
-// WaitStateConfigurationTest / WaitStatesTest already prove config
-// propagation at the unit level — this proves the full-stack outcome.
-
 const ISOLATED_BASE_URL =
   process.env.WAITSTATES_ISOLATED_BASE_URL ?? 'http://localhost:29080';
 const authHeader = `Basic ${encode('demo:demo')}`;
@@ -90,10 +81,7 @@ test.describe.serial('Wait States Flag Off', () => {
     });
 
     await test.step('Confirm the wait state was never indexed', async () => {
-      // Give the exporter every opportunity to have indexed something if the
-      // flag were somehow not honored — a fixed wait, not a retry-until-found
-      // loop, since we're asserting an absence, not waiting for eventual
-      // presence.
+      // Fixed wait, not a retry loop — asserting an absence, not eventual presence.
       await new Promise((resolve) => setTimeout(resolve, 15_000));
 
       const res = await request.post(
