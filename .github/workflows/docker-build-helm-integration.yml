@@ -1094,20 +1094,11 @@ jobs:
           FAILURE_CATEGORY="none"
 
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            if [[ "${{ steps.wait-downstream.outputs.downstream_conclusion }}" == "failure" ]]; then
-              OWNER_TEAM="@camunda/test-automation-team"
-              FAILURE_CATEGORY="saas_e2e"
-            else
-              # This job's own dispatch/wait mechanism (timeout budget,
-              # gh api auth, etc.) is part of THIS workflow, owned by
-              # Distribution (see TEST_OWNER above) -- monorepo-ci-medic
-              # doesn't own or have a runbook for it. Confirmed noisy in
-              # practice: this branch fires whenever the wait simply times
-              # out while the downstream run is still legitimately in
-              # progress, not just on a real dispatch failure.
-              OWNER_TEAM="@camunda/distribution"
-              FAILURE_CATEGORY="orchestration_dispatch_or_wait"
-            fi
+            # SaaS E2E is owned end-to-end by test-automation-team, including
+            # this job's own dispatch/wait mechanism -- always route here
+            # rather than splitting on downstream_conclusion.
+            OWNER_TEAM="@camunda/test-automation-team"
+            FAILURE_CATEGORY="saas_e2e"
           fi
 
           jq -n \
