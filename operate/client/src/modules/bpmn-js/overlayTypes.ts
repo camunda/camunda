@@ -39,6 +39,7 @@ type WaitingStatePayload = {
 type AgentStatusPayload = {
   status: AgentInstance['status'];
   agentInstanceKey: string;
+  additionalActiveCount: number;
 };
 
 type AgentShinePayload = {
@@ -79,7 +80,8 @@ const isAgentStatusPayload = (
     typeof payload === 'object' &&
     payload !== null &&
     'status' in payload &&
-    'agentInstanceKey' in payload
+    'agentInstanceKey' in payload &&
+    'additionalActiveCount' in payload
   );
 };
 

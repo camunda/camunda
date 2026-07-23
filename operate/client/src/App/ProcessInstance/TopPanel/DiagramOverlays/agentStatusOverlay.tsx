@@ -12,15 +12,13 @@ import {useMemo} from 'react';
 import {createPortal} from 'react-dom';
 import styled, {keyframes} from 'styled-components';
 import {AGENT_STATUS_TAG} from 'modules/bpmn-js/badgePositions';
-import type {
-  AgentInstance,
-  AgentInstanceStatus,
-} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {AgentInstanceStatus} from '@camunda/camunda-api-zod-schemas/8.10';
 import type {
   AgentStatusPayload,
   OverlayData,
 } from 'modules/bpmn-js/overlayTypes';
 import type {DiagramOverlay} from './types';
+import type {AgentInstancesStatusMap} from './agentInstances';
 
 const AGENT_STATUS_OVERLAY_TYPE = 'agentStatus';
 
@@ -83,33 +81,38 @@ const AGENT_STATUS_LABELS: Record<AgentInstanceStatus, string | null> = {
 };
 
 const useAgentStatusOverlaysData = (
-  agentInstances: AgentInstance[],
+  agentInstancesStatusMap: AgentInstancesStatusMap,
 ): OverlayData[] =>
   useMemo(
     () =>
-      agentInstances.map((agentInstance) => ({
-        type: AGENT_STATUS_OVERLAY_TYPE,
-        elementId: agentInstance.elementId,
-        position: AGENT_STATUS_TAG,
-        payload: {
-          status: agentInstance.status,
-          agentInstanceKey: agentInstance.agentInstanceKey,
-        } satisfies AgentStatusPayload,
-      })),
-    [agentInstances],
+      Array.from(
+        agentInstancesStatusMap.entries(),
+        ([elementId, statusInfo]) => ({
+          type: AGENT_STATUS_OVERLAY_TYPE,
+          elementId,
+          position: AGENT_STATUS_TAG,
+          payload: statusInfo satisfies AgentStatusPayload,
+        }),
+      ),
+    [agentInstancesStatusMap],
   );
 
 const AgentStatusOverlay: React.FC<{overlay: DiagramOverlay}> = ({overlay}) => {
-  const {status} = overlay.payload as AgentStatusPayload;
+  const {status, additionalActiveCount} = overlay.payload as AgentStatusPayload;
   const label = AGENT_STATUS_LABELS[status];
   if (label === null) {
     return null;
   }
 
+  const fullLabel =
+    additionalActiveCount > 0
+      ? `${label} + ${additionalActiveCount} more active`
+      : label;
+
   return createPortal(
     <AgentStatusContainer>
       <AgentStatus data-testid={`agent-status-overlay-${status}`}>
-        {label}
+        {fullLabel}
       </AgentStatus>
     </AgentStatusContainer>,
     overlay.container,
