@@ -10,6 +10,7 @@ package io.camunda.authentication.service;
 import static io.camunda.security.api.model.authz.EntityType.GROUP;
 import static io.camunda.security.api.model.authz.EntityType.MAPPING_RULE;
 
+import io.camunda.authentication.utils.OidcClaimExtractor;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -79,11 +80,14 @@ public class DefaultMembershipService implements MembershipPort {
 
   @Override
   public List<String> groupIds(final MembershipQuery query) {
-    // OIDC groups-claim path: in-memory extraction. distinct() matches NoDBMembershipService and
-    // the previous Set-based semantics.
     if (isGroupsClaimConfigured) {
-      final var extracted = oidcGroupsExtractor.extract(query.tokenClaims());
-      return extracted != null ? extracted.stream().distinct().toList() : List.of();
+      return OidcClaimExtractor.extractOrFallback(
+              () -> oidcGroupsExtractor.extract(query.tokenClaims()),
+              List.<String>of(),
+              "membership.groupIds.default")
+          .stream()
+          .distinct()
+          .toList();
     }
     final var owners = buildOwners(query);
     final var ids =
