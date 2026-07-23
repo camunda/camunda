@@ -7,24 +7,34 @@
  */
 package io.camunda.analytics.lake.translate;
 
+import io.camunda.analytics.lake.metrics.PollFedRider;
 import io.camunda.analytics.lake.sink.RowAppender;
 import io.camunda.analytics.lake.state.TranslatorState;
+import io.camunda.analytics.lake.state.TranslatorState.FlowEndpoints;
 import io.camunda.analytics.lake.state.TranslatorState.OpenElement;
 import io.camunda.analytics.lake.state.TranslatorState.OpenInstance;
 import io.camunda.analytics.lake.translate.RawTableSchemas.ActivityColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.InstanceColumns;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.SequenceFlow;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Process;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -150,9 +160,39 @@ public final class LakeTranslator {
 
   private static final Logger LOG = LoggerFactory.getLogger(LakeTranslator.class);
 
+  // ---- poll-fed metrics dim indices (see PollFedRider's own class javadoc) ----
+  private static final int FLOW_DIM_PROCESS_ID = 0;
+  private static final int FLOW_DIM_VERSION = 1;
+  private static final int FLOW_DIM_FLOW_ID = 2;
+  private static final int FLOW_DIM_SOURCE_ELEMENT_ID = 3;
+  private static final int FLOW_DIM_TARGET_ELEMENT_ID = 4;
+  private static final int STARTED_DIM_PROCESS_ID = 0;
+  private static final int STARTED_DIM_VERSION = 1;
+
   private final TranslatorState state;
   private final RowAppender instanceAppender;
   private final RowAppender activityAppender;
+
+  /**
+   * Folds sequence-flow-taken events into branch counts, {@code null} when this translator isn't
+   * wired for it (e.g. a test exercising unrelated behavior) — see this class's "Poll-fed metrics"
+   * section below and {@code io.camunda.analytics.lake.metrics.PollFedRider}'s own class javadoc.
+   */
+  private final PollFedRider flowCountsRider;
+
+  /** Folds process-instance-started events into started counters — see {@link #flowCountsRider}. */
+  private final PollFedRider startedCountsRider;
+
+  /**
+   * Heap cache of {@link #onProcess}'s own persisted state, warmed two ways: eagerly, in full, the
+   * moment a definition's own {@code PROCESS}/{@code CREATED} record is folded; lazily, one flow at
+   * a time, on a cache miss in {@link #resolveFlowEndpoints} (the path a restart takes — the
+   * deployment record itself is never replayed past this translator's bootstrap offset, so only the
+   * durable {@link TranslatorState} store, not this cache, survives a restart). Poll thread only,
+   * like every other field on this class; {@code null} inner maps are never stored — a definition
+   * either has an entry (created on first touch) or doesn't.
+   */
+  private final Map<Long, Map<String, FlowEndpoints>> flowEndpointsCache = new HashMap<>();
 
   // Reused across every completed instance's vars_json build (see class javadoc's allocation
   // note) -- poll thread only, like everything else in this class; setLength(0) per use rather
@@ -171,9 +211,26 @@ public final class LakeTranslator {
       final TranslatorState state,
       final RowAppender instanceAppender,
       final RowAppender activityAppender) {
+    this(state, instanceAppender, activityAppender, null, null);
+  }
+
+  /**
+   * Same as the 3-arg constructor, additionally wiring the two poll-fed metrics riders — see {@link
+   * #flowCountsRider}/{@link #startedCountsRider}. Either (or both) may be {@code null} to disable
+   * that metric family without disturbing anything else (existing tests that only exercise raw-row
+   * folding use the 3-arg constructor and never touch either rider).
+   */
+  public LakeTranslator(
+      final TranslatorState state,
+      final RowAppender instanceAppender,
+      final RowAppender activityAppender,
+      final PollFedRider flowCountsRider,
+      final PollFedRider startedCountsRider) {
     this.state = state;
     this.instanceAppender = instanceAppender;
     this.activityAppender = activityAppender;
+    this.flowCountsRider = flowCountsRider;
+    this.startedCountsRider = startedCountsRider;
     zeebeWatermarks = newWatermarkArray(INITIAL_WATERMARK_CAPACITY);
   }
 
@@ -227,6 +284,10 @@ public final class LakeTranslator {
       return onProcessInstance(record);
     } else if (valueType == ValueType.VARIABLE) {
       onVariable(record);
+    } else if (valueType == ValueType.PROCESS) {
+      // Deployment metadata, not instance data -- never touches a RowAppender, so it never reports
+      // backpressure; see #onProcess's own javadoc for what this feeds.
+      onProcess(record);
     }
     return true;
   }
@@ -332,6 +393,16 @@ public final class LakeTranslator {
                 value.getVersion(),
                 value.getTenantId(),
                 timestamp));
+        // ---- poll-fed metrics: started counters (see PollFedRider's own class javadoc) ----
+        // A brand-new instance, right at activation, produces no raw row of its own (that only
+        // happens on completion/termination) -- fold it into the started-count entity directly.
+        if (startedCountsRider != null) {
+          startedCountsRider
+              .putDict(STARTED_DIM_PROCESS_ID, value.getBpmnProcessId())
+              .putInt(STARTED_DIM_VERSION, value.getVersion());
+          startedCountsRider.fold(millisToMicros(timestamp));
+        }
+        // ---- end poll-fed metrics: started counters ----
       } else {
         final OpenInstance owner = state.getInstance(processInstanceKey);
         // Replay edge where the owner is unknown (e.g. resuming past the instance's own evict but
@@ -351,6 +422,29 @@ public final class LakeTranslator {
       }
       return true;
     }
+
+    // ---- poll-fed metrics: branch counts (see PollFedRider's own class javadoc) ----
+    // A sequence-flow-taken event produces no raw row either -- resolve the flow's source/target
+    // element ids (parsed once from the definition's deployed BPMN, see #onProcess) and fold it
+    // into the branch-count entity directly.
+    if (record.getIntent() == ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN) {
+      if (flowCountsRider != null) {
+        final String flowId = value.getElementId();
+        final FlowEndpoints endpoints =
+            resolveFlowEndpoints(value.getProcessDefinitionKey(), flowId);
+        flowCountsRider
+            .putDict(FLOW_DIM_PROCESS_ID, value.getBpmnProcessId())
+            .putInt(FLOW_DIM_VERSION, value.getVersion())
+            .putDict(FLOW_DIM_FLOW_ID, flowId)
+            .putDict(
+                FLOW_DIM_SOURCE_ELEMENT_ID, endpoints == null ? null : endpoints.sourceElementId())
+            .putDict(
+                FLOW_DIM_TARGET_ELEMENT_ID, endpoints == null ? null : endpoints.targetElementId());
+        flowCountsRider.fold(millisToMicros(timestamp));
+      }
+      return true;
+    }
+    // ---- end poll-fed metrics: branch counts ----
 
     final String finalState = finalStateOf(record.getIntent());
     if (finalState == null) {
@@ -439,6 +533,77 @@ public final class LakeTranslator {
       return;
     }
     state.putVariable(value.getProcessInstanceKey(), value.getName(), valueJson);
+  }
+
+  /**
+   * Resolves every sequence flow's source/target element ids from a newly deployed process
+   * definition's own BPMN resource, and persists them — see {@link #flowCountsRider}'s own "branch
+   * counts" fold, which is the only reader. Parsing happens once per deployment record (rare); the
+   * per-flow-record hot path ({@link #resolveFlowEndpoints}) never parses anything, only looks up
+   * already-resolved values.
+   *
+   * <p>Deliberately unscoped to just this record's own process: a BPMN resource may define more
+   * than one process, and {@code sequenceFlow} {@code id}s are unique across an entire BPMN 2.0 XML
+   * document (an XML Schema {@code ID} attribute), so extracting every flow in the resource once
+   * per contained process is redundant across processes sharing one file, never incorrect — every
+   * process's own {@link #flowEndpointsCache} entry ends up with the exactly correct answer for
+   * every flow id it will ever be asked to resolve.
+   *
+   * <p>A resource that fails to parse (corrupt, or not actually BPMN) is logged and skipped rather
+   * than failing the whole fold: every flow of that definition then resolves as unknown ({@code
+   * null}) forever, which is the same honest answer {@link #resolveFlowEndpoints} already gives for
+   * a definition whose deployment record was never seen at all.
+   */
+  private void onProcess(final Record<?> record) {
+    if (record.getIntent() != ProcessIntent.CREATED) {
+      return;
+    }
+    final Process value = (Process) record.getValue();
+    final long processDefinitionKey = value.getProcessDefinitionKey();
+    final BpmnModelInstance model;
+    try {
+      model = Bpmn.readModelFromStream(new ByteArrayInputStream(value.getResource()));
+    } catch (final RuntimeException e) {
+      LOG.warn(
+          "Failed to parse BPMN resource for process definition {} ({}); its sequence flows will"
+              + " resolve as unknown from now on",
+          processDefinitionKey,
+          value.getBpmnProcessId(),
+          e);
+      return;
+    }
+    final Map<String, FlowEndpoints> parsed = new HashMap<>();
+    for (final SequenceFlow flow : model.getModelElementsByType(SequenceFlow.class)) {
+      final FlowNode source = flow.getSource();
+      final FlowNode target = flow.getTarget();
+      if (source == null || target == null) {
+        continue; // malformed/unlinked flow in the model -- nothing to resolve for it
+      }
+      final FlowEndpoints endpoints = new FlowEndpoints(source.getId(), target.getId());
+      parsed.put(flow.getId(), endpoints);
+      state.putFlowEndpoints(processDefinitionKey, flow.getId(), endpoints);
+    }
+    flowEndpointsCache.put(processDefinitionKey, parsed);
+  }
+
+  /**
+   * The branch-count fold's per-record hot-path lookup: this definition's per-flow heap cache
+   * (warmed in full by {@link #onProcess} when its deployment record was seen this run, or lazily
+   * one flow at a time here — the path a restart takes, since the deployment record itself is never
+   * replayed past this translator's bootstrap offset). Never fails, never guesses adjacency from
+   * record ordering (unreliable under parallel-gateway interleaving) — {@code null} is the honest
+   * answer for a flow whose definition was never resolved (e.g. the source log's head was
+   * retention-trimmed before bootstrap).
+   */
+  private FlowEndpoints resolveFlowEndpoints(final long processDefinitionKey, final String flowId) {
+    final Map<String, FlowEndpoints> cache =
+        flowEndpointsCache.computeIfAbsent(processDefinitionKey, k -> new HashMap<>());
+    if (cache.containsKey(flowId)) {
+      return cache.get(flowId); // may itself be null -- a previously-cached "unknown" answer
+    }
+    final FlowEndpoints fromState = state.flowEndpoints(processDefinitionKey, flowId);
+    cache.put(flowId, fromState); // cache the miss too, so a permanently-unknown flow isn't re-read
+    return fromState;
   }
 
   /**

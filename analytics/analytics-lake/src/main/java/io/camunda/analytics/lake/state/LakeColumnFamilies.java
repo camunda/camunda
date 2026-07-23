@@ -32,7 +32,16 @@ public enum LakeColumnFamilies implements EnumValue, ScopedColumnFamily {
    * valueJson}. A process instance's variables are read/cleared by a {@code processInstanceKey}
    * prefix scan (Zeebe-style per-entry storage, not a map blob).
    */
-  VARIABLES(3, ColumnFamilyScope.PARTITION_LOCAL);
+  VARIABLES(3, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Resolved sequence-flow endpoints: {@code processDefinitionKey(8, big-endian) ++ flowIdUtf8 ->
+   * FlowEndpoints}, parsed once from a process definition's deployed BPMN and persisted so it
+   * survives a restart (the deployment record itself is not re-read after bootstrap — see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator}'s own {@code ValueType.PROCESS}/{@code
+   * CREATED} handling).
+   */
+  FLOW_ENDPOINTS(4, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

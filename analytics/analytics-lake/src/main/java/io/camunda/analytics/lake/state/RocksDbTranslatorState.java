@@ -43,6 +43,7 @@ public final class RocksDbTranslatorState implements TranslatorState {
   private final KeyValueStore<DbLong, OpenInstanceValue> instances;
   private final KeyValueStore<DbLong, OpenElementValue> elements;
   private final KeyValueStore<DbBytes, DbString> variables;
+  private final KeyValueStore<DbBytes, FlowEndpointsValue> flowEndpoints;
 
   // Mutation flyweights — reused across calls on the single translator thread.
   private final DbLong instanceKey = new DbLong();
@@ -52,6 +53,8 @@ public final class RocksDbTranslatorState implements TranslatorState {
   private final DbBytes variableKey = new DbBytes();
   private final DbString variableValue = new DbString();
   private final DbBytes variablePrefix = new DbBytes();
+  private final DbBytes flowEndpointsKey = new DbBytes();
+  private final FlowEndpointsValue flowEndpointsValue = new FlowEndpointsValue();
 
   public RocksDbTranslatorState(final Path stateDir) {
     provider = RocksDbStateStoreProvider.open(stateDir.toFile(), new SimpleMeterRegistry());
@@ -63,6 +66,9 @@ public final class RocksDbTranslatorState implements TranslatorState {
         provider.keyValueStore(
             LakeColumnFamilies.OPEN_ELEMENTS, new DbLong(), new OpenElementValue());
     variables = provider.keyValueStore(LakeColumnFamilies.VARIABLES, new DbBytes(), new DbString());
+    flowEndpoints =
+        provider.keyValueStore(
+            LakeColumnFamilies.FLOW_ENDPOINTS, new DbBytes(), new FlowEndpointsValue());
   }
 
   @Override
@@ -132,6 +138,19 @@ public final class RocksDbTranslatorState implements TranslatorState {
   }
 
   @Override
+  public void putFlowEndpoints(
+      final long processDefinitionKey, final String flowId, final FlowEndpoints endpoints) {
+    flowEndpointsKey.wrapBytes(flowEndpointsKey(processDefinitionKey, flowId));
+    flowEndpoints.put(flowEndpointsKey, flowEndpointsValue.set(endpoints));
+  }
+
+  @Override
+  public FlowEndpoints flowEndpoints(final long processDefinitionKey, final String flowId) {
+    flowEndpointsKey.wrapBytes(flowEndpointsKey(processDefinitionKey, flowId));
+    return flowEndpoints.get(flowEndpointsKey).map(FlowEndpointsValue::toRecord).orElse(null);
+  }
+
+  @Override
   public void forEachOpenInstance(final BiConsumer<Long, OpenInstance> consumer) {
     instances.forEach((key, value) -> consumer.accept(key.getValue(), value.toRecord()));
   }
@@ -159,6 +178,14 @@ public final class RocksDbTranslatorState implements TranslatorState {
     return ByteBuffer.allocate(Long.BYTES + nameUtf8.length)
         .putLong(instanceKey)
         .put(nameUtf8)
+        .array();
+  }
+
+  private static byte[] flowEndpointsKey(final long processDefinitionKey, final String flowId) {
+    final byte[] flowIdUtf8 = flowId.getBytes(UTF_8);
+    return ByteBuffer.allocate(Long.BYTES + flowIdUtf8.length)
+        .putLong(processDefinitionKey)
+        .put(flowIdUtf8)
         .array();
   }
 
