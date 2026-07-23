@@ -1,7 +1,8 @@
 ---
 # description: Provisions an ephemeral AWS Aurora Global Database (two regions) using the
 # aurora-global Terraform module from camunda/camunda-deployment-references and runs the
-# AuroraAsyncReplicationIT acceptance test against it through an SSM port-forwarding tunnel.
+# AuroraAsyncReplicationIT (or AuroraMysqlAsyncReplicationIT, via the db_engine input)
+# acceptance test against it through an SSM port-forwarding tunnel.
 # The infrastructure is destroyed at the end of the run.
 # test location: qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/db/asyncreplication
 # type: CI
@@ -17,6 +18,10 @@ on:
         type: string
         required: false
         default: 'main'
+      db_engine:
+        description: 'Aurora engine to provision (postgresql or mysql)'
+        type: string
+        required: true
       skip_destroy:
         description: 'Keep the Aurora infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
@@ -29,6 +34,13 @@ on:
         type: string
         required: false
         default: 'main'
+      db_engine:
+        description: 'Aurora engine to provision'
+        type: choice
+        options:
+          - postgresql
+          - mysql
+        required: true
       skip_destroy:
         description: 'Keep the Aurora infrastructure after the run (for debugging; destroy manually!)'
         type: boolean
@@ -38,7 +50,7 @@ on:
     types: [labeled, synchronize]
 
 concurrency:
-  group: aurora-async-replication-test
+  group: aurora-async-replication-test-${{ inputs.db_engine || 'postgresql' }}
   cancel-in-progress: false
 
 defaults:
@@ -54,10 +66,17 @@ env:
   TF_VAR_secondary_region: eu-west-2
   LOCAL_DB_PORT: '15432'
   TF_STATE_BUCKET_REGION: eu-west-1
+  # engine-derived config: keep all engine differences here so the steps below stay generic.
+  # NOTE: aurora-mysql connectivity additionally requires the aurora-global module (in
+  # camunda-deployment-references) to stop hardcoding port 5432 in its own security groups —
+  # see the `port` variable comment in .github/terraform/aurora-replication-it/main.tf.
+  TF_VAR_engine: ${{ (inputs.db_engine || 'postgresql') == 'mysql' && 'aurora-mysql' || 'aurora-postgresql' }}
+  TF_VAR_engine_version: ${{ (inputs.db_engine || 'postgresql') == 'mysql' && '8.0.mysql_aurora.3.05.2' || '18.3' }}
+  TF_VAR_port: ${{ (inputs.db_engine || 'postgresql') == 'mysql' && '3306' || '5432' }}
 
 jobs:
   aurora-it:
-    name: Provision Aurora and run AuroraAsyncReplicationIT
+    name: Provision Aurora (${{ inputs.db_engine || 'postgresql' }}) and run async replication IT
     runs-on: ubuntu-latest
     timeout-minutes: 180
     permissions: {}
@@ -204,7 +223,7 @@ jobs:
               aws ssm start-session \
                 --target "$(cat /tmp/ssm-bastion-id)" \
                 --document-name AWS-StartPortForwardingSessionToRemoteHost \
-                --parameters "host=$(cat /tmp/ssm-endpoint),portNumber=5432,localPortNumber=${LOCAL_DB_PORT}" \
+                --parameters "host=$(cat /tmp/ssm-endpoint),portNumber=${TF_VAR_port},localPortNumber=${LOCAL_DB_PORT}" \
                 2>&1 | stamp
               echo "SSM session ended — restarting in 2s" | stamp
               sleep 2
@@ -230,20 +249,24 @@ jobs:
         with:
           parameters: install -pl qa/acceptance-tests -am -Dquickly
 
-      - name: Run AuroraAsyncReplicationIT
+      - name: Run Aurora async replication IT
         env:
-          TEST_AURORA_JDBC_URL: jdbc:postgresql://localhost:${{ env.LOCAL_DB_PORT }}/postgres
+          TEST_AURORA_JDBC_URL: >-
+            ${{ (inputs.db_engine || 'postgresql') == 'mysql'
+              && format('jdbc:mysql://localhost:{0}/mysql', env.LOCAL_DB_PORT)
+              || format('jdbc:postgresql://localhost:{0}/postgres', env.LOCAL_DB_PORT) }}
           TEST_AURORA_USERNAME: camunda_admin
           TEST_AURORA_PASSWORD: ${{ env.TF_VAR_master_password }}
           # Replica loss is simulated by DELETING the secondary instance, not by rebooting or
           # scaling it. Aurora Global Database replication is storage-level and independent of the
           # secondary DB instance, so a reboot never freezes the replica's durable_lsn nor removes
-          # its row from aurora_global_db_instance_status() — the row the test waits to disappear.
-          # Deleting the instance makes the secondary cluster headless: its row vanishes from the
-          # status function (so the exporter loses its sync quorum and pauses) while the secondary
-          # cluster and its already-replicated storage volume survive. Recovery re-creates the
-          # instance into that surviving cluster, so it reattaches to the replicated volume and
-          # catches up quickly instead of re-seeding from scratch.
+          # its row from the Aurora Global Database instance status (the row the test waits to
+          # disappear — see AbstractAuroraReplicationCluster). Deleting the instance makes the
+          # secondary cluster headless: its row vanishes from that status (so the exporter loses
+          # its sync quorum and pauses) while the secondary cluster and its already-replicated
+          # storage volume survive. Recovery re-creates the instance into that surviving cluster,
+          # so it reattaches to the replicated volume and catches up quickly instead of
+          # re-seeding from scratch.
           TEST_AURORA_STOP_REPLICA_CMD: >-
             aws rds delete-db-instance
             --region ${{ env.TF_VAR_secondary_region }}
@@ -257,7 +280,7 @@ jobs:
             --region ${{ env.TF_VAR_secondary_region }}
             --db-cluster-identifier ${{ env.TF_VAR_name_prefix }}-secondary
             --db-instance-identifier ${{ env.TF_VAR_name_prefix }}-secondary-0
-            --engine aurora-postgresql
+            --engine ${{ env.TF_VAR_engine }}
             --db-instance-class db.r6g.large
             && aws rds wait db-instance-available
             --region ${{ env.TF_VAR_secondary_region }}
@@ -267,7 +290,7 @@ jobs:
           threads: '1'
           parameters: >-
             verify -pl qa/acceptance-tests
-            -Prdbms-aurora
+            ${{ (inputs.db_engine || 'postgresql') == 'mysql' && '-Prdbms-aurora-mysql' || '-Prdbms-aurora' }}
             -DskipUTs -DskipChecks -DskipTests=false
 
       - name: Upload test reports and SSM logs
