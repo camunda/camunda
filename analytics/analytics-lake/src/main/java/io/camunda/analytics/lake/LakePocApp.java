@@ -121,6 +121,28 @@ public final class LakePocApp {
    */
   private static final int VARS_JSON_AVG_BYTES_PER_ROW = 512;
 
+  /**
+   * Ring geometry for the variants dictionary pipeline (see {@code RawTableSchemas#variants}) —
+   * deliberately much smaller than {@link #SEGMENT_ROWS}/{@link #RING_SEGMENTS} above: rows are one
+   * per distinct (process id, version, variant hash) triple ever seen, bounded by the number of
+   * distinct process variants rather than by instance volume, and {@code LakeTranslator}'s own
+   * per-translator seen-cache already suppresses most repeat writes before a row is even attempted
+   * (see its javadoc). {@link SinkConfig#ringSegments()} still requires at least 2 (one FILLING
+   * slot, one SEALED slot for backpressure to have room to bite).
+   */
+  private static final int VARIANT_SEGMENT_ROWS = 1024;
+
+  /** See {@link #VARIANT_SEGMENT_ROWS}. */
+  private static final int VARIANT_RING_SEGMENTS = 2;
+
+  /**
+   * Bytes budgeted per row for the {@code variants} table's {@code elements}/{@code flows} BINARY
+   * columns (see {@code SegmentFactory#createSegments}'s {@code binaryAvgBytesPerRow} parameter) —
+   * a PoC-tuned guess sized for a moderately large process's joined, newline-separated id list; see
+   * {@link #VARS_JSON_AVG_BYTES_PER_ROW}'s own javadoc for the same caveat.
+   */
+  private static final int VARIANT_ELEMENTS_AVG_BYTES_PER_ROW = 2048;
+
   private static final long PARK_NANOS_ON_BACKPRESSURE = 1_000_000L; // 1ms
 
   private LakePocApp() {}
@@ -274,8 +296,10 @@ public final class LakePocApp {
       final LakeConfig config, final IcebergLakeWriter writer) {
     final Table instancesTable = writer.instancesTable();
     final Table activitiesTable = writer.activitiesTable();
+    final Table variantsTable = writer.variantsTable();
     final TableSchema instancesSchema = RawTableSchemas.instances(instancesTable.schema());
     final TableSchema activitiesSchema = RawTableSchemas.activities(activitiesTable.schema());
+    final TableSchema variantsSchema = RawTableSchemas.variants(variantsTable.schema());
 
     // The metrics declarations -- dims, window, measures; everything downstream (partials
     // schemas, tables, rider plans, merge/finalize SQL, fingerprint) derives from them.
@@ -291,6 +315,18 @@ public final class LakePocApp {
             .window(Duration.ofMinutes(1), "ended_at")
             .measure("duration_ms", Algebras.scalarStats(), Algebras.expHistogram(3))
             .build();
+    // Per-variant metrics: a second declaration over the SAME raw "instances" schema (nothing
+    // about a declaration requires exclusivity over its raw schema) -- dims (process_id,
+    // variant_hash) instead of (process_id), everything else identical. Rides the instances
+    // pipeline as a second MetricsRider alongside instanceMetrics's own (see
+    // #buildPartitionPipelines) -- FlushLoop's rider list is a List<SealRider>, so two riders on
+    // one pipeline is already supported machinery, not a workaround.
+    final CompiledEntityMetrics instanceVariantMetrics =
+        EntityMetrics.declare("instance_variants", instancesSchema)
+            .dims("process_id", "variant_hash")
+            .window(Duration.ofMinutes(1), "ended_at")
+            .measure("duration_ms", Algebras.scalarStats(), Algebras.expHistogram(3))
+            .build();
     final Table activityMetricsTable =
         writer.partialsTableOrCreate(
             activityMetrics.metricsSchema(), activityMetrics.fingerprint());
@@ -301,6 +337,12 @@ public final class LakePocApp {
             instanceMetrics.metricsSchema(), instanceMetrics.fingerprint());
     final Table instanceHistTable =
         writer.partialsTableOrCreate(instanceMetrics.histSchema(), instanceMetrics.fingerprint());
+    final Table instanceVariantMetricsTable =
+        writer.partialsTableOrCreate(
+            instanceVariantMetrics.metricsSchema(), instanceVariantMetrics.fingerprint());
+    final Table instanceVariantHistTable =
+        writer.partialsTableOrCreate(
+            instanceVariantMetrics.histSchema(), instanceVariantMetrics.fingerprint());
 
     // Mirrors the "<table.location()>/data/<fileName>" convention IcebergLakeWriter's own legacy
     // path uses -- see LocalFileSink's javadoc.
@@ -314,6 +356,9 @@ public final class LakePocApp {
             fileSink,
             SEGMENT_ROWS,
             Set.of("instance_key", "element_key"));
+    final IcebergParquetEncoderFactory variantsEncoderFactory =
+        new IcebergParquetEncoderFactory(
+            variantsTable.schema(), fileSink, VARIANT_SEGMENT_ROWS, Set.of());
     // The rider's one factory dispatches by generated-schema table name -- each partials table has
     // its own iceberg schema and thus its own underlying encoder factory.
     final Map<String, BatchEncoder.Factory> partialsFactories =
@@ -329,7 +374,13 @@ public final class LakePocApp {
                 instanceMetricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
             instanceMetrics.histSchema().table(),
             new IcebergParquetEncoderFactory(
-                instanceHistTable.schema(), fileSink, SEGMENT_ROWS, Set.of()));
+                instanceHistTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
+            instanceVariantMetrics.metricsSchema().table(),
+            new IcebergParquetEncoderFactory(
+                instanceVariantMetricsTable.schema(), fileSink, SEGMENT_ROWS, Set.of()),
+            instanceVariantMetrics.histSchema().table(),
+            new IcebergParquetEncoderFactory(
+                instanceVariantHistTable.schema(), fileSink, SEGMENT_ROWS, Set.of()));
     final BatchEncoder.Factory partialsEncoderFactory =
         (schema, epochDay) -> partialsFactories.get(schema.table()).newFile(schema, epochDay);
 
@@ -337,31 +388,32 @@ public final class LakePocApp {
     // rider-carrying descriptors fan out atomically -- a single commit path either way.
     final LakeCommitCoordinator coordinator = new LakeCommitCoordinator(writer.jdbcUrl(), "lake");
     final Map<String, Table> tablesByName =
-        Map.of(
-            "instances",
-            instancesTable,
-            "activities",
-            activitiesTable,
-            activityMetrics.metricsSchema().table(),
-            activityMetricsTable,
-            activityMetrics.histSchema().table(),
-            activityHistTable,
-            instanceMetrics.metricsSchema().table(),
-            instanceMetricsTable,
-            instanceMetrics.histSchema().table(),
-            instanceHistTable);
+        Map.ofEntries(
+            Map.entry("instances", instancesTable),
+            Map.entry("activities", activitiesTable),
+            Map.entry("variants", variantsTable),
+            Map.entry(activityMetrics.metricsSchema().table(), activityMetricsTable),
+            Map.entry(activityMetrics.histSchema().table(), activityHistTable),
+            Map.entry(instanceMetrics.metricsSchema().table(), instanceMetricsTable),
+            Map.entry(instanceMetrics.histSchema().table(), instanceHistTable),
+            Map.entry(instanceVariantMetrics.metricsSchema().table(), instanceVariantMetricsTable),
+            Map.entry(instanceVariantMetrics.histSchema().table(), instanceVariantHistTable));
     final CoordinatedDescriptorSink commitSink =
         new CoordinatedDescriptorSink(coordinator, Namespace.of("lake"), tablesByName::get);
 
     return new SinkWiring(
         instancesSchema,
         activitiesSchema,
+        variantsSchema,
         instancesEncoderFactory,
         activitiesEncoderFactory,
+        variantsEncoderFactory,
+        commitSink,
         commitSink,
         commitSink,
         instanceMetrics,
         activityMetrics,
+        instanceVariantMetrics,
         partialsEncoderFactory,
         coordinator,
         config.flushIntervalMs(),
@@ -547,11 +599,15 @@ public final class LakePocApp {
       final Consumer consumer,
       final TranslatorState state,
       final SinkWiring wiring) {
-    // Shared by both tables' pipelines for this partition -- see PartitionBackpressureGate's own
-    // javadoc for why a plain 1:1 gate per ring would thrash pause/resume instead.
+    // Shared by all three tables' pipelines for this partition -- see PartitionBackpressureGate's
+    // own javadoc for why a plain 1:1 gate per ring would thrash pause/resume instead.
     final PartitionBackpressureGate gate = new PartitionBackpressureGate(consumer, topicPartition);
     // Riders are per-pipeline state (accumulators keyed by this partition's flush windows), so
-    // each partition gets its own instances -- unlike the commit sink, which is shared.
+    // each partition gets its own instances -- unlike the commit sink, which is shared. The
+    // instances pipeline carries TWO riders (instance-level metrics and per-variant metrics):
+    // FlushLoop's rider list is a List<SealRider>, and its drainRiders() already merges disjoint
+    // per-rider derived-table sets (throwing on a clash) -- two riders on one pipeline is
+    // supported machinery already, not something bolted on here.
     final SinkPipeline instancesPipeline =
         newPipeline(
             wiring.instancesSchema(),
@@ -561,9 +617,16 @@ public final class LakePocApp {
             wiring.instancesSink(),
             List.of(
                 new MetricsRider(
-                    wiring.instanceMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS)),
+                    wiring.instanceMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS),
+                new MetricsRider(
+                    wiring.instanceVariantMetrics(),
+                    wiring.partialsEncoderFactory(),
+                    SEGMENT_ROWS)),
             wiring.flushIntervalMs(),
-            wiring.meterRegistry());
+            wiring.meterRegistry(),
+            SEGMENT_ROWS,
+            RING_SEGMENTS,
+            VARS_JSON_AVG_BYTES_PER_ROW);
     final SinkPipeline activitiesPipeline =
         newPipeline(
             wiring.activitiesSchema(),
@@ -575,11 +638,32 @@ public final class LakePocApp {
                 new MetricsRider(
                     wiring.activityMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS)),
             wiring.flushIntervalMs(),
-            wiring.meterRegistry());
+            wiring.meterRegistry(),
+            SEGMENT_ROWS,
+            RING_SEGMENTS,
+            VARS_JSON_AVG_BYTES_PER_ROW);
+    // Small, dedicated ring (see VARIANT_SEGMENT_ROWS/VARIANT_RING_SEGMENTS' own javadoc); no
+    // riders -- the variants table is a plain dictionary, not a metrics source.
+    final SinkPipeline variantsPipeline =
+        newPipeline(
+            wiring.variantsSchema(),
+            partition,
+            gate,
+            wiring.variantsEncoderFactory(),
+            wiring.variantsSink(),
+            List.of(),
+            wiring.flushIntervalMs(),
+            wiring.meterRegistry(),
+            VARIANT_SEGMENT_ROWS,
+            VARIANT_RING_SEGMENTS,
+            VARIANT_ELEMENTS_AVG_BYTES_PER_ROW);
     final RowAppender instanceAppender = new SegmentRowAppender(instancesPipeline.ring());
     final RowAppender activityAppender = new SegmentRowAppender(activitiesPipeline.ring());
-    final LakeTranslator translator = new LakeTranslator(state, instanceAppender, activityAppender);
-    return new PartitionPipelines(instancesPipeline, activitiesPipeline, translator);
+    final RowAppender variantsAppender = new SegmentRowAppender(variantsPipeline.ring());
+    final LakeTranslator translator =
+        new LakeTranslator(state, instanceAppender, activityAppender, variantsAppender);
+    return new PartitionPipelines(
+        instancesPipeline, activitiesPipeline, variantsPipeline, translator);
   }
 
   private static SinkPipeline newPipeline(
@@ -590,23 +674,26 @@ public final class LakePocApp {
       final DescriptorSink descriptorSink,
       final List<SealRider> riders,
       final long flushIntervalMs,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final int segmentRows,
+      final int ringSegments,
+      final int binaryAvgBytesPerRowValue) {
     final int[] binaryAvgBytesPerRow = new int[schema.columns().size()];
     for (int i = 0; i < binaryAvgBytesPerRow.length; i++) {
       if (schema.columns().get(i).type() == ColumnType.BINARY) {
-        binaryAvgBytesPerRow[i] = VARS_JSON_AVG_BYTES_PER_ROW;
+        binaryAvgBytesPerRow[i] = binaryAvgBytesPerRowValue;
       }
     }
     final Interner interner = new Interner();
     final Segment[] segments =
         SegmentFactory.createSegments(
-            schema, RING_SEGMENTS, SEGMENT_ROWS, binaryAvgBytesPerRow, interner);
+            schema, ringSegments, segmentRows, binaryAvgBytesPerRow, interner);
     final SegmentSorter sorter =
-        new SegmentSorter(schema, SEGMENT_ROWS, binaryAvgBytesPerRow, interner);
+        new SegmentSorter(schema, segmentRows, binaryAvgBytesPerRow, interner);
     final SinkConfig config =
         new SinkConfig(
-            SEGMENT_ROWS,
-            RING_SEGMENTS,
+            segmentRows,
+            ringSegments,
             flushIntervalMs,
             FILE_TARGET_BYTES,
             partition,
@@ -650,39 +737,47 @@ public final class LakePocApp {
   private record SinkWiring(
       TableSchema instancesSchema,
       TableSchema activitiesSchema,
+      TableSchema variantsSchema,
       IcebergParquetEncoderFactory instancesEncoderFactory,
       IcebergParquetEncoderFactory activitiesEncoderFactory,
+      IcebergParquetEncoderFactory variantsEncoderFactory,
       DescriptorSink instancesSink,
       DescriptorSink activitiesSink,
+      DescriptorSink variantsSink,
       CompiledEntityMetrics instanceMetrics,
       CompiledEntityMetrics activityMetrics,
+      CompiledEntityMetrics instanceVariantMetrics,
       BatchEncoder.Factory partialsEncoderFactory,
       LakeCommitCoordinator coordinator,
       long flushIntervalMs,
       MeterRegistry meterRegistry) {}
 
   /**
-   * One owned partition's L0 sink wiring: the two per-table {@link SinkPipeline}s (one per (table,
-   * partition), per {@link SinkConfig}'s own contract) and the {@link LakeTranslator} appending
-   * into them.
+   * One owned partition's L0 sink wiring: the three per-table {@link SinkPipeline}s (one per
+   * (table, partition), per {@link SinkConfig}'s own contract) and the {@link LakeTranslator}
+   * appending into them.
    */
   private static final class PartitionPipelines {
     private final SinkPipeline instancesPipeline;
     private final SinkPipeline activitiesPipeline;
+    private final SinkPipeline variantsPipeline;
     private final LakeTranslator translator;
 
     private PartitionPipelines(
         final SinkPipeline instancesPipeline,
         final SinkPipeline activitiesPipeline,
+        final SinkPipeline variantsPipeline,
         final LakeTranslator translator) {
       this.instancesPipeline = instancesPipeline;
       this.activitiesPipeline = activitiesPipeline;
+      this.variantsPipeline = variantsPipeline;
       this.translator = translator;
     }
 
     void start() {
       instancesPipeline.start();
       activitiesPipeline.start();
+      variantsPipeline.start();
     }
 
     boolean translate(final ZeebeRecord record) {
@@ -691,11 +786,12 @@ public final class LakePocApp {
 
     void onPollTick(final long lastOffset, final long frontierMs) {
       // One immutable snapshot per tick (see LakeTranslator#watermarkSnapshot's own javadoc for
-      // the allocation budget), shared by both tables' pipelines -- they always cover the exact
+      // the allocation budget), shared by every table's pipeline -- they always cover the exact
       // same set of folded Zeebe records for this owned partition.
       final Map<Integer, Long> watermarks = translator.watermarkSnapshot();
       instancesPipeline.onPollTick(lastOffset, frontierMs, watermarks);
       activitiesPipeline.onPollTick(lastOffset, frontierMs, watermarks);
+      variantsPipeline.onPollTick(lastOffset, frontierMs, watermarks);
     }
 
     /** See {@code LakePocApp#seedWatermarks}. */
@@ -704,12 +800,15 @@ public final class LakePocApp {
     }
 
     boolean isFailed() {
-      return instancesPipeline.isFailed() || activitiesPipeline.isFailed();
+      return instancesPipeline.isFailed()
+          || activitiesPipeline.isFailed()
+          || variantsPipeline.isFailed();
     }
 
     void close() {
       instancesPipeline.close();
       activitiesPipeline.close();
+      variantsPipeline.close();
     }
   }
 

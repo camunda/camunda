@@ -916,6 +916,8 @@ class SinkIntegrationTest {
     private final Map<Long, OpenInstance> instances = new HashMap<>();
     private final Map<Long, OpenElement> elements = new HashMap<>();
     private final Map<Long, Map<String, String>> variables = new HashMap<>();
+    private final Map<Long, VariantAccumulator> variantAccumulators = new HashMap<>();
+    private final Map<String, VariantName> variantNames = new HashMap<>();
 
     @Override
     public void putInstance(final long instanceKey, final OpenInstance instance) {
@@ -960,6 +962,32 @@ class SinkIntegrationTest {
     @Override
     public void deleteVariablesOf(final long instanceKey) {
       variables.remove(instanceKey);
+    }
+
+    @Override
+    public void putVariantAccumulator(
+        final long instanceKey, final VariantAccumulator accumulator) {
+      variantAccumulators.put(instanceKey, accumulator);
+    }
+
+    @Override
+    public VariantAccumulator getVariantAccumulator(final long instanceKey) {
+      return variantAccumulators.get(instanceKey);
+    }
+
+    @Override
+    public void deleteVariantAccumulator(final long instanceKey) {
+      variantAccumulators.remove(instanceKey);
+    }
+
+    @Override
+    public void putVariantName(final String bpmnProcessId, final int h32, final VariantName name) {
+      variantNames.put(bpmnProcessId + '#' + h32, name);
+    }
+
+    @Override
+    public VariantName getVariantName(final String bpmnProcessId, final int h32) {
+      return variantNames.get(bpmnProcessId + '#' + h32);
     }
 
     @Override

@@ -210,6 +210,14 @@ public final class IcebergLakeWriter implements LakeWriter {
    * {@code duration_ms} and every other {@code *_ms} column stay plain {@link Types.LongType}
    * milliseconds — only the two instant columns changed shape.
    *
+   * <p>{@code variant_hash} (field id 11, schema v3) is an <b>optional</b> {@link
+   * Types.StringType}: 16 lowercase hex characters of the variant-k1 running hash (see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator}'s "Variant capture" javadoc section), or
+   * absent when the instance completed with no live accumulator (e.g. state loss). Optional, not
+   * required: a data file predating this field (written by an older schema version, or by this
+   * class's own legacy DuckDB-appender path below, which never populates it) must still resolve the
+   * column to {@code null} via name mapping rather than fail to read.
+   *
    * <p>{@code vars_json} (field id 10) is {@link Types.BinaryType}, not {@link Types.StringType}:
    * the L0 sink's {@code io.camunda.analytics.lake.sink.ColumnType#BINARY} column for this field
    * stores raw UTF-8 bytes (never boxes a {@code String} on the hot path — see {@code
@@ -234,7 +242,9 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(7, "started_at", Types.TimestampType.withZone()),
               Types.NestedField.required(8, "ended_at", Types.TimestampType.withZone()),
               Types.NestedField.required(9, "duration_ms", Types.LongType.get()),
-              Types.NestedField.required(10, "vars_json", Types.BinaryType.get())));
+              Types.NestedField.required(10, "vars_json", Types.BinaryType.get()),
+              // Schema v3 -- see this field's own javadoc paragraph above.
+              Types.NestedField.optional(11, "variant_hash", Types.StringType.get())));
 
   /**
    * Mirrors {@link ActivityRow} field for field; see {@link #INSTANCE_SCHEMA} for the {@code
@@ -259,12 +269,32 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(
                   12, "instance_started_at", Types.TimestampType.withZone())));
 
+  /**
+   * The variant-k1 dictionary table's schema: one row per distinct (process id, version, variant
+   * hash) triple ever seen (see {@code io.camunda.analytics.lake.translate.LakeTranslator}'s
+   * "Variant capture" javadoc section). Created via the same plain {@link #tableOrCreate} path as
+   * {@link #INSTANCE_SCHEMA}/{@link #ACTIVITY_SCHEMA} — unlike a generated partials table (see
+   * {@link #partialsTableOrCreate}), this table carries no declaration fingerprint: its rows are
+   * deterministic given the (process id, version, variant hash) key regardless of who wrote them or
+   * when, so there is nothing for a fingerprint to guard against.
+   */
+  private static final Schema VARIANT_SCHEMA =
+      new Schema(
+          List.of(
+              Types.NestedField.required(1, "process_id", Types.StringType.get()),
+              Types.NestedField.required(2, "version", Types.IntegerType.get()),
+              Types.NestedField.required(3, "variant_hash", Types.StringType.get()),
+              Types.NestedField.required(4, "elements", Types.BinaryType.get()),
+              Types.NestedField.required(5, "flows", Types.BinaryType.get()),
+              Types.NestedField.required(6, "first_seen", Types.TimestampType.withZone())));
+
   private static final Logger LOG = LoggerFactory.getLogger(IcebergLakeWriter.class);
 
   private final JdbcCatalog catalog;
   private final String jdbcUrl;
   private final Table instancesTable;
   private final Table activitiesTable;
+  private final Table variantsTable;
   private final Connection duckdb;
 
   // One commit mutex per raw table (never a single shared lock across both) -- see #commitLock's
@@ -313,6 +343,11 @@ public final class IcebergLakeWriter implements LakeWriter {
             TableIdentifier.of(namespace, "activities"),
             ACTIVITY_SCHEMA,
             PartitionSpec.builderFor(ACTIVITY_SCHEMA).day("instance_started_at").build());
+    variantsTable =
+        tableOrCreate(
+            TableIdentifier.of(namespace, "variants"),
+            VARIANT_SCHEMA,
+            PartitionSpec.builderFor(VARIANT_SCHEMA).day("first_seen").build());
 
     try {
       // One embedded, in-process DuckDB instance for the life of this writer. It never persists
@@ -764,6 +799,17 @@ public final class IcebergLakeWriter implements LakeWriter {
   /** See {@link #instancesTable()}. */
   public Table activitiesTable() {
     return activitiesTable;
+  }
+
+  /**
+   * The variant-k1 dictionary table — see {@link #VARIANT_SCHEMA}'s own javadoc. Unlike {@link
+   * #instancesTable()}/{@link #activitiesTable()}, this table is never registered with {@link
+   * #commitLock(Table)}: it is only ever committed through {@code CoordinatedDescriptorSink} (which
+   * serializes concurrent committers through {@code LakeCommitCoordinator} instead), the same
+   * arrangement every generated partials table (see {@link #partialsTableOrCreate}) already uses.
+   */
+  public Table variantsTable() {
+    return variantsTable;
   }
 
   /**

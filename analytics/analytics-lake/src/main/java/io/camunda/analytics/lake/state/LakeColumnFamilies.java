@@ -13,9 +13,10 @@ import io.camunda.zeebe.protocol.ScopedColumnFamily;
 
 /**
  * Column families for the lake translator's working state, held in one RocksDB under the state
- * directory: the open process instances, the open (non-root) element instances, and the root-scope
- * variable entries. There is no offset family — the lake's snapshot summary is the offset authority
- * (see {@link io.camunda.analytics.lake.state.TranslatorState}).
+ * directory: the open process instances, the open (non-root) element instances, the root-scope
+ * variable entries, and the variant-k1 accumulators/name map. There is no offset family — the
+ * lake's snapshot summary is the offset authority (see {@link
+ * io.camunda.analytics.lake.state.TranslatorState}).
  */
 public enum LakeColumnFamilies implements EnumValue, ScopedColumnFamily {
   /** Reserved default (RocksDB requires a default column family). */
@@ -32,7 +33,20 @@ public enum LakeColumnFamilies implements EnumValue, ScopedColumnFamily {
    * valueJson}. A process instance's variables are read/cleared by a {@code processInstanceKey}
    * prefix scan (Zeebe-style per-entry storage, not a map blob).
    */
-  VARIABLES(3, ColumnFamilyScope.PARTITION_LOCAL);
+  VARIABLES(3, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Open instances' variant-k1 accumulators: {@code processInstanceKey -> VariantAccumulator}. See
+   * {@code io.camunda.analytics.lake.translate.LakeTranslator}'s "Variant capture" javadoc section.
+   */
+  VARIANT_ACCUMULATORS(4, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * The variant-k1 per-process element/flow name map: {@code bpmnProcessId(utf8) ++ h32(4,
+   * big-endian) -> VariantName}. The fixed-width {@code h32} suffix makes the key unambiguous
+   * without a length prefix (see {@code RocksDbTranslatorState#variantNameKey}'s own javadoc).
+   */
+  VARIANT_NAMES(5, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;
