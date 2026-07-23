@@ -454,9 +454,9 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ env.IMAGE_TAG }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ env.IMAGE_TAG }}" -X -Djib.serialize=true
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ env.IMAGE_TAG }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ env.IMAGE_TAG }}" -X -Djib.serialize=true
       - name: Observe build status
         if: always()
         continue-on-error: true
