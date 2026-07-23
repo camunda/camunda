@@ -302,6 +302,24 @@ final class ClusterConfigurationManagerImplNewConfigTest {
   }
 
   @Test
+  void shouldMergeAndApplyOperationOnGossipReceived() {
+    // given — the local member (1) starts with an empty, initialized configuration
+    final var manager = newManager(MEMBER_1);
+    manager.updateMultiConfiguration(ignored -> CurrentClusterConfiguration.init()).join();
+
+    // when — a configuration received via gossip carries a pending plan joining the local member
+    final var received =
+        CurrentClusterConfiguration.init()
+            .initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_1)))));
+    manager.onGossipReceivedCurrent(received);
+
+    // then — the merge is persisted locally and the local member's join operation is applied
+    final var config = configuration(manager);
+    assertThat(config.globalConfiguration().getMember(MEMBER_1).state()).isEqualTo(State.ACTIVE);
+    assertThat(config.globalConfiguration().hasPendingChanges()).isFalse();
+  }
+
+  @Test
   void shouldRetryPendingOperationInPartitionGroupIfFailed() {
     // given — member 0 is the coordinator; it is part of the cluster and the default group, which
     // has member 1 holding partition 1; a plan is initiated to add member 0 as a replica of
