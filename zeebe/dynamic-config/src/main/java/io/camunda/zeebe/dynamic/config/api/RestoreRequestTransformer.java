@@ -28,7 +28,6 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncar
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -82,7 +81,7 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
         clusterConfiguration.members().entrySet().stream()
             .filter(entry -> entry.getValue().state() == State.RECOVERING)
             .map(Entry::getKey)
-            .sorted(Comparator.comparing(MemberId::id))
+            .sorted(MemberId.ID_COMPARATOR)
             .toList();
 
     final var operations = new ArrayList<ClusterConfigurationChangeOperation>();

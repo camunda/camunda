@@ -251,4 +251,35 @@ final class RestoreRequestTransformerTest {
             new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
             new UpdateIncarnationNumberOperation(memberOne));
   }
+
+  @Test
+  void shouldSkipPartitionOperationsForRecoveringMemberWithNoLocalPartitions() {
+    // given - memberOne (sorted first) has no local partitions, memberTwo has partition 1
+    final var memberOne = MemberId.from("0");
+    final var memberTwo = MemberId.from("1");
+    final var partitionState = Map.of(1, PartitionState.active(1, DynamicPartitionConfig.init()));
+    final var topology =
+        ClusterConfiguration.init()
+            .addMember(memberOne, MemberState.initializeAsActive(Map.of()).toRecovering())
+            .addMember(memberTwo, MemberState.initializeAsActive(partitionState).toRecovering());
+    final var resolved = new RestoreResolvedRequest(Map.of(1, new long[] {1L, 2L}), false);
+    final var transformer =
+        new RestoreRequestTransformer(
+            restoreRequest(), registryWithValidator(validatorReturning(Either.right(resolved))));
+
+    // when
+    final var result = transformer.operations(topology);
+
+    // then - memberOne contributes no Pre/Restore operations but still gets the tail operations
+    EitherAssert.assertThat(result).isRight();
+    assertThat(result.get())
+        .containsExactly(
+            new PartitionPreRestoreOperation(memberTwo, 1),
+            new PartitionRestoreOperation(memberTwo, 1, new TreeSet<>(List.of(1L, 2L))),
+            new ModeChangeOperation(memberOne, Mode.PROCESSING),
+            new ModeChangeOperation(memberTwo, Mode.PROCESSING),
+            new AwaitModeChangeOperation(memberOne, Mode.PROCESSING),
+            new AwaitModeChangeOperation(memberTwo, Mode.PROCESSING),
+            new UpdateIncarnationNumberOperation(memberOne));
+  }
 }
