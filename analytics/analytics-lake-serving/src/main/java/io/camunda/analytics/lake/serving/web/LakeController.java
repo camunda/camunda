@@ -53,6 +53,17 @@ public class LakeController {
     return viewRegistry.registeredTables().stream().map(this::describe).toList();
   }
 
+  /**
+   * Re-runs view discovery against the warehouse directory and returns the resulting view names —
+   * for a table that appeared after startup (or after a prior request already triggered the same
+   * lazy refresh once; see {@link LakeViewRegistry#ensureAvailable}) to become visible without a
+   * restart.
+   */
+  @PostMapping("/refresh")
+  public List<String> refresh() {
+    return viewRegistry.refresh();
+  }
+
   private TableInfo describe(final String tableName) {
     final String countSql = "SELECT count(*) FROM \"" + tableName.replace("\"", "\"\"") + "\"";
     try {

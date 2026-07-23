@@ -44,6 +44,21 @@ public class LakeQueryService {
    * SQLException} for the caller to translate into an HTTP error; never swallows the failure.
    */
   public QueryResult execute(final String sql) throws SQLException {
+    return execute(sql, maxRows);
+  }
+
+  /**
+   * Same as {@link #execute(String)}, but with an explicit row-cap override instead of the
+   * configured {@link #maxRows}.
+   *
+   * <p><b>Internal use only</b> — never exposed through {@code POST /api/query} or any other
+   * caller-controlled path. The single-scan explain tools (today: {@code cohort-compare}'s one
+   * {@code GROUP BY} over attribute/bucket combinations) can legitimately produce more result rows
+   * than the public API's default cap without that indicating a runaway query, since the row count
+   * there is bounded by attribute cardinality, not by warehouse size. Every call site passing a cap
+   * other than {@link #maxRows} must document why in its own javadoc.
+   */
+  public QueryResult execute(final String sql, final int rowCap) throws SQLException {
     try (Statement statement = connection.createStatement()) {
       try {
         statement.setQueryTimeout(queryTimeoutSeconds);
@@ -55,7 +70,7 @@ public class LakeQueryService {
         return new QueryResult(List.of(), List.of());
       }
       try (ResultSet resultSet = statement.getResultSet()) {
-        return new QueryResult(readColumns(resultSet), readRows(resultSet));
+        return new QueryResult(readColumns(resultSet), readRows(resultSet, rowCap));
       }
     }
   }
@@ -81,10 +96,11 @@ public class LakeQueryService {
     return columns;
   }
 
-  private List<List<Object>> readRows(final ResultSet resultSet) throws SQLException {
+  private List<List<Object>> readRows(final ResultSet resultSet, final int rowCap)
+      throws SQLException {
     final int columnCount = resultSet.getMetaData().getColumnCount();
     final List<List<Object>> rows = new ArrayList<>();
-    while (rows.size() < maxRows && resultSet.next()) {
+    while (rows.size() < rowCap && resultSet.next()) {
       final List<Object> row = new ArrayList<>(columnCount);
       for (int i = 1; i <= columnCount; i++) {
         row.add(resultSet.getObject(i));
