@@ -9,6 +9,7 @@ import { Navigate, useNavigate } from "react-router";
 import { Button } from "@camunda/design-system";
 import { PROCESSES_PERSPECTIVE, useAppData } from "../../lib/appData";
 import { EmptyTile } from "../common/EmptyTile";
+import { TypeMapPanel } from "./TypeMapPanel";
 
 /** /objects with no type in the URL: jumps straight to the current perspective's object type if
  * one is selected, otherwise offers a pick list (or an empty state if none were discovered). */
@@ -44,6 +45,7 @@ export function ObjectsIndexPage() {
           </Button>
         ))}
       </div>
+      <TypeMapPanel />
     </div>
   );
 }
