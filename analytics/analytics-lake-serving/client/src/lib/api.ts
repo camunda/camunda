@@ -121,6 +121,11 @@ export interface DecomposeRequest {
   window: TimeWindow;
   baseline: TimeWindow;
   dim: string;
+  /** Optional, backward-compatible: the server's DecomposeQuery record has carried this field since
+   * before this client type did (added here for the Processes page's per-process breakdowns --
+   * without it every decompose call blends every process's rows together). Omitted entirely by
+   * every existing caller, which keeps their unfiltered behavior unchanged. */
+  filters?: Filters;
 }
 
 export interface DecomposeRow {
