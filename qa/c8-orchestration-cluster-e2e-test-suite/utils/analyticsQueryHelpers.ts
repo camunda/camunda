@@ -63,6 +63,11 @@ export async function queryLoki(
     );
   }
   const body = (await response.json()) as LokiQueryRangeResponse;
+  if (body.status !== 'success' || !body.data) {
+    throw new Error(
+      `Loki query returned non-success response: ${JSON.stringify(body)}`,
+    );
+  }
   return body.data.result;
 }
 
@@ -92,6 +97,11 @@ export async function queryPrometheus(
     );
   }
   const body = (await response.json()) as PrometheusQueryResponse;
+  if (body.status !== 'success' || !body.data) {
+    throw new Error(
+      `Prometheus query returned non-success response: ${JSON.stringify(body)}`,
+    );
+  }
   return body.data.result;
 }
 

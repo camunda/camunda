@@ -95,7 +95,7 @@ services:
 
   otel-collector-isolated:
     container_name: otel-collector-isolated
-    image: otel/opentelemetry-collector-contrib:latest
+    image: otel/opentelemetry-collector-contrib:${OTEL_COLLECTOR_VERSION:-0.157.0}
     volumes:
       - ./otel-collector-config-isolated.yaml:/etc/otelcol-contrib/config.yaml
     depends_on:
@@ -106,7 +106,7 @@ services:
 
   loki-isolated:
     container_name: loki-isolated
-    image: grafana/loki:latest
+    image: grafana/loki:${LOKI_VERSION:-3.7.4}
     ports:
       - '23100:3100'
     networks:
@@ -114,7 +114,7 @@ services:
 
   prometheus-isolated:
     container_name: prometheus-isolated
-    image: prom/prometheus:latest
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v3.13.1}
     ports:
       - '29090:9090'
     volumes:

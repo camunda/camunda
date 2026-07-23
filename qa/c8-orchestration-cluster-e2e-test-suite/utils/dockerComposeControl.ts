@@ -32,7 +32,7 @@ const PROJECT_NAME = 'analytics-isolated';
 // use it themselves.
 const COMPOSE_ENV = {
   ...process.env,
-  DATABASE: process.env.DATABASE ?? 'elasticsearch',
+  DATABASE: (process.env.DATABASE ?? 'elasticsearch').toLowerCase(),
 };
 
 function composeCommand(args: string[]): string {
@@ -91,13 +91,26 @@ export async function stopIsolatedEnvironment(): Promise<void> {
   });
 }
 
+const ISOLATED_SERVICE_NAMES = [
+  'camunda-analytics-isolated',
+  'camunda-analytics-isolated-exporter',
+  'otel-collector-isolated',
+  'loki-isolated',
+  'prometheus-isolated',
+];
+
 /** Fetches recent logs from a service in the isolated environment, for assertions/debugging. */
 export async function getIsolatedServiceLogs(
   serviceName: string,
 ): Promise<string> {
+  if (!ISOLATED_SERVICE_NAMES.includes(serviceName)) {
+    throw new Error(
+      `Unknown isolated service "${serviceName}" — expected one of ${ISOLATED_SERVICE_NAMES.join(', ')}`,
+    );
+  }
   const {stdout, stderr} = await execAsync(
     composeCommand(['logs', '--no-color', serviceName]),
-    {cwd: CONFIG_DIR, env: COMPOSE_ENV},
+    {cwd: CONFIG_DIR, env: COMPOSE_ENV, maxBuffer: 10 * 1024 * 1024},
   );
   return stdout + stderr;
 }
