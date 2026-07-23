@@ -27,6 +27,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
@@ -117,6 +118,12 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
           new PartitionPreRestoreApplier(
               preRestoreOperation.memberId(),
               preRestoreOperation.partitionId(),
+              restoreChangeExecutor);
+      case final PartitionRestoreOperation restoreOperation ->
+          new PartitionRestoreApplier(
+              restoreOperation.memberId(),
+              restoreOperation.partitionId(),
+              restoreOperation.backupIds(),
               restoreChangeExecutor);
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new DeleteHistoryApplier(deleteHistoryOperation.memberId(), clusterChangeExecutor);

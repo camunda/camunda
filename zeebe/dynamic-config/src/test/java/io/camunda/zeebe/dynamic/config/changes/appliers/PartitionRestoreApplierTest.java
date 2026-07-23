@@ -23,24 +23,26 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
-final class PartitionPreRestoreApplierTest {
+final class PartitionRestoreApplierTest {
 
   private static final MemberId MEMBER_ID = MemberId.from("1");
   private static final int PARTITION_ID = 1;
+  private static final SortedSet<Long> BACKUP_IDS = new TreeSet<>(List.of(1L, 2L));
 
   @Test
   void shouldFailInitWhenMemberNotActiveInCluster() {
     // given
     final var applier =
-        new PartitionPreRestoreApplier(
-            MEMBER_ID, PARTITION_ID, new SucceedingRestoreChangeExecutor());
+        new PartitionRestoreApplier(
+            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
 
     // when
     final var result =
@@ -55,8 +57,8 @@ final class PartitionPreRestoreApplierTest {
   void shouldFailInitWhenMemberNotInPartitionGroup() {
     // given
     final var applier =
-        new PartitionPreRestoreApplier(
-            MEMBER_ID, PARTITION_ID, new SucceedingRestoreChangeExecutor());
+        new PartitionRestoreApplier(
+            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
     final var globalConfig =
         GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
 
@@ -74,8 +76,8 @@ final class PartitionPreRestoreApplierTest {
   void shouldFailInitWhenMemberIsNotRecovering() {
     // given
     final var applier =
-        new PartitionPreRestoreApplier(
-            MEMBER_ID, PARTITION_ID, new SucceedingRestoreChangeExecutor());
+        new PartitionRestoreApplier(
+            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
     final var globalConfig =
         GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
     final var partitionState =
@@ -100,8 +102,8 @@ final class PartitionPreRestoreApplierTest {
   void shouldFailInitWhenMemberDoesNotReplicatePartition() {
     // given
     final var applier =
-        new PartitionPreRestoreApplier(
-            MEMBER_ID, PARTITION_ID, new SucceedingRestoreChangeExecutor());
+        new PartitionRestoreApplier(
+            MEMBER_ID, PARTITION_ID, BACKUP_IDS, new SucceedingRestoreChangeExecutor());
     final var globalConfig =
         GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
     final var groupConfig =
@@ -123,22 +125,25 @@ final class PartitionPreRestoreApplierTest {
   void shouldDelegateToExecutorAndLeaveGroupConfigurationUnchanged() {
     // given
     final var executor = new SucceedingRestoreChangeExecutor();
-    final var applier = new PartitionPreRestoreApplier(MEMBER_ID, PARTITION_ID, executor);
+    final var applier = new PartitionRestoreApplier(MEMBER_ID, PARTITION_ID, BACKUP_IDS, executor);
 
     // when
     final var result = applier.apply();
 
     // then
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
-    assertThat(executor.invokedPartitionIds).containsExactly(PARTITION_ID);
+    assertThat(executor.invokedRestores).containsExactly(Map.entry(PARTITION_ID, BACKUP_IDS));
   }
 
   @Test
   void shouldFailApplyWhenExecutorFails() {
     // given
     final var applier =
-        new PartitionPreRestoreApplier(
-            MEMBER_ID, PARTITION_ID, new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
+        new PartitionRestoreApplier(
+            MEMBER_ID,
+            PARTITION_ID,
+            BACKUP_IDS,
+            new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
 
     // when
     final var result = applier.apply();
@@ -151,16 +156,16 @@ final class PartitionPreRestoreApplierTest {
   }
 
   private static final class SucceedingRestoreChangeExecutor implements RestoreChangeExecutor {
-    private final List<Integer> invokedPartitionIds = new ArrayList<>();
+    private final Map<Integer, SortedSet<Long>> invokedRestores = new HashMap<>();
 
     @Override
     public ActorFuture<Void> preRestore(final int partitionId) {
-      invokedPartitionIds.add(partitionId);
       return CompletableActorFuture.completed(null);
     }
 
     @Override
     public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
+      invokedRestores.put(partitionId, backupIds);
       return CompletableActorFuture.completed(null);
     }
   }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.SortedSet;
 
 /**
  * Performs the local, broker-side steps of an in-process restore of a single partition while the
@@ -22,11 +23,24 @@ public interface RestoreChangeExecutor {
   /** Drops the member's local disk data for {@code partitionId}, preparing it for a restore. */
   ActorFuture<Void> preRestore(int partitionId);
 
+  /**
+   * Restores the given local partition from the given backups.
+   *
+   * @param partitionId the partition to restore
+   * @param backupIds the ids of the backups to restore, in ascending order
+   */
+  ActorFuture<Void> restore(int partitionId, SortedSet<Long> backupIds);
+
   /** No-op executor for plan simulation, where operations must succeed without side effects. */
   final class NoopRestoreChangeExecutor implements RestoreChangeExecutor {
 
     @Override
     public ActorFuture<Void> preRestore(final int partitionId) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
       return CompletableActorFuture.completed(null);
     }
   }
@@ -39,6 +53,11 @@ public interface RestoreChangeExecutor {
 
     @Override
     public ActorFuture<Void> preRestore(final int partitionId) {
+      return denied();
+    }
+
+    @Override
+    public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
       return denied();
     }
 
