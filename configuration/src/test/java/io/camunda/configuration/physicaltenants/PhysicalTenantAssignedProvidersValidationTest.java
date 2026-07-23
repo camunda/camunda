@@ -554,6 +554,25 @@ class PhysicalTenantAssignedProvidersValidationTest {
   }
 
   // -------------------------------------------------------------------------
+  // Tenant id discovery: delegated to the shared PhysicalTenantIdDiscovery utility
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldRejectTenantIdExceeding64Characters() {
+    // given a tenant id one character over the shared length limit — the only discovery-reachable
+    // invalid case, since Form.UNIFORM normalizes any format-invalid segment (e.g. dashes/upper
+    // case) into a valid id before the shared validation runs
+    final String tooLong = "a".repeat(65);
+    final Environment environment =
+        environmentWith(Map.of("camunda.physical-tenants." + tooLong + ".cluster.size", 4));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantAssignedProvidersValidation.validate(environment))
+        .withMessageContaining("Invalid physical tenant id");
+  }
+
+  // -------------------------------------------------------------------------
   // Helpers
   // -------------------------------------------------------------------------
 
