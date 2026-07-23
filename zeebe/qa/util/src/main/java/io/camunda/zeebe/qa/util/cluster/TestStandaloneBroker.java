@@ -438,6 +438,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     metadata.setSyncInitializerDelay(Duration.ofMillis(500));
     metadata.setSyncDelay(Duration.ofMillis(500));
     metadata.setSyncRequestTimeout(Duration.ofMillis(500));
+    metadata.setBootstrapTimeout(Duration.ofSeconds(5));
 
     // Set raft defaults - disable flushing for faster tests
     unifiedConfig.getCluster().getRaft().setFlushEnabled(false);
