@@ -406,3 +406,74 @@ test.describe.parallel('Job Priority API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 });
+
+test.describe.parallel('Activate Jobs API Tests - priority order', () => {
+  const runSuffix = randomUUID().slice(0, 8);
+  const processId = `processWithJobPriority-${runSuffix}`;
+  const priorityJobType = `priorityJobType-${runSuffix}`;
+  const processInstanceKeysToCancel: string[] = [];
+
+  test.beforeAll(async () => {
+    await deployWithSubstitutions('./resources/processWithJobPriority.bpmn', {
+      processWithJobPriority: processId,
+      priorityJobType: priorityJobType,
+    });
+  });
+
+  test.afterAll(async () => {
+    for (const processInstanceKey of processInstanceKeysToCancel) {
+      await cancelProcessInstance(processInstanceKey);
+    }
+  });
+
+  test('Activate Jobs - jobs of the same type are activated in descending priority order', async ({
+    request,
+  }) => {
+    const [processInstance] = await createInstances(processId, 1, 1);
+    processInstanceKeysToCancel.push(
+      String(processInstance.processInstanceKey),
+    );
+
+    await expect(async () => {
+      const res = await request.post(buildUrl('/jobs/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            processInstanceKey: {$eq: processInstance.processInstanceKey},
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const json = await res.json();
+      expect(json.items).toHaveLength(3);
+    }).toPass(defaultAssertionOptions);
+
+    const activatedPriorities: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      const res = await request.post(buildUrl('/jobs/activation'), {
+        headers: jsonHeaders(),
+        data: {
+          type: priorityJobType,
+          timeout: 10000,
+          maxJobsToActivate: 1,
+        },
+      });
+
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/jobs/activation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      const json = await res.json();
+      expect(json.jobs).toHaveLength(1);
+      expect(json.jobs[0].priority).not.toBeUndefined();
+      activatedPriorities.push(json.jobs[0].priority);
+    }
+
+    expect(activatedPriorities).toEqual([90, 50, 10]);
+  });
+});
