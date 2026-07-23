@@ -59,13 +59,13 @@ public final class RestoreValidator
   // unavailable to release resources.
   private static final Duration BACKUP_RESOLUTION_TIMEOUT = Duration.ofSeconds(10);
   private final @Nullable BackupStore backupStore;
-  private final @Nullable IntFunction<Long> exportedPositionSupplier;
+  private final @Nullable IntFunction<@Nullable Long> exportedPositionSupplier;
   private final int partitionCount;
 
   public RestoreValidator(
       final int partitionCount,
       final @Nullable BackupStore backupStore,
-      final @Nullable IntFunction<Long> exportedPositionSupplier) {
+      final @Nullable IntFunction<@Nullable Long> exportedPositionSupplier) {
     this.backupStore = backupStore;
     this.exportedPositionSupplier = exportedPositionSupplier;
     this.partitionCount = partitionCount;
@@ -206,7 +206,7 @@ public final class RestoreValidator
   }
 
   private Map<Integer, Long> exportedPositions(
-      final IntFunction<Long> positionSupplier, final int partitionCount) {
+      final IntFunction<@Nullable Long> positionSupplier, final int partitionCount) {
     return IntStream.rangeClosed(1, partitionCount)
         .boxed()
         .collect(
