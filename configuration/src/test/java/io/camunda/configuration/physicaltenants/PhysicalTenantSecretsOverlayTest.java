@@ -149,12 +149,12 @@ class PhysicalTenantSecretsOverlayTest {
 
   @Test
   void shouldOverlayAwsSecretsManagerStorePerTenant() {
-    // given a root aws-secrets-manager store and a tenant that overrides its path-prefix
+    // given a root aws store and a tenant that overrides its path-prefix
     setProperties(
         new HashMap<>(
             Map.of(
-                "camunda.secrets.stores.aws-secrets-manager.shared.path-prefix", "camunda/",
-                "camunda.physical-tenants.tenanta.secrets.stores.aws-secrets-manager.shared.path-prefix",
+                "camunda.secrets.stores.aws.shared.path-prefix", "camunda/",
+                "camunda.physical-tenants.tenanta.secrets.stores.aws.shared.path-prefix",
                     "tenanta/")),
         "tenanta");
 
@@ -167,7 +167,7 @@ class PhysicalTenantSecretsOverlayTest {
                 .forPhysicalTenant("tenanta")
                 .getSecrets()
                 .getStores()
-                .getAwsSecretsManager()
+                .getAws()
                 .get("shared")
                 .getPathPrefix())
         .isEqualTo("tenanta/");
@@ -176,7 +176,7 @@ class PhysicalTenantSecretsOverlayTest {
                 .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .getSecrets()
                 .getStores()
-                .getAwsSecretsManager()
+                .getAws()
                 .get("shared")
                 .getPathPrefix())
         .isEqualTo("camunda/");
@@ -184,10 +184,9 @@ class PhysicalTenantSecretsOverlayTest {
 
   @Test
   void shouldInheritRootAwsSecretsManagerStoreWhenTenantHasNoSecretsOverride() {
-    // given only a root aws-secrets-manager store; the tenant overrides no secrets field
+    // given only a root aws store; the tenant overrides no secrets field
     setProperties(
-        new HashMap<>(
-            Map.of("camunda.secrets.stores.aws-secrets-manager.shared.path-prefix", "camunda/")),
+        new HashMap<>(Map.of("camunda.secrets.stores.aws.shared.path-prefix", "camunda/")),
         "tenanta");
 
     // when the resolver produces a Camunda per tenant
@@ -199,7 +198,7 @@ class PhysicalTenantSecretsOverlayTest {
                 .forPhysicalTenant("tenanta")
                 .getSecrets()
                 .getStores()
-                .getAwsSecretsManager()
+                .getAws()
                 .get("shared")
                 .getPathPrefix())
         .isEqualTo("camunda/");
@@ -211,10 +210,9 @@ class PhysicalTenantSecretsOverlayTest {
     setProperties(
         new HashMap<>(
             Map.of(
-                "camunda.secrets.stores.aws-secrets-manager.shared.region", "eu-west-1",
-                "camunda.secrets.stores.aws-secrets-manager.shared.path-prefix", "camunda/",
-                "camunda.physical-tenants.tenanta.secrets.stores.aws-secrets-manager.shared.region",
-                    "us-east-1")),
+                "camunda.secrets.stores.aws.shared.region", "eu-west-1",
+                "camunda.secrets.stores.aws.shared.path-prefix", "camunda/",
+                "camunda.physical-tenants.tenanta.secrets.stores.aws.shared.region", "us-east-1")),
         "tenanta");
 
     // when the resolver produces a Camunda per tenant
@@ -222,12 +220,7 @@ class PhysicalTenantSecretsOverlayTest {
 
     // then tenanta's region is overridden but path-prefix survives the deep merge from root
     final var store =
-        resolver
-            .forPhysicalTenant("tenanta")
-            .getSecrets()
-            .getStores()
-            .getAwsSecretsManager()
-            .get("shared");
+        resolver.forPhysicalTenant("tenanta").getSecrets().getStores().getAws().get("shared");
     assertThat(store.getRegion()).isEqualTo("us-east-1");
     assertThat(store.getPathPrefix()).isEqualTo("camunda/");
   }
@@ -238,8 +231,8 @@ class PhysicalTenantSecretsOverlayTest {
     setProperties(
         new HashMap<>(
             Map.of(
-                "camunda.secrets.stores.aws-secrets-manager.shared.path-prefix", "camunda/",
-                "camunda.physical-tenants.tenanta.secrets.stores.aws-secrets-manager.shared.batch-enabled",
+                "camunda.secrets.stores.aws.shared.path-prefix", "camunda/",
+                "camunda.physical-tenants.tenanta.secrets.stores.aws.shared.batch-enabled",
                     "true")),
         "tenanta");
 
@@ -248,12 +241,7 @@ class PhysicalTenantSecretsOverlayTest {
 
     // then tenanta's batch-enabled is overridden but path-prefix survives the deep merge
     final var store =
-        resolver
-            .forPhysicalTenant("tenanta")
-            .getSecrets()
-            .getStores()
-            .getAwsSecretsManager()
-            .get("shared");
+        resolver.forPhysicalTenant("tenanta").getSecrets().getStores().getAws().get("shared");
     assertThat(store.isBatchEnabled()).isTrue();
     assertThat(store.getPathPrefix()).isEqualTo("camunda/");
     assertThat(
@@ -261,7 +249,7 @@ class PhysicalTenantSecretsOverlayTest {
                 .forPhysicalTenant(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .getSecrets()
                 .getStores()
-                .getAwsSecretsManager()
+                .getAws()
                 .get("shared")
                 .isBatchEnabled())
         .isFalse();
@@ -274,8 +262,8 @@ class PhysicalTenantSecretsOverlayTest {
     setProperties(
         new HashMap<>(
             Map.of(
-                "camunda.secrets.stores.aws-secrets-manager.shared.path-prefix", "camunda/",
-                "camunda.physical-tenants.tenanta.secrets.stores.aws-secrets-manager.shared.path-prefix",
+                "camunda.secrets.stores.aws.shared.path-prefix", "camunda/",
+                "camunda.physical-tenants.tenanta.secrets.stores.aws.shared.path-prefix",
                     "tenanta/")),
         "tenanta");
 
@@ -284,19 +272,13 @@ class PhysicalTenantSecretsOverlayTest {
 
     // then it contains a Secrets per tenant with the correct per-tenant path-prefix
     assertThat(registry).containsKeys("tenanta", PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
-    assertThat(
-            registry
-                .get("tenanta")
-                .getStores()
-                .getAwsSecretsManager()
-                .get("shared")
-                .getPathPrefix())
+    assertThat(registry.get("tenanta").getStores().getAws().get("shared").getPathPrefix())
         .isEqualTo("tenanta/");
     assertThat(
             registry
                 .get(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
                 .getStores()
-                .getAwsSecretsManager()
+                .getAws()
                 .get("shared")
                 .getPathPrefix())
         .isEqualTo("camunda/");
