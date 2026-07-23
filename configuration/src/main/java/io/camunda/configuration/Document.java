@@ -56,6 +56,13 @@ public class Document {
 
   public String getDefaultStoreId() {
     if (defaultStoreId != null) {
+      // value may already be resolved by the Binder from a path other than the canonical one below
+      // (e.g. a physical-tenant overlay bound at "camunda.physical-tenants.<id>.document.
+      // default-store-id"). We trust that resolved value and call validateLegacyConfigurationUnsafe
+      // only for its legacy-usage warning side effect, ignoring its return: reacting to it would
+      // check/report presence against the canonical path only, which can silently overwrite an
+      // already-correct tenant-scoped value with the legacy one, and mislabel which property the
+      // warning is actually about.
       UnifiedConfigurationHelper.validateLegacyConfigurationUnsafe(
           "camunda.document.default-store-id",
           defaultStoreId,
