@@ -14,11 +14,8 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 
 /**
@@ -72,32 +69,9 @@ public final class ExportingStateChangeApplier implements PartitionGroupConfigur
 
   @Override
   public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
-    final var result = new CompletableActorFuture<UnaryOperator<PartitionGroupConfiguration>>();
-
-    if (partitions.isEmpty()) {
-      result.complete(UnaryOperator.identity());
-      return result;
-    }
-
-    final var remaining = new AtomicInteger(partitions.size());
-    final var failed = new AtomicBoolean(false);
-
-    for (final int partitionId : partitions) {
-      partitionChangeExecutor
-          .setExportingState(partitionId, state)
-          .onComplete(
-              (nothing, error) -> {
-                if (error != null) {
-                  if (failed.compareAndSet(false, true)) {
-                    result.completeExceptionally(error);
-                  }
-                } else if (remaining.decrementAndGet() == 0 && !failed.get()) {
-                  result.complete(this::updatePartitionConfigs);
-                }
-              });
-    }
-
-    return result;
+    return partitionChangeExecutor
+        .setExportingState(partitions, state)
+        .thenApply(ignored -> this::updatePartitionConfigs);
   }
 
   private PartitionGroupConfiguration updatePartitionConfigs(

@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents the executor that executes the actual process to start or start. The concrete
@@ -112,12 +113,13 @@ public interface PartitionChangeExecutor {
       int partitionId, String exporterId, long metadataVersion, String initializeFrom);
 
   /**
-   * Sets the overall exporting state for the given partition, pausing, soft-pausing or resuming all
-   * exporters of the partition accordingly.
+   * Sets the overall exporting state for every given partition, pausing, soft-pausing or resuming
+   * all exporters of each partition accordingly.
    *
-   * @param partitionId id of the partition
+   * @param partitionIds ids of the partitions
    * @param exportingState the target exporting state
-   * @return a future that completes when the exporting state has been applied
+   * @return a future that completes when the exporting state has been applied to all partitions
    */
-  ActorFuture<Void> setExportingState(final int partitionId, final ExportingState exportingState);
+  ActorFuture<Void> setExportingState(
+      final Set<Integer> partitionIds, final ExportingState exportingState);
 }

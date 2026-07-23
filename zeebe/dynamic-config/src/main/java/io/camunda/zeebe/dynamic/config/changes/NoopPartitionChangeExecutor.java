@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 public final class NoopPartitionChangeExecutor implements PartitionChangeExecutor {
 
@@ -71,7 +72,7 @@ public final class NoopPartitionChangeExecutor implements PartitionChangeExecuto
 
   @Override
   public ActorFuture<Void> setExportingState(
-      final int partitionId, final ExportingState exportingState) {
+      final Set<Integer> partitionIds, final ExportingState exportingState) {
     return CompletableActorFuture.completed(null);
   }
 }

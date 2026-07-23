@@ -22,6 +22,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
@@ -69,17 +70,14 @@ final class ExportingStateChangeApplierTest {
   void shouldSetExporterStateOnAllLocalPartitions() {
     // given
     applier.initMemberState(clusterWithPartitions(1, 2));
-    when(partitionChangeExecutor.setExportingState(1, targetState))
-        .thenReturn(CompletableActorFuture.completed(null));
-    when(partitionChangeExecutor.setExportingState(2, targetState))
+    when(partitionChangeExecutor.setExportingState(Set.of(1, 2), targetState))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     applier.applyOperation().join();
 
     // then
-    verify(partitionChangeExecutor).setExportingState(1, targetState);
-    verify(partitionChangeExecutor).setExportingState(2, targetState);
+    verify(partitionChangeExecutor).setExportingState(Set.of(1, 2), targetState);
   }
 
   @Test
@@ -87,9 +85,7 @@ final class ExportingStateChangeApplierTest {
     // given
     final var clusterConfiguration = clusterWithPartitions(1, 2);
     applier.initMemberState(clusterConfiguration);
-    when(partitionChangeExecutor.setExportingState(1, targetState))
-        .thenReturn(CompletableActorFuture.completed(null));
-    when(partitionChangeExecutor.setExportingState(2, targetState))
+    when(partitionChangeExecutor.setExportingState(Set.of(1, 2), targetState))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
@@ -106,9 +102,7 @@ final class ExportingStateChangeApplierTest {
   void shouldFailFutureIfAnyPartitionFails() {
     // given
     applier.initMemberState(clusterWithPartitions(1, 2));
-    when(partitionChangeExecutor.setExportingState(1, targetState))
-        .thenReturn(CompletableActorFuture.completed(null));
-    when(partitionChangeExecutor.setExportingState(2, targetState))
+    when(partitionChangeExecutor.setExportingState(Set.of(1, 2), targetState))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new RuntimeException("force fail")));
 

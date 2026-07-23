@@ -13,11 +13,8 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 
 /**
@@ -64,34 +61,9 @@ final class ExportingStateChangeApplier implements MemberOperationApplier {
 
   @Override
   public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
-    final var result = new CompletableActorFuture<UnaryOperator<MemberState>>();
-
-    if (partitions.isEmpty()) {
-      result.complete(memberState -> memberState);
-      return result;
-    }
-
-    // remaining/failed track the fan-out: the member config is only updated once every partition
-    // has replied, and only if none of them failed (result can only be completed once).
-    final var remaining = new AtomicInteger(partitions.size());
-    final var failed = new AtomicBoolean(false);
-
-    for (final int partitionId : partitions) {
-      partitionChangeExecutor
-          .setExportingState(partitionId, state)
-          .onComplete(
-              (nothing, error) -> {
-                if (error != null) {
-                  if (failed.compareAndSet(false, true)) {
-                    result.completeExceptionally(error);
-                  }
-                } else if (remaining.decrementAndGet() == 0 && !failed.get()) {
-                  result.complete(this::updatePartitionConfigs);
-                }
-              });
-    }
-
-    return result;
+    return partitionChangeExecutor
+        .setExportingState(partitions, state)
+        .thenApply(ignored -> this::updatePartitionConfigs);
   }
 
   private MemberState updatePartitionConfigs(final MemberState memberState) {

@@ -552,9 +552,27 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> setExportingState(
-      final int partitionId, final ExportingState exportingState) {
+      final Set<Integer> partitionIds, final ExportingState exportingState) {
     final var result = concurrencyControl.<Void>createFuture();
-    concurrencyControl.run(() -> setExportingState(partitionId, exportingState, result));
+    final var perPartitionResults =
+        partitionIds.stream()
+            .map(
+                partitionId -> {
+                  final var partitionResult = concurrencyControl.<Void>createFuture();
+                  concurrencyControl.run(
+                      () -> setExportingState(partitionId, exportingState, partitionResult));
+                  return partitionResult;
+                })
+            .collect(new ActorFutureCollector<Void>(concurrencyControl));
+    concurrencyControl.runOnCompletion(
+        perPartitionResults,
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(null);
+          }
+        });
     return result;
   }
 
