@@ -17,17 +17,21 @@ public final class BatchOperationPartitionLifecycleRecord extends UnifiedRecordV
     implements BatchOperationPartitionLifecycleRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
+  public static final String PROP_STORAGE_ORDINAL_KEY = "storageOrdinalKey";
   public static final String PROP_SOURCE_PARTITION_ID = "sourcePartitionId";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
+  private final IntegerProperty storageOrdinalKeyProp =
+      new IntegerProperty(PROP_STORAGE_ORDINAL_KEY, 0);
   private final IntegerProperty sourcePartitionIdProp =
       new IntegerProperty(PROP_SOURCE_PARTITION_ID, -1);
   private final ObjectProperty<BatchOperationError> errorProp =
       new ObjectProperty<>("error", new BatchOperationError());
 
   public BatchOperationPartitionLifecycleRecord() {
-    super(3);
+    super(4);
     declareProperty(batchOperationKeyProp);
+    declareProperty(storageOrdinalKeyProp);
     declareProperty(sourcePartitionIdProp);
     declareProperty(errorProp);
   }
@@ -40,6 +44,16 @@ public final class BatchOperationPartitionLifecycleRecord extends UnifiedRecordV
   public BatchOperationPartitionLifecycleRecord setBatchOperationKey(final Long batchOperationKey) {
     batchOperationKeyProp.reset();
     batchOperationKeyProp.setValue(batchOperationKey);
+    return this;
+  }
+
+  @Override
+  public int getStorageOrdinalKey() {
+    return storageOrdinalKeyProp.getValue();
+  }
+
+  public BatchOperationPartitionLifecycleRecord setStorageOrdinalKey(final int storageOrdinalKey) {
+    storageOrdinalKeyProp.setValue(storageOrdinalKey);
     return this;
   }
 
@@ -66,6 +80,7 @@ public final class BatchOperationPartitionLifecycleRecord extends UnifiedRecordV
   public BatchOperationPartitionLifecycleRecord wrap(
       final BatchOperationPartitionLifecycleRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
+    setStorageOrdinalKey(record.getStorageOrdinalKey());
     setSourcePartitionId(record.getSourcePartitionId());
     setError(record.getError());
     return this;

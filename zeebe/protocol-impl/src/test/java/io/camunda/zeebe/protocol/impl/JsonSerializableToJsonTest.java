@@ -2237,6 +2237,7 @@ final class JsonSerializableToJsonTest {
         "DecisionEvaluationRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
+              final int storageOrdinalKey = 9;
               final var record =
                   new DecisionEvaluationRecord()
                       .setDecisionKey(1L)
@@ -2256,7 +2257,8 @@ final class JsonSerializableToJsonTest {
                       .setEvaluationFailureMessage("evaluation-failure-message")
                       .setFailedDecisionId("failed-decision-id")
                       .setRootProcessInstanceKey(6L)
-                      .setBusinessId("business-id");
+                      .setBusinessId("business-id")
+                      .setStorageOrdinalKey(storageOrdinalKey);
 
               final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
               evaluatedDecisionRecord
@@ -2339,7 +2341,8 @@ final class JsonSerializableToJsonTest {
                   "failedDecisionId":"failed-decision-id",
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 6,
-                  "businessId": "business-id"
+                  "businessId": "business-id",
+                  "storageOrdinalKey": 9
                 }
                 """
       },
@@ -2349,6 +2352,7 @@ final class JsonSerializableToJsonTest {
         "DecisionEvaluationRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
+              final int storageOrdinalKey = 10;
               final var record =
                   new DecisionEvaluationRecord()
                       .setDecisionKey(1L)
@@ -2369,7 +2373,8 @@ final class JsonSerializableToJsonTest {
                       .setFailedDecisionId("failed-decision-id")
                       .setTenantId("tenant-test")
                       .setRootProcessInstanceKey(6L)
-                      .setBusinessId("business-id");
+                      .setBusinessId("business-id")
+                      .setStorageOrdinalKey(storageOrdinalKey);
 
               final var evaluatedDecisionRecord = record.evaluatedDecisions().add();
               evaluatedDecisionRecord
@@ -2453,7 +2458,8 @@ final class JsonSerializableToJsonTest {
                   "failedDecisionId":"failed-decision-id",
                   "tenantId": "tenant-test",
                   "rootProcessInstanceKey": 6,
-                  "businessId": "business-id"
+                  "businessId": "business-id",
+                  "storageOrdinalKey": 10
                 }
                 """
       },
@@ -2486,7 +2492,8 @@ final class JsonSerializableToJsonTest {
                   "failedDecisionId":"",
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
-                  "businessId": ""
+                  "businessId": "",
+                  "storageOrdinalKey": 0
                 }
                 """
       },
@@ -2696,6 +2703,7 @@ final class JsonSerializableToJsonTest {
             () -> {
               final var resourceKey = 1L;
               final var batchOperationKey = 2L;
+              final int storageOrdinalKey = 3;
 
               return new ResourceDeletionRecord()
                   .setResourceKey(resourceKey)
@@ -2704,7 +2712,8 @@ final class JsonSerializableToJsonTest {
                   .setBatchOperationKey(batchOperationKey)
                   .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
                   .setResourceType(ResourceType.PROCESS_DEFINITION)
-                  .setResourceId("foo");
+                  .setResourceId("foo")
+                  .setStorageOrdinalKey(storageOrdinalKey);
             },
         """
                 {
@@ -2714,7 +2723,8 @@ final class JsonSerializableToJsonTest {
                   "batchOperationKey": 2,
                   "batchOperationType": "DELETE_PROCESS_INSTANCE",
                   "resourceType": "PROCESS_DEFINITION",
-                  "resourceId": "foo"
+                  "resourceId": "foo",
+                  "storageOrdinalKey": 3
                 }
                 """
       },
@@ -2736,7 +2746,8 @@ final class JsonSerializableToJsonTest {
                   "batchOperationKey": -1,
                   "batchOperationType": "DELETE_PROCESS_INSTANCE",
                   "resourceType": "UNKNOWN",
-                  "resourceId": ""
+                  "resourceId": "",
+                  "storageOrdinalKey": 0
                 }
                 """
       },
@@ -4167,7 +4178,8 @@ final class JsonSerializableToJsonTest {
                     "valueType": "NULL_VAL",
                     "intent": "UNKNOWN",
                     "recordValue": null
-                  }
+                  },
+                  "storageOrdinalKey": 0
                 }
                 """
       },
@@ -4235,7 +4247,8 @@ final class JsonSerializableToJsonTest {
                         HistoryDeletionIntent.DELETE,
                         new HistoryDeletionRecord()
                             .setResourceKey(1)
-                            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)),
+                            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION))
+                    .setStorageOrdinalKey(11),
         """
                 {
                    "batchOperationKey": 12345,
@@ -4300,7 +4313,8 @@ final class JsonSerializableToJsonTest {
                         "tenantId": "<default>",
                         "decisionDefinitionId": ""
                       }
-                    }
+                    },
+                    "storageOrdinalKey": 11
                  }
                 """
       },
@@ -4319,7 +4333,8 @@ final class JsonSerializableToJsonTest {
                     .setBatchOperationType(BatchOperationType.UPDATE_JOB)
                     .setEntityFilter(toMessagePack("{'type': 'myJobType'}"))
                     .setJobUpdatePlan(
-                        new BatchOperationJobUpdatePlan().setPriority(80).setRetries(5)),
+                        new BatchOperationJobUpdatePlan().setPriority(80).setRetries(5))
+                    .setStorageOrdinalKey(12),
         """
                 {
                   "batchOperationKey": 12345,
@@ -4336,7 +4351,8 @@ final class JsonSerializableToJsonTest {
                     "valueType": "NULL_VAL",
                     "intent": "UNKNOWN",
                     "recordValue": null
-                  }
+                  },
+                  "storageOrdinalKey": 12
                 }
                 """
       },
@@ -4352,7 +4368,8 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "batchOperationKey": 12345,
-                  "items": []
+                  "items": [],
+                  "storageOrdinalKey": 0
                 }
                 """
       },
@@ -4372,8 +4389,10 @@ final class JsonSerializableToJsonTest {
                             new BatchOperationItem()
                                 .setItemKey(1L)
                                 .setProcessInstanceKey(2L)
-                                .setRootProcessInstanceKey(3L),
-                            new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L))),
+                                .setRootProcessInstanceKey(3L)
+                                .setStorageOrdinalKey(13),
+                            new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L)))
+                    .setStorageOrdinalKey(14),
         """
                 {
                   "items": [
@@ -4381,18 +4400,21 @@ final class JsonSerializableToJsonTest {
                       "itemKey": 1,
                       "processInstanceKey": 2,
                       "rootProcessInstanceKey": 3,
+                      "storageOrdinalKey": 13,
                       "empty": false,
-                      "encodedLength": 54
+                      "encodedLength": 73
                     },
                     {
                       "itemKey": 2,
                       "processInstanceKey": 2,
                       "rootProcessInstanceKey": -1,
+                      "storageOrdinalKey": 0,
                       "empty": false,
-                      "encodedLength": 54
+                      "encodedLength": 73
                     }
                   ],
-                  "batchOperationKey": 12345
+                  "batchOperationKey": 12345,
+                  "storageOrdinalKey": 14
                 }
                 """
       },
@@ -4407,11 +4429,13 @@ final class JsonSerializableToJsonTest {
             () ->
                 new BatchOperationExecutionRecord()
                     .setBatchOperationKey(12345L)
-                    .setItemKeys(Set.of(1L, 2L)),
+                    .setItemKeys(Set.of(1L, 2L))
+                    .setStorageOrdinalKey(15),
         """
                 {
                   "batchOperationKey": 12345,
-                  "itemKeys": [1, 2]
+                  "itemKeys": [1, 2],
+                  "storageOrdinalKey": 15
                 }
                 """
       },
@@ -4427,7 +4451,8 @@ final class JsonSerializableToJsonTest {
         """
                 {
                   "batchOperationKey": 12345,
-                  "itemKeys": []
+                  "itemKeys": [],
+                  "storageOrdinalKey": 0
                 }
                 """
       },
@@ -4439,11 +4464,15 @@ final class JsonSerializableToJsonTest {
       {
         "BatchOperationLifecycleManagementRecord",
         (Supplier<BatchOperationLifecycleManagementRecord>)
-            () -> new BatchOperationLifecycleManagementRecord().setBatchOperationKey(12345L),
+            () ->
+                new BatchOperationLifecycleManagementRecord()
+                    .setBatchOperationKey(12345L)
+                    .setStorageOrdinalKey(16),
         """
                 {
                   "batchOperationKey": 12345,
-                  "errors":[]
+                  "errors":[],
+                  "storageOrdinalKey": 16
                 }
                 """
       },
