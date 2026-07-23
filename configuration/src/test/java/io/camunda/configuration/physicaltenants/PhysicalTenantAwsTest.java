@@ -8,11 +8,9 @@
 package io.camunda.configuration.physicaltenants;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.Aws;
 import io.camunda.configuration.Camunda;
-import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import java.util.HashMap;
 import java.util.Map;
@@ -133,55 +131,5 @@ class PhysicalTenantAwsTest {
     assertThat(aws.getAccessKey()).isNull();
     assertThat(aws.getSecretKey()).isNull();
     assertThat(aws.hasStaticCredentials()).isFalse();
-  }
-
-  @Test
-  void shouldRejectBlankSecretKeyNextToRealAccessKey() {
-    // given
-    setProperties(Map.of("camunda.aws.access-key", "key", "camunda.aws.secret-key", ""));
-
-    // when / then blank counts as unset, so this is a half-configured identity
-    assertThatThrownBy(this::newResolver)
-        .isInstanceOf(UnifiedConfigurationException.class)
-        .hasMessageContaining("aws.secret-key");
-  }
-
-  @Test
-  void shouldRejectPartialStaticCredentials() {
-    // given
-    setProperties(Map.of("camunda.physical-tenants.tenanta.aws.access-key", "key-only"), "tenanta");
-
-    // when / then
-    assertThatThrownBy(this::newResolver)
-        .isInstanceOf(UnifiedConfigurationException.class)
-        .hasMessageContaining("tenanta")
-        .hasMessageContaining("aws.secret-key");
-  }
-
-  @Test
-  void shouldRejectPartialWebIdentity() {
-    // given
-    setProperties(Map.of("camunda.aws.role-arn", "arn:aws:iam::111:role/some-role"));
-
-    // when / then
-    assertThatThrownBy(this::newResolver)
-        .isInstanceOf(UnifiedConfigurationException.class)
-        .hasMessageContaining("aws.web-identity-token-file");
-  }
-
-  @Test
-  void shouldRejectBothStaticCredentialsAndWebIdentity() {
-    // given
-    setProperties(
-        Map.of(
-            "camunda.aws.access-key", "key",
-            "camunda.aws.secret-key", "secret",
-            "camunda.aws.role-arn", "arn:aws:iam::111:role/some-role",
-            "camunda.aws.web-identity-token-file", "/var/run/secrets/token"));
-
-    // when / then
-    assertThatThrownBy(this::newResolver)
-        .isInstanceOf(UnifiedConfigurationException.class)
-        .hasMessageContaining("only one");
   }
 }

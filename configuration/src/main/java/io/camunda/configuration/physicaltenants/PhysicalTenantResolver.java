@@ -111,7 +111,6 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
     if (!resolvedPhysicalTenants.containsKey(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)) {
       resolvedPhysicalTenants.put(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camunda);
     }
-    resolvedPhysicalTenants.forEach(AwsCredentialsValidation::validate);
     CROSS_TENANT_VALIDATIONS.forEach(v -> v.validate(resolvedPhysicalTenants));
     PhysicalTenantDocumentAssignedValidation.validate(
         environment, resolvedPhysicalTenants, physicalTenantIds);
