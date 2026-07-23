@@ -271,7 +271,7 @@ public class ExporterConfiguration {
 
   private static void checkPositiveDuration(
       final Duration duration, final String name, final List<String> errors) {
-    if (duration.isNegative() || duration.isZero()) {
+    if (duration == null || duration.isNegative() || duration.isZero()) {
       errors.add(String.format("%s must be a positive duration but was %s", name, duration));
     }
   }
@@ -619,16 +619,23 @@ public class ExporterConfiguration {
 
   public static class ReplicationConfiguration {
     public static final boolean DEFAULT_ENABLED = false;
+    public static final ReplicationType DEFAULT_TYPE = ReplicationType.LOG_SEQ;
     public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(15);
     public static final Duration DEFAULT_MAX_LAG = Duration.ofMinutes(15);
     public static final int DEFAULT_MIN_SYNC_REPLICAS = 1;
     public static final boolean DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED = false;
+    public static final int DEFAULT_QUEUE_CAPACITY = 8192;
+    public static final Duration DEFAULT_QUEUE_DEBOUNCE_TIME = Duration.ofSeconds(5);
 
     private boolean enabled = DEFAULT_ENABLED;
+    private ReplicationType type = DEFAULT_TYPE;
     private Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
     private int minSyncReplicas = DEFAULT_MIN_SYNC_REPLICAS;
     private Duration maxLag = DEFAULT_MAX_LAG;
     private boolean pauseOnMaxLagExceeded = DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
+    private Duration delay;
+    private Duration queueDebounceTime = DEFAULT_QUEUE_DEBOUNCE_TIME;
+    private int queueCapacity = DEFAULT_QUEUE_CAPACITY;
 
     public boolean isEnabled() {
       return enabled;
@@ -636,6 +643,14 @@ public class ExporterConfiguration {
 
     public void setEnabled(final boolean enabled) {
       this.enabled = enabled;
+    }
+
+    public ReplicationType getType() {
+      return type;
+    }
+
+    public void setType(final ReplicationType type) {
+      this.type = type;
     }
 
     public Duration getPollingInterval() {
@@ -670,25 +685,68 @@ public class ExporterConfiguration {
       this.pauseOnMaxLagExceeded = pauseOnMaxLagExceeded;
     }
 
+    public Duration getDelay() {
+      return delay;
+    }
+
+    public void setDelay(final Duration delay) {
+      this.delay = delay;
+    }
+
+    public Duration getQueueDebounceTime() {
+      return queueDebounceTime;
+    }
+
+    public void setQueueDebounceTime(final Duration queueDebounceTime) {
+      this.queueDebounceTime = queueDebounceTime;
+    }
+
+    public int getQueueCapacity() {
+      return queueCapacity;
+    }
+
+    public void setQueueCapacity(final int queueCapacity) {
+      this.queueCapacity = queueCapacity;
+    }
+
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
-      if (enabled && (pollingInterval.isNegative() || pollingInterval.isZero())) {
-        errors.add(
-            String.format(
-                "asyncReplication.pollingInterval must be a positive duration but was %s",
-                pollingInterval));
+
+      if (!enabled) {
+        return errors;
       }
+
       if (minSyncReplicas <= 0) {
         errors.add(
             String.format(
                 "asyncReplication.minSyncReplicas must be greater 0 but was %d", minSyncReplicas));
       }
-      if (enabled && (maxLag.isNegative() || maxLag.isZero())) {
-        errors.add(
-            String.format(
-                "asyncReplication.maxLag must be a positive duration but was %s", maxLag));
+
+      if (type == ReplicationType.LOG_SEQ) {
+        checkPositiveDuration(pollingInterval, "asyncReplication.pollingInterval", errors);
+        checkPositiveDuration(maxLag, "asyncReplication.maxLag", errors);
+      } else if (type == ReplicationType.DELAY) {
+        checkPositiveDuration(delay, "asyncReplication.delay", errors);
+        checkNonNegativeDuration(queueDebounceTime, "asyncReplication.queueDebounceTime", errors);
+        if (queueCapacity <= 0) {
+          errors.add(
+              String.format(
+                  "asyncReplication.queueCapacity must be greater 0 but was %d", queueCapacity));
+        }
       }
       return errors;
+    }
+
+    private static void checkNonNegativeDuration(
+        final Duration duration, final String name, final List<String> errors) {
+      if (duration == null || duration.isNegative()) {
+        errors.add(String.format("%s must be a non-negative duration but was %s", name, duration));
+      }
+    }
+
+    public enum ReplicationType {
+      LOG_SEQ,
+      DELAY
     }
   }
 }

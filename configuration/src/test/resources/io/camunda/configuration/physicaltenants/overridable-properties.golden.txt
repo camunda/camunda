@@ -182,11 +182,15 @@ data.secondary-storage.opensearch.url
 data.secondary-storage.opensearch.urls
 data.secondary-storage.opensearch.username
 data.secondary-storage.opensearch.variable-size-threshold
+data.secondary-storage.rdbms.async-replication.delay
 data.secondary-storage.rdbms.async-replication.enabled
 data.secondary-storage.rdbms.async-replication.max-lag
 data.secondary-storage.rdbms.async-replication.min-sync-replicas
 data.secondary-storage.rdbms.async-replication.pause-on-max-lag-exceeded
 data.secondary-storage.rdbms.async-replication.polling-interval
+data.secondary-storage.rdbms.async-replication.queue-capacity
+data.secondary-storage.rdbms.async-replication.queue-debounce-time
+data.secondary-storage.rdbms.async-replication.type
 data.secondary-storage.rdbms.auto-ddl
 data.secondary-storage.rdbms.batch-operation-cache
 data.secondary-storage.rdbms.batch-operation-item-insert-block-size

@@ -1029,12 +1029,20 @@ public class BrokerBasedPropertiesOverride {
     if (database.getAsyncReplication() != null) {
       final var asyncReplication = database.getAsyncReplication();
       config.getAsyncReplication().setEnabled(asyncReplication.isEnabled());
+      if (asyncReplication.getType() != null) {
+        config.getAsyncReplication().setType(asyncReplication.getType());
+      }
       config.getAsyncReplication().setPollingInterval(asyncReplication.getPollingInterval());
       config.getAsyncReplication().setMinSyncReplicas(asyncReplication.getMinSyncReplicas());
       config.getAsyncReplication().setMaxLag(asyncReplication.getMaxLag());
       config
           .getAsyncReplication()
           .setPauseOnMaxLagExceeded(asyncReplication.isPauseOnMaxLagExceeded());
+      if (asyncReplication.getDelay() != null) {
+        config.getAsyncReplication().setDelay(asyncReplication.getDelay());
+      }
+      config.getAsyncReplication().setQueueDebounceTime(asyncReplication.getQueueDebounceTime());
+      config.getAsyncReplication().setQueueCapacity(asyncReplication.getQueueCapacity());
     }
 
     applyRdbmsExtensionPropertyConfiguration(
