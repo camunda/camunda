@@ -273,10 +273,6 @@
                 "type": "boolean",
                 "description": "Indicates whether the start event of the process has an associated Form Key."
               },
-              "isDeleted": {
-                "type": "boolean",
-                "description": "Filter by whether the process definition has been deleted. When not set, both deleted and non-deleted process definitions are returned. Set to `false` to exclude deleted definitions (recommended for most use cases). Set to `true` to return only deleted definitions that are still retained in secondary storage. "
-              },
               "isLatestVersion": {
                 "type": "boolean",
                 "description": "Whether to only return the latest version of each process definition. When using this filter, pagination functionality is limited, you can only paginate forward using `after` and `limit`. The response contains no `startCursor` in the `page`, and requests ignore the `from` and `before` in the `page`. When using this filter, sorting is limited to `processDefinitionId` and `tenantId` fields only. "
@@ -296,6 +292,11 @@
               "resourceName": {
                 "type": "string",
                 "description": "Resource name of this process definition."
+              },
+              "state": {
+                "type": "string",
+                "enum": ["ACTIVE", "DELETED"],
+                "description": "Filter by the process definition's state. When not set, process definitions in any state are returned. Set to `ACTIVE` to exclude deleted definitions (recommended for most use cases). Set to `DELETED` to return only definitions that have been deleted but are still retained in secondary storage. "
               },
               "version": {
                 "type": "integer",
