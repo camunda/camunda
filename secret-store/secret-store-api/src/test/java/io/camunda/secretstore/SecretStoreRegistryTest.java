@@ -5,11 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.secrets;
+package io.camunda.secretstore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.secretstore.NoopSecretStore;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
@@ -66,7 +65,7 @@ class SecretStoreRegistryTest {
     // when
     final var caches = registry.getCaches();
 
-    // then — one cache per store, keyed by the same ID
+    // then - one cache per store, keyed by the same ID
     assertThat(caches).containsKeys("store-a", "store-b");
   }
 }

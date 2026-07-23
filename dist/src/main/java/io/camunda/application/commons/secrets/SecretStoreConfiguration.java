@@ -11,6 +11,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.secretstore.NoopSecretStore;
 import io.camunda.secretstore.SecretStore;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.secretstore.file.FileBasedSecretStore;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
