@@ -22,7 +22,9 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -54,6 +56,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
           .withIdentitySetup()
           .withAuthorizationsEnabled(true)
           .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withMultiTenancyChecksEnabled(true)
           .withSecurityConfig(
               cfg -> {
                 final var defaultRoles = new HashMap<>(cfg.getInitialization().getDefaultRoles());
@@ -65,6 +68,8 @@ public class MessageCorrelationCorrelateAuthorizationTest {
 
   @Before
   public void before() {
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, DEFAULT_USER.getUsername());
+
     engine
         .deployment()
         .withXmlResource(
@@ -112,6 +117,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
     final var correlationKey = UUID.randomUUID().toString();
     createProcessInstance(correlationKey);
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE_PROCESS_INSTANCE);
 
@@ -137,6 +143,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
     final var correlationKey = UUID.randomUUID().toString();
     createProcessInstance(correlationKey);
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
 
     // when
     final var rejection =
@@ -177,6 +184,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
   public void shouldBeAuthorizedToCorrelateMessageToStartEventWithUser() {
     // given
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user,
         AuthorizationResourceType.PROCESS_DEFINITION,
@@ -202,6 +210,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
   public void shouldBeUnauthorizedToCorrelateMessageToStartEventIfNoPermissions() {
     // given
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     final var correlationKey = "test";
 
     // when
@@ -228,6 +237,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
     final var correlationKey = UUID.randomUUID().toString();
     createProcessInstance(correlationKey);
     final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
     addPermissionsToUser(
         user,
         AuthorizationResourceType.PROCESS_DEFINITION,
@@ -264,6 +274,50 @@ public class MessageCorrelationCorrelateAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(unauthorizedProcessId));
+  }
+
+  @Test
+  public void shouldRejectWhenUserNotAssignedToTenant() {
+    // given
+    final String tenant = "restricted-tenant";
+    final String tenantProcessId = "tenantProcessId";
+
+    engine.tenant().newTenant().withTenantId(tenant).withName("Restricted Tenant").create();
+    assignUserToTenant(tenant, DEFAULT_USER.getUsername());
+
+    final var user = createUser();
+    assignUserToTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER, user.getUsername());
+    addPermissionsToUser(
+        user,
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.CREATE_PROCESS_INSTANCE,
+        tenantProcessId);
+
+    engine
+        .deployment()
+        .withXmlResource(
+            "tenant-process.bpmn",
+            Bpmn.createExecutableProcess(tenantProcessId)
+                .startEvent()
+                .message(m -> m.name(START_MSG_NAME))
+                .endEvent()
+                .done())
+        .withTenantId(tenant)
+        .deploy(DEFAULT_USER.getUsername());
+
+    // when
+    final var rejection =
+        engine
+            .messageCorrelation()
+            .withName(START_MSG_NAME)
+            .withCorrelationKey("")
+            .withTenantId(tenant)
+            .expectRejection()
+            .correlate(user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.FORBIDDEN);
+    assertThat(rejection.getRejectionReason()).contains("user is not assigned to this tenant");
   }
 
   private UserRecordValue createUser() {
@@ -311,6 +365,15 @@ public class MessageCorrelationCorrelateAuthorizationTest {
         .ofBpmnProcessId(PROCESS_ID)
         .withVariable(CORRELATION_KEY_VARIABLE, correlationKey)
         .create(DEFAULT_USER.getUsername());
+  }
+
+  private void assignUserToTenant(final String tenantId, final String username) {
+    engine
+        .tenant()
+        .addEntity(tenantId)
+        .withEntityType(EntityType.USER)
+        .withEntityId(username)
+        .add();
   }
 
   private void assertNoMessagePublishedOrCorrelated(

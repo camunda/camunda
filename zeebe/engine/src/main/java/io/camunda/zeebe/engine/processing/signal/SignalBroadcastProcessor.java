@@ -8,13 +8,13 @@
 package io.camunda.zeebe.engine.processing.signal;
 
 import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -96,13 +96,20 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     // Check tenant authorization if not an internal command
     if (isAuthNeeded) {
-      final var authorizedTenants = determineAuthorizedTenants(command);
-      if (!authorizedTenants.isAuthorizedForTenantId(signalRecord.getTenantId())) {
-        final var message =
-            "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
-                .formatted(signalRecord.getTenantId());
-        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-        responseWriter.writeRejectedResponseOnCommand(command, RejectionType.FORBIDDEN, message);
+      final var tenantCheck =
+          cslCheck.checkTenant(
+              command,
+              signalRecord.getTenantId(),
+              signalRecord,
+              new Rejection(
+                  RejectionType.FORBIDDEN,
+                  "Expected to broadcast signal for tenant '%s', but user is not assigned to this tenant."
+                      .formatted(signalRecord.getTenantId())));
+      if (tenantCheck.isLeft()) {
+        final var rejection = tenantCheck.getLeft();
+        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+        responseWriter.writeRejectedResponseOnCommand(
+            command, rejection.type(), rejection.reason());
         return;
       }
     }
@@ -141,10 +148,6 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     final var isAuthNeeded = !(command.getAuthInfo().getFormat() == AuthDataFormat.PRE_AUTHORIZED);
     triggerSignal(command, command.getKey(), isAuthNeeded);
     commandDistributionBehavior.acknowledgeCommand(command);
-  }
-
-  private AuthorizedTenants determineAuthorizedTenants(final TypedRecord<SignalRecord> command) {
-    return cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
   }
 
   private void checkAuthorization(
