@@ -5,11 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.application.commons.secrets;
+package io.camunda.secretstore;
 
-import io.camunda.secretstore.InMemorySecretCache;
-import io.camunda.secretstore.SecretCache;
-import io.camunda.secretstore.SecretStore;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NullMarked;
