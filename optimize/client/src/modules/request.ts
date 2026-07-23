@@ -29,6 +29,31 @@ export interface ErrorResponse extends Response {
 
 const handlers: Handler[] = [];
 
+// SPIKE (ADR-0038): CSRF token handling for the CSL security chains, mirroring Operate/Tasklist.
+// The server issues the token in the `X-CSRF-TOKEN` response header on authenticated responses; we
+// stash it and echo it back as a request header on state-changing requests. Public `/external`
+// share endpoints are anonymous GETs and are CSRF-exempt on the backend, so they need nothing here.
+const CSRF_TOKEN_HEADER = 'X-CSRF-TOKEN';
+const CSRF_PROTECTED_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
+function csrfRequestHeader(method: string | undefined): Record<string, string> {
+  const token = sessionStorage.getItem(CSRF_TOKEN_HEADER);
+  if (token && method && CSRF_PROTECTED_METHODS.includes(method.toUpperCase())) {
+    return {[CSRF_TOKEN_HEADER]: token};
+  }
+  return {};
+}
+
+function storeCsrfToken(response: Response): void {
+  // Cast to optional: real responses always carry Headers, but this guards test doubles / edge
+  // responses that do not, so token capture never throws.
+  const headers = response.headers as Headers | undefined;
+  const token = headers?.get(CSRF_TOKEN_HEADER);
+  if (token) {
+    sessionStorage.setItem(CSRF_TOKEN_HEADER, token);
+  }
+}
+
 export function put(
   url: string,
   body: unknown,
@@ -104,11 +129,14 @@ export async function request(payload: RequestPayload): Promise<Response> {
       'Content-Type': 'application/json',
       'X-Optimize-Client-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
       'X-Optimize-Client-Locale': getLanguage(),
+      ...csrfRequestHeader(method),
       ...headers,
     },
     mode: 'cors',
     credentials: 'same-origin',
   });
+
+  storeCsrfToken(response);
 
   for (const handlerToCall of handlers) {
     if (handlerToCall) {

@@ -58,6 +58,20 @@ public class URLRedirectFilter implements Filter {
       return;
     }
 
+    /*
+     * SPIKE (ADR-0038): let the CSL / OAuth2 security endpoints reach Spring Security instead of
+     * being redirected to the SPA home. Otherwise the OIDC login-initiation endpoint
+     * (/oauth2/authorization/**) and the redirect callback (/sso-callback) get bounced to /#,
+     * producing a redirect loop.
+     */
+    if (requestURI.startsWith("/oauth2/")
+        || requestURI.startsWith("/sso-callback")
+        || "/login".equals(requestURI)
+        || "/logout".equals(requestURI)) {
+      chain.doFilter(request, response);
+      return;
+    }
+
     /* Validate requests to the static resources */
     final String staticRequestPath = requestURI;
     final String staticFilePath = WEBAPP_PATH + staticRequestPath;

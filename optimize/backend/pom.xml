@@ -116,6 +116,20 @@
       </exclusions>
     </dependency>
 
+    <!-- Camunda Security Library (ADR-0038). Versions managed in the parent pom. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-library-spring-boot-starter</artifactId>
+    </dependency>
+
     <!-- Spring -->
     <!-- Do not add versions: parent/pom.xml manages spring-framework-bom -->
     <dependency>

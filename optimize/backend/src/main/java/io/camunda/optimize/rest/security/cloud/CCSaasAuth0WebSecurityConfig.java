@@ -11,6 +11,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
 import java.util.List;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -22,8 +23,16 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
+// SPIKE (ADR-0038): backs off under CSL so it does not publish the legacy Auth0
+// ClientRegistrationRepository. Otherwise CSL adopts that legacy registration via
+// @ConditionalOnMissingBean and its {baseUrl}/sso-callback?uuid redirect wins over the
+// camunda.security.authentication.oidc.* config.
 @Configuration
 @Conditional(CCSaaSCondition.class)
+@ConditionalOnProperty(
+    name = "optimize.security.csl.enabled",
+    havingValue = "false",
+    matchIfMissing = true)
 public class CCSaasAuth0WebSecurityConfig {
 
   public static final String OAUTH_AUTH_ENDPOINT = "/sso";

@@ -226,6 +226,40 @@ describe('request', () => {
   });
 });
 
+describe('CSRF (ADR-0038)', () => {
+  beforeEach(() => {
+    fetch.mockClear();
+    sessionStorage.clear();
+    fetch.mockReturnValue(Promise.resolve(successResponse));
+  });
+
+  it('attaches the X-CSRF-TOKEN header on state-changing requests when a token is stored', async () => {
+    sessionStorage.setItem('X-CSRF-TOKEN', 'tok');
+
+    await post(url, 'body');
+
+    const {headers} = fetch.mock.calls[0][1];
+    expect(headers['X-CSRF-TOKEN']).toBe('tok');
+  });
+
+  it('does not attach the token on GET requests', async () => {
+    sessionStorage.setItem('X-CSRF-TOKEN', 'tok');
+
+    await get(url);
+
+    const {headers} = fetch.mock.calls[0][1];
+    expect(headers['X-CSRF-TOKEN']).toBeUndefined();
+  });
+
+  it('stores the X-CSRF-TOKEN from the response header', async () => {
+    fetch.mockReturnValueOnce(Promise.resolve({status: 200, headers: {get: () => 'newtok'}}));
+
+    await get(url);
+
+    expect(sessionStorage.getItem('X-CSRF-TOKEN')).toBe('newtok');
+  });
+});
+
 describe('handlers', () => {
   it('should call a registered handler with the response', async () => {
     const spy = jest.fn().mockReturnValue(successResponse);

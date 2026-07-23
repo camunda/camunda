@@ -32,6 +32,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
@@ -101,11 +102,30 @@ public class SessionService implements ConfigurationReloadable {
    */
   public String getRequestUserOrFailNotAuthorized(final HttpServletRequest request) {
     return subjectFromSecurityContext()
+        // SPIKE (ADR-0038): under CSL the browser is authenticated via the OIDC session, whose
+        // SecurityContext holds an OAuth2AuthenticationToken rather than an Optimize auth cookie.
+        // Resolve the user from that principal so session-authenticated API calls are not 401'd.
+        .or(SessionService::subjectFromCslWebappSession)
         .or(
             () ->
                 AuthCookieService.getAuthCookieToken(request)
                     .flatMap(AuthCookieService::getTokenSubject))
         .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
+  }
+
+  /**
+   * SPIKE (ADR-0038): extracts the user id from a CSL OIDC webapp session. When Optimize adopts
+   * CSL's stateful webapp chain, an authenticated browser request carries an {@link
+   * OAuth2AuthenticationToken} in the {@link SecurityContextHolder} (principal name = the
+   * configured username claim, {@code sub} by default). Legacy runs never produce this token type,
+   * so this is inert unless CSL is active.
+   */
+  private static Optional<String> subjectFromCslWebappSession() {
+    return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+        .filter(org.springframework.security.core.Authentication::isAuthenticated)
+        .filter(OAuth2AuthenticationToken.class::isInstance)
+        .map(OAuth2AuthenticationToken.class::cast)
+        .map(OAuth2AuthenticationToken::getName);
   }
 
   /**

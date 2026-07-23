@@ -16,6 +16,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -50,6 +53,15 @@ public class AuthenticationRestService {
   @GetMapping(path = LOGOUT)
   public void logoutUser(final HttpServletRequest request, final HttpServletResponse response) {
     authenticationService.logout(request.getCookies(), response);
+    // SPIKE (ADR-0038): under CSL the user is authenticated via a server-side session, so the
+    // legacy cookie cleanup above does not actually log them out. Invalidate the session (which
+    // removes it from the SessionStorePort) and clear the SecurityContext. No-op in the legacy
+    // stateless setup, where there is no session to invalidate. IdP end-session (Keycloak logout)
+    // via CSL's oidcLogout is a follow-up.
+    final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null) {
+      new SecurityContextLogoutHandler().logout(request, response, authentication);
+    }
   }
 
   private URI getUri(final HttpServletRequest request) {

@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 
 @ExtendWith(MockitoExtension.class)
 public class CCSMTokenServiceTest {
@@ -53,6 +55,7 @@ public class CCSMTokenServiceTest {
   @Mock private UserDetails userDetails;
   @Mock private DecodedJWT decodedJWT;
   @Mock private Claim verClaim;
+  @Mock private ObjectProvider<OAuth2AuthorizedClientRepository> authorizedClientRepositoryProvider;
 
   private CCSMTokenService ccsmTokenService;
 
@@ -69,7 +72,9 @@ public class CCSMTokenServiceTest {
     lenient().when(authConfiguration.getCcsmAuthConfiguration()).thenReturn(ccsmAuthConfiguration);
     lenient().when(ccsmAuthConfiguration.isEntraTokenVersionCheckEnabled()).thenReturn(true);
 
-    ccsmTokenService = new CCSMTokenService(authCookieService, configurationService, identity);
+    ccsmTokenService =
+        new CCSMTokenService(
+            authCookieService, configurationService, identity, authorizedClientRepositoryProvider);
   }
 
   @Test

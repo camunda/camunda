@@ -10,6 +10,7 @@ import React, {useEffect} from 'react';
 import {Route} from 'react-router-dom';
 import {addHandler, removeHandler} from 'request';
 import {IS_NAV_V2_ENABLED} from 'feature-flags';
+import {storePostLoginRedirect} from 'postLoginRedirect';
 
 import {Header} from '..';
 
@@ -19,6 +20,8 @@ export function PrivateRoute({component: Component, ...rest}) {
   useEffect(() => {
     const handleResponse = async (response) => {
       if (response.status === 401) {
+        // SPIKE (ADR-0038): stash the current route so the user returns here after re-login.
+        storePostLoginRedirect();
         // reload to reinitialize the login flow on timeout
         window.location.reload();
       }
