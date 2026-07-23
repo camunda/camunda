@@ -84,6 +84,7 @@ public class ProcessInstanceMigrationMigrateProcessor
   private final ProcessInstanceMigrationJobBehavior migrationJobBehaviour;
   private final ProcessInstanceMigrationSequenceFlowBehavior migrationSequenceFlowBehaviour;
   private final ProcessInstanceMigrationUserTaskBehavior migrationUserTaskBehaviour;
+  private final ProcessInstanceMigrationAgentInstanceBehavior migrationAgentInstanceBehaviour;
 
   public ProcessInstanceMigrationMigrateProcessor(
       final Writers writers,
@@ -130,6 +131,9 @@ public class ProcessInstanceMigrationMigrateProcessor
     migrationSequenceFlowBehaviour =
         new ProcessInstanceMigrationSequenceFlowBehavior(
             keyGenerator, stateWriter, elementInstanceState);
+    migrationAgentInstanceBehaviour =
+        new ProcessInstanceMigrationAgentInstanceBehavior(
+            stateWriter, processingState.getAgentInstanceState());
   }
 
   @Override
@@ -367,6 +371,21 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     migrateCalledSubProcessElements(
         elementInstance.getCalledChildInstanceKey(), updatedElementInstanceRecord);
+
+    migrateAgentInstances(
+        elementInstanceRecord, targetProcessDefinition, sourceElementIdToTargetElementId);
+  }
+
+  private void migrateAgentInstances(
+      final ProcessInstanceRecord elementInstanceRecord,
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId) {
+    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS) {
+      migrationAgentInstanceBehaviour.migrateAgentInstances(
+          elementInstanceRecord.getProcessInstanceKey(),
+          targetProcessDefinition,
+          sourceElementIdToTargetElementId);
+    }
   }
 
   private void migrateCatchEvents(
