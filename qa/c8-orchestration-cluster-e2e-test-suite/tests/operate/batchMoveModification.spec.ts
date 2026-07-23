@@ -133,7 +133,13 @@ test.describe('Process Instance Batch Modification', () => {
 
     await test.step('Filter and verify modified instances', async () => {
       await operateOperationPanelPage.collapseOperationsPanel();
-      await operateDiagramPage.clickFlowNode('shipArticles');
+      // Filter by the target flow node via the dropdown rather than clicking it
+      // on the process-list diagram: after the operations panel collapses the
+      // diagram re-lays-out and 'shipArticles' can sit outside the visible
+      // canvas, so a coordinate-based click misses and never sets the
+      // flowNodeId URL filter. The dropdown sets it deterministically, so the
+      // onFailure reload below preserves it.
+      await operateFiltersPanelPage.selectFlowNode('Ship Articles');
       await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
       await waitForAssertion({
         assertion: async () => {
