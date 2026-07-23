@@ -258,6 +258,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setFlowNodeName(null)
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId");
+    final TargetIndex index = TargetIndex.mainIndex("test-index");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new HashMap<>();
@@ -271,10 +272,10 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(
         FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
 
-    underTest.flush(inputEntity, mockRequest);
+    underTest.flush(index, inputEntity, mockRequest);
 
     verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+        .upsert(index, inputEntity.getId(), inputEntity, expectedUpdateFields);
   }
 
   @Test
