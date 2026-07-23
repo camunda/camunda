@@ -50,8 +50,18 @@
       </bpmn:startEvent>
       <bpmn:sequenceFlow id="Flow_ToSetItemId" sourceRef="Event_RegisterItemStart" targetRef="Activity_SetItemId" />
       <bpmn:scriptTask id="Activity_SetItemId" name="Set item id (inner scope)">
+        <bpmn:documentation>itemId is created by the INPUT mapping: input mappings create local
+          variables in the task's own scope, which is what makes each iteration's itemId a
+          scope-precise, non-root sighting. resultVariable would NOT work here — Zeebe merges a
+          script task's result variable into the process root scope, where k iterations overwrite
+          one root itemId and the root×non-root relation rule can no longer pair order⊃item
+          (found live: all item sightings were root-scoped). The script's own result is an inert
+          marker variable.</bpmn:documentation>
         <bpmn:extensionElements>
-          <zeebe:script expression="=item.itemId" resultVariable="itemId" />
+          <zeebe:ioMapping>
+            <zeebe:input source="=item.itemId" target="itemId" />
+          </zeebe:ioMapping>
+          <zeebe:script expression="=true" resultVariable="itemRegistered" />
         </bpmn:extensionElements>
         <bpmn:incoming>Flow_ToSetItemId</bpmn:incoming>
         <bpmn:outgoing>Flow_ToRegisterItemEnd</bpmn:outgoing>

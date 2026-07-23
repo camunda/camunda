@@ -45,15 +45,19 @@ deterministically derive every other field. Ignore it in ground-truth assertions
 ### 1. MI-inner itemId -> scope-precise item sightings
 
 `order-intake.bpmn`'s "Register items" embedded subprocess has multi-instance loop characteristics
-(`inputCollection="=items" inputElement="item"`). Inside it, a script task
-(`zeebe:script expression="=item.itemId" resultVariable="itemId"`) writes `itemId` as an *output*
-of that script task. In Zeebe, a task's output mapping lands in the flow scope of the task — for a
-task inside a multi-instance body, that scope is **the per-iteration MI body instance**, not the
-process root. This is the load-bearing bit: it is what makes `itemId` a scope-precise child
-sighting instead of one array blob sitting at root.
+(`inputCollection="=items" inputElement="item"`). Inside it, a script task creates `itemId` via an
+**input mapping** (`zeebe:input source="=item.itemId" target="itemId"`): input mappings create
+*local* variables in the task's own scope — for a task inside a multi-instance body, a distinct
+scope per iteration. This is the load-bearing bit: it is what makes `itemId` a scope-precise child
+sighting instead of one root variable overwritten k times.
+
+> Corrected 2026-07-23: the original model used `resultVariable="itemId"`, and a script task's
+> result variable is merged into the **process root** scope — found live: every item sighting came
+> back root-scoped, so the root×non-root relation rule emitted zero `order ⊃ item` rows. The
+> analytics translator was verified correct (regression tests added); the model was the bug.
 
 **Ground truth**: an order with *k* items yields exactly *k* `itemId` VARIABLE records, each at a
-non-root scope (one MI body instance per array element) — never at the `order-intake` root scope.
+non-root scope (one script-task instance per array element) — never at the `order-intake` root scope.
 It also yields exactly *k* `order ⊃ item` relations (each item scope is nested directly under the
 `order-intake` process instance).
 

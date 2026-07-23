@@ -28,7 +28,11 @@ public class SpaForwardController {
     "/objects",
     "/objects/**",
     "/data",
-    "/data/**"
+    "/data/**",
+    "/today",
+    "/ask",
+    "/processes",
+    "/processes/**"
   })
   public String forwardToSpa() {
     return "forward:/index.html";
