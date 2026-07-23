@@ -44,6 +44,8 @@ public interface LogStreamMetrics {
 
   void setExportingRate(long value);
 
+  void setExportingBacklog(final long value);
+
   void setWriteRateMaxLimit(long value);
 
   void setPartitionLoad(double load);

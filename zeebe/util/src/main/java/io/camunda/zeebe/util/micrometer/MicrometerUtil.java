@@ -10,6 +10,7 @@ package io.camunda.zeebe.util.micrometer;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
@@ -21,6 +22,7 @@ import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 
 /** Collection of disparate convenience methods for Micrometer. */
@@ -104,6 +106,13 @@ public final class MicrometerUtil {
     return DistributionSummary.builder(documentation.getName())
         .description(documentation.getDescription())
         .serviceLevelObjectives(documentation.getDistributionSLOs());
+  }
+
+  /** Returns a gauge builder pre-configured based on the given documentation. */
+  public static <T extends Number> Gauge.Builder<Supplier<T>> buildGauge(
+      final ExtendedMeterDocumentation documentation, final Supplier<T> valueSupplier) {
+    return Gauge.builder(documentation.getName(), valueSupplier)
+        .description(documentation.getDescription());
   }
 
   /**
