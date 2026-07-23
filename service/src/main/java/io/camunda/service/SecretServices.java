@@ -137,11 +137,11 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
       // Authorize before any lookup so an unauthorized caller never receives a value or learns
       // whether the secret exists. A single query covers the whole batch instead of one
       // authorization round-trip per reference.
-      final var authorizedReferences =
-          resolveAuthorizedReferences(validReferences, authentication, SECRET_REVEAL_AUTHORIZATION);
+      final var authorizedScopes =
+          retrieveAuthorizedScopes(authentication, SECRET_REVEAL_AUTHORIZATION);
 
       for (final var reference : validReferences) {
-        if (!authorizedReferences.contains(reference)) {
+        if (!authorizedScopes.authorizes(reference)) {
           LOG.debug(
               "Denied secret reveal of '{}' for {}",
               reference,
@@ -178,14 +178,23 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    * enumeration down to what the caller is authorized to see rather than accepting a
    * caller-supplied batch (contrast {@link #resolve}).
    *
+   * <p>Authorizes before enumerating, mirroring {@link #resolve}: a caller with no wildcard and no
+   * ID-scoped grant is denied everything, so the (mocked, but eventually store-backed) enumeration
+   * is never invoked for them. Once a real {@code SecretStore} is wired, that enumeration is a
+   * tenant-wide backend call with real cost (money, rate limits on AWS/GCP); skipping it for a
+   * zero-grant caller avoids paying that cost for a result that is discarded anyway.
+   *
    * <p>Synchronous today for the same reason {@link #resolve} is (see its Javadoc).
    */
   public CompletableFuture<List<String>> list(final CamundaAuthentication authentication) {
     try {
+      final var authorizedScopes =
+          retrieveAuthorizedScopes(authentication, SECRET_READ_AUTHORIZATION);
+      if (!authorizedScopes.authorizesEverything() && authorizedScopes.isEmpty()) {
+        return CompletableFuture.completedFuture(List.of());
+      }
       final var references = mockListReferences();
-      final var authorizedReferences =
-          resolveAuthorizedReferences(references, authentication, SECRET_READ_AUTHORIZATION);
-      final var result = references.stream().filter(authorizedReferences::contains).toList();
+      final var result = references.stream().filter(authorizedScopes::authorizes).toList();
       return CompletableFuture.completedFuture(result);
     } catch (final Exception ex) {
       return CompletableFuture.failedFuture(ErrorMapper.mapError(ex));
@@ -193,13 +202,12 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   }
 
   /**
-   * Returns the subset of {@code validReferences} the caller holds {@code requiredAuthorization}
-   * on. Issues at most one authorization query for the whole batch, mirroring the
-   * bulk-fetch-then-locally-match pattern {@code DefaultResourceAccessProvider} uses for search
-   * pre-filtering, rather than one query per reference.
+   * Retrieves the caller's authorization scopes for {@code requiredAuthorization} in a single
+   * query, mirroring the bulk-fetch-then-locally-match pattern {@code
+   * DefaultResourceAccessProvider} uses for search pre-filtering, rather than one query per
+   * reference.
    */
-  private Set<String> resolveAuthorizedReferences(
-      final List<String> validReferences,
+  private AuthorizedScopes retrieveAuthorizedScopes(
       final CamundaAuthentication authentication,
       final RequiredAuthorization<?> requiredAuthorization) {
     // Matches DocumentServices#hasDocumentPermission: when authorization is disabled
@@ -207,23 +215,21 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
     // would make the endpoint unusable in authorization-disabled setups (e.g. C8Run's default),
     // which the epic this endpoint serves explicitly targets.
     if (!authorizationsConfig.isEnabled()) {
-      return new LinkedHashSet<>(validReferences);
+      return AuthorizedScopes.everything();
     }
     final var authorizedScopes =
         authorizationChecker.retrieveAuthorizedAuthorizationScopes(
             authentication, requiredAuthorization);
     if (authorizedScopes.contains(AuthorizationScope.WILDCARD)) {
-      // A wildcard grant authorizes every reference in the batch.
-      return new LinkedHashSet<>(validReferences);
+      // A wildcard grant authorizes every reference.
+      return AuthorizedScopes.everything();
     }
     final var authorizedResourceIds =
         authorizedScopes.stream()
             .filter(scope -> scope.getMatcher() == AuthorizationResourceMatcher.ID)
             .map(AuthorizationScope::getResourceId)
             .collect(Collectors.toSet());
-    return validReferences.stream()
-        .filter(authorizedResourceIds::contains)
-        .collect(Collectors.toCollection(LinkedHashSet::new));
+    return AuthorizedScopes.only(authorizedResourceIds);
   }
 
   private static boolean isValidReference(final String reference) {
@@ -262,6 +268,33 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
    */
   private List<String> mockListReferences() {
     return MOCK_RESOLVABLE_REFERENCES.stream().sorted().toList();
+  }
+
+  /**
+   * The caller's authorization scopes for one {@code RequiredAuthorization}, either "authorizes
+   * everything" (disabled cluster-wide authorization, or a wildcard grant) or a concrete set of
+   * authorized references.
+   *
+   * <p>Grants are keyed by the full {@code camunda.secrets.<name>} reference, matching the resource
+   * id callers grant {@code SECRET} permissions on (see the authorization docs), so a grant matches
+   * the same string this class receives from {@link #resolve} / {@link #list}.
+   */
+  private record AuthorizedScopes(boolean authorizesEverything, Set<String> authorizedNames) {
+    static AuthorizedScopes everything() {
+      return new AuthorizedScopes(true, Set.of());
+    }
+
+    static AuthorizedScopes only(final Set<String> authorizedNames) {
+      return new AuthorizedScopes(false, authorizedNames);
+    }
+
+    boolean isEmpty() {
+      return authorizedNames.isEmpty();
+    }
+
+    boolean authorizes(final String reference) {
+      return authorizesEverything || authorizedNames.contains(reference);
+    }
   }
 
   /** The per-reference outcome of a resolve request. */

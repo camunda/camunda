@@ -301,6 +301,57 @@ public class SecretServicesTest {
   }
 
   @Test
+  void shouldNotAuthorizeByBareSecretNameAlone() {
+    // given the checker grants only the bare name "token", not the full reference — this is not
+    // how SECRET grants are created (see SecretAuthorizationIT), but guards against silently
+    // reintroducing bare-name matching in authorizes()
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_REVEAL_AUTHORIZATION)))
+        .thenReturn(List.of(AuthorizationScope.id("token")));
+
+    // when resolving the full reference for that name
+    final var resolution =
+        services.resolve(List.of("camunda.secrets.token"), authentication).join();
+
+    // then it is denied: the resource id is matched against the full reference, not the bare name
+    assertThat(resolution.resolved()).isEmpty();
+    assertThat(resolution.errors()).hasSize(1);
+    assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
+  }
+
+  @Test
+  void shouldNotListByBareSecretNameAlone() {
+    // given the checker grants only the bare name "a", not the full reference
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_READ_AUTHORIZATION)))
+        .thenReturn(List.of(AuthorizationScope.id("a")));
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then nothing is listed: the resource id is matched against the full reference, not the bare
+    // name
+    assertThat(references).isEmpty();
+  }
+
+  @Test
+  void shouldNotEnumerateBackendWhenCallerHasNoReadGrant() {
+    // given the caller holds no SECRET:READ grant at all (no wildcard, no ID scope)
+    authorizationsConfig.setEnabled(true);
+    denyAllReads();
+
+    // when
+    final var references = services.list(authentication).join();
+
+    // then nothing is listed — the empty-grant short-circuit skips the (mocked, but eventually
+    // tenant-wide and costly) backend enumeration entirely rather than enumerating then filtering
+    // everything out
+    assertThat(references).isEmpty();
+  }
+
+  @Test
   void shouldAuthorizeExactlyTheGrantedResourceId() {
     // given the caller is granted REVEAL only on a different reference
     authorizationsConfig.setEnabled(true);
