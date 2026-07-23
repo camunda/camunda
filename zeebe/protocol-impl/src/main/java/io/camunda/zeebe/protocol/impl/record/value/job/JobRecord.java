@@ -23,6 +23,7 @@ import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -410,7 +411,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   @Override
   public List<JobSecretReferenceValue> getSecretReferences() {
-    // copy each element while iterating the ArrayProperty because the inner values are reused
+    // detach copies so the returned list stays valid if this record is reused or reset later
     return secretReferencesProp.stream()
         .map(
             element -> {
@@ -431,6 +432,20 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
                   reference.getStoreId(), reference.getSecretReference(), reference.getPath()));
     }
     return this;
+  }
+
+  /**
+   * Direct access to the secret reference elements, without the detached copies of {@link
+   * #getSecretReferences()}. The elements stay owned by this record; do not hold on to them.
+   */
+  @JsonIgnore
+  public ValueArray<JobSecretReference> secretReferences() {
+    return secretReferencesProp;
+  }
+
+  @JsonIgnore
+  public boolean hasSecretReferences() {
+    return !secretReferencesProp.isEmpty();
   }
 
   public JobRecord addSecretReference(
