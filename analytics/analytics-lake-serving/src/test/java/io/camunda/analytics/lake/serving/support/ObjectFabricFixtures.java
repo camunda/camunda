@@ -115,4 +115,198 @@ public final class ObjectFabricFixtures {
             + "' AS parent_id, 'lineItem' AS child_type, 'LI-1' AS child_id, "
             + "CAST(TIMESTAMP '2024-01-01 00:00:00' AS TIMESTAMPTZ) AS first_seen");
   }
+
+  // -----------------------------------------------------------------------------------------
+  // Stats scenario: a self-contained "order" object-type warehouse for POST /api/objects/stats
+  // and the /api/objects/list DURATION_DESC sort -- independent of build() above (own object
+  // type, own instances/tables), so it doesn't disturb any of that scenario's planted numbers.
+  // -----------------------------------------------------------------------------------------
+
+  public static final String STATS_OBJECT_TYPE = "order";
+  public static final String STATS_PROCESS_A = "checkoutProcess";
+  public static final String STATS_PROCESS_B = "expressCheckoutProcess";
+  public static final String ORD_1 = "ORD-1";
+  public static final String ORD_2 = "ORD-2";
+  public static final String ORD_3 = "ORD-3";
+  public static final String ORD_4 = "ORD-4";
+
+  /**
+   * Plants four {@code order} objects across two processes, a fanout distribution over {@code
+   * object_relations} (children: 1, 2, 3, 3), and {@code object_lifecycle} rows for three of the
+   * four objects (the fourth, {@link #ORD_4}, stays open -- no lifecycle row -- to exercise {@code
+   * DURATION_DESC}'s {@code NULLS LAST}).
+   *
+   * <table>
+   *   <caption>ground truth</caption>
+   *   <tr><td>by process</td><td>{@code checkoutProcess}: {@link #ORD_1} (sighted twice, same
+   *       object), {@link #ORD_2}, {@link #ORD_3} -&gt; 3 distinct objects; {@code
+   *       expressCheckoutProcess}: {@link #ORD_4} -&gt; 1</td></tr>
+   *   <tr><td>fanout</td><td>{@link #ORD_2} -&gt; 1 child, {@link #ORD_3} -&gt; 2 children, {@link
+   *       #ORD_1} and {@link #ORD_4} -&gt; 3 children each</td></tr>
+   *   <tr><td>lifecycle</td><td>{@link #ORD_2} 900_000ms/COMPLETED, {@link #ORD_1} 500_000ms/
+   *       COMPLETED, {@link #ORD_3} 200_000ms/CANCELLED, {@link #ORD_4} open (no row)</td></tr>
+   * </table>
+   */
+  public static void buildStatsScenario(final Path warehouseDir) {
+    ParquetFixtures.writeTableFromQuery(
+        warehouseDir,
+        "activities",
+        "SELECT * FROM (VALUES "
+            + "(2001, '"
+            + STATS_PROCESS_A
+            + "', 1, 'default', 'Task', 'SERVICE_TASK', 9001, 'COMPLETED', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), "
+            + "CAST(TIMESTAMP '2024-02-01 00:01:00' AS TIMESTAMPTZ), 60000, "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), CAST(NULL AS BIGINT)), "
+            + "(2002, '"
+            + STATS_PROCESS_A
+            + "', 1, 'default', 'Task', 'SERVICE_TASK', 9002, 'COMPLETED', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), "
+            + "CAST(TIMESTAMP '2024-02-01 00:01:00' AS TIMESTAMPTZ), 60000, "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), CAST(NULL AS BIGINT)), "
+            + "(2003, '"
+            + STATS_PROCESS_A
+            + "', 1, 'default', 'Task', 'SERVICE_TASK', 9003, 'COMPLETED', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), "
+            + "CAST(TIMESTAMP '2024-02-01 00:01:00' AS TIMESTAMPTZ), 60000, "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), CAST(NULL AS BIGINT)), "
+            + "(2004, '"
+            + STATS_PROCESS_A
+            + "', 1, 'default', 'Task', 'SERVICE_TASK', 9004, 'COMPLETED', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), "
+            + "CAST(TIMESTAMP '2024-02-01 00:01:00' AS TIMESTAMPTZ), 60000, "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), CAST(NULL AS BIGINT)), "
+            + "(2005, '"
+            + STATS_PROCESS_B
+            + "', 1, 'default', 'Task', 'SERVICE_TASK', 9005, 'COMPLETED', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), "
+            + "CAST(TIMESTAMP '2024-02-01 00:01:00' AS TIMESTAMPTZ), 60000, "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), CAST(NULL AS BIGINT))"
+            + ") AS t(instance_key, process_id, version, tenant_id, element_id, element_type, "
+            + "element_key, state, started_at, ended_at, duration_ms, instance_started_at, "
+            + "flow_scope_key)");
+
+    ParquetFixtures.writeTableFromQuery(
+        warehouseDir,
+        "objects",
+        "SELECT * FROM (VALUES "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_1
+            + "', 2001, '"
+            + STATS_PROCESS_A
+            + "', 1, CAST(NULL AS BIGINT), 'root', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_1
+            + "', 2002, '"
+            + STATS_PROCESS_A
+            + "', 1, CAST(NULL AS BIGINT), 'root', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:01' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_2
+            + "', 2003, '"
+            + STATS_PROCESS_A
+            + "', 1, CAST(NULL AS BIGINT), 'root', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:02' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_3
+            + "', 2004, '"
+            + STATS_PROCESS_A
+            + "', 1, CAST(NULL AS BIGINT), 'root', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:03' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_4
+            + "', 2005, '"
+            + STATS_PROCESS_B
+            + "', 1, CAST(NULL AS BIGINT), 'root', "
+            + "CAST(TIMESTAMP '2024-02-01 00:00:04' AS TIMESTAMPTZ))"
+            + ") AS t(object_type, object_id, instance_key, process_id, version, scope_key, "
+            + "qualifier, first_seen)");
+
+    ParquetFixtures.writeTableFromQuery(
+        warehouseDir,
+        "object_relations",
+        "SELECT * FROM (VALUES "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_1
+            + "', 'lineItem', 'LI-1', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_1
+            + "', 'lineItem', 'LI-2', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_1
+            + "', 'lineItem', 'LI-3', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_2
+            + "', 'lineItem', 'LI-4', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_3
+            + "', 'lineItem', 'LI-5', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_3
+            + "', 'lineItem', 'LI-6', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_4
+            + "', 'lineItem', 'LI-7', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_4
+            + "', 'lineItem', 'LI-8', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ)), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_4
+            + "', 'lineItem', 'LI-9', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ))"
+            + ") AS t(parent_type, parent_id, child_type, child_id, first_seen)");
+
+    ParquetFixtures.writeTableFromQuery(
+        warehouseDir,
+        "object_lifecycle",
+        "SELECT * FROM (VALUES "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_1
+            + "', 'root', CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), "
+            + "CAST(TIMESTAMP '2024-02-01 00:08:20' AS TIMESTAMPTZ), 500000, 'COMPLETED', 2), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_2
+            + "', 'root', CAST(TIMESTAMP '2024-02-01 00:00:02' AS TIMESTAMPTZ), "
+            + "CAST(TIMESTAMP '2024-02-01 00:15:00' AS TIMESTAMPTZ), 900000, 'COMPLETED', 1), "
+            + "('"
+            + STATS_OBJECT_TYPE
+            + "', '"
+            + ORD_3
+            + "', 'root', CAST(TIMESTAMP '2024-02-01 00:00:03' AS TIMESTAMPTZ), "
+            + "CAST(TIMESTAMP '2024-02-01 00:03:20' AS TIMESTAMPTZ), 200000, 'CANCELLED', 1)"
+            + ") AS t(object_type, object_id, birth_qualifier, birth_ts, closed_at, duration_ms, "
+            + "outcome, n_sightings)");
+  }
 }

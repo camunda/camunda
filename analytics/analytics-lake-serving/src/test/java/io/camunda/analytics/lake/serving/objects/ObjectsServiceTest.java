@@ -14,6 +14,7 @@ import io.camunda.analytics.lake.serving.objects.ObjectsService.JourneyQuery;
 import io.camunda.analytics.lake.serving.objects.ObjectsService.JourneyResult;
 import io.camunda.analytics.lake.serving.objects.ObjectsService.ObjectListQuery;
 import io.camunda.analytics.lake.serving.objects.ObjectsService.ObjectListResult;
+import io.camunda.analytics.lake.serving.objects.ObjectsService.ObjectRow;
 import io.camunda.analytics.lake.serving.objects.ObjectsService.ObjectTypesResult;
 import io.camunda.analytics.lake.serving.support.ObjectFabricFixtures;
 import java.nio.file.Path;
@@ -64,6 +65,31 @@ class ObjectsServiceTest {
             new ObjectListQuery(ObjectFabricFixtures.OBJECT_TYPE, "CLOSED", null, null));
 
     assertThat(result.rows()).isEmpty();
+  }
+
+  @Test
+  void shouldOrderByFirstSeenDescendingByDefault() {
+    final ObjectListResult result =
+        objectsService.list(
+            new ObjectListQuery(ObjectFabricFixtures.OBJECT_TYPE, "ALL", null, null, null));
+
+    assertThat(result.rows())
+        .extracting(ObjectRow::objectId)
+        .containsExactly(ObjectFabricFixtures.SCOPE_OBJECT_ID, ObjectFabricFixtures.ROOT_OBJECT_ID);
+  }
+
+  @Test
+  void shouldFallBackToFirstSeenOrderWhenDurationSortIsRequestedButNoLifecycleViewExists() {
+    final ObjectListResult result =
+        objectsService.list(
+            new ObjectListQuery(
+                ObjectFabricFixtures.OBJECT_TYPE, "ALL", null, null, "DURATION_DESC"));
+
+    // duration_ms doesn't exist without object_lifecycle -- the sort request degrades to the
+    // default first_seen-descending order instead of erroring.
+    assertThat(result.rows())
+        .extracting(ObjectRow::objectId)
+        .containsExactly(ObjectFabricFixtures.SCOPE_OBJECT_ID, ObjectFabricFixtures.ROOT_OBJECT_ID);
   }
 
   @Test
