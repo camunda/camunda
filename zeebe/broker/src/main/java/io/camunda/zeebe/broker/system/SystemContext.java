@@ -77,7 +77,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -137,7 +136,7 @@ public final class SystemContext {
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
   private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
-  private final @Nullable IntFunction<Long> exportedPositionSupplier;
+  private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
   private final GlobalListenerValidator globalListenerValidator;
@@ -159,7 +158,7 @@ public final class SystemContext {
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
-      final @Nullable IntFunction<Long> exportedPositionSupplier,
+      final Map<String, IntFunction<Long>> exportedPositionSuppliers,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
     this.shutdownTimeout = shutdownTimeout;
@@ -176,7 +175,7 @@ public final class SystemContext {
         Objects.requireNonNull(
             oidcClaimsProviderFactory, "oidcClaimsProviderFactory must not be null");
     this.searchClientsProxy = searchClientsProxy;
-    this.exportedPositionSupplier = exportedPositionSupplier;
+    this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
     this.nodeIdProvider = nodeIdProvider;
     this.physicalTenantIds = physicalTenantIds;
     globalListenerValidator = new GlobalListenerValidator();
@@ -754,8 +753,9 @@ public final class SystemContext {
     return searchClientsProxy;
   }
 
-  public @Nullable IntFunction<Long> getExportedPositionSupplier() {
-    return exportedPositionSupplier;
+  /** Returns the per-physical-tenant RDBMS exported-position supplier map (unmodifiable). */
+  public Map<String, IntFunction<Long>> getExportedPositionSuppliers() {
+    return exportedPositionSuppliers;
   }
 
   public NodeIdProvider getNodeIdProvider() {

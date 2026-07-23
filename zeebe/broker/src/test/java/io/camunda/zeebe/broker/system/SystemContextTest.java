@@ -584,7 +584,7 @@ final class SystemContextTest {
             authConfig -> mock(JwtDecoder.class),
             authConfig -> (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
             mock(SearchClientsProxy.class),
-            null,
+            Map.of(),
             mock(NodeIdProvider.class),
             PhysicalTenantIds.DEFAULT);
 
@@ -665,7 +665,7 @@ final class SystemContextTest {
         authConfig -> mock(JwtDecoder.class),
         authConfig -> (OidcClaimsProvider) (jwtClaims, tokenValue) -> jwtClaims,
         mock(SearchClientsProxy.class),
-        null,
+        Map.of(),
         mock(NodeIdProvider.class),
         PhysicalTenantIds.DEFAULT);
   }

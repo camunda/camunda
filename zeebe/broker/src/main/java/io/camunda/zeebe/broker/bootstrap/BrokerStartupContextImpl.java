@@ -73,7 +73,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory;
   private final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
-  private final @Nullable IntFunction<Long> exportedPositionSupplier;
+  private final Map<String, IntFunction<Long>> exportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
   private final PhysicalTenantIds physicalTenantIds;
 
@@ -109,7 +109,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final Function<AuthenticationConfiguration, JwtDecoder> jwtDecoderFactory,
       final Function<AuthenticationConfiguration, OidcClaimsProvider> oidcClaimsProviderFactory,
       final SearchClientsProxy searchClientsProxy,
-      final @Nullable IntFunction<Long> exportedPositionSupplier,
+      final Map<String, IntFunction<Long>> exportedPositionSuppliers,
       final NodeIdProvider nodeIdProvider,
       final PhysicalTenantIds physicalTenantIds) {
 
@@ -128,7 +128,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.jwtDecoderFactory = jwtDecoderFactory;
     this.oidcClaimsProviderFactory = oidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
-    this.exportedPositionSupplier = exportedPositionSupplier;
+    this.exportedPositionSuppliers = Map.copyOf(exportedPositionSuppliers);
     this.nodeIdProvider = requireNonNull(nodeIdProvider);
     this.physicalTenantIds = requireNonNull(physicalTenantIds);
     partitionListeners.addAll(additionalPartitionListeners);
@@ -179,8 +179,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   }
 
   @Override
-  public @Nullable IntFunction<Long> getExportedPositionSupplier() {
-    return exportedPositionSupplier;
+  public @Nullable IntFunction<Long> getExportedPositionSupplier(final String physicalTenantId) {
+    return exportedPositionSuppliers.get(physicalTenantId);
   }
 
   @Override

@@ -75,7 +75,11 @@ public interface BrokerStartupContext {
 
   SearchClientsProxy getSearchClientsProxy();
 
-  @Nullable IntFunction<Long> getExportedPositionSupplier();
+  /**
+   * Returns the RDBMS exported-position supplier for the given physical tenant, or {@code null} if
+   * no RDBMS secondary storage is configured for that tenant.
+   */
+  @Nullable IntFunction<Long> getExportedPositionSupplier(String physicalTenantId);
 
   void addPartitionListener(PartitionListener partitionListener);
 
