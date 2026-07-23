@@ -6,14 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type InlineLoadingProps, Button, InlineLoading} from '@carbon/react';
+import {type ButtonProps, type InlineLoadingProps, Button, InlineLoading} from '#/shared/design-system-compat';
 import {useEffect} from 'react';
 import {cn} from '#/shared/cn';
 import styles from './AsyncActionButton.module.scss';
 
 type Props = {
 	inlineLoadingProps?: Omit<InlineLoadingProps, 'status' | 'successDelay'>;
-	buttonProps?: React.ComponentProps<typeof Button>;
+	buttonProps?: ButtonProps<'button'>;
 	children?: React.ReactNode;
 	status: NonNullable<InlineLoadingProps['status']>;
 	isHidden?: boolean;

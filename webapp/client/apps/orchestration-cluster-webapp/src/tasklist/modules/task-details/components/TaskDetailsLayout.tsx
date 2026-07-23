@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Section} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import type {RegisteredRouter} from '@tanstack/react-router';
 import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
+import {Section} from '#/shared/design-system-compat';
 import {useHasRouteMatch} from '#/shared/useHasRouteMatch';
 import {TurnOnNotificationPermission} from './TurnOnNotificationPermission';
 import {TaskDetailsHeader} from './TaskDetailsHeader';

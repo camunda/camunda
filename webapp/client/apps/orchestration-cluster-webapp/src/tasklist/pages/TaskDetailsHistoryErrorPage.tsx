@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button, Layer, Link, Stack} from '@carbon/react';
-import {Launch} from '@carbon/react/icons';
 import {useNavigate, type ErrorComponentProps} from '@tanstack/react-router';
 import {Trans, useTranslation} from 'react-i18next';
+import {Button, Layer, LaunchIcon, Link, Stack} from '#/shared/design-system-compat';
 import {requestErrorSchema} from '#/shared/http/request';
 import SvgErrorRobot from '#/shared/svg/ErrorRobot';
 import SvgForbidden from '#/shared/svg/Forbidden';
@@ -54,7 +53,7 @@ const ForbiddenHistoryPage: React.FC = () => {
 								<Trans i18nKey="tasklist.taskDetailsHistoryForbiddenDesc" components={{strong: <strong />}} />
 							</div>
 						</Stack>
-						<Link href={DOCS_URL} target="_blank" renderIcon={Launch}>
+						<Link href={DOCS_URL} target="_blank" renderIcon={LaunchIcon}>
 							{t('tasklist.taskDetailsHistoryForbiddenLinkLabel')}
 						</Link>
 					</Stack>

@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IconButton} from '@carbon/react';
-import {Add, CenterCircle, Subtract} from '@carbon/react/icons';
+import {AddIcon, CenterCircleIcon, IconButton, SubtractIcon} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
 import styles from './DiagramControls.module.scss';
 
@@ -31,7 +30,7 @@ const DiagramControls: React.FC<Props> = ({onZoomReset, onZoomIn, onZoomOut}) =>
 				aria-label={t('tasklist.taskDetailsResetDiagramZoom')}
 				onClick={onZoomReset}
 			>
-				<CenterCircle />
+				<CenterCircleIcon />
 			</IconButton>
 			<IconButton
 				className={styles.zoomIn}
@@ -42,7 +41,7 @@ const DiagramControls: React.FC<Props> = ({onZoomReset, onZoomIn, onZoomOut}) =>
 				aria-label={t('tasklist.taskDetailsZoomInDiagram')}
 				onClick={onZoomIn}
 			>
-				<Add />
+				<AddIcon />
 			</IconButton>
 			<IconButton
 				className={styles.zoomOut}
@@ -53,7 +52,7 @@ const DiagramControls: React.FC<Props> = ({onZoomReset, onZoomIn, onZoomOut}) =>
 				aria-label={t('tasklist.taskDetailsZoomOutDiagram')}
 				onClick={onZoomOut}
 			>
-				<Subtract />
+				<SubtractIcon />
 			</IconButton>
 		</div>
 	);

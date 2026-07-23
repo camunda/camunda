@@ -9,9 +9,8 @@
 import React from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useMatch} from '@tanstack/react-router';
-import {Stack} from '@carbon/react';
-import {Calendar, CheckmarkFilled, Warning, Notification} from '@carbon/react/icons';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import {CalendarIcon, CheckmarkFilledIcon, NotificationIcon, Stack, WarningIcon} from '#/shared/design-system-compat';
 import {cn} from '#/shared/cn';
 import {formatISODate, formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';
 import {getSecondaryDate} from '#/tasklist/modules/available-tasks/getSecondaryDate';
@@ -100,7 +99,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 									date={creationDate}
 									relativeLabel={t('tasklist.availableTasksCreatedRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksCreatedAbsoluteLabel')}
-									icon={<Calendar className={styles.inlineIcon} />}
+									icon={<CalendarIcon className={styles.inlineIcon} />}
 								/>
 							) : null}
 							{secondaryDate.followUpDate !== undefined ? (
@@ -108,7 +107,9 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 									date={secondaryDate.followUpDate}
 									relativeLabel={t('tasklist.availableTasksFollowUpRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksFollowUpAbsoluteLabel')}
-									icon={<Notification className={styles.inlineIcon} color="blue" />}
+									icon={
+										<NotificationIcon className={cn(styles.inlineIcon, 'fill-current text-info-foreground-strong')} />
+									}
 									align="top-end"
 								/>
 							) : null}
@@ -117,7 +118,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 									date={secondaryDate.overDueDate}
 									relativeLabel={t('tasklist.availableTasksOverdueRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksOverdueAbsoluteLabel')}
-									icon={<Warning className={styles.inlineIcon} color="red" />}
+									icon={<WarningIcon className={cn(styles.inlineIcon, 'fill-current text-danger-foreground-strong')} />}
 									align="top-end"
 								/>
 							) : null}
@@ -134,7 +135,11 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
 									date={secondaryDate.completionDate}
 									relativeLabel={t('tasklist.availableTasksCompletedRelativeLabel')}
 									absoluteLabel={t('tasklist.availableTasksCompletedAbsoluteLabel')}
-									icon={<CheckmarkFilled className={styles.inlineIcon} color="green" />}
+									icon={
+										<CheckmarkFilledIcon
+											className={cn(styles.inlineIcon, 'fill-current text-success-foreground-strong')}
+										/>
+									}
 									align="top-end"
 								/>
 							) : null}

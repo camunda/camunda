@@ -7,8 +7,22 @@
  */
 
 import {useCallback, useState} from 'react';
-import {Button, ButtonSet, Layer, OverflowMenu, OverflowMenuItem} from '@carbon/react';
-import {Filter, SidePanelClose, SidePanelOpen} from '@carbon/react/icons';
+// FLAG: ButtonSet has no carbon-compat adapter in @camunda/design-system
+// (no button-set.* module in carbon-compat) — no DS equivalent exists yet, so
+// it stays on @carbon/react until the DS team ships one. See
+// docs/migration/human-follow-up.md ("FLAG symbols"). All other symbols in
+// this file are migrated to the feature-flagged #/shared/design-system-compat
+// swap point below.
+import {ButtonSet} from '@carbon/react';
+import {
+	Button,
+	FilterIcon,
+	Layer,
+	OverflowMenu,
+	OverflowMenuItem,
+	SidePanelCloseIcon,
+	SidePanelOpenIcon,
+} from '#/shared/design-system-compat';
 import {Link, useNavigate, useSearch} from '@tanstack/react-router';
 import {useSuspenseQuery} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
@@ -130,7 +144,7 @@ const CollapsiblePanel: React.FC = () => {
 					<li>
 						<Button
 							hasIconOnly
-							renderIcon={SidePanelOpen}
+							renderIcon={SidePanelOpenIcon}
 							iconDescription={t('tasklist.taskFilterPanelExpandButton')}
 							tooltipPosition="right"
 							kind="ghost"
@@ -146,7 +160,7 @@ const CollapsiblePanel: React.FC = () => {
 					<li>
 						<Button
 							hasIconOnly
-							renderIcon={Filter}
+							renderIcon={FilterIcon}
 							iconDescription={t('tasklist.taskFilterPanelFilterButton')}
 							tooltipPosition="right"
 							kind="ghost"
@@ -167,7 +181,7 @@ const CollapsiblePanel: React.FC = () => {
 					<h2 id="filters-title">{t('tasklist.taskFilterPanelTitle')}</h2>
 					<Button
 						hasIconOnly
-						renderIcon={SidePanelClose}
+						renderIcon={SidePanelCloseIcon}
 						iconDescription={t('tasklist.taskFilterPanelCollapse')}
 						tooltipPosition="right"
 						kind="ghost"
@@ -251,6 +265,9 @@ const CollapsiblePanel: React.FC = () => {
 							);
 						})}
 					</ul>
+					{/* FLAG: ButtonSet has no carbon-compat adapter — left on @carbon/react
+					    (see import above + docs/migration/human-follow-up.md). Its child
+					    Button is already migrated to the DS swap point. */}
 					<ButtonSet>
 						<Button kind="ghost" size="md" onClick={openModal}>
 							{t('tasklist.taskFilterPanelNewFilter')}

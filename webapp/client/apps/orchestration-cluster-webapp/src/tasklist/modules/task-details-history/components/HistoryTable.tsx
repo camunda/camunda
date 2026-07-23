@@ -7,6 +7,15 @@
  */
 
 import {useMemo} from 'react';
+// FLAG: this whole render-props DataTable cluster stays on @carbon/react — it
+// is NOT a safe SHIM despite the pre-flight bucketing. The carbon-compat
+// `DataTable` adapter takes a single generic (`DataTable<TData>`) whereas
+// Carbon's is `DataTable<RowType, ColTypes>` (two params), so the call below
+// (`DataTable<RowData, RowCellValues>`) is a hard tsc error against the compat
+// adapter; and that adapter renders its own TanStack table from `columns`/
+// `data`, ignoring Carbon's render-props `children` entirely. Migrating this
+// needs a full rewrite to the DS declarative DataTable API — human judgement
+// required. Logged in docs/migration/human-follow-up.md under "## FLAG symbols".
 import {
 	DataTable,
 	Table,
@@ -17,7 +26,7 @@ import {
 	TableRow,
 	type DataTableHeader,
 } from '@carbon/react';
-import {Information} from '@carbon/react/icons';
+import {InformationIcon} from '#/shared/design-system-compat';
 import {Link} from '@tanstack/react-router';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
@@ -174,7 +183,7 @@ const HistoryTable: React.FC<Props> = ({userTaskKey, auditLogs, search}) => {
 														aria-label={t('tasklist.taskDetailsHistoryDetailsLabel')}
 														title={t('tasklist.taskDetailsHistoryDetailsLabel')}
 													>
-														<Information />
+														<InformationIcon />
 													</Link>
 												) : (
 													cell.value

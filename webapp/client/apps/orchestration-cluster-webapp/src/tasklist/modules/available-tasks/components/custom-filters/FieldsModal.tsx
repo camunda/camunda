@@ -23,8 +23,9 @@ import {
 	SelectSkeleton,
 	TextInput,
 	Toggle,
-} from '@carbon/react';
-import {Close, Add} from '@carbon/react/icons';
+	CloseIcon,
+	PlusIcon,
+} from '#/shared/design-system-compat';
 import {ErrorBoundary} from 'react-error-boundary';
 import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
@@ -309,7 +310,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 															className={styles.datePicker}
 															datePickerType="single"
 															dateFormat={t('globalWrittenCalendarDateFormat')}
-															locale={{locale: i18n.resolvedLanguage}}
+															locale={i18n.resolvedLanguage}
 														>
 															<DatePickerInput
 																id="due-date-from"
@@ -330,7 +331,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 															className={styles.datePicker}
 															datePickerType="single"
 															dateFormat={t('globalWrittenCalendarDateFormat')}
-															locale={{locale: i18n.resolvedLanguage}}
+															locale={i18n.resolvedLanguage}
 														>
 															<DatePickerInput
 																id="due-date-to"
@@ -357,7 +358,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 															className={styles.datePicker}
 															datePickerType="single"
 															dateFormat={t('globalWrittenCalendarDateFormat')}
-															locale={{locale: i18n.resolvedLanguage}}
+															locale={i18n.resolvedLanguage}
 														>
 															<DatePickerInput
 																id="follow-up-date-from"
@@ -378,7 +379,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 															className={styles.datePicker}
 															datePickerType="single"
 															dateFormat={t('globalWrittenCalendarDateFormat')}
-															locale={{locale: i18n.resolvedLanguage}}
+															locale={i18n.resolvedLanguage}
 														>
 															<DatePickerInput
 																id="follow-up-date-to"
@@ -450,7 +451,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 																		className={styles.variableGridRemove}
 																		hasIconOnly
 																		iconDescription={t('tasklist.customFiltersModalRemoveVariableButton')}
-																		renderIcon={Close}
+																		renderIcon={CloseIcon}
 																		kind="ghost"
 																		size="md"
 																		onClick={() => fields.remove(index)}
@@ -463,7 +464,7 @@ const FieldsModal: React.FC<Props> = ({isOpen, onClose, onApply, onSave, onEdit,
 														<Button
 															type="button"
 															iconDescription={t('tasklist.customFiltersModalAddVariableButtonAria')}
-															renderIcon={Add}
+															renderIcon={PlusIcon}
 															kind="tertiary"
 															size="md"
 															onClick={() => fields.push({name: '', value: ''})}

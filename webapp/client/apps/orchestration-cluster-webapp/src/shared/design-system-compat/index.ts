@@ -19,8 +19,19 @@
 
 import {
 	Button as CarbonButton,
+	Column as CarbonColumn,
 	ComposedModal as CarbonComposedModal,
+	ContainedList as CarbonContainedList,
+	ContainedListItem as CarbonContainedListItem,
+	DatePicker as CarbonDatePicker,
+	DatePickerInput as CarbonDatePickerInput,
+	Dropdown as CarbonDropdown,
+	FormGroup as CarbonFormGroup,
+	Grid as CarbonGrid,
+	InlineLoading as CarbonInlineLoading,
 	InlineNotification as CarbonInlineNotification,
+	Layer as CarbonLayer,
+	Link as CarbonLink,
 	Loading as CarbonLoading,
 	Modal as CarbonModal,
 	ModalBody as CarbonModalBody,
@@ -30,19 +41,39 @@ import {
 	OverflowMenuItem as CarbonOverflowMenuItem,
 	Popover as CarbonPopover,
 	PopoverContent as CarbonPopoverContent,
+	RadioButton as CarbonRadioButton,
+	RadioButtonGroup as CarbonRadioButtonGroup,
+	Section as CarbonSection,
 	Select as CarbonSelect,
 	SelectItem as CarbonSelectItem,
+	SelectSkeleton as CarbonSelectSkeleton,
 	SkeletonText as CarbonSkeletonText,
 	Stack as CarbonStack,
+	StructuredListBody as CarbonStructuredListBody,
+	StructuredListCell as CarbonStructuredListCell,
+	StructuredListRow as CarbonStructuredListRow,
+	StructuredListWrapper as CarbonStructuredListWrapper,
 	Tag as CarbonTag,
 	TableHeader as CarbonTableHeader,
+	TabsSkeleton as CarbonTabsSkeleton,
 	TextInput as CarbonTextInput,
 	Toggle as CarbonToggle,
 } from '@carbon/react';
 import {
 	Button as CompatButton,
+	Column as CompatColumn,
 	ComposedModal as CompatComposedModal,
+	ContainedList as CompatContainedList,
+	ContainedListItem as CompatContainedListItem,
+	DatePicker as CompatDatePicker,
+	DatePickerInput as CompatDatePickerInput,
+	Dropdown as CompatDropdown,
+	FormGroup as CompatFormGroup,
+	Grid as CompatGrid,
+	InlineLoading as CompatInlineLoading,
 	InlineNotification as CompatInlineNotification,
+	Layer as CompatLayer,
+	Link as CompatLink,
 	Loading as CompatLoading,
 	Modal as CompatModal,
 	ModalBody as CompatModalBody,
@@ -52,39 +83,79 @@ import {
 	OverflowMenuItem as CompatOverflowMenuItem,
 	Popover as CompatPopover,
 	PopoverContent as CompatPopoverContent,
+	RadioButton as CompatRadioButton,
+	RadioButtonGroup as CompatRadioButtonGroup,
+	Section as CompatSection,
 	Select as CompatSelect,
 	SelectItem as CompatSelectItem,
+	SelectSkeleton as CompatSelectSkeleton,
 	SkeletonText as CompatSkeletonText,
 	Stack as CompatStack,
+	StructuredListBody as CompatStructuredListBody,
+	StructuredListCell as CompatStructuredListCell,
+	StructuredListRow as CompatStructuredListRow,
+	StructuredListWrapper as CompatStructuredListWrapper,
 	Tag as CompatTag,
 	TableHeader as CompatTableHeader,
+	TabsSkeleton as CompatTabsSkeleton,
 	TextInput as CompatTextInput,
 	Toggle as CompatToggle,
 } from '@camunda/design-system/carbon-compat';
 import {
+	Add as CarbonAdd,
+	Calendar as CarbonCalendar,
+	CenterCircle as CarbonCenterCircle,
+	CheckmarkFilled as CarbonCheckmarkFilled,
 	CircleDash as CarbonCircleDash,
 	Checkmark as CarbonCheckmark,
+	Close as CarbonClose,
 	Critical as CarbonCritical,
+	EventSchedule as CarbonEventSchedule,
+	Filter as CarbonFilter,
+	Information as CarbonInformation,
+	Launch as CarbonLaunch,
+	Notification as CarbonNotification,
 	Search as CarbonSearchIcon,
+	SidePanelClose as CarbonSidePanelClose,
+	SidePanelOpen as CarbonSidePanelOpen,
 	SkillLevelAdvanced as CarbonSkillLevelAdvanced,
 	SkillLevelBasic as CarbonSkillLevelBasic,
 	SkillLevelIntermediate as CarbonSkillLevelIntermediate,
 	SortAscending as CarbonSortAscending,
+	Subtract as CarbonSubtract,
 	UserAvatar as CarbonUserAvatar,
 	UserAvatarFilled as CarbonUserAvatarFilled,
+	Warning as CarbonWarning,
 } from '@carbon/react/icons';
 import {
 	ArrowUpNarrowWide as LucideArrowUpNarrowWide,
+	Bell as LucideBell,
+	Calendar as LucideCalendar,
+	CalendarClock as LucideCalendarClock,
 	Check as LucideCheck,
+	CircleCheck as LucideCircleCheck,
 	CircleDashed as LucideCircleDashed,
 	CircleUser as LucideCircleUser,
+	Crosshair as LucideCrosshair,
+	ExternalLink as LucideExternalLink,
+	Filter as LucideFilter,
+	Info as LucideInfo,
+	PanelLeftClose as LucidePanelLeftClose,
+	PanelLeftOpen as LucidePanelLeftOpen,
+	Plus as LucidePlus,
 	Search as LucideSearchIcon,
 	SignalHigh as LucideSignalHigh,
 	SignalLow as LucideSignalLow,
 	SignalMedium as LucideSignalMedium,
 	TriangleAlert as LucideTriangleAlert,
+	X as LucideX,
+	ZoomIn as LucideZoomIn,
+	ZoomOut as LucideZoomOut,
 } from 'lucide-react';
 import {featureFlags} from '#/shared/feature-flags';
+import {IconButton} from './IconButton';
+
+export {IconButton};
 
 // Re-exported for callers that need to type a local wrapper around `Tag`
 // (e.g. `React.FC<TagProps<'div'> & ...>`). Carbon's own `Tag` component has
@@ -97,15 +168,37 @@ import {featureFlags} from '#/shared/feature-flags';
 // plain div-based Tag.
 export type {TagProps} from '@camunda/design-system/carbon-compat';
 
+// InlineLoadingProps: carbon-compat re-exports Carbon's own InlineLoading type
+// unchanged (see carbon-compat/inline-loading.d.ts), so this is a type-only
+// re-export with no behavioral or shape difference from importing directly
+// from `@carbon/react`.
+export type {InlineLoadingProps} from '@camunda/design-system/carbon-compat';
+
+// ButtonProps: same collapsing-union problem as `Tag` above. Carbon's own
+// `Button` is polymorphic (`ButtonProps<T extends React.ElementType>`, no
+// default), while the compat adapter's exported function signature is fixed
+// to `ButtonProps<"button">`. Typing a callsite prop as
+// `React.ComponentProps<typeof Button>` unions the two and widens `as` to
+// `ElementType<any, keyof IntrinsicElements> | undefined`, which then fails
+// to satisfy either component's narrower `as` requirement. `ButtonProps`
+// (identical between Carbon and the compat adapter — the adapter's type is a
+// re-export of Carbon's own generic type, defaulted to `"button"`) is the
+// correct, non-collapsing type for callers that only ever render the plain
+// `<button>`-based Button.
+export type {ButtonProps} from '@camunda/design-system/carbon-compat';
+
+// InlineLoading: SWAP tier (docs/kb/carbon-migration-tiers.md) — carbon-compat
+// re-exports the component unchanged (paper-move, no shadcn equivalent yet).
+// Zero prop/behavior difference from importing directly from `@carbon/react`.
+export const InlineLoading = featureFlags.dsTasklistUI ? CompatInlineLoading : CarbonInlineLoading;
+
 // InlineNotification: carbon-compat ships an Alert-backed adapter with the
 // same prop shape as Carbon's (kind -> variant, title/subtitle -> title/
 // description, hideCloseButton -> dismissible inverted). Carbon-only props
 // with no DS equivalent (statusIconDescription, iconDescription, actions,
 // role, notificationType) are silently dropped by the adapter (dev-only
 // console warning) rather than causing a type or runtime error.
-export const InlineNotification = featureFlags.dsTasklistUI
-	? CompatInlineNotification
-	: CarbonInlineNotification;
+export const InlineNotification = featureFlags.dsTasklistUI ? CompatInlineNotification : CarbonInlineNotification;
 
 export const Loading = featureFlags.dsTasklistUI ? CompatLoading : CarbonLoading;
 
@@ -136,6 +229,75 @@ export const ModalFooter = featureFlags.dsTasklistUI ? CompatModalFooter : Carbo
 export const SkeletonText = featureFlags.dsTasklistUI ? CompatSkeletonText : CarbonSkeletonText;
 export const Stack = featureFlags.dsTasklistUI ? CompatStack : CarbonStack;
 
+// Layer: carbon-compat currently re-exports this unchanged from `@carbon/react`
+// (Carbon's z-layer theming system has no shadcn equivalent — see
+// carbon-compat/layer.tsx and MAPPING.md's SHIM table). Importing through this
+// feature-flagged swap point today is a no-op visually/behaviorally, but
+// establishes the swap point so call sites pick up a real DS-backed
+// implementation automatically if one ships, with no further call-site changes.
+export const Layer = featureFlags.dsTasklistUI ? CompatLayer : CarbonLayer;
+
+// Link: carbon-compat adapter renders a DS-token-styled `<a>` with the same
+// prop shape as Carbon's `LinkProps<'a'>` (size, disabled, renderIcon,
+// className, children, ...rest) — no JSX restructuring needed at the call
+// site. `inline` has no separate spacing treatment in the adapter and is
+// silently dropped (dev-only console warning); callers relying on Carbon's
+// inline variant get the standard link look once the flag is on.
+export const Link = featureFlags.dsTasklistUI ? CompatLink : CarbonLink;
+
+// Grid / Column: SHIM tier (carbon-compat/MAPPING.md "SHIM components" table) —
+// carbon-compat re-exports these unchanged from `@carbon/react` (layout-only
+// primitives; the DS equivalent is Tailwind grid utilities, so no adapter
+// ships yet — see carbon-compat/grid.tsx / column.tsx). Importing through this
+// feature-flagged swap point today is a no-op visually/behaviorally (the
+// responsive `sm`/`md`/`lg`/`xlg` span+offset props pass straight through), but
+// establishes the swap point so call sites pick up a real DS-backed
+// implementation automatically if one ships, with no further call-site changes.
+export const Grid = featureFlags.dsTasklistUI ? CompatGrid : CarbonGrid;
+export const Column = featureFlags.dsTasklistUI ? CompatColumn : CarbonColumn;
+
+// StructuredList family: carbon-compat currently re-exports these unchanged
+// from `@carbon/react` (no shadcn equivalent yet — see
+// carbon-compat/structured-list.tsx and MAPPING.md's SHIM table). Importing
+// through this feature-flagged swap point today is a no-op visually/
+// behaviorally, but establishes the swap point so the call site picks up a
+// real DS-backed implementation automatically once one ships, with no
+// further call-site changes required.
+export const StructuredListWrapper = featureFlags.dsTasklistUI
+	? CompatStructuredListWrapper
+	: CarbonStructuredListWrapper;
+export const StructuredListBody = featureFlags.dsTasklistUI ? CompatStructuredListBody : CarbonStructuredListBody;
+export const StructuredListRow = featureFlags.dsTasklistUI ? CompatStructuredListRow : CarbonStructuredListRow;
+export const StructuredListCell = featureFlags.dsTasklistUI ? CompatStructuredListCell : CarbonStructuredListCell;
+
+// Section: carbon-compat currently re-exports this unchanged from `@carbon/react`
+// (semantic heading-level wrapper — paper-move SHIM, no shadcn equivalent yet;
+// see carbon-compat/section.d.ts). The `level` prop (used at the call site) is
+// Carbon's own and is fully preserved. Importing through this feature-flagged
+// swap point today is a no-op visually/behaviorally, but establishes the swap
+// point so the call site picks up a real DS-backed implementation automatically
+// once one ships, with no further call-site changes required.
+export const Section = featureFlags.dsTasklistUI ? CompatSection : CarbonSection;
+
+// ContainedList / ContainedListItem: SHIM tier (docs/kb/carbon-migration-tiers.md).
+// carbon-compat currently re-exports both unchanged from `@carbon/react` (no
+// shadcn equivalent yet — see carbon-compat/contained-list.d.ts). Importing
+// through this feature-flagged swap point today is a no-op visually/
+// behaviorally, but establishes the swap point so the call site picks up a
+// real DS-backed implementation automatically once one ships, with no further
+// call-site changes required. The `label` and `kind` props (used at the call
+// site) are Carbon's own and are fully preserved.
+export const ContainedList = featureFlags.dsTasklistUI ? CompatContainedList : CarbonContainedList;
+export const ContainedListItem = featureFlags.dsTasklistUI ? CompatContainedListItem : CarbonContainedListItem;
+
+// TabsSkeleton: SWAP tier (docs/kb/carbon-migration-tiers.md). carbon-compat
+// ships a Tailwind `animate-pulse` adapter that renders a tab-bar-shaped
+// placeholder matching the dimensions Carbon's static skeleton occupies, so the
+// subsequent real <Tabs> swap-in doesn't reflow. Carbon's `type`
+// ('default' | 'container') is accepted but unused at this fidelity (skeleton
+// renders identically either way); `className` is applied to the wrapper.
+export const TabsSkeleton = featureFlags.dsTasklistUI ? CompatTabsSkeleton : CarbonTabsSkeleton;
+
 // Tag: carbon-compat adapter is backed by DS Badge under the hood and keeps
 // the same call-site shape (children, className, ...rest passed through).
 // `size`, `title`, `disabled`, `filter`, `onClose`, `decorator`, and `slug`
@@ -154,6 +316,53 @@ export const SelectItem = featureFlags.dsTasklistUI ? CompatSelectItem : CarbonS
 export const Toggle = featureFlags.dsTasklistUI ? CompatToggle : CarbonToggle;
 export const Button = featureFlags.dsTasklistUI ? CompatButton : CarbonButton;
 export const TextInput = featureFlags.dsTasklistUI ? CompatTextInput : CarbonTextInput;
+
+// SelectSkeleton: SWAP tier (docs/kb/carbon-migration-tiers.md). carbon-compat
+// ships a Tailwind `animate-pulse` adapter that renders a Select-shaped
+// placeholder matching the dimensions Carbon's static skeleton occupies, so the
+// subsequent real <Select> swap-in doesn't reflow. `hideLabel` and `className`
+// (Carbon's own props, type re-exported) are preserved; no other props exist.
+export const SelectSkeleton = featureFlags.dsTasklistUI ? CompatSelectSkeleton : CarbonSelectSkeleton;
+
+// FormGroup: carbon-compat adapter renders a native `<fieldset>` + `<legend>`
+// with the same prop shape as Carbon's (type is Carbon's own FormGroupProps
+// re-exported) — `legendText`, `legendId`, `disabled`, `invalid`, `className`
+// are preserved, so no JSX restructuring is needed at the call site. Only
+// `message`/`messageText` (Carbon's inline error-helper variant) are silently
+// dropped by the adapter (dev-only console warning); callers not using them are
+// unaffected.
+export const FormGroup = featureFlags.dsTasklistUI ? CompatFormGroup : CarbonFormGroup;
+
+// RadioButton / RadioButtonGroup: carbon-compat ships a prop-compatible adapter
+// (types are Carbon's own RadioButtonProps/RadioButtonGroupProps re-exported),
+// backed by Radix RadioGroup under the hood — no JSX restructuring needed at the
+// call site. The group bridges Carbon's `valueSelected`/`defaultSelected`/
+// `onChange` to Radix's `value`/`defaultValue`/`onValueChange`; `legendText`,
+// `orientation`, `name`, and `className` are preserved. Note: the adapter only
+// bridges `onChange` at the group level — an `onChange` placed on an individual
+// `RadioButton` falls into `...rest` and never fires (this file already wires
+// `onChange` on the group, so no change is needed here).
+export const RadioButton = featureFlags.dsTasklistUI ? CompatRadioButton : CarbonRadioButton;
+export const RadioButtonGroup = featureFlags.dsTasklistUI ? CompatRadioButtonGroup : CarbonRadioButtonGroup;
+
+// DatePicker / DatePickerInput: SHIM tier (docs/kb/carbon-migration-tiers.md) —
+// carbon-compat ships a compound adapter that keeps Carbon's parent/child call
+// shape (`<DatePicker datePickerType dateFormat onChange locale><DatePickerInput
+// id labelText placeholder size/></DatePicker>`): the parent reads the child's
+// input props via `findInputProps`, and `DatePickerInput` renders nothing on its
+// own. `datePickerType`, `dateFormat`, `onChange` (Date[] signature),
+// `className`, `id`, `labelText`, `placeholder`, and `size` are all preserved,
+// so no JSX restructuring is needed at the call site.
+export const DatePicker = featureFlags.dsTasklistUI ? CompatDatePicker : CarbonDatePicker;
+export const DatePickerInput = featureFlags.dsTasklistUI ? CompatDatePickerInput : CarbonDatePickerInput;
+
+// Dropdown: carbon-compat adapter's exported type is Carbon's own DropdownProps
+// re-exported, so no JSX restructuring is needed at the call site. `size` and
+// `direction` have no Radix-backed equivalent and are silently dropped (dev-only
+// console warning) rather than causing a type or runtime error — callers passing
+// `direction="top"` should expect the menu to open downward once the flag is on
+// and verify visually.
+export const Dropdown = featureFlags.dsTasklistUI ? CompatDropdown : CarbonDropdown;
 
 // carbon-compat ships an OverflowMenu/OverflowMenuItem adapter with the same
 // prop shape as Carbon's (backed by DS DropdownMenu under the hood), so no
@@ -177,6 +386,36 @@ export const TableHeader = featureFlags.dsTasklistUI ? CompatTableHeader : Carbo
 // (see docs/kb/carbon-icons-to-lucide.md "Common remaps").
 export const CheckmarkIcon = featureFlags.dsTasklistUI ? LucideCheck : CarbonCheckmark;
 
+// CheckmarkFilled: generic "task completed" status icon, not a domain
+// entity — no registry match. Lucide's `CircleCheck` is the documented direct
+// equivalent (see docs/kb/carbon-icons-to-lucide.md's mapping table, which
+// notes Carbon's filled variant needs `fill-current` to approximate the solid
+// look — callers should add that class where the filled style matters).
+export const CheckmarkFilledIcon = featureFlags.dsTasklistUI ? LucideCircleCheck : CarbonCheckmarkFilled;
+
+// Calendar: generic date/schedule glyph (task creation-date row), not a
+// domain entity — no registry match. Lucide ships an identically-named
+// `Calendar` icon — direct equivalent, no visual approximation needed.
+export const CalendarIcon = featureFlags.dsTasklistUI ? LucideCalendar : CarbonCalendar;
+
+// Warning: generic "overdue" status icon, not a domain entity — no registry
+// match. Not listed verbatim in docs/kb/carbon-icons-to-lucide.md's mapping
+// table (that table only has `WarningAlt`/`WarningAltFilled`/`WarningFilled`/
+// `Caution`), but Lucide's `TriangleAlert` is the same glyph family and is
+// already the established mapping for Carbon's `Critical` (see `CriticalIcon`
+// below) — reused here for consistency. Callers should add `fill-current`
+// where the filled-triangle look matters, same as the `CheckmarkFilled` note
+// above.
+export const WarningIcon = featureFlags.dsTasklistUI ? LucideTriangleAlert : CarbonWarning;
+
+// Notification: generic "follow-up date" status icon, not a domain entity —
+// no registry match, and not listed in docs/kb/carbon-icons-to-lucide.md at
+// all (genuine gap). Lucide's `Bell` is the closest visual/semantic
+// equivalent (notification/reminder glyph) — fallback tier per the KB's
+// "no reasonable equivalent" guidance. Logged under "Icon gaps (Carbon ->
+// Lucide)" in docs/migration/human-follow-up.md.
+export const NotificationIcon = featureFlags.dsTasklistUI ? LucideBell : CarbonNotification;
+
 // SortAscending: generic UI icon (sort-trigger icon), not a domain entity.
 // Not listed in carbon-icons-to-lucide.md's mapping table, but Lucide's
 // `ArrowUpNarrowWide` is the library's standard "sort ascending" glyph
@@ -189,11 +428,29 @@ export const SortAscendingIcon = featureFlags.dsTasklistUI ? LucideArrowUpNarrow
 // severity indicators). `Critical` maps to `TriangleAlert`, consistent with
 // the existing Carbon `WarningFilled`/`Caution` -> `TriangleAlert` precedent.
 export const SkillLevelBasicIcon = featureFlags.dsTasklistUI ? LucideSignalLow : CarbonSkillLevelBasic;
-export const SkillLevelIntermediateIcon = featureFlags.dsTasklistUI
-	? LucideSignalMedium
-	: CarbonSkillLevelIntermediate;
+export const SkillLevelIntermediateIcon = featureFlags.dsTasklistUI ? LucideSignalMedium : CarbonSkillLevelIntermediate;
 export const SkillLevelAdvancedIcon = featureFlags.dsTasklistUI ? LucideSignalHigh : CarbonSkillLevelAdvanced;
 export const CriticalIcon = featureFlags.dsTasklistUI ? LucideTriangleAlert : CarbonCritical;
+
+// EventSchedule: used here as a generic calendar/time-of-event glyph (audit
+// log timestamp row), not a "backup" domain entity — no registry match under
+// the context rule in docs/kb/carbon-icons-to-lucide.md ("EventSchedule
+// (backup context)" only REMAPs to the registry's BackupIcon when the
+// surrounding code refers to a backup). Lucide's `CalendarClock` is the
+// documented generic-calendar equivalent (see the KB's "Mapping table",
+// `EventSchedule (calendar)` row).
+export const EventScheduleIcon = featureFlags.dsTasklistUI ? LucideCalendarClock : CarbonEventSchedule;
+
+// Launch: generic "open in new tab" affordance (external docs link), not a
+// domain entity. Lucide's `ExternalLink` is the documented direct equivalent
+// (see docs/kb/carbon-icons-to-lucide.md's mapping table).
+export const LaunchIcon = featureFlags.dsTasklistUI ? LucideExternalLink : CarbonLaunch;
+
+// Information: generic informational "i-in-circle" affordance (the history
+// row "view details" link glyph), not a Camunda domain entity — no registry
+// match. Lucide's `Info` is the direct visual/semantic equivalent (a circle
+// enclosing a lowercase "i") — same-glyph mapping, no approximation needed.
+export const InformationIcon = featureFlags.dsTasklistUI ? LucideInfo : CarbonInformation;
 
 // CircleDash: used here as a generic "unassigned" indicator, not a Camunda
 // domain entity — no registry match. Lucide's `CircleDashed` is the direct
@@ -214,3 +471,46 @@ export const CircleDashIcon = featureFlags.dsTasklistUI ? LucideCircleDashed : C
 // not by icon shape.
 export const UserAvatarIcon = featureFlags.dsTasklistUI ? LucideCircleUser : CarbonUserAvatar;
 export const UserAvatarFilledIcon = featureFlags.dsTasklistUI ? LucideCircleUser : CarbonUserAvatarFilled;
+
+// Add / Subtract / CenterCircle: diagram zoom-control glyphs (process
+// diagram zoom in/out/reset), not domain entities — no registry match. Not
+// listed verbatim in docs/kb/carbon-icons-to-lucide.md (that KB's "Common
+// remaps" maps generic `Add` -> `Plus`), but in this zoom-control context
+// Lucide's dedicated `ZoomIn`/`ZoomOut`/`Crosshair` glyphs are the closer
+// semantic match than the generic add/subtract/target icons — same choice
+// used consistently anywhere this diagram zoom control appears.
+export const AddIcon = featureFlags.dsTasklistUI ? LucideZoomIn : CarbonAdd;
+export const SubtractIcon = featureFlags.dsTasklistUI ? LucideZoomOut : CarbonSubtract;
+export const CenterCircleIcon = featureFlags.dsTasklistUI ? LucideCrosshair : CarbonCenterCircle;
+
+// Close: generic UI icon (X / close affordance on the remove-variable button),
+// not a Camunda domain entity — no registry match. Lucide's `X` is the
+// documented direct equivalent (see docs/kb/carbon-icons-to-lucide.md's
+// "Common remaps": `Close` -> `X`).
+export const CloseIcon = featureFlags.dsTasklistUI ? LucideX : CarbonClose;
+
+// Plus: generic "add" affordance (the add-variable-row button's leading icon),
+// not a domain entity — no registry match. Carbon's `Add` glyph in this generic
+// add context maps to Lucide's `Plus` per docs/kb/carbon-icons-to-lucide.md's
+// "Common remaps" (generic `Add` -> `Plus`). NOTE: the `AddIcon` export above
+// deliberately maps Carbon `Add` -> Lucide `ZoomIn` for the process-diagram
+// zoom-control context *only*; this generic add/plus usage gets its own export
+// so it doesn't inherit the zoom glyph. Both share the same Carbon fallback
+// (`CarbonAdd`) since both were Carbon's `Add` pre-migration.
+export const PlusIcon = featureFlags.dsTasklistUI ? LucidePlus : CarbonAdd;
+
+// Filter: generic "filter tasks" affordance on the collapsed task-nav panel,
+// not a Camunda domain entity — no registry match. Lucide ships an
+// identically-named `Filter` (funnel) glyph — direct visual/semantic
+// equivalent, no approximation needed.
+export const FilterIcon = featureFlags.dsTasklistUI ? LucideFilter : CarbonFilter;
+
+// SidePanelOpen / SidePanelClose: generic panel-toggle glyphs for the
+// left-docked task filter navigation panel (`id="task-nav-bar"`), not domain
+// entities — no registry match. The panel is left-docked, so Lucide's
+// `PanelLeft*` family is the direct semantic equivalent (over `PanelRight*`):
+// `PanelLeftOpen` (arrow pointing outward, panel expanding) maps to Carbon's
+// `SidePanelOpen`, and `PanelLeftClose` (arrow pointing inward, panel
+// collapsing) maps to Carbon's `SidePanelClose`.
+export const SidePanelOpenIcon = featureFlags.dsTasklistUI ? LucidePanelLeftOpen : CarbonSidePanelOpen;
+export const SidePanelCloseIcon = featureFlags.dsTasklistUI ? LucidePanelLeftClose : CarbonSidePanelClose;

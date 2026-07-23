@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
+import {ContainedList, ContainedListItem, Tag} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatISODateTime} from '#/tasklist/modules/dates/formatDateRelative';

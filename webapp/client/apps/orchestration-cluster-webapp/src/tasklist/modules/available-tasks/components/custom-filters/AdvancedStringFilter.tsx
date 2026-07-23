@@ -8,10 +8,10 @@
 
 import {useState} from 'react';
 import {t} from 'i18next';
-import {Dropdown, TextInput} from '@carbon/react';
 import {Field, type FieldInputProps} from 'react-final-form';
 import {useTranslation} from 'react-i18next';
 import {cn} from '#/shared/cn';
+import {Dropdown, TextInput} from '#/shared/design-system-compat';
 import {
 	encodeFilterOperation,
 	splitEncodedFilterOperation,

@@ -10,7 +10,7 @@ import {useActorRef, useSelector} from '@xstate/react';
 import {useQueryClient} from '@tanstack/react-query';
 import type {SnapshotFrom} from 'xstate';
 import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.10';
-import type {InlineLoadingProps} from '@carbon/react';
+import type {InlineLoadingProps} from '#/shared/design-system-compat';
 import {useCallback, useEffect} from 'react';
 import {taskCompletionMachine} from './taskCompletionMachine';
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Layer, Tag} from '@carbon/react';
+import {Layer, Tag} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
 import {BPMNDiagram} from './BPMNDiagram';
 import styles from './ProcessDiagramView.module.scss';

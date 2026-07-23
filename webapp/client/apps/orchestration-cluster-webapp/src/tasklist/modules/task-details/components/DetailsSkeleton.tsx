@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ButtonSkeleton, ContainedList, ContainedListItem, Section, SkeletonText, TabsSkeleton} from '@carbon/react';
+import {ContainedList, ContainedListItem, Section, SkeletonText, TabsSkeleton} from '#/shared/design-system-compat';
+// FLAG: ButtonSkeleton has no carbon-compat adapter (no DS equivalent yet) — left on
+// @carbon/react pending DS support. See docs/migration/human-follow-up.md.
+import {ButtonSkeleton} from '@carbon/react';
 import styles from './DetailsSkeleton.module.scss';
 import layoutStyles from './taskDetailsLayoutCommon.module.scss';
 
@@ -25,6 +28,7 @@ const DetailsSkeleton: React.FC<Props> = (props) => {
 					</div>
 					<div className={layoutStyles.headerRightContainer}>
 						<SkeletonText width="100px" className={styles.margin0} />
+						{/* FLAG: ButtonSkeleton — no carbon-compat adapter; still Carbon. See human-follow-up.md */}
 						<ButtonSkeleton size="sm" />
 					</div>
 				</header>

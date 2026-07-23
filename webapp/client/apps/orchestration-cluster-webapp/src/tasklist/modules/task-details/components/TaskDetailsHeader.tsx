@@ -7,9 +7,8 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import {Stack} from '@carbon/react';
-import {CheckmarkFilled} from '@carbon/react/icons';
 import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.10';
+import {CheckmarkFilledIcon, Stack} from '#/shared/design-system-compat';
 import {AssigneeTag} from '#/tasklist/modules/available-tasks/components/AssigneeTag';
 import {ActiveTransitionLoadingText} from './ActiveTransitionLoadingText';
 import styles from './TaskDetailsHeader.module.scss';
@@ -46,7 +45,7 @@ const TaskDetailsHeader: React.FC<Props> = ({taskName, processName, assignee, ta
 						title={t('tasklist.taskDetailsTaskCompletedBy')}
 					>
 						<Stack className={styles.alignItemsCenter} orientation="horizontal" gap={2}>
-							<CheckmarkFilled size={16} color="green" />
+							<CheckmarkFilledIcon size={16} color="green" />
 							{assignee ? (
 								<>
 									{t('tasklist.taskDetailsTaskCompletedBy') + ' '}

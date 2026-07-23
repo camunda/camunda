@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Column, Grid, Link} from '@carbon/react';
+import {Column, Grid, Link} from '#/shared/design-system-compat';
 import {useTranslation, Trans} from 'react-i18next';
 import {getStateLocally} from '#/shared/browser-storage/local-storage';
 import styles from './NoTaskSelectedPage.module.scss';

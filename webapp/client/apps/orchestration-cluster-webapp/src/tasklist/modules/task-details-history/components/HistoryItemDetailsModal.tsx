@@ -8,14 +8,15 @@
 
 import {
 	ComposedModal,
+	EventScheduleIcon,
 	ModalBody,
 	ModalHeader,
 	StructuredListBody,
 	StructuredListCell,
 	StructuredListRow,
 	StructuredListWrapper,
-} from '@carbon/react';
-import {EventSchedule, UserAvatar} from '@carbon/react/icons';
+	UserAvatarIcon,
+} from '#/shared/design-system-compat';
 import {useTranslation} from 'react-i18next';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.10';
 import {formatHistoryDate} from '#/tasklist/modules/task-details-history/formatHistoryDate';
@@ -47,7 +48,7 @@ const HistoryItemDetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
 						<StructuredListRow className={styles.verticallyAlignedRow}>
 							<StructuredListCell className={styles.firstColumn}>
 								<div className={styles.iconText}>
-									<UserAvatar />
+									<UserAvatarIcon />
 									{t('tasklist.taskDetailsHistoryModalActor')}
 								</div>
 							</StructuredListCell>
@@ -56,7 +57,7 @@ const HistoryItemDetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
 						<StructuredListRow className={styles.verticallyAlignedRow}>
 							<StructuredListCell noWrap className={styles.firstColumn}>
 								<div className={styles.iconText}>
-									<EventSchedule />
+									<EventScheduleIcon />
 									{t('tasklist.taskDetailsHistoryModalTime')}
 								</div>
 							</StructuredListCell>
@@ -72,7 +73,7 @@ const HistoryItemDetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
 								<StructuredListRow className={styles.verticallyAlignedRow}>
 									<StructuredListCell noWrap className={styles.firstColumn}>
 										<div className={styles.iconText}>
-											<EventSchedule />
+											<EventScheduleIcon />
 											{t('tasklist.taskDetailsHistoryModalAssignee')}
 										</div>
 									</StructuredListCell>
