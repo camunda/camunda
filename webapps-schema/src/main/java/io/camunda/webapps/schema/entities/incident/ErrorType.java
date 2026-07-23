@@ -27,7 +27,8 @@ public enum ErrorType {
   DECISION_EVALUATION_ERROR("Decision evaluation error"),
 
   FORM_NOT_FOUND("Form not found"),
-  RESOURCE_NOT_FOUND("Resource not found");
+  RESOURCE_NOT_FOUND("Resource not found"),
+  SECRET_RESOLUTION_ERROR("Secret resolution error");
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ErrorType.class);
 
