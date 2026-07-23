@@ -54,7 +54,6 @@ public final class EntityManager {
   /** Will wait until all entities are created and permissions are assigned. */
   public void await(final @NonNull ConfigurationTestEntities testEntities) {
     LOGGER.debug("Awaiting visibility of all entities and permissions");
-    awaitAdminAuthReady();
     awaitSearchVisibility(
         "users",
         () -> wrap(defaultClient.newUsersSearchRequest()),
@@ -208,22 +207,6 @@ public final class EntityManager {
 
   private <T> Function<T, Stream<String>> extractField(final Function<T, String> fieldExtractor) {
     return obj -> Stream.of(fieldExtractor.apply(obj));
-  }
-
-  /**
-   * Gates on the admin user's authentication being usable. The visibility waits below only issue
-   * requests for classes that configure entities; a class without configured entities would
-   * otherwise make its first authenticated call from test code — possibly over gRPC, which is not
-   * retried — racing the admin user's export into secondary storage.
-   */
-  private void awaitAdminAuthReady() {
-    Awaitility.await("admin authentication ready")
-        .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                assertThat(defaultClient.newUsersSearchRequest().send().join().items())
-                    .isNotNull());
   }
 
   private <T> void awaitSearchVisibility(
