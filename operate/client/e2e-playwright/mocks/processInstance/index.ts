@@ -116,7 +116,6 @@ function mockResponses({
       const roleFilter: string | undefined = requestBody?.filter?.role;
       const elementInstanceKeyFilter: string | undefined =
         requestBody?.filter?.elementInstanceKey;
-      const limit: number | undefined = requestBody?.page?.limit;
 
       let items = agentInstanceHistory?.items ?? [];
       if (roleFilter) {
@@ -127,17 +126,13 @@ function mockResponses({
           (item) => item.elementInstanceKey === elementInstanceKeyFilter,
         );
       }
-      const totalItems = items.length;
-      if (typeof limit === 'number') {
-        items = items.slice(0, limit);
-      }
 
       return route.fulfill({
         status: 200,
         body: JSON.stringify({
           items,
           page: {
-            totalItems,
+            totalItems: items.length,
             startCursor: null,
             endCursor: null,
             hasMoreTotalItems: false,
