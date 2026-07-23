@@ -159,7 +159,27 @@ public final class LakePocApp {
   private LakePocApp() {}
 
   public static void main(final String[] args) {
-    final LakeConfig config = configFromSystemProperties();
+    final Handle handle = start(configFromSystemProperties());
+    Runtime.getRuntime()
+        .addShutdownHook(
+            new Thread(
+                () -> {
+                  LOG.info("Shutdown requested; draining poll loop");
+                  handle.close();
+                  LOG.info("Lake PoC translator stopped");
+                },
+                "lake-poc-shutdown"));
+    handle.awaitPollLoop();
+  }
+
+  /**
+   * The embeddable entry point: everything {@link #main} does except process-level concerns
+   * (system-property parsing, the JVM shutdown hook, blocking the caller). The returned {@link
+   * Handle} owns every resource and the poll thread; callers hosting ingest inside a larger process
+   * (e.g. the serving application) call this at startup and {@link Handle#close()} at shutdown —
+   * the seam the one-backend consolidation builds on.
+   */
+  public static Handle start(final LakeConfig config) {
     LOG.info(
         "Starting lake PoC translator: gateway={} topic={} group={} warehouse={} state={} "
             + "flushIntervalMs={} stateDumpIntervalMs={} compactIntervalMs={} uiPort={}",
@@ -255,53 +275,103 @@ public final class LakePocApp {
         rawConsumer.getOwnedPartitions());
 
     final AtomicBoolean running = new AtomicBoolean(true);
-    final Thread mainThread = Thread.currentThread();
+    final Thread pollThread =
+        new Thread(
+            () ->
+                runLoop(
+                    consumer,
+                    icebergWriter,
+                    cachedCommittedOffset,
+                    partitionPipelines,
+                    running,
+                    stateSnapshotDumper,
+                    compactor,
+                    wiring.coordinator(),
+                    state,
+                    config.stateDumpIntervalMs(),
+                    config.compactIntervalMs(),
+                    config.objectTombstoneRetentionMs()),
+            "lake-poll-loop");
+    pollThread.start();
+    return new Handle(
+        client, icebergWriter, state, uiServer, consumer, partitionPipelines, running, pollThread);
+  }
 
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  LOG.info("Shutdown requested; draining poll loop");
-                  running.set(false);
-                  try {
-                    // Joining the main thread establishes happens-before for everything it wrote
-                    // before exiting its loop, so no extra synchronization is needed to safely
-                    // touch partitionPipelines/state/writer from here afterward.
-                    mainThread.join(SHUTDOWN_DRAIN_TIMEOUT.toMillis());
-                  } catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                  }
-                  // Draining each pipeline seals whatever the filling segment holds, waits for the
-                  // flush thread to finalize files and commit a last descriptor, then stops --
-                  // see SinkPipeline#close's own javadoc. Must happen before the writer (and its
-                  // catalog/DuckDB connection) closes.
-                  for (final PartitionPipelines pipelines : partitionPipelines.values()) {
-                    pipelines.close();
-                  }
-                  if (uiServer != null) {
-                    uiServer.close();
-                  }
-                  state.close();
-                  icebergWriter.close();
-                  consumer.close();
-                  client.close();
-                  LOG.info("Lake PoC translator stopped");
-                },
-                "lake-poc-shutdown"));
+  /**
+   * A running ingest's lifecycle handle, returned by {@link #start}: owns every resource and the
+   * poll thread. {@link #close()} drains and releases everything in dependency order — safe to call
+   * from a JVM shutdown hook ({@link #main} does) or a host container's lifecycle callback (the
+   * serving application's ingest bean does). Idempotent: a second close is a no-op.
+   */
+  public static final class Handle implements AutoCloseable {
 
-    runLoop(
-        consumer,
-        icebergWriter,
-        cachedCommittedOffset,
-        partitionPipelines,
-        running,
-        stateSnapshotDumper,
-        compactor,
-        wiring.coordinator(),
-        state,
-        config.stateDumpIntervalMs(),
-        config.compactIntervalMs(),
-        config.objectTombstoneRetentionMs());
+    private final EventBridgeClient client;
+    private final IcebergLakeWriter icebergWriter;
+    private final TranslatorState state;
+    private final LakeUiServer uiServer;
+    private final ZeebeRecordConsumer consumer;
+    private final Map<Integer, PartitionPipelines> partitionPipelines;
+    private final AtomicBoolean running;
+    private final Thread pollThread;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
+
+    private Handle(
+        final EventBridgeClient client,
+        final IcebergLakeWriter icebergWriter,
+        final TranslatorState state,
+        final LakeUiServer uiServer,
+        final ZeebeRecordConsumer consumer,
+        final Map<Integer, PartitionPipelines> partitionPipelines,
+        final AtomicBoolean running,
+        final Thread pollThread) {
+      this.client = client;
+      this.icebergWriter = icebergWriter;
+      this.state = state;
+      this.uiServer = uiServer;
+      this.consumer = consumer;
+      this.partitionPipelines = partitionPipelines;
+      this.running = running;
+      this.pollThread = pollThread;
+    }
+
+    /** Blocks until the poll loop exits (normally only on {@link #close()}). */
+    public void awaitPollLoop() {
+      try {
+        pollThread.join();
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+
+    @Override
+    public void close() {
+      if (!closed.compareAndSet(false, true)) {
+        return;
+      }
+      running.set(false);
+      try {
+        // Joining the poll thread establishes happens-before for everything it wrote before
+        // exiting its loop, so no extra synchronization is needed to safely touch
+        // partitionPipelines/state/writer from here afterward.
+        pollThread.join(SHUTDOWN_DRAIN_TIMEOUT.toMillis());
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      // Draining each pipeline seals whatever the filling segment holds, waits for the flush
+      // thread to finalize files and commit a last descriptor, then stops -- see
+      // SinkPipeline#close's own javadoc. Must happen before the writer (and its catalog/DuckDB
+      // connection) closes.
+      for (final PartitionPipelines pipelines : partitionPipelines.values()) {
+        pipelines.close();
+      }
+      if (uiServer != null) {
+        uiServer.close();
+      }
+      state.close();
+      icebergWriter.close();
+      consumer.close();
+      client.close();
+    }
   }
 
   /** Builds the per-table plumbing shared by every partition's {@link SinkPipeline} pair. */
