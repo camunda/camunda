@@ -131,7 +131,7 @@ public final class VariableDocumentUpdateProcessor
             scope.getValue().getTenantId(),
             new Rejection(
                 RejectionType.NOT_FOUND,
-                ERROR_MESSAGE_SCOPE_NOT_FOUND.formatted(scope.getValue().getProcessInstanceKey())));
+                ERROR_MESSAGE_SCOPE_NOT_FOUND.formatted(value.getScopeKey())));
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       writers.rejection().appendRejection(record, rejection.type(), rejection.reason());
