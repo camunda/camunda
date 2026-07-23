@@ -12,22 +12,27 @@ import io.camunda.analytics.lake.serving.duckdb.LakeQueryService.QueryResult;
 import io.camunda.analytics.lake.serving.duckdb.LakeViewRegistry;
 import io.camunda.analytics.lake.serving.sql.SqlText;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.springframework.stereotype.Service;
 
 /**
- * Backs {@code GET /api/definitions}: looks up one deployed process definition's BPMN 2.0 XML from
- * the {@code process_definitions} dictionary table (a lake writer table this module only reads --
- * it never deploys or modifies definitions).
+ * Backs {@code GET /api/definitions}: looks up one deployed process definition's BPMN 2.0 XML, and
+ * {@code GET /api/definitions/list}: the distinct process ids with their deployed versions -- both
+ * from the {@code process_definitions} dictionary table (a lake writer table this module only reads
+ * -- it never deploys or modifies definitions).
  *
  * <h2>Open/closed (read-time degradation)</h2>
  *
  * <p>{@code process_definitions} may not exist yet in an older warehouse (this table is newer than
  * {@code objects}/{@code object_relations}). Same rule as {@link ObjectsService}: never a 500 for a
- * missing view. Both "view absent" and "no row for this (processId, version)" surface as {@link
- * NoSuchElementException}, which {@code ProcessDefinitionsController} maps to a 404 -- the caller
- * (the object detail page's Diagram tab) treats any error response the same way: hide the tab.
+ * missing view. For {@link #find}, both "view absent" and "no row for this (processId, version)"
+ * surface as {@link NoSuchElementException}, which {@code ProcessDefinitionsController} maps to a
+ * 404 -- the caller (the object detail page's Diagram tab) treats any error response the same way:
+ * hide the tab. {@link #list} degrades differently on a missing view -- an empty {@code
+ * definitions} list rather than an error -- since its caller (the Processes page's picker) renders
+ * an empty state, not an error state.
  */
 @Service
 public class ProcessDefinitionsService {
@@ -77,7 +82,69 @@ public class ProcessDefinitionsService {
     }
   }
 
+  /**
+   * Every distinct {@code process_id} in {@code process_definitions} with its deployed versions,
+   * ordered by {@code processId} then {@code version} -- deliberately excludes {@code bpmn_xml}
+   * (this is a picker listing, not a definition lookup; that BLOB is large and irrelevant here). A
+   * missing view degrades to an empty list, never an error -- see the class javadoc.
+   */
+  public ProcessDefinitionsListResult list() {
+    if (!viewRegistry.ensureAvailable(PROCESS_DEFINITIONS)) {
+      return new ProcessDefinitionsListResult(List.of(), List.of());
+    }
+    final String sql =
+        "SELECT process_id, version, deployed_at FROM "
+            + SqlText.identifier(PROCESS_DEFINITIONS)
+            + " ORDER BY process_id, version";
+    try {
+      final QueryResult result = queryService.execute(sql);
+      final List<ProcessDefinitionSummary> definitions = new ArrayList<>();
+      String currentProcessId = null;
+      List<ProcessDefinitionVersion> currentVersions = null;
+      for (final List<Object> row : result.rows()) {
+        final String processId = (String) row.get(0);
+        final int version = ((Number) row.get(1)).intValue();
+        final String deployedAt = SqlText.toIsoString(row.get(2));
+        if (!processId.equals(currentProcessId)) {
+          if (currentProcessId != null) {
+            definitions.add(summarize(currentProcessId, currentVersions));
+          }
+          currentProcessId = processId;
+          currentVersions = new ArrayList<>();
+        }
+        currentVersions.add(new ProcessDefinitionVersion(version, deployedAt));
+      }
+      if (currentProcessId != null) {
+        definitions.add(summarize(currentProcessId, currentVersions));
+      }
+      return new ProcessDefinitionsListResult(definitions, List.of(sql));
+    } catch (final SQLException e) {
+      throw new IllegalStateException(
+          "Process-definitions list query failed: " + e.getMessage(), e);
+    }
+  }
+
+  private static ProcessDefinitionSummary summarize(
+      final String processId, final List<ProcessDefinitionVersion> versions) {
+    int latestVersion = versions.get(0).version();
+    for (final ProcessDefinitionVersion version : versions) {
+      latestVersion = Math.max(latestVersion, version.version());
+    }
+    return new ProcessDefinitionSummary(processId, latestVersion, versions);
+  }
+
   /** {@code GET /api/definitions} response. */
   public record ProcessDefinitionResult(
       String processId, int version, String bpmnXml, List<String> sql) {}
+
+  /** One {@code (version, deployedAt)} entry in a {@link ProcessDefinitionSummary}. */
+  public record ProcessDefinitionVersion(int version, String deployedAt) {}
+
+  /** One process id's summary in a {@code GET /api/definitions/list} response. */
+  public record ProcessDefinitionSummary(
+      String processId, int latestVersion, List<ProcessDefinitionVersion> versions) {}
+
+  /** {@code GET /api/definitions/list} response. */
+  public record ProcessDefinitionsListResult(
+      List<ProcessDefinitionSummary> definitions, List<String> sql) {}
 }

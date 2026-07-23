@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.analytics.lake.serving.objects.ProcessDefinitionsService.ProcessDefinitionResult;
+import io.camunda.analytics.lake.serving.objects.ProcessDefinitionsService.ProcessDefinitionSummary;
+import io.camunda.analytics.lake.serving.objects.ProcessDefinitionsService.ProcessDefinitionsListResult;
 import io.camunda.analytics.lake.serving.support.ObjectFabricFixtures;
 import io.camunda.analytics.lake.serving.support.ParquetFixtures;
 import java.nio.file.Path;
@@ -98,6 +100,13 @@ class ProcessDefinitionsServiceTest {
       </bpmn:definitions>
       """;
 
+  /**
+   * A second process id, planted alongside {@link ObjectFabricFixtures#PROCESS_ID} for {@code
+   * list()}'s grouping/ordering assertions -- sorts after it so {@code ORDER BY process_id} is
+   * actually exercised.
+   */
+  static final String SECOND_PROCESS_ID = "shippingProcess";
+
   @TempDir private static Path warehouseDir;
 
   @Autowired private ProcessDefinitionsService processDefinitionsService;
@@ -109,12 +118,24 @@ class ProcessDefinitionsServiceTest {
         "process_definitions",
         // encode(): the lake writer stores bpmn_xml as BINARY (BLOB in the view), so the fixture
         // matches production; the service's typeof guard covers the legacy VARCHAR shape.
+        // Three rows: orderProcess v1 (the original fixture, kept for the find() tests below) and
+        // v2 (a second version of the same process, deployed later), plus a second process id --
+        // together these exercise list()'s per-process grouping, version ordering, latestVersion,
+        // and processId ordering.
         "SELECT CAST(5001 AS BIGINT) AS process_definition_key, '"
             + ObjectFabricFixtures.PROCESS_ID
             + "' AS process_id, 1 AS version, 'default' AS tenant_id, encode('"
             + BPMN_XML.replace("'", "''")
             + "') AS bpmn_xml, CAST(TIMESTAMP '2024-01-01 00:00:00' AS TIMESTAMPTZ) AS deployed_at, "
-            + "DATE '2024-01-01' AS day");
+            + "DATE '2024-01-01' AS day"
+            + " UNION ALL SELECT CAST(5002 AS BIGINT), '"
+            + ObjectFabricFixtures.PROCESS_ID
+            + "', 2, 'default', encode('<bpmn:definitions/>'),"
+            + " CAST(TIMESTAMP '2024-02-01 00:00:00' AS TIMESTAMPTZ), DATE '2024-02-01'"
+            + " UNION ALL SELECT CAST(5003 AS BIGINT), '"
+            + SECOND_PROCESS_ID
+            + "', 1, 'default', encode('<bpmn:definitions/>'),"
+            + " CAST(TIMESTAMP '2024-01-15 00:00:00' AS TIMESTAMPTZ), DATE '2024-01-15'");
     registry.add("lake.serving.warehouse-dir", () -> warehouseDir.toString());
   }
 
@@ -138,5 +159,32 @@ class ProcessDefinitionsServiceTest {
   void shouldReportNotFoundForAnUnknownProcessId() {
     assertThatThrownBy(() -> processDefinitionsService.find("no-such-process", 1))
         .isInstanceOf(NoSuchElementException.class);
+  }
+
+  @Test
+  void shouldGroupVersionsByProcessIdOrderedByProcessIdThenVersion() {
+    final ProcessDefinitionsListResult result = processDefinitionsService.list();
+
+    assertThat(result.definitions()).hasSize(2);
+
+    final ProcessDefinitionSummary orderProcess = result.definitions().get(0);
+    assertThat(orderProcess.processId()).isEqualTo(ObjectFabricFixtures.PROCESS_ID);
+    assertThat(orderProcess.latestVersion()).isEqualTo(2);
+    assertThat(orderProcess.versions()).extracting("version").containsExactly(1, 2);
+
+    final ProcessDefinitionSummary shippingProcess = result.definitions().get(1);
+    assertThat(shippingProcess.processId()).isEqualTo(SECOND_PROCESS_ID);
+    assertThat(shippingProcess.latestVersion()).isEqualTo(1);
+    assertThat(shippingProcess.versions()).extracting("version").containsExactly(1);
+  }
+
+  @Test
+  void shouldReturnIsoDeployedAtTimestampsPerVersion() {
+    final ProcessDefinitionsListResult result = processDefinitionsService.list();
+
+    final ProcessDefinitionSummary orderProcess = result.definitions().get(0);
+    assertThat(orderProcess.versions())
+        .extracting("deployedAt")
+        .containsExactly("2024-01-01T00:00:00Z", "2024-02-01T00:00:00Z");
   }
 }
