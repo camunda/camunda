@@ -71,6 +71,10 @@ public class ProcessInstanceResumeAuthorizationTest {
   public void shouldBeAuthorizedToResumeInstanceWithDefaultUser() {
     // given
     final var processInstanceKey = createProcessInstance();
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .suspend(DEFAULT_USER.getUsername());
 
     // when
     engine.processInstance().withInstanceKey(processInstanceKey).resume(DEFAULT_USER.getUsername());
@@ -94,6 +98,7 @@ public class ProcessInstanceResumeAuthorizationTest {
         PermissionType.SUSPEND_PROCESS_INSTANCE,
         AuthorizationResourceMatcher.ID,
         PROCESS_ID);
+    engine.processInstance().withInstanceKey(processInstanceKey).suspend(user.getUsername());
 
     // when
     engine.processInstance().withInstanceKey(processInstanceKey).resume(user.getUsername());
