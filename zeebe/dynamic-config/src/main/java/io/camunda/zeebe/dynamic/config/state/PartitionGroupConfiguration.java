@@ -56,6 +56,7 @@ public record PartitionGroupConfiguration(
     Optional<ClusterChangePlan> pendingChanges,
     Optional<CompletedChange> lastChange) {
 
+  public static final long INITIAL_VERSION = 1;
   public static final long INITIAL_INCARNATION_NUMBER = 0;
 
   public PartitionGroupConfiguration {

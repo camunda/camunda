@@ -248,7 +248,14 @@ public final class ClusterConfigurationGossiper
    */
   public void setCurrentConfigurationUpdateHandler(
       final Consumer<CurrentClusterConfiguration> handler) {
-    executor.run(() -> currentConfigurationUpdateHandler = handler);
+    // A plain field write, not executor.run: this is wired once, synchronously, before the actor
+    // is submitted to a scheduler (mirroring the constructor-injected
+    // clusterConfigurationUpdateHandler
+    // and setConfigurationGossiper/setCurrentConfigurationGossiper on the manager). A job submitted
+    // via executor.run before the actor is scheduled is not guaranteed to run before gossip starts
+    // arriving once the actor is scheduled, which would otherwise race this handler against the
+    // very first received gossip message.
+    currentConfigurationUpdateHandler = handler;
   }
 
   /**

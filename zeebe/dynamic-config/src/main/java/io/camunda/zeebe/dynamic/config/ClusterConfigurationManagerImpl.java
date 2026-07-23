@@ -65,6 +65,7 @@ import org.slf4j.LoggerFactory;
  * See {@link ConfigurationChangeAppliers} to see how a change is applied locally.
  */
 public final class ClusterConfigurationManagerImpl implements ClusterConfigurationManager {
+
   private static final Logger LOG = LoggerFactory.getLogger(ClusterConfigurationManagerImpl.class);
   private static final Duration MIN_RETRY_DELAY = Duration.ofSeconds(10);
   private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(1);
@@ -81,9 +82,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final ExponentialBackoffRetryDelay backoffRetry;
   private boolean initialized = false;
   private final TopologyManagerMetrics topologyMetrics;
-
-  // Temporary flag to switch between the old single-partition-group model and the new
-  // multi-partition-group model. This is used for testing and will be removed in the future.
   private final boolean useNewConfig;
 
   // New-model state, only used when useNewConfig is true.
@@ -137,9 +135,24 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   }
 
   /**
-   * Constructs a manager operating on the new multi-partition-group model. Used only in tests now.
-   * The legacy {@code PersistedClusterConfiguration} is not used in this mode.
+   * Constructs a manager operating on the new multi-partition-group model. Used when {@link
+   * ClusterConfigurationManagerService#USE_NEW_CONFIG} is enabled. The legacy {@code
+   * PersistedClusterConfiguration} is not used in this mode.
    */
+  ClusterConfigurationManagerImpl(
+      final ConcurrencyControl executor,
+      final MemberId localMemberId,
+      final PersistedCurrentClusterConfiguration persistedCurrentConfiguration,
+      final TopologyManagerMetrics topologyMetrics) {
+    this(
+        executor,
+        localMemberId,
+        persistedCurrentConfiguration,
+        topologyMetrics,
+        MIN_RETRY_DELAY,
+        MAX_RETRY_DELAY);
+  }
+
   @VisibleForTesting
   ClusterConfigurationManagerImpl(
       final ConcurrencyControl executor,
@@ -205,6 +218,46 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return future;
   }
 
+  @Override
+  public boolean isUsingNewConfig() {
+    return useNewConfig;
+  }
+
+  /** Returns the full multi-group configuration. Only valid when {@link #useNewConfig} is true. */
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> getMultiConfiguration() {
+    final var future = executor.<CurrentClusterConfiguration>createFuture();
+    executor.run(() -> future.complete(persistedCurrentConfiguration.getConfiguration()));
+    return future;
+  }
+
+  /**
+   * Applies {@code updater} to the multi-group configuration, persists and gossips the result, then
+   * triggers local operation application. Only valid when {@link #useNewConfig} is true.
+   */
+  @Override
+  public ActorFuture<CurrentClusterConfiguration> updateMultiConfiguration(
+      final UnaryOperator<CurrentClusterConfiguration> updater) {
+    final var future = executor.<CurrentClusterConfiguration>createFuture();
+    executor.run(
+        () -> {
+          try {
+            final var updated = updater.apply(persistedCurrentConfiguration.getConfiguration());
+            updateLocalCurrentConfiguration(updated)
+                .ifRightOrLeft(
+                    applied -> {
+                      future.complete(applied);
+                      applyNewConfigurationChangeOperation();
+                    },
+                    future::completeExceptionally);
+          } catch (final Exception e) {
+            LOG.error("Failed to update cluster configuration", e);
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
+  }
+
   ActorFuture<Void> start(final ClusterConfigurationInitializer clusterConfigurationInitializer) {
     executor.run(
         () -> {
@@ -257,6 +310,57 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
       initialized = true;
       startFuture.complete(null);
     }
+  }
+
+  /**
+   * Starts the manager on the new multi-partition-group model using {@code initializer} (only
+   * {@link CurrentClusterConfigurationInitializer.StaticInitializer} exists today — see that
+   * interface's class doc for the migration status). Only valid when {@link #useNewConfig} is true.
+   */
+  ActorFuture<Void> start(final CurrentClusterConfigurationInitializer initializer) {
+    executor.run(
+        () -> {
+          if (startFuture.isDone()) {
+            return;
+          }
+          initializeNewModel(initializer);
+        });
+    return startFuture;
+  }
+
+  private void initializeNewModel(final CurrentClusterConfigurationInitializer initializer) {
+    initializer
+        .initialize()
+        .onComplete(
+            (configuration, error) -> {
+              if (error != null) {
+                LOG.error("Failed to initialize configuration", error);
+                startFuture.completeExceptionally(error);
+              } else if (configuration.globalConfiguration().members().isEmpty()) {
+                final String errorMessage =
+                    "Expected to initialize configuration, but got uninitialized configuration";
+                LOG.error(errorMessage);
+                startFuture.completeExceptionally(new IllegalStateException(errorMessage));
+              } else {
+                try {
+                  // merge in case there was a concurrent update via gossip
+                  final var merged =
+                      configuration.merge(persistedCurrentConfiguration.getConfiguration());
+                  persistedCurrentConfiguration.update(merged);
+                  LOG.debug(
+                      "Initialized cluster configuration '{}'",
+                      persistedCurrentConfiguration.getConfiguration());
+                  if (currentConfigurationGossiper != null) {
+                    currentConfigurationGossiper.accept(
+                        persistedCurrentConfiguration.getConfiguration());
+                  }
+                  setStarted();
+                } catch (final IOException e) {
+                  startFuture.completeExceptionally(
+                      "Failed to start update cluster configuration", e);
+                }
+              }
+            });
   }
 
   void onGossipReceived(final ClusterConfiguration receivedConfiguration) {
@@ -453,6 +557,10 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
         });
   }
 
+  // ---------------------------------------------------------------------------
+  // New multi-partition-group model (used only when useNewConfig is true).
+  // ---------------------------------------------------------------------------
+
   void removeTopologyChangeAppliers() {
     executor.run(() -> changeAppliers = null);
   }
@@ -465,53 +573,9 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     executor.run(() -> onInconsistentConfigurationDetected = null);
   }
 
-  // ---------------------------------------------------------------------------
-  // New multi-partition-group model (used only when useNewConfig is true).
-  // ---------------------------------------------------------------------------
-
-  @Override
-  public boolean isUsingNewConfig() {
-    return useNewConfig;
-  }
-
   void setCurrentConfigurationGossiper(
       final Consumer<CurrentClusterConfiguration> currentConfigurationGossiper) {
     this.currentConfigurationGossiper = currentConfigurationGossiper;
-  }
-
-  /** Returns the full multi-group configuration. Only valid when {@link #useNewConfig} is true. */
-  @Override
-  public ActorFuture<CurrentClusterConfiguration> getMultiConfiguration() {
-    final var future = executor.<CurrentClusterConfiguration>createFuture();
-    executor.run(() -> future.complete(persistedCurrentConfiguration.getConfiguration()));
-    return future;
-  }
-
-  /**
-   * Applies {@code updater} to the multi-group configuration, persists and gossips the result, then
-   * triggers local operation application. Only valid when {@link #useNewConfig} is true.
-   */
-  @Override
-  public ActorFuture<CurrentClusterConfiguration> updateMultiConfiguration(
-      final UnaryOperator<CurrentClusterConfiguration> updater) {
-    final var future = executor.<CurrentClusterConfiguration>createFuture();
-    executor.run(
-        () -> {
-          try {
-            final var updated = updater.apply(persistedCurrentConfiguration.getConfiguration());
-            updateLocalCurrentConfiguration(updated)
-                .ifRightOrLeft(
-                    applied -> {
-                      future.complete(applied);
-                      applyNewConfigurationChangeOperation();
-                    },
-                    future::completeExceptionally);
-          } catch (final Exception e) {
-            LOG.error("Failed to update cluster configuration", e);
-            future.completeExceptionally(e);
-          }
-        });
-    return future;
   }
 
   /**
