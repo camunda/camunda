@@ -165,10 +165,6 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   MESSAGE_SUBSCRIPTION_BY_NAME_AND_CORRELATION_KEY(74, PARTITION_LOCAL),
   PROCESS_SUBSCRIPTION_BY_KEY(75, PARTITION_LOCAL),
 
-  /**
-   * @deprecated use {@link #JOB_ACTIVATABLE_BY_PRIORITY}; retained drain-only for pre-8.10 jobs
-   */
-  @Deprecated
   JOB_ACTIVATABLE(76, PARTITION_LOCAL),
 
   SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY(77, PARTITION_LOCAL),
@@ -312,8 +308,6 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   // entry is "cross-partition" iff this CF has a value for the lock; local-PI lock entries are
   // absent from this CF and continue to be released by today's local completion path.
   CROSS_PARTITION_MESSAGE_START_LOCK(147, PARTITION_LOCAL),
-
-  JOB_ACTIVATABLE_BY_PRIORITY(148, PARTITION_LOCAL),
 
   // Secondary index over buffered messages by Business ID, keyed by (tenantId, businessId,
   // messageKey). Maintained on the buffered message's own lifecycle: an entry is written when a

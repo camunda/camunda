@@ -89,7 +89,6 @@ final class ContainerState implements AutoCloseable {
   private boolean isSpring;
   private TestStandaloneBroker springBroker;
   private Path extractedDataDir;
-  private int partitionCount = PARTITION_COUNT;
 
   CamundaClient client() {
     return client;
@@ -112,11 +111,6 @@ final class ContainerState implements AutoCloseable {
 
   ContainerState withOldGateway() {
     gatewayImage = PREVIOUS_VERSION;
-    return this;
-  }
-
-  ContainerState withPartitionCount(final int partitions) {
-    partitionCount = partitions;
     return this;
   }
 
@@ -143,7 +137,7 @@ final class ContainerState implements AutoCloseable {
         new BrokerContainer(brokerImage)
             .withUnifiedConfig(
                 cfg -> {
-                  cfg.getCluster().setPartitionCount(partitionCount);
+                  cfg.getCluster().setPartitionCount(PARTITION_COUNT);
                   cfg.getData().getPrimaryStorage().getLogStream().setLogIndexDensity(1);
                   cfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
                   cfg.getData()
@@ -154,7 +148,7 @@ final class ContainerState implements AutoCloseable {
                   cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
                 })
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, partitionCount))
+            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
             .withCamundaData(volume)
             .withNetwork(network);
     this.withRemoteDebugging = withRemoteDebugging;
@@ -200,7 +194,7 @@ final class ContainerState implements AutoCloseable {
               .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
               .withEnv(UNPROTECTED_API_ENV_VAR, "true")
               .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
-              .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, partitionCount))
+              .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
               .withNetwork(network);
 
       if (gatewayImage.equals(PREVIOUS_VERSION)) {
@@ -252,7 +246,7 @@ final class ContainerState implements AutoCloseable {
             .withUnauthenticatedAccess()
             .withUnifiedConfig(
                 cfg -> {
-                  cfg.getCluster().setPartitionCount(partitionCount);
+                  cfg.getCluster().setPartitionCount(PARTITION_COUNT);
                   cfg.getData().getPrimaryStorage().getLogStream().setLogIndexDensity(1);
                   cfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
                   cfg.getData()
@@ -305,7 +299,7 @@ final class ContainerState implements AutoCloseable {
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
             .withAccessToHost(true)
-            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, partitionCount))
+            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, PARTITION_COUNT))
             .withNetwork(network);
 
     if (gatewayImage.equals(PREVIOUS_VERSION)) {
@@ -389,13 +383,6 @@ final class ContainerState implements AutoCloseable {
   // returns true if it finds a line that contains every piece.
   boolean hasLogContaining(final String... pieces) {
     return getLogContaining(pieces) != null;
-  }
-
-  int countLogOccurrences(final String... pieces) {
-    return (int)
-        Arrays.stream(getLogs().split("\n"))
-            .filter(line -> Arrays.stream(pieces).allMatch(line::contains))
-            .count();
   }
 
   public String getLogContaining(final String... pieces) {
