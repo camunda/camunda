@@ -11,6 +11,7 @@ import { objectTypeFilter } from "../../lib/registryHelpers";
 import type { DashboardRange } from "./DashboardRangePicker";
 import { DecomposeByDimTile } from "./tiles/DecomposeByDimTile";
 import { SeriesTile } from "./tiles/SeriesTile";
+import { TopObjectsTile } from "./tiles/TopObjectsTile";
 
 export function PerformanceTab({
   perspective,
@@ -92,14 +93,7 @@ export function PerformanceTab({
         chartType="line"
         valueFormatter={formatDuration}
       />
-      <DecomposeByDimTile
-        title="Outcome split"
-        description={`${perspective} objects by closing outcome`}
-        entity="object_cohorts"
-        dimCandidates={["outcome", "result", "status"]}
-        from={from}
-        to={to}
-      />
+      <TopObjectsTile type={perspective} />
     </div>
   );
 }
