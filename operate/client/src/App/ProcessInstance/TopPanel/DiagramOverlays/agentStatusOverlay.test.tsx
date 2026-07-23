@@ -20,7 +20,7 @@ const createOverlay = (status: AgentInstanceStatus): DiagramOverlay => ({
 
 describe('agentStatusOverlay', () => {
   it.each<[AgentInstanceStatus, string]>([
-    ['INITIALIZING', 'Starting...'],
+    ['INITIALIZING', 'Initializing...'],
     ['TOOL_DISCOVERY', 'Discovering tools...'],
     ['THINKING', 'Thinking...'],
     ['TOOL_CALLING', 'Calling tools...'],
