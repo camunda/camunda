@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.api;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
@@ -67,43 +68,91 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-// Test to verify that server handles requests from the clients. This test uses the actual
-// communicationService to ensure that request subscription and handling is done correctly.
-final class ClusterConfigurationManagementApiTest {
-  private ClusterConfigurationManagementRequestSender clientApi;
-  private final RecordingChangeCoordinator recordingCoordinator = new RecordingChangeCoordinator();
+abstract class ClusterConfigurationManagementApiTestBase {
+  protected final MemberId coordinatorId;
+  protected ClusterConfigurationManagementRequestSender clientApi;
+  protected final RecordingChangeCoordinator recordingCoordinator =
+      new RecordingChangeCoordinator();
+  protected final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
+  private final ClusterConfiguration initialTopology;
   private ClusterConfigurationRequestServer requestServer;
+  private List<ClusterConfigurationRequestServer> extraRequestServers = List.of();
   private AtomixCluster gateway;
   private AtomixCluster coordinator;
-  private final MemberId id0 = MemberId.from("0");
-  private final MemberId id1 = MemberId.from("1");
-  private final MemberId id2 = MemberId.from("2");
-  private final MemberId id3 = MemberId.from("3");
-  private final ClusterConfiguration initialTopology =
-      ClusterConfiguration.init().addMember(id0, MemberState.initializeAsActive(Map.of()));
+  private List<AtomixCluster> extraNodes = List.of();
   @AutoClose private final MeterRegistry registry = new SimpleMeterRegistry();
+  private final Function<Integer, MemberId> memberFactory;
 
-  private final DynamicPartitionConfig partitionConfig = DynamicPartitionConfig.init();
+  ClusterConfigurationManagementApiTestBase(final Function<Integer, MemberId> memberFactory) {
+    this.memberFactory = memberFactory;
+    coordinatorId = memberFactory.apply(0);
+    // the physical coordinator node is always coordinatorId, so the recorded topology's
+    // coordinator member must be the same id for requests to route to the started node
+    initialTopology =
+        ClusterConfiguration.init()
+            .addMember(coordinatorId, MemberState.initializeAsActive(Map.of()));
+  }
 
   @BeforeEach
   void setup() {
-    final var gatewayNode =
-        Node.builder().withId("gateway").withPort(SocketUtil.getNextAddress().getPort()).build();
-    final var coordinatorNode =
-        Node.builder().withId("0").withPort(SocketUtil.getNextAddress().getPort()).build();
+    // seed the coordinator so that the "no topology yet" default still resolves to the physical
+    // coordinator node, rather than falling back to member "0"
+    recordingCoordinator.setCurrentTopology(initialTopology);
 
-    gateway = createClusterNode(gatewayNode, List.of(gatewayNode, coordinatorNode));
-    coordinator = createClusterNode(coordinatorNode, List.of(gatewayNode, coordinatorNode));
+    final var gatewayId = MemberId.from("gateway");
+    final var gatewayNode =
+        Node.builder()
+            .withId(gatewayId.id())
+            .withPort(SocketUtil.getNextAddress().getPort())
+            .build();
+    final var coordinatorNode =
+        Node.builder()
+            .withId(coordinatorId.id())
+            .withPort(SocketUtil.getNextAddress().getPort())
+            .build();
+    final var extraNodeEntries =
+        extraPhysicalMembers().stream()
+            .map(
+                id ->
+                    Map.entry(
+                        id,
+                        Node.builder()
+                            .withId(id.id())
+                            .withPort(SocketUtil.getNextAddress().getPort())
+                            .build()))
+            .toList();
+    final var nodes =
+        Stream.concat(
+                Stream.of(gatewayNode, coordinatorNode),
+                extraNodeEntries.stream().map(Map.Entry::getValue))
+            .toList();
+
+    gateway = createClusterNode(gatewayId, gatewayNode, nodes);
+    coordinator = createClusterNode(coordinatorId, coordinatorNode, nodes);
+    final var extraClusters =
+        extraNodeEntries.stream()
+            .map(
+                entry ->
+                    Map.entry(
+                        entry.getKey(), createClusterNode(entry.getKey(), entry.getValue(), nodes)))
+            .toList();
+    extraNodes = extraClusters.stream().map(Map.Entry::getValue).toList();
 
     final var gatewayStarted = gateway.start();
     final var coordinatorStarted = coordinator.start();
-    CompletableFuture.allOf(gatewayStarted, coordinatorStarted).join();
+    final var extraStarted = extraNodes.stream().map(AtomixCluster::start).toList();
+    CompletableFuture.allOf(
+            Stream.concat(Stream.of(gatewayStarted, coordinatorStarted), extraStarted.stream())
+                .toArray(CompletableFuture[]::new))
+        .join();
 
     clientApi =
         new ClusterConfigurationManagementRequestSender(
@@ -132,22 +181,62 @@ final class ClusterConfigurationManagementApiTest {
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                recordingCoordinator, id0, new TestConcurrencyControl(), validatorRegistry));
-
+                recordingCoordinator,
+                coordinatorId,
+                new TestConcurrencyControl(),
+                validatorRegistry));
     requestServer.start();
+
+    // extra nodes may be resolved as the coordinator for a given request (see
+    // extraPhysicalMembers), so they need their own request server too
+    extraRequestServers =
+        extraClusters.stream()
+            .map(
+                entry ->
+                    new ClusterConfigurationRequestServer(
+                        entry.getValue().getCommunicationService(),
+                        new ProtoBufSerializer(),
+                        new ClusterConfigurationManagementRequestsHandler(
+                            recordingCoordinator,
+                            entry.getKey(),
+                            new TestConcurrencyControl(),
+                            validatorRegistry)))
+            .toList();
+    extraRequestServers.forEach(ClusterConfigurationRequestServer::start);
   }
 
   @AfterEach
   void tearDown() {
     requestServer.close();
+    extraRequestServers.forEach(ClusterConfigurationRequestServer::close);
     gateway.stop();
     coordinator.stop();
+    extraNodes.forEach(AtomixCluster::stop);
   }
 
-  private AtomixCluster createClusterNode(final Node localNode, final Collection<Node> nodes) {
-    return AtomixCluster.builder(registry)
+  /**
+   * Extra physical broker nodes to start alongside the coordinator, so that {@code
+   * communicationService} can route requests to a member other than {@link #coordinatorId}. Used by
+   * tests where the coordinator resolved at request time (e.g. force-remove-zone routing around the
+   * removed zone) differs from the physical coordinator node.
+   */
+  protected List<MemberId> extraPhysicalMembers() {
+    return List.of();
+  }
+
+  /**
+   * Builds the physical cluster member for {@code localId}. Atomix's own {@link
+   * io.atomix.cluster.Member} validates that the zone it was configured with matches the zone
+   * embedded in the {@link MemberId}, so a zone-aware {@code localId} (e.g. {@code zone-a_0})
+   * requires setting the zone explicitly on the {@link ClusterConfig}; {@code AtomixClusterBuilder}
+   * has no public setter for it.
+   */
+  private AtomixCluster createClusterNode(
+      final MemberId localId, final Node localNode, final Collection<Node> nodes) {
+    final var clusterConfig = new ClusterConfig();
+    clusterConfig.getNodeConfig().setId(localId).setZoneId(localId.zone());
+    return AtomixCluster.builder(clusterConfig, registry)
         .withAddress(localNode.address())
-        .withMemberId(localNode.id().id())
         .withMembershipProvider(new BootstrapDiscoveryProvider(nodes))
         .withMembershipProtocol(new DiscoveryMembershipProtocol())
         .build();
@@ -157,7 +246,7 @@ final class ClusterConfigurationManagementApiTest {
   void shouldGetCurrentTopology() {
     // given
     final var expectedTopology =
-        initialTopology.addMember(id1, MemberState.initializeAsActive(Map.of()));
+        initialTopology.addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()));
     recordingCoordinator.setCurrentTopology(expectedTopology);
 
     // when
@@ -171,13 +260,14 @@ final class ClusterConfigurationManagementApiTest {
   void shouldAddMembers() {
     // given
     final var request =
-        new ClusterConfigurationManagementRequest.AddMembersRequest(Set.of(id1), false);
+        new ClusterConfigurationManagementRequest.AddMembersRequest(
+            Set.of(memberFactory.apply(1)), false);
 
     // when
     final var changeStatus = clientApi.addMembers(request).join().get();
 
     // then
-    final var expected = new MemberJoinOperation(id1);
+    final var expected = new MemberJoinOperation(memberFactory.apply(1));
     assertThat(changeStatus.plannedChanges()).containsExactly(expected);
   }
 
@@ -186,17 +276,20 @@ final class ClusterConfigurationManagementApiTest {
     // given
     recordingCoordinator.setCurrentTopology(
         initialTopology
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .addMember(id2, MemberState.initializeAsActive(Map.of())));
+            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of())));
     final var request =
-        new ClusterConfigurationManagementRequest.RemoveMembersRequest(Set.of(id1, id2), false);
+        new ClusterConfigurationManagementRequest.RemoveMembersRequest(
+            Set.of(memberFactory.apply(1), memberFactory.apply(2)), false);
 
     // when
     final var changeStatus = clientApi.removeMembers(request).join().get();
 
     // then
     final List<ClusterConfigurationChangeOperation> expected =
-        List.of(new MemberLeaveOperation(id1), new MemberLeaveOperation(id2));
+        List.of(
+            new MemberLeaveOperation(memberFactory.apply(1)),
+            new MemberLeaveOperation(memberFactory.apply(2)));
     assertThat(changeStatus.plannedChanges()).containsExactlyElementsOf(expected);
   }
 
@@ -204,28 +297,30 @@ final class ClusterConfigurationManagementApiTest {
   void shouldJoinPartition() {
     // given
     final var request =
-        new ClusterConfigurationManagementRequest.JoinPartitionRequest(id1, 1, 3, false);
+        new ClusterConfigurationManagementRequest.JoinPartitionRequest(
+            memberFactory.apply(1), 1, 3, false);
 
     // when
     final var changeStatus = clientApi.joinPartition(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .containsExactly(new PartitionJoinOperation(id1, 1, 3));
+        .containsExactly(new PartitionJoinOperation(memberFactory.apply(1), 1, 3));
   }
 
   @Test
   void shouldLeavePartition() {
     // given
     final var request =
-        new ClusterConfigurationManagementRequest.LeavePartitionRequest(id1, 1, false);
+        new ClusterConfigurationManagementRequest.LeavePartitionRequest(
+            memberFactory.apply(1), 1, false);
 
     // when
     final var changeStatus = clientApi.leavePartition(request).join().get();
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .containsExactly(new PartitionLeaveOperation(id1, 1, 1));
+        .containsExactly(new PartitionLeaveOperation(memberFactory.apply(1), 1, 1));
   }
 
   @Test
@@ -233,18 +328,18 @@ final class ClusterConfigurationManagementApiTest {
     // given
     final var request =
         new ClusterConfigurationManagementRequest.ReassignPartitionsRequest(
-            Set.of(id1, id2), false);
+            Set.of(memberFactory.apply(1), memberFactory.apply(2)), false);
     final ClusterConfiguration currentTopology =
         initialTopology
             .addMember(
-                id1,
+                memberFactory.apply(1),
                 MemberState.initializeAsActive(
                     Map.of(
                         1,
                         PartitionState.active(1, partitionConfig),
                         2,
                         PartitionState.active(1, partitionConfig))))
-            .addMember(id2, MemberState.initializeAsActive(Map.of()));
+            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()));
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
@@ -253,17 +348,23 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new PartitionJoinOperation(id2, 2, 1), new PartitionLeaveOperation(id1, 2, 1));
+            new PartitionJoinOperation(memberFactory.apply(2), 2, 1),
+            new PartitionLeaveOperation(memberFactory.apply(1), 2, 1));
   }
 
   @Test
   void shouldScaleBrokers() {
     // given
-    final var request = new BrokerScaleRequest(Set.of(id0, id1), false);
+    final var request =
+        new BrokerScaleRequest(Set.of(memberFactory.apply(0), memberFactory.apply(1)), false);
     final ClusterConfiguration currentTopology =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -273,21 +374,29 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new PreScalingOperation(id0, Set.of(id0, id1)),
-            new MemberJoinOperation(id1),
-            new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2, 1),
-            new PostScalingOperation(id0, Set.of(id0, id1)));
+            new PreScalingOperation(
+                memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
+            new MemberJoinOperation(memberFactory.apply(1)),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
+            new PostScalingOperation(
+                memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))));
   }
 
   @Test
   void shouldScaleBrokersWithNewReplicationFactor() {
     // given
-    final var request = new BrokerScaleRequest(Set.of(id0, id1), Optional.of(2), false);
+    final var request =
+        new BrokerScaleRequest(
+            Set.of(memberFactory.apply(0), memberFactory.apply(1)), Optional.of(2), false);
     final ClusterConfiguration currentTopology =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -297,22 +406,34 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .hasSize(6)
-        .startsWith(new PreScalingOperation(id0, Set.of(id0, id1)))
-        .endsWith(new PostScalingOperation(id0, Set.of(id0, id1)))
-        .contains(new MemberJoinOperation(id1), new PartitionJoinOperation(id1, 2, 2))
+        .startsWith(
+            new PreScalingOperation(
+                memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))))
+        .endsWith(
+            new PostScalingOperation(
+                memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))))
+        .contains(
+            new MemberJoinOperation(memberFactory.apply(1)),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 2))
         .containsSequence(
-            new PartitionJoinOperation(id1, 1, 1),
-            new PartitionReconfigurePriorityOperation(id0, 1, 2));
+            new PartitionJoinOperation(memberFactory.apply(1), 1, 1),
+            new PartitionReconfigurePriorityOperation(memberFactory.apply(0), 1, 2));
   }
 
   @Test
   void shouldRejectScaleRequestWithInvalidReplicationFactor() {
     // given
-    final var request = new BrokerScaleRequest(Set.of(id0, id1), Optional.of(0), false);
+    final var request =
+        new BrokerScaleRequest(
+            Set.of(memberFactory.apply(0), memberFactory.apply(1)), Optional.of(0), false);
     final ClusterConfiguration currentTopology =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -330,14 +451,24 @@ final class ClusterConfigurationManagementApiTest {
   @Test
   void shouldReduceReplicationFactorWithoutScalingDown() {
     // given
-    final var request = new BrokerScaleRequest(Set.of(id0, id1), Optional.of(1), false);
+    final var request =
+        new BrokerScaleRequest(
+            Set.of(memberFactory.apply(0), memberFactory.apply(1)), Optional.of(1), false);
     final ClusterConfiguration currentTopology =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
+            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                memberFactory.apply(1),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(1),
+                m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -347,26 +478,35 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactlyInAnyOrder(
-            new PartitionLeaveOperation(id0, 2, 1),
-            new PartitionLeaveOperation(id1, 1, 1),
-            new PartitionReconfigurePriorityOperation(id0, 1, 1),
-            new PartitionReconfigurePriorityOperation(id1, 2, 1));
+            new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
+            new PartitionLeaveOperation(memberFactory.apply(1), 1, 1),
+            new PartitionReconfigurePriorityOperation(memberFactory.apply(0), 1, 1),
+            new PartitionReconfigurePriorityOperation(memberFactory.apply(1), 2, 1));
   }
 
   @Test
   void shouldForceScaleDown() {
     // given
-    final var request = new BrokerScaleRequest(Set.of(id0, id2), false);
+    final var request =
+        new BrokerScaleRequest(Set.of(memberFactory.apply(0), memberFactory.apply(2)), false);
     final ClusterConfiguration currentTopology =
         ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .addMember(id2, MemberState.initializeAsActive(Map.of()))
-            .addMember(id3, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
-            .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
-            .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
+            .addMember(memberFactory.apply(0), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(3), MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(1),
+                m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(2),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(3),
+                m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
@@ -375,10 +515,12 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactlyInAnyOrder(
-            new PartitionForceReconfigureOperation(id0, 1, Set.of(id0)),
-            new PartitionForceReconfigureOperation(id2, 2, Set.of(id2)),
-            new MemberRemoveOperation(id0, id1),
-            new MemberRemoveOperation(id0, id3));
+            new PartitionForceReconfigureOperation(
+                memberFactory.apply(0), 1, Set.of(memberFactory.apply(0))),
+            new PartitionForceReconfigureOperation(
+                memberFactory.apply(2), 2, Set.of(memberFactory.apply(2))),
+            new MemberRemoveOperation(memberFactory.apply(0), memberFactory.apply(1)),
+            new MemberRemoveOperation(memberFactory.apply(0), memberFactory.apply(3)));
   }
 
   @Test
@@ -386,40 +528,63 @@ final class ClusterConfigurationManagementApiTest {
     // given
     final var request =
         new ClusterScaleRequest(
-            Optional.of(2), Optional.of(3), Optional.empty(), Optional.empty(), false);
-    final ClusterConfiguration currentTopology =
+            Optional.of(2),
+            Optional.of(3),
+            Optional.empty(),
+            Optional.ofNullable(coordinatorId.zone()),
+            false);
+    final var topologyWithPartitions =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+    final ClusterConfiguration currentTopology =
+        Optional.ofNullable(coordinatorId.zone())
+            .map(
+                zone ->
+                    topologyWithPartitions.setPartitionDistributorConfig(
+                        new ZoneAwareConfig(List.of(new ZoneSpec(zone, 1, 1)))))
+            .orElse(topologyWithPartitions);
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
-    final var changeStatus = clientApi.scaleCluster(request).join().get();
+    final var changeStatus = clientApi.scaleCluster(request).join();
+    EitherAssert.assertThat(changeStatus).isRight();
 
     // then
-    assertThat(changeStatus.plannedChanges())
+    assertThat(changeStatus.get().plannedChanges())
         .containsExactly(
-            new PreScalingOperation(id0, Set.of(id0, id1)),
-            new MemberJoinOperation(id1),
-            new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2, 1),
-            new StartPartitionScaleUp(id0, 3),
-            new PartitionBootstrapOperation(id0, 3, 1, true),
-            new AwaitRedistributionCompletion(id0, 3, new TreeSet<>(List.of(3))),
-            new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))),
-            new PostScalingOperation(id0, Set.of(id0, id1)));
+            new PreScalingOperation(
+                memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
+            new MemberJoinOperation(memberFactory.apply(1)),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
+            new StartPartitionScaleUp(memberFactory.apply(0), 3),
+            new PartitionBootstrapOperation(memberFactory.apply(0), 3, 1, true),
+            new AwaitRedistributionCompletion(memberFactory.apply(0), 3, new TreeSet<>(List.of(3))),
+            new AwaitRelocationCompletion(memberFactory.apply(0), 3, new TreeSet<>(List.of(3))),
+            new PostScalingOperation(
+                memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))));
   }
 
   @Test
   void shouldPatchCluster() {
     // given
     final var request =
-        new ClusterPatchRequest(Set.of(id1), Set.of(), Optional.of(3), Optional.empty(), false);
+        new ClusterPatchRequest(
+            Set.of(memberFactory.apply(1)), Set.of(), Optional.of(3), Optional.empty(), false);
     final ClusterConfiguration currentTopology =
         initialTopology
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id0, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
 
     recordingCoordinator.setCurrentTopology(currentTopology);
 
@@ -429,31 +594,43 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new PreScalingOperation(id0, Set.of(id0, id1)),
-            new MemberJoinOperation(id1),
-            new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2, 1),
-            new StartPartitionScaleUp(id0, 3),
-            new PartitionBootstrapOperation(id0, 3, 1, true),
-            new AwaitRedistributionCompletion(id0, 3, new TreeSet<>(List.of(3))),
-            new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))),
-            new PostScalingOperation(id0, Set.of(id0, id1)));
+            new PreScalingOperation(
+                memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))),
+            new MemberJoinOperation(memberFactory.apply(1)),
+            new PartitionJoinOperation(memberFactory.apply(1), 2, 1),
+            new PartitionLeaveOperation(memberFactory.apply(0), 2, 1),
+            new StartPartitionScaleUp(memberFactory.apply(0), 3),
+            new PartitionBootstrapOperation(memberFactory.apply(0), 3, 1, true),
+            new AwaitRedistributionCompletion(memberFactory.apply(0), 3, new TreeSet<>(List.of(3))),
+            new AwaitRelocationCompletion(memberFactory.apply(0), 3, new TreeSet<>(List.of(3))),
+            new PostScalingOperation(
+                memberFactory.apply(0), Set.of(memberFactory.apply(0), memberFactory.apply(1))));
   }
 
   @Test
   void shouldForceRemoveBrokers() {
     // given
-    final var request = new ForceRemoveBrokersRequest(Set.of(id1, id3), false);
+    final var request =
+        new ForceRemoveBrokersRequest(
+            Set.of(memberFactory.apply(1), memberFactory.apply(3)), false);
     final ClusterConfiguration currentTopology =
         ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .addMember(id2, MemberState.initializeAsActive(Map.of()))
-            .addMember(id3, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
-            .updateMember(id2, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
-            .updateMember(id3, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
+            .addMember(memberFactory.apply(0), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(3), MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(1),
+                m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(2),
+                m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(3),
+                m -> m.addPartition(2, PartitionState.active(2, partitionConfig)));
     recordingCoordinator.setCurrentTopology(currentTopology);
 
     // when
@@ -462,16 +639,19 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactlyInAnyOrder(
-            new PartitionForceReconfigureOperation(id0, 1, Set.of(id0)),
-            new PartitionForceReconfigureOperation(id2, 2, Set.of(id2)),
-            new MemberRemoveOperation(id0, id1),
-            new MemberRemoveOperation(id0, id3));
+            new PartitionForceReconfigureOperation(
+                memberFactory.apply(0), 1, Set.of(memberFactory.apply(0))),
+            new PartitionForceReconfigureOperation(
+                memberFactory.apply(2), 2, Set.of(memberFactory.apply(2))),
+            new MemberRemoveOperation(memberFactory.apply(0), memberFactory.apply(1)),
+            new MemberRemoveOperation(memberFactory.apply(0), memberFactory.apply(3)));
   }
 
   @Test
   void shouldForceRemoveZone() {
     // given
-    // id0 is a bare (non-zoned) member so that the request is routed to the coordinator that the
+    // memberFactory.apply(0) is a bare (non-zoned) member so that the request is routed to the
+    // coordinator that the
     // test's real communicationService actually knows about; the zone members below are the ones
     // exercised by the force-remove-zone logic itself.
     final var zoneA0 = MemberId.from("zone-a", 0);
@@ -480,7 +660,7 @@ final class ClusterConfigurationManagementApiTest {
     final var zoneB1 = MemberId.from("zone-b", 1);
     final var currentTopology =
         ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(0), MemberState.initializeAsActive(Map.of()))
             .addMember(zoneA0, MemberState.initializeAsActive(Map.of()))
             .addMember(zoneA1, MemberState.initializeAsActive(Map.of()))
             .addMember(zoneB0, MemberState.initializeAsActive(Map.of()))
@@ -503,25 +683,31 @@ final class ClusterConfigurationManagementApiTest {
         .containsExactlyInAnyOrder(
             new PartitionForceReconfigureOperation(zoneB0, 1, Set.of(zoneB0)),
             new PartitionForceReconfigureOperation(zoneB1, 2, Set.of(zoneB1)),
-            new MemberRemoveOperation(id0, zoneA0),
-            new MemberRemoveOperation(id0, zoneA1),
+            new MemberRemoveOperation(memberFactory.apply(0), zoneA0),
+            new MemberRemoveOperation(memberFactory.apply(0), zoneA1),
             new UpdatePartitionDistributorConfigOperation(
-                id0, new ZoneAwareConfig(List.of(new ZoneSpec("zone-b", 2, 2)))));
+                memberFactory.apply(0),
+                new ZoneAwareConfig(List.of(new ZoneSpec("zone-b", 2, 2)))));
   }
 
   @Test
   void shouldAddZone() {
     // given
-    // id0 and id1 are bare (non-zoned) members so that the request is routed to the coordinator
+    // memberFactory.apply(0) and memberFactory.apply(1) are bare (non-zoned) members so that the
+    // request is routed to the coordinator
     // that the test's real communicationService actually knows about; the cluster is mid zone
     // migration, with a zone-aware distribution config persisted but brokers not yet re-tagged.
     final var zoneB0 = MemberId.from("zone-b", 0);
     final var currentTopology =
         ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()))
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .addMember(memberFactory.apply(0), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(1),
+                m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
             .setPartitionDistributorConfig(
                 new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1))));
     recordingCoordinator.setCurrentTopology(currentTopology);
@@ -553,7 +739,8 @@ final class ClusterConfigurationManagementApiTest {
                 Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var configurationWithExporter =
         initialTopology.updateMember(
-            id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
+            memberFactory.apply(0),
+            m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
     recordingCoordinator.setCurrentTopology(configurationWithExporter);
 
     // when
@@ -561,7 +748,8 @@ final class ClusterConfigurationManagementApiTest {
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .containsExactly(new PartitionDisableExporterOperation(id0, 1, exporterId));
+        .containsExactly(
+            new PartitionDisableExporterOperation(memberFactory.apply(0), 1, exporterId));
   }
 
   @Test
@@ -577,7 +765,8 @@ final class ClusterConfigurationManagementApiTest {
                 Map.of(exporterId, new ExporterState(1, State.ENABLED, Optional.empty()))));
     final var configurationWithExporter =
         initialTopology.updateMember(
-            id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
+            memberFactory.apply(0),
+            m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
     recordingCoordinator.setCurrentTopology(configurationWithExporter);
 
     // when
@@ -585,7 +774,8 @@ final class ClusterConfigurationManagementApiTest {
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .containsExactly(new PartitionDeleteExporterOperation(id0, 1, exporterId));
+        .containsExactly(
+            new PartitionDeleteExporterOperation(memberFactory.apply(0), 1, exporterId));
   }
 
   @Test
@@ -602,7 +792,8 @@ final class ClusterConfigurationManagementApiTest {
                 Map.of(exporterId, new ExporterState(1, State.DISABLED, Optional.empty()))));
     final var configurationWithExporter =
         initialTopology.updateMember(
-            id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
+            memberFactory.apply(0),
+            m -> m.addPartition(1, PartitionState.active(1, partitionConfigWithExporter)));
     recordingCoordinator.setCurrentTopology(configurationWithExporter);
 
     // when
@@ -611,7 +802,8 @@ final class ClusterConfigurationManagementApiTest {
     // then
     assertThat(changeStatus.plannedChanges())
         .containsExactly(
-            new PartitionEnableExporterOperation(id0, 1, exporterId, Optional.empty()));
+            new PartitionEnableExporterOperation(
+                memberFactory.apply(0), 1, exporterId, Optional.empty()));
   }
 
   @Test
@@ -636,7 +828,8 @@ final class ClusterConfigurationManagementApiTest {
     // given
     recordingCoordinator.setCurrentTopology(
         ClusterConfiguration.init()
-            .addMember(id0, MemberState.initializeAsActive(Map.of()).toRecovering()));
+            .addMember(
+                memberFactory.apply(0), MemberState.initializeAsActive(Map.of()).toRecovering()));
     final var request =
         new RestoreRequest(
             PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID,
@@ -688,14 +881,26 @@ final class ClusterConfigurationManagementApiTest {
     // given
     recordingCoordinator.setCurrentTopology(
         initialTopology
-            .addMember(id1, MemberState.initializeAsActive(Map.of()))
-            .addMember(id2, MemberState.initializeAsActive(Map.of()))
-            .updateMember(id0, m -> m.addPartition(0, PartitionState.active(2, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
-            .updateMember(id2, m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
-            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
-            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
-            .updateMember(id2, m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
+            .addMember(memberFactory.apply(1), MemberState.initializeAsActive(Map.of()))
+            .addMember(memberFactory.apply(2), MemberState.initializeAsActive(Map.of()))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(0, PartitionState.active(2, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(1),
+                m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(2),
+                m -> m.addPartition(0, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(0),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(1),
+                m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(
+                memberFactory.apply(2),
+                m -> m.addPartition(1, PartitionState.active(1, partitionConfig))));
     final var request = new PurgeRequest(false);
 
     // when
