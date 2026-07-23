@@ -97,4 +97,75 @@ class ObjectTypesTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("must not be blank");
   }
+
+  // ---- closing rules -----------------------------------------------------------------------
+
+  @Test
+  void shouldDefaultToNoClosingRulesWhenNoneDeclared() {
+    // when
+    final CompiledObjectType type =
+        ObjectTypes.declare("customer").identifiedBy(ObjectTypes.variable("customerId")).build();
+
+    // then: the default-open case
+    assertThat(type.closingRules()).isEmpty();
+  }
+
+  @Test
+  void shouldCompileATypeWithAClosingRule() {
+    // when
+    final CompiledObjectType type =
+        ObjectTypes.declare("order")
+            .identifiedBy(ObjectTypes.variable("orderId"))
+            .closes(ObjectTypes.onProcessCompletion("orderFulfillment"))
+            .build();
+
+    // then
+    assertThat(type.closingRules())
+        .containsExactly(new ClosingRule.OnProcessCompletion("orderFulfillment"));
+  }
+
+  @Test
+  void shouldCompileATypeWithMultipleClosingRules() {
+    // when: an object type may declare more than one closing process
+    final CompiledObjectType type =
+        ObjectTypes.declare("order")
+            .identifiedBy(ObjectTypes.variable("orderId"))
+            .closes(ObjectTypes.onProcessCompletion("processA"))
+            .closes(ObjectTypes.onProcessCompletion("processB"))
+            .build();
+
+    // then
+    assertThat(type.closingRules()).hasSize(2);
+  }
+
+  @Test
+  void shouldRejectNullClosingRule() {
+    assertThatThrownBy(() -> ObjectTypes.declare("order").closes(null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must not be null");
+  }
+
+  @Test
+  void shouldRejectBlankClosingProcessId() {
+    assertThatThrownBy(
+            () ->
+                ObjectTypes.declare("order")
+                    .identifiedBy(ObjectTypes.variable("orderId"))
+                    .closes(ObjectTypes.onProcessCompletion(" "))
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must not be blank");
+  }
+
+  @Test
+  void shouldRejectNullClosingProcessId() {
+    assertThatThrownBy(
+            () ->
+                ObjectTypes.declare("order")
+                    .identifiedBy(ObjectTypes.variable("orderId"))
+                    .closes(ObjectTypes.onProcessCompletion(null))
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must not be blank");
+  }
 }

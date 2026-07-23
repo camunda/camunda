@@ -14,10 +14,15 @@ import java.util.List;
  * ObjectTypes.Builder#build()} — never constructed directly. Combine with other declared types via
  * {@link CompiledObjectTypes#of} to get the cross-type validation and the fast lookups {@code
  * io.camunda.analytics.lake.translate.LakeTranslator} needs.
+ *
+ * @param closingRules empty for a type that never closes (the default-open case — see {@code
+ *     LakeTranslator}'s "Object lifecycle capture" javadoc section)
  */
-public record CompiledObjectType(String name, List<IdentifierSource> identifiers) {
+public record CompiledObjectType(
+    String name, List<IdentifierSource> identifiers, List<ClosingRule> closingRules) {
 
   public CompiledObjectType {
     identifiers = List.copyOf(identifiers);
+    closingRules = List.copyOf(closingRules);
   }
 }
