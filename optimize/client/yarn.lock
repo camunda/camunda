@@ -13963,16 +13963,16 @@ react-full-screen@^1.1.1:
   dependencies:
     fscreen "^1.0.2"
 
-react-grid-layout@^1.5.2:
-  version "1.5.3"
-  resolved "https://registry.yarnpkg.com/react-grid-layout/-/react-grid-layout-1.5.3.tgz#802de040616c443b0162d73cecde792cb5beeaa2"
-  integrity sha512-KaG6IbjD6fYhagUtIvOzhftXG+ViKZjCjADe86X1KHl7C/dsBN2z0mi14nbvZKTkp0RKiil9RPcJBgq3LnoA8g==
+react-grid-layout@^2.0.0:
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/react-grid-layout/-/react-grid-layout-2.2.3.tgz#6daf24b8c48448af617238520dd233a9375e2f16"
+  integrity sha512-OAEJHBxmfuxQfVtZwRzmsokijGlBgzYIJ7MUlLk/VSa43SaGzu15w5D0P2RDrfX5EvP9POMbL6bFrai/huDzbQ==
   dependencies:
     clsx "^2.1.1"
     fast-equals "^4.0.3"
     prop-types "^15.8.1"
     react-draggable "^4.4.6"
-    react-resizable "^3.0.5"
+    react-resizable "^3.1.3"
     resize-observer-polyfill "^1.5.1"
 
 "react-is-18@npm:react-is@^18.3.1":
@@ -14014,7 +14014,7 @@ react-refresh@^0.11.0:
   resolved "https://registry.npmjs.org/react-refresh/-/react-refresh-0.11.0.tgz"
   integrity sha512-F27qZr8uUqwhWZboondsPx8tnC3Ct3SxZA3V5WyEvujRyyNv0VYPhoBg1gZ8/MV5tubQp76Trw8lTv9hzRBa+A==
 
-react-resizable@^3.0.5:
+react-resizable@^3.1.3:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/react-resizable/-/react-resizable-3.2.0.tgz#09a6f77fcc4d59ca810098f58e46f39376cacef5"
   integrity sha512-3NKQ0SLZV7rs3LQHeXlOzDSRQfFrkX6TVet77/Qk03zqiZyee37b7N8/gwDJAA8UUjRz7PdWCCy49hcso45SMQ==
