@@ -854,7 +854,12 @@ public class AgenticControlDashboardServiceTest {
 
     final DashboardReportTileDto toolCallsTile = toolCallsTiles.getFirst();
     assertThat(toolCallsTile.getConfiguration())
-        .isEqualTo(Map.of("section", "reliabilityAndToolCalls"));
+        .isEqualTo(
+            Map.of(
+                "section",
+                "reliabilityAndToolCalls",
+                "footnote",
+                AgenticControlDashboardService.KPI_TOOL_CALLS_FOOTNOTE_KEY));
     assertThat(toolCallsTile.getDimensions().getWidth()).isEqualTo(18);
     assertThat(toolCallsTile.getDimensions().getHeight()).isEqualTo(2);
   }
@@ -923,7 +928,7 @@ public class AgenticControlDashboardServiceTest {
         tileById(saved, AgenticControlDashboardService.TOOL_CALLS_HEATMAP_REPORT_ID);
 
     assertThat(heatmapTile.getPosition().getX()).isZero();
-    assertThat(heatmapTile.getPosition().getY()).isEqualTo(14);
+    assertThat(heatmapTile.getPosition().getY()).isZero();
     assertThat(heatmapTile.getDimensions().getWidth()).isEqualTo(18);
     assertThat(heatmapTile.getDimensions().getHeight()).isEqualTo(4);
     assertThat(heatmapTile.getConfiguration())
@@ -1017,7 +1022,7 @@ public class AgenticControlDashboardServiceTest {
         tileById(saved, AgenticControlDashboardService.DURATION_HEATMAP_REPORT_ID);
 
     assertThat(heatmapTile.getPosition().getX()).isZero();
-    assertThat(heatmapTile.getPosition().getY()).isEqualTo(14);
+    assertThat(heatmapTile.getPosition().getY()).isZero();
     assertThat(heatmapTile.getDimensions().getWidth()).isEqualTo(18);
     assertThat(heatmapTile.getDimensions().getHeight()).isEqualTo(4);
     assertThat(heatmapTile.getConfiguration())
