@@ -69,6 +69,7 @@ cluster.size
 cluster.zone
 data.secondary-storage.rdbms.max-varchar-field-length
 license.key
+security.authentication.catch-all-unhandled-paths-enabled
 security.authentication.method
 security.authentication.unprotected-api
 security.authentication.webapp-enabled

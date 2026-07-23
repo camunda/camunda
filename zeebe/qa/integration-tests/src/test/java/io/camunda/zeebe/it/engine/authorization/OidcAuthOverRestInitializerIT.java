@@ -56,7 +56,7 @@ public class OidcAuthOverRestInitializerIT {
                     .getOidc()
                     .setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
                 c.getAuthentication().getOidc().setClientId("example");
-                c.getAuthentication().getOidc().setRedirectUri("example.com");
+                c.getAuthentication().getOidc().setRedirectUri("https://example.com");
                 c.getAuthorizations().setEnabled(true);
                 // add a preconfigured user. This should not be allowed with OIDC
                 c.getInitialization()

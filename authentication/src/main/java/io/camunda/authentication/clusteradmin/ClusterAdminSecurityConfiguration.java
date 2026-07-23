@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.clusteradmin;
 
-import static io.camunda.security.spring.security.CamundaSecurityFilterChainConstants.ORDER_WEBAPP_API;
+import static io.camunda.security.spring.security.CamundaSecurityFilterChainConstants.ORDER_API;
 
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
@@ -76,7 +76,7 @@ public class ClusterAdminSecurityConfiguration {
       LoggerFactory.getLogger(ClusterAdminSecurityConfiguration.class);
 
   @Bean
-  @Order(ORDER_WEBAPP_API)
+  @Order(ORDER_API)
   public SecurityFilterChain clusterAdminSecurityFilterChain(
       final HttpSecurity http,
       final Environment environment,

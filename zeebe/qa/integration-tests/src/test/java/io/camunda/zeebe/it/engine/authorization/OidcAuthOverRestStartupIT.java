@@ -45,7 +45,7 @@ public class OidcAuthOverRestStartupIT {
               c -> {
                 c.getAuthentication().getOidc().setIssuerUri(UNREACHABLE_ISSUER_URI);
                 c.getAuthentication().getOidc().setClientId("example");
-                c.getAuthentication().getOidc().setRedirectUri("example.com");
+                c.getAuthentication().getOidc().setRedirectUri("https://example.com");
                 c.getAuthorizations().setEnabled(true);
                 final var defaultRoles = new HashMap<>(c.getInitialization().getDefaultRoles());
                 defaultRoles.put("admin", Map.of("users", List.of(DEFAULT_USER_ID)));
