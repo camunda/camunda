@@ -35,8 +35,11 @@ const getToolCallResult = (content: ContentItem[]): ToolCallResult | null => {
   }
 };
 
-/** Extracts a tool call result for rendering in a single-line preview. */
-const getResultPreview = (content: ContentItem[]): string => {
+/**
+ * Extracts a tool call result for rendering in a single-line preview.
+ * Returns `null` when no TEXT/OBJECT exists, but DOCUMENT content.
+ */
+const getResultPreview = (content: ContentItem[]): string | null => {
   const entry = content.find(
     (item) => item.contentType === 'TEXT' || item.contentType === 'OBJECT',
   );
@@ -45,8 +48,12 @@ const getResultPreview = (content: ContentItem[]): string => {
       return entry.text;
     case 'OBJECT':
       return JSON.stringify(entry.object);
-    default:
-      return EMPTY_RESULT_MESSAGE;
+    default: {
+      const hasDocuments = content.some(
+        (item) => item.contentType === 'DOCUMENT',
+      );
+      return hasDocuments ? null : EMPTY_RESULT_MESSAGE;
+    }
   }
 };
 

@@ -167,10 +167,10 @@ describe('<LatestAgentMessage />', () => {
 
     const message = within(screen.getByTestId('conversation-message-msg-2'));
     expect(
-      message.getByRole('button', {name: '"doSomething" tool call.'}),
-    ).toBeDisabled();
+      message.getByRole('listitem', {name: 'doSomething'}),
+    ).toBeInTheDocument();
     expect(
-      message.getByRole('button', {name: '"noElement" tool call.'}),
-    ).toBeDisabled();
+      message.getByRole('listitem', {name: 'noElement'}),
+    ).toBeInTheDocument();
   });
 });

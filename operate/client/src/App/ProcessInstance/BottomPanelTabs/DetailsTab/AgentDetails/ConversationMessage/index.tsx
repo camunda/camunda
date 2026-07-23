@@ -8,7 +8,7 @@
 
 import {useReducer} from 'react';
 import {Button} from '@carbon/react';
-import {Document, Maximize, Tools} from '@carbon/react/icons';
+import {Maximize} from '@carbon/react/icons';
 import type {
   AgentInstanceHistoryItem,
   AgentInstanceHistoryRole,
@@ -21,14 +21,13 @@ import {
   TextContent,
   MessageActions,
   ObjectContent,
-  AttachmentsContainer,
-  AttachmentsLabel,
-  AttachmentButton,
   MessageHeader,
 } from './styled';
 import {MarkdownMessage} from './MarkdownMessage';
 import {MessageDetailsModal} from './MessageDetailsModal';
 import {MessageMetrics} from './MessageMetrics';
+import {DocumentContent} from './MessageAttachments/DocumentContent';
+import {ToolCalls} from './MessageAttachments/ToolCalls';
 
 type Actor = Exclude<AgentInstanceHistoryRole, 'TOOL_RESULT'> | 'SYSTEM';
 type ContentItem = AgentInstanceHistoryItem['content'][number];
@@ -65,10 +64,6 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
   const [messageDetails, dispatch] = useReducer(
     messageDetailsReducer,
     initialMessageDetailsState,
-  );
-
-  const documentEntries = content.filter(
-    (entry) => entry.contentType === 'DOCUMENT',
   );
 
   return (
@@ -117,32 +112,11 @@ const ConversationMessage: React.FC<ConversationMessageProps> = ({
           }
         }
       })}
-      {documentEntries.length > 0 && (
-        <AttachmentsContainer>
-          <AttachmentsLabel>Documents</AttachmentsLabel>
-          {documentEntries.map(({documentReference}) => (
-            <AttachmentButton key={documentReference.documentId} disabled>
-              <Document size={12} />
-              {documentReference.metadata.fileName}
-            </AttachmentButton>
-          ))}
-        </AttachmentsContainer>
-      )}
-      {toolCalls.length > 0 && (
-        <AttachmentsContainer>
-          <AttachmentsLabel>Tool calls</AttachmentsLabel>
-          {toolCalls.map((tc) => (
-            <AttachmentButton
-              key={tc.toolCallId}
-              aria-label={`"${tc.toolName}" tool call.`}
-              disabled
-            >
-              <Tools size={12} />
-              {tc.toolName}
-            </AttachmentButton>
-          ))}
-        </AttachmentsContainer>
-      )}
+      <DocumentContent
+        content={content}
+        modalTitleSuffix="conversation message"
+      />
+      <ToolCalls toolCalls={toolCalls} />
       {messageDetails.state === 'visible' && (
         <MessageDetailsModal
           title={messageDetails.title}

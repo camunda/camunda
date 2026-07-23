@@ -424,10 +424,10 @@ describe('<ConversationHistory />', () => {
     const message = within(screen.getByTestId('conversation-message-1'));
     expect(message.getByText('Here are the documents.')).toBeInTheDocument();
     expect(
-      message.getByRole('button', {name: 'report.txt'}),
+      message.getByRole('listitem', {name: 'report.txt'}),
     ).toBeInTheDocument();
     expect(
-      message.getByRole('button', {name: 'screenshot.png'}),
+      message.getByRole('listitem', {name: 'screenshot.png'}),
     ).toBeInTheDocument();
   });
 
@@ -476,11 +476,11 @@ describe('<ConversationHistory />', () => {
       screen.getByTestId('conversation-message-1'),
     );
     expect(
-      assistantMessage.getByRole('button', {name: '"greet" tool call.'}),
-    ).toBeDisabled();
+      assistantMessage.getByRole('listitem', {name: 'greet'}),
+    ).toBeInTheDocument();
     expect(
-      assistantMessage.getByRole('button', {name: '"search" tool call.'}),
-    ).toBeDisabled();
+      assistantMessage.getByRole('listitem', {name: 'search'}),
+    ).toBeInTheDocument();
   });
 
   it('should render metrics when they are available for a message', async () => {

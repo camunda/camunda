@@ -22,6 +22,7 @@ import {
 import {Button} from '@carbon/react';
 import {getResultPreview, type ContentItem} from './getRenderableResult';
 import {ToolResultModal} from './ToolResultModal';
+import {DocumentContent} from '../MessageAttachments/DocumentContent';
 
 type ToolResultMessageProps = {
   availableTools: AgentTool[];
@@ -61,7 +62,8 @@ const ToolResultMessage: React.FC<ToolResultMessageProps> = ({
         <Tools size={12} />
         <ToolLabel>{toolCall.toolName}</ToolLabel>
       </ToolHeader>
-      <ResultPreview>{resultPreview}</ResultPreview>
+      {resultPreview !== null && <ResultPreview>{resultPreview}</ResultPreview>}
+      <DocumentContent content={content} modalTitleSuffix="tool result" />
       <ToolActions>
         <Button
           kind="ghost"
