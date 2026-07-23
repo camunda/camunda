@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.context.PropertyAuthorizationEvaluator;
 import io.camunda.security.api.model.CamundaAuthentication;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -123,7 +124,8 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final JobStreamer jobStreamer,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final SecretStoreRegistry secretStoreRegistry) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -342,7 +344,8 @@ public final class EngineProcessors {
         config,
         clock,
         cslCheck,
-        incidentMetrics);
+        incidentMetrics,
+        secretStoreRegistry);
 
     final var userTaskProcessor =
         createUserTaskProcessor(

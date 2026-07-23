@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system;
 
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -22,10 +23,14 @@ import io.camunda.zeebe.util.FeatureFlags;
  *
  * <p>exporterRepository contains all exporters that are configured for the physical tenant with the
  * corresponding configuration.
+ *
+ * <p>secretStoreRegistry holds the tenant's configured secret stores and their caches, read on job
+ * activation to inject resolved secrets.
  */
 public record PhysicalTenantContext(
     EngineSecurityConfig securityConfig,
     BrokerRequestAuthorizationConverter authorizationConverter,
     FeatureFlags featureFlags,
     BrokerCfg config,
-    ExporterRepository exporterRepository) {}
+    ExporterRepository exporterRepository,
+    SecretStoreRegistry secretStoreRegistry) {}

@@ -14,6 +14,7 @@ import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.cluster.PartitionId;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -108,6 +109,7 @@ public final class PartitionManagerImpl
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final FeatureFlags featureFlags,
+      final SecretStoreRegistry secretStoreRegistry,
       final TopologyManagerImpl topologyManager) {
     this.partitionGroup = partitionGroup;
     this.concurrencyControl = concurrencyControl;
@@ -147,7 +149,8 @@ public final class PartitionManagerImpl
                 : null,
             brokerRequestAuthorizationConverter,
             clusterConfigurationService,
-            rocksDbResources);
+            rocksDbResources,
+            secretStoreRegistry);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

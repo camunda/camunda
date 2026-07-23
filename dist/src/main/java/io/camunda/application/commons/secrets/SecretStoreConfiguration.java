@@ -31,8 +31,7 @@ public class SecretStoreConfiguration {
   private static final NoopSecretStore NOOP_STORE = new NoopSecretStore();
 
   @Bean
-  public Map<String, SecretStoreRegistry> secretStoreRegistries(
-      final PhysicalTenantResolver resolver) {
+  public SecretStoreRegistries secretStoreRegistries(final PhysicalTenantResolver resolver) {
     final Map<String, SecretStoreRegistry> registries = new LinkedHashMap<>();
     resolver
         .mapValues(Camunda::getSecrets)
@@ -74,6 +73,6 @@ public class SecretStoreConfiguration {
               }
               registries.put(tenantId, new SecretStoreRegistry(Map.copyOf(stores)));
             });
-    return Map.copyOf(registries);
+    return new SecretStoreRegistries(Map.copyOf(registries));
   }
 }

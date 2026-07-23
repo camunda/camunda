@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -362,7 +363,8 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
                 brokerRequestAuthorizationConverter,
                 featureFlags,
                 brokerConfiguration,
-                exporterRepository));
+                exporterRepository,
+                new SecretStoreRegistry(Map.of())));
   }
 
   @Override

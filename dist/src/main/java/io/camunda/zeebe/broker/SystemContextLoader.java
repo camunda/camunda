@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.application.commons.secrets.SecretStoreRegistries;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
@@ -31,6 +32,8 @@ import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -71,6 +74,7 @@ public final class SystemContextLoader {
   private NodeIdProvider nodeIdProvider;
   private Path workingDirectory;
   private List<ExporterDescriptor> exporterDescriptors;
+  private SecretStoreRegistries secretStoreRegistries = new SecretStoreRegistries(Map.of());
 
   public SystemContextLoader withShutdownTimeout(final Duration shutdownTimeout) {
     this.shutdownTimeout = shutdownTimeout;
@@ -173,9 +177,25 @@ public final class SystemContextLoader {
     return this;
   }
 
+  /**
+   * The configured secret stores and their caches per physical tenant. The same instances back the
+   * Spring-side bean and the broker partitions, so the background secret-resolution flow and job
+   * activation read and populate the same caches.
+   */
+  public SystemContextLoader withSecretStoreRegistries(
+      final SecretStoreRegistries secretStoreRegistries) {
+    this.secretStoreRegistries = secretStoreRegistries;
+    return this;
+  }
+
   public SystemContext createSystemContext() {
-    final Map<String, PhysicalTenantContext> physicalTenantContexts =
-        physicalTenantResolver.mapValues(this::buildPhysicalTenantContext);
+    final Map<String, PhysicalTenantContext> physicalTenantContexts = new LinkedHashMap<>();
+    physicalTenantResolver
+        .getAll()
+        .forEach(
+            (physicalTenantId, camunda) ->
+                physicalTenantContexts.put(
+                    physicalTenantId, buildPhysicalTenantContext(physicalTenantId, camunda)));
 
     return new SystemContext(
         shutdownTimeout,
@@ -184,7 +204,7 @@ public final class SystemContextLoader {
         cluster,
         brokerClient,
         meterRegistry,
-        physicalTenantContexts,
+        Collections.unmodifiableMap(physicalTenantContexts),
         userServicesForTenant,
         passwordEncoder,
         jwtDecoderFactory,
@@ -194,7 +214,8 @@ public final class SystemContextLoader {
         physicalTenantResolver);
   }
 
-  private PhysicalTenantContext buildPhysicalTenantContext(final Camunda camunda) {
+  private PhysicalTenantContext buildPhysicalTenantContext(
+      final String physicalTenantId, final Camunda camunda) {
     final var s = camunda.getSecurity();
     final var securityConfig =
         new EngineSecurityConfig(
@@ -229,7 +250,12 @@ public final class SystemContextLoader {
         buildExporterRepository(predefinedExporterRepository(), brokerConfig);
 
     return new PhysicalTenantContext(
-        securityConfig, authorizationConverter, featureFlags, brokerConfig, exporterRepository);
+        securityConfig,
+        authorizationConverter,
+        featureFlags,
+        brokerConfig,
+        exporterRepository,
+        secretStoreRegistries.forPhysicalTenant(physicalTenantId));
   }
 
   private ExporterRepository predefinedExporterRepository() {

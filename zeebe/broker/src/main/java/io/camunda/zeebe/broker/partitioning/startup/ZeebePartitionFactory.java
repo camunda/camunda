@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning.startup;
 import io.atomix.cluster.BrokerMemberId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -108,6 +109,10 @@ public final class ZeebePartitionFactory {
   private final ClusterConfigurationService clusterConfigurationService;
   private final RocksDbResources rocksDbResources;
 
+  // The tenant's secret store registry, shared across its partitions: the caches are read on job
+  // activation to inject resolved secrets and populated by the background secret-resolution flow.
+  private final SecretStoreRegistry secretStoreRegistry;
+
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
@@ -126,7 +131,8 @@ public final class ZeebePartitionFactory {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final ClusterConfigurationService clusterConfigurationService,
-      final RocksDbResources rocksDbResources) {
+      final RocksDbResources rocksDbResources,
+      final SecretStoreRegistry secretStoreRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -145,6 +151,7 @@ public final class ZeebePartitionFactory {
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     this.clusterConfigurationService = clusterConfigurationService;
     this.rocksDbResources = rocksDbResources;
+    this.secretStoreRegistry = secretStoreRegistry;
   }
 
   public ZeebePartition constructPartition(
@@ -278,7 +285,8 @@ public final class ZeebePartitionFactory {
           featureFlags,
           jobStreamer,
           searchClientsProxy,
-          brokerRequestAuthorizationConverter);
+          brokerRequestAuthorizationConverter,
+          secretStoreRegistry);
     };
   }
 }
