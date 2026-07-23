@@ -19,7 +19,7 @@ import {
 } from "recharts";
 import { api, type Filters } from "../../../lib/api";
 import { chartColor } from "../../../lib/chartColors";
-import { formatWindow } from "../../../lib/format";
+import { formatWindowForSpan } from "../../../lib/format";
 import { ChartCard } from "../../common/ChartCard";
 import { EmptyTile, LoadingTile } from "../../common/EmptyTile";
 import { ExplainLink } from "../../common/ExplainLink";
@@ -97,6 +97,7 @@ export function SeriesTile({
         setLoading(false);
         return;
       }
+      const span = to - from;
       const byT = new Map<string, Row>();
       results.forEach((result, i) => {
         if (!result.ok) {
@@ -105,7 +106,7 @@ export function SeriesTile({
         for (const p of result.data.points) {
           let row = byT.get(p.t);
           if (!row) {
-            row = { t: p.t, label: formatWindow(p.t) };
+            row = { t: p.t, label: formatWindowForSpan(p.t, span) };
             byT.set(p.t, row);
           }
           row[`s${i}`] = p.value;

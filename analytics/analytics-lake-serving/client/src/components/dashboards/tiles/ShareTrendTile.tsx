@@ -19,7 +19,7 @@ import {
 } from "recharts";
 import { api } from "../../../lib/api";
 import { chartColor } from "../../../lib/chartColors";
-import { formatPercent, formatWindow } from "../../../lib/format";
+import { formatPercent, formatWindowForSpan } from "../../../lib/format";
 import { useAppData } from "../../../lib/appData";
 import { findMeasure } from "../../../lib/registryHelpers";
 import { ChartCard } from "../../common/ChartCard";
@@ -104,10 +104,11 @@ export function ShareTrendTile({
         return;
       }
       const [totalResult, ...bandResults] = results;
+      const span = to - from;
       const byT = new Map<string, Record<string, number | string>>();
       if (totalResult.ok) {
         for (const p of totalResult.data.points) {
-          byT.set(p.t, { t: p.t, label: formatWindow(p.t), total: p.value });
+          byT.set(p.t, { t: p.t, label: formatWindowForSpan(p.t, span), total: p.value });
         }
       }
       bandResults.forEach((result, i) => {

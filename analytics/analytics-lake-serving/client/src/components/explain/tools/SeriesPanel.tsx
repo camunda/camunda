@@ -18,7 +18,7 @@ import {
 import { Button, Input } from "@camunda/design-system";
 import { api, type SeriesRequest, type SeriesResponse } from "../../../lib/api";
 import { chartColor } from "../../../lib/chartColors";
-import { formatWindow } from "../../../lib/format";
+import { formatWindowForSpan } from "../../../lib/format";
 import { EmptyTile, LoadingTile } from "../../common/EmptyTile";
 
 function defaultRequest(): SeriesRequest {
@@ -53,7 +53,8 @@ export function SeriesPanel({ prefill }: { prefill?: Partial<SeriesRequest> }) {
     });
   };
 
-  const data = result?.points.map((p) => ({ label: formatWindow(p.t), value: p.value })) ?? [];
+  const span = req.to - req.from;
+  const data = result?.points.map((p) => ({ label: formatWindowForSpan(p.t, span), value: p.value })) ?? [];
 
   return (
     <div className="flex flex-col gap-3">
