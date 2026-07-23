@@ -29,7 +29,6 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
@@ -121,14 +120,14 @@ final class ExportingStateChangeApplierTest {
     // given
     final var group = groupWithPartitions(1, 2);
     applier.init(globalConfigurationWithLocalMemberActive, group);
-    when(partitionChangeExecutor.setExportingState(Set.of(1, 2), targetState))
+    when(partitionChangeExecutor.setExportingState(targetState))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     applier.apply().join();
 
     // then
-    verify(partitionChangeExecutor).setExportingState(Set.of(1, 2), targetState);
+    verify(partitionChangeExecutor).setExportingState(targetState);
   }
 
   @Test
@@ -136,7 +135,7 @@ final class ExportingStateChangeApplierTest {
     // given
     final var group = groupWithPartitions(1, 2);
     applier.init(globalConfigurationWithLocalMemberActive, group);
-    when(partitionChangeExecutor.setExportingState(Set.of(1, 2), targetState))
+    when(partitionChangeExecutor.setExportingState(targetState))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
@@ -154,7 +153,7 @@ final class ExportingStateChangeApplierTest {
     // given
     final var group = groupWithPartitions(1, 2);
     applier.init(globalConfigurationWithLocalMemberActive, group);
-    when(partitionChangeExecutor.setExportingState(Set.of(1, 2), targetState))
+    when(partitionChangeExecutor.setExportingState(targetState))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new RuntimeException("force fail")));
 

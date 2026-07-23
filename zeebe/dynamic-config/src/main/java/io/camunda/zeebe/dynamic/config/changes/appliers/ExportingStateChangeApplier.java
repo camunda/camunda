@@ -70,7 +70,7 @@ public final class ExportingStateChangeApplier implements PartitionGroupConfigur
   @Override
   public ActorFuture<UnaryOperator<PartitionGroupConfiguration>> apply() {
     return partitionChangeExecutor
-        .setExportingState(partitions, state)
+        .setExportingState(state)
         .thenApply(ignored -> this::updatePartitionConfigs);
   }
 

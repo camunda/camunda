@@ -405,8 +405,7 @@ public final class RecoveryPartitionManager
   }
 
   @Override
-  public ActorFuture<Void> setExportingState(
-      final Set<Integer> partitionIds, final ExportingState exportingState) {
+  public ActorFuture<Void> setExportingState(final ExportingState exportingState) {
     return CompletableActorFuture.completedExceptionally(
         new IllegalStateException("Cannot perform setExportingState on a recovering partition"));
   }

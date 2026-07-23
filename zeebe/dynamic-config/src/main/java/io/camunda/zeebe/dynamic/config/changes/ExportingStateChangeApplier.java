@@ -62,7 +62,7 @@ final class ExportingStateChangeApplier implements MemberOperationApplier {
   @Override
   public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
     return partitionChangeExecutor
-        .setExportingState(partitions, state)
+        .setExportingState(state)
         .thenApply(ignored -> this::updatePartitionConfigs);
   }
 
