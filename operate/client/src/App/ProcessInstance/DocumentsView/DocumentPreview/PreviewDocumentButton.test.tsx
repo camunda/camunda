@@ -60,33 +60,29 @@ const unknownDocument: DocumentInfo = {
 describe('<PreviewDocumentButton />', () => {
   it('should render an enabled preview button for image documents', () => {
     render(
-      <PreviewDocumentButton document={imageDocument} variableName="myImage" />,
+      <PreviewDocumentButton document={imageDocument} labelSuffix="myImage" />,
     );
 
-    const button = screen.getByLabelText(
-      'Preview document for variable myImage',
-    );
+    const button = screen.getByLabelText('Preview document for myImage');
     expect(button).toBeEnabled();
   });
 
   it('should render an enabled preview button for pdf documents', () => {
     render(
-      <PreviewDocumentButton document={pdfDocument} variableName="myPdf" />,
+      <PreviewDocumentButton document={pdfDocument} labelSuffix="myPdf" />,
     );
 
-    const button = screen.getByLabelText('Preview document for variable myPdf');
+    const button = screen.getByLabelText('Preview document for myPdf');
     expect(button).toBeEnabled();
   });
 
   it('should render an enabled preview button for json documents', () => {
     render(
-      <PreviewDocumentButton document={jsonDocument} variableName="myJson" />,
+      <PreviewDocumentButton document={jsonDocument} labelSuffix="myJson" />,
       {wrapper: createWrapper()},
     );
 
-    const button = screen.getByLabelText(
-      'Preview document for variable myJson',
-    );
+    const button = screen.getByLabelText('Preview document for myJson');
     expect(button).toBeEnabled();
   });
 
@@ -94,25 +90,21 @@ describe('<PreviewDocumentButton />', () => {
     render(
       <PreviewDocumentButton
         document={unknownDocument}
-        variableName="myArchive"
+        labelSuffix="myArchive"
       />,
     );
 
-    const button = screen.getByLabelText(
-      'Preview document for variable myArchive',
-    );
+    const button = screen.getByLabelText('Preview document for myArchive');
     expect(button).toBeDisabled();
     expect(screen.getByText('Unsupported file type')).toBeInTheDocument();
   });
 
   it('should open the modal with the pdf when clicked', async () => {
     const {user} = render(
-      <PreviewDocumentButton document={pdfDocument} variableName="myPdf" />,
+      <PreviewDocumentButton document={pdfDocument} labelSuffix="myPdf" />,
     );
 
-    await user.click(
-      screen.getByLabelText('Preview document for variable myPdf'),
-    );
+    await user.click(screen.getByLabelText('Preview document for myPdf'));
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeInTheDocument();
@@ -123,12 +115,10 @@ describe('<PreviewDocumentButton />', () => {
 
   it('should open the modal with the image when clicked', async () => {
     const {user} = render(
-      <PreviewDocumentButton document={imageDocument} variableName="myImage" />,
+      <PreviewDocumentButton document={imageDocument} labelSuffix="myImage" />,
     );
 
-    await user.click(
-      screen.getByLabelText('Preview document for variable myImage'),
-    );
+    await user.click(screen.getByLabelText('Preview document for myImage'));
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeInTheDocument();
@@ -140,13 +130,11 @@ describe('<PreviewDocumentButton />', () => {
     mockDownloadDocument().withSuccess('{"foo":"bar","nested":{"baz":1}}');
 
     const {user} = render(
-      <PreviewDocumentButton document={jsonDocument} variableName="myJson" />,
+      <PreviewDocumentButton document={jsonDocument} labelSuffix="myJson" />,
       {wrapper: createWrapper()},
     );
 
-    await user.click(
-      screen.getByLabelText('Preview document for variable myJson'),
-    );
+    await user.click(screen.getByLabelText('Preview document for myJson'));
 
     const editor = await screen.findByTestId('monaco-editor');
     expect(editor).toHaveValue(
@@ -158,13 +146,11 @@ describe('<PreviewDocumentButton />', () => {
     mockDownloadDocument().withServerError();
 
     const {user} = render(
-      <PreviewDocumentButton document={jsonDocument} variableName="myJson" />,
+      <PreviewDocumentButton document={jsonDocument} labelSuffix="myJson" />,
       {wrapper: createWrapper()},
     );
 
-    await user.click(
-      screen.getByLabelText('Preview document for variable myJson'),
-    );
+    await user.click(screen.getByLabelText('Preview document for myJson'));
 
     expect(
       await screen.findByText(
@@ -176,12 +162,10 @@ describe('<PreviewDocumentButton />', () => {
 
   it('should show the file name as the modal heading', async () => {
     const {user} = render(
-      <PreviewDocumentButton document={imageDocument} variableName="myImage" />,
+      <PreviewDocumentButton document={imageDocument} labelSuffix="myImage" />,
     );
 
-    await user.click(
-      screen.getByLabelText('Preview document for variable myImage'),
-    );
+    await user.click(screen.getByLabelText('Preview document for myImage'));
 
     expect(
       screen.getByRole('heading', {name: 'Preview: photo.png'}),
@@ -199,10 +183,10 @@ describe('<PreviewDocumentButton />', () => {
     };
 
     render(
-      <PreviewDocumentButton document={expiredDocument} variableName="myDoc" />,
+      <PreviewDocumentButton document={expiredDocument} labelSuffix="myDoc" />,
     );
 
-    const button = screen.getByLabelText('Preview document for variable myDoc');
+    const button = screen.getByLabelText('Preview document for myDoc');
     expect(button).toBeDisabled();
     expect(screen.getByText('Document has expired')).toBeInTheDocument();
   });
@@ -218,10 +202,10 @@ describe('<PreviewDocumentButton />', () => {
     };
 
     render(
-      <PreviewDocumentButton document={noLinkDocument} variableName="myDoc" />,
+      <PreviewDocumentButton document={noLinkDocument} labelSuffix="myDoc" />,
     );
 
-    const button = screen.getByLabelText('Preview document for variable myDoc');
+    const button = screen.getByLabelText('Preview document for myDoc');
     expect(button).toBeDisabled();
     expect(screen.getByText('Preview unavailable')).toBeInTheDocument();
   });
@@ -229,12 +213,10 @@ describe('<PreviewDocumentButton />', () => {
   it('should track "document-previewed" events', async () => {
     const trackSpy = vi.spyOn(tracking, 'track');
     const {user} = render(
-      <PreviewDocumentButton document={imageDocument} variableName="myImage" />,
+      <PreviewDocumentButton document={imageDocument} labelSuffix="myImage" />,
     );
 
-    await user.click(
-      screen.getByLabelText('Preview document for variable myImage'),
-    );
+    await user.click(screen.getByLabelText('Preview document for myImage'));
 
     expect(trackSpy).toHaveBeenCalledWith({
       eventName: 'document-previewed',
@@ -246,12 +228,10 @@ describe('<PreviewDocumentButton />', () => {
 
   it('should show an error notification when the image fails to load', async () => {
     const {user} = render(
-      <PreviewDocumentButton document={imageDocument} variableName="myImage" />,
+      <PreviewDocumentButton document={imageDocument} labelSuffix="myImage" />,
     );
 
-    await user.click(
-      screen.getByLabelText('Preview document for variable myImage'),
-    );
+    await user.click(screen.getByLabelText('Preview document for myImage'));
 
     const image = screen.getByRole('img', {name: 'photo.png'});
     fireEvent.error(image);

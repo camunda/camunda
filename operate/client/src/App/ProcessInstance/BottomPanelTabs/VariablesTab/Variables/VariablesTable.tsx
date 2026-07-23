@@ -152,11 +152,11 @@ const VariablesTable: React.FC<Props> = ({
                         <>
                           <PreviewDocumentButton
                             document={documentResult.document}
-                            variableName={name}
+                            labelSuffix={name}
                           />
                           <DownloadDocumentButton
                             document={documentResult.document}
-                            variableName={name}
+                            labelSuffix={name}
                           />
                         </>
                       )}

@@ -44,10 +44,7 @@ describe('<DocumentListModal />', () => {
         open
         setOpen={() => {}}
         documents={documents}
-        isFullyLoaded
-        isLoading={false}
-        isError={false}
-        variableName="files"
+        labelSuffix="files"
       />,
     );
 
@@ -68,19 +65,16 @@ describe('<DocumentListModal />', () => {
         open
         setOpen={() => {}}
         documents={documents}
-        isFullyLoaded
-        isLoading={false}
-        isError={false}
-        variableName="files"
+        labelSuffix="files"
       />,
     );
 
     const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.getAllByLabelText('Preview document for files')).toHaveLength(
+      3,
+    );
     expect(
-      dialog.getAllByLabelText('Preview document for variable files'),
-    ).toHaveLength(3);
-    expect(
-      dialog.getAllByLabelText('Download document for variable files'),
+      dialog.getAllByLabelText('Download document for files'),
     ).toHaveLength(3);
   });
 
@@ -90,10 +84,7 @@ describe('<DocumentListModal />', () => {
         open
         setOpen={() => {}}
         documents={documents}
-        isFullyLoaded
-        isLoading={false}
-        isError={false}
-        variableName="files"
+        labelSuffix="files"
       />,
     );
 
@@ -103,16 +94,14 @@ describe('<DocumentListModal />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show a lower-bound count with a plus sign when not fully loaded', () => {
+  it('should show a lower-bound count with a plus sign when a hint is provided', () => {
     render(
       <DocumentListModal
         open
         setOpen={() => {}}
         documents={documents}
-        isFullyLoaded={false}
-        isLoading={false}
-        isError={false}
-        variableName="files"
+        labelSuffix="files"
+        loadingHint="Loading more documents..."
       />,
     );
 
@@ -122,44 +111,38 @@ describe('<DocumentListModal />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show a loading notice when isLoading is true', () => {
+  it('should render the loading hint when provided', () => {
     render(
       <DocumentListModal
         open
         setOpen={() => {}}
         documents={documents}
-        isFullyLoaded={false}
-        isLoading
-        isError={false}
-        variableName="files"
+        labelSuffix="files"
+        loadingHint="Loading more documents... More documents may exist."
       />,
     );
 
     const dialog = within(screen.getByRole('dialog'));
     expect(
-      dialog.getByText(
-        'Loading the full variable value... More documents may exist for this variable.',
-      ),
+      dialog.getByText('Loading more documents... More documents may exist.'),
     ).toBeInTheDocument();
   });
 
-  it('should show an error notice when isError is true', () => {
+  it('should render the error hint when provided', () => {
     render(
       <DocumentListModal
         open
         setOpen={() => {}}
         documents={documents}
-        isFullyLoaded={false}
-        isLoading={false}
-        isError
-        variableName="files"
+        labelSuffix="files"
+        errorHint="Failed to load more documents. More documents may exist."
       />,
     );
 
     const dialog = within(screen.getByRole('dialog'));
     expect(
       dialog.getByText(
-        'Failed to load the full variable value. More documents may exist for this variable.',
+        'Failed to load more documents. More documents may exist.',
       ),
     ).toBeInTheDocument();
   });
@@ -181,10 +164,7 @@ describe('<DocumentListModal />', () => {
             isExpired: false,
           },
         ]}
-        isFullyLoaded
-        isLoading={false}
-        isError={false}
-        variableName="files"
+        labelSuffix="files"
       />,
     );
 
@@ -220,10 +200,7 @@ describe('<DocumentListModal />', () => {
         open
         setOpen={() => {}}
         documents={documentsWithExpired}
-        isFullyLoaded
-        isLoading={false}
-        isError={false}
-        variableName="files"
+        labelSuffix="files"
       />,
     );
 
@@ -234,10 +211,10 @@ describe('<DocumentListModal />', () => {
     );
     expect(expiredItem.getByText('Expired')).toBeInTheDocument();
     expect(
-      expiredItem.getByLabelText('Preview document for variable files'),
+      expiredItem.getByLabelText('Preview document for files'),
     ).toBeDisabled();
     expect(
-      expiredItem.getByLabelText('Download document for variable files'),
+      expiredItem.getByLabelText('Download document for files'),
     ).toBeDisabled();
 
     const activeItem = within(
@@ -245,10 +222,10 @@ describe('<DocumentListModal />', () => {
     );
     expect(activeItem.queryByText('Expired')).not.toBeInTheDocument();
     expect(
-      activeItem.getByLabelText('Preview document for variable files'),
+      activeItem.getByLabelText('Preview document for files'),
     ).toBeEnabled();
     const activeDownloadLink = activeItem.getByLabelText(
-      'Download document for variable files',
+      'Download document for files',
     );
     expect(activeDownloadLink).toBeEnabled();
     expect(activeDownloadLink).toHaveAttribute('href', '/v2/documents/active');

@@ -32,22 +32,20 @@ describe('<DownloadDocumentButton />', () => {
     };
 
     render(
-      <DownloadDocumentButton document={noLinkDocument} variableName="myPdf" />,
+      <DownloadDocumentButton document={noLinkDocument} labelSuffix="myPdf" />,
     );
 
-    const button = screen.getByLabelText(
-      'Download document for variable myPdf',
-    );
+    const button = screen.getByLabelText('Download document for myPdf');
     expect(button).toBeDisabled();
     expect(button.tagName).not.toBe('A');
   });
 
   it('should render a download link with correct href and filename', () => {
     render(
-      <DownloadDocumentButton document={pdfDocument} variableName="myPdf" />,
+      <DownloadDocumentButton document={pdfDocument} labelSuffix="myPdf" />,
     );
 
-    const link = screen.getByLabelText('Download document for variable myPdf');
+    const link = screen.getByLabelText('Download document for myPdf');
     expect(link).toHaveAttribute('href', '/v2/documents/pdf');
     expect(link).toHaveAttribute('download', 'report.pdf');
   });
@@ -63,15 +61,10 @@ describe('<DownloadDocumentButton />', () => {
     };
 
     render(
-      <DownloadDocumentButton
-        document={expiredDocument}
-        variableName="myPdf"
-      />,
+      <DownloadDocumentButton document={expiredDocument} labelSuffix="myPdf" />,
     );
 
-    const button = screen.getByLabelText(
-      'Download document for variable myPdf',
-    );
+    const button = screen.getByLabelText('Download document for myPdf');
     expect(button).toBeDisabled();
     expect(button.tagName).not.toBe('A');
     expect(screen.getByText('Document has expired')).toBeInTheDocument();
@@ -82,12 +75,10 @@ describe('<DownloadDocumentButton />', () => {
     window.addEventListener('click', (e) => e.preventDefault(), {once: true});
     const trackSpy = vi.spyOn(tracking, 'track');
     const {user} = render(
-      <DownloadDocumentButton document={pdfDocument} variableName="myPdf" />,
+      <DownloadDocumentButton document={pdfDocument} labelSuffix="myPdf" />,
     );
 
-    await user.click(
-      screen.getByLabelText('Download document for variable myPdf'),
-    );
+    await user.click(screen.getByLabelText('Download document for myPdf'));
 
     expect(trackSpy).toHaveBeenCalledWith({
       eventName: 'document-downloaded',

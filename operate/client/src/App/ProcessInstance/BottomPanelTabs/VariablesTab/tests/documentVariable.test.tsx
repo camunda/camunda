@@ -77,7 +77,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     const downloadButton = variableRow.getByLabelText(
-      'Download document for variable myDocument',
+      'Download document for myDocument',
     );
     expect(downloadButton).toHaveAttribute(
       'href',
@@ -104,7 +104,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myDocumentList'));
     expect(
-      variableRow.queryByLabelText(/download document for variable/i),
+      variableRow.queryByLabelText(/download document for/i),
     ).not.toBeInTheDocument();
   });
 
@@ -130,7 +130,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myImage'));
     const previewButton = variableRow.getByLabelText(
-      'Preview document for variable myImage',
+      'Preview document for myImage',
     );
     expect(previewButton).toBeEnabled();
   });
@@ -157,7 +157,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     const previewButton = variableRow.getByLabelText(
-      'Preview document for variable myDocument',
+      'Preview document for myDocument',
     );
     expect(previewButton).toBeDisabled();
   });
@@ -180,7 +180,7 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-myDocumentList'));
     expect(
-      variableRow.queryByLabelText(/preview document for variable/i),
+      variableRow.queryByLabelText(/preview document for/i),
     ).not.toBeInTheDocument();
   });
 
@@ -247,10 +247,10 @@ describe('VariablesTab document variables', () => {
     expect(variableRow.getByText('Expired')).toBeInTheDocument();
 
     const downloadButton = variableRow.getByLabelText(
-      'Download document for variable myDocument',
+      'Download document for myDocument',
     );
     const previewButton = variableRow.getByLabelText(
-      'Preview document for variable myDocument',
+      'Preview document for myDocument',
     );
     expect(downloadButton).toBeDisabled();
     expect(previewButton).toBeDisabled();
@@ -280,10 +280,10 @@ describe('VariablesTab document variables', () => {
     const variableRow = within(screen.getByTestId('variable-myDocument'));
     expect(variableRow.queryByText('Expired')).not.toBeInTheDocument();
     expect(
-      variableRow.getByLabelText('Download document for variable myDocument'),
+      variableRow.getByLabelText('Download document for myDocument'),
     ).toBeEnabled();
     expect(
-      variableRow.getByLabelText('Preview document for variable myDocument'),
+      variableRow.getByLabelText('Preview document for myDocument'),
     ).toBeEnabled();
   });
 
@@ -295,13 +295,13 @@ describe('VariablesTab document variables', () => {
 
     const variableRow = within(screen.getByTestId('variable-testVariableName'));
     expect(
-      variableRow.queryByLabelText(/download document for variable/i),
+      variableRow.queryByLabelText(/download document for/i),
     ).not.toBeInTheDocument();
     expect(
       variableRow.queryByLabelText(/view documents for variable/i),
     ).not.toBeInTheDocument();
     expect(
-      variableRow.queryByLabelText(/preview document for variable/i),
+      variableRow.queryByLabelText(/preview document for/i),
     ).not.toBeInTheDocument();
   });
 });

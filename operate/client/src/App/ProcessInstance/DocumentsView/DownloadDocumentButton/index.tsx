@@ -18,10 +18,10 @@ function getDisabledTooltipText(document: DocumentInfo): string {
 
 type Props = {
   document: DocumentInfo;
-  variableName: string;
+  labelSuffix: string;
 };
 
-const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
+const DownloadDocumentButton: React.FC<Props> = ({document, labelSuffix}) => {
   const isDisabled = document.link === null || document.isExpired;
 
   const button = (
@@ -37,7 +37,7 @@ const DownloadDocumentButton: React.FC<Props> = ({document, variableName}) => {
       iconDescription="Download"
       tooltipPosition="top"
       tooltipAlignment="end"
-      aria-label={`Download document for variable ${variableName}`}
+      aria-label={`Download document for ${labelSuffix}`}
       disabled={isDisabled}
       onClick={() => {
         tracking.track({
