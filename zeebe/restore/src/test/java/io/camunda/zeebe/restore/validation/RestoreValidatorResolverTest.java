@@ -16,9 +16,11 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
@@ -40,6 +42,8 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Exercises {@link RestoreValidator#validate(RestoreRequest)} against a mocked {@link BackupStore}.
@@ -119,6 +123,28 @@ final class RestoreValidatorResolverTest {
   private void stubNoBackupExists() {
     when(backupStore.list(any(BackupIdentifierWildcard.class)))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
+  }
+
+  private void stubBackupExists(final int partitionId, final long backupId) {
+    final var pattern =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(backupId));
+    final var status =
+        new BackupStatusImpl(
+            new BackupIdentifierImpl(0, partitionId, backupId),
+            Optional.empty(),
+            BackupStatusCode.COMPLETED,
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    when(backupStore.list(pattern)).thenReturn(CompletableFuture.completedFuture(List.of(status)));
+  }
+
+  private void stubBackupMissing(final int partitionId, final long backupId) {
+    final var pattern =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(backupId));
+    when(backupStore.list(pattern)).thenReturn(CompletableFuture.completedFuture(List.of()));
   }
 
   private static byte[] serialize(final BackupMetadata metadata) {
@@ -409,6 +435,61 @@ final class RestoreValidatorResolverTest {
       // when / then
       final var result = validator.validate(request);
       assertThat(assertInvalid(result)).isInstanceOf(NoSuchElementException.class);
+    }
+  }
+
+  @Nested
+  final class NonRdbmsDatabaseTypes {
+
+    @ParameterizedTest
+    @ValueSource(strings = {"elasticsearch", "opensearch"})
+    void shouldBroadcastExplicitBackupIdToAllPartitions(final String databaseType) {
+      // given
+      stubBackupExists(1, 1L);
+      stubBackupExists(2, 1L);
+      final var validator = new RestoreValidator(2, backupStore, null);
+      final var request =
+          new RestoreRequest("default", List.of(1L), null, null, databaseType, false, false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}, 2, new long[] {1L}), false);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"elasticsearch", "opensearch"})
+    void shouldRejectMultipleBackupIdsWithoutQueryingBackupStore(final String databaseType) {
+      // given
+      final var validator = new RestoreValidator(2, backupStore, null);
+      final var request =
+          new RestoreRequest("default", List.of(1L, 2L), null, null, databaseType, false, false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertThat(assertInvalid(result))
+          .hasMessage("Cannot restore from multiple backups against database type " + databaseType);
+      verifyNoInteractions(backupStore);
+    }
+
+    @Test
+    void shouldRejectWhenBackupIsMissingForAPartition() {
+      // given - partition 2 has no completed backup for the requested id
+      stubBackupExists(1, 1L);
+      stubBackupMissing(2, 1L);
+      final var validator = new RestoreValidator(2, backupStore, null);
+      final var request =
+          new RestoreRequest("default", List.of(1L), null, null, "elasticsearch", false, false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertThat(assertInvalid(result))
+          .hasMessage("No completed backup found for partition 2 with backup id 1");
     }
   }
 }

@@ -22,6 +22,7 @@ final class RestoreParameterValidatorTest {
   private static final String EARLIER = "2026-01-01T10:00:00Z";
   private static final String LATER = "2026-01-01T12:00:00Z";
   private static final List<Long> BACKUP_ID = List.of(1L);
+  private static final List<Long> MULTIPLE_BACKUP_IDS = List.of(1L, 2L);
   private static final List<Long> NO_BACKUP_IDS = List.of();
 
   private static final String BOTH_MESSAGE =
@@ -185,6 +186,27 @@ final class RestoreParameterValidatorTest {
           .isThrownBy(
               () -> validator.validateParameters(request(BACKUP_ID, EARLIER, null, DB, true)))
           .withMessage(BOTH_MESSAGE);
+    }
+
+    @Test
+    void shouldRejectMultipleBackupIdsForElasticsearch() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validator.validateParameters(request(MULTIPLE_BACKUP_IDS, null, null, DB, false)))
+          .withMessage("Cannot restore from multiple backups against database type elasticsearch");
+    }
+
+    @Test
+    void shouldRejectMultipleBackupIdsForOpensearch() {
+      // when / then
+      assertThatExceptionOfType(IllegalArgumentException.class)
+          .isThrownBy(
+              () ->
+                  validator.validateParameters(
+                      request(MULTIPLE_BACKUP_IDS, null, null, "opensearch", false)))
+          .withMessage("Cannot restore from multiple backups against database type opensearch");
     }
   }
 
