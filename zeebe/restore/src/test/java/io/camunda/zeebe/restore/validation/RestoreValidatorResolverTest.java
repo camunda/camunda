@@ -216,6 +216,23 @@ final class RestoreValidatorResolverTest {
     }
 
     @Test
+    void shouldResolveWhenToIsProvidedAloneForContinuousBackups() {
+      // given
+      stubMetadata(1, singleCheckpointMetadata(1));
+      final IntFunction<Long> exportedPositionSupplier = partitionId -> 100L;
+      final var validator = new RestoreValidator(1, backupStore, exportedPositionSupplier);
+      final var request =
+          new RestoreRequest(
+              "default", List.of(), null, CHECKPOINT_TIMESTAMP.toString(), "rdbms", true, false);
+
+      // when
+      final var result = validator.validate(request);
+
+      // then
+      assertValid(result, Map.of(1, new long[] {1L}), false);
+    }
+
+    @Test
     void shouldResolveWhenFromAndToAreBothProvided() {
       // given
       stubMetadata(1, singleCheckpointMetadata(1));
