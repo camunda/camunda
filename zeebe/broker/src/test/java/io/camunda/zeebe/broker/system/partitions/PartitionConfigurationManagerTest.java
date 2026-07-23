@@ -511,7 +511,7 @@ final class PartitionConfigurationManagerTest {
         case PAUSED -> verify(mockExporterDirector).pauseExporting();
         case SOFT_PAUSED -> verify(mockExporterDirector).softPauseExporting();
         case EXPORTING -> verify(mockExporterDirector).resumeExporting();
-        case UNKNOWN -> throw new AssertionError("Unexpected exporting state: " + exportingState);
+        default -> throw new AssertionError("Unexpected exporting state: " + exportingState);
       }
     }
 
