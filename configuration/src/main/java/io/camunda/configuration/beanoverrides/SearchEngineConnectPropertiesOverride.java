@@ -97,8 +97,10 @@ public class SearchEngineConnectPropertiesOverride {
             database = secondaryStorage.getOpensearch();
             populateFromDocumentBasedSecondaryStorageDatabase(
                 (DocumentBasedSecondaryStorageDatabase) database, override);
-            override.setAwsEnabled(((Opensearch) database).isAwsEnabled());
+            final Opensearch opensearch = (Opensearch) database;
+            override.setAwsEnabled(opensearch.isAwsEnabled());
             populateAws(camunda.getAws(), override.aws());
+            override.aws().setRegion(opensearch.getRegion());
             break;
           }
         case rdbms:
@@ -128,7 +130,6 @@ public class SearchEngineConnectPropertiesOverride {
       target.setSessionToken(aws.getSessionToken());
       target.setRoleArn(aws.getRoleArn());
       target.setWebIdentityTokenFile(aws.getWebIdentityTokenFile());
-      target.setRegion(aws.getRegion());
     }
 
     private void populateFromDocumentBasedSecondaryStorageDatabase(

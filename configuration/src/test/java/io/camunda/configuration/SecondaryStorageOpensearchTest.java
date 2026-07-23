@@ -117,7 +117,7 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.aws-enabled=true",
         "camunda.aws.access-key=" + EXPECTED_AWS_ACCESS_KEY,
         "camunda.aws.secret-key=" + EXPECTED_AWS_SECRET_KEY,
-        "camunda.aws.region=" + EXPECTED_AWS_REGION,
+        "camunda.data.secondary-storage.opensearch.region=" + EXPECTED_AWS_REGION,
         "camunda.data.secondary-storage.opensearch.username=" + EXPECTED_USERNAME,
         "camunda.data.secondary-storage.opensearch.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.opensearch.cluster-name=" + EXPECTED_CLUSTER_NAME,

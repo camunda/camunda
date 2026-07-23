@@ -73,8 +73,7 @@ class PhysicalTenantAwsTest {
         Map.of(
             "camunda.aws.access-key", "key",
             "camunda.aws.secret-key", "secret",
-            "camunda.aws.session-token", "token",
-            "camunda.aws.region", "eu-west-1"));
+            "camunda.aws.session-token", "token"));
 
     // when
     final Aws aws = newResolver().forPhysicalTenant("default").getAws();
@@ -83,31 +82,26 @@ class PhysicalTenantAwsTest {
     assertThat(aws.getAccessKey()).isEqualTo("key");
     assertThat(aws.getSecretKey()).isEqualTo("secret");
     assertThat(aws.getSessionToken()).isEqualTo("token");
-    assertThat(aws.getRegion()).isEqualTo("eu-west-1");
     assertThat(aws.hasStaticCredentials()).isTrue();
     assertThat(aws.hasWebIdentity()).isFalse();
   }
 
   @Test
   void shouldMergeTenantAwsOverrideWithRootFields() {
-    // given a root region and role, and a tenant overriding only the identity fields
+    // given a root web identity, and a tenant overriding only the role
     setProperties(
         Map.of(
-            "camunda.aws.region", "eu-west-1",
             "camunda.aws.role-arn", "arn:aws:iam::111:role/default-tenant",
             "camunda.aws.web-identity-token-file", "/var/run/secrets/default-token",
-            "camunda.physical-tenants.tenantb.aws.role-arn", "arn:aws:iam::222:role/tenant-b",
-            "camunda.physical-tenants.tenantb.aws.web-identity-token-file",
-                "/var/run/secrets/tenant-b-token"),
+            "camunda.physical-tenants.tenantb.aws.role-arn", "arn:aws:iam::222:role/tenant-b"),
         "tenantb");
 
     // when
     final Aws aws = newResolver().forPhysicalTenant("tenantb").getAws();
 
-    // then the identity is the tenant's while the region is inherited from the root
+    // then the role is the tenant's while the token file is inherited from the root
     assertThat(aws.getRoleArn()).isEqualTo("arn:aws:iam::222:role/tenant-b");
-    assertThat(aws.getWebIdentityTokenFile()).isEqualTo("/var/run/secrets/tenant-b-token");
-    assertThat(aws.getRegion()).isEqualTo("eu-west-1");
+    assertThat(aws.getWebIdentityTokenFile()).isEqualTo("/var/run/secrets/default-token");
   }
 
   @Test
@@ -130,8 +124,7 @@ class PhysicalTenantAwsTest {
     setProperties(
         Map.of(
             "camunda.aws.access-key", "",
-            "camunda.aws.secret-key", " ",
-            "camunda.aws.region", ""));
+            "camunda.aws.secret-key", " "));
 
     // when
     final Aws aws = newResolver().forPhysicalTenant("default").getAws();
@@ -139,7 +132,6 @@ class PhysicalTenantAwsTest {
     // then the section is empty and falls back to the SDK default chains
     assertThat(aws.getAccessKey()).isNull();
     assertThat(aws.getSecretKey()).isNull();
-    assertThat(aws.getRegion()).isNull();
     assertThat(aws.hasStaticCredentials()).isFalse();
   }
 

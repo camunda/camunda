@@ -19,7 +19,6 @@ api.rest.cluster-variable.max-metadata-size
 api.rest.process-cache.expiration-idle
 api.rest.process-cache.max-size
 aws.access-key
-aws.region
 aws.role-arn
 aws.secret-key
 aws.session-token
@@ -181,6 +180,7 @@ data.secondary-storage.opensearch.proxy.ssl-enabled
 data.secondary-storage.opensearch.proxy.username
 data.secondary-storage.opensearch.refresh-interval
 data.secondary-storage.opensearch.refresh-interval-by-index-name
+data.secondary-storage.opensearch.region
 data.secondary-storage.opensearch.security.database-name
 data.secondary-storage.opensearch.socket-timeout
 data.secondary-storage.opensearch.template-priority

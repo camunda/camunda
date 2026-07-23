@@ -20,7 +20,6 @@ import org.jspecify.annotations.Nullable;
  *       camunda.aws.session-token} — static credentials
  *   <li>{@code camunda.aws.role-arn}, {@code camunda.aws.web-identity-token-file} — web identity
  *       (IRSA)
- *   <li>{@code camunda.aws.region}
  * </ul>
  *
  * <p>Blank values are treated as unset. When no field is set, the AWS SDK default credentials
@@ -51,9 +50,6 @@ public class Aws {
    * {@code role-arn}.
    */
   private @Nullable String webIdentityTokenFile;
-
-  /** AWS region. When unset, the AWS SDK default region provider chain is used. */
-  private @Nullable String region;
 
   public boolean hasStaticCredentials() {
     return accessKey != null && secretKey != null;
@@ -101,14 +97,6 @@ public class Aws {
 
   public void setWebIdentityTokenFile(final @Nullable String webIdentityTokenFile) {
     this.webIdentityTokenFile = blankToNull(webIdentityTokenFile);
-  }
-
-  public @Nullable String getRegion() {
-    return region;
-  }
-
-  public void setRegion(final @Nullable String region) {
-    this.region = blankToNull(region);
   }
 
   /**
