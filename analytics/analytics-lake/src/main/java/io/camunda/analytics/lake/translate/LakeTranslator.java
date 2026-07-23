@@ -11,8 +11,12 @@ import io.camunda.analytics.lake.sink.RowAppender;
 import io.camunda.analytics.lake.state.TranslatorState;
 import io.camunda.analytics.lake.state.TranslatorState.OpenElement;
 import io.camunda.analytics.lake.state.TranslatorState.OpenInstance;
+import io.camunda.analytics.lake.state.TranslatorState.VariantAccumulator;
+import io.camunda.analytics.lake.state.TranslatorState.VariantElementKind;
+import io.camunda.analytics.lake.state.TranslatorState.VariantName;
 import io.camunda.analytics.lake.translate.RawTableSchemas.ActivityColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.InstanceColumns;
+import io.camunda.analytics.lake.translate.RawTableSchemas.VariantColumns;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -24,9 +28,15 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,6 +137,42 @@ import org.slf4j.LoggerFactory;
  * completion rate, not by however many records it took to reach it, and is the one explicitly
  * budgeted exception to the sink's otherwise strict zero-allocation hot path (see {@code
  * io.camunda.analytics.lake.sink} package-info and {@code RowAppender}'s own javadoc).
+ *
+ * <h2>Variant capture (scheme variant-k1)</h2>
+ *
+ * <p><b>Set semantics</b>: while an instance is open, every distinct activated element id (any
+ * element type except the {@code PROCESS} root itself — {@code MULTI_INSTANCE_BODY} is a normal
+ * element, needing no special handling: its inner instances all share the body's own element id, so
+ * repeats are absorbed by the seen-set below) and every distinct taken sequence flow id contributes
+ * <b>at most once</b> to a running XOR-folded hash held in a {@link
+ * TranslatorState.VariantAccumulator}, one per open instance (see {@link #foldVariant} for the fold
+ * itself and {@link VariantHash} for the frozen hash/mix functions it uses). A revisited loop body
+ * or re-taken flow re-mixes nothing — only first sight of a given id counts.
+ *
+ * <p><b>Replay guard (load-bearing, separate from the origin-position dedup gate above)</b>: each
+ * accumulator carries its own {@code lastPosition}; a record at or below it skips folding entirely,
+ * because XOR is not idempotent — re-mixing a replayed record would <em>cancel</em> its own prior
+ * contribution, and re-inserting an already-seen id into the seen-set would double-count it. This
+ * must be a second, per-accumulator guard rather than relying on the class's own partition-wide
+ * {@link #zeebeWatermarks} gate: after a crash, this translator's {@link TranslatorState} (RocksDB)
+ * may already be durably <em>ahead of</em> the lake's own committed cut (the two are not atomically
+ * coupled), so replay from committed+1 can legitimately re-deliver records this accumulator already
+ * folded, even though the class-level watermark gate (seeded from the lake's own committed
+ * position) admits them as "new". {@code lastPosition} always advances on a fold that is not
+ * skipped, whether or not the id itself turned out to be a repeat.
+ *
+ * <p>At completion, the accumulator's hash is <em>read</em>, never recomputed, hex-encoded (see
+ * {@link VariantHash#toHex16}) onto the instance row's {@code variant_hash} column, and the
+ * accumulator is evicted — mirroring the instance/element eviction pattern this class already uses
+ * everywhere else. A per-process, per-id name map ({@link TranslatorState#putVariantName}/ {@link
+ * TranslatorState#getVariantName}, written on first sight of a given id and cached on heap per
+ * process in {@link #knownVariantNamesByProcess} to make repeat writes rare) lets completion decode
+ * the accumulator's compact {@code seenHashes} back into sorted element/flow id strings for the
+ * {@code variants} dictionary table — one row per distinct (process id, version, variant hash)
+ * triple, emitted only on a per-translator seen-cache miss ({@link #variantDictionarySeenCache});
+ * duplicates across restarts/partitions are expected and harmless (rows are deterministic given the
+ * key). See {@link #emitVariantDictionaryRowIfNew} for that emission, and {@link
+ * #variantsAppender}'s own field javadoc for why it may be {@code null}.
  */
 public final class LakeTranslator {
 
@@ -148,11 +194,50 @@ public final class LakeTranslator {
    */
   private static final int INITIAL_WATERMARK_CAPACITY = 4;
 
+  /**
+   * A freshly-opened instance's variant accumulator has folded nothing yet -- see {@link
+   * TranslatorState.VariantAccumulator}'s own javadoc.
+   */
+  private static final int[] EMPTY_SEEN_HASHES = new int[0];
+
+  /**
+   * Capacity of {@link #variantDictionarySeenCache} — a PoC-tuned guess (mirrors {@link
+   * #MAX_VARIABLE_VALUE_CHARS}'s own precedent), not a measured production figure. A cache miss on
+   * a (process id, version, variant hash) triple that was in fact already emitted (evicted from the
+   * LRU, or from before a restart) only ever costs one harmless duplicate dictionary row — see this
+   * class's "Variant capture" javadoc section.
+   */
+  private static final int VARIANT_DICTIONARY_CACHE_CAPACITY = 4096;
+
   private static final Logger LOG = LoggerFactory.getLogger(LakeTranslator.class);
 
   private final TranslatorState state;
   private final RowAppender instanceAppender;
   private final RowAppender activityAppender;
+
+  /**
+   * The variants dictionary table's {@link RowAppender}, or {@code null} when the dictionary
+   * pipeline is not wired (e.g. an existing 3-arg-constructed translator, or a test exercising only
+   * the raw instances/activities path). {@code null} disables dictionary-row emission entirely
+   * ({@link #emitVariantDictionaryRowIfNew} becomes a no-op) — it never affects the instances row's
+   * own {@code variant_hash} column, which is always populated from the accumulator regardless (see
+   * {@link #emitInstance}).
+   */
+  private final RowAppender variantsAppender;
+
+  /**
+   * variant-k1 name-map write-avoidance cache: {@code bpmnProcessId -> every h32 already known to
+   * be recorded in the durable name map} (see {@link TranslatorState#putVariantName}). Bounded by
+   * the number of distinct processes times each process's own distinct element/flow count — small
+   * and stable in practice, unlike {@link #variantDictionarySeenCache} this is never evicted: a
+   * false negative here would cost only a redundant (idempotent) durable write, not a correctness
+   * bug, so an unbounded cache is the simpler and cheaper choice for this specific purpose.
+   */
+  private final Map<String, Set<Integer>> knownVariantNamesByProcess = new HashMap<>();
+
+  /** See {@link VariantDictionarySeenCache}'s own javadoc. */
+  private final VariantDictionarySeenCache variantDictionarySeenCache =
+      new VariantDictionarySeenCache();
 
   // Reused across every completed instance's vars_json build (see class javadoc's allocation
   // note) -- poll thread only, like everything else in this class; setLength(0) per use rather
@@ -171,9 +256,23 @@ public final class LakeTranslator {
       final TranslatorState state,
       final RowAppender instanceAppender,
       final RowAppender activityAppender) {
+    this(state, instanceAppender, activityAppender, null);
+  }
+
+  /**
+   * Same as the 3-arg constructor, additionally wiring {@code variantsAppender} — see that field's
+   * own javadoc for what {@code null} means and why every pre-existing 3-arg caller keeps working
+   * unchanged.
+   */
+  public LakeTranslator(
+      final TranslatorState state,
+      final RowAppender instanceAppender,
+      final RowAppender activityAppender,
+      final RowAppender variantsAppender) {
     this.state = state;
     this.instanceAppender = instanceAppender;
     this.activityAppender = activityAppender;
+    this.variantsAppender = variantsAppender;
     zeebeWatermarks = newWatermarkArray(INITIAL_WATERMARK_CAPACITY);
   }
 
@@ -332,6 +431,10 @@ public final class LakeTranslator {
                 value.getVersion(),
                 value.getTenantId(),
                 timestamp));
+        // variant-k1: a fresh accumulator per OPEN instance -- see class javadoc's "Variant
+        // capture" section. Nothing folded yet: lastPosition sits below any legitimate position.
+        state.putVariantAccumulator(
+            processInstanceKey, new VariantAccumulator(-1L, 0L, 0, EMPTY_SEEN_HASHES));
       } else {
         final OpenInstance owner = state.getInstance(processInstanceKey);
         // Replay edge where the owner is unknown (e.g. resuming past the instance's own evict but
@@ -348,7 +451,28 @@ public final class LakeTranslator {
                 value.getBpmnElementType().name(),
                 timestamp,
                 instanceStartMs));
+        // variant-k1: every activated element except the PROCESS root (this branch) contributes,
+        // MULTI_INSTANCE_BODY included as a normal element -- see class javadoc.
+        foldVariant(
+            processInstanceKey,
+            value.getBpmnProcessId(),
+            value.getElementId(),
+            VariantElementKind.ELEMENT,
+            record.getPosition());
       }
+      return true;
+    }
+
+    if (record.getIntent() == ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN) {
+      // variant-k1: a taken sequence flow contributes exactly like an element activation, keyed by
+      // its own id (ProcessInstanceRecordValue#getElementId() is the flow's id for this intent) --
+      // see class javadoc. No other state mutation for this intent.
+      foldVariant(
+          processInstanceKey,
+          value.getBpmnProcessId(),
+          value.getElementId(),
+          VariantElementKind.FLOW,
+          record.getPosition());
       return true;
     }
 
@@ -401,6 +525,12 @@ public final class LakeTranslator {
     }
     final byte[] varsJson =
         varsJson(state.variablesOf(processInstanceKey)).getBytes(StandardCharsets.UTF_8);
+    // variant-k1: read (never recompute) the accumulator's hash -- see class javadoc's "Variant
+    // capture" section. null when state loss left no live accumulator; the column is nullable
+    // exactly for this case.
+    final VariantAccumulator variantAccumulator = state.getVariantAccumulator(processInstanceKey);
+    final String variantHashHex =
+        variantAccumulator != null ? VariantHash.toHex16(variantAccumulator.hash()) : null;
     instanceAppender
         .putLong(InstanceColumns.KEY, processInstanceKey)
         .putLong(InstanceColumns.PROCESS_DEFINITION_KEY, instance.processDefinitionKey())
@@ -412,9 +542,18 @@ public final class LakeTranslator {
         .putLong(InstanceColumns.ENDED_AT, millisToMicros(timestamp))
         .putLong(InstanceColumns.DURATION_MS, timestamp - instance.startMs())
         .putBinary(InstanceColumns.VARS_JSON, varsJson, 0, varsJson.length);
+    if (variantHashHex != null) {
+      instanceAppender.putDict(InstanceColumns.VARIANT_HASH, variantHashHex);
+    } else {
+      instanceAppender.putNull(InstanceColumns.VARIANT_HASH);
+    }
     instanceAppender.endRow();
     state.deleteInstance(processInstanceKey);
     state.deleteVariablesOf(processInstanceKey);
+    if (variantAccumulator != null) {
+      state.deleteVariantAccumulator(processInstanceKey);
+      emitVariantDictionaryRowIfNew(instance, variantAccumulator, variantHashHex, timestamp);
+    }
     return true;
   }
 
@@ -521,5 +660,165 @@ public final class LakeTranslator {
     out.append(HEX_DIGITS[(c >> 8) & 0xF]);
     out.append(HEX_DIGITS[(c >> 4) & 0xF]);
     out.append(HEX_DIGITS[c & 0xF]);
+  }
+
+  // ===========================================================================================
+  // Variant capture (scheme variant-k1) -- see class javadoc's own section. Grouped as one block
+  // below the pre-existing translator logic above, called only from the small, clearly-marked
+  // "variant-k1" hook points in onProcessInstance/emitInstance, to keep this addition easy to
+  // isolate for merge purposes (see LakeTranslator.java's own history for other concurrent work).
+  // ===========================================================================================
+
+  /**
+   * Folds one activated element or taken sequence flow into {@code processInstanceKey}'s variant
+   * accumulator, honoring the replay guard — see class javadoc's "Variant capture" section for the
+   * full scheme this implements.
+   */
+  private void foldVariant(
+      final long processInstanceKey,
+      final String bpmnProcessId,
+      final String id,
+      final VariantElementKind kind,
+      final long position) {
+    final VariantAccumulator accumulator = state.getVariantAccumulator(processInstanceKey);
+    if (accumulator == null) {
+      return; // replay past evict, or an accumulator never created for this instance -- expected
+    }
+    if (position <= accumulator.lastPosition()) {
+      return; // REPLAY GUARD -- see class javadoc; must not re-mix or re-count a replayed record
+    }
+    final long idHash = VariantHash.h64(id);
+    final int h32 = (int) idHash;
+    final int[] seenHashes = accumulator.seenHashes();
+    final int insertionPoint = Arrays.binarySearch(seenHashes, h32);
+    if (insertionPoint < 0) {
+      final int[] grown = insertSorted(seenHashes, -(insertionPoint + 1), h32);
+      final long seed = VariantHash.h64(bpmnProcessId);
+      final long newHash = accumulator.hash() ^ VariantHash.mix64(seed, idHash);
+      recordVariantNameIfUnknown(bpmnProcessId, h32, id, kind);
+      state.putVariantAccumulator(
+          processInstanceKey, new VariantAccumulator(position, newHash, grown.length, grown));
+    } else {
+      // Set semantics: a repeat contributes no second entry and re-mixes nothing -- but
+      // lastPosition still advances (see class javadoc: "Always update lastPosition when
+      // folding").
+      state.putVariantAccumulator(
+          processInstanceKey,
+          new VariantAccumulator(position, accumulator.hash(), accumulator.count(), seenHashes));
+    }
+  }
+
+  /** Inserts {@code value} at {@code index} of a copy of {@code sorted}, keeping it sorted. */
+  private static int[] insertSorted(final int[] sorted, final int index, final int value) {
+    final int[] grown = new int[sorted.length + 1];
+    System.arraycopy(sorted, 0, grown, 0, index);
+    grown[index] = value;
+    System.arraycopy(sorted, index, grown, index + 1, sorted.length - index);
+    return grown;
+  }
+
+  /**
+   * Writes {@code (bpmnProcessId, h32) -> (id, kind)} into the durable name map on a heap-cache
+   * miss only — see {@link #knownVariantNamesByProcess}'s own javadoc for why a miss here is rare
+   * in steady state (first sight of a given id, per process, per translator lifetime).
+   */
+  private void recordVariantNameIfUnknown(
+      final String bpmnProcessId, final int h32, final String id, final VariantElementKind kind) {
+    final Set<Integer> known =
+        knownVariantNamesByProcess.computeIfAbsent(bpmnProcessId, ignored -> new HashSet<>());
+    if (known.add(h32)) {
+      state.putVariantName(bpmnProcessId, h32, new VariantName(id, kind));
+    }
+  }
+
+  /**
+   * Emits one {@code variants} dictionary row for {@code instance}'s just-finished variant, unless
+   * {@link #variantsAppender} is unwired or this (process id, version, variant hash) triple was
+   * already emitted by this translator (see {@link #variantDictionarySeenCache}'s own javadoc).
+   * Decodes {@code variantAccumulator}'s {@code seenHashes} back into sorted element/flow id lists
+   * via the name map, joins each with {@code '\n'}, and stamps {@code completedAtMs} as {@code
+   * first_seen} — see class javadoc's "Variant capture" section for the full scheme.
+   */
+  private void emitVariantDictionaryRowIfNew(
+      final OpenInstance instance,
+      final VariantAccumulator variantAccumulator,
+      final String variantHashHex,
+      final long completedAtMs) {
+    if (variantsAppender == null) {
+      return; // dictionary pipeline not wired -- see #variantsAppender's own field javadoc
+    }
+    final VariantDictKey key =
+        new VariantDictKey(instance.processId(), instance.version(), variantHashHex);
+    if (!variantDictionarySeenCache.checkAndMarkSeen(key)) {
+      return; // already emitted -- see the cache's own javadoc
+    }
+
+    final List<String> elementIds = new ArrayList<>();
+    final List<String> flowIds = new ArrayList<>();
+    for (final int h32 : variantAccumulator.seenHashes()) {
+      final VariantName name = state.getVariantName(instance.processId(), h32);
+      if (name == null) {
+        continue; // name-map entry lost (state loss) -- omit rather than fail
+      }
+      (name.kind() == VariantElementKind.FLOW ? flowIds : elementIds).add(name.id());
+    }
+    Collections.sort(elementIds);
+    Collections.sort(flowIds);
+    final byte[] elementsBytes = String.join("\n", elementIds).getBytes(StandardCharsets.UTF_8);
+    final byte[] flowsBytes = String.join("\n", flowIds).getBytes(StandardCharsets.UTF_8);
+
+    if (!variantsAppender.begin()) {
+      // Ring backpressure on the small, dedicated variants dictionary pipeline: unlike every other
+      // RowAppender use in this class, this is deliberately absorbed rather than propagated as
+      // onRecord() == false -- a dropped dictionary row costs nothing but a later duplicate write
+      // (see the seen-cache's own javadoc), so it must never hold back the primary instances row
+      // this method is called from. Un-marking the seen-cache entry lets a later completion of the
+      // same variant retry the write.
+      variantDictionarySeenCache.remove(key);
+      return;
+    }
+    variantsAppender
+        .putDict(VariantColumns.PROCESS_ID, instance.processId())
+        .putInt(VariantColumns.VERSION, instance.version())
+        .putDict(VariantColumns.VARIANT_HASH, variantHashHex)
+        .putBinary(VariantColumns.ELEMENTS, elementsBytes, 0, elementsBytes.length)
+        .putBinary(VariantColumns.FLOWS, flowsBytes, 0, flowsBytes.length)
+        .putLong(VariantColumns.FIRST_SEEN, millisToMicros(completedAtMs));
+    variantsAppender.endRow();
+  }
+
+  /** Dedup key for {@link #variantDictionarySeenCache}. */
+  private record VariantDictKey(String processId, int version, String variantHash) {}
+
+  /**
+   * Bounded (LRU-evicted, access-order) per-translator cache of (process id, version, variant hash)
+   * triples already known to have a dictionary row — see {@link #emitVariantDictionaryRowIfNew}. A
+   * cache miss does not mean the {@code variants} table lacks the row (a prior instance, an earlier
+   * eviction, or a fresh restart could already have written it) — readers dedup the table
+   * themselves, since a row's content is fully determined by its key (sorted id lists) — so a false
+   * negative here only ever costs one harmless duplicate row, never a correctness bug.
+   */
+  private static final class VariantDictionarySeenCache
+      extends LinkedHashMap<VariantDictKey, Boolean> {
+
+    private static final int INITIAL_CAPACITY = 16;
+    private static final float LOAD_FACTOR = 0.75f;
+
+    VariantDictionarySeenCache() {
+      super(INITIAL_CAPACITY, LOAD_FACTOR, true);
+    }
+
+    @Override
+    protected boolean removeEldestEntry(final Map.Entry<VariantDictKey, Boolean> eldest) {
+      return size() > VARIANT_DICTIONARY_CACHE_CAPACITY;
+    }
+
+    /**
+     * @return {@code true} the first time {@code key} is checked (caller should emit); {@code
+     *     false} on a repeat
+     */
+    boolean checkAndMarkSeen(final VariantDictKey key) {
+      return put(key, Boolean.TRUE) == null;
+    }
   }
 }
