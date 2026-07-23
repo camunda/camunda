@@ -552,57 +552,28 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> setExportingState(final ExportingState exportingState) {
-    final var result = concurrencyControl.<Void>createFuture();
-    final var perPartitionResults =
-        partitions.keySet().stream()
-            .map(
-                partitionId -> {
-                  final var partitionResult = concurrencyControl.<Void>createFuture();
-                  concurrencyControl.run(
-                      () -> setExportingState(partitionId, exportingState, partitionResult));
-                  return partitionResult;
-                })
-            .collect(new ActorFutureCollector<Void>(concurrencyControl));
-    concurrencyControl.runOnCompletion(
-        perPartitionResults,
-        (ok, error) -> {
-          if (error != null) {
-            result.completeExceptionally(error);
-          } else {
-            result.complete(null);
-          }
-        });
-    return result;
+    return partitions.keySet().stream()
+        .map(partitionId -> setExportingState(partitionId, exportingState))
+        .collect(new ActorFutureCollector<Void>(concurrencyControl))
+        .thenAccept(ignored -> unit());
   }
 
-  private void setExportingState(
-      final int partitionId, final ExportingState exportingState, final ActorFuture<Void> result) {
+  private ActorFuture<Void> setExportingState(
+      final int partitionId, final ExportingState exportingState) {
     final var partition = partitions.get(partitionId);
     if (partition == null) {
-      result.completeExceptionally(
+      return CompletableActorFuture.completedExceptionally(
           new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
-      return;
     }
 
     if (partition.zeebePartition() == null) {
-      result.completeExceptionally(
+      return CompletableActorFuture.completedExceptionally(
           new IllegalArgumentException(
               "Expected to set exporting state on partition %s, but zeebePartition is not ready"
                   .formatted(partitionId)));
-      return;
     }
     LOGGER.trace("Setting exporting state {} on partition {}", exportingState, partitionId);
-    concurrencyControl.runOnCompletion(
-        partition.zeebePartition().getAdminAccess().setExportingState(exportingState),
-        (ok, error) -> {
-          if (error != null) {
-            result.completeExceptionally(error);
-            return;
-          }
-
-          LOGGER.info("Set exporting state {} on partition {}", exportingState, partitionId);
-          result.complete(unit());
-        });
+    return partition.zeebePartition().getAdminAccess().setExportingState(exportingState);
   }
 
   private void disableExporter(
