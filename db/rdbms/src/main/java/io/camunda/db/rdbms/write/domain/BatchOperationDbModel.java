@@ -16,33 +16,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
+public record BatchOperationDbModel(
+    String batchOperationKey,
+    BatchOperationState state,
+    BatchOperationType operationType,
+    OffsetDateTime startDate,
+    OffsetDateTime endDate,
+    // The type/id of the actor that performed the operation. @since 8.9.0 -- null for older
+    // versions.
+    AuditLogActorType actorType,
+    String actorId,
+    Integer operationsTotalCount,
+    Integer operationsFailedCount,
+    Integer operationsCompletedCount,
+    List<BatchOperationErrorDbModel> errors)
+    implements Copyable<BatchOperationDbModel> {
 
-  private String batchOperationKey;
-  private BatchOperationState state;
-  private BatchOperationType operationType;
-  private OffsetDateTime startDate;
-  private OffsetDateTime endDate;
+  public BatchOperationDbModel {
+    // Must stay mutable: MyBatis appends to this via <collection> after construction.
+    errors = errors != null ? errors : new ArrayList<>();
+  }
 
-  /**
-   * The type of the actor that performed the operation.
-   *
-   * @since 8.9.0 - so null for older versions
-   */
-  private final AuditLogActorType actorType;
-
-  /**
-   * The id of the actor that performed the operation.
-   *
-   * @since 8.9.0 - so null for older versions
-   */
-  private final String actorId;
-
-  private Integer operationsTotalCount;
-  private Integer operationsFailedCount;
-  private Integer operationsCompletedCount;
-  private List<BatchOperationErrorDbModel> errors = new ArrayList<>();
-
+  // Matches BatchOperationResultMap's <constructor>, which omits errors -- populated separately
+  // via the sibling <collection> element.
   public BatchOperationDbModel(
       final String batchOperationKey,
       final BatchOperationState state,
@@ -54,41 +50,18 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
       final Integer operationsTotalCount,
       final Integer operationsFailedCount,
       final Integer operationsCompletedCount) {
-    this.batchOperationKey = batchOperationKey;
-    this.state = state;
-    this.operationType = operationType;
-    this.startDate = startDate;
-    this.endDate = endDate;
-    this.actorType = actorType;
-    this.actorId = actorId;
-    this.operationsTotalCount = operationsTotalCount;
-    this.operationsFailedCount = operationsFailedCount;
-    this.operationsCompletedCount = operationsCompletedCount;
-  }
-
-  public BatchOperationDbModel(
-      final String batchOperationKey,
-      final BatchOperationState state,
-      final BatchOperationType operationType,
-      final OffsetDateTime startDate,
-      final OffsetDateTime endDate,
-      final AuditLogActorType actorType,
-      final String actorId,
-      final Integer operationsTotalCount,
-      final Integer operationsFailedCount,
-      final Integer operationsCompletedCount,
-      final List<BatchOperationErrorDbModel> errors) {
-    this.batchOperationKey = batchOperationKey;
-    this.state = state;
-    this.operationType = operationType;
-    this.startDate = startDate;
-    this.endDate = endDate;
-    this.actorType = actorType;
-    this.actorId = actorId;
-    this.operationsTotalCount = operationsTotalCount;
-    this.operationsFailedCount = operationsFailedCount;
-    this.operationsCompletedCount = operationsCompletedCount;
-    this.errors = errors != null ? errors : new ArrayList<>();
+    this(
+        batchOperationKey,
+        state,
+        operationType,
+        startDate,
+        endDate,
+        actorType,
+        actorId,
+        operationsTotalCount,
+        operationsFailedCount,
+        operationsCompletedCount,
+        null);
   }
 
   @Override
@@ -96,88 +69,6 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
       final Function<ObjectBuilder<BatchOperationDbModel>, ObjectBuilder<BatchOperationDbModel>>
           copyFunction) {
     return copyFunction.apply(toBuilder()).build();
-  }
-
-  // Methods without get/set prefix
-
-  public String batchOperationKey() {
-    return batchOperationKey;
-  }
-
-  public void batchOperationKey(final String batchOperationKey) {
-    this.batchOperationKey = batchOperationKey;
-  }
-
-  public BatchOperationState state() {
-    return state;
-  }
-
-  public void state(final BatchOperationState state) {
-    this.state = state;
-  }
-
-  public BatchOperationType operationType() {
-    return operationType;
-  }
-
-  public void operationType(final BatchOperationType operationType) {
-    this.operationType = operationType;
-  }
-
-  public OffsetDateTime startDate() {
-    return startDate;
-  }
-
-  public void startDate(final OffsetDateTime startDate) {
-    this.startDate = startDate;
-  }
-
-  public OffsetDateTime endDate() {
-    return endDate;
-  }
-
-  public void endDate(final OffsetDateTime endDate) {
-    this.endDate = endDate;
-  }
-
-  public AuditLogActorType actorType() {
-    return actorType;
-  }
-
-  public String actorId() {
-    return actorId;
-  }
-
-  public Integer operationsTotalCount() {
-    return operationsTotalCount;
-  }
-
-  public void operationsTotalCount(final Integer operationsTotalCount) {
-    this.operationsTotalCount = operationsTotalCount;
-  }
-
-  public Integer operationsFailedCount() {
-    return operationsFailedCount;
-  }
-
-  public void operationsFailedCount(final Integer operationsFailedCount) {
-    this.operationsFailedCount = operationsFailedCount;
-  }
-
-  public Integer operationsCompletedCount() {
-    return operationsCompletedCount;
-  }
-
-  public void operationsCompletedCount(final Integer operationsCompletedCount) {
-    this.operationsCompletedCount = operationsCompletedCount;
-  }
-
-  public List<BatchOperationErrorDbModel> errors() {
-    return errors;
-  }
-
-  public void errors(final List<BatchOperationErrorDbModel> errors) {
-    this.errors = errors;
   }
 
   public Builder toBuilder() {
@@ -287,35 +178,5 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
     }
   }
 
-  public static class BatchOperationErrorDbModel {
-    private Integer partitionId;
-    private String type;
-    private String message;
-
-    public BatchOperationErrorDbModel() {}
-
-    public Integer partitionId() {
-      return partitionId;
-    }
-
-    public void partitionId(final Integer partitionId) {
-      this.partitionId = partitionId;
-    }
-
-    public String type() {
-      return type;
-    }
-
-    public void type(final String type) {
-      this.type = type;
-    }
-
-    public String message() {
-      return message;
-    }
-
-    public void message(final String message) {
-      this.message = message;
-    }
-  }
+  public record BatchOperationErrorDbModel(Integer partitionId, String type, String message) {}
 }

@@ -8,78 +8,42 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class GroupDbModel implements DbModel<GroupDbModel> {
+public record GroupDbModel(
+    Long groupKey,
+    String groupId,
+    String name,
+    String description,
+    List<GroupMemberDbModel> members)
+    implements DbModel<GroupDbModel> {
 
-  private Long groupKey;
-  private String groupId;
-  private String name;
-  private String description;
-  private List<GroupMemberDbModel> members;
-
-  public Long groupKey() {
-    return groupKey;
+  public GroupDbModel {
+    // Must stay mutable: MyBatis appends to this via <collection> after construction.
+    members = members != null ? members : new ArrayList<>();
   }
 
-  public void groupKey(final Long groupKey) {
-    this.groupKey = groupKey;
-  }
-
-  public String groupId() {
-    return groupId;
-  }
-
-  public void groupId(final String groupId) {
-    this.groupId = groupId;
-  }
-
-  public String name() {
-    return name;
-  }
-
-  public void name(final String name) {
-    this.name = name;
-  }
-
-  public String description() {
-    return description;
-  }
-
-  public void description(final String description) {
-    this.description = description;
-  }
-
-  public List<GroupMemberDbModel> members() {
-    return members;
-  }
-
-  public void members(final List<GroupMemberDbModel> members) {
-    this.members = members;
+  // Matches groupResultMap's <constructor>, which omits members -- populated separately via the
+  // sibling <collection> element.
+  public GroupDbModel(
+      final Long groupKey, final String groupId, final String name, final String description) {
+    this(groupKey, groupId, name, description, null);
   }
 
   @Override
   public GroupDbModel copy(
       final Function<ObjectBuilder<GroupDbModel>, ObjectBuilder<GroupDbModel>> copyFunction) {
-    return copyFunction.apply(new Builder().groupKey(groupKey).name(name).members(members)).build();
-  }
-
-  @Override
-  public String toString() {
-    return "GroupDbModel{"
-        + "groupKey="
-        + groupKey
-        + ", groupId='"
-        + groupId
-        + ", name='"
-        + name
-        + ", description='"
-        + description
-        + '\''
-        + ", members="
-        + members
-        + '}';
+    return copyFunction
+        .apply(
+            new Builder()
+                .groupKey(groupKey)
+                .groupId(groupId)
+                .name(name)
+                .description(description)
+                .members(members))
+        .build();
   }
 
   public static class Builder implements ObjectBuilder<GroupDbModel> {
@@ -119,13 +83,7 @@ public class GroupDbModel implements DbModel<GroupDbModel> {
 
     @Override
     public GroupDbModel build() {
-      final GroupDbModel model = new GroupDbModel();
-      model.groupKey(groupKey);
-      model.groupId(groupId);
-      model.name(name);
-      model.description(description);
-      model.members(members);
-      return model;
+      return new GroupDbModel(groupKey, groupId, name, description, members);
     }
   }
 }

@@ -8,78 +8,38 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-public class RoleDbModel implements DbModel<RoleDbModel> {
+public record RoleDbModel(
+    Long roleKey, String roleId, String name, String description, List<RoleMemberDbModel> members)
+    implements DbModel<RoleDbModel> {
 
-  private Long roleKey;
-  private String roleId;
-  private String name;
-  private String description;
-  private List<RoleMemberDbModel> members;
-
-  public Long roleKey() {
-    return roleKey;
+  public RoleDbModel {
+    // Must stay mutable: MyBatis appends to this via <collection> after construction.
+    members = members != null ? members : new ArrayList<>();
   }
 
-  public void roleKey(final Long roleKey) {
-    this.roleKey = roleKey;
-  }
-
-  public String roleId() {
-    return roleId;
-  }
-
-  public void roleId(final String roleId) {
-    this.roleId = roleId;
-  }
-
-  public String name() {
-    return name;
-  }
-
-  public void name(final String name) {
-    this.name = name;
-  }
-
-  public String description() {
-    return description;
-  }
-
-  public void description(final String description) {
-    this.description = description;
-  }
-
-  public List<RoleMemberDbModel> members() {
-    return members;
-  }
-
-  public void members(final List<RoleMemberDbModel> members) {
-    this.members = members;
+  // Matches roleResultMap's <constructor>, which omits members -- populated separately via the
+  // sibling <collection> element.
+  public RoleDbModel(
+      final Long roleKey, final String roleId, final String name, final String description) {
+    this(roleKey, roleId, name, description, null);
   }
 
   @Override
   public RoleDbModel copy(
       final Function<ObjectBuilder<RoleDbModel>, ObjectBuilder<RoleDbModel>> copyFunction) {
-    return copyFunction.apply(new Builder().roleKey(roleKey).name(name).members(members)).build();
-  }
-
-  @Override
-  public String toString() {
-    return "RoleDbModel{"
-        + "roleKey="
-        + roleKey
-        + ", roleId='"
-        + roleId
-        + ", name='"
-        + name
-        + ", description='"
-        + description
-        + '\''
-        + ", members="
-        + members
-        + '}';
+    return copyFunction
+        .apply(
+            new Builder()
+                .roleKey(roleKey)
+                .roleId(roleId)
+                .name(name)
+                .description(description)
+                .members(members))
+        .build();
   }
 
   public static class Builder implements ObjectBuilder<RoleDbModel> {
@@ -119,13 +79,7 @@ public class RoleDbModel implements DbModel<RoleDbModel> {
 
     @Override
     public RoleDbModel build() {
-      final RoleDbModel model = new RoleDbModel();
-      model.roleKey(roleKey);
-      model.roleId(roleId);
-      model.name(name);
-      model.description(description);
-      model.members(members);
-      return model;
+      return new RoleDbModel(roleKey, roleId, name, description, members);
     }
   }
 }
