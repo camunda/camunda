@@ -96,6 +96,29 @@ final class PartitionPreRestoreApplierTest {
   }
 
   @Test
+  void shouldFailInitWhenMemberDoesNotReplicatePartition() {
+    // given
+    final var applier =
+        new PartitionPreRestoreApplier(
+            MEMBER_ID, PARTITION_ID, new SucceedingRestoreChangeExecutor());
+    final var globalConfig =
+        GlobalConfiguration.init().addMember(MEMBER_ID, BrokerState.initializeAsActive());
+    final var groupConfig =
+        PartitionGroupConfiguration.empty(1)
+            .addMember(
+                MEMBER_ID, new BrokerPartitionState(0, Instant.MIN, Map.of(), Mode.RECOVERING));
+
+    // when
+    final var result = applier.init(globalConfig, groupConfig);
+
+    // then
+    EitherAssert.assertThat(result).isLeft();
+    assertThat(result.getLeft())
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("does not replicate that partition");
+  }
+
+  @Test
   void shouldDelegateToExecutorAndLeaveGroupConfigurationUnchanged() {
     // given
     final var executor = new SucceedingRestoreChangeExecutor();
