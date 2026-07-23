@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionState.State;
 import io.camunda.zeebe.scheduler.AsyncClosable;
@@ -27,9 +28,19 @@ import org.jspecify.annotations.Nullable;
 public interface ClusterConfigurationService extends AsyncClosable {
   PartitionDistribution getPartitionDistribution();
 
+  default void registerPartitionChangeExecutors(
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+    registerPartitionChangeExecutors(
+        partitionChangeExecutor,
+        partitionScalingChangeExecutor,
+        new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
+  }
+
   void registerPartitionChangeExecutors(
       PartitionChangeExecutor partitionChangeExecutor,
-      PartitionScalingChangeExecutor partitionScalingChangeExecutor);
+      PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      RestoreChangeExecutor restoreChangeExecutor);
 
   void removePartitionChangeExecutor();
 
