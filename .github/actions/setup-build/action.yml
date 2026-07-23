@@ -266,7 +266,7 @@ runs:
       timeout_seconds: 60
       shell: bash
       command: |
-        echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin
+        printf '%s' "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin
   - name: Logs on to Harbor
     # Harbor login is disabled for fork PRs
     if: >-
@@ -282,7 +282,7 @@ runs:
       timeout_seconds: 60
       shell: bash
       command: |
-        echo "${DOCKER_PASSWORD}" | docker login registry.camunda.cloud \
+        printf '%s' "${DOCKER_PASSWORD}" | docker login registry.camunda.cloud \
           --username "${DOCKER_USERNAME}" --password-stdin
   - name: Logs on to Minimus
     # Minimus login is disabled for fork PRs
@@ -298,7 +298,7 @@ runs:
       timeout_seconds: 60
       shell: bash
       command: |
-        echo "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
+        printf '%s' "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
           --username minimus --password-stdin
   - name: Authenticate to GCS build-cache
     # GCS build-cache auth is disabled for fork PRs (no Vault access)
