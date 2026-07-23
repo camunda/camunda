@@ -147,7 +147,10 @@ final class PartitionConfigurationManager {
             case PAUSED -> exporterDirector.pauseExporting();
             case SOFT_PAUSED -> exporterDirector.softPauseExporting();
             case EXPORTING -> exporterDirector.resumeExporting();
-            case UNKNOWN -> CompletableActorFuture.completed(null);
+            case UNKNOWN ->
+                CompletableActorFuture.completedExceptionally(
+                    new IllegalArgumentException(
+                        "Expected exporting state to be a valid value, but was " + exportingState));
           };
       directorUpdated.onComplete(stateChanged);
     } else {

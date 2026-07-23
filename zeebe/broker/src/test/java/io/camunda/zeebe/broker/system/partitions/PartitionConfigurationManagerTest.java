@@ -543,5 +543,19 @@ final class PartitionConfigurationManagerTest {
           .withThrowableOfType(ExecutionException.class)
           .withMessageContaining("force fail");
     }
+
+    @Test
+    void shouldFailFutureWhenTargetStateIsUnknown() {
+      // given
+      partitionTransitionContext.setDynamicPartitionConfig(partitionConfig);
+      final ExporterDirector mockExporterDirector = mock(ExporterDirector.class);
+      partitionTransitionContext.setExporterDirector(mockExporterDirector);
+
+      // when - then
+      assertThat(partitionConfigurationManager.setExporterState(ExportingState.UNKNOWN))
+          .failsWithin(Duration.ofMillis(100))
+          .withThrowableOfType(ExecutionException.class)
+          .withMessageContaining("Expected exporting state to be a valid value");
+    }
   }
 }
