@@ -180,7 +180,7 @@ export class OperateFiltersPanelPage {
     // hides every other node. Fill the target text to replace it before
     // selecting.
     await this.flowNodeFilter.fill(option);
-    await this.page.getByRole('option', {name: option}).click();
+    await this.page.getByRole('option', {name: option, exact: true}).click();
   }
 
   async fillVariableNameFilter(name: string) {
