@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.UpdateNameDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
@@ -110,5 +111,41 @@ class FlowNodeInstanceWriterTest {
                     1L,
                     "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateStateAndEndDate",
                     new FlowNodeInstanceMapper.EndFlowNodeDto(1L, FlowNodeState.COMPLETED, NOW))));
+  }
+
+  @Test
+  void shouldEnqueueSetIfNullNameUpdate() {
+    // given
+    when(executionQueue.tryMergeWithExistingQueueItem(any())).thenReturn(false);
+
+    // when
+    writer.updateName(123L, "List users");
+
+    // then
+    verify(executionQueue)
+        .executeInQueue(
+            eq(
+                new QueueItem(
+                    ContextType.FLOW_NODE,
+                    WriteStatementType.UPDATE,
+                    123L,
+                    "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateNameIfNull",
+                    new UpdateNameDto(123L, "List users"))));
+  }
+
+  @Test
+  void shouldFoldNameUpdateIntoPendingInsert() {
+    // given
+    when(executionQueue.tryMergeWithExistingQueueItem(any(ListParameterUpsertMerger.class)))
+        .thenReturn(true);
+
+    // when
+    writer.updateName(123L, "List users");
+
+    // then
+    // the name update must attempt to fold into the still-queued insert; when it merges, nothing
+    // extra is enqueued
+    verify(executionQueue).tryMergeWithExistingQueueItem(any(ListParameterUpsertMerger.class));
+    verify(executionQueue, never()).executeInQueue(any(QueueItem.class));
   }
 }
