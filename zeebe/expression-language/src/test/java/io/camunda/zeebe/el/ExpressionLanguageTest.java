@@ -229,6 +229,20 @@ public class ExpressionLanguageTest {
   }
 
   @Test
+  public void shouldEvaluateVeryDeeplyNestedAlternatingListsAndContextsWithoutStackOverflow() {
+    // given
+    final var depth = 3_000;
+    final var expressionString =
+        String.format(
+            "(for i in 1..%s return if i = 1 then {\"a\": 1} else if modulo(i,2) = 0 then [partial[-1]] else {\"a\": partial[-1]})[-1]",
+            depth);
+    final var expression = expressionLanguage.parseExpression("=" + expressionString);
+    final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
+    assertThat(evaluationResult.isFailure()).isFalse();
+    assertThat(evaluationResult.toBuffer().capacity()).isPositive();
+  }
+
+  @Test
   public void shouldEvaluateExpressionWithMissingVariables() {
     final var expression = expressionLanguage.parseExpression("=x");
     final var evaluationResult = expressionLanguage.evaluateExpression(expression, EMPTY_CONTEXT);
