@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import org.junit.jupiter.api.Test;
 
 class ProcessDefinitionWriterTest {
@@ -38,7 +39,7 @@ class ProcessDefinitionWriterTest {
             1,
             "<bpmn>...</bpmn>",
             "form1",
-            false);
+            ProcessDefinitionState.ACTIVE);
 
     writer.create(model);
 
