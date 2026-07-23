@@ -43,7 +43,7 @@ jobs:
       IS_WEEKLY_DIGEST: ${{ github.event_name == 'schedule' && github.event.schedule == '0 6 * * 1' }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     # Inspects in-scope Renovate PRs and takes action per PR:
     # rebase stale PRs (by adding the Renovate `rebase` label) or re-run their
@@ -166,7 +166,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - name: Import Secrets
       id: secrets
