@@ -23,11 +23,11 @@ import java.util.stream.Collectors;
  * Force-evicts a failed zone's brokers from the member set (no data movement, since the zone is
  * down) and drops the zone from the persisted {@link ZoneAwareConfig}, in one atomic change.
  */
-public final class FailoverRequestTransformer implements ConfigurationChangeRequest {
+public final class RemoveZoneTransformer implements ConfigurationChangeRequest {
 
   private final String zoneId;
 
-  public FailoverRequestTransformer(final String zoneId) {
+  public RemoveZoneTransformer(final String zoneId) {
     this.zoneId = zoneId;
   }
 

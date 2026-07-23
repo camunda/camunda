@@ -24,14 +24,14 @@ import java.util.Set;
  * re-includes the zone in the persisted {@link ZoneAwareConfig}, and reassigns partitions over the
  * augmented member set, in one atomic change.
  */
-public final class FailbackRequestTransformer implements ConfigurationChangeRequest {
+public final class AddZoneTransformer implements ConfigurationChangeRequest {
 
   private final String zoneId;
   private final int numberOfReplicas;
   private final int priority;
   private final Set<MemberId> brokers;
 
-  public FailbackRequestTransformer(
+  public AddZoneTransformer(
       final String zoneId,
       final int numberOfReplicas,
       final int priority,

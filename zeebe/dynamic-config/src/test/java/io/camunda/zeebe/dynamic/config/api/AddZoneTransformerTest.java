@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
-final class FailbackRequestTransformerTest {
+final class AddZoneTransformerTest {
 
   private static final DynamicPartitionConfig PARTITION_CONFIG = DynamicPartitionConfig.init();
 
@@ -62,8 +62,7 @@ final class FailbackRequestTransformerTest {
 
     // when
     final var result =
-        new FailbackRequestTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0))
-            .operations(currentTopology);
+        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -91,8 +90,7 @@ final class FailbackRequestTransformerTest {
 
     // when
     final var result =
-        new FailbackRequestTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_1))
-            .operations(currentTopology);
+        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_1)).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -117,8 +115,7 @@ final class FailbackRequestTransformerTest {
 
     // when / then: config present but not ZoneAware
     final var roundRobinResult =
-        new FailbackRequestTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0))
-            .operations(roundRobinTopology);
+        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)).operations(roundRobinTopology);
     EitherAssert.assertThat(roundRobinResult).isLeft();
     assertThat(roundRobinResult.getLeft())
         .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
@@ -126,8 +123,7 @@ final class FailbackRequestTransformerTest {
 
     // when / then: config absent
     final var noConfigResult =
-        new FailbackRequestTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0))
-            .operations(noConfigTopology);
+        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_B_0)).operations(noConfigTopology);
     EitherAssert.assertThat(noConfigResult).isLeft();
     assertThat(noConfigResult.getLeft())
         .isInstanceOf(ClusterConfigurationRequestFailedException.InvalidRequest.class)
@@ -140,8 +136,7 @@ final class FailbackRequestTransformerTest {
     final var currentTopology = buildTopology(SINGLE_ZONE_CONFIG, SINGLE_ZONE_MEMBERS);
 
     // when
-    final var result =
-        new FailbackRequestTransformer(ZONE_B, 1, 500, Set.of()).operations(currentTopology);
+    final var result = new AddZoneTransformer(ZONE_B, 1, 500, Set.of()).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -157,8 +152,7 @@ final class FailbackRequestTransformerTest {
 
     // when
     final var result =
-        new FailbackRequestTransformer(ZONE_B, 1, 500, Set.of(ZONE_A_1))
-            .operations(currentTopology);
+        new AddZoneTransformer(ZONE_B, 1, 500, Set.of(ZONE_A_1)).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -174,8 +168,7 @@ final class FailbackRequestTransformerTest {
 
     // when
     final var result =
-        new FailbackRequestTransformer(ZONE_B, 2, 500, Set.of(ZONE_B_0))
-            .operations(currentTopology);
+        new AddZoneTransformer(ZONE_B, 2, 500, Set.of(ZONE_B_0)).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -191,8 +184,7 @@ final class FailbackRequestTransformerTest {
 
     // when
     final var result =
-        new FailbackRequestTransformer(ZONE_B, -1, 500, Set.of(ZONE_B_0))
-            .operations(currentTopology);
+        new AddZoneTransformer(ZONE_B, -1, 500, Set.of(ZONE_B_0)).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -208,7 +200,7 @@ final class FailbackRequestTransformerTest {
 
     // when
     final var result =
-        new FailbackRequestTransformer(ZONE_B, 1, -1, Set.of(ZONE_B_0)).operations(currentTopology);
+        new AddZoneTransformer(ZONE_B, 1, -1, Set.of(ZONE_B_0)).operations(currentTopology);
 
     // then
     EitherAssert.assertThat(result).isLeft();
