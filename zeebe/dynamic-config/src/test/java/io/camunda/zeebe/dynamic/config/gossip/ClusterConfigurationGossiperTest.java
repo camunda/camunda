@@ -162,6 +162,39 @@ final class ClusterConfigurationGossiperTest {
                     .isEqualTo(CurrentClusterConfiguration.fromLegacy(node1Topology)));
   }
 
+  @Test
+  void shouldStillGossipLegacyFieldToAnOldBrokerFromAnUpgradedBroker() {
+    // given — node 1 is upgraded (dual-write); node 2 is not yet upgraded (legacy handler only)
+    final var config =
+        new ClusterConfigurationGossiperConfig(
+            Duration.ofMillis(100), Duration.ofSeconds(1), 0, Duration.ofSeconds(1));
+    node1 =
+        new TestGossiper(
+            createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);
+    node2 =
+        new TestGossiper(
+            createClusterNode(clusterNodes.get(1), clusterNodes), config, topologyMetrics);
+
+    node1.start();
+    node2.start();
+    node1.enableNewModel();
+
+    final var node1Configuration =
+        CurrentClusterConfiguration.fromLegacy(
+            ClusterConfiguration.init()
+                .addMember(node1.id(), MemberState.initializeAsActive(Map.of())));
+
+    // when — the upgraded broker gossips the new-model configuration (dual-writing both fields)
+    node1.setCurrentClusterConfiguration(node1Configuration);
+
+    // then — the not-yet-upgraded broker still receives and merges the legacy field
+    Awaitility.await("Node 2 (not upgraded) has received the legacy field via gossip")
+        .untilAsserted(
+            () ->
+                assertThat(node2.clusterConfiguration)
+                    .isEqualTo(node1Configuration.toLegacyDefault()));
+  }
+
   private Node createNode(final String id) {
     return Node.builder().withId(id).withPort(SocketUtil.getNextAddress().getPort()).build();
   }
