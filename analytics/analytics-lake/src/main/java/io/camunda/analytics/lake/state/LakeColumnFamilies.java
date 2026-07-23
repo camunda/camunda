@@ -79,7 +79,24 @@ public enum LakeColumnFamilies implements EnumValue, ScopedColumnFamily {
    * instance and are only ever removed by the tombstone-retention sweep ({@code
    * TranslatorState#sweepObjectLifecycleTombstones}).
    */
-  OBJECT_LIFECYCLE(8, ColumnFamilyScope.PARTITION_LOCAL);
+  OBJECT_LIFECYCLE(8, ColumnFamilyScope.PARTITION_LOCAL),
+
+  /**
+   * Written-marker for process definitions whose {@code process_definitions} dictionary row has
+   * already been appended: {@code processDefinitionKey(8, big-endian) -> } an empty marker value.
+   * Exists because Zeebe distributes a deployment to every partition of the process's own topic, so
+   * the same {@code PROCESS}/{@code CREATED} record for one definition is folded once per source
+   * partition, each copy carrying different origin coordinates — the segment-level origin dedup
+   * (see {@code io.camunda.analytics.lake.translate.LakeTranslator}'s "Origin-position dedup"
+   * javadoc section) only collapses replays of the very same record, not these genuinely distinct
+   * copies, so without this marker every partition's own copy would append its own duplicate
+   * dictionary row. {@code io.camunda.analytics.lake.translate.LakeTranslator#onProcess} checks
+   * this marker before appending and sets it right after, so only the first copy folded by this
+   * translator ever appends a row. Entries are never deleted: a deployed process definition is
+   * immutable and never re-deployed under the same key, so there is no analogue of {@link
+   * #OBJECT_LIFECYCLE}'s tombstone sweep here.
+   */
+  PROCESS_DEFINITIONS(9, ColumnFamilyScope.PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope scope;

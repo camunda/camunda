@@ -35,8 +35,10 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.iceberg.Metrics;
 import org.junit.jupiter.api.Test;
 
@@ -369,6 +371,7 @@ class LakeTranslatorVariableProfilesTest {
     private final Map<String, VariantName> variantNames = new HashMap<>();
     private final Map<Long, ObjectSightingList> objectSightings = new HashMap<>();
     private final Map<String, ObjectLifecycle> objectLifecycle = new HashMap<>();
+    private final Set<Long> processDefinitions = new HashSet<>();
 
     @Override
     public void putVariantAccumulator(
@@ -502,6 +505,16 @@ class LakeTranslatorVariableProfilesTest {
                   lifecycle.status() == TranslatorState.LifecycleStatus.CLOSED_TOMBSTONE
                       && lifecycle.closedAtMs() < cutoffMs);
       return before - objectLifecycle.size();
+    }
+
+    @Override
+    public boolean hasProcessDefinition(final long processDefinitionKey) {
+      return processDefinitions.contains(processDefinitionKey);
+    }
+
+    @Override
+    public void markProcessDefinition(final long processDefinitionKey) {
+      processDefinitions.add(processDefinitionKey);
     }
 
     @Override

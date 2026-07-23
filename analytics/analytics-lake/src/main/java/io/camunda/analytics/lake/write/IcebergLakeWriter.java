@@ -361,6 +361,29 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(7, "outcome", Types.StringType.get()),
               Types.NestedField.required(8, "n_sightings", Types.IntegerType.get())));
 
+  /**
+   * The process-definitions dictionary table's schema — one row per distinct process definition
+   * ever deployed, holding its BPMN 2.0 XML verbatim (see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator}'s {@code ValueType.PROCESS}/{@code CREATED}
+   * handling and {@code RawTableSchemas#processDefinitions}'s own javadoc). Created via the same
+   * plain {@link #tableOrCreate} path as {@link #OBJECT_SCHEMA} — no declaration fingerprint, for
+   * the same reason: a row's content is fully determined by its key.
+   *
+   * <p>{@code bpmn_xml} (field id 5) is {@link Types.BinaryType}, not {@link Types.StringType} —
+   * see {@link #INSTANCE_SCHEMA}'s own {@code vars_json} paragraph for why the L0 sink's {@link
+   * io.camunda.analytics.lake.sink.ColumnType#BINARY} column requires the catalog schema's field to
+   * agree, on pain of a {@code ClassCastException} in iceberg-parquet's generic writer.
+   */
+  private static final Schema PROCESS_DEFINITION_SCHEMA =
+      new Schema(
+          List.of(
+              Types.NestedField.required(1, "process_definition_key", Types.LongType.get()),
+              Types.NestedField.required(2, "process_id", Types.StringType.get()),
+              Types.NestedField.required(3, "version", Types.IntegerType.get()),
+              Types.NestedField.required(4, "tenant_id", Types.StringType.get()),
+              Types.NestedField.required(5, "bpmn_xml", Types.BinaryType.get()),
+              Types.NestedField.required(6, "deployed_at", Types.TimestampType.withZone())));
+
   private static final Logger LOG = LoggerFactory.getLogger(IcebergLakeWriter.class);
 
   private final JdbcCatalog catalog;
@@ -372,6 +395,7 @@ public final class IcebergLakeWriter implements LakeWriter {
   private final Table instanceLinksTable;
   private final Table objectRelationsTable;
   private final Table objectLifecycleTable;
+  private final Table processDefinitionsTable;
   private final Connection duckdb;
 
   // One commit mutex per raw table (never a single shared lock across both) -- see #commitLock's
@@ -445,6 +469,11 @@ public final class IcebergLakeWriter implements LakeWriter {
             TableIdentifier.of(namespace, "object_lifecycle"),
             OBJECT_LIFECYCLE_SCHEMA,
             PartitionSpec.builderFor(OBJECT_LIFECYCLE_SCHEMA).day("birth_ts").build());
+    processDefinitionsTable =
+        tableOrCreate(
+            TableIdentifier.of(namespace, "process_definitions"),
+            PROCESS_DEFINITION_SCHEMA,
+            PartitionSpec.builderFor(PROCESS_DEFINITION_SCHEMA).day("deployed_at").build());
 
     try {
       // One embedded, in-process DuckDB instance for the life of this writer. It never persists
@@ -940,6 +969,14 @@ public final class IcebergLakeWriter implements LakeWriter {
    */
   public Table objectLifecycleTable() {
     return objectLifecycleTable;
+  }
+
+  /**
+   * The process-definitions dictionary table — see {@link #PROCESS_DEFINITION_SCHEMA}'s own
+   * javadoc; same commit arrangement as {@link #variantsTable()}.
+   */
+  public Table processDefinitionsTable() {
+    return processDefinitionsTable;
   }
 
   /**
