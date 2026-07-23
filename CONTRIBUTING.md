@@ -143,6 +143,21 @@ docker build \
   .
 ```
 
+#### Branch-scoped local Maven repository
+
+This repository enables the
+[`branch-scoped-local-repository`](https://github.com/lenaschoenburg/branch-scoped-local-repository)
+Maven extension (see [`.mvn/extensions.xml`](.mvn/extensions.xml)). It installs artifacts built
+locally (`./mvnw install`) under a per-branch path — `~/.m2/repository/installed/<branch>/...` —
+so multiple worktrees or branches can be built in parallel without clobbering each other's
+`SNAPSHOT`s. Downloaded (remote) artifacts stay shared, so there is no extra download cost.
+
+Over time that partition accumulates one tree per branch you have built. To prune it, use
+[`scripts/branch-scoped-m2/clean-installed.sh`](scripts/branch-scoped-m2/clean-installed.sh) — it
+removes trees for branches that no longer exist (`--stale-branches`) or that have been idle for a
+while (`--older-than`). It is a dry-run unless you pass `--delete`; see the
+[script README](scripts/branch-scoped-m2/README.md) for details.
+
 ### Run
 
 Operate, Tasklist, and Optimize use Elasticsearch as its underlying data store. Therefore you have to download and run Elasticsearch. (For information on what version of Elasticsearch is needed, refer to the [Supported Environments documentation](https://docs.camunda.io/docs/next/reference/supported-environments/#component-requirements)).
