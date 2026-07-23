@@ -13,6 +13,11 @@ import {parseDocumentVariable} from '../parseDocumentVariable';
 import type {DocumentInfo} from 'App/ProcessInstance/DocumentsView/documentInfo';
 import {DocumentListModal} from 'App/ProcessInstance/DocumentsView/DocumentListModal';
 
+const LOADING_HINT =
+  'Loading the full variable value... More documents may exist for this variable.';
+const ERROR_HINT =
+  'Failed to load the full variable value. More documents may exist for this variable.';
+
 type Props = {
   documents: DocumentInfo[];
   isLowerBound: boolean;
@@ -28,7 +33,7 @@ const VariableDocumentListModal: React.FC<StateProps & Props> = ({
   variableKey,
   variableName,
 }) => {
-  const {data, isSuccess, isError, isLoading} = useVariable(variableKey, {
+  const {data, isError, isLoading} = useVariable(variableKey, {
     enabled: open && isLowerBound,
   });
 
@@ -50,10 +55,9 @@ const VariableDocumentListModal: React.FC<StateProps & Props> = ({
       open={open}
       setOpen={setOpen}
       documents={resolvedDocuments}
-      isFullyLoaded={!isLowerBound || isSuccess}
-      isLoading={isLoading}
-      isError={isError}
-      variableName={variableName}
+      labelSuffix={variableName}
+      loadingHint={isLoading ? LOADING_HINT : undefined}
+      errorHint={isError ? ERROR_HINT : undefined}
     />
   );
 };

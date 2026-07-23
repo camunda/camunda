@@ -80,10 +80,7 @@ const DocumentContent: React.FC<Props> = memo(function DocumentContent({
             open={open}
             setOpen={setOpen}
             documents={documents}
-            isFullyLoaded
-            isError={false}
-            isLoading={false}
-            variableName={modalTitleSuffix}
+            labelSuffix={modalTitleSuffix}
           />
         )}
       </ModalStateManager>

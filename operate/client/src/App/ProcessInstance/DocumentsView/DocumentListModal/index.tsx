@@ -24,21 +24,20 @@ import {
 
 type Props = {
   documents: DocumentInfo[];
-  isFullyLoaded: boolean;
-  isLoading: boolean;
-  isError: boolean;
-  variableName: string;
+  labelSuffix: string;
+  loadingHint?: string;
+  errorHint?: string;
 };
 
 const DocumentListModal: React.FC<StateProps & Props> = ({
   open,
   setOpen,
   documents,
-  isFullyLoaded,
-  isLoading,
-  isError,
-  variableName,
+  labelSuffix,
+  loadingHint,
+  errorHint,
 }) => {
+  const isFullyLoaded = !loadingHint && !errorHint;
   const count = documents.length;
   const prefix = isFullyLoaded ? `${count}` : `${count}+`;
   const suffix = count !== 1 ? 'documents' : 'document';
@@ -47,7 +46,7 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
     <Modal
       open={open}
       onRequestClose={() => setOpen(false)}
-      modalHeading={`${prefix} ${suffix} in ${variableName}`}
+      modalHeading={`${prefix} ${suffix} in ${labelSuffix}`}
       size="md"
       passiveModal
     >
@@ -73,27 +72,17 @@ const DocumentListModal: React.FC<StateProps & Props> = ({
             </DocumentInfoBlock>
             <PreviewDocumentButton
               document={document}
-              variableName={variableName}
+              labelSuffix={labelSuffix}
             />
             <DownloadDocumentButton
               document={document}
-              variableName={variableName}
+              labelSuffix={labelSuffix}
             />
           </DocumentListItem>
         ))}
       </DocumentList>
-      {isLoading && (
-        <TruncationNotice>
-          Loading the full variable value... More documents may exist for this
-          variable.
-        </TruncationNotice>
-      )}
-      {isError && (
-        <TruncationNotice>
-          Failed to load the full variable value. More documents may exist for
-          this variable.
-        </TruncationNotice>
-      )}
+      {loadingHint && <TruncationNotice>{loadingHint}</TruncationNotice>}
+      {errorHint && <TruncationNotice>{errorHint}</TruncationNotice>}
     </Modal>
   );
 };

@@ -27,10 +27,10 @@ function getDisabledTooltipText(document: DocumentInfo): string {
 
 type Props = {
   document: DocumentInfo;
-  variableName: string;
+  labelSuffix: string;
 };
 
-const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
+const PreviewDocumentButton: React.FC<Props> = ({document, labelSuffix}) => {
   const isDisabled =
     document.link === null || document.isExpired || document.type === 'unknown';
 
@@ -45,7 +45,7 @@ const PreviewDocumentButton: React.FC<Props> = ({document, variableName}) => {
             renderIcon={View}
             iconDescription="Preview"
             tooltipPosition="top"
-            aria-label={`Preview document for variable ${variableName}`}
+            aria-label={`Preview document for ${labelSuffix}`}
             disabled={isDisabled}
             onClick={() => {
               tracking.track({
