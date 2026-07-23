@@ -41,6 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
+import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -203,6 +204,60 @@ public final class ExporterDirectorTest {
     Awaitility.await("exporter open has been retried")
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(() -> verify(exporter, times(2)).open(any()));
+
+    rule.closeExporterDirector();
+  }
+
+  @Test
+  public void shouldNotRetryOpenCallOnUnrecoverableException() throws Exception {
+    // given, when
+    final ControlledTestExporter exporter = spy(new ControlledTestExporter());
+    doThrow(new UnrecoverableException("permanent misconfiguration")).when(exporter).open(any());
+    final ExporterDescriptor descriptor =
+        spy(
+            new ExporterDescriptor(
+                "exporter-unrecoverable", exporter.getClass(), Collections.singletonMap("x", 1)));
+    doAnswer(c -> exporter).when(descriptor).newInstance();
+    startExporterDirector(List.of(descriptor));
+
+    // then
+    Awaitility.await("director reports the exporter failure as unrecoverable")
+        .untilAsserted(
+            () ->
+                assertThat(rule.getDirector().getHealthReport().status())
+                    .isEqualTo(HealthStatus.DEAD));
+    verify(exporter, times(1)).open(any());
+
+    rule.closeExporterDirector();
+  }
+
+  @Test
+  public void shouldNotExportToContainerThatFailedToOpenUnrecoverably() throws Exception {
+    // given - exporter-1 fails to open unrecoverably. It never finished opening, so it must
+    // never receive an export call - a real exporter relies on state only assigned in open()
+    // (e.g. CamundaExporter's writer field), so exporting to it anyway fails unpredictably.
+    final ControlledTestExporter failingExporter = exporters.get(0);
+    final var failingExportCallCount = new AtomicInteger();
+    failingExporter.onExport(record -> failingExportCallCount.incrementAndGet());
+    doThrow(new UnrecoverableException("permanent misconfiguration"))
+        .when(failingExporter)
+        .open(any());
+
+    // when
+    startExporterDirector(exporterDescriptors);
+    Awaitility.await("director reports the exporter failure as unrecoverable")
+        .untilAsserted(
+            () ->
+                assertThat(rule.getDirector().getHealthReport().status())
+                    .isEqualTo(HealthStatus.DEAD));
+    writeEvent();
+
+    // then - give the pipeline time to attempt exporting, then confirm the failed container was
+    // never called
+    Awaitility.await("healthy exporter has had a chance to export")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(exporters.get(1).getExportedRecords()).hasSize(1));
+    assertThat(failingExportCallCount.get()).isZero();
 
     rule.closeExporterDirector();
   }

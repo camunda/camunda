@@ -268,7 +268,9 @@ public class MultiExporterIT {
                                   "usageMetricsMinimumAge",
                                   "0s")),
                           "bulk",
-                          Map.of("size", 1)));
+                          Map.of("size", 1),
+                          "clusterIdCheckRestrictionEnabled",
+                          false));
                 });
             yield DatabaseType.ELASTICSEARCH;
           }

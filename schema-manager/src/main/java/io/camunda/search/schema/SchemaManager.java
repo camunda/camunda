@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleClusterIdException;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
@@ -64,6 +65,7 @@ public class SchemaManager implements CloseableSilently {
   private final SchemaManagerMetrics schemaManagerMetrics;
   private final SchemaMetadataStore schemaMetadataStore;
   private final String currentVersion;
+  private final String clusterId;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -78,6 +80,7 @@ public class SchemaManager implements CloseableSilently {
         config,
         new IndexSchemaValidator(objectMapper),
         VersionUtil.getVersion(),
+        null,
         null);
   }
 
@@ -90,6 +93,27 @@ public class SchemaManager implements CloseableSilently {
       final IndexSchemaValidator schemaValidator,
       final String currentVersion,
       final SchemaManagerMetrics schemaManagerMetrics) {
+    this(
+        searchEngineClient,
+        indexOnlyDescriptors,
+        indexTemplateDescriptors,
+        config,
+        schemaValidator,
+        currentVersion,
+        schemaManagerMetrics,
+        null);
+  }
+
+  @VisibleForTesting
+  SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexOnlyDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final IndexSchemaValidator schemaValidator,
+      final String currentVersion,
+      final SchemaManagerMetrics schemaManagerMetrics,
+      final String clusterId) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
     this.indexOnlyDescriptors = indexOnlyDescriptors;
@@ -110,6 +134,7 @@ public class SchemaManager implements CloseableSilently {
                 config.connect().getTypeEnum().isElasticSearch()),
             LOG);
     this.currentVersion = currentVersion;
+    this.clusterId = clusterId;
   }
 
   public SchemaManager withMetrics(final SchemaManagerMetrics schemaManagerMetrics) {
@@ -120,7 +145,20 @@ public class SchemaManager implements CloseableSilently {
         config,
         schemaValidator,
         currentVersion,
-        schemaManagerMetrics);
+        schemaManagerMetrics,
+        clusterId);
+  }
+
+  public SchemaManager withClusterId(final String clusterId) {
+    return new SchemaManager(
+        searchEngineClient,
+        indexOnlyDescriptors,
+        indexTemplateDescriptors,
+        config,
+        schemaValidator,
+        currentVersion,
+        schemaManagerMetrics,
+        clusterId);
   }
 
   /**
@@ -188,6 +226,28 @@ public class SchemaManager implements CloseableSilently {
     LOG.info("Schema management completed.");
   }
 
+  /**
+   * Validates this cluster's ID against the one previously recorded in the secondary storage
+   * schema, and records it. Called directly by the exporter, not {@link #startup()}: that method
+   * runs once per broker before any exporter's cluster ID is resolved, so it can't perform this
+   * check itself.
+   */
+  public void validateClusterId() {
+    if (!config.schemaManager().isClusterIdCheckRestrictionEnabled()) {
+      LOG.debug(
+          "Cluster ID check restriction is disabled, skipping cluster ID compatibility check");
+      return;
+    }
+    if (clusterId == null || clusterId.isBlank()) {
+      LOG.debug("No local cluster ID available, skipping cluster ID compatibility check");
+      return;
+    }
+    final var previousClusterId = schemaMetadataStore.getClusterId();
+    if (checkClusterIdCompatibility(previousClusterId, clusterId)) {
+      schemaMetadataStore.storeClusterId(clusterId);
+    }
+  }
+
   private CheckResult checkVersionCompatibility(
       final String previousVersion, final String currentVersion) {
     final var checkResult = VersionCompatibilityCheck.check(previousVersion, currentVersion);
@@ -239,6 +299,31 @@ public class SchemaManager implements CloseableSilently {
           LOG.debug("Schema is compatible with current version: {}", compatible);
     }
     return checkResult;
+  }
+
+  /**
+   * @return {@code true} if the caller should store {@code currentClusterId}, i.e. there was no
+   *     previous value recorded yet.
+   */
+  private boolean checkClusterIdCompatibility(
+      final String previousClusterId, final String currentClusterId) {
+    if (previousClusterId == null) {
+      LOG.info("No cluster ID found in metadata index, assuming a fresh installation");
+      return true;
+    }
+    if (previousClusterId.equals(currentClusterId)) {
+      LOG.info(
+          "Cluster ID '{}' matches the one recorded in the secondary storage schema",
+          currentClusterId);
+      return false;
+    }
+
+    throw new IncompatibleClusterIdException(
+        ("Secondary storage schema was previously initialized by cluster '%s', but this "
+                + "cluster's ID is '%s'. Pointing a cluster at storage belonging to a different "
+                + "installation can corrupt data. If this is an intentional re-pointing, set "
+                + "clusterIdCheckRestrictionEnabled=false to bypass this check.")
+            .formatted(previousClusterId, currentClusterId));
   }
 
   private void createLifecyclePolicies() {

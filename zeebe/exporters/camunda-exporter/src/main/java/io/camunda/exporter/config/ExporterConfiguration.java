@@ -32,6 +32,7 @@ public class ExporterConfiguration {
   private HistoryDeletionConfiguration historyDeletion = new HistoryDeletionConfiguration();
   private WaitStateConfiguration waitState = new WaitStateConfiguration();
   private boolean createSchema = true;
+  private boolean clusterIdCheckRestrictionEnabled = true;
   private boolean skipVariableWriteWithoutUserTasks = false;
   private ExtensionPropertyConfiguration extensionProperties = new ExtensionPropertyConfiguration();
 
@@ -123,6 +124,14 @@ public class ExporterConfiguration {
     this.createSchema = createSchema;
   }
 
+  public boolean isClusterIdCheckRestrictionEnabled() {
+    return clusterIdCheckRestrictionEnabled;
+  }
+
+  public void setClusterIdCheckRestrictionEnabled(final boolean clusterIdCheckRestrictionEnabled) {
+    this.clusterIdCheckRestrictionEnabled = clusterIdCheckRestrictionEnabled;
+  }
+
   public boolean isSkipVariableWriteWithoutUserTasks() {
     return skipVariableWriteWithoutUserTasks;
   }
@@ -185,6 +194,8 @@ public class ExporterConfiguration {
         + history
         + ", createSchema="
         + createSchema
+        + ", clusterIdCheckRestrictionEnabled="
+        + clusterIdCheckRestrictionEnabled
         + ", batchOperationCache="
         + batchOperationCache
         + ", processCache="

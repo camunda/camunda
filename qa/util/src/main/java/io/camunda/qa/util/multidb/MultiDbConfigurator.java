@@ -130,6 +130,7 @@ public class MultiDbConfigurator {
     final var documentBasedDatabase =
         cfg.getData().getSecondaryStorage().getDocumentBasedDatabase();
     documentBasedDatabase.setCreateSchema(true);
+    documentBasedDatabase.setClusterIdCheckRestrictionEnabled(false);
     documentBasedDatabase.setUrl(url);
     documentBasedDatabase.setIndexPrefix(indexPrefix);
     documentBasedDatabase.getHistory().setPolicyName(indexPrefix + "-ilm");
@@ -177,6 +178,7 @@ public class MultiDbConfigurator {
               rdbms.setPassword(password);
               rdbms.setPrefix(tablePrefix);
               rdbms.setFlushInterval(Duration.ZERO);
+              rdbms.setClusterIdCheckRestrictionEnabled(false);
               if (retentionEnabled) {
                 rdbms.getHistory().setDefaultHistoryTTL(Duration.ofSeconds(1));
                 rdbms.getHistory().setMinHistoryCleanupInterval(Duration.ofSeconds(1));

@@ -121,4 +121,12 @@ public class ScriptBasedSchemaManager implements RdbmsSchemaManagerRegistry, Ini
   public boolean isInitialized(final String physicalTenantId) {
     return initializedTenants.contains(physicalTenantId);
   }
+
+  @Override
+  public void validateClusterId(
+      final String physicalTenantId,
+      final String clusterId,
+      final boolean clusterIdCheckRestrictionEnabled) {
+    // no-op: this is a QA test-acceleration utility, not a production schema manager
+  }
 }

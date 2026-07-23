@@ -224,6 +224,8 @@ public final class CamundaExporterConfigurationApplier {
     }
 
     exporterConfiguration.setCreateSchema(source.isCreateSchema());
+    exporterConfiguration.setClusterIdCheckRestrictionEnabled(
+        source.isClusterIdCheckRestrictionEnabled());
     exporterConfiguration
         .getBatchOperationCache()
         .setMaxCacheSize(source.getBatchOperationCache().getMaxSize());

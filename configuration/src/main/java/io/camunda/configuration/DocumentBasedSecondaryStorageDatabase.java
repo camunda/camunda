@@ -81,6 +81,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Whether to schedule the cleanup of legacy indexes */
   private boolean performCleanup = false;
 
+  /** If true, startup fails when this cluster's ID doesn't match the one recorded in storage. */
+  private boolean clusterIdCheckRestrictionEnabled = true;
+
   @NestedConfigurationProperty
   private IncidentNotifier incidentNotifier = new IncidentNotifier(databaseName());
 
@@ -194,6 +197,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setPerformCleanup(final boolean performCleanup) {
     this.performCleanup = performCleanup;
+  }
+
+  public boolean isClusterIdCheckRestrictionEnabled() {
+    return clusterIdCheckRestrictionEnabled;
+  }
+
+  public void setClusterIdCheckRestrictionEnabled(final boolean clusterIdCheckRestrictionEnabled) {
+    this.clusterIdCheckRestrictionEnabled = clusterIdCheckRestrictionEnabled;
   }
 
   public Cache getBatchOperationCache() {

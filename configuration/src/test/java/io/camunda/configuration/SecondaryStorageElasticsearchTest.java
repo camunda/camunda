@@ -76,6 +76,7 @@ public class SecondaryStorageElasticsearchTest {
   private static final int EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS = 12000;
 
   private static final boolean EXPECTED_CREATE_SCHEMA = false;
+  private static final boolean EXPECTED_CLUSTER_ID_CHECK_RESTRICTION_ENABLED = false;
 
   private static final String EXPECTED_INCIDENT_NOTIFIER_WEBHOOK =
       "https://test-webhook.example.com";
@@ -155,6 +156,8 @@ public class SecondaryStorageElasticsearchTest {
             + EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS
             + "ms",
         "camunda.data.secondary-storage.elasticsearch.create-schema=" + EXPECTED_CREATE_SCHEMA,
+        "camunda.data.secondary-storage.elasticsearch.cluster-id-check-restriction-enabled="
+            + EXPECTED_CLUSTER_ID_CHECK_RESTRICTION_ENABLED,
         "camunda.data.secondary-storage.elasticsearch.incident-notifier.webhook="
             + EXPECTED_INCIDENT_NOTIFIER_WEBHOOK,
         "camunda.data.secondary-storage.elasticsearch.incident-notifier.auth0-domain="
@@ -308,6 +311,8 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(exporterConfiguration.getHistory().getMaxDelayBetweenRuns())
           .isEqualTo(EXPECTED_HISTORY_MAX_DELAY_BETWEEN_RUNS);
       assertThat(exporterConfiguration.isCreateSchema()).isEqualTo(EXPECTED_CREATE_SCHEMA);
+      assertThat(exporterConfiguration.isClusterIdCheckRestrictionEnabled())
+          .isEqualTo(EXPECTED_CLUSTER_ID_CHECK_RESTRICTION_ENABLED);
       assertThat(exporterConfiguration.getNotifier().getWebhook())
           .isEqualTo(EXPECTED_INCIDENT_NOTIFIER_WEBHOOK);
       assertThat(exporterConfiguration.getNotifier().getAuth0Domain())

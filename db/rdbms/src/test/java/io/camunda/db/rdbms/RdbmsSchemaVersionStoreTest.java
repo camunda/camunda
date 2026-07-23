@@ -9,13 +9,16 @@ package io.camunda.db.rdbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.exception.RdbmsClusterIdIncompatibleException;
 import io.camunda.db.rdbms.exception.RdbmsSchemaVersionIncompatibleException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
@@ -170,6 +173,118 @@ class RdbmsSchemaVersionStoreTest {
     verify(dataSource, never()).getConnection();
   }
 
+  // ---- cluster ID check ----
+
+  @Test
+  void shouldSkipClusterIdCheckWhenLocalClusterIdBlank() throws Exception {
+    // given
+    final var dataSource = mock(DataSource.class);
+    final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
+
+    // when
+    assertThat(store.checkClusterIdCompatibility("", true)).isFalse();
+    assertThat(store.checkClusterIdCompatibility(null, true)).isFalse();
+
+    // then - the datasource is never touched
+    verify(dataSource, never()).getConnection();
+  }
+
+  @Test
+  void shouldSkipClusterIdCheckWhenNoPreviousClusterIdRecorded() throws Exception {
+    // given - fresh install, or upgrading from before this check existed
+    final var store = clusterIdStore(null);
+
+    // when / then - no exception, and the caller is told to record the value
+    assertThat(store.checkClusterIdCompatibility("this-cluster", true)).isTrue();
+  }
+
+  @Test
+  void shouldAllowMatchingClusterId() throws Exception {
+    final var store = clusterIdStore("this-cluster");
+
+    // nothing changed, so no redundant write is needed
+    assertThat(store.checkClusterIdCompatibility("this-cluster", true)).isFalse();
+  }
+
+  @Test
+  void shouldThrowOnClusterIdMismatchWhenRestrictionEnabled() throws Exception {
+    // given
+    final var store = clusterIdStore("other-cluster");
+
+    // when / then
+    assertThatThrownBy(() -> store.checkClusterIdCompatibility("this-cluster", true))
+        .isInstanceOf(RdbmsClusterIdIncompatibleException.class)
+        .hasMessageContaining("other-cluster")
+        .hasMessageContaining("this-cluster");
+  }
+
+  @Test
+  void shouldSkipClusterIdCheckEntirelyWhenRestrictionDisabled() throws Exception {
+    // given
+    final var dataSource = mock(DataSource.class);
+    final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
+
+    // when / then - no exception, no read or write ever happens
+    assertThat(store.checkClusterIdCompatibility("this-cluster", false)).isFalse();
+    verify(dataSource, never()).getConnection();
+  }
+
+  @Test
+  void shouldFailWhenClusterIdCheckEncountersUnexpectedError() throws Exception {
+    // given
+    final var dataSource = mock(DataSource.class);
+    when(dataSource.getConnection()).thenThrow(new RuntimeException("DB connection refused"));
+    final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
+
+    // when / then
+    assertThatThrownBy(() -> store.checkClusterIdCompatibility("this-cluster", true))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Failed to determine current cluster ID");
+  }
+
+  @Test
+  void shouldSkipClusterIdRecordingWhenBlank() throws Exception {
+    // given
+    final var dataSource = mock(DataSource.class);
+    final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
+
+    // when
+    store.recordClusterId("");
+    store.recordClusterId(null);
+
+    // then - the datasource is never touched
+    verify(dataSource, never()).getConnection();
+  }
+
+  @Test
+  void shouldFailWhenClusterIdRecordingFails() throws Exception {
+    // given
+    final var dataSource = mock(DataSource.class);
+    when(dataSource.getConnection()).thenThrow(new RuntimeException("DB write refused"));
+    final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
+
+    // when / then
+    assertThatThrownBy(() -> store.recordClusterId("this-cluster"))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Failed to update cluster ID");
+  }
+
+  @Test
+  void shouldWarnRatherThanClaimSuccessWhenNoSchemaVersionRowExistsYet() throws Exception {
+    // given - the UPDATE affects 0 rows, e.g. because recordCurrentVersion() never inserted the
+    // row (unparseable application version, such as local development builds)
+    final var dataSource = mock(DataSource.class);
+    final var connection = mock(Connection.class);
+    final var statement = mock(PreparedStatement.class);
+    when(dataSource.getConnection()).thenReturn(connection);
+    when(connection.prepareStatement(anyString())).thenReturn(statement);
+    when(statement.executeUpdate()).thenReturn(0);
+    final var store = new RdbmsSchemaVersionStore(dataSource, "", "8.10.0");
+
+    // when / then - does not throw, and does not falsely report success
+    store.recordClusterId("this-cluster");
+  }
+
   // ---- toStableVersion ----
 
   @Test
@@ -206,6 +321,25 @@ class RdbmsSchemaVersionStoreTest {
       protected String resolveCurrentSchemaVersion(
           final Connection connection, final String prefix) {
         return schemaVersion;
+      }
+    };
+  }
+
+  /**
+   * Builds a {@link RdbmsSchemaVersionStore} whose {@link #readClusterId} returns {@code
+   * previousClusterId}, backed by a mock data source that yields a mock connection.
+   */
+  private static RdbmsSchemaVersionStore clusterIdStore(final String previousClusterId) {
+    final var dataSource = mock(DataSource.class);
+    try {
+      when(dataSource.getConnection()).thenReturn(mock(Connection.class));
+    } catch (final SQLException e) {
+      throw new RuntimeException(e);
+    }
+    return new RdbmsSchemaVersionStore(dataSource, "", "8.10.0") {
+      @Override
+      protected String readClusterId(final Connection connection, final String prefix) {
+        return previousClusterId;
       }
     };
   }

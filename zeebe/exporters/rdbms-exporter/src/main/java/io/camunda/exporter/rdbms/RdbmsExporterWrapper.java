@@ -118,6 +118,8 @@ public class RdbmsExporterWrapper implements Exporter {
     }
     config.validate(); // throws exception if configuration is invalid
 
+    rdbmsSchemaManagerRegistry.validateClusterId(
+        physicalTenantId, context.getClusterId(), config.isClusterIdCheckRestrictionEnabled());
     final var rdbmsWriterConfig =
         config.createRdbmsWriterConfig(partitionId, physicalTenantId, context.clock());
     // Use the partition-scoped meter registry so the writer metrics inherit the partition and

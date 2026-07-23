@@ -7,6 +7,7 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.SchemaMetadataStore.CLUSTER_ID_METADATA_ID;
 import static io.camunda.search.schema.SchemaMetadataStore.SCHEMA_VERSION_METADATA_ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.VALUE;
@@ -20,10 +21,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.IncompatibleClusterIdException;
 import io.camunda.search.schema.exceptions.IncompatibleVersionException;
 import io.camunda.search.schema.utils.TestIndexDescriptor;
 import io.camunda.search.schema.utils.TestTemplateDescriptor;
@@ -322,7 +325,90 @@ class SchemaManagerTest {
     verifyInvokedOperations("8.8.0", true);
   }
 
+  @Test
+  void shouldThrowExceptionForClusterIdMismatch() {
+    // Given: validateClusterId() is called directly by the exporter (e.g. CamundaExporter.open()),
+    // independently of startup() - it runs once the exporter has resolved its own cluster ID,
+    // which startup() (broker-wide, pre-gossip) never has.
+    schemaManager = createSpySchemaManager("8.8.0", "this-cluster");
+    mockClusterIdInMetadata("other-cluster");
+
+    // When & Then
+    assertThatThrownBy(() -> schemaManager.validateClusterId())
+        .isInstanceOf(IncompatibleClusterIdException.class)
+        .hasMessageContaining("other-cluster")
+        .hasMessageContaining("this-cluster");
+    verify(searchEngineClient, never()).upsertDocument(anyString(), anyString(), any());
+  }
+
+  @Test
+  void shouldSkipClusterIdCheckEntirelyWhenRestrictionDisabled() {
+    // Given
+    config.schemaManager().setClusterIdCheckRestrictionEnabled(false);
+    schemaManager = createSpySchemaManager("8.9.0", "this-cluster");
+    mockClusterIdInMetadata("other-cluster");
+
+    // When: should not throw despite the mismatch
+    schemaManager.validateClusterId();
+
+    // Then: no read or write ever happens, matching a disabled check exactly
+    verifyNoInteractions(searchEngineClient);
+  }
+
+  @Test
+  void shouldProceedWhenClusterIdMatches() {
+    // Given
+    schemaManager = createSpySchemaManager("8.9.0", "this-cluster");
+    mockClusterIdInMetadata("this-cluster");
+
+    // When
+    schemaManager.validateClusterId();
+
+    // Then - no exception, and no redundant write since nothing changed
+    verify(searchEngineClient, never())
+        .upsertDocument(
+            eq(metadataIndex.getFullQualifiedName()), eq(CLUSTER_ID_METADATA_ID), any());
+  }
+
+  @Test
+  void shouldStoreClusterIdOnFreshInstall() {
+    // Given: no previous cluster ID stored (fresh installation, or upgrading from before this
+    // feature existed)
+    schemaManager = createSpySchemaManager("8.9.0", "this-cluster");
+    mockClusterIdInMetadata(null);
+
+    // When
+    schemaManager.validateClusterId();
+
+    // Then
+    verify(searchEngineClient)
+        .upsertDocument(
+            metadataIndex.getFullQualifiedName(),
+            CLUSTER_ID_METADATA_ID,
+            Map.of(MetadataIndex.ID, CLUSTER_ID_METADATA_ID, MetadataIndex.VALUE, "this-cluster"));
+  }
+
+  @Test
+  void shouldSkipClusterIdCheckAndStorageWhenLocalClusterIdUnresolved() {
+    // Given: this exporter could not resolve its own cluster ID (e.g. empty string sentinel)
+    schemaManager = createSpySchemaManager("8.9.0", "");
+    mockClusterIdInMetadata("other-cluster");
+
+    // When: should not throw, and should not overwrite the stored cluster ID
+    schemaManager.validateClusterId();
+
+    // Then
+    verify(searchEngineClient, never())
+        .upsertDocument(
+            eq(metadataIndex.getFullQualifiedName()), eq(CLUSTER_ID_METADATA_ID), any());
+  }
+
   private SchemaManager createSpySchemaManager(final String currentVersion) {
+    return createSpySchemaManager(currentVersion, null);
+  }
+
+  private SchemaManager createSpySchemaManager(
+      final String currentVersion, final String clusterId) {
     return spy(
         new SchemaManager(
             searchEngineClient,
@@ -331,7 +417,8 @@ class SchemaManagerTest {
             config,
             mock(IndexSchemaValidator.class),
             currentVersion,
-            null));
+            null,
+            clusterId));
   }
 
   private void mockSchemaVersionInMetadata(final String version) {
@@ -342,6 +429,16 @@ class SchemaManagerTest {
     when(searchEngineClient.getDocument(
             metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
         .thenReturn(versionDoc);
+  }
+
+  private void mockClusterIdInMetadata(final String clusterId) {
+    final var clusterIdDoc =
+        clusterId == null
+            ? null
+            : Map.<String, Object>of(ID, CLUSTER_ID_METADATA_ID, VALUE, clusterId);
+    when(searchEngineClient.getDocument(
+            metadataIndex.getFullQualifiedName(), CLUSTER_ID_METADATA_ID))
+        .thenReturn(clusterIdDoc);
   }
 
   @Nested

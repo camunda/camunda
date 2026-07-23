@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 class SchemaMetadataStore {
   // Schema version metadata constants
   @VisibleForTesting static final String SCHEMA_VERSION_METADATA_ID = "schema-version";
+  // Cluster ID metadata constants
+  @VisibleForTesting static final String CLUSTER_ID_METADATA_ID = "cluster-id";
 
   private final SearchEngineClient searchEngineClient;
   private final MetadataIndex metadataIndex;
@@ -69,6 +71,44 @@ class SchemaMetadataStore {
     } catch (final Exception e) {
       logger.error("Failed to store schema version in metadata", e);
       throw new IllegalStateException("Could not store schema version metadata", e);
+    }
+  }
+
+  /**
+   * Retrieves the cluster ID from metadata storage. Returns null if no cluster ID is stored
+   * (indicating a fresh installation, or an installation predating this check).
+   */
+  String getClusterId() {
+    if (!searchEngineClient.indexExists(metadataIndex.getFullQualifiedName())) {
+      logger.info("Metadata index does not exist, assuming a fresh installation");
+      return null;
+    }
+    final var clusterIdDoc =
+        searchEngineClient.getDocument(
+            metadataIndex.getFullQualifiedName(), CLUSTER_ID_METADATA_ID);
+
+    if (clusterIdDoc != null) {
+      return (String) clusterIdDoc.get(MetadataIndex.VALUE);
+    }
+
+    logger.info("No cluster ID found in metadata index, assuming a fresh installation");
+    return null;
+  }
+
+  void storeClusterId(final String clusterId) {
+    try {
+      final var clusterIdDoc =
+          Map.<String, Object>of(
+              MetadataIndex.ID, CLUSTER_ID_METADATA_ID,
+              MetadataIndex.VALUE, clusterId);
+
+      searchEngineClient.upsertDocument(
+          metadataIndex.getFullQualifiedName(), CLUSTER_ID_METADATA_ID, clusterIdDoc);
+
+      logger.info("Stored cluster ID metadata: {}", clusterId);
+    } catch (final Exception e) {
+      logger.error("Failed to store cluster ID in metadata", e);
+      throw new IllegalStateException("Could not store cluster ID metadata", e);
     }
   }
 }

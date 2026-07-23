@@ -37,6 +37,7 @@ public class ExporterConfiguration {
       RdbmsWriterConfig.DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
   private int batchOperationItemInsertBlockSize =
       RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
+  private boolean clusterIdCheckRestrictionEnabled = true;
   // insert batching configuration
   private InsertBatchingConfiguration insertBatching = new InsertBatchingConfiguration();
   // caches
@@ -101,6 +102,14 @@ public class ExporterConfiguration {
   public void setExportBatchOperationItemsOnCreation(
       final boolean exportBatchOperationItemsOnCreation) {
     this.exportBatchOperationItemsOnCreation = exportBatchOperationItemsOnCreation;
+  }
+
+  public boolean isClusterIdCheckRestrictionEnabled() {
+    return clusterIdCheckRestrictionEnabled;
+  }
+
+  public void setClusterIdCheckRestrictionEnabled(final boolean clusterIdCheckRestrictionEnabled) {
+    this.clusterIdCheckRestrictionEnabled = clusterIdCheckRestrictionEnabled;
   }
 
   public int getBatchOperationItemInsertBlockSize() {
@@ -301,6 +310,8 @@ public class ExporterConfiguration {
         + batchOperationCache
         + ", asyncReplication="
         + asyncReplication
+        + ", clusterIdCheckRestrictionEnabled="
+        + clusterIdCheckRestrictionEnabled
         + '}';
   }
 

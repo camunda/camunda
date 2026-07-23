@@ -321,18 +321,24 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final String exporterId,
       final ExporterInitializationInfo initializationInfo,
       final ExporterDescriptor descriptor) {
+    final var unrecoverableFailureDetected = new AtomicBoolean(false);
     return new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
         .runWithRetry(
             () -> {
               try {
                 addExporter(exporterId, initializationInfo, descriptor);
                 return true;
+              } catch (final UnrecoverableException e) {
+                LOG.error("Failed to add exporter '{}'. Not retrying.", exporterId, e);
+                unrecoverableFailureDetected.set(true);
+                updateHealthStatusWithError(e);
+                return false;
               } catch (final Exception e) {
                 LOG.error("Failed to add exporter '{}'. Retrying...", exporterId, e);
                 return false;
               }
             },
-            this::isClosed);
+            () -> isClosed() || unrecoverableFailureDetected.get());
   }
 
   private void addExporter(
@@ -582,6 +588,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     final var containerOpenFutures = new ArrayList<ActorFuture<Boolean>>();
     for (final ExporterContainer container : containers) {
       container.initMetadata();
+      final var unrecoverableFailureDetected = new AtomicBoolean(false);
       final var openFuture =
           new BackOffRetryStrategy(actor, Duration.ofSeconds(10), Duration.ofMillis(150))
               .runWithRetry(
@@ -597,6 +604,19 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                             container.getId());
                       }
                       return true;
+                    } catch (final UnrecoverableException e) {
+                      // Permanent misconfiguration (e.g. incompatible schema/cluster state) won't
+                      // resolve itself on retry, so retrying forever would just hide the failure.
+                      LOG.error(
+                          "Failed to open exporter '{}'. Not retrying.", container.getId(), e);
+                      unrecoverableFailureDetected.set(true);
+                      updateHealthStatusWithError(e);
+                      // The container never finished opening (e.g. its writer was never
+                      // assigned), so it must not receive records once exporting starts -
+                      // otherwise every export attempt on this partition would fail on it forever.
+                      containers.remove(container);
+                      recordExporter.resetExporterIndex();
+                      return false;
                     } catch (final Exception e) {
                       LOG.warn("Failed to open exporter '{}'. Retrying...", container.getId());
                       LOG.debug(
@@ -604,7 +624,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                       return false;
                     }
                   },
-                  this::isClosed);
+                  () -> isClosed() || unrecoverableFailureDetected.get());
 
       containerOpenFutures.add(openFuture);
     }

@@ -97,6 +97,7 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private boolean clusterIdValidated;
   private long lastFlushTimestamp = 0L;
 
   private long flushDelayMs;
@@ -142,6 +143,12 @@ public class CamundaExporter implements Exporter {
       try (final var schemaManager = createSchemaManager()) {
         if (!schemaManager.isSchemaReadyForUse()) {
           throw new ExporterException("Schema is not ready for use");
+        }
+        // the metadata index validateClusterId() reads/writes is only guaranteed to exist once
+        // isSchemaReadyForUse() returns true, so this must run after that check
+        if (!clusterIdValidated) {
+          schemaManager.validateClusterId();
+          clusterIdValidated = true;
         }
       }
 
@@ -294,17 +301,20 @@ public class CamundaExporter implements Exporter {
   private SchemaManager createSchemaManager() {
     final var schemaManagerConfiguration = new SchemaManagerConfiguration();
     schemaManagerConfiguration.setCreateSchema(configuration.isCreateSchema());
+    schemaManagerConfiguration.setClusterIdCheckRestrictionEnabled(
+        configuration.isClusterIdCheckRestrictionEnabled());
     return new SchemaManager(
-        searchEngineClient,
-        provider.getIndexDescriptors(),
-        provider.getIndexTemplateDescriptors(),
-        SearchEngineConfiguration.of(
-            b ->
-                b.connect(configuration.getConnect())
-                    .index(configuration.getIndex())
-                    .retention(configuration.getHistory().getRetention())
-                    .schemaManager(schemaManagerConfiguration)),
-        clientAdapter.objectMapper());
+            searchEngineClient,
+            provider.getIndexDescriptors(),
+            provider.getIndexTemplateDescriptors(),
+            SearchEngineConfiguration.of(
+                b ->
+                    b.connect(configuration.getConnect())
+                        .index(configuration.getIndex())
+                        .retention(configuration.getHistory().getRetention())
+                        .schemaManager(schemaManagerConfiguration)),
+            clientAdapter.objectMapper())
+        .withClusterId(context.getClusterId());
   }
 
   private List<String> prefixedNames(final String... names) {

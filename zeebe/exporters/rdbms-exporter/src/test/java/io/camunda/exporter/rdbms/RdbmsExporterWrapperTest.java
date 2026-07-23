@@ -383,6 +383,40 @@ class RdbmsExporterWrapperTest {
     assertThat(configCaptor.getValue().physicalTenantId()).isEqualTo("mycustomtenant");
   }
 
+  @Test
+  public void shouldValidateClusterIdWithContextValuesAndConfiguredRestrictionFlag() {
+    // given
+    final var configuration = new ExporterConfiguration();
+    configuration.setClusterIdCheckRestrictionEnabled(false);
+    final Context context = mock(Context.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsServiceFactory rdbmsServiceFactory = mock(RdbmsServiceFactory.class);
+    final RdbmsService rdbmsService = mock(RdbmsService.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsWriters rdbmsWriters = mock(RdbmsWriters.class, Mockito.RETURNS_DEEP_STUBS);
+    final RdbmsSchemaManagerRegistry rdbmsSchemaManagerRegistry =
+        mock(RdbmsSchemaManagerRegistry.class);
+    when(rdbmsServiceFactory.createRdbmsService(Mockito.anyString(), any()))
+        .thenReturn(rdbmsService);
+
+    when(context.getPartitionId()).thenReturn(1);
+    when(context.getPhysicalTenantId()).thenReturn("my-custom-tenant");
+    when(context.getClusterId()).thenReturn("cluster-under-test");
+    when(rdbmsService.createWriter(any(RdbmsWriterConfig.class))).thenReturn(rdbmsWriters);
+
+    final RdbmsExporterWrapper exporterWrapper =
+        new RdbmsExporterWrapper(
+            rdbmsServiceFactory,
+            rdbmsSchemaManagerRegistry,
+            Map.of("my-custom-tenant", configuration));
+
+    // when
+    exporterWrapper.configure(context);
+
+    // then - verify the exact arguments passed through to the registry: physical tenant id,
+    // cluster id, and the configured restriction flag, in that order
+    verify(rdbmsSchemaManagerRegistry)
+        .validateClusterId("my-custom-tenant", "cluster-under-test", false);
+  }
+
   private void assertAuditLogExportPresent(
       final Map<ValueType, List<RdbmsExportHandler>> registeredHandlers,
       final Map<Class<?>, ValueType> expectedRegisteredTransformers) {

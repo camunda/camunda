@@ -115,6 +115,14 @@ public class LiquibaseSchemaManager implements RdbmsSchemaManager {
     return initialized;
   }
 
+  @Override
+  public void validateClusterId(
+      final String clusterId, final boolean clusterIdCheckRestrictionEnabled) {
+    if (versionStore.checkClusterIdCompatibility(clusterId, clusterIdCheckRestrictionEnabled)) {
+      versionStore.recordClusterId(clusterId);
+    }
+  }
+
   @VisibleForTesting
   protected SpringLiquibase buildRunner() {
     final var runner = new SpringLiquibase();
