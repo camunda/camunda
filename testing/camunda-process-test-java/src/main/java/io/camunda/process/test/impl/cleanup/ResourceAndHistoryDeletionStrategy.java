@@ -140,14 +140,13 @@ public final class ResourceAndHistoryDeletionStrategy implements CleanupStrategy
 
     deployments.forEach(
         deployment -> {
+          // Delete all process definitions
           deployment
               .getProcesses()
               .forEach(process -> resourceKeysToDelete.add(process.getProcessDefinitionKey()));
 
-          deployment
-              .getDecisions()
-              .forEach(decision -> resourceKeysToDelete.add(decision.getDecisionKey()));
-
+          // Delete all decision requirements. Ignore decision definitions, as they are deleted when
+          // the decision requirements are deleted.
           deployment
               .getDecisionRequirements()
               .forEach(
