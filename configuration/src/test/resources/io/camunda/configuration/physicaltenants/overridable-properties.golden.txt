@@ -314,7 +314,7 @@ provider-auth.aws.role-arn
 provider-auth.aws.secret-key
 provider-auth.aws.session-token
 provider-auth.aws.web-identity-token-file
-secrets.stores.aws-secrets-manager
+secrets.stores.aws
 secrets.stores.file
 security.authentication
 security.authentication.authentication-refresh-interval
