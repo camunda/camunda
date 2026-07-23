@@ -7,6 +7,7 @@
  */
 package io.camunda.search.connect.configuration;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ public class ConnectConfiguration {
   private String indexPrefix = "";
   private List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private boolean isAwsEnabled = false;
+  private AwsConfiguration aws = new AwsConfiguration();
   private ProxyConfiguration proxy;
 
   /** Use {@link ConnectConfiguration#getTypeEnum()} */
@@ -52,6 +54,16 @@ public class ConnectConfiguration {
 
   public void setAwsEnabled(final boolean awsEnabled) {
     isAwsEnabled = awsEnabled;
+  }
+
+  @JsonProperty("aws")
+  public AwsConfiguration aws() {
+    return aws;
+  }
+
+  @JsonProperty("aws")
+  public void aws(final AwsConfiguration aws) {
+    this.aws = aws;
   }
 
   public DatabaseType getTypeEnum() {

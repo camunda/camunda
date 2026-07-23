@@ -31,6 +31,7 @@ public class Camunda {
   @NestedConfigurationProperty private Document document = new Document();
   @NestedConfigurationProperty private Webapps webapps = new Webapps();
   @NestedConfigurationProperty private Secrets secrets = new Secrets();
+  @NestedConfigurationProperty private ProviderAuth providerAuth = new ProviderAuth();
 
   @NestedConfigurationProperty
   private ProcessInstanceCreation processInstanceCreation = new ProcessInstanceCreation();
@@ -154,5 +155,13 @@ public class Camunda {
 
   public void setSecrets(final Secrets secrets) {
     this.secrets = secrets;
+  }
+
+  public ProviderAuth getProviderAuth() {
+    return providerAuth;
+  }
+
+  public void setProviderAuth(final ProviderAuth providerAuth) {
+    this.providerAuth = providerAuth;
   }
 }

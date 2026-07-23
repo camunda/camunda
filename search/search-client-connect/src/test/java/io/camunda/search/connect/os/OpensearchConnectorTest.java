@@ -119,6 +119,23 @@ class OpensearchConnectorTest {
   }
 
   @Test
+  void shouldUseAwsTransportWithConfiguredCredentialsAndRegion() {
+    // given static credentials and a region configured on the connect configuration only,
+    // without any AWS environment
+    final var connectConfig = new ConnectConfiguration();
+    connectConfig.setAwsEnabled(true);
+    connectConfig.aws().setAccessKey("username");
+    connectConfig.aws().setSecretKey("password");
+    connectConfig.aws().setRegion("eu-west-1");
+
+    // when
+    final var client = new OpensearchConnector(connectConfig).createClient();
+
+    // then
+    Assertions.assertThat(client._transport()).isInstanceOf(AwsSdk2Transport.class);
+  }
+
+  @Test
   void shouldApplyRequestInterceptorsWithinClasspathForNativeAsyncClient() throws Exception {
     final var context = HttpClientContext.create();
     final var configuration = new ConnectConfiguration();

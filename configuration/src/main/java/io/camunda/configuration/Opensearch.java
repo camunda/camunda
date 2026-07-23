@@ -14,6 +14,8 @@ public class Opensearch extends DocumentBasedSecondaryStorageDatabase {
 
   private boolean awsEnabled = false;
 
+  private String region;
+
   @Override
   public String databaseName() {
     return "opensearch";
@@ -34,5 +36,13 @@ public class Opensearch extends DocumentBasedSecondaryStorageDatabase {
 
   public void setAwsEnabled(final boolean awsEnabled) {
     this.awsEnabled = awsEnabled;
+  }
+
+  public String getRegion() {
+    return region;
+  }
+
+  public void setRegion(final String region) {
+    this.region = region;
   }
 }

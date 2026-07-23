@@ -175,6 +175,7 @@ data.secondary-storage.opensearch.proxy.ssl-enabled
 data.secondary-storage.opensearch.proxy.username
 data.secondary-storage.opensearch.refresh-interval
 data.secondary-storage.opensearch.refresh-interval-by-index-name
+data.secondary-storage.opensearch.region
 data.secondary-storage.opensearch.security.database-name
 data.secondary-storage.opensearch.socket-timeout
 data.secondary-storage.opensearch.template-priority
@@ -304,6 +305,11 @@ processing.max-commands-in-batch
 processing.max-recoverable-retries
 processing.scheduled-tasks-check-interval
 processing.skip-positions
+provider-auth.aws.access-key
+provider-auth.aws.role-arn
+provider-auth.aws.secret-key
+provider-auth.aws.session-token
+provider-auth.aws.web-identity-token-file
 secrets.stores.aws-secrets-manager
 secrets.stores.file
 security.authentication

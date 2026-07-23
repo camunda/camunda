@@ -1,0 +1,109 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.configuration;
+
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
+/**
+ * This section configures the AWS identity used by all AWS consumers of a tenant (e.g. OpenSearch).
+ *
+ * <p>Canonical unified configuration properties are under {@code camunda.provider-auth.aws.*}:
+ *
+ * <ul>
+ *   <li>{@code camunda.provider-auth.aws.access-key}, {@code camunda.provider-auth.aws.secret-key},
+ *       {@code camunda.provider-auth.aws.session-token} — static credentials
+ *   <li>{@code camunda.provider-auth.aws.role-arn}, {@code
+ *       camunda.provider-auth.aws.web-identity-token-file} — web identity (IRSA)
+ * </ul>
+ *
+ * <p>Blank values are treated as unset. When no field is set, the AWS SDK default credentials
+ * provider chain is used, preserving the previous environment-based behavior. AWS configuration is
+ * overridable per physical tenant via {@code camunda.physical-tenants.<id>.aws.*}; a tenant that
+ * declares no {@code aws} block inherits the root block.
+ */
+@NullMarked
+public class Aws {
+
+  /** Access key id of static AWS credentials. Must be set together with {@code secret-key}. */
+  private @Nullable String accessKey;
+
+  /** Secret access key of static AWS credentials. Must be set together with {@code access-key}. */
+  private @Nullable String secretKey;
+
+  /** Optional session token accompanying static AWS credentials. */
+  private @Nullable String sessionToken;
+
+  /**
+   * ARN of the IAM role to assume via web identity (IRSA). Must be set together with {@code
+   * web-identity-token-file}.
+   */
+  private @Nullable String roleArn;
+
+  /**
+   * Path to the web identity token file used to assume {@code role-arn}. Must be set together with
+   * {@code role-arn}.
+   */
+  private @Nullable String webIdentityTokenFile;
+
+  public boolean hasStaticCredentials() {
+    return accessKey != null && secretKey != null;
+  }
+
+  public boolean hasWebIdentity() {
+    return roleArn != null && webIdentityTokenFile != null;
+  }
+
+  public @Nullable String getAccessKey() {
+    return accessKey;
+  }
+
+  public void setAccessKey(final @Nullable String accessKey) {
+    this.accessKey = blankToNull(accessKey);
+  }
+
+  public @Nullable String getSecretKey() {
+    return secretKey;
+  }
+
+  public void setSecretKey(final @Nullable String secretKey) {
+    this.secretKey = blankToNull(secretKey);
+  }
+
+  public @Nullable String getSessionToken() {
+    return sessionToken;
+  }
+
+  public void setSessionToken(final @Nullable String sessionToken) {
+    this.sessionToken = blankToNull(sessionToken);
+  }
+
+  public @Nullable String getRoleArn() {
+    return roleArn;
+  }
+
+  public void setRoleArn(final @Nullable String roleArn) {
+    this.roleArn = blankToNull(roleArn);
+  }
+
+  public @Nullable String getWebIdentityTokenFile() {
+    return webIdentityTokenFile;
+  }
+
+  public void setWebIdentityTokenFile(final @Nullable String webIdentityTokenFile) {
+    this.webIdentityTokenFile = blankToNull(webIdentityTokenFile);
+  }
+
+  /**
+   * Blank values (e.g. an env var that is set but empty) mean "unset"; null is the single
+   * representation downstream.
+   */
+  private static @Nullable String blankToNull(final @Nullable String value) {
+    return value == null || value.isBlank() ? null : value;
+  }
+}

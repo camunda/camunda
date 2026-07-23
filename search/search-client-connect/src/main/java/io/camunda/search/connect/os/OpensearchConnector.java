@@ -9,6 +9,7 @@ package io.camunda.search.connect.os;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.SearchClientConnectException;
+import io.camunda.search.connect.aws.AwsCredentialsProviders;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.ProxyConfiguration;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
@@ -41,9 +42,7 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
-import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 public final class OpensearchConnector {
 
@@ -59,7 +58,7 @@ public final class OpensearchConnector {
     this(
         configuration,
         new JacksonConfiguration(configuration).createObjectMapper(),
-        DefaultCredentialsProvider.builder().build(),
+        AwsCredentialsProviders.from(configuration.aws()),
         new PluginRepository());
   }
 
@@ -106,13 +105,14 @@ public final class OpensearchConnector {
 
   private OpenSearchTransport createAWSBasedTransport(final ConnectConfiguration configuration) {
     final var hostname = getHttpHosts(configuration)[0].getHostName();
-    final var region = new DefaultAwsRegionProviderChain().getRegion();
+    final var region = AwsCredentialsProviders.region(configuration.aws());
     final var httpClient = AwsCrtHttpClient.builder().build();
     return new AwsSdk2Transport(
         httpClient,
         hostname,
         region,
         AwsSdk2TransportOptions.builder()
+            .setCredentials(credentialsProvider)
             .setMapper(new SearchRequestJacksonJsonpMapperWrapper(objectMapper))
             .build());
   }

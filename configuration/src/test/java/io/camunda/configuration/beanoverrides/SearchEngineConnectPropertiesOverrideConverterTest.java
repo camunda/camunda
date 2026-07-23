@@ -98,6 +98,9 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     opensearch.setPassword("os-pass");
     opensearch.setClusterName("os-cluster");
     opensearch.setAwsEnabled(true);
+    opensearch.setRegion("eu-west-1");
+    camunda.getProviderAuth().getAws().setAccessKey("aws-key");
+    camunda.getProviderAuth().getAws().setSecretKey("aws-secret");
 
     // when
     final SearchEngineConnectProperties result = new Converter(camunda).convert();
@@ -109,6 +112,9 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     assertThat(result.getPassword()).isEqualTo("os-pass");
     assertThat(result.getClusterName()).isEqualTo("os-cluster");
     assertThat(result.isAwsEnabled()).isTrue();
+    assertThat(result.aws().getAccessKey()).isEqualTo("aws-key");
+    assertThat(result.aws().getSecretKey()).isEqualTo("aws-secret");
+    assertThat(result.aws().getRegion()).isEqualTo("eu-west-1");
   }
 
   @Test
