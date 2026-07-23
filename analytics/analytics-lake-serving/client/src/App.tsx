@@ -8,13 +8,14 @@
 import { Navigate, Route, Routes } from "react-router";
 import { AppDataProvider } from "./lib/appData";
 import { RangeProvider } from "./lib/rangeContext";
-import { DashboardsPage } from "./components/dashboards/DashboardsPage";
 import { DataPage } from "./components/data/DataPage";
 import { ExplainPage } from "./components/explain/ExplainPage";
 import { Shell } from "./components/layout/Shell";
 import { ObjectDetailPage } from "./components/objects/ObjectDetailPage";
 import { ObjectsIndexPage } from "./components/objects/ObjectsIndexPage";
 import { ObjectsListPage } from "./components/objects/ObjectsListPage";
+import { ProcessDetailPage } from "./components/processes/ProcessDetailPage";
+import { ProcessListPage } from "./components/processes/ProcessListPage";
 import { TodayPage } from "./components/today/TodayPage";
 
 /**
@@ -27,9 +28,20 @@ import { TodayPage } from "./components/today/TodayPage";
  * hard deep-link (not a client-side navigation) to any *other* path 404s before the SPA bundle even
  * loads. Today and Ask why therefore render at the existing, backend-forwarded /dashboards and
  * /explain paths (nav labels renamed; URLs unchanged), with /today and /ask kept only as
- * client-side Navigate aliases onto them. Processes is a genuinely new destination with no
- * backend-forwarded path yet (/processes) -- same class of gap, flagged for the next backend lane
- * to close by extending SpaForwardController.
+ * client-side Navigate aliases onto them. Processes and its detail route are still genuinely new
+ * destinations with no backend-forwarded path yet (/processes, /processes/:processId) -- same class
+ * of gap, flagged for the next backend lane to close by extending SpaForwardController.
+ *
+ * P2 note: the old entity/tab-shaped DashboardsPage (KPI/Performance/Quality tabs keyed by
+ * `perspective`) is retired from routing here per the design sketch's build plan ("P2 replaces this
+ * with the real one-page-per-process view") -- ProcessListPage/ProcessDetailPage below are its
+ * replacement for the "processes" perspective. Its non-process branch (an object-type's KPI/
+ * Performance/Quality tabs) has no route left pointing at it; that functionality now overlaps with
+ * the dedicated Objects pages (ObjectsIndexPage/ObjectsListPage/ObjectDetailPage) built separately,
+ * so nothing routes to DashboardsPage.tsx anymore. The global perspective switcher in Shell.tsx
+ * (a sibling lane's file) still lets a reader pick an object type, but that selection no longer
+ * drives anything under this nav item -- flagged in the lane report as a follow-up for whichever
+ * lane owns Shell.tsx/the perspective switcher next, not fixed here.
  */
 export default function App() {
   return (
@@ -40,7 +52,8 @@ export default function App() {
             <Route index element={<Navigate to="/dashboards" replace />} />
             <Route path="dashboards" element={<TodayPage />} />
             <Route path="today" element={<Navigate to="/dashboards" replace />} />
-            <Route path="processes" element={<DashboardsPage />} />
+            <Route path="processes" element={<ProcessListPage />} />
+            <Route path="processes/:processId" element={<ProcessDetailPage />} />
             <Route path="explain" element={<ExplainPage />} />
             <Route path="ask" element={<Navigate to="/explain" replace />} />
             <Route path="objects" element={<ObjectsIndexPage />} />

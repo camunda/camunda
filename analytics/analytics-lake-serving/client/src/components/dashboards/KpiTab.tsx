@@ -9,11 +9,11 @@ import { PROCESSES_PERSPECTIVE, useAppData } from "../../lib/appData";
 import { objectTypeFilter } from "../../lib/registryHelpers";
 import type { DashboardRange } from "./DashboardRangePicker";
 import { BirthsByProcessTile } from "./tiles/BirthsByProcessTile";
+import { CohortWithinShareTile } from "./tiles/CohortWithinShareTile";
 import { DecomposeByDimTile } from "./tiles/DecomposeByDimTile";
 import { OpenCountTile } from "./tiles/OpenCountTile";
 import { RelationFanoutTile } from "./tiles/RelationFanoutTile";
 import { SeriesTile } from "./tiles/SeriesTile";
-import { ShareTrendTile } from "./tiles/ShareTrendTile";
 
 export function KpiTab({ perspective, range }: { perspective: string; range: DashboardRange }) {
   const { from, to, grainMinutes } = range;
@@ -33,19 +33,7 @@ export function KpiTab({ perspective, range }: { perspective: string; range: Das
           to={to}
           grainMinutes={grainMinutes}
         />
-        <ShareTrendTile
-          title="Cohort survival"
-          description="Share of each start cohort completed within 1h / 1d"
-          entity="instance_cohorts"
-          totalMeasureCandidates={["started", "total", "cnt"]}
-          bands={[
-            { candidates: ["1h", "hour"], label: "≤ 1h", colorIndex: 2 },
-            { candidates: ["1d", "day"], label: "≤ 1d", colorIndex: 0 },
-          ]}
-          from={from}
-          to={to}
-          grainMinutes={grainMinutes}
-        />
+        <CohortWithinShareTile from={from} to={to} grainMinutes={grainMinutes} />
         <DecomposeByDimTile
           title="Throughput by process"
           description="Instances started per process, this window"
