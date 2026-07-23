@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="drd2" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.48.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <decision id="decision2" name="decision2">
+    <variable id="InformationItem_0t4rhpp" name="decision2" />
+    <informationRequirement id="InformationRequirement_0vt2q3f">
+      <requiredInput href="#InputData_125kgte" />
+    </informationRequirement>
+    <literalExpression id="LiteralExpression_1p2328r">
+      <text>"Hello " + name</text>
+    </literalExpression>
+  </decision>
+  <inputData id="InputData_125kgte" name="name" />
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape id="DMNShape_1urbxy6" dmnElementRef="decision2">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_0bitpx9" dmnElementRef="InputData_125kgte">
+        <dc:Bounds height="45" width="125" x="187" y="337" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_1nn0xj9" dmnElementRef="InformationRequirement_0vt2q3f">
+        <di:waypoint x="250" y="337" />
+        <di:waypoint x="250" y="200" />
+        <di:waypoint x="250" y="180" />
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
