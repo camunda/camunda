@@ -1535,6 +1535,25 @@ public final class LakeTranslator {
    * {@link #MAX_OBJECT_SIGHTINGS_PER_INSTANCE} with an overflow flag once hit — see that constant's
    * own javadoc. Runs unconditionally: relations derivation needs this regardless of whether the
    * {@code objects}/{@code object_relations} dictionary appenders are even wired.
+   *
+   * <p><b>The list is a content-deduplicated SET in list clothing, not a plain append log.</b> The
+   * caller's {@link #objectSightingSeenCache} is only a heap write-avoidance optimization — it is
+   * NOT the correctness guard against a duplicate append, for two reasons neither of which it
+   * covers: (1) crash-replay — {@link TranslatorState} (RocksDB) can be durably ahead of the lake's
+   * own committed cut (the two are not atomically coupled, same as the variant accumulator's own
+   * replay exposure — see class javadoc's "Origin-position dedup" section), so a resumed translator
+   * can re-fold a VARIABLE record whose sighting this list already holds, with an empty (post-
+   * restart) heap cache that admits it as "new"; (2) the heap cache is LRU-bounded and can evict a
+   * still-open instance's own entry while the instance is still open, letting a genuine re-sighting
+   * (e.g. an unchanged variable re-delivered) pass the cache again. Unlike the variant accumulator,
+   * there is no {@code lastPosition} here to reject a replay by position — this list has no natural
+   * "position" of its own (unlike a single running hash, entries are unordered facts) — so
+   * correctness instead comes from this method scanning the existing list (at most {@link
+   * #MAX_OBJECT_SIGHTINGS_PER_INSTANCE} entries — the O(n) cost is paid only on a cache miss, the
+   * rare path) for an entry already equal on {@code (objectType, objectId, scopeKey)} before ever
+   * appending. Without this, a duplicate append at the {@link #MAX_OBJECT_SIGHTINGS_PER_INSTANCE}
+   * boundary would silently consume a slot a genuinely new, later sighting needed — eroding the cap
+   * into a missed relation, not just a harmless repeated row.
    */
   private void recordObjectSightingForRelations(
       final long instanceKey, final String objectType, final String objectId, final long scopeKey) {
@@ -1543,6 +1562,14 @@ public final class LakeTranslator {
       return; // already capped -- see MAX_OBJECT_SIGHTINGS_PER_INSTANCE's own javadoc
     }
     final List<ObjectSighting> current = existing == null ? List.of() : existing.sightings();
+    for (final ObjectSighting sighting : current) {
+      if (sighting.objectType().equals(objectType)
+          && sighting.objectId().equals(objectId)
+          && sighting.scopeKey() == scopeKey) {
+        return; // already recorded -- see this method's own javadoc on why this scan is
+        // load-bearing
+      }
+    }
     if (current.size() >= MAX_OBJECT_SIGHTINGS_PER_INSTANCE) {
       state.putObjectSightings(instanceKey, new ObjectSightingList(current, true));
       return;

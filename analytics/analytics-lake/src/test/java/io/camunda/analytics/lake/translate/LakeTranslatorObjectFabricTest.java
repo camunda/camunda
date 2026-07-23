@@ -611,6 +611,68 @@ class LakeTranslatorObjectFabricTest {
   }
 
   @Test
+  void shouldDeduplicateAReplayedSightingAcrossARestartWithAnEmptyHeapCache() {
+    // given: one translator folds a root "customer" sighting and a non-root "dispute" sighting
+    // over a shared TranslatorState (the durable half of the picture, unlike the heap seen-cache)
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final LakeTranslator beforeRestart = newTranslator(state, null, null, null, OBJECT_TYPES);
+    beforeRestart.onRecord(activateRoot(1L, 100L, 1L));
+    beforeRestart.onRecord(variableRecord(1L, "customerId", "\"cust-1\"", 1L, 101L, 2L));
+    beforeRestart.onRecord(variableRecord(1L, "correlationKey", "\"disp-1\"", 55L, 102L, 3L));
+    assertThat(state.getObjectSightings(1L).sightings()).hasSize(2);
+
+    // when: a FRESH translator instance over the SAME state re-folds the identical customerId
+    // record -- this is exactly the replay shape the coordinator's review flagged: RocksDB state
+    // can be durably ahead of the lake's committed cut, so a resumed translator's own (empty) heap
+    // seen-cache admits an already-recorded sighting as "new"
+    final CapturingRowAppender relations = new CapturingRowAppender();
+    final LakeTranslator afterRestart = newTranslator(state, null, null, relations, OBJECT_TYPES);
+    afterRestart.onRecord(variableRecord(1L, "customerId", "\"cust-1\"", 1L, 101L, 2L));
+
+    // then: the durable sighting list still holds exactly one entry per distinct (type, id, scope)
+    // -- the content scan in recordObjectSightingForRelations caught the duplicate, not the (empty,
+    // useless-here) heap cache
+    assertThat(state.getObjectSightings(1L).sightings()).hasSize(2);
+
+    // and: relations at completion are unaffected -- still exactly one edge, not double-counted
+    afterRestart.onRecord(completeRoot(1L, 200L, 4L));
+    assertThat(relations.rows).hasSize(1);
+  }
+
+  @Test
+  void shouldNotLetADuplicateReplayConsumeASlotNeededByAGenuinelyNewSighting() {
+    // given: an instance already at the cap minus one, all distinct root sightings
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final LakeTranslator translator = newTranslator(state, null, null, null, OBJECT_TYPES);
+    translator.onRecord(activateRoot(1L, 100L, 1L));
+    long position = 2L;
+    for (int i = 0; i < 63; i++) {
+      translator.onRecord(
+          variableRecord(1L, "customerId", "\"cust-" + i + "\"", 1000L + i, 101L, position++));
+    }
+    assertThat(state.getObjectSightings(1L).sightings()).hasSize(63);
+
+    // when: a fresh translator instance (bypassing the heap seen-cache, same replay shape as
+    // above) re-delivers the FIRST sighting again, immediately followed by one genuinely new one
+    final LakeTranslator afterRestart = newTranslator(state, null, null, null, OBJECT_TYPES);
+    afterRestart.onRecord(variableRecord(1L, "customerId", "\"cust-0\"", 1000L, 101L, position++));
+    afterRestart.onRecord(
+        variableRecord(1L, "customerId", "\"cust-new\"", 2000L, 101L, position++));
+
+    // then: the duplicate did not consume the last slot -- the genuinely new sighting still fits,
+    // the list is exactly at the cap, and it is NOT marked overflowed
+    final TranslatorState.ObjectSightingList sightings = state.getObjectSightings(1L);
+    assertThat(sightings.overflowed()).isFalse();
+    assertThat(sightings.sightings()).hasSize(64);
+    assertThat(sightings.sightings())
+        .anyMatch(
+            sighting ->
+                sighting.objectType().equals("customer")
+                    && sighting.objectId().equals("cust-new")
+                    && sighting.scopeKey() == 2000L);
+  }
+
+  @Test
   void shouldEvictTheSightingListOnCompletionEvenWithNoRelationsAppenderWired() {
     // given
     final InMemoryTranslatorState state = new InMemoryTranslatorState();
