@@ -204,8 +204,34 @@ WORKERS_OCPM=(
 # EU/US/APAC/LATAM, one long-running region-shipping instance each (see docs/ocpm-showcase.md for
 # why a slow trickle rate is the closest fit to "restart on complete" — the Starter is timer-
 # scheduled, not completion-triggered).
+#
+# HAZARD (see docs/ocpm-showcase.md, "Approximations"): Zeebe correlates a published message to
+# EVERY process instance with a matching open subscription, not just one. If the region-shipping
+# restart interval is shorter than (or too close to) how long a 20-parcel batch actually takes at
+# the configured order-intake rate, two instances of the same region end up subscribed
+# simultaneously and a single ship-order double-correlates — breaking the N:1-convergence ground
+# truth and double-counting parcels. OCPM_REGION_STARTER_INTERVAL_OVERRIDE preserves an explicit
+# env override; otherwise the interval is derived from the intake rate in start_ocpm() below, with
+# a 3x safety margin over the ~80/rate-second batch duration (each region gets ~1/4 of the overall
+# order-intake rate, and each region-shipping batch is 20 parcels — see
+# ocpm_default_region_interval_seconds). This assumes the default order-intake
+# STARTER_RATE_DURATION=1s; if that's overridden, set OCPM_REGION_STARTER_INTERVAL explicitly too.
 OCPM_REGIONS=(eu us apac latam)
-OCPM_REGION_STARTER_INTERVAL="${OCPM_REGION_STARTER_INTERVAL:-90s}"
+OCPM_REGION_STARTER_INTERVAL_OVERRIDE="${OCPM_REGION_STARTER_INTERVAL:-}"
+
+# max(120, ceil(80/rate * 3)) in whole seconds — the x3 margin means overlap needs a 3x rate
+# slowdown to occur, not a 1.1x one. At intervals much larger than the batch duration (e.g. a very
+# low rate), region-shipping simply sits idle between batches: harmless, just fewer converged
+# orders per instance lifetime — see the doc for the "up to 20 per interval per region" caveat.
+ocpm_default_region_interval_seconds() {
+  local rate="$1"
+  awk -v r="$rate" 'BEGIN {
+    v = (80 / r) * 3;
+    c = (v == int(v)) ? v : int(v) + 1;
+    if (c < 120) c = 120;
+    printf "%d", c;
+  }'
+}
 
 start_ocpm() {
   local rate="${1:-1}"
@@ -213,6 +239,14 @@ start_ocpm() {
   [ -d "$OCPM_RESOURCES_DIR" ] || { echo "Missing $OCPM_RESOURCES_DIR"; exit 1; }
   mkdir -p "$RUN_DIR_OCPM"
   : > "$PID_FILE_OCPM"
+
+  if [ -n "$OCPM_REGION_STARTER_INTERVAL_OVERRIDE" ]; then
+    OCPM_REGION_STARTER_INTERVAL="$OCPM_REGION_STARTER_INTERVAL_OVERRIDE"
+    echo "Region-shipping starter interval: $OCPM_REGION_STARTER_INTERVAL (explicit override)"
+  else
+    OCPM_REGION_STARTER_INTERVAL="$(ocpm_default_region_interval_seconds "$rate")s"
+    echo "Region-shipping starter interval: $OCPM_REGION_STARTER_INTERVAL (derived: 3x margin over ~$(awk -v r="$rate" 'BEGIN{printf "%.0f", 80/r}')s/batch at rate=$rate)"
+  fi
 
   echo "Launching ${#WORKERS_OCPM[@]} ocpm job types (engine=$ZEEBE_REST_ADDRESS)…"
   for spec in "${WORKERS_OCPM[@]}"; do

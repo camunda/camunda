@@ -26,7 +26,16 @@
       catch, which is worse than omitting it. Once Worker.java is extended to publish message
       variables, add `zeebe:output source="=orderId" target="orderId"` here (last-write-wins on
       the shared instance is fine for the demo: each write is still its own VARIABLE record, so
-      sightings capture every value even though only the latest is visible on the instance).</bpmn:documentation>
+      sightings capture every value even though only the latest is visible on the instance).
+
+      HAZARD — overlap double-correlates messages: Zeebe correlates a published message to EVERY
+      instance with a matching open subscription, not just one. If a region's restart interval is
+      shorter than (or too close to) how long a 20-parcel batch actually takes, two instances of
+      the same region are subscribed at once and a single ship-order increments `parcelsLoaded` on
+      BOTH, breaking the "each order lands in exactly one region-shipping instance" ground truth.
+      The driver (run-realistic-load.sh) derives its restart interval from the intake rate with a
+      3x margin specifically to avoid this — see docs/ocpm-showcase.md, "Approximations", for the
+      full hazard writeup and the rate envelope the N:1 ground truth actually holds within.</bpmn:documentation>
     <bpmn:startEvent id="StartEvent_1" name="Region shipping opened">
       <bpmn:extensionElements>
         <zeebe:ioMapping>

@@ -96,7 +96,10 @@ non-high orders land in `[50, 3000)`, high orders in `[4500, 7500)` — see "Pay
 `region`. `region-shipping` has one long-running instance per region, looping on an intermediate
 catch event subscribed to `ship-order` with `correlationKey="=region"`. Every order's fulfillment
 run correlates into the *same* region-shipping instance for its region — a genuine N:1
-convergence, the shape OCPM calls out as distinct from the tree-shaped call-activity links above.
+convergence, the shape OCPM calls out as distinct from the tree-shaped call-activity links above —
+**provided at most one region-shipping instance per region is subscribed at a time** (see the
+overlap hazard under "Approximations" for the rate envelope this holds within; the driver script
+now derives its restart interval to stay inside that envelope by default).
 
 **Ground truth, if the message carried a payload** (see gap below): every catch event would create
 a new `orderId` VARIABLE record on the shared region-shipping instance (last-write-wins on the
@@ -155,3 +158,35 @@ payload file (`region-shipping-<region>.json`, e.g. `{"region": "EU"}`).
 - **`region-shipping` "restart on complete" is approximated as a slow trickle rate**, since the
   Starter schedules new instances on a fixed timer, not on completion of the previous one. See the
   driver script for the configured interval.
+
+- **HAZARD — overlapping region-shipping instances double-correlate messages, breaking N:1
+  convergence.** Zeebe correlates a published message to *every* process instance with a matching
+  open subscription, not to just one. A region-shipping batch (20 parcels) takes roughly
+  `80 / rate` seconds at a given order-intake `rate` (each region gets ~1/4 of the overall rate;
+  20 parcels / (rate/4) = 80/rate). If the region-shipping restart interval is shorter than, or too
+  close to, that batch duration, a slow batch can still be running when its region's *next*
+  instance starts — two instances of the same region now hold an open `ship-order` subscription
+  simultaneously, and a single publish increments `parcelsLoaded` on **both**. That's not a rare
+  edge case at a 1.1x margin: any jitter, GC pause, or broker slowdown is enough to trigger it, and
+  once triggered it's sustained (both instances keep looping and both keep matching until one
+  reaches its 20-parcel cap).
+
+  **Fix**: the driver derives the default interval from the intake `rate` with a 3x margin —
+  `max(120, ceil(80/rate * 3))` seconds (`ocpm_default_region_interval_seconds` in
+  `run-realistic-load.sh`) — so overlap needs a 3x rate slowdown, not a 1.1x one, before it can
+  occur. `OCPM_REGION_STARTER_INTERVAL` still overrides this explicitly when set.
+
+  **Envelope where the N:1 ground truth holds**: as long as the *actual* time to complete a
+  20-parcel batch for a region stays under the configured interval, every order for that region
+  correlates into exactly one region-shipping instance. Sustained rate drops (or other slowdowns)
+  of more than ~3x the configured rate can still violate this — treat the ground truth as
+  probabilistic, not absolute, under sustained abnormal conditions.
+
+  **At intervals ≫ batch duration** (e.g. a very low intake rate, where the derived interval is
+  large): region-shipping instances simply sit mostly idle between messages, no correlation issue,
+  but each instance's lifetime may span many restart-interval boundaries before it fills its
+  20-parcel cap — harmless for the demo. Conversely, if the interval is set far too high relative
+  to actual message arrival (e.g. via an explicit `OCPM_REGION_STARTER_INTERVAL` override that's
+  much larger than warranted), buffered-but-uncorrelated messages simply expire at the Camunda
+  client's default 1h message TTL — also harmless, but it weakens "every order correlates" down to
+  "up to 20 per interval per region" for that region.
