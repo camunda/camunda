@@ -30,7 +30,9 @@ import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
@@ -74,7 +76,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
   private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
-  private final @Nullable IntFunction<Long> rdbmsExportedPositionSupplier;
+  private final Map<String, IntFunction<Long>> rdbmsExportedPositionSuppliers;
   private final NodeIdProvider nodeIdProvider;
   private final WorkingDirectory workingDirectory;
 
@@ -98,7 +100,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false)
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
-      @Autowired(required = false) final RdbmsMapperBundle rdbmsMapperBundle,
+      @Autowired(required = false) final Map<String, RdbmsMapperBundle> rdbmsMapperBundles,
       final NodeIdProvider nodeIdProvider,
       final WorkingDirectory workingDirectory) {
     this.configuration = configuration;
@@ -115,7 +117,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
     this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
-    rdbmsExportedPositionSupplier = exportedPositionSupplier(rdbmsMapperBundle);
+    rdbmsExportedPositionSuppliers = exportedPositionSuppliers(rdbmsMapperBundles);
     this.nodeIdProvider = nodeIdProvider;
     this.workingDirectory = workingDirectory;
   }
@@ -148,7 +150,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withNodeIdProvider(nodeIdProvider)
             .withWorkingDirectory(workingDirectory.path())
             .withExporterDescriptors(exporterDescriptors)
-            .withExportedPositionSupplier(rdbmsExportedPositionSupplier)
+            .withExportedPositionSupplier(rdbmsExportedPositionSuppliers)
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
@@ -176,11 +178,20 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     }
   }
 
-  private static @Nullable IntFunction<Long> exportedPositionSupplier(
-      final @Nullable RdbmsMapperBundle rdbmsMapperBundle) {
-    if (rdbmsMapperBundle == null) {
-      return null;
+  private static Map<String, IntFunction<Long>> exportedPositionSuppliers(
+      final @Nullable Map<String, RdbmsMapperBundle> rdbmsMapperBundles) {
+    if (rdbmsMapperBundles == null) {
+      return Map.of();
     }
+    final Map<String, IntFunction<Long>> suppliers = new HashMap<>();
+    rdbmsMapperBundles.forEach(
+        (physicalTenantId, rdbmsMapperBundle) ->
+            suppliers.put(physicalTenantId, exportedPositionSupplier(rdbmsMapperBundle)));
+    return Map.copyOf(suppliers);
+  }
+
+  private static IntFunction<Long> exportedPositionSupplier(
+      final RdbmsMapperBundle rdbmsMapperBundle) {
     final var exporterPositionMapper = rdbmsMapperBundle.exporterPositionMapper();
     return partition -> {
       final var position = exporterPositionMapper.findOne(partition);
