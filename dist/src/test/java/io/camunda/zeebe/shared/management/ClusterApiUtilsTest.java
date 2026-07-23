@@ -32,6 +32,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRob
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
@@ -485,11 +486,14 @@ final class ClusterApiUtilsTest {
         new PartitionLeaveOperation(memberId1, 1, 3),
         new PartitionReconfigurePriorityOperation(memberId1, 1, 2),
         new PartitionForceReconfigureOperation(memberId1, 1, memberCollection),
+        new PartitionBootstrapOperation(memberId1, 1, 1, emptyConfig, false),
+        new PartitionBootstrapOperation(memberId1, 2, 1, true), // Alternative constructor
+
+        // Exporters
         new PartitionDisableExporterOperation(memberId1, 1, "test-exporter"),
         new PartitionDeleteExporterOperation(memberId1, 1, "test-exporter"),
         new PartitionEnableExporterOperation(memberId1, 1, "test-exporter", emptyExporterId),
-        new PartitionBootstrapOperation(memberId1, 1, 1, emptyConfig, false),
-        new PartitionBootstrapOperation(memberId1, 2, 1, true), // Alternative constructor
+        new ExportingStateChangeOperation(memberId1, ExportingState.PAUSED),
 
         // PartitionDistributorConfig
         new UpdatePartitionDistributorConfigOperation(memberId1, new RoundRobinConfig()),

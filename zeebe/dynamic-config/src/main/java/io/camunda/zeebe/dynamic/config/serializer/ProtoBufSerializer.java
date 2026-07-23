@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
@@ -67,6 +68,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupConfiguration;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
@@ -574,6 +576,11 @@ public class ProtoBufSerializer
               Topology.AwaitModeChangeOperation.newBuilder()
                   .setMode(toProtoTopologyMode(awaitModeChangeOperation.mode()))
                   .build());
+      case final ExportingStateChangeOperation exportingStateChangeOperation ->
+          builder.setExporterStateChange(
+              Topology.ExportingStateChangeOperation.newBuilder()
+                  .setState(encodeExportingState(exportingStateChangeOperation.state()))
+                  .build());
     }
     return builder.build();
   }
@@ -903,6 +910,10 @@ public class ProtoBufSerializer
       final var awaitModeChangeProto = topologyChangeOperation.getAwaitModeChange();
       return new AwaitModeChangeOperation(
           memberId, fromProtoTopologyMode(awaitModeChangeProto.getMode()));
+    } else if (topologyChangeOperation.hasExporterStateChange()) {
+      final var exporterStateChangeProto = topologyChangeOperation.getExporterStateChange();
+      return new ExportingStateChangeOperation(
+          memberId, decodeExportingState(exporterStateChangeProto.getState()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -1441,6 +1452,27 @@ public class ProtoBufSerializer
     try {
       final var request = Requests.ModeChangeRequest.parseFrom(encodedRequest);
       return new ModeChangeRequest(toMode(request.getMode()), request.getDryRun());
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  @Override
+  public byte[] encodeExportingStateChangeRequest(final ExportingStateChangeRequest request) {
+    return Requests.ExportingStateChangeRequest.newBuilder()
+        .setState(encodeExportingState(request.state()))
+        .setDryRun(request.dryRun())
+        .build()
+        .toByteArray();
+  }
+
+  @Override
+  public ExportingStateChangeRequest decodeExportingStateChangeRequest(
+      final byte[] encodedRequest) {
+    try {
+      final var request = Requests.ExportingStateChangeRequest.parseFrom(encodedRequest);
+      return new ExportingStateChangeRequest(
+          decodeExportingState(request.getState()), request.getDryRun());
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
@@ -2027,6 +2059,11 @@ public class ProtoBufSerializer
               Topology.AwaitModeChangeOperation.newBuilder()
                   .setMode(toProtoTopologyMode(op.mode()))
                   .build());
+      case final ExportingStateChangeOperation op ->
+          builder.setExporterStateChange(
+              Topology.ExportingStateChangeOperation.newBuilder()
+                  .setState(encodeExportingState(op.state()))
+                  .build());
       case StartPartitionScaleUp(final var ignoredMemberId, final var desiredPartitionCount) ->
           builder.setInitiateScaleUpPartitions(
               Topology.StartPartitionScaleUpOperation.newBuilder()
@@ -2139,6 +2176,9 @@ public class ProtoBufSerializer
     } else if (proto.hasAwaitModeChange()) {
       return new AwaitModeChangeOperation(
           memberId, fromProtoTopologyMode(proto.getAwaitModeChange().getMode()));
+    } else if (proto.hasExporterStateChange()) {
+      return new ExportingStateChangeOperation(
+          memberId, decodeExportingState(proto.getExporterStateChange().getState()));
     } else {
       throw new IllegalStateException("Unknown partition group change operation: " + proto);
     }

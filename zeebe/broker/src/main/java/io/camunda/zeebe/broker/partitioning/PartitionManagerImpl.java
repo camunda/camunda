@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.partitioning;
 
+import static io.camunda.zeebe.util.Unit.unit;
+
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
@@ -36,6 +38,7 @@ import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -545,6 +548,32 @@ public final class PartitionManagerImpl
     concurrencyControl.run(
         () -> enableExporter(partitionId, exporterId, metadataVersion, initializeFrom, result));
     return result;
+  }
+
+  @Override
+  public ActorFuture<Void> setExportingState(final ExportingState exportingState) {
+    return partitions.keySet().stream()
+        .map(partitionId -> setExportingState(partitionId, exportingState))
+        .collect(new ActorFutureCollector<Void>(concurrencyControl))
+        .thenAccept(ignored -> unit());
+  }
+
+  private ActorFuture<Void> setExportingState(
+      final int partitionId, final ExportingState exportingState) {
+    final var partition = partitions.get(partitionId);
+    if (partition == null) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalArgumentException("No partition with id %s".formatted(partitionId)));
+    }
+
+    if (partition.zeebePartition() == null) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalArgumentException(
+              "Expected to set exporting state on partition %s, but zeebePartition is not ready"
+                  .formatted(partitionId)));
+    }
+    LOGGER.trace("Setting exporting state {} on partition {}", exportingState, partitionId);
+    return partition.zeebePartition().getAdminAccess().setExportingState(exportingState);
   }
 
   private void disableExporter(

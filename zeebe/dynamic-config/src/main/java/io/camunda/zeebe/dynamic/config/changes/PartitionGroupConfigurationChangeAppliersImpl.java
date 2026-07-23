@@ -13,6 +13,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.AwaitRelocationCompletio
 import io.camunda.zeebe.dynamic.config.changes.appliers.DeleteHistoryApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.EnterRecoveryApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.ExitRecoveryApplier;
+import io.camunda.zeebe.dynamic.config.changes.appliers.ExportingStateChangeApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionBootstrapApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDeleteExporterApplier;
 import io.camunda.zeebe.dynamic.config.changes.appliers.PartitionDisableExporterApplier;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.dynamic.config.changes.appliers.UpdateRoutingStateApplie
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
@@ -120,6 +122,8 @@ public final class PartitionGroupConfigurationChangeAppliersImpl
           };
       case final AwaitModeChangeOperation op ->
           new AwaitModeChangeApplier(op.memberId(), op.mode(), modeChangeExecutor);
+      case final ExportingStateChangeOperation op ->
+          new ExportingStateChangeApplier(op.memberId(), op.state(), partitionChangeExecutor);
     };
   }
 }

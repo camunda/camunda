@@ -16,6 +16,7 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOpe
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
@@ -151,6 +152,11 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               awaitModeChangeOperation.memberId(),
               awaitModeChangeOperation.mode(),
               modeChangeExecutor);
+      case final ExportingStateChangeOperation exportingStateChangeOperation ->
+          new ExportingStateChangeApplier(
+              exportingStateChangeOperation.memberId(),
+              exportingStateChangeOperation.state(),
+              partitionChangeExecutor);
     };
   }
 }

@@ -22,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
+import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.RoundRob
 import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.DeleteHistoryOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ExportingStateChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
@@ -301,6 +303,11 @@ final class ClusterApiUtils {
           new Operation()
               .operation(OperationEnum.AWAIT_MODE_CHANGE)
               .brokerId(brokerIdValue(modeChange.memberId()));
+      case final ExportingStateChangeOperation exportingStateChangeOperation ->
+          new Operation()
+              .operation(OperationEnum.EXPORTING_STATE_CHANGE)
+              .brokerId(brokerIdValue(exportingStateChangeOperation.memberId()))
+              .exportingState(mapExportingState(exportingStateChangeOperation.state()));
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -370,6 +377,16 @@ final class ClusterApiUtils {
       case DISABLED -> ExporterStateCode.DISABLED;
       case ENABLED -> ExporterStateCode.ENABLED;
       case CONFIG_NOT_FOUND -> ExporterStateCode.CONFIG_NOT_FOUND;
+    };
+  }
+
+  private static io.camunda.zeebe.management.cluster.ExportingState mapExportingState(
+      final ExportingState state) {
+    return switch (state) {
+      case EXPORTING -> io.camunda.zeebe.management.cluster.ExportingState.EXPORTING;
+      case PAUSED -> io.camunda.zeebe.management.cluster.ExportingState.PAUSED;
+      case SOFT_PAUSED -> io.camunda.zeebe.management.cluster.ExportingState.SOFT_PAUSED;
+      case UNKNOWN -> io.camunda.zeebe.management.cluster.ExportingState.UNKNOWN;
     };
   }
 

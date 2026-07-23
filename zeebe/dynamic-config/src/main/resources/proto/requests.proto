@@ -43,7 +43,7 @@ message ClusterScaleRequest {
   optional uint32 newPartitionCount = 2;
   optional uint32 newReplicationFactor = 3;
   bool dryRun = 4;
-  optional string zone= 5;
+  optional string zone = 5;
 }
 
 message ClusterPatchRequest {
@@ -100,6 +100,11 @@ enum Mode {
   UNKNOWN = 0;
   RECOVERING = 1;
   PROCESSING = 2;
+}
+
+message ExportingStateChangeRequest {
+  topology_protocol.ExportingStateEnum state = 1;
+  bool dryRun = 2;
 }
 
 message ModeChangeRequest {

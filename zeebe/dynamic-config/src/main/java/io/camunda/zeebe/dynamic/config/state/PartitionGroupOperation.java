@@ -47,6 +47,17 @@ public sealed interface PartitionGroupOperation extends ClusterConfigurationChan
       implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
 
   /**
+   * Operation to change the exporting state of every partition replica owned by the given member.
+   * Applied by the target member, which sets the requested {@link ExportingState} on all of its
+   * local partitions after the local exporters have reached that state.
+   *
+   * @param memberId the member id of the member that will apply this operation
+   * @param state the exporting state to apply to all of the member's partitions
+   */
+  record ExportingStateChangeOperation(MemberId memberId, ExportingState state)
+      implements io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation {}
+
+  /**
    * Verifies that a member's partition manager has finished starting in the target mode. Emitted
    * after the {@link ModeChangeOperation}s of a mode change so that the cluster change only
    * completes once every member's partitions are up. It changes no member state; it only gates the
