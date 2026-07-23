@@ -10,6 +10,9 @@ package io.camunda.zeebe.dynamic.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.cluster.PartitionId;
+import io.camunda.zeebe.dynamic.config.CurrentClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
@@ -43,6 +46,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -308,5 +312,59 @@ final class ClusterConfigurationManagerImplNewConfigTest {
     final var config = configuration(manager);
     assertThat(config.globalConfiguration().getMember(MEMBER_1).state()).isEqualTo(State.ACTIVE);
     assertThat(config.globalConfiguration().hasPendingChanges()).isFalse();
+  }
+
+  @Test
+  void shouldStartFromStaticInitializer() {
+    // given — a fresh (never-started) manager and a static configuration for two members
+    final var manager = newManager(MEMBER_0);
+    final var partition =
+        new PartitionMetadata(
+            new PartitionId(CurrentClusterConfiguration.DEFAULT_GROUP, 1),
+            Set.of(MEMBER_0, MEMBER_1),
+            Map.of(MEMBER_0, 1, MEMBER_1, 1),
+            1,
+            MEMBER_0);
+    final var staticConfiguration =
+        new StaticConfiguration(
+            new ControllablePartitionDistributor().withPartitions(Set.of(partition)),
+            Set.of(MEMBER_0, MEMBER_1),
+            MEMBER_0,
+            List.of(new PartitionId(CurrentClusterConfiguration.DEFAULT_GROUP, 1)),
+            1,
+            partitionConfig,
+            "cluster-x");
+
+    // when
+    manager.start(new StaticInitializer(staticConfiguration)).join();
+
+    // then — the generated multi-group configuration was persisted and is retrievable
+    final var config = configuration(manager);
+    assertThat(config.globalConfiguration().members().keySet())
+        .containsExactlyInAnyOrder(MEMBER_0, MEMBER_1);
+    assertThat(config.globalConfiguration().clusterId()).contains("cluster-x");
+    assertThat(config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP).members().keySet())
+        .containsExactlyInAnyOrder(MEMBER_0, MEMBER_1);
+  }
+
+  @Test
+  void shouldFailToStartWhenGeneratedConfigurationHasNoMembers() {
+    // given — a static configuration with no cluster members at all
+    final var manager = newManager(MEMBER_0);
+    final var staticConfiguration =
+        new StaticConfiguration(
+            new ControllablePartitionDistributor().withPartitions(Set.of()),
+            Set.of(),
+            MEMBER_0,
+            List.of(),
+            1,
+            partitionConfig,
+            null);
+
+    // when
+    final var startFuture = manager.start(new StaticInitializer(staticConfiguration));
+
+    // then
+    assertThat(startFuture).failsWithin(Duration.ofSeconds(1));
   }
 }

@@ -23,9 +23,11 @@ import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinatorImpl;
+import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
@@ -33,25 +35,43 @@ import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 
 public final class ClusterConfigurationManagerService
     implements ClusterConfigurationUpdateNotifier, AsyncClosable {
   public static final String TOPOLOGY_FILE_NAME = ".topology.meta";
+
+  /**
+   * Static feature flag switching the manager between the legacy single-group model and the new
+   * multi-partition-group model. Kept {@code false} in production for now; the new path is
+   * exercised via the {@code useNewConfig} constructor parameter (see {@link #USE_NEW_CONFIG}).
+   * When {@code false}, the legacy code path runs completely unchanged.
+   */
+  static final boolean USE_NEW_CONFIG = false;
+
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
-  private final PersistedClusterConfiguration persistedClusterConfiguration;
+  // Exactly one of persistedClusterConfiguration (legacy model) /
+  // persistedCurrentClusterConfiguration
+  // (new model) is set, matching ClusterConfigurationManagerImpl.USE_NEW_CONFIG. Both classes read
+  // the same on-disk file, distinguished by an internal header version, so only one may ever open
+  // it.
+  private final @Nullable PersistedClusterConfiguration persistedClusterConfiguration;
+  private final @Nullable PersistedCurrentClusterConfiguration persistedCurrentClusterConfiguration;
   private final Path configurationFile;
   private final ConfigurationChangeCoordinator configurationChangeCoordinator;
   private final ClusterConfigurationRequestServer configurationRequestServer;
@@ -62,6 +82,7 @@ public final class ClusterConfigurationManagerService
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
   private final MemberId localMemberId;
+  private final boolean useNewConfig;
   private ModeChangeExecutor modeChangeExecutor;
 
   public ClusterConfigurationManagerService(
@@ -71,6 +92,31 @@ public final class ClusterConfigurationManagerService
       final ClusterConfigurationGossiperConfig config,
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry) {
+    this(
+        dataRootDirectory,
+        communicationService,
+        memberShipService,
+        config,
+        clusterChangeExecutor,
+        meterRegistry,
+        USE_NEW_CONFIG);
+  }
+
+  /**
+   * @param useNewConfig overrides {@link ClusterConfigurationManagerService#USE_NEW_CONFIG} for
+   *     testing; production code always goes through the constructor above, which uses the
+   *     compile-time flag.
+   */
+  @VisibleForTesting
+  ClusterConfigurationManagerService(
+      final Path dataRootDirectory,
+      final ClusterCommunicationService communicationService,
+      final ClusterMembershipService memberShipService,
+      final ClusterConfigurationGossiperConfig config,
+      final ClusterChangeExecutor clusterChangeExecutor,
+      final MeterRegistry meterRegistry,
+      final boolean useNewConfig) {
+    this.useNewConfig = useNewConfig;
     gossiperConfig = config;
     this.clusterChangeExecutor = clusterChangeExecutor;
     topologyMetrics = new TopologyMetrics(meterRegistry);
@@ -83,13 +129,28 @@ public final class ClusterConfigurationManagerService
 
     localMemberId = memberShipService.getLocalMember().id();
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
-    persistedClusterConfiguration =
-        PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
     gossipActor = Actor.newActor().name("ClusterConfigGossip").build();
     managerActor = Actor.newActor().name("ClusterConfigManager").build();
-    clusterConfigurationManager =
-        new ClusterConfigurationManagerImpl(
-            managerActor, localMemberId, persistedClusterConfiguration, topologyManagerMetrics);
+
+    if (useNewConfig) {
+      persistedClusterConfiguration = null;
+      persistedCurrentClusterConfiguration =
+          PersistedCurrentClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
+      clusterConfigurationManager =
+          new ClusterConfigurationManagerImpl(
+              managerActor,
+              localMemberId,
+              persistedCurrentClusterConfiguration,
+              topologyManagerMetrics);
+    } else {
+      persistedCurrentClusterConfiguration = null;
+      persistedClusterConfiguration =
+          PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
+      clusterConfigurationManager =
+          new ClusterConfigurationManagerImpl(
+              managerActor, localMemberId, persistedClusterConfiguration, topologyManagerMetrics);
+    }
+
     clusterConfigurationGossiper =
         new ClusterConfigurationGossiper(
             gossipActor,
@@ -97,7 +158,9 @@ public final class ClusterConfigurationManagerService
             memberShipService,
             new ProtoBufSerializer(),
             config,
-            clusterConfigurationManager::onGossipReceived,
+            // Dead on the new model: setCurrentConfigurationUpdateHandler (below) makes the
+            // gossiper prefer the new-model handler, so this legacy one is never invoked.
+            useNewConfig ? ignored -> {} : clusterConfigurationManager::onGossipReceived,
             topologyMetrics);
     configurationChangeCoordinator =
         new ConfigurationChangeCoordinatorImpl(
@@ -109,8 +172,19 @@ public final class ClusterConfigurationManagerService
             new ClusterConfigurationManagementRequestsHandler(
                 configurationChangeCoordinator, localMemberId, managerActor));
 
-    clusterConfigurationManager.setConfigurationGossiper(
-        clusterConfigurationGossiper::updateClusterConfiguration);
+    if (useNewConfig) {
+      // Plain field wiring — safe here since it happens before either actor is submitted to a
+      // scheduler. registerGlobalChangeAppliers (below) goes through the manager's executor, so it
+      // is deferred to startClusterTopologyServices, after managerActor is actually scheduled — see
+      // that method for why.
+      clusterConfigurationGossiper.setCurrentConfigurationUpdateHandler(
+          clusterConfigurationManager::onGossipReceivedCurrent);
+      clusterConfigurationManager.setCurrentConfigurationGossiper(
+          clusterConfigurationGossiper::updateCurrentClusterConfiguration);
+    } else {
+      clusterConfigurationManager.setConfigurationGossiper(
+          clusterConfigurationGossiper::updateClusterConfiguration);
+    }
   }
 
   private ClusterConfigurationInitializer getNonCoordinatorInitializer(
@@ -200,14 +274,6 @@ public final class ClusterConfigurationManagerService
       final ActorSchedulingService actorSchedulingService,
       final StaticConfiguration staticConfiguration) {
     final var result = new CompletableActorFuture<Void>();
-    final var coordinatorMemberId =
-        ClusterConfigurationCoordinatorSupplier.ofMembers(staticConfiguration.clusterMembers())
-            .getDefaultCoordinator();
-    final var isCoordinator = coordinatorMemberId.equals(localMemberId);
-    final ClusterConfigurationInitializer clusterConfigurationInitializer =
-        isCoordinator
-            ? getCoordinatorInitializer(staticConfiguration)
-            : getNonCoordinatorInitializer(staticConfiguration);
 
     configurationRequestServer.start();
 
@@ -219,7 +285,40 @@ public final class ClusterConfigurationManagerService
             (ok, error) -> {
               if (error != null) {
                 result.completeExceptionally(error);
+              } else if (useNewConfig) {
+                // Registered here rather than in the constructor: registerGlobalChangeAppliers goes
+                // through managerActor's executor, and a job submitted before the actor is
+                // scheduled
+                // is not guaranteed to be processed before other work; doing it right after the
+                // actor is confirmed scheduled avoids racing gossip/apply against the registration.
+                // The global (cluster-membership) appliers need nothing broker-supplied: cluster
+                // membership changes have no real executor in production (see
+                // NoopClusterMembershipChangeExecutor's usage in the legacy path too), and
+                // clusterChangeExecutor is already available here. This is therefore registered
+                // once, unconditionally, unlike the per-tenant partition-group appliers which the
+                // broker must register per physical tenant.
+                clusterConfigurationManager.registerGlobalChangeAppliers(
+                    new GlobalConfigurationChangeAppliersImpl(
+                        new NoopClusterMembershipChangeExecutor(), clusterChangeExecutor));
+                // Intermediate migration step: only the static initializer exists for the new
+                // model, used unconditionally for both coordinator and non-coordinator roles (see
+                // CurrentClusterConfigurationInitializer's class doc). File/gossip/sync recovery
+                // and the coordinator/non-coordinator split are a follow-up.
+                clusterConfigurationManager
+                    .start(
+                        new CurrentClusterConfigurationInitializer.StaticInitializer(
+                            staticConfiguration))
+                    .onComplete(result);
               } else {
+                final var coordinatorMemberId =
+                    ClusterConfigurationCoordinatorSupplier.ofMembers(
+                            staticConfiguration.clusterMembers())
+                        .getDefaultCoordinator();
+                final var isCoordinator = coordinatorMemberId.equals(localMemberId);
+                final ClusterConfigurationInitializer clusterConfigurationInitializer =
+                    isCoordinator
+                        ? getCoordinatorInitializer(staticConfiguration)
+                        : getNonCoordinatorInitializer(staticConfiguration);
                 clusterConfigurationManager
                     .start(clusterConfigurationInitializer)
                     .onComplete(result);
@@ -230,6 +329,11 @@ public final class ClusterConfigurationManagerService
 
   public ActorFuture<ClusterConfiguration> getClusterTopology() {
     return clusterConfigurationManager.getClusterConfiguration();
+  }
+
+  /** Returns the full multi-partition-group configuration. Only valid when the new model is on. */
+  public ActorFuture<CurrentClusterConfiguration> getMultiConfiguration() {
+    return clusterConfigurationManager.getMultiConfiguration();
   }
 
   public Optional<ConfigurationChangeCoordinator> getTopologyChangeCoordinator() {
@@ -273,6 +377,37 @@ public final class ClusterConfigurationManagerService
 
   public void removeModeChangeExecutor() {
     managerActor.run(() -> modeChangeExecutor = null);
+  }
+
+  /**
+   * Registers the appliers for a single partition group (physical tenant) on the new
+   * multi-partition-group model, keyed by {@code groupId}. Unlike {@link
+   * #registerPartitionChangeExecutors}/{@link #registerModeChangeExecutor} (one shared registration
+   * for the single legacy group), this is called once per physical tenant — each tenant's own
+   * executors are scoped to that tenant only.
+   *
+   * <p>Not yet called by any broker code: broker integration (registering every physical tenant's
+   * {@code PartitionManagerImpl}/{@code PartitionModeHandler} here instead of only the default
+   * tenant's) is a follow-up.
+   */
+  public void registerPartitionGroupChangeExecutors(
+      final String groupId,
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      final ModeChangeExecutor modeChangeExecutor) {
+    managerActor.run(
+        () ->
+            clusterConfigurationManager.registerPartitionGroupChangeAppliers(
+                groupId,
+                new PartitionGroupConfigurationChangeAppliersImpl(
+                    partitionChangeExecutor,
+                    partitionScalingChangeExecutor,
+                    clusterChangeExecutor,
+                    modeChangeExecutor)));
+  }
+
+  public void removePartitionGroupChangeExecutors(final String groupId) {
+    managerActor.run(() -> clusterConfigurationManager.removePartitionGroupChangeAppliers(groupId));
   }
 
   public void registerTopologyChangedListener(final InconsistentConfigurationListener listener) {

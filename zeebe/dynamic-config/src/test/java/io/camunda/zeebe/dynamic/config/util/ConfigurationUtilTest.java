@@ -14,6 +14,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.cluster.PartitionId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
+import io.camunda.zeebe.dynamic.config.state.BrokerState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -279,6 +280,66 @@ class ConfigurationUtilTest {
 
     // then
     assertThat(partitionDistribution).containsExactly(partitionOne);
+  }
+
+  @Test
+  void shouldGenerateCurrentClusterConfigurationSplitByGroup() {
+    // given — two groups, "default" and "tenantA", each with their own partitions
+    final PartitionMetadata defaultPartitionOne =
+        new PartitionMetadata(
+            new PartitionId("default", 1),
+            Set.of(member(0), member(1)),
+            Map.of(member(0), 2, member(1), 1),
+            2,
+            member(0));
+    final PartitionMetadata tenantAPartitionOne =
+        new PartitionMetadata(
+            new PartitionId("tenantA", 1), Set.of(member(1)), Map.of(member(1), 1), 1, member(1));
+    final var partitionDistribution = Set.of(defaultPartitionOne, tenantAPartitionOne);
+    // member(2) is part of the cluster but replicates no partition in any group
+    final var clusterMembers = Set.of(member(0), member(1), member(2));
+
+    // when
+    final var configuration =
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            clusterMembers, partitionDistribution, partitionConfig, "clusterId");
+
+    // then — every cluster member is ACTIVE in the global configuration, regardless of partitions
+    assertThat(configuration.globalConfiguration().members().keySet())
+        .containsExactlyInAnyOrder(member(0), member(1), member(2));
+    assertThat(configuration.globalConfiguration().getMember(member(2)).state())
+        .isEqualTo(BrokerState.State.ACTIVE);
+    assertThat(configuration.globalConfiguration().clusterId()).contains("clusterId");
+
+    // and — the partition groups are split by PartitionId.group()
+    assertThat(configuration.partitionGroups()).containsOnlyKeys("default", "tenantA");
+
+    final var defaultGroup = configuration.partitionGroup("default");
+    assertThat(defaultGroup.members().keySet()).containsExactlyInAnyOrder(member(0), member(1));
+    assertThat(defaultGroup.getMember(member(0)).partitions().get(1).priority()).isEqualTo(2);
+    assertThat(defaultGroup.routingState()).isPresent();
+    assertThat(defaultGroup.routingState().orElseThrow().requestHandling().activePartitions())
+        .containsExactly(1);
+
+    final var tenantAGroup = configuration.partitionGroup("tenantA");
+    assertThat(tenantAGroup.members().keySet()).containsExactly(member(1));
+    assertThat(tenantAGroup.getMember(member(1)).partitions().get(1).priority()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldGenerateCurrentClusterConfigurationWithoutClusterId() {
+    // given
+    final PartitionMetadata partitionOne =
+        new PartitionMetadata(
+            new PartitionId(GROUP_NAME, 1), Set.of(member(0)), Map.of(member(0), 1), 1, member(0));
+
+    // when
+    final var configuration =
+        ConfigurationUtil.getCurrentClusterConfigurationFrom(
+            Set.of(member(0)), Set.of(partitionOne), partitionConfig, null);
+
+    // then
+    assertThat(configuration.globalConfiguration().clusterId()).isEmpty();
   }
 
   private MemberId member(final int id) {
