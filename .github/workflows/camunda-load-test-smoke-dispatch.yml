@@ -38,39 +38,7 @@ jobs:
           persist-credentials: false
       - id: detect
         name: Detect which setup versions changed
-        run: |
-          changed=$(git diff --name-only "origin/${GITHUB_BASE_REF}...HEAD")
-
-          run_all=false
-          if echo "$changed" | grep -qE '\.github/workflows/camunda-load-test'; then
-            run_all=true
-          fi
-
-          matrix_entries=()
-
-          if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/main/'; then
-            matrix_entries+=('{"version":"main","orchestration-tag":"SNAPSHOT"}')
-          fi
-          #
-          # Commented out versions - will be added as soon as we have target version support
-          #
-          if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-89/'; then
-            matrix_entries+=('{"version":"stable-89","orchestration-tag":"8.9-SNAPSHOT"}')
-          fi
-          if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-88/'; then
-            matrix_entries+=('{"version":"stable-88","orchestration-tag":"8.8-SNAPSHOT"}')
-          fi
-          if [[ "$run_all" == "true" ]] || echo "$changed" | grep -q 'load-tests/setup/stable-87/'; then
-            matrix_entries+=('{"version":"stable-87","orchestration-tag":"8.7-SNAPSHOT"}')
-          fi
-
-          # Default: run main if nothing specific was detected
-          if [[ ${#matrix_entries[@]} -eq 0 ]]; then
-            matrix_entries+=('{"version":"main","orchestration-tag":"SNAPSHOT"}')
-          fi
-
-          joined=$(IFS=,; echo "${matrix_entries[*]}")
-          echo "matrix={\"include\":[${joined}]}" >> "$GITHUB_OUTPUT"
+        run: ./.github/scripts/load-test-detect-versions-changed.sh
 
   smoke:
     name: Smoke (${{ matrix.version }})
