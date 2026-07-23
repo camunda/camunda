@@ -64,6 +64,8 @@ spec:
               value: Stackdriver
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_REPLICAS
               value: "1"
+            - name: CAMUNDA_OPERATE_ARCHIVER_ARCHIVEBYIDENABLED
+              value: "true"
           resources:
             limits:
               cpu: 2000m
@@ -141,6 +143,8 @@ spec:
               value: Stackdriver
             - name: CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_REPLICAS
               value: "1"
+            - name: CAMUNDA_OPERATE_ARCHIVER_ARCHIVEBYIDENABLED
+              value: "true"
           envFrom:
             - configMapRef:
                 name: c8-golden-stable-87-elasticsearch-camunda-platform-identity-env-vars
