@@ -517,7 +517,7 @@ final class RestoreValidatorResolverTest {
 
       // then
       assertThat(assertInvalid(result))
-          .hasMessage("Could not find a completed backup with id 1 for partition 2.");
+          .hasMessage("No completed backup found for partition 2 with backup id 1");
     }
   }
 }
