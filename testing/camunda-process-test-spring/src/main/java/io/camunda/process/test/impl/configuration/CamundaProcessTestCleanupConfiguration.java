@@ -29,7 +29,7 @@ public class CamundaProcessTestCleanupConfiguration {
   public CleanupStrategy cleanupStrategy(
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
     final DataDeletionMode dataDeletionMode = runtimeConfiguration.getDataDeletionMode();
-    return DefaultCleanupStrategyFactory.resolve(dataDeletionMode);
+    return new DefaultCleanupStrategyFactory().create(dataDeletionMode);
   }
 
   @Bean

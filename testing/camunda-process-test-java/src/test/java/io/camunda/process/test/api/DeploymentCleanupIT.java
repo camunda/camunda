@@ -36,6 +36,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This integration test verifies deployment collection for resource deletion after a test case
+ * cleanup.
+ */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class DeploymentCleanupIT {
 

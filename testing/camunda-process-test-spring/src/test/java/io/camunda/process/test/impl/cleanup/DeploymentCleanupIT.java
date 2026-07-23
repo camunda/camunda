@@ -39,7 +39,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-/** This integration test verifies the deployment collection for the cleanup strategy. */
+/**
+ * This integration test verifies deployment collection for resource deletion after a test case
+ * cleanup in the Spring listener setup.
+ */
 @SpringBootTest(classes = {DeploymentCleanupIT.TestConfig.class})
 @CamundaSpringProcessTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
