@@ -20,6 +20,7 @@ import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.security.UserIdMigrationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
@@ -115,6 +116,8 @@ class CslSecurityChainSelectionTest {
               assertThat(context).hasSingleBean(OptimizeCamundaSecurityConfig.class);
               assertThat(context.getBean(SecurityPathPort.class))
                   .isInstanceOf(OptimizeSecurityPathAdapter.class);
+              assertThat(context.getBean(MembershipPort.class))
+                  .isInstanceOf(OptimizeMembershipAdapter.class);
             });
   }
 
@@ -140,6 +143,8 @@ class CslSecurityChainSelectionTest {
               assertThat(context).doesNotHaveBean(CCSaaSSecurityConfigurerAdapter.class);
               assertThat(context).doesNotHaveBean(CCSaasAuth0WebSecurityConfig.class);
               assertThat(context).hasSingleBean(OptimizeCamundaSecurityConfig.class);
+              assertThat(context.getBean(MembershipPort.class))
+                  .isInstanceOf(OptimizeMembershipAdapter.class);
             });
   }
 }
