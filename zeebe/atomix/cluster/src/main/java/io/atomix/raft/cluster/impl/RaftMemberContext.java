@@ -85,6 +85,10 @@ public final class RaftMemberContext {
     open = false;
     member.close();
     closeReader();
+    if (snapshotChunkReader != null) {
+      snapshotChunkReader.close();
+      snapshotChunkReader = null;
+    }
   }
 
   public boolean isOpen() {
