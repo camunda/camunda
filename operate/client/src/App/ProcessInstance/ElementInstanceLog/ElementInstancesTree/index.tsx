@@ -28,6 +28,7 @@ import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {useSearchElementInstancesByScope} from 'modules/queries/elementInstances/useSearchElementInstancesByScope';
 import {notificationsStore} from 'modules/stores/notifications';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {buildElementInstanceSort} from 'modules/utils/buildElementInstanceSort';
 import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
@@ -506,10 +507,7 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
         {
           filter: {elementInstanceScopeKey: scopeKey},
           page: {limit: 1, from: 0},
-          sort: [
-            {field: 'startDate', order: sortOrder},
-            {field: 'elementInstanceKey', order: sortOrder},
-          ],
+          sort: buildElementInstanceSort(sortOrder),
         },
         {enabled: false},
       );

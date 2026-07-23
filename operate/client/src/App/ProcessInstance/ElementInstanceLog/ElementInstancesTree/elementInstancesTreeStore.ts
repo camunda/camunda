@@ -16,6 +16,7 @@ import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from 'modules/stores/networkReconnectionHandler';
 import type {RequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {buildElementInstanceSort} from 'modules/utils/buildElementInstanceSort';
 
 const PAGE_SIZE = 50;
 const POLLING_INTERVAL = 5000;
@@ -149,10 +150,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: 0},
-        sort: [
-          {field: 'startDate', order: this.sortOrder},
-          {field: 'elementInstanceKey', order: this.sortOrder},
-        ],
+        sort: buildElementInstanceSort(this.sortOrder),
       },
       controller.signal,
     );
@@ -260,10 +258,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: nextWindowStart},
-        sort: [
-          {field: 'startDate', order: this.sortOrder},
-          {field: 'elementInstanceKey', order: this.sortOrder},
-        ],
+        sort: buildElementInstanceSort(this.sortOrder),
       },
       controller.signal,
     );
@@ -318,10 +313,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
       {
         filter: {elementInstanceScopeKey: scopeKey},
         page: {limit: PAGE_SIZE * 2, from: prevWindowStart},
-        sort: [
-          {field: 'startDate', order: this.sortOrder},
-          {field: 'elementInstanceKey', order: this.sortOrder},
-        ],
+        sort: buildElementInstanceSort(this.sortOrder),
       },
       controller.signal,
     );
@@ -491,10 +483,7 @@ class ElementInstancesTreeStore extends NetworkReconnectionHandler {
                 limit: PAGE_SIZE * 2,
                 from: requestedWindowStart,
               },
-              sort: [
-                {field: 'startDate', order: this.sortOrder},
-                {field: 'elementInstanceKey', order: this.sortOrder},
-              ],
+              sort: buildElementInstanceSort(this.sortOrder),
             },
             signal,
           );

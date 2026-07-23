@@ -31,6 +31,7 @@ import {
 import {flattenPaginatedPages} from 'modules/queries/flattenPaginatedPages';
 import {useDashboardScrollPagination} from 'modules/hooks/useDashboardScrollPagination';
 import {escapeLikePattern} from 'modules/utils/escapeLikePattern';
+import {buildElementInstanceSort} from 'modules/utils/buildElementInstanceSort';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {instanceHistorySortOrderStore} from 'modules/stores/instanceHistorySortOrder';
@@ -122,10 +123,7 @@ const FilteredElementInstancesList: React.FC<Props> = observer(
           processInstanceKey,
           $or: [{elementName: {$like: pattern}}, {elementId: {$like: pattern}}],
         },
-        sort: [
-          {field: 'startDate', order: sortOrder},
-          {field: 'elementInstanceKey', order: sortOrder},
-        ],
+        sort: buildElementInstanceSort(sortOrder),
       };
     }, [searchText, processInstanceKey, sortOrder]);
 
