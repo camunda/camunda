@@ -184,8 +184,11 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Install Claude Code CLI
+        env:
+          # renovate: datasource=npm depName=@anthropic-ai/claude-code
+          CLAUDE_CODE_VERSION: '2.1.198'
         run: |
-          npm install -g @anthropic-ai/claude-code@2.1.156
+          npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
           claude --version
 
       - name: Compute workspace name

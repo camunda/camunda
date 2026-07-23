@@ -4,6 +4,12 @@ name: "Opened Issue Labeler"
 on:
   issues:
     types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to (re)run the component auto-labeler against"
+        required: false
+        type: string
 
 permissions:
   issues: write
@@ -11,6 +17,7 @@ permissions:
 
 jobs:
   triage:
+    if: ${{ github.event_name == 'issues' }}
     runs-on: ubuntu-latest
     steps:
     - name: Generate GitHub token
@@ -30,3 +37,59 @@ jobs:
         configuration-path: .github/opened_issue_labeler.yml
         enable-versioned-regex: 0
         repo-token: ${{ steps.github-token.outputs.token }}
+
+  # Fallback labeler: runs after the regex-based triage job and, for issues it
+  # could not assign a component/* label to, asks Claude to read the issue and
+  # apply a best-fit component/* label (or leave a triage note when it can't).
+  component-auto-label:
+    needs: [triage]
+    if: ${{ always() && (github.event.issue.number || inputs.issue_number) }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+    - name: Checkout
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Generate GitHub token
+      id: github-token
+      uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # generate-github-app-token-from-vault-secrets: v1.1.0
+      with:
+        github-app-id-vault-key: PROJECT_BOARD_AUTOMATION_APP_ID
+        github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+        github-app-private-key-vault-key: PROJECT_BOARD_AUTOMATION_APP_PRIVATE_KEY
+        github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+        vault-auth-method: approle
+        vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+        vault-url: ${{ secrets.VAULT_ADDR }}
+    - name: Import Vault secrets
+      id: secrets
+      uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        exportEnv: false
+        secrets: |
+          secret/data/products/qa/ci/common CLAUDE_API_KEY | ANTHROPIC_API_KEY ;
+    - name: Set up Node
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      with:
+        node-version: 20
+    - name: Install Claude Code CLI
+      env:
+        # renovate: datasource=npm depName=@anthropic-ai/claude-code
+        CLAUDE_CODE_VERSION: '2.1.198'
+      run: |
+        npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+        claude --version
+    - name: Run component auto-labeler
+      env:
+        GH_TOKEN: ${{ steps.github-token.outputs.token }}
+        ANTHROPIC_API_KEY: ${{ steps.secrets.outputs.ANTHROPIC_API_KEY }}
+        ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+        REPO: ${{ github.repository }}
+        FORCE: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+      run: |
+        claude -p "$(cat .github/prompts/component-auto-label.md)" --dangerously-skip-permissions
