@@ -27,25 +27,28 @@ import {getForbiddenPermissionsError} from 'modules/constants/permissions';
 type LayoutProps = {
   children: React.ReactNode;
   isPanel: boolean;
+  showHeader: boolean;
   searchInput?: React.ReactNode;
 };
 
 const Layout: React.FC<LayoutProps> = observer(
-  ({children, isPanel, searchInput}) => {
+  ({children, isPanel, showHeader, searchInput}) => {
     if (!isPanel) {
       return children;
     }
 
     return (
       <Container data-testid="instance-history">
-        <PanelHeader title="Instance History" size="sm">
-          {!modificationsStore.isModificationModeEnabled && (
-            <Stack orientation="horizontal" gap={5}>
-              <TimeStampPill />
-              <ExecutionCountToggle />
-            </Stack>
-          )}
-        </PanelHeader>
+        {showHeader && (
+          <PanelHeader title="Instance History" size="sm">
+            {!modificationsStore.isModificationModeEnabled && (
+              <Stack orientation="horizontal" gap={5}>
+                <TimeStampPill />
+                <ExecutionCountToggle />
+              </Stack>
+            )}
+          </PanelHeader>
+        )}
         {!modificationsStore.isModificationModeEnabled && searchInput}
         {children}
       </Container>
@@ -58,8 +61,8 @@ const INSTANCE_HISTORY_FORBIDDEN = getForbiddenPermissionsError(
   'this instance history',
 );
 
-const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
-  ({isPanel = false}) => {
+const ElementInstanceLog: React.FC<{isPanel?: boolean; showHeader?: boolean}> =
+  observer(({isPanel = false, showHeader = true}) => {
     const {
       data: processInstance,
       status: processInstanceStatus,
@@ -84,7 +87,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
 
     if ([processInstanceStatus, businessObjectsStatus].includes('pending')) {
       return (
-        <Layout isPanel={isPanel}>
+        <Layout isPanel={isPanel} showHeader={showHeader}>
           <Skeleton />
         </Layout>
       );
@@ -98,7 +101,7 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
           businessObjectsError?.response?.status === HTTP_STATUS_FORBIDDEN);
 
       return (
-        <Layout isPanel={isPanel}>
+        <Layout isPanel={isPanel} showHeader={showHeader}>
           <ErrorMessage
             message={
               isForbidden
@@ -116,7 +119,11 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
     }
 
     return (
-      <Layout isPanel={isPanel} searchInput={<SearchForm />}>
+      <Layout
+        isPanel={isPanel}
+        showHeader={showHeader}
+        searchInput={<SearchForm />}
+      >
         <PanelBody>
           <ErrorBoundary
             fallbackRender={({error}) => (
@@ -155,7 +162,6 @@ const ElementInstanceLog: React.FC<{isPanel?: boolean}> = observer(
         </PanelBody>
       </Layout>
     );
-  },
-);
+  });
 
 export {ElementInstanceLog};

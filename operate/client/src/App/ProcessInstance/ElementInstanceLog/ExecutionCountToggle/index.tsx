@@ -9,7 +9,6 @@
 import {observer} from 'mobx-react';
 import {Toggle} from '@carbon/react';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
-import {useEffect} from 'react';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 
@@ -18,8 +17,6 @@ const ExecutionCountToggle: React.FC = observer(() => {
     state: {isExecutionCountVisible},
     toggleExecutionCountVisibility,
   } = executionCountToggleStore;
-
-  useEffect(() => executionCountToggleStore.reset, []);
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isSuccess} = useProcessInstanceXml({processDefinitionKey});
