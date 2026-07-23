@@ -64,7 +64,7 @@
     <!-- renovate: datasource=docker depName=docker.elastic.co/elasticsearch/elasticsearch -->
     <version.elasticsearch.container>8.19.16</version.elasticsearch.container>
     <version.error-prone>2.50.0</version.error-prone>
-    <version.nullaway>0.13.7</version.nullaway>
+    <version.nullaway>0.13.8</version.nullaway>
     <version.grpc>1.82.2</version.grpc>
     <version.gson>2.14.0</version.gson>
     <version.guava>33.6.0-jre</version.guava>
