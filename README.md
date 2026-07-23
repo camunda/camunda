@@ -91,6 +91,30 @@ For more details, see the [documentation site README](monorepo-docs-site/README.
 * [Java Client](https://docs.camunda.io/docs/apis-tools/java-client/)
 * [Camunda Spring Boot Starter](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/)
 
+## Git Hooks
+
+This repository includes a pre-push hook in [`.githooks/pre-push`](.githooks/pre-push) that runs
+formatting, license checks, and a quick build of changed modules before pushing.
+This catches common issues locally so you don't have to wait for CI to report them.
+
+**What the hook does:**
+
+1. Runs `spotless:apply` and `license:format` to auto-fix formatting
+2. Verifies license headers with `license:check`
+3. Detects which Maven modules you changed and builds them with `-Dquickly`
+
+**Setup:**
+
+The [`git-build-hook-maven-plugin`](https://github.com/rudikershaw/git-build-hook) in the root
+`pom.xml` automatically installs the pre-push hook into `.git/hooks/` on your first Maven build.
+If you haven't run a build yet, you can set it up manually:
+
+```bash
+cp .githooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+```
+
+To bypass the hook in an emergency: `git push --no-verify`
+
 ## Contributing
 
 Read the [Contributions Guide](/CONTRIBUTING.md).
