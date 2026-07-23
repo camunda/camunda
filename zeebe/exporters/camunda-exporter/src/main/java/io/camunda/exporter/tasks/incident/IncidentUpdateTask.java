@@ -754,7 +754,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     final var frequencies =
         ids.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
     var totalDuplicates = 0;
-    final var duplicates = new ArrayList<T>();
+    final var duplicates = new LinkedHashSet<>();
     for (final var entry : frequencies.entrySet()) {
       if (entry.getValue() > 1L) {
         duplicates.add(entry.getKey());
@@ -794,17 +794,18 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
   private <T> void recordDuplication(
       final int totalDuplicates,
-      final Collection<T> duplicates,
+      final Set<T> duplicates,
       final String type,
       final Consumer<Integer> recordDuplicatesMetric) {
     if (totalDuplicates > 0) {
       logger.warn(
           """
-        Found duplicate {} documents for the following IDs: {} - will update all duplicates.
+        Found {} duplicate {} documents - will update all duplicates. Example IDs: {}.
         This may indicate a problem with archiving.
       """,
+          totalDuplicates,
           type,
-          duplicates);
+          duplicates.stream().limit(10).collect(Collectors.toList()));
       recordDuplicatesMetric.accept(totalDuplicates);
     }
   }
