@@ -232,14 +232,6 @@ create-namespace:
 	@# Sleep a bit to let Kubernetes finish the creation of the namespace and make it fully consistent for read and write operations.
 	kubectl get namespace "$(namespace)" > /dev/null 2>&1 || (kubectl create namespace "$(namespace)" && sleep 1)
 
-# Apply the camunda-credentials secret. Idempotent: rerunning after a TTL
-# deletion reapplies the SAME credentials, so the orchestration secret in
-# load-tester-values-defaults.yaml stays in sync with the live secret.
-.PHONY: create-credentials
-create-credentials:
-	@echo "Applying camunda-credentials secret for namespace $(namespace)..."
-	kubectl apply -n $(namespace) -f resources/camunda-credentials.yaml
-
 ifneq ($(install_storage_target),)
 # Install secondary storage based on configuration
 .PHONY: install-storage

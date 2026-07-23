@@ -72,39 +72,6 @@ function hashmod_zone() {
     echo "$zone"
 }
 
-function get_existing_secret() {
-  local jsonObject="$1"
-  local key="$2"
-
-  detect_os
-  local base64_decode_flag="-d"
-  if [ "${GO_OS}" == "darwin" ]; then
-    base64_decode_flag="-D"
-  fi
-
-  local existing_secret
-  existing_secret="$(echo "$jsonObject" | jq --raw-output --arg key "$key" '.[$key] // empty' | base64 "$base64_decode_flag")" || {
-    echo "ERROR: failed to decode key '$key' from existing camunda-credentials secret."
-    exit 1
-  }
-
-  if [ -z "$existing_secret" ]; then
-    echo "ERROR: existing camunda-credentials secret is missing key '$key'."
-    exit 1
-  fi
-  echo "$existing_secret"
-}
-
-# Generate credentials. These are baked into resources/camunda-credentials.yaml
-# and (for the orchestration OIDC secret) into load-test-values.yaml. Any
-# subsequent `make install` reapplies the same manifest, so the secret in the
-# cluster always matches the value the load test starter authenticates with.
-# `head -c 20` closes the pipe early; upstream `tr` then takes SIGPIPE and
-# returns 141 under `set -o pipefail`. Wrap in a subshell so the harmless
-# SIGPIPE doesn't trip `set -e` in the caller.
-function gen_password() { ( set +o pipefail; LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20 ); }
-function gen_token()    { openssl rand -hex 16; }
-
 # Check whether a value is present in a list (pass the list as trailing args).
 # Usage: if contains "$value" "${some_array[@]}"; then ...
 contains() {
