@@ -425,7 +425,7 @@ final class ClusterConfigurationManagerImplNewConfigTest {
     assertThat(config.phasedChangeState().pending()).isEmpty();
   }
 
-  private static class FailingExecutor
+  private static final class FailingExecutor
       implements ClusterMembershipChangeExecutor, PartitionChangeExecutor {
 
     private int numFailures;
