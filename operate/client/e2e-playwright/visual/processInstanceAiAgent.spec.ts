@@ -215,6 +215,34 @@ test.describe('AI agent details', () => {
     await expect(page).toHaveScreenshot();
   });
 
+  test('conversation document lists', async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      agentMockResponses(agentProcessWithOneActiveInstance),
+    );
+
+    await processInstancePage.gotoProcessInstancePage({
+      key: PROCESS_INSTANCE_KEY,
+      bottomPanel: 'details',
+      selection: `elementId=${AI_AGENT_ELEMENT_ID}`,
+    });
+
+    await processInstancePage.aiAgentDetails.conversationHistorySectionTrigger.click();
+
+    await processInstancePage.aiAgentDetails.conversationHistorySection
+      .getByLabel('User message')
+      .getByRole('button', {name: 'View documents'})
+      .click();
+
+    const modal = page.getByRole('dialog', {
+      name: '4 documents in conversation message',
+    });
+    await expect(modal).toBeVisible();
+    await expect(modal.getByText('test_image.png')).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
   test('scoped conversation history section', async ({
     page,
     processInstancePage,

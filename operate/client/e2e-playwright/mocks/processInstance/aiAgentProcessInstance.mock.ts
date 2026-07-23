@@ -309,6 +309,25 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
               items: 3,
             },
           },
+          {
+            contentType: 'DOCUMENT',
+            documentReference: {
+              'camunda.document.type': 'camunda',
+              storeId: 'in-memory',
+              documentId: '3f34f325-143e-4e25-9be2-56195c8fd07b',
+              contentHash:
+                'c74786d7b2a4f02000529fe14291e9e11d7a13e4da8fe42d6f56241ca2bdf974',
+              metadata: {
+                contentType: 'application/json',
+                fileName: 'test_json.json',
+                expiresAt: null,
+                size: 187,
+                processDefinitionId: null,
+                processInstanceKey: null,
+                customProperties: {},
+              },
+            },
+          },
         ],
         toolCalls: [
           {
@@ -369,6 +388,82 @@ const agentProcessWithOneActiveInstance: InstanceMock = {
         role: 'USER',
         content: [
           {contentType: 'TEXT', text: 'What is the status of order #12345?'},
+          {
+            contentType: 'DOCUMENT',
+            documentReference: {
+              'camunda.document.type': 'camunda',
+              storeId: 'in-memory',
+              documentId: 'b6c19c47-e241-4e3a-9726-23aa7ca053ed',
+              contentHash:
+                '39920693ce70e3ac2dc85d8d2643afff54e153a874f18a30aa080fcabf85f572',
+              metadata: {
+                contentType: 'image/png',
+                fileName: 'test_image.png',
+                expiresAt: null,
+                size: 33906,
+                processDefinitionId: null,
+                processInstanceKey: null,
+                customProperties: {},
+              },
+            },
+          },
+          {
+            contentType: 'DOCUMENT',
+            documentReference: {
+              'camunda.document.type': 'camunda',
+              storeId: 'in-memory',
+              documentId: '3f34f325-143e-4e25-9be2-56195c8fd07b',
+              contentHash:
+                'c74786d7b2a4f02000529fe14291e9e11d7a13e4da8fe42d6f56241ca2bdf974',
+              metadata: {
+                contentType: 'application/json',
+                fileName: 'expired_json.json',
+                expiresAt: '2026-06-01',
+                size: 187,
+                processDefinitionId: null,
+                processInstanceKey: null,
+                customProperties: {},
+              },
+            },
+          },
+          {
+            contentType: 'DOCUMENT',
+            documentReference: {
+              'camunda.document.type': 'camunda',
+              storeId: 'in-memory',
+              documentId: 'ff787145-b82d-4ce4-bbc4-22c44f2201b8',
+              contentHash:
+                '848eaa0a3565d0bc72f5d82adc229b073fa971f65a78e1010879fe5ca7cbda96',
+              metadata: {
+                contentType: 'application/pdf',
+                fileName: 'test_document.pdf',
+                expiresAt: null,
+                size: 25894,
+                processDefinitionId: null,
+                processInstanceKey: null,
+                customProperties: {},
+              },
+            },
+          },
+          {
+            contentType: 'DOCUMENT',
+            documentReference: {
+              'camunda.document.type': 'camunda',
+              storeId: 'in-memory',
+              documentId: '3f34f325-143e-4e25-9be2-56195c8fd07b',
+              contentHash:
+                'c74786d7b2a4f02000529fe14291e9e11d7a13e4da8fe42d6f56241ca2bdf974',
+              metadata: {
+                contentType: 'application/json',
+                fileName: 'test_json.json',
+                expiresAt: null,
+                size: 187,
+                processDefinitionId: null,
+                processInstanceKey: null,
+                customProperties: {},
+              },
+            },
+          },
         ],
         toolCalls: [],
         metrics: null,
