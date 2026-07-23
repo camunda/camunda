@@ -1,0 +1,55 @@
+# Standalone, throwaway environment for the wait-states flag-off scenarios
+# (P1-API-2, P1-UI-3): proving `camunda.data.wait-states.enabled=false`
+# disables both indexing and the Operate UI/API surface requires a broker
+# that was booted with the flag off from the start — the shared, long-running
+# `camunda` container every other test in this suite depends on always boots
+# with the default (`enabled=true`). Deliberately NOT part of
+# docker-compose.yml — brought up and torn down around these tests via
+# utils/dockerComposeControl.ts. Modeled on
+# docker-compose.analytics-isolated.yml's isolated-stack pattern, but with a
+# single service variant (there is no "isolated flag-on" test — every other
+# wait-state case already runs flag-on against the shared stack).
+#
+# Usage:
+#   docker compose -f config/docker-compose.yml -f config/docker-compose.waitstates-isolated.yml \
+#     -p waitstates-isolated up -d --no-deps camunda-waitstates-isolated-off
+#   docker compose -f config/docker-compose.yml -f config/docker-compose.waitstates-isolated.yml \
+#     -p waitstates-isolated down
+
+services:
+  camunda-waitstates-isolated-off:
+    container_name: camunda-waitstates-isolated-off
+    image: ${CAMUNDA_DOCKER_IMAGE:-camunda/camunda:SNAPSHOT}
+    environment:
+      JAVA_TOOL_OPTIONS: '-Xms512m -Xmx1g'
+      ZEEBE_BROKER_NETWORK_HOST: camunda-waitstates-isolated-off
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-e2e-test,consolidated-auth,tasklist,broker,operate,admin}
+      CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: 'false'
+      CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: 'true'
+      CAMUNDA_SECURITY_AUTHENTICATION_METHOD: BASIC
+      CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED: 'false'
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME: demo
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD: demo
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME: Demo
+      CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
+      CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
+      CAMUNDA_LICENSE_KEY: ${CAMUNDA_LICENSE_KEY:-local-test-license-key}
+      # H2 in-memory storage — this throwaway broker only needs to prove the
+      # wait-state surface is absent, not exercise a real secondary store.
+      CAMUNDA_DATA_SECONDARY_STORAGE_TYPE: rdbms
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_URL: jdbc:h2:mem:camunda
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_USERNAME: sa
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_PASSWORD: ''
+      CAMUNDA_DATA_SECONDARY_STORAGE_RDBMS_AUTO_DDL: 'true'
+      # The entire point of this variant: wait-state tracking explicitly off.
+      # Property is camunda.data.wait-states.enabled — Spring's relaxed
+      # binding maps the hyphen in "wait-states" to an underscore just like
+      # "secondary-storage" becomes SECONDARY_STORAGE above, so this is
+      # WAIT_STATES, not WAITSTATES.
+      CAMUNDA_DATA_WAIT_STATES_ENABLED: 'false'
+    ports:
+      - '29080:8080'
+      - '29600:9600'
+      - '29650:26500'
+    networks:
+      - zeebe_network

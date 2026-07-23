@@ -150,6 +150,18 @@ export class OperateDiagramPage {
       .getByTestId('state-overlay-active');
   }
 
+  /**
+   * The waiting-state diagram badge is a dedicated component
+   * (`WaitingStateOverlay`, testid `waiting-state-overlay`), separate from
+   * the `state-overlay-{state}` family above — it is not one of
+   * `verifyStateOverlay`'s states.
+   */
+  getWaitingOverlay(elementId: string): Locator {
+    return this.page
+      .locator(`[data-container-id="${elementId}"]`)
+      .getByTestId('waiting-state-overlay');
+  }
+
   async verifyFlowNodeMetadata(
     elementId: string,
     options: {
