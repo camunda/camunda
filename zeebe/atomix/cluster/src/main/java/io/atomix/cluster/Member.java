@@ -56,7 +56,7 @@ public class Member extends Node {
   }
 
   protected Member(final MemberId id, final Address address) {
-    this(id, 0L, address, null, null, null, new Properties());
+    this(id, 0L, address, id.zone(), null, null, new Properties());
   }
 
   protected Member(
@@ -149,7 +149,7 @@ public class Member extends Node {
    * @return the member
    */
   public static Member member(final MemberId memberId, final Address address) {
-    return builder(memberId).withAddress(address).build();
+    return builder(memberId).withAddress(address).withZoneId(memberId.zone()).build();
   }
 
   @Override
