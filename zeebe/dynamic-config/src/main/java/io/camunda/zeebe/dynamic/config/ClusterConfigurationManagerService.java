@@ -152,7 +152,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 false))
-        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
+        .andThen(new RoutingStateInitializer())
         // Must be initialized by the coordinator only. However, we still define it here because the
         // actual coordinator might be different from what is provided in the static configuration.
         // These initializers will be skipped if they are not running on the latest coordinator
@@ -180,7 +180,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 true))
-        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
+        .andThen(new RoutingStateInitializer())
         // Must be initialized by the coordinator only
         .andThen(new PartitionDistributorInitializer(staticConfiguration))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId(), localMemberId));
