@@ -106,6 +106,12 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       raft.getThreadContext()
           .execute(
               () -> {
+                if (!isRunning()) {
+                  // The role was stopped between scheduling and running this task, e.g. because
+                  // the server stepped down or shut down. Do not append as an ex-leader; the next
+                  // elected leader resumes the exit from joint consensus.
+                  return;
+                }
                 final var currentMembers = raft.getCluster().getConfiguration().newMembers();
                 ongoingReconfigurationRequestFuture = new CompletableFuture<>();
                 leaveJointConsensus(currentMembers, raft.getCluster().getConfiguration());
