@@ -1,0 +1,4020 @@
+{
+  "customerId": 123,
+  "customer": {
+    "firstname": "Dodson",
+    "lastname": "Glenn",
+    "email": "dodsonglenn@bicol.com",
+    "phone": "+1 (975) 473-3820",
+    "address": "612 Kiely Place, Coinjock, New York, 906"
+  },
+  "disputeDetails": {
+    "disputePositions": [
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0000",
+        "index": 0,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10001",
+        "index": 1,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0002",
+        "index": 2,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0003",
+        "index": 3,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670004",
+        "index": 4,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970005",
+        "index": 5,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0006",
+        "index": 6,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320007",
+        "index": 7,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0008",
+        "index": 8,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10009",
+        "index": 9,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0010",
+        "index": 10,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0011",
+        "index": 11,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760012",
+        "index": 12,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10013",
+        "index": 13,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140014",
+        "index": 14,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560015",
+        "index": 15,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90016",
+        "index": 16,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0017",
+        "index": 17,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0018",
+        "index": 18,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0019",
+        "index": 19,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0020",
+        "index": 20,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0021",
+        "index": 21,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660022",
+        "index": 22,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080023",
+        "index": 23,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50024",
+        "index": 24,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120025",
+        "index": 25,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990026",
+        "index": 26,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350027",
+        "index": 27,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0028",
+        "index": 28,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0029",
+        "index": 29,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480030",
+        "index": 30,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70031",
+        "index": 31,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010032",
+        "index": 32,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0033",
+        "index": 33,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60034",
+        "index": 34,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0035",
+        "index": 35,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0036",
+        "index": 36,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300037",
+        "index": 37,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860038",
+        "index": 38,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220039",
+        "index": 39,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0040",
+        "index": 40,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0041",
+        "index": 41,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240042",
+        "index": 42,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0043",
+        "index": 43,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0044",
+        "index": 44,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00045",
+        "index": 45,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0046",
+        "index": 46,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0047",
+        "index": 47,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360048",
+        "index": 48,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730049",
+        "index": 49,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      },
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0050",
+        "index": 50,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10051",
+        "index": 51,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0052",
+        "index": 52,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0053",
+        "index": 53,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670054",
+        "index": 54,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970055",
+        "index": 55,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0056",
+        "index": 56,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320057",
+        "index": 57,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0058",
+        "index": 58,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10059",
+        "index": 59,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0060",
+        "index": 60,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0061",
+        "index": 61,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760062",
+        "index": 62,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10063",
+        "index": 63,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140064",
+        "index": 64,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560065",
+        "index": 65,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90066",
+        "index": 66,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0067",
+        "index": 67,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0068",
+        "index": 68,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0069",
+        "index": 69,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0070",
+        "index": 70,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0071",
+        "index": 71,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660072",
+        "index": 72,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080073",
+        "index": 73,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50074",
+        "index": 74,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120075",
+        "index": 75,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990076",
+        "index": 76,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350077",
+        "index": 77,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0078",
+        "index": 78,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0079",
+        "index": 79,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480080",
+        "index": 80,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70081",
+        "index": 81,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010082",
+        "index": 82,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0083",
+        "index": 83,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60084",
+        "index": 84,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0085",
+        "index": 85,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0086",
+        "index": 86,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300087",
+        "index": 87,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860088",
+        "index": 88,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220089",
+        "index": 89,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0090",
+        "index": 90,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0091",
+        "index": 91,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240092",
+        "index": 92,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0093",
+        "index": 93,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0094",
+        "index": 94,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00095",
+        "index": 95,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0096",
+        "index": 96,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0097",
+        "index": 97,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360098",
+        "index": 98,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730099",
+        "index": 99,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      },
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0100",
+        "index": 100,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10101",
+        "index": 101,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0102",
+        "index": 102,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0103",
+        "index": 103,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670104",
+        "index": 104,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970105",
+        "index": 105,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0106",
+        "index": 106,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320107",
+        "index": 107,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0108",
+        "index": 108,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10109",
+        "index": 109,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0110",
+        "index": 110,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0111",
+        "index": 111,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760112",
+        "index": 112,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10113",
+        "index": 113,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140114",
+        "index": 114,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560115",
+        "index": 115,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90116",
+        "index": 116,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0117",
+        "index": 117,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0118",
+        "index": 118,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0119",
+        "index": 119,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0120",
+        "index": 120,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0121",
+        "index": 121,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660122",
+        "index": 122,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080123",
+        "index": 123,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50124",
+        "index": 124,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120125",
+        "index": 125,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990126",
+        "index": 126,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350127",
+        "index": 127,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0128",
+        "index": 128,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0129",
+        "index": 129,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480130",
+        "index": 130,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70131",
+        "index": 131,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010132",
+        "index": 132,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0133",
+        "index": 133,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60134",
+        "index": 134,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0135",
+        "index": 135,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0136",
+        "index": 136,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300137",
+        "index": 137,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860138",
+        "index": 138,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220139",
+        "index": 139,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0140",
+        "index": 140,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0141",
+        "index": 141,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240142",
+        "index": 142,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0143",
+        "index": 143,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0144",
+        "index": 144,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00145",
+        "index": 145,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0146",
+        "index": 146,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0147",
+        "index": 147,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360148",
+        "index": 148,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730149",
+        "index": 149,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      },
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0150",
+        "index": 150,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10151",
+        "index": 151,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0152",
+        "index": 152,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0153",
+        "index": 153,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670154",
+        "index": 154,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970155",
+        "index": 155,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0156",
+        "index": 156,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320157",
+        "index": 157,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0158",
+        "index": 158,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10159",
+        "index": 159,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0160",
+        "index": 160,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0161",
+        "index": 161,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760162",
+        "index": 162,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10163",
+        "index": 163,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140164",
+        "index": 164,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560165",
+        "index": 165,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90166",
+        "index": 166,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0167",
+        "index": 167,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0168",
+        "index": 168,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0169",
+        "index": 169,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0170",
+        "index": 170,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0171",
+        "index": 171,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660172",
+        "index": 172,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080173",
+        "index": 173,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50174",
+        "index": 174,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120175",
+        "index": 175,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990176",
+        "index": 176,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350177",
+        "index": 177,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0178",
+        "index": 178,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0179",
+        "index": 179,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480180",
+        "index": 180,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70181",
+        "index": 181,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010182",
+        "index": 182,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0183",
+        "index": 183,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60184",
+        "index": 184,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0185",
+        "index": 185,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0186",
+        "index": 186,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300187",
+        "index": 187,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860188",
+        "index": 188,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220189",
+        "index": 189,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0190",
+        "index": 190,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0191",
+        "index": 191,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240192",
+        "index": 192,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0193",
+        "index": 193,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0194",
+        "index": 194,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00195",
+        "index": 195,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0196",
+        "index": 196,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0197",
+        "index": 197,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360198",
+        "index": 198,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730199",
+        "index": 199,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      },
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0200",
+        "index": 200,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10201",
+        "index": 201,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0202",
+        "index": 202,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0203",
+        "index": 203,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670204",
+        "index": 204,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970205",
+        "index": 205,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0206",
+        "index": 206,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320207",
+        "index": 207,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0208",
+        "index": 208,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10209",
+        "index": 209,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0210",
+        "index": 210,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0211",
+        "index": 211,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760212",
+        "index": 212,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10213",
+        "index": 213,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140214",
+        "index": 214,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560215",
+        "index": 215,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90216",
+        "index": 216,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0217",
+        "index": 217,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0218",
+        "index": 218,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0219",
+        "index": 219,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0220",
+        "index": 220,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0221",
+        "index": 221,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660222",
+        "index": 222,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080223",
+        "index": 223,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50224",
+        "index": 224,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120225",
+        "index": 225,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990226",
+        "index": 226,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350227",
+        "index": 227,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0228",
+        "index": 228,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0229",
+        "index": 229,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480230",
+        "index": 230,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70231",
+        "index": 231,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010232",
+        "index": 232,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0233",
+        "index": 233,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60234",
+        "index": 234,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0235",
+        "index": 235,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0236",
+        "index": 236,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300237",
+        "index": 237,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860238",
+        "index": 238,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220239",
+        "index": 239,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0240",
+        "index": 240,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0241",
+        "index": 241,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240242",
+        "index": 242,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0243",
+        "index": 243,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0244",
+        "index": 244,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00245",
+        "index": 245,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0246",
+        "index": 246,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0247",
+        "index": 247,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360248",
+        "index": 248,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730249",
+        "index": 249,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      },
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0250",
+        "index": 250,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10251",
+        "index": 251,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0252",
+        "index": 252,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0253",
+        "index": 253,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670254",
+        "index": 254,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970255",
+        "index": 255,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0256",
+        "index": 256,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320257",
+        "index": 257,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0258",
+        "index": 258,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10259",
+        "index": 259,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0260",
+        "index": 260,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0261",
+        "index": 261,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760262",
+        "index": 262,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10263",
+        "index": 263,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140264",
+        "index": 264,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560265",
+        "index": 265,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90266",
+        "index": 266,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0267",
+        "index": 267,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0268",
+        "index": 268,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0269",
+        "index": 269,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0270",
+        "index": 270,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0271",
+        "index": 271,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660272",
+        "index": 272,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080273",
+        "index": 273,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50274",
+        "index": 274,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120275",
+        "index": 275,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990276",
+        "index": 276,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350277",
+        "index": 277,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0278",
+        "index": 278,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0279",
+        "index": 279,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480280",
+        "index": 280,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70281",
+        "index": 281,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010282",
+        "index": 282,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0283",
+        "index": 283,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60284",
+        "index": 284,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0285",
+        "index": 285,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0286",
+        "index": 286,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300287",
+        "index": 287,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860288",
+        "index": 288,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220289",
+        "index": 289,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0290",
+        "index": 290,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0291",
+        "index": 291,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240292",
+        "index": 292,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0293",
+        "index": 293,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0294",
+        "index": 294,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00295",
+        "index": 295,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0296",
+        "index": 296,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0297",
+        "index": 297,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360298",
+        "index": 298,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730299",
+        "index": 299,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      },
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0300",
+        "index": 300,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10301",
+        "index": 301,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0302",
+        "index": 302,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0303",
+        "index": 303,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670304",
+        "index": 304,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970305",
+        "index": 305,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0306",
+        "index": 306,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320307",
+        "index": 307,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0308",
+        "index": 308,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10309",
+        "index": 309,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0310",
+        "index": 310,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0311",
+        "index": 311,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760312",
+        "index": 312,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10313",
+        "index": 313,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140314",
+        "index": 314,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560315",
+        "index": 315,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90316",
+        "index": 316,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0317",
+        "index": 317,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0318",
+        "index": 318,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0319",
+        "index": 319,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0320",
+        "index": 320,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0321",
+        "index": 321,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660322",
+        "index": 322,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080323",
+        "index": 323,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50324",
+        "index": 324,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120325",
+        "index": 325,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990326",
+        "index": 326,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350327",
+        "index": 327,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0328",
+        "index": 328,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0329",
+        "index": 329,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480330",
+        "index": 330,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70331",
+        "index": 331,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010332",
+        "index": 332,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0333",
+        "index": 333,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60334",
+        "index": 334,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0335",
+        "index": 335,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0336",
+        "index": 336,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300337",
+        "index": 337,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860338",
+        "index": 338,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220339",
+        "index": 339,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0340",
+        "index": 340,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0341",
+        "index": 341,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240342",
+        "index": 342,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0343",
+        "index": 343,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0344",
+        "index": 344,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00345",
+        "index": 345,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0346",
+        "index": 346,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0347",
+        "index": 347,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360348",
+        "index": 348,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730349",
+        "index": 349,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      },
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0350",
+        "index": 350,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10351",
+        "index": 351,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0352",
+        "index": 352,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0353",
+        "index": 353,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670354",
+        "index": 354,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970355",
+        "index": 355,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0356",
+        "index": 356,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320357",
+        "index": 357,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0358",
+        "index": 358,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10359",
+        "index": 359,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0360",
+        "index": 360,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0361",
+        "index": 361,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760362",
+        "index": 362,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10363",
+        "index": 363,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140364",
+        "index": 364,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560365",
+        "index": 365,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90366",
+        "index": 366,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0367",
+        "index": 367,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0368",
+        "index": 368,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0369",
+        "index": 369,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0370",
+        "index": 370,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0371",
+        "index": 371,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660372",
+        "index": 372,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080373",
+        "index": 373,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50374",
+        "index": 374,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120375",
+        "index": 375,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990376",
+        "index": 376,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350377",
+        "index": 377,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0378",
+        "index": 378,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0379",
+        "index": 379,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480380",
+        "index": 380,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70381",
+        "index": 381,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010382",
+        "index": 382,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0383",
+        "index": 383,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60384",
+        "index": 384,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0385",
+        "index": 385,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0386",
+        "index": 386,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300387",
+        "index": 387,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860388",
+        "index": 388,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220389",
+        "index": 389,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0390",
+        "index": 390,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0391",
+        "index": 391,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240392",
+        "index": 392,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0393",
+        "index": 393,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0394",
+        "index": 394,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00395",
+        "index": 395,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0396",
+        "index": 396,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0397",
+        "index": 397,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360398",
+        "index": 398,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730399",
+        "index": 399,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      },
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0400",
+        "index": 400,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10401",
+        "index": 401,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0402",
+        "index": 402,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0403",
+        "index": 403,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670404",
+        "index": 404,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970405",
+        "index": 405,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0406",
+        "index": 406,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320407",
+        "index": 407,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0408",
+        "index": 408,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10409",
+        "index": 409,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0410",
+        "index": 410,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0411",
+        "index": 411,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760412",
+        "index": 412,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10413",
+        "index": 413,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140414",
+        "index": 414,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560415",
+        "index": 415,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90416",
+        "index": 416,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0417",
+        "index": 417,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0418",
+        "index": 418,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0419",
+        "index": 419,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0420",
+        "index": 420,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0421",
+        "index": 421,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660422",
+        "index": 422,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080423",
+        "index": 423,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50424",
+        "index": 424,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120425",
+        "index": 425,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990426",
+        "index": 426,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350427",
+        "index": 427,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0428",
+        "index": 428,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0429",
+        "index": 429,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480430",
+        "index": 430,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70431",
+        "index": 431,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010432",
+        "index": 432,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0433",
+        "index": 433,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60434",
+        "index": 434,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0435",
+        "index": 435,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0436",
+        "index": 436,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300437",
+        "index": 437,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860438",
+        "index": 438,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220439",
+        "index": 439,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0440",
+        "index": 440,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0441",
+        "index": 441,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240442",
+        "index": 442,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0443",
+        "index": 443,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0444",
+        "index": 444,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00445",
+        "index": 445,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0446",
+        "index": 446,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0447",
+        "index": 447,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360448",
+        "index": 448,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730449",
+        "index": 449,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      },
+      {
+        "_id": "66c745ecca7d2cfbe029d2ea0450",
+        "index": 450,
+        "name": "BESTO",
+        "amount": 266.49,
+        "currency": "EUR",
+        "transactionDate": "2024-06-28T05:31:02-02:00"
+      },
+      {
+        "_id": "66c745ecb79793a37fa1d6a10451",
+        "index": 451,
+        "name": "CENTREE",
+        "amount": 269.19,
+        "currency": "EUR",
+        "transactionDate": "2024-05-11T07:15:36-02:00"
+      },
+      {
+        "_id": "66c745ec57a851a321dfa38c0452",
+        "index": 452,
+        "name": "DEEPENDS",
+        "amount": 275.71,
+        "currency": "EUR",
+        "transactionDate": "2024-05-03T04:45:27-02:00"
+      },
+      {
+        "_id": "66c745ec02a490338e09a9dd0453",
+        "index": 453,
+        "name": "COMDOM",
+        "amount": 201.65,
+        "currency": "EUR",
+        "transactionDate": "2024-02-18T01:51:44-01:00"
+      },
+      {
+        "_id": "66c745ec1674b8d963b475670454",
+        "index": 454,
+        "name": "EXOPLODE",
+        "amount": 208.45,
+        "currency": "EUR",
+        "transactionDate": "2024-02-24T05:14:40-01:00"
+      },
+      {
+        "_id": "66c745ec0f2af1cc09bc0f970455",
+        "index": 455,
+        "name": "TECHTRIX",
+        "amount": 118.01,
+        "currency": "EUR",
+        "transactionDate": "2024-03-14T02:42:50-01:00"
+      },
+      {
+        "_id": "66c745ecfd72cf653a9b641e0456",
+        "index": 456,
+        "name": "MACRONAUT",
+        "amount": 21.14,
+        "currency": "EUR",
+        "transactionDate": "2024-03-20T12:57:36-01:00"
+      },
+      {
+        "_id": "66c745ec6bc5a6aedcec5c320457",
+        "index": 457,
+        "name": "VIRXO",
+        "amount": 122.9,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T09:26:40-01:00"
+      },
+      {
+        "_id": "66c745ec13e604442d90ef9c0458",
+        "index": 458,
+        "name": "EARTHMARK",
+        "amount": 250.87,
+        "currency": "EUR",
+        "transactionDate": "2024-03-19T09:14:50-01:00"
+      },
+      {
+        "_id": "66c745ec47daf58b261fb2e10459",
+        "index": 459,
+        "name": "ISOSTREAM",
+        "amount": 235.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-16T02:52:11-02:00"
+      },
+      {
+        "_id": "66c745ec77ff322e1c227f1e0460",
+        "index": 460,
+        "name": "ORBEAN",
+        "amount": 282.42,
+        "currency": "EUR",
+        "transactionDate": "2024-03-25T05:30:25-01:00"
+      },
+      {
+        "_id": "66c745eca0df8a5de2251caf0461",
+        "index": 461,
+        "name": "TOYLETRY",
+        "amount": 225.66,
+        "currency": "EUR",
+        "transactionDate": "2024-03-08T10:33:58-01:00"
+      },
+      {
+        "_id": "66c745ec8a1dd221929fc7760462",
+        "index": 462,
+        "name": "INTERFIND",
+        "amount": 331.09,
+        "currency": "EUR",
+        "transactionDate": "2024-05-05T02:05:06-02:00"
+      },
+      {
+        "_id": "66c745ecddc7fc31cd0143a10463",
+        "index": 463,
+        "name": "ACLIMA",
+        "amount": 261.04,
+        "currency": "EUR",
+        "transactionDate": "2024-06-07T03:28:29-02:00"
+      },
+      {
+        "_id": "66c745ecbb685a6dd367c7140464",
+        "index": 464,
+        "name": "ZENTIME",
+        "amount": 286.98,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T11:40:03-02:00"
+      },
+      {
+        "_id": "66c745ec2f7a70d9d11bb9560465",
+        "index": 465,
+        "name": "VERTIDE",
+        "amount": 96.12,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T10:53:09-02:00"
+      },
+      {
+        "_id": "66c745ecf7cf9209e3f8c6f90466",
+        "index": 466,
+        "name": "COMVENE",
+        "amount": 289.09,
+        "currency": "EUR",
+        "transactionDate": "2024-02-22T05:39:40-01:00"
+      },
+      {
+        "_id": "66c745ecd339b520507415cb0467",
+        "index": 467,
+        "name": "ZOXY",
+        "amount": 140.87,
+        "currency": "EUR",
+        "transactionDate": "2024-04-04T07:27:28-02:00"
+      },
+      {
+        "_id": "66c745ec80357c7f956d823e0468",
+        "index": 468,
+        "name": "ZENTURY",
+        "amount": 80.07,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T02:21:05-02:00"
+      },
+      {
+        "_id": "66c745ec2ac30564ae0bbc4f0469",
+        "index": 469,
+        "name": "SAVVY",
+        "amount": 243.35,
+        "currency": "EUR",
+        "transactionDate": "2024-05-23T06:00:07-02:00"
+      },
+      {
+        "_id": "66c745ec81030fc80ae39e1b0470",
+        "index": 470,
+        "name": "COLAIRE",
+        "amount": 202.26,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T07:53:52-02:00"
+      },
+      {
+        "_id": "66c745ec24a7faa219bb047c0471",
+        "index": 471,
+        "name": "XANIDE",
+        "amount": 97.95,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T03:27:53-01:00"
+      },
+      {
+        "_id": "66c745ecc437fce849e1cd660472",
+        "index": 472,
+        "name": "ARTIQ",
+        "amount": 73.09,
+        "currency": "EUR",
+        "transactionDate": "2024-04-30T03:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecee0a5f0b86b546080473",
+        "index": 473,
+        "name": "GEEKFARM",
+        "amount": 80.3,
+        "currency": "EUR",
+        "transactionDate": "2024-03-11T10:12:48-01:00"
+      },
+      {
+        "_id": "66c745ec5f6e4d9111d1bde50474",
+        "index": 474,
+        "name": "FUTURITY",
+        "amount": 218.42,
+        "currency": "EUR",
+        "transactionDate": "2024-07-01T08:08:48-02:00"
+      },
+      {
+        "_id": "66c745ec897cfd974966bd120475",
+        "index": 475,
+        "name": "KIGGLE",
+        "amount": 249.56,
+        "currency": "EUR",
+        "transactionDate": "2024-05-01T12:36:03-02:00"
+      },
+      {
+        "_id": "66c745ecbee5f1ebab944f990476",
+        "index": 476,
+        "name": "TUBALUM",
+        "amount": 63.14,
+        "currency": "EUR",
+        "transactionDate": "2024-07-10T02:45:16-02:00"
+      },
+      {
+        "_id": "66c745ec1dcae3a8ce04b6350477",
+        "index": 477,
+        "name": "RONBERT",
+        "amount": 174.29,
+        "currency": "EUR",
+        "transactionDate": "2024-06-13T08:08:53-02:00"
+      },
+      {
+        "_id": "66c745ecd230c0665b74cbfd0478",
+        "index": 478,
+        "name": "CONFRENZY",
+        "amount": 167.7,
+        "currency": "EUR",
+        "transactionDate": "2024-08-22T03:34:28-02:00"
+      },
+      {
+        "_id": "66c745ec51f977bb3a0b1dff0479",
+        "index": 479,
+        "name": "ISOTRONIC",
+        "amount": 245.34,
+        "currency": "EUR",
+        "transactionDate": "2024-03-10T01:16:31-01:00"
+      },
+      {
+        "_id": "66c745ec77bd8b37ed2f01480480",
+        "index": 480,
+        "name": "GROK",
+        "amount": 55.24,
+        "currency": "EUR",
+        "transactionDate": "2024-03-26T05:27:38-01:00"
+      },
+      {
+        "_id": "66c745ec1232227c24c18ed70481",
+        "index": 481,
+        "name": "KOZGENE",
+        "amount": 284.32,
+        "currency": "EUR",
+        "transactionDate": "2024-06-24T03:31:12-02:00"
+      },
+      {
+        "_id": "66c745eca63c8298b8cecd010482",
+        "index": 482,
+        "name": "CINCYR",
+        "amount": 48.8,
+        "currency": "EUR",
+        "transactionDate": "2024-03-22T09:09:44-01:00"
+      },
+      {
+        "_id": "66c745ec97ee9aa44199757f0483",
+        "index": 483,
+        "name": "KONGENE",
+        "amount": 201.8,
+        "currency": "EUR",
+        "transactionDate": "2024-06-18T08:04:32-02:00"
+      },
+      {
+        "_id": "66c745ecc959f8dcaf1bb1e60484",
+        "index": 484,
+        "name": "UNISURE",
+        "amount": 167.74,
+        "currency": "EUR",
+        "transactionDate": "2024-04-22T03:24:51-02:00"
+      },
+      {
+        "_id": "66c745ec8d113359018225de0485",
+        "index": 485,
+        "name": "BOLAX",
+        "amount": 132.48,
+        "currency": "EUR",
+        "transactionDate": "2024-02-20T12:17:40-01:00"
+      },
+      {
+        "_id": "66c745ec4847944ef2e8f97b0486",
+        "index": 486,
+        "name": "AUTOGRATE",
+        "amount": 287.98,
+        "currency": "EUR",
+        "transactionDate": "2024-08-13T07:55:28-02:00"
+      },
+      {
+        "_id": "66c745ecc6f92e84dd30bb300487",
+        "index": 487,
+        "name": "NIMON",
+        "amount": 302.76,
+        "currency": "EUR",
+        "transactionDate": "2024-04-07T07:27:31-02:00"
+      },
+      {
+        "_id": "66c745ec338bf12dbfa3e7860488",
+        "index": 488,
+        "name": "BLEENDOT",
+        "amount": 245.44,
+        "currency": "EUR",
+        "transactionDate": "2024-05-28T09:27:20-02:00"
+      },
+      {
+        "_id": "66c745ecbc7724902ec45e220489",
+        "index": 489,
+        "name": "ZENTHALL",
+        "amount": 345.96,
+        "currency": "EUR",
+        "transactionDate": "2024-05-10T02:43:49-02:00"
+      },
+      {
+        "_id": "66c745ec02b98d960e733e5a0490",
+        "index": 490,
+        "name": "PHOTOBIN",
+        "amount": 184.21,
+        "currency": "EUR",
+        "transactionDate": "2024-03-06T10:14:33-01:00"
+      },
+      {
+        "_id": "66c745ec4a070ed17d959b0c0491",
+        "index": 491,
+        "name": "FURNIGEER",
+        "amount": 298.11,
+        "currency": "EUR",
+        "transactionDate": "2024-06-08T04:11:51-02:00"
+      },
+      {
+        "_id": "66c745ecc6c4945a0819d2240492",
+        "index": 492,
+        "name": "RETROTEX",
+        "amount": 102.23,
+        "currency": "EUR",
+        "transactionDate": "2024-06-15T05:30:21-02:00"
+      },
+      {
+        "_id": "66c745ec91209b60ccda0e4b0493",
+        "index": 493,
+        "name": "POSHOME",
+        "amount": 199.04,
+        "currency": "EUR",
+        "transactionDate": "2024-02-15T08:24:37-01:00"
+      },
+      {
+        "_id": "66c745ec9ed2256b89917dac0494",
+        "index": 494,
+        "name": "IMANT",
+        "amount": 241.05,
+        "currency": "EUR",
+        "transactionDate": "2024-02-26T12:47:03-01:00"
+      },
+      {
+        "_id": "66c745ec7289745a52dc6cb00495",
+        "index": 495,
+        "name": "LUNCHPOD",
+        "amount": 123.68,
+        "currency": "EUR",
+        "transactionDate": "2024-07-25T11:12:01-02:00"
+      },
+      {
+        "_id": "66c745ec36f6f860f0532c5f0496",
+        "index": 496,
+        "name": "CORIANDER",
+        "amount": 125.71,
+        "currency": "EUR",
+        "transactionDate": "2024-07-30T09:36:30-02:00"
+      },
+      {
+        "_id": "66c745ecb73f5568372529af0497",
+        "index": 497,
+        "name": "ISONUS",
+        "amount": 181.24,
+        "currency": "EUR",
+        "transactionDate": "2024-05-19T03:13:43-02:00"
+      },
+      {
+        "_id": "66c745ec16982631bf63dd360498",
+        "index": 498,
+        "name": "BITTOR",
+        "amount": 260.47,
+        "currency": "EUR",
+        "transactionDate": "2024-05-26T08:00:37-02:00"
+      },
+      {
+        "_id": "66c745ecc6016e60df597a730499",
+        "index": 499,
+        "name": "BICOL",
+        "amount": 166.99,
+        "currency": "EUR",
+        "transactionDate": "2024-08-16T06:01:56-02:00"
+      }
+    ],
+    "disputeId": 456,
+    "disputeAmount": {
+      "amount": 9734.199999999999,
+      "currency": "EUR"
+    },
+    "disputeStartDate": "2024-08-307T10:00:00Z"
+  }
+}
