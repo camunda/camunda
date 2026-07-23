@@ -93,6 +93,7 @@ test.describe('Element Instance Update API', () => {
   test('Update Element Instance - local update overrides global variable', async ({
     request,
   }) => {
+    test.slow();
     await test.step('Complete User Task', async () => {
       await findUserTask(
         request,
