@@ -18,6 +18,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +32,14 @@ import org.springframework.stereotype.Component;
  * one matching Parquet file already exists; a table directory with no data yet (or ever) is skipped
  * and logged, never treated as an error.
  *
- * <p>Runs once at startup ({@link #registerViews()}), not lazily per request: this is the
- * scaffold's proof-of-life discovery pass. A follow-up lane can add a refresh/rescan endpoint if
- * new tables appearing after startup needs to be picked up without a restart.
+ * <p>Runs once at startup ({@link #registerViews()}) and again on demand: {@link #refresh()}
+ * re-runs the same scan (e.g. behind {@code POST /api/refresh}), and {@link
+ * #ensureAvailable(String...)} triggers exactly one such rescan when a request names a view that
+ * isn't registered yet — never a per-query rescan, so a single request that issues several SQL
+ * statements against the same still-missing view only ever re-triggers discovery once. Re-running
+ * the scan is safe to call concurrently with itself or a request in flight: {@link
+ * #registeredTables} is swapped atomically, and {@code CREATE OR REPLACE VIEW} makes a raced
+ * re-registration harmless.
  */
 @Component
 public class LakeViewRegistry {
@@ -42,7 +48,7 @@ public class LakeViewRegistry {
 
   private final Connection connection;
   private final Path warehouseDir;
-  private final List<String> registeredTables = new ArrayList<>();
+  private volatile List<String> registeredTables = List.of();
 
   public LakeViewRegistry(final Connection connection, final LakeServingProperties properties) {
     this.connection = connection;
@@ -50,14 +56,25 @@ public class LakeViewRegistry {
   }
 
   @PostConstruct
-  void registerViews() {
+  void onStartup() {
+    refresh();
+  }
+
+  /**
+   * Re-runs view discovery from scratch and returns the resulting view list. Safe to call
+   * repeatedly (e.g. once per {@code POST /api/refresh} call, or lazily from {@link
+   * #ensureAvailable}): a table directory that still has no Parquet data is skipped exactly as at
+   * startup, and an already-registered view is simply {@code CREATE OR REPLACE}d again.
+   */
+  public synchronized List<String> refresh() {
     final Path lakeDir = warehouseDir.resolve("lake");
     if (!Files.isDirectory(lakeDir)) {
       LOG.info(
           "No lake directory found at {} yet -- no views registered. Views appear once the lake "
               + "writer has flushed at least one table.",
           lakeDir);
-      return;
+      registeredTables = List.of();
+      return registeredTables;
     }
 
     final List<Path> tableDirs;
@@ -67,9 +84,11 @@ public class LakeViewRegistry {
       throw new UncheckedIOException("Failed to list lake tables under " + lakeDir, e);
     }
 
+    final List<String> discovered = new ArrayList<>();
     for (final Path tableDir : tableDirs) {
-      registerViewIfDataPresent(tableDir.getFileName().toString(), tableDir);
+      registerViewIfDataPresent(tableDir.getFileName().toString(), tableDir, discovered);
     }
+    registeredTables = List.copyOf(discovered);
     LOG.info(
         "Discovered {} lake table director{} under {}; registered {} view(s) with data: {}",
         tableDirs.size(),
@@ -77,14 +96,49 @@ public class LakeViewRegistry {
         lakeDir,
         registeredTables.size(),
         registeredTables);
+    return registeredTables;
   }
 
-  /** Names of the views this registry successfully created at startup. */
+  /** Names of the views currently registered. */
   public List<String> registeredTables() {
-    return List.copyOf(registeredTables);
+    return registeredTables;
   }
 
-  private void registerViewIfDataPresent(final String tableName, final Path tableDir) {
+  /**
+   * Ensures every named view is registered, refreshing discovery <b>at most once</b> if any is
+   * currently missing. Returns whether all of them are present after that single attempt — {@code
+   * false} means the backing table genuinely has no data yet (or never will, e.g. {@code
+   * object_lifecycle} in a warehouse that predates it), which callers use to degrade gracefully
+   * rather than error.
+   */
+  public boolean ensureAvailable(final String... viewNames) {
+    final Set<String> present = Set.copyOf(registeredTables());
+    boolean allPresent = true;
+    for (final String name : viewNames) {
+      if (!present.contains(name)) {
+        allPresent = false;
+        break;
+      }
+    }
+    if (allPresent) {
+      return true;
+    }
+    final Set<String> refreshed = Set.copyOf(refresh());
+    for (final String name : viewNames) {
+      if (!refreshed.contains(name)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** Whether {@code viewName} is registered right now, without triggering a rescan. */
+  public boolean has(final String viewName) {
+    return registeredTables().contains(viewName);
+  }
+
+  private void registerViewIfDataPresent(
+      final String tableName, final Path tableDir, final List<String> discovered) {
     final Path dataDir = tableDir.resolve("data");
     if (!containsParquetFiles(dataDir)) {
       LOG.info(
@@ -102,7 +156,7 @@ public class LakeViewRegistry {
             + "')";
     try (Statement statement = connection.createStatement()) {
       statement.execute(sql);
-      registeredTables.add(tableName);
+      discovered.add(tableName);
     } catch (final SQLException e) {
       LOG.warn("Failed to register view '{}' from {}: {}", tableName, glob, e.getMessage());
     }

@@ -44,6 +44,21 @@ public class LakeQueryService {
    * SQLException} for the caller to translate into an HTTP error; never swallows the failure.
    */
   public QueryResult execute(final String sql) throws SQLException {
+    return execute(sql, maxRows);
+  }
+
+  /**
+   * Same as {@link #execute(String)}, but with an explicit row-cap override instead of the
+   * configured {@link #maxRows}.
+   *
+   * <p><b>Internal use only</b> — never exposed through {@code POST /api/query} or any other
+   * caller-controlled path. The single-scan explain tools (today: {@code cohort-compare}'s one
+   * {@code GROUP BY} over attribute/bucket combinations) can legitimately produce more result rows
+   * than the public API's default cap without that indicating a runaway query, since the row count
+   * there is bounded by attribute cardinality, not by warehouse size. Every call site passing a cap
+   * other than {@link #maxRows} must document why in its own javadoc.
+   */
+  public QueryResult execute(final String sql, final int rowCap) throws SQLException {
     try (Statement statement = connection.createStatement()) {
       try {
         statement.setQueryTimeout(queryTimeoutSeconds);
@@ -52,10 +67,12 @@ public class LakeQueryService {
       }
       final boolean hasResultSet = statement.execute(sql);
       if (!hasResultSet) {
-        return new QueryResult(List.of(), List.of());
+        return new QueryResult(List.of(), List.of(), false);
       }
       try (ResultSet resultSet = statement.getResultSet()) {
-        return new QueryResult(readColumns(resultSet), readRows(resultSet));
+        final List<String> columns = readColumns(resultSet);
+        final RowsRead rowsRead = readRows(resultSet, rowCap);
+        return new QueryResult(columns, rowsRead.rows(), rowsRead.truncated());
       }
     }
   }
@@ -81,19 +98,38 @@ public class LakeQueryService {
     return columns;
   }
 
-  private List<List<Object>> readRows(final ResultSet resultSet) throws SQLException {
+  /**
+   * Reads up to {@code rowCap} rows, then probes for one more ({@code resultSet.next()}) to detect
+   * whether the result was actually cut off — the only way to tell "exactly {@code rowCap} rows"
+   * apart from "more than {@code rowCap} rows, truncated" is to look one row past the cap. That
+   * probe row is never added to {@link RowsRead#rows()}, only reflected in {@link
+   * RowsRead#truncated()}.
+   */
+  private RowsRead readRows(final ResultSet resultSet, final int rowCap) throws SQLException {
     final int columnCount = resultSet.getMetaData().getColumnCount();
     final List<List<Object>> rows = new ArrayList<>();
-    while (rows.size() < maxRows && resultSet.next()) {
+    while (rows.size() < rowCap && resultSet.next()) {
       final List<Object> row = new ArrayList<>(columnCount);
       for (int i = 1; i <= columnCount; i++) {
         row.add(resultSet.getObject(i));
       }
       rows.add(row);
     }
-    return rows;
+    final boolean truncated = rows.size() == rowCap && resultSet.next();
+    return new RowsRead(rows, truncated);
   }
 
-  /** One query's result: column labels in order, and up to {@code maxRows} rows. */
-  public record QueryResult(List<String> columns, List<List<Object>> rows) {}
+  private record RowsRead(List<List<Object>> rows, boolean truncated) {}
+
+  /**
+   * One query's result: column labels in order, up to the requested row cap's worth of rows, and
+   * whether the underlying result actually had more rows than that cap ({@code truncated}) — a true
+   * value means {@code rows} is an incomplete, silently-cut prefix of the real result, which any
+   * caller aggregating across {@code rows} (e.g. {@code cohort-compare}'s marginalization) MUST
+   * treat as unusable rather than as a smaller-but-still-correct answer. {@code POST /api/query}
+   * intentionally keeps its documented "silently capped at {@code maxRows}" browse contract either
+   * way (see {@link io.camunda.analytics.lake.serving.web.LakeController}); {@code truncated} is
+   * additive there, not a behavior change.
+   */
+  public record QueryResult(List<String> columns, List<List<Object>> rows, boolean truncated) {}
 }
