@@ -14,6 +14,7 @@ import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,29 +52,36 @@ import org.springframework.core.env.Environment;
  * is derived downstream from the tenant's secondary-storage properties, and args-tuning declared
  * for them is taken as-is.
  *
- * <p><b>Deliberately not implemented yet (ADR-0008 §6 step 2, gated on <a
- * href="https://github.com/camunda/camunda/issues/56652">#56652</a>):</b> the {@code
- * data.exporters-assigned} manifest — mandatory-explicit validation, narrowing unassigned catalog
- * entries out of the tenant's resolved map, and the configured-but-unassigned boot error. As long
- * as the initial dynamic cluster configuration derives the per-partition exporter <em>enable</em>
- * state from the root {@code BrokerCfg} only, a narrowed-away id would remain enabled on the
- * tenant's partitions and be instantiated as a {@code BlockingExporter}, stalling exporting and log
- * compaction. This step therefore changes only entry <em>contents</em>, never which ids exist for a
+ * <p><b>The {@code data.exporters-assigned} manifest (ADR-0008 D1/D2/D5) is implemented but not yet
+ * wired into {@link PhysicalTenantResolver}, gated on <a
+ * href="https://github.com/camunda/camunda/issues/56652">#56652</a>:</b> its mandatory-explicit
+ * validation, the exempt/unknown/configured-but-unassigned boot errors, and the root-level
+ * placement check live in {@link PhysicalTenantExporterAssignedValidation}; the narrowing of
+ * unassigned catalog entries out of the tenant's resolved map lives in {@link #narrowToAssigned}.
+ * Both are dormant on purpose: as long as the initial dynamic cluster configuration derives the
+ * per-partition exporter <em>enable</em> state from the root {@code BrokerCfg} only, a
+ * narrowed-away id would remain enabled on the tenant's partitions and be instantiated as a {@code
+ * BlockingExporter}, stalling exporting and log compaction — so the interim inherit-all behavior
+ * stands until #56652 flips the wire-in. To activate (from {@link PhysicalTenantResolver#of}): call
+ * {@link PhysicalTenantExporterAssignedValidation#validateRootAssignedAbsent} before the tenant
+ * loop, then — after the loop and once every tenant's {@link #apply} has run — {@link
+ * PhysicalTenantExporterAssignedValidation#validate} for the whole resolved-by-tenant map, and only
+ * then {@link #narrowToAssigned} for each tenant. Validation must precede narrowing: narrowing
+ * removes ids, and validation checks assigned ids against the full pre-narrow universe. {@link
+ * #apply} itself therefore changes only entry <em>contents</em>, never which ids exist for a
  * tenant.
  */
 @NullMarked
 final class PhysicalTenantExporterConfigurations {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(PhysicalTenantExporterConfigurations.class);
-
-  private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
-
-  /** Autoconfigured exporter ids, always outside the generic-exporter catalog (ADR-0008 §1). */
-  private static final Set<String> AUTOCONFIGURED_EXPORTER_IDS =
+  static final Set<String> AUTOCONFIGURED_EXPORTER_IDS =
       Set.of(
           BrokerBasedPropertiesOverride.CAMUNDA_EXPORTER_NAME,
           BrokerBasedPropertiesOverride.RDBMS_EXPORTER_NAME);
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(PhysicalTenantExporterConfigurations.class);
+  private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
 
   private PhysicalTenantExporterConfigurations() {}
 
@@ -228,5 +236,36 @@ final class PhysicalTenantExporterConfigurations {
 
   private static Map<String, Object> immutableCopy(final @Nullable Map<String, Object> args) {
     return args == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(args));
+  }
+
+  /**
+   * Narrows {@code physicalTenant}'s resolved {@code data.exporters} to exactly the assigned
+   * generic exporters plus the always-present autoconfigured entries (ADR-0008 D1/D2): every
+   * catalog entry the tenant inherited but did not assign is removed, so the resolved map becomes
+   * the tenant's complete generic-exporter manifest. The {@code exporters-assigned} list is read
+   * from the environment — it is never a field on the config POJO. An absent manifest is a no-op
+   * here ({@link PhysicalTenantExporterAssignedValidation} already rejects it at boot whenever a
+   * generic exporter could apply); an explicit empty manifest keeps only the autoconfigured
+   * entries.
+   *
+   * <p><b>Dormant:</b> not yet called from {@link PhysicalTenantResolver} — wiring it in is gated
+   * on <a href="https://github.com/camunda/camunda/issues/56652">#56652</a>; see the class javadoc.
+   */
+  static void narrowToAssigned(
+      final Camunda physicalTenant, final String tenantId, final Environment environment) {
+    final List<String> assigned =
+        Binder.get(environment)
+            .bind(
+                PHYSICAL_TENANTS_PREFIX + "." + tenantId + ".data.exporters-assigned",
+                Bindable.listOf(String.class))
+            .orElse(null);
+    if (assigned == null) {
+      return;
+    }
+    final Set<String> keep = new LinkedHashSet<>(AUTOCONFIGURED_EXPORTER_IDS);
+    assigned.stream().filter(id -> !id.isBlank()).forEach(keep::add);
+    // exporter ids are matched verbatim: they are case-sensitive (#36444), and no other id match in
+    // this resolver (e.g. apply's catalog lookup) trims or normalizes, so neither does this one
+    physicalTenant.getData().getExporters().keySet().removeIf(id -> !keep.contains(id));
   }
 }
