@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.util.ObjectBuilder;
 
 public record ProcessDefinitionDbModel(
@@ -19,7 +20,7 @@ public record ProcessDefinitionDbModel(
     int version,
     String bpmnXml,
     String formId,
-    boolean isDeleted) {
+    ProcessDefinitionState state) {
 
   public static class ProcessDefinitionDbModelBuilder
       implements ObjectBuilder<ProcessDefinitionDbModel> {
@@ -33,7 +34,7 @@ public record ProcessDefinitionDbModel(
     private String versionTag;
     private int version;
     private String formId;
-    private boolean isDeleted;
+    private ProcessDefinitionState state;
 
     // Public constructor to initialize the builder
     public ProcessDefinitionDbModelBuilder() {}
@@ -84,8 +85,8 @@ public record ProcessDefinitionDbModel(
       return this;
     }
 
-    public ProcessDefinitionDbModelBuilder isDeleted(final boolean isDeleted) {
-      this.isDeleted = isDeleted;
+    public ProcessDefinitionDbModelBuilder state(final ProcessDefinitionState state) {
+      this.state = state;
       return this;
     }
 
@@ -102,7 +103,7 @@ public record ProcessDefinitionDbModel(
           version,
           bpmnXml,
           formId,
-          isDeleted);
+          state);
     }
   }
 }
