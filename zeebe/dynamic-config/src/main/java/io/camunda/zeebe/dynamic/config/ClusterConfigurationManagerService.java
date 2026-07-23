@@ -144,7 +144,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 false))
-        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
+        .andThen(new RoutingStateInitializer());
   }
 
   private ClusterConfigurationInitializer getCoordinatorInitializer(
@@ -167,7 +167,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor,
                 true))
-        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
+        .andThen(new RoutingStateInitializer());
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
