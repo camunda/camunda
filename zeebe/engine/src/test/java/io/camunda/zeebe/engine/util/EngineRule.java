@@ -694,8 +694,10 @@ public final class EngineRule extends ExternalResource {
   }
 
   public void awaitIdentitySetup() {
+    // The INITIALIZED event payload is intentionally empty (see IdentitySetupInitializeProcessor).
+    // Authorization count is read from the INITIALIZE command instead, which still carries it.
     final var identitySetup =
-        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).getFirst();
+        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE).getFirst();
 
     /*
      * We'll need to await for the identity setup to be completed before proceeding, but it's not

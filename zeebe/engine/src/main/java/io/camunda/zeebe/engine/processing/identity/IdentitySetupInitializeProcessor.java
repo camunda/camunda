@@ -61,8 +61,14 @@ public final class IdentitySetupInitializeProcessor
     createRoleMembers(initializationKey, setupRecord.getRoleMembers());
     createGroupMembers(initializationKey, setupRecord.getGroupMembers());
 
+    // the setup record's data is intentionally not included here: it was already written via the
+    // follow-up commands above, and nothing consumes this event's payload, so re-serializing the
+    // entire record would only make this already large batch grow further. The default tenant's
+    // tenantId must still be set explicitly, as it has no default value.
     stateWriter.appendFollowUpEvent(
-        initializationKey, IdentitySetupIntent.INITIALIZED, setupRecord);
+        initializationKey,
+        IdentitySetupIntent.INITIALIZED,
+        new IdentitySetupRecord().setDefaultTenant(setupRecord.getDefaultTenant()));
   }
 
   @Override

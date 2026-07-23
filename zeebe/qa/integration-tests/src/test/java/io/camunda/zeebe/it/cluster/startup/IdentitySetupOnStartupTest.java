@@ -42,7 +42,7 @@ final class IdentitySetupOnStartupTest {
                       cfg.unifiedConfig()
                           .getCluster()
                           .getNetwork()
-                          .setMaxMessageSize(DataSize.ofKilobytes(64));
+                          .setMaxMessageSize(DataSize.ofKilobytes(32));
                       cfg.unifiedConfig().getProcessing().setMaxCommandsInBatch(100);
                     })
                 .build()
