@@ -463,20 +463,15 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.COMPLETED, 3, new JobCompletedV3Applier(state));
     register(JobIntent.CREATED, 1, new JobCreatedV1Applier(state));
     register(JobIntent.CREATED, 2, new JobCreatedV2Applier(state));
-    register(JobIntent.CREATED, 3, new JobCreatedV3Applier(state));
     register(JobIntent.ERROR_THROWN, 1, new JobErrorThrownV1Applier(state));
     register(JobIntent.ERROR_THROWN, 2, new JobErrorThrownV2Applier(state));
     register(JobIntent.FAILED, 1, new JobFailedV1Applier(state));
     register(JobIntent.FAILED, 2, new JobFailedV2Applier(state));
-    register(JobIntent.FAILED, 3, new JobFailedV3Applier(state));
-    register(JobIntent.YIELDED, 1, new JobYieldedApplier(state));
-    register(JobIntent.YIELDED, 2, new JobYieldedV2Applier(state));
+    register(JobIntent.YIELDED, new JobYieldedApplier(state));
     register(JobIntent.RETRIES_UPDATED, new JobRetriesUpdatedApplier(state));
     register(JobIntent.TIMED_OUT, 1, new JobTimedOutV1Applier(state));
     register(JobIntent.TIMED_OUT, 2, new JobTimedOutV2Applier(state));
-    register(JobIntent.TIMED_OUT, 3, new JobTimedOutV3Applier(state));
-    register(JobIntent.RECURRED_AFTER_BACKOFF, 1, new JobRecurredApplier(state));
-    register(JobIntent.RECURRED_AFTER_BACKOFF, 2, new JobRecurredV2Applier(state));
+    register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
     register(JobIntent.TIMEOUT_UPDATED, new JobTimeoutUpdatedApplier(state));
     register(JobIntent.UPDATED, 1, new JobUpdatedApplier(state));
     register(JobIntent.UPDATED, 2, NOOP_EVENT_APPLIER);
@@ -650,11 +645,6 @@ public final class EventAppliers implements EventApplier {
         IncidentIntent.RESOLVED,
         3,
         new IncidentResolvedV3Applier(
-            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
-    register(
-        IncidentIntent.RESOLVED,
-        4,
-        new IncidentResolvedV4Applier(
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
     register(IncidentIntent.MIGRATED, new IncidentMigratedApplier(state.getIncidentState()));
   }

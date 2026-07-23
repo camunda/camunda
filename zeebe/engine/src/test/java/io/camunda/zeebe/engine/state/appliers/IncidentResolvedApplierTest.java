@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.job.JobThrowErrorProcessor;
@@ -23,7 +22,6 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,42 +69,6 @@ public class IncidentResolvedApplierTest {
 
     // then
     assertThat(job.getElementId()).isEqualTo(elementId);
-  }
-
-  @Test
-  void shouldMakeJobActivatableByPriorityOnIncidentResolutionV4() {
-    // given
-    final var incidentKey = 1L;
-    final var jobKey = 2L;
-    final var priority = 7;
-    final var incidentRecord =
-        new IncidentRecord()
-            .setErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
-            .setJobKey(jobKey)
-            .setElementId(BufferUtil.wrapString("elementId"));
-
-    final var job =
-        new JobRecord()
-            .setType("test")
-            .setPriority(priority)
-            .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
-            .setElementId("elementId");
-    when(jobStateMock.getState(jobKey)).thenReturn(State.FAILED);
-    when(jobStateMock.getJob(jobKey)).thenReturn(job);
-
-    final var v4Applier =
-        new IncidentResolvedV4Applier(incidentState, jobStateMock, elementInstanceStateMock);
-
-    // when
-    v4Applier.applyState(incidentKey, incidentRecord);
-
-    // then
-    verify(jobStateMock).updateJobRecord(jobKey, job);
-    verify(jobStateMock).updateJobState(jobKey, State.ACTIVATABLE);
-    verify(jobStateMock).removeJobDeadline(jobKey, job.getDeadline());
-    verify(jobStateMock)
-        .makeJobActivatableByPriority(
-            job.getTypeBuffer(), jobKey, job.getTenantId(), job.getPriority());
   }
 
   @Test
