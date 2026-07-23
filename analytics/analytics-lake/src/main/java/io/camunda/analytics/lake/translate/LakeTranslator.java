@@ -260,10 +260,22 @@ import org.slf4j.LoggerFactory;
  * OBJECT_SIGHTINGS} column family, capped at {@link #MAX_OBJECT_SIGHTINGS_PER_INSTANCE} with an
  * overflow flag, deleted on eviction like every other per-instance state). <b>v1 rule shipped</b>:
  * a relation (parent contains child) is emitted for every (root-scope sighting, non-root-scope
- * sighting) pair of the same instance whose (type, id) differ — the declared-parent-type variant
- * the design allowed skipping was skipped, for simplicity; root⊇non-root alone is the whole rule.
- * Deduped by {@link #objectRelationSeenCache} per distinct (parent type, parent id, child type,
- * child id) edge, across the whole translator lifetime, not just one instance.
+ * sighting) pair of the same instance whose (type, id) differ — root⊇non-root alone is the whole
+ * scope-nesting rule. Deduped by {@link #objectRelationSeenCache} per distinct (parent type, parent
+ * id, child type, child id) edge, across the whole translator lifetime, not just one instance.
+ *
+ * <p><b>Declared containment</b> ({@link #emitBelongsToRelations}, also called from {@link
+ * #emitObjectRelationsAtCompletion}): the scope-nesting rule above can only order a root-scope
+ * sighting against a non-root-scope one — it has no way to order two sightings that are
+ * <em>both</em> at the instance's root scope (e.g. an order and its customer, sighted together at
+ * the same process instance's root). For every {@link CompiledObjectTypes#belongsToParentTypes}
+ * edge (declared child type &rarr; parent type), if the completing instance's root-scope sightings
+ * include both types, a relation is emitted for every (parent-id, child-id) combination among that
+ * instance's root sightings of the two types — same emission/dedupe path as the scope-nesting rule
+ * ({@link #emitObjectRelationRowIfNew}, so the same {@link #objectRelationSeenCache}), just fed a
+ * different pair of sightings. Multiple root sightings of one type in a single instance (the same
+ * rare "k overwrites" case the scope-nesting rule already tolerates) pair all combinations, not
+ * just one.
  *
  * <p>Every new appender ({@link #objectsAppender}, {@link #instanceLinksAppender}, {@link
  * #objectRelationsAppender}) follows the variants dictionary's own backpressure judgment call:
@@ -2098,6 +2110,8 @@ public final class LakeTranslator {
    * <p><b>v1 rule</b> (see class javadoc): a relation (parent contains child) is emitted for every
    * (root-scope sighting, non-root-scope sighting) pair whose (type, id) differ — a sighting at
    * both root and non-root scope with the identical (type, id) is a self-relation and is skipped.
+   * Then {@link #emitBelongsToRelations} derives the declared-containment edges the scope-nesting
+   * rule above cannot (see class javadoc's "Declared containment" section).
    */
   private void emitObjectRelationsAtCompletion(final long instanceKey, final long completedAtMs) {
     final ObjectSightingList sightings = state.getObjectSightings(instanceKey);
@@ -2117,6 +2131,39 @@ public final class LakeTranslator {
           continue; // self-relation -- skip (see this method's own javadoc)
         }
         emitObjectRelationRowIfNew(parent, child, completedAtMs);
+      }
+    }
+    emitBelongsToRelations(roots, completedAtMs);
+  }
+
+  /**
+   * Derives and emits one {@code object_relations} row for every declared {@code belongsTo} edge
+   * whose parent and child types are both sighted at this instance's root — see class javadoc's
+   * "Declared containment" section for why this is needed alongside the scope-nesting rule in
+   * {@link #emitObjectRelationsAtCompletion} above. No-op when {@link #objectTypes} is unwired or
+   * declares no {@code belongsTo} edge at all, which is the common case.
+   */
+  private void emitBelongsToRelations(final List<ObjectSighting> roots, final long completedAtMs) {
+    if (objectTypes == null) {
+      return;
+    }
+    final Map<String, String> belongsTo = objectTypes.belongsToParentTypes();
+    if (belongsTo.isEmpty()) {
+      return;
+    }
+    for (final Map.Entry<String, String> edge : belongsTo.entrySet()) {
+      final String childType = edge.getKey();
+      final String parentType = edge.getValue();
+      for (final ObjectSighting parent : roots) {
+        if (!parent.objectType().equals(parentType)) {
+          continue;
+        }
+        for (final ObjectSighting child : roots) {
+          if (!child.objectType().equals(childType)) {
+            continue;
+          }
+          emitObjectRelationRowIfNew(parent, child, completedAtMs);
+        }
       }
     }
   }

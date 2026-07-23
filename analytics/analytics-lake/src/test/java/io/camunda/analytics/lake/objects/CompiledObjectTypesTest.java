@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -198,5 +199,109 @@ class CompiledObjectTypesTest {
     // then
     assertThat(registry.closingTypesForProcess("processA")).containsExactly(dispute);
     assertThat(registry.closingTypesForProcess("processB")).containsExactly(dispute);
+  }
+
+  // ---- belongsTo cross-type validation + lookup -------------------------------------------------
+
+  @Test
+  void shouldReturnEmptyBelongsToParentTypesWhenNoneDeclareOne() {
+    // given
+    final CompiledObjectType customer =
+        ObjectTypes.declare("customer").identifiedBy(ObjectTypes.variable("customerId")).build();
+
+    // when
+    final CompiledObjectTypes registry = CompiledObjectTypes.of(customer);
+
+    // then
+    assertThat(registry.belongsToParentTypes()).isEmpty();
+  }
+
+  @Test
+  void shouldResolveADeclaredBelongsToEdge() {
+    // given
+    final CompiledObjectType customer =
+        ObjectTypes.declare("customer").identifiedBy(ObjectTypes.variable("customerId")).build();
+    final CompiledObjectType order =
+        ObjectTypes.declare("order")
+            .identifiedBy(ObjectTypes.variable("orderId"))
+            .belongsTo("customer")
+            .build();
+
+    // when
+    final CompiledObjectTypes registry = CompiledObjectTypes.of(customer, order);
+
+    // then
+    assertThat(registry.belongsToParentTypes()).containsExactly(Map.entry("order", "customer"));
+  }
+
+  @Test
+  void shouldRejectABelongsToParentTypeThatIsNotDeclared() {
+    // given: "order" declares belongsTo("customer") but "customer" is never declared
+    final CompiledObjectType order =
+        ObjectTypes.declare("order")
+            .identifiedBy(ObjectTypes.variable("orderId"))
+            .belongsTo("customer")
+            .build();
+
+    // then
+    assertThatThrownBy(() -> CompiledObjectTypes.of(order))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("belongsTo('customer')")
+        .hasMessageContaining("no object type 'customer' is declared");
+  }
+
+  @Test
+  void shouldRejectADirectTwoTypeBelongsToCycle() {
+    // given: a belongsTo b, b belongsTo a
+    final CompiledObjectType a =
+        ObjectTypes.declare("a").identifiedBy(ObjectTypes.variable("aId")).belongsTo("b").build();
+    final CompiledObjectType b =
+        ObjectTypes.declare("b").identifiedBy(ObjectTypes.variable("bId")).belongsTo("a").build();
+
+    // then
+    assertThatThrownBy(() -> CompiledObjectTypes.of(a, b))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("cyclic belongsTo chain");
+  }
+
+  @Test
+  void shouldRejectALongerBelongsToCycle() {
+    // given: a belongsTo b, b belongsTo c, c belongsTo a
+    final CompiledObjectType a =
+        ObjectTypes.declare("a").identifiedBy(ObjectTypes.variable("aId")).belongsTo("b").build();
+    final CompiledObjectType b =
+        ObjectTypes.declare("b").identifiedBy(ObjectTypes.variable("bId")).belongsTo("c").build();
+    final CompiledObjectType c =
+        ObjectTypes.declare("c").identifiedBy(ObjectTypes.variable("cId")).belongsTo("a").build();
+
+    // then
+    assertThatThrownBy(() -> CompiledObjectTypes.of(a, b, c))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("cyclic belongsTo chain");
+  }
+
+  @Test
+  void shouldAllowAMultiLevelBelongsToChainThatIsNotCyclic() {
+    // given: item belongsTo order belongsTo customer -- a valid chain, not a cycle
+    final CompiledObjectType customer =
+        ObjectTypes.declare("customer").identifiedBy(ObjectTypes.variable("customerId")).build();
+    final CompiledObjectType order =
+        ObjectTypes.declare("order")
+            .identifiedBy(ObjectTypes.variable("orderId"))
+            .belongsTo("customer")
+            .build();
+    final CompiledObjectType item =
+        ObjectTypes.declare("item")
+            .identifiedBy(ObjectTypes.variable("itemId"))
+            .belongsTo("order")
+            .build();
+
+    // when
+    final CompiledObjectTypes registry = CompiledObjectTypes.of(customer, order, item);
+
+    // then
+    assertThat(registry.belongsToParentTypes())
+        .containsEntry("order", "customer")
+        .containsEntry("item", "order");
   }
 }

@@ -168,4 +168,60 @@ class ObjectTypesTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("must not be blank");
   }
+
+  // ---- belongsTo ----------------------------------------------------------------------------
+
+  @Test
+  void shouldDefaultToNoParentTypeWhenNoneDeclared() {
+    // when
+    final CompiledObjectType type =
+        ObjectTypes.declare("customer").identifiedBy(ObjectTypes.variable("customerId")).build();
+
+    // then: the common case -- no belongsTo declared
+    assertThat(type.parentTypeName()).isNull();
+  }
+
+  @Test
+  void shouldCompileATypeWithABelongsToParent() {
+    // when
+    final CompiledObjectType type =
+        ObjectTypes.declare("order")
+            .identifiedBy(ObjectTypes.variable("orderId"))
+            .belongsTo("customer")
+            .build();
+
+    // then
+    assertThat(type.parentTypeName()).isEqualTo("customer");
+  }
+
+  @Test
+  void shouldRejectNullBelongsToParentTypeName() {
+    assertThatThrownBy(() -> ObjectTypes.declare("order").belongsTo(null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must not be null");
+  }
+
+  @Test
+  void shouldRejectBlankBelongsToParentTypeName() {
+    assertThatThrownBy(
+            () ->
+                ObjectTypes.declare("order")
+                    .identifiedBy(ObjectTypes.variable("orderId"))
+                    .belongsTo(" ")
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("must not be blank");
+  }
+
+  @Test
+  void shouldRejectSelfReferencingBelongsTo() {
+    assertThatThrownBy(
+            () ->
+                ObjectTypes.declare("order")
+                    .identifiedBy(ObjectTypes.variable("orderId"))
+                    .belongsTo("order")
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("self-reference");
+  }
 }

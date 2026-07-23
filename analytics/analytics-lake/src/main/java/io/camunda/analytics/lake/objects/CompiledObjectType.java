@@ -17,9 +17,16 @@ import java.util.List;
  *
  * @param closingRules empty for a type that never closes (the default-open case — see {@code
  *     LakeTranslator}'s "Object lifecycle capture" javadoc section)
+ * @param parentTypeName {@code null} for a type that declares no {@code belongsTo(...)} parent —
+ *     the common case; see {@link ObjectTypes.Builder#belongsTo} for why this exists and {@link
+ *     CompiledObjectTypes#of} for the cross-type validation (parent existence, no cycle) a single
+ *     declaration cannot perform on its own
  */
 public record CompiledObjectType(
-    String name, List<IdentifierSource> identifiers, List<ClosingRule> closingRules) {
+    String name,
+    List<IdentifierSource> identifiers,
+    List<ClosingRule> closingRules,
+    String parentTypeName) {
 
   public CompiledObjectType {
     identifiers = List.copyOf(identifiers);

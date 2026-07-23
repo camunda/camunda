@@ -710,10 +710,16 @@ public final class LakePocApp {
         // (intake -> fulfillment -> invoicing), so its completion is exactly the moment the order
         // — and every item registered under it — is done. `item` demonstrates the non-root
         // sighting case: itemId only ever appears in a multi-instance body's per-iteration scope,
-        // never at a process root.
+        // never at a process root. `order` also declares belongsTo("customer"): order-intake's
+        // start event sets both orderId and customerId at the SAME (root) scope, so the
+        // root x non-root relation rule alone can never pair them -- see ObjectTypes' own javadoc
+        // and LakeTranslator's "Declared containment" section. `dispute` deliberately does NOT
+        // declare belongsTo("customer") -- its customer -> dispute edge already derives from the
+        // root x non-root rule (customerId at root, correlationKey at a non-root scope).
         ObjectTypes.declare("order")
             .identifiedBy(ObjectTypes.variable("orderId"))
             .closes(ObjectTypes.onProcessCompletion("order-intake"))
+            .belongsTo("customer")
             .build(),
         ObjectTypes.declare("item")
             .identifiedBy(ObjectTypes.variable("itemId"))

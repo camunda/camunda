@@ -28,7 +28,11 @@ order   --N:1-->  region-shipping batch (region)   [via ship-order message corre
 - **order**: root object of `order-intake`. Identified by `orderId`. Carries `customerId`,
   `amount`, `region`. Propagated by value into `order-fulfillment` and `order-invoicing` via
   call-activity variable propagation (no `zeebe:ioMapping` restriction on either call activity, so
-  the Zeebe default — propagate everything both ways — applies).
+  the Zeebe default — propagate everything both ways — applies). Also declares
+  `belongsTo("customer")`: `order-intake`'s start event sets `orderId` and `customerId` at the
+  *same* (root) scope, so `LakeTranslator`'s root×non-root relation rule can never pair them —
+  scope nesting cannot order two root-scoped ids, so the declaration supplies the hierarchy
+  explicitly, yielding one `customer ⊃ order` relation per order.
 - **item**: sub-object of order. One per entry of the `items` array, materialized inside the
   "Register items" multi-instance body.
 - **customer**: referenced by `customerId`, not separately modeled as a process (out of scope for
