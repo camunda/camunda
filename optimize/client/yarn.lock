@@ -1442,13 +1442,13 @@
   resolved "https://registry.npmjs.org/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bpmn-io/diagram-js-ui@^0.2.3":
-  version "0.2.3"
-  resolved "https://registry.npmjs.org/@bpmn-io/diagram-js-ui/-/diagram-js-ui-0.2.3.tgz"
-  integrity sha512-OGyjZKvGK8tHSZ0l7RfeKhilGoOGtFDcoqSGYkX0uhFlo99OVZ9Jn1K7TJGzcE9BdKwvA5Y5kGqHEhdTxHvFfw==
+"@bpmn-io/diagram-js-ui@^0.2.4":
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/diagram-js-ui/-/diagram-js-ui-0.2.4.tgz#2ca1b1108404a4306f6b411f580fe37b360f4def"
+  integrity sha512-I678ZGtoH7z7FgzFhzzppM9ThsJ3Lh83kW3GjhjG3xyYciIPYHMaHK1MABP8F69H9pFZpViM6t4qUo8dwrVz0w==
   dependencies:
     htm "^3.1.1"
-    preact "^10.11.2"
+    preact "^10.29.2"
 
 "@bpmn-io/element-templates-icons-renderer@^0.3.0":
   version "0.3.0"
@@ -5325,14 +5325,14 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@18.16.1:
-  version "18.16.1"
-  resolved "https://registry.npmjs.org/bpmn-js/-/bpmn-js-18.16.1.tgz"
-  integrity sha512-qdJp/1JbKY3JtqB2L7LF4VEJtVlbl9AGkvyUjzJlBJ8jURNNTx+22OdrZMVNPxaGOjW+nuHK38ObFCmMCp/Kcg==
+bpmn-js@18.21.0:
+  version "18.21.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-18.21.0.tgz#c262a83396a81c4fcc5220ca0d5f693ee7839047"
+  integrity sha512-TVPsgsTnD24jrcZ5bjU3LAfhEp4UtfnRIQ53Spf7Cs2nMofFU27uZ/Z5MTxNzfB5PVczjZbx7UTRmq+RcCZ7HA==
   dependencies:
     bpmn-moddle "^10.0.0"
-    diagram-js "^15.14.0"
-    diagram-js-direct-editing "^3.3.0"
+    diagram-js "^15.20.0"
+    diagram-js-direct-editing "^3.4.0"
     ids "^3.0.2"
     inherits-browser "^0.1.0"
     min-dash "^5.0.0"
@@ -6802,24 +6802,24 @@ diagram-js-direct-editing@^1.6.3:
     min-dash "^3.5.2"
     min-dom "^3.1.3"
 
-diagram-js-direct-editing@^3.3.0:
-  version "3.3.0"
-  resolved "https://registry.npmjs.org/diagram-js-direct-editing/-/diagram-js-direct-editing-3.3.0.tgz"
-  integrity sha512-EjXYb35J3qBU8lLz5U81hn7wNykVmF7U5DXZ7BvPok2IX7rmPz+ZyaI5AEMiqaC6lpSnHqPxFcPgKEiJcAiv5w==
+diagram-js-direct-editing@^3.4.0:
+  version "3.5.1"
+  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-3.5.1.tgz#535323c3007f933f5a08f59c6821a0d6f00821dc"
+  integrity sha512-fEQCQ/x5oKVV0m7Nmgv7i85Vhw+kJkKNXF8zcV5Vm0KwF8x/8e3Ax0aJgdXt8/fDPymEkY8HmZweXIipCeeh+g==
   dependencies:
     min-dash "^5.0.0"
-    min-dom "^5.2.0"
+    min-dom "^5.3.0"
 
-diagram-js@^15.14.0:
-  version "15.14.0"
-  resolved "https://registry.npmjs.org/diagram-js/-/diagram-js-15.14.0.tgz"
-  integrity sha512-xXIKBgK9qC5YIfdUs0Qx+rSlz3DNGMtYxx+pRK+U8eVBD184eZnLCu6KVzaZXXyyC5YRirQayorCVI55Ulhzvg==
+diagram-js@^15.20.0:
+  version "15.22.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-15.22.0.tgz#ce91ad7cf7079436c1a4031cd9956119a9fc9441"
+  integrity sha512-xcX1e4lmRCrpwlnNqNHVqY8Xp4i70tXUZwO39IzRJsXWq6F+/osNs4biehnb5ZlHIzjZcEHWzOx/vlIui4qS8w==
   dependencies:
-    "@bpmn-io/diagram-js-ui" "^0.2.3"
+    "@bpmn-io/diagram-js-ui" "^0.2.4"
     clsx "^2.1.1"
     didi "^11.0.0"
     inherits-browser "^0.1.0"
-    min-dash "^5.0.0"
+    min-dash "^5.1.0"
     min-dom "^5.3.0"
     object-refs "^0.4.0"
     path-intersection "^4.1.0"
@@ -6998,11 +6998,6 @@ domify@^1.3.1:
   version "1.4.2"
   resolved "https://registry.npmjs.org/domify/-/domify-1.4.2.tgz"
   integrity sha512-m4yreHcUWHBncGVV7U+yQzc12vIlq0jMrtHZ5mW6dQMiL/7skSYNVX9wqKwOtyO9SGCgevrAFEgOCAHmamHTUA==
-
-domify@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.npmjs.org/domify/-/domify-2.0.0.tgz"
-  integrity sha512-rmvrrmWQPD/X1A/nPBfIVg4r05792QdG9Z4Prk6oQG0F9zBMDkr0GKAdds1wjb2dq1rTz/ywc4ZxpZbgz0tttg==
 
 domify@^3.0.0:
   version "3.0.0"
@@ -11905,6 +11900,11 @@ min-dash@^5.0.0:
   resolved "https://registry.npmjs.org/min-dash/-/min-dash-5.0.0.tgz"
   integrity sha512-EGuoBnVL7/Fnv2sqakpX5WGmZehZ3YMmLayT7sM8E9DRU74kkeyMg4Rik1lsOkR2GbFNeBca4/L+UfU6gF0Edw==
 
+min-dash@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-5.1.0.tgz#ab0d892afa7e2b6b257dfe60fa3e805e0ac73799"
+  integrity sha512-HAvN6XzmCQj+js43G9sJRRw8kj/7DvoxN7qhoIN9Xo5ZN1NMljtpyKs/NunXmw0QSWwlgZzNv6tLeEa4xaZ0tg==
+
 min-dom@^3.1.3:
   version "3.2.1"
   resolved "https://registry.npmjs.org/min-dom/-/min-dom-3.2.1.tgz"
@@ -11915,14 +11915,6 @@ min-dom@^3.1.3:
     indexof "0.0.1"
     matches-selector "^1.2.0"
     min-dash "^3.8.1"
-
-min-dom@^5.2.0:
-  version "5.2.0"
-  resolved "https://registry.npmjs.org/min-dom/-/min-dom-5.2.0.tgz"
-  integrity sha512-shfMH1tFbZCVSx3ECaQV1aGu8fYmGnXEWuItudWRd31DpVJzmVKXFH/Aqgf7YjOmZRgRH5BJafk16oeSbohJDg==
-  dependencies:
-    domify "^2.0.0"
-    min-dash "^5.0.0"
 
 min-dom@^5.3.0:
   version "5.3.0"
@@ -13588,10 +13580,10 @@ postcss@^8.5.16:
     picocolors "^1.1.1"
     source-map-js "^1.2.1"
 
-preact@^10.11.2:
-  version "10.24.3"
-  resolved "https://registry.npmjs.org/preact/-/preact-10.24.3.tgz"
-  integrity sha512-Z2dPnBnMUfyQfSQ+GBdsGa16hz35YmLmtTLhM169uW944hYL6xzTYkJjC07j+Wosz733pMWx0fgON3JNw1jJQA==
+preact@^10.29.2:
+  version "10.29.7"
+  resolved "https://registry.yarnpkg.com/preact/-/preact-10.29.7.tgz#b70df2eb06e982c7ac65b6df1541e5846ac0f6ba"
+  integrity sha512-DCHYrK/B10yUD3ZjLfhZ3WIE/9Vf9VFUODcRE2dRomTYDpJk6z6L9wecSfhfE6M9ZTHUdyQkoC46arIDhEV84Q==
 
 prebuild-install@^7.1.1:
   version "7.1.2"
