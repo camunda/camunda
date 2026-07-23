@@ -5,43 +5,35 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { useEffect, useState } from "react";
-import { LakeTables } from "./components/LakeTables";
-import { api, type TableInfo } from "./lib/api";
+import { Navigate, Route, Routes } from "react-router";
+import { AppDataProvider } from "./lib/appData";
+import { DashboardsPage } from "./components/dashboards/DashboardsPage";
+import { DataPage } from "./components/data/DataPage";
+import { ExplainPage } from "./components/explain/ExplainPage";
+import { Shell } from "./components/layout/Shell";
+import { ObjectDetailPage } from "./components/objects/ObjectDetailPage";
+import { ObjectsIndexPage } from "./components/objects/ObjectsIndexPage";
+import { ObjectsListPage } from "./components/objects/ObjectsListPage";
 
 /**
- * Proof-of-life "Lake" screen: lists the tables {@code LakeViewRegistry} discovered at startup.
- * The explain-shaped screens (follow-up lane J) render alongside this, not in place of it.
+ * App shell + routing: Dashboards / Explain / Objects / Data, with a global perspective switcher
+ * (see lib/appData.tsx) shared across every page.
  */
 export default function App() {
-  const [tables, setTables] = useState<TableInfo[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .tables()
-      .then(setTables)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
-  }, []);
-
   return (
-    <div className="min-h-full bg-neutral-background-subtle text-neutral-foreground">
-      <header className="border-b border-border bg-neutral-background">
-        <div className="mx-auto flex max-w-4xl flex-col gap-1 px-6 py-4">
-          <span className="text-lg font-semibold">Camunda · Analytics Lake</span>
-          <span className="text-xs text-neutral-foreground-muted">
-            Read-only serving over the lake warehouse
-          </span>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-4xl px-6 py-6">
-        {error ? (
-          <p className="text-destructive-foreground">Failed to load tables: {error}</p>
-        ) : (
-          <LakeTables tables={tables} />
-        )}
-      </main>
-    </div>
+    <AppDataProvider>
+      <Routes>
+        <Route element={<Shell />}>
+          <Route index element={<Navigate to="/dashboards" replace />} />
+          <Route path="dashboards" element={<DashboardsPage />} />
+          <Route path="explain" element={<ExplainPage />} />
+          <Route path="objects" element={<ObjectsIndexPage />} />
+          <Route path="objects/:type" element={<ObjectsListPage />} />
+          <Route path="objects/:type/:id" element={<ObjectDetailPage />} />
+          <Route path="data" element={<DataPage />} />
+          <Route path="*" element={<Navigate to="/dashboards" replace />} />
+        </Route>
+      </Routes>
+    </AppDataProvider>
   );
 }
