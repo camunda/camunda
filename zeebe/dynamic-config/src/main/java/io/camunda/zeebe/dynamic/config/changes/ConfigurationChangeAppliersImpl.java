@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ScaleUpOperation.*;
@@ -38,18 +39,21 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
   private final PartitionScalingChangeExecutor partitionScalingChangeExecutor;
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final ModeChangeExecutor modeChangeExecutor;
+  private final RestoreChangeExecutor restoreChangeExecutor;
 
   public ConfigurationChangeAppliersImpl(
       final PartitionChangeExecutor partitionChangeExecutor,
       final ClusterMembershipChangeExecutor clusterMembershipChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
       final ClusterChangeExecutor clusterChangeExecutor,
-      final ModeChangeExecutor modeChangeExecutor) {
+      final ModeChangeExecutor modeChangeExecutor,
+      final RestoreChangeExecutor restoreChangeExecutor) {
     this.partitionChangeExecutor = partitionChangeExecutor;
     this.clusterMembershipChangeExecutor = clusterMembershipChangeExecutor;
     this.partitionScalingChangeExecutor = partitionScalingChangeExecutor;
     this.clusterChangeExecutor = clusterChangeExecutor;
     this.modeChangeExecutor = modeChangeExecutor;
+    this.restoreChangeExecutor = restoreChangeExecutor;
   }
 
   @Override
@@ -109,6 +113,11 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               partitionChangeExecutor);
       case final PartitionBootstrapOperation bootstrapOperation ->
           new PartitionBootstrapApplier(bootstrapOperation, partitionChangeExecutor);
+      case final PartitionPreRestoreOperation preRestoreOperation ->
+          new PartitionPreRestoreApplier(
+              preRestoreOperation.memberId(),
+              preRestoreOperation.partitionId(),
+              restoreChangeExecutor);
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new DeleteHistoryApplier(deleteHistoryOperation.memberId(), clusterChangeExecutor);
       case final ScaleUpOperation scaleUpOperation ->

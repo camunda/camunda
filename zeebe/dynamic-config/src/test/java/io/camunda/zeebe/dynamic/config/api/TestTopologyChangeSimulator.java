@@ -15,6 +15,7 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChange
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import java.util.List;
@@ -30,7 +31,8 @@ final class TestTopologyChangeSimulator {
             new NoopClusterMembershipChangeExecutor(),
             new NoopPartitionScalingChangeExecutor(),
             new NoopClusterChangeExecutor(),
-            new NoopModeChangeExecutor());
+            new NoopModeChangeExecutor(),
+            new RestoreChangeExecutor.NoopRestoreChangeExecutor());
     ClusterConfiguration newTopology = currentTopology;
     if (!operations.isEmpty()) {
       newTopology = currentTopology.startConfigurationChange(operations);
