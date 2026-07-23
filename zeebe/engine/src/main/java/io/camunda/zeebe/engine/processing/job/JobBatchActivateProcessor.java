@@ -117,7 +117,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
     // Skip tenant authorization check when using ASSIGNED filter
     if (TenantFilter.PROVIDED.equals(value.getTenantFilter())) {
-      final var tenantAuthResult = validateTenantAuthorization(value, authorizedTenantIds);
+      final var tenantAuthResult = validateTenantAuthorization(record, value, authorizedTenantIds);
       if (tenantAuthResult.isLeft()) {
         return tenantAuthResult;
       }
@@ -127,18 +127,25 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private Either<Rejection, Void> validateTenantAuthorization(
-      final JobBatchRecord record, final AuthorizedTenants authorizedTenantIds) {
-    final var tenantIds = record.getTenantIds();
-
-    if (!authorizedTenantIds.isAuthorizedForTenantIds(tenantIds)) {
-      return Either.left(
-          new Rejection(
-              RejectionType.UNAUTHORIZED,
-              "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
-                  .formatted(tenantIds, authorizedTenantIds.getAuthorizedTenantIds())));
-    }
-
-    return Either.right(null);
+      final TypedRecord<JobBatchRecord> record,
+      final JobBatchRecord value,
+      final AuthorizedTenants authorizedTenantIds) {
+    final var tenantIds = value.getTenantIds();
+    // Rejection is a method argument, so it's always evaluated eagerly, even when checkTenants
+    // ends up allowing the request; getAuthorizedTenantIds() throws for an anonymous principal, so
+    // it can't be called unconditionally here.
+    final var authorizedTenantIdsForMessage =
+        authorizedTenantIds.isAnonymous()
+            ? List.of()
+            : authorizedTenantIds.getAuthorizedTenantIds();
+    return cslCheck.checkTenants(
+        record,
+        tenantIds,
+        null,
+        new Rejection(
+            RejectionType.UNAUTHORIZED,
+            "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
+                .formatted(tenantIds, authorizedTenantIdsForMessage)));
   }
 
   private Either<Rejection, Void> validateCommandFields(final JobBatchRecord record) {

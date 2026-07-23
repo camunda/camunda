@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsResolver;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -157,6 +158,34 @@ public final class CslAuthorizationCheck {
       return Either.right(value);
     }
     if (resolveAuthorizedTenants(authorizations).isAuthorizedForTenantId(tenantId)) {
+      return Either.right(value);
+    }
+    return Either.left(notAssignedRejection);
+  }
+
+  /**
+   * Like {@link #checkTenant} but for command sites that must verify membership across a list of
+   * tenant IDs at once (e.g. a job-batch activation command targeting multiple explicit tenants),
+   * using {@link AuthorizedTenants#isAuthorizedForTenantIds}. Shares the same skip-logic as {@link
+   * #checkTenant}.
+   *
+   * @param notAssignedRejection the rejection to return when the principal is not assigned to all
+   *     of {@code tenantIds}
+   */
+  public <T> Either<Rejection, T> checkTenants(
+      final TypedRecord<?> command,
+      final List<String> tenantIds,
+      final T value,
+      final Rejection notAssignedRejection) {
+    if (!securityConfig.isMultiTenancyChecksEnabled()) {
+      return Either.right(value);
+    }
+    final var authorizations = command.getAuthorizations();
+    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
+        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
+      return Either.right(value);
+    }
+    if (resolveAuthorizedTenants(authorizations).isAuthorizedForTenantIds(tenantIds)) {
       return Either.right(value);
     }
     return Either.left(notAssignedRejection);
