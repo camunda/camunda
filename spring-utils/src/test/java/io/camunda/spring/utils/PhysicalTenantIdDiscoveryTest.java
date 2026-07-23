@@ -11,6 +11,9 @@ import static io.camunda.spring.utils.PhysicalTenantIdDiscovery.MAX_TENANT_ID_LE
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -115,6 +118,59 @@ class PhysicalTenantIdDiscoveryTest {
     // when / then
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
         .isThrownBy(() -> PhysicalTenantIdDiscovery.discover(environment))
+        .withMessageContaining("Invalid physical tenant id");
+  }
+
+  @Test
+  void shouldInvokeConsumerPerTenantPropertyWithRelativeName() {
+    // given a tenant declaring two properties
+    final MockEnvironment environment = new MockEnvironment();
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.physical-tenants.tenanta.cluster.size",
+                    4,
+                    "camunda.physical-tenants.tenanta.cluster.name",
+                    "n")));
+
+    // when
+    final Map<String, List<String>> relativesByTenant = new LinkedHashMap<>();
+    PhysicalTenantIdDiscovery.forEachTenantProperty(
+        environment,
+        (tenantId, relative) ->
+            relativesByTenant
+                .computeIfAbsent(tenantId, k -> new ArrayList<>())
+                .add(relative.toString()));
+
+    // then the consumer receives the id and each property relative to the tenant prefix
+    assertThat(relativesByTenant).containsOnlyKeys("tenanta");
+    assertThat(relativesByTenant.get("tenanta"))
+        .containsExactlyInAnyOrder("cluster.size", "cluster.name");
+  }
+
+  @Test
+  void shouldValidateIdsDuringForEachTenantProperty() {
+    // given a tenant id over the length limit
+    final MockEnvironment environment = new MockEnvironment();
+    environment
+        .getPropertySources()
+        .addFirst(
+            new MapPropertySource(
+                "test",
+                Map.of(
+                    "camunda.physical-tenants."
+                        + "a".repeat(MAX_TENANT_ID_LENGTH + 1)
+                        + ".cluster.size",
+                    4)));
+
+    // when / then the walk validates each surfaced id and fails fast
+    assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
+        .isThrownBy(
+            () ->
+                PhysicalTenantIdDiscovery.forEachTenantProperty(environment, (id, relative) -> {}))
         .withMessageContaining("Invalid physical tenant id");
   }
 }

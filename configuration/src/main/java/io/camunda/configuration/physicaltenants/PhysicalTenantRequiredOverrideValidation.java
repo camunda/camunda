@@ -19,10 +19,6 @@ import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
-import org.springframework.boot.context.properties.source.ConfigurationPropertyName.Form;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
-import org.springframework.boot.context.properties.source.IterableConfigurationPropertySource;
 import org.springframework.core.env.Environment;
 
 /**
@@ -51,9 +47,6 @@ import org.springframework.core.env.Environment;
 @NullMarked
 final class PhysicalTenantRequiredOverrideValidation {
 
-  private static final ConfigurationPropertyName PHYSICAL_TENANTS_NAME =
-      ConfigurationPropertyName.of(Camunda.PREFIX + ".physical-tenants");
-
   /**
    * The per-tenant {@code initialization} block, expressed relative to {@code
    * camunda.physical-tenants.<id>.}. A tenant satisfies the requirement by declaring any key at or
@@ -67,34 +60,15 @@ final class PhysicalTenantRequiredOverrideValidation {
   static void validate(final Environment environment) {
     final Set<String> declaredTenants = new LinkedHashSet<>();
     final Set<String> tenantsWithInitialization = new LinkedHashSet<>();
-    final int tenantIdIndex = PHYSICAL_TENANTS_NAME.getNumberOfElements();
     try {
-      for (final ConfigurationPropertySource source :
-          ConfigurationPropertySources.get(environment)) {
-        if (source instanceof final IterableConfigurationPropertySource iter) {
-          iter.stream()
-              .filter(PHYSICAL_TENANTS_NAME::isAncestorOf)
-              .forEach(
-                  name -> {
-                    if (name.getNumberOfElements() <= tenantIdIndex) {
-                      // only the physical-tenants prefix, no tenant id segment
-                      return;
-                    }
-                    final String tenantId = name.getElement(tenantIdIndex, Form.UNIFORM);
-                    if (tenantId == null || tenantId.isEmpty()) {
-                      // mirror PhysicalTenantResolver.discover — never report a blank tenant id
-                      return;
-                    }
-                    if (declaredTenants.add(tenantId)) {
-                      PhysicalTenantIdDiscovery.validateTenantId(tenantId);
-                    }
-                    if (name.getNumberOfElements() > tenantIdIndex + 1
-                        && declaresInitialization(name.subName(tenantIdIndex + 1))) {
-                      tenantsWithInitialization.add(tenantId);
-                    }
-                  });
-        }
-      }
+      PhysicalTenantIdDiscovery.forEachTenantProperty(
+          environment,
+          (tenantId, relative) -> {
+            declaredTenants.add(tenantId);
+            if (!relative.isEmpty() && declaresInitialization(relative)) {
+              tenantsWithInitialization.add(tenantId);
+            }
+          });
     } catch (final InvalidPhysicalTenantIdException e) {
       throw new UnifiedConfigurationException(e);
     }

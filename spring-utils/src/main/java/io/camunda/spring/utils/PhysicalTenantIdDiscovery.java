@@ -9,6 +9,7 @@ package io.camunda.spring.utils;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.regex.Pattern;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName;
 import org.springframework.boot.context.properties.source.ConfigurationPropertyName.Form;
@@ -48,24 +49,42 @@ public final class PhysicalTenantIdDiscovery {
    */
   public static Set<String> discover(final Environment environment) {
     final Set<String> tenants = new LinkedHashSet<>();
+    forEachTenantProperty(environment, (tenantId, relative) -> tenants.add(tenantId));
+    return tenants;
+  }
+
+  /**
+   * Walks {@code environment} and invokes {@code consumer} once per property declared under {@code
+   * camunda.physical-tenants.<id>.*}, passing the validated tenant id and the property name
+   * relative to {@code camunda.physical-tenants.<id>} (empty when the key is only the id segment).
+   * Pure key inspection — no binding. Blank id segments are skipped; every surfaced id is
+   * validated.
+   *
+   * @throws InvalidPhysicalTenantIdException if any surfaced id fails format or length validation
+   */
+  public static void forEachTenantProperty(
+      final Environment environment, final BiConsumer<String, ConfigurationPropertyName> consumer) {
+    final int tenantIdIndex = PREFIX_NAME.getNumberOfElements();
     for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
       if (source instanceof final IterableConfigurationPropertySource iter) {
         iter.stream()
             .filter(PREFIX_NAME::isAncestorOf)
             .forEach(
                 name -> {
-                  if (name.getNumberOfElements() > PREFIX_NAME.getNumberOfElements()) {
-                    final String tenantId =
-                        name.getElement(PREFIX_NAME.getNumberOfElements(), Form.UNIFORM);
-                    if (tenantId != null && !tenantId.isEmpty()) {
-                      tenants.add(tenantId);
-                    }
+                  if (name.getNumberOfElements() <= tenantIdIndex) {
+                    // only the physical-tenants prefix, no tenant id segment
+                    return;
                   }
+                  final String tenantId = name.getElement(tenantIdIndex, Form.UNIFORM);
+                  if (tenantId == null || tenantId.isEmpty()) {
+                    // never surface a blank tenant id
+                    return;
+                  }
+                  validateTenantId(tenantId);
+                  consumer.accept(tenantId, name.subName(tenantIdIndex + 1));
                 });
       }
     }
-    tenants.forEach(PhysicalTenantIdDiscovery::validateTenantId);
-    return tenants;
   }
 
   /**
