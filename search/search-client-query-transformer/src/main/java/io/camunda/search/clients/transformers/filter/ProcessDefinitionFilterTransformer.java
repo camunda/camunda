@@ -9,8 +9,11 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.bool;
+import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.not;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -26,7 +29,6 @@ import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION_T
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -71,9 +73,9 @@ public class ProcessDefinitionFilterTransformer
     if (hasStartForm != null) {
       return bool(b -> {
             if (hasStartForm) {
-              b.must(List.of(SearchQueryBuilders.exists(FORM_ID)));
+              b.must(List.of(exists(FORM_ID)));
             } else {
-              b.mustNot(List.of(SearchQueryBuilders.exists(FORM_ID)));
+              b.mustNot(List.of(exists(FORM_ID)));
             }
             return b;
           })
@@ -86,14 +88,12 @@ public class ProcessDefinitionFilterTransformer
     if (state == null) {
       return null;
     }
-    if (state == ProcessDefinitionState.DELETED) {
-      return term(STATE, ProcessDefinitionState.DELETED.name());
+    // ACTIVE is the implicit default for documents indexed before this field existed, so a missing
+    // field also counts as ACTIVE. Every other state requires an exact match.
+    if (state != ProcessDefinitionState.ACTIVE) {
+      return term(STATE, state.name());
     }
-    return bool(b -> {
-          b.mustNot(List.of(term(STATE, ProcessDefinitionState.DELETED.name())));
-          return b;
-        })
-        .toSearchQuery();
+    return or(term(STATE, ProcessDefinitionState.ACTIVE.name()), not(exists(STATE)));
   }
 
   @Override
