@@ -43,7 +43,7 @@ public class EngineCaches {
   private int processCacheCapacity = DEFAULT_PROCESS_CACHE_CAPACITY;
 
   /** Configures the maximum number of resources (e.g. RPA scripts) to cache. */
-  private int resourceCacheCapacity = DEFAULT_PROCESS_CACHE_CAPACITY;
+  private int resourceCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
 
   /** Configures the maximum number of authorization decisions to cache. */
   private int authorizationsCacheCapacity = DEFAULT_AUTHORIZATIONS_CACHE_CAPACITY;
