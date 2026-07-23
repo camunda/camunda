@@ -1040,6 +1040,8 @@ public class BrokerBasedPropertiesOverride {
       if (asyncReplication.getDelay() != null) {
         config.getAsyncReplication().setDelay(asyncReplication.getDelay());
       }
+      config.getAsyncReplication().setQueueDebounceTime(asyncReplication.getQueueDebounceTime());
+      config.getAsyncReplication().setQueueCapacity(asyncReplication.getQueueCapacity());
     }
 
     applyRdbmsExtensionPropertyConfiguration(

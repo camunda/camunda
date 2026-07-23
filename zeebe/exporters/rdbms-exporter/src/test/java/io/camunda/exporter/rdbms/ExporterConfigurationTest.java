@@ -520,6 +520,8 @@ class ExporterConfigurationTest {
     replication.setEnabled(true);
     replication.setType(ReplicationType.DELAY);
     replication.setDelay(Duration.ofMinutes(10));
+    replication.setQueueDebounceTime(Duration.ZERO);
+    replication.setQueueCapacity(10);
     configuration.setAsyncReplication(replication);
 
     // when
@@ -577,10 +579,18 @@ class ExporterConfigurationTest {
                 },
             "asyncReplication.pollingInterval must be a positive duration"),
         Arguments.of(
-            (Consumer<ReplicationConfiguration>) r -> r.setMinSyncReplicas(-1),
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setMinSyncReplicas(-1);
+                },
             "asyncReplication.minSyncReplicas must be greater 0"),
         Arguments.of(
-            (Consumer<ReplicationConfiguration>) r -> r.setMinSyncReplicas(0),
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setMinSyncReplicas(0);
+                },
             "asyncReplication.minSyncReplicas must be greater 0"),
         Arguments.of(
             (Consumer<ReplicationConfiguration>)
@@ -613,6 +623,42 @@ class ExporterConfigurationTest {
                   r.setType(ReplicationType.DELAY);
                   r.setDelay(Duration.ZERO);
                 },
-            "asyncReplication.delay must be a positive duration"));
+            "asyncReplication.delay must be a positive duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setQueueDebounceTime(Duration.ofMillis(-1));
+                },
+            "asyncReplication.queueDebounceTime must be a non-negative duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setQueueDebounceTime(null);
+                },
+            "asyncReplication.queueDebounceTime must be a non-negative duration"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setQueueCapacity(0);
+                },
+            "asyncReplication.queueCapacity must be greater 0"),
+        Arguments.of(
+            (Consumer<ReplicationConfiguration>)
+                r -> {
+                  r.setEnabled(true);
+                  r.setType(ReplicationType.DELAY);
+                  r.setDelay(Duration.ofMinutes(10));
+                  r.setQueueCapacity(-1);
+                },
+            "asyncReplication.queueCapacity must be greater 0"));
   }
 }

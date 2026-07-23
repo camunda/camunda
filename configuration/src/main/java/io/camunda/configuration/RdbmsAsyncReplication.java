@@ -21,6 +21,8 @@ public class RdbmsAsyncReplication {
   private boolean pauseOnMaxLagExceeded =
       ReplicationConfiguration.DEFAULT_PAUSE_ON_MAX_LAG_EXCEEDED;
   private Duration delay;
+  private Duration queueDebounceTime = ReplicationConfiguration.DEFAULT_QUEUE_DEBOUNCE_TIME;
+  private int queueCapacity = ReplicationConfiguration.DEFAULT_QUEUE_CAPACITY;
 
   public boolean isEnabled() {
     return enabled;
@@ -44,6 +46,22 @@ public class RdbmsAsyncReplication {
 
   public void setDelay(final Duration delay) {
     this.delay = delay;
+  }
+
+  public Duration getQueueDebounceTime() {
+    return queueDebounceTime;
+  }
+
+  public void setQueueDebounceTime(final Duration queueDebounceTime) {
+    this.queueDebounceTime = queueDebounceTime;
+  }
+
+  public int getQueueCapacity() {
+    return queueCapacity;
+  }
+
+  public void setQueueCapacity(final int queueCapacity) {
+    this.queueCapacity = queueCapacity;
   }
 
   public Duration getPollingInterval() {

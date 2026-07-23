@@ -17,10 +17,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import java.time.Duration;
 import java.time.InstantSource;
+import java.util.stream.LongStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +30,8 @@ class DelayReplicationControllerTest {
 
   private static final int PARTITION_ID = 1;
   private static final Duration DELAY = Duration.ofSeconds(30);
+  private static final int QUEUE_CAPACITY = 10;
+  private static final Duration QUEUE_DEBOUNCE_TIME = Duration.ZERO;
 
   private Controller controller;
   private InstantSource clock;
@@ -44,7 +48,17 @@ class DelayReplicationControllerTest {
   }
 
   private DelayReplicationController createController() {
-    return new DelayReplicationController(controller, DELAY, clock, PARTITION_ID);
+    return createController(QUEUE_DEBOUNCE_TIME, QUEUE_CAPACITY);
+  }
+
+  private DelayReplicationController createController(
+      final Duration queueDebounceTime, final int queueCapacity) {
+    final ReplicationConfiguration config = new ReplicationConfiguration();
+    config.setDelay(DELAY);
+    config.setQueueDebounceTime(queueDebounceTime);
+    config.setQueueCapacity(queueCapacity);
+
+    return new DelayReplicationController(controller, config, clock, PARTITION_ID);
   }
 
   @Test
@@ -124,7 +138,53 @@ class DelayReplicationControllerTest {
   }
 
   @Test
-  void shouldNotAcknowledgeOnClose() throws Exception {
+  void shouldDebounceFlushesWithinConfiguredWindow() {
+    // given
+    final var replicationController = createController(Duration.ofMillis(5), QUEUE_CAPACITY);
+    when(clock.millis()).thenReturn(0L);
+    replicationController.onFlush(100L);
+    when(clock.millis()).thenReturn(4L);
+    replicationController.onFlush(200L);
+
+    // then
+    assertThat(replicationController.pendingEntries)
+        .containsExactly(new DelayReplicationController.DelayedEntry(100L, DELAY.toMillis()));
+  }
+
+  @Test
+  void shouldOfferEveryFlushWhenQueueDebounceTimeIsZero() {
+    // given
+    final var replicationController = createController(Duration.ZERO, QUEUE_CAPACITY);
+    when(clock.millis()).thenReturn(0L);
+
+    // when
+    replicationController.onFlush(100L);
+    replicationController.onFlush(200L);
+
+    // then
+    assertThat(replicationController.pendingEntries)
+        .containsExactly(
+            new DelayReplicationController.DelayedEntry(100L, DELAY.toMillis()),
+            new DelayReplicationController.DelayedEntry(200L, DELAY.toMillis()));
+  }
+
+  @Test
+  void shouldUseConfiguredQueueCapacity() {
+    // given
+    final var replicationController = createController(QUEUE_DEBOUNCE_TIME, 1);
+    when(clock.millis()).thenReturn(0L);
+
+    // when
+    replicationController.onFlush(100L);
+    replicationController.onFlush(200L);
+
+    // then
+    assertThat(replicationController.pendingEntries)
+        .containsExactly(new DelayReplicationController.DelayedEntry(100L, DELAY.toMillis()));
+  }
+
+  @Test
+  void shouldNotAcknowledgeOnClose() {
     // given - a flush is pending
     final var replicationController = createController();
     when(clock.millis()).thenReturn(0L);
@@ -150,7 +210,7 @@ class DelayReplicationControllerTest {
   }
 
   @Test
-  void shouldCancelTaskAfterClose() throws Exception {
+  void shouldCancelTaskAfterClose() {
     // given
     final var replicationController = createController();
 
@@ -162,7 +222,7 @@ class DelayReplicationControllerTest {
   }
 
   @Test
-  void shouldNotRescheduleAfterCloseDuringCheck() throws Exception {
+  void shouldNotRescheduleAfterCloseDuringCheck() {
     // given - close is called; checkTask is set to null
     final var replicationController = createController();
     replicationController.close(); // sets checkTask to null
@@ -179,62 +239,20 @@ class DelayReplicationControllerTest {
     // given - fill the queue to capacity
     final var replicationController = createController();
     when(clock.millis()).thenReturn(0L);
-    for (int i = 0; i < DelayReplicationController.DEFAULT_QUEUE_CAPACITY; i++) {
+    for (int i = 0; i < QUEUE_CAPACITY; i++) {
       replicationController.onFlush(i);
     }
 
     // when - one more flush that should be silently dropped (first entry that overflows capacity)
-    replicationController.onFlush(DelayReplicationController.DEFAULT_QUEUE_CAPACITY);
-
-    // then - no exception, controller is still in sync
-    assertThat(replicationController.isReplicationInSync()).isTrue();
-  }
-
-  @Test
-  void shouldReturnOutOfSyncWhenHeadEntryIsOverdue() {
-    // given - a flush was queued, delay has now passed without checkDue running
-    final var replicationController = createController();
-    when(clock.millis()).thenReturn(0L);
-    replicationController.onFlush(100L);
-
-    // when - delay has elapsed but checkDue has not run yet
-    when(clock.millis()).thenReturn(DELAY.toMillis() + 1);
-
-    // then - head entry is overdue; signal out of sync to pause the exporter
-    assertThat(replicationController.isReplicationInSync()).isFalse();
-  }
-
-  @Test
-  void shouldReturnInSyncWhenQueueIsEmpty() {
-    // given - no pending flushes
-    final var replicationController = createController();
+    replicationController.onFlush(42L);
 
     // then
-    assertThat(replicationController.isReplicationInSync()).isTrue();
-  }
-
-  @Test
-  void shouldUseDefaultCapacityForShortDelays() {
-    // given - a delay shorter than what 5 flushes/sec over DEFAULT_QUEUE_CAPACITY would require
-    final var shortDelay = Duration.ofSeconds(1);
-
-    // then - floor kicks in
-    assertThat(DelayReplicationController.queueCapacityFor(shortDelay))
-        .isEqualTo(DelayReplicationController.DEFAULT_QUEUE_CAPACITY);
-  }
-
-  @Test
-  void shouldScaleCapacityWithDelay() {
-    // given - a 12-hour delay (realistic upper bound for this controller)
-    final var twelveHours = Duration.ofHours(12);
-
-    // then - capacity exceeds default and fits 5 flushes/sec for the full delay
-    final int capacity = DelayReplicationController.queueCapacityFor(twelveHours);
-    assertThat(capacity).isGreaterThan(DelayReplicationController.DEFAULT_QUEUE_CAPACITY);
-    assertThat(capacity)
-        .isEqualTo(
-            (int)
-                (twelveHours.toSeconds()
-                    * DelayReplicationController.ESTIMATED_MAX_FLUSHES_PER_SECOND));
+    assertThat(replicationController.pendingEntries)
+        .containsExactlyElementsOf(
+            LongStream.range(0, QUEUE_CAPACITY)
+                .mapToObj(
+                    position ->
+                        new DelayReplicationController.DelayedEntry(position, DELAY.toMillis()))
+                .toList());
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.rdbms.replication;
 
+import io.camunda.exporter.rdbms.ExporterConfiguration.ReplicationConfiguration;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.api.context.ScheduledTask;
 import java.time.Duration;
@@ -27,56 +28,66 @@ import org.slf4j.LoggerFactory;
  */
 public class DelayReplicationController implements ReplicationController {
 
-  // Minimum queue size used as a floor regardless of delay length.
-  public static final int DEFAULT_QUEUE_CAPACITY = 8192;
-
-  // Conservative upper bound on flushes per second used to size the queue for longer delays.
-  // The queue is a last resort; dropping entries is safe (watermark semantics), but sizing
-  // generously avoids spurious drops for delays up to ~12 h at realistic flush rates.
-  static final int ESTIMATED_MAX_FLUSHES_PER_SECOND = 5;
-
   private static final Logger LOG = LoggerFactory.getLogger(DelayReplicationController.class);
-
+  final BlockingQueue<DelayedEntry> pendingEntries;
   private final Controller controller;
   private final Duration delay;
+  private final long queueDebounceMillis;
   private final InstantSource clock;
   private final int partitionId;
-  private final BlockingQueue<DelayedEntry> pendingEntries;
+  private long lastAdded = Long.MIN_VALUE;
 
   private volatile ScheduledTask checkTask;
 
   public DelayReplicationController(
       final Controller controller,
-      final Duration delay,
+      final ReplicationConfiguration config,
       final InstantSource clock,
       final int partitionId) {
     this.controller = controller;
-    this.delay = delay;
+    delay = config.getDelay();
+    queueDebounceMillis = config.getQueueDebounceTime().toMillis();
     this.clock = clock;
     this.partitionId = partitionId;
-    pendingEntries = new ArrayBlockingQueue<>(queueCapacityFor(delay));
+    pendingEntries = new ArrayBlockingQueue<>(config.getQueueCapacity());
     checkTask = controller.scheduleCancellableTask(delay, this::checkDue);
   }
 
   @Override
   public void onFlush(final long exporterPosition) {
-    final long releaseTimeMs = clock.millis() + delay.toMillis();
+    final long now = clock.millis();
+    final long releaseTimeMs = now + delay.toMillis();
+
+    if (queueDebounceMillis > 0
+        && !pendingEntries.isEmpty()
+        && now - lastAdded < queueDebounceMillis) {
+      LOG.debug(
+          "[RDBMS Exporter P{}] Debouncing flush (position={}), last added {} ms ago",
+          partitionId,
+          exporterPosition,
+          now - lastAdded);
+      return;
+    }
+
     if (!pendingEntries.offer(new DelayedEntry(exporterPosition, releaseTimeMs))) {
       LOG.warn(
           "[RDBMS Exporter P{}] Delay replication queue is full, dropping entry (position={})",
           partitionId,
           exporterPosition);
+    } else {
+      lastAdded = now;
     }
   }
 
+  /**
+   * We have no way of checking if the replication is in sync (that's why we use this configured
+   * delay), so we simply assume it to not stop exporting.
+   *
+   * @return true
+   */
   @Override
   public boolean isReplicationInSync() {
-    final DelayedEntry head = pendingEntries.peek();
-    if (head == null) {
-      return true;
-    }
-    // Returns false when the head entry is overdue (checkDue is behind schedule)
-    return clock.millis() <= head.releaseTimeMs();
+    return true;
   }
 
   void checkDue() {
@@ -111,11 +122,6 @@ public class DelayReplicationController implements ReplicationController {
       }
       checkTask = controller.scheduleCancellableTask(nextDelay, this::checkDue);
     }
-  }
-
-  static int queueCapacityFor(final Duration delay) {
-    final long computed = delay.toSeconds() * ESTIMATED_MAX_FLUSHES_PER_SECOND;
-    return (int) Math.max(DEFAULT_QUEUE_CAPACITY, Math.min(computed, Integer.MAX_VALUE));
   }
 
   @Override

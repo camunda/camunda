@@ -20,7 +20,6 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterMetricsDoc;
 import io.micrometer.core.instrument.Measurement;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Objects;
 import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
@@ -69,23 +68,15 @@ public class DelayReplicationIT {
                 "jdbc:h2:mem:delay-replication-test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL")
             .withProperty("camunda.data.secondary-storage.rdbms.username", "sa")
             .withProperty("camunda.data.secondary-storage.rdbms.password", "")
-            .withExporter(
-                "rdbms",
-                cfg -> {
-                  cfg.setClassName("io.camunda.db.rdbms.exporter.RdbmsExporter");
-                  cfg.setArgs(
-                      Map.of(
-                          "flushInterval",
-                          "PT0.5S",
-                          "asyncReplication",
-                          Map.of(
-                              "enabled",
-                              true,
-                              "type",
-                              "DELAY",
-                              "delay",
-                              REPLICATION_DELAY.toString())));
-                })
+            .withProperty("camunda.data.secondary-storage.rdbms.flush-interval", "PT0.5S")
+            .withProperty("camunda.data.secondary-storage.rdbms.async-replication.enabled", "true")
+            .withProperty("camunda.data.secondary-storage.rdbms.async-replication.type", "DELAY")
+            .withProperty(
+                "camunda.data.secondary-storage.rdbms.async-replication.delay",
+                REPLICATION_DELAY.toString())
+            .withProperty(
+                "camunda.data.secondary-storage.rdbms.async-replication.queue-debounce-time",
+                Duration.ZERO.toString())
             .withBasicAuth();
 
     testInstance.start();
@@ -121,10 +112,18 @@ public class DelayReplicationIT {
                 assertThat(getCurrentExporterPosition())
                     .isGreaterThan(baselineAcknowledgedPosition));
 
+    Awaitility.await()
+        .during(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(35))
+        .untilAsserted(
+            () ->
+                assertThat(getCurrentAcknowledgedExporterPosition())
+                    .isEqualTo(baselineAcknowledgedPosition));
+
     // then - the delay has not elapsed yet: acknowledged position must not have advanced
     // (REPLICATION_DELAY is PT1M; this assertion runs within a few seconds of the flush)
     assertThat(getCurrentAcknowledgedExporterPosition())
-        .isLessThanOrEqualTo(baselineAcknowledgedPosition + 5L);
+        .isLessThanOrEqualTo(baselineAcknowledgedPosition);
   }
 
   @Test

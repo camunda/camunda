@@ -26,6 +26,6 @@ public class DelayReplicationControllerFactory implements ReplicationControllerF
 
   @Override
   public ReplicationController createReplicationController(final Controller controller) {
-    return new DelayReplicationController(controller, config.getDelay(), clock, partitionId);
+    return new DelayReplicationController(controller, config, clock, partitionId);
   }
 }
