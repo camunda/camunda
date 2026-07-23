@@ -8,15 +8,21 @@
 package io.camunda.zeebe.engine.processing.secretreference;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class SecretReferenceProcessors {
 
   private SecretReferenceProcessors() {}
 
   public static void addSecretReferenceProcessors(
-      final TypedRecordProcessors typedRecordProcessors) {
+      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers,
+      final KeyGenerator keyGenerator,
+      final ProcessingState processingState) {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_COMPLETE,
@@ -28,7 +34,8 @@ public final class SecretReferenceProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_REACTIVATE_JOBS,
-        new SecretReferenceBatchReactivateJobsProcessor());
+        new SecretReferenceBatchReactivateJobsProcessor(
+            writers, keyGenerator, processingState.getSecretReferenceState()));
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.BATCH_CREATE_INCIDENTS,

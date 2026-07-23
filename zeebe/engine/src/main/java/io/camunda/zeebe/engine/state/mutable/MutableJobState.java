@@ -61,6 +61,12 @@ public interface MutableJobState extends JobState {
   void yield(long key, JobRecord updatedValue);
 
   /**
+   * Makes a job activatable after its pending secret references have been resolved. Silently does
+   * nothing if the job no longer exists.
+   */
+  void makeActivatableAfterSecretResolution(long key);
+
+  /**
    * @deprecated see {@link #create(long, JobRecord)}.
    */
   @Deprecated
