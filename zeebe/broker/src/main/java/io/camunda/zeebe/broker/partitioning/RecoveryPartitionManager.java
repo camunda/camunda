@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
@@ -33,8 +34,12 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -43,6 +48,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -57,7 +66,10 @@ import org.slf4j.LoggerFactory;
  * mirroring the normal {@link Partition} bootstrapping approach.
  */
 public final class RecoveryPartitionManager
-    implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
+    implements PartitionManager,
+        PartitionChangeExecutor,
+        PartitionScalingChangeExecutor,
+        RestoreChangeExecutor {
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryPartitionManager.class);
   private final List<RecoveryPartition> recoveryPartitions = new ArrayList<>();
@@ -74,6 +86,7 @@ public final class RecoveryPartitionManager
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private @Nullable BackupStore backupStore;
+  private @Nullable ExecutorService restoreExecutor;
 
   public RecoveryPartitionManager(
       final String partitionGroup,
@@ -122,7 +135,7 @@ public final class RecoveryPartitionManager
     concurrencyControl.run(
         () -> {
           if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-            clusterConfigurationService.registerPartitionChangeExecutors(this, this);
+            clusterConfigurationService.registerPartitionChangeExecutors(this, this, this);
           }
           startInternal(result);
         });
@@ -145,6 +158,8 @@ public final class RecoveryPartitionManager
   }
 
   private void startInternal(final ActorFuture<Void> result) {
+    restoreExecutor =
+        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("zeebe-restore-", 0).factory());
     final var localPartitions = localPartitions();
     if (localPartitions.isEmpty()) {
       LOG.info("No local partitions to recover for partition group {}", partitionGroup);
@@ -250,6 +265,10 @@ public final class RecoveryPartitionManager
         stopFutures,
         (ignored, stopError) -> {
           recoveryPartitions.clear();
+          if (restoreExecutor != null) {
+            restoreExecutor.shutdownNow();
+            restoreExecutor = null;
+          }
           if (stopError != null) {
             LOG.error("Failed to stop recovery partitions", stopError);
           }
@@ -268,6 +287,49 @@ public final class RecoveryPartitionManager
   private Path partitionDirectory(final PartitionId partitionId) {
     final var dataDirectory = brokerCfg.getData().getDirectory();
     return RaftPartitionFactory.getPartitionDirectory(partitionId, dataDirectory);
+  }
+
+  @Override
+  public ActorFuture<Void> preRestore(final int partitionId) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var executor = restoreExecutor;
+          if (executor == null) {
+            result.completeExceptionally(
+                new IllegalStateException("RecoveryPartitionManager is not started"));
+            return;
+          }
+          final var partitionDir = partitionDirectory(new PartitionId(partitionGroup, partitionId));
+          CompletableFuture.runAsync(() -> deleteDirectory(partitionDir), executor)
+              .whenCompleteAsync(
+                  (ok, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(unwrapCompletionException(error));
+                    } else {
+                      LOG.info("Dropped local data of partition {} for restore", partitionId);
+                      result.complete(null);
+                    }
+                  },
+                  concurrencyControl);
+        });
+    return result;
+  }
+
+  private static void deleteDirectory(final Path directory) {
+    try {
+      if (Files.exists(directory)) {
+        FileUtil.deleteFolderContents(directory);
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to delete directory " + directory, e);
+    }
+  }
+
+  private static Throwable unwrapCompletionException(final Throwable error) {
+    return error instanceof CompletionException && error.getCause() != null
+        ? error.getCause()
+        : error;
   }
 
   private MemberId localMemberId() {
