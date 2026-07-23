@@ -17,6 +17,7 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.WebIdentityTokenFileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sts.auth.StsWebIdentityTokenFileCredentialsProvider;
 
 class AwsCredentialsProvidersTest {
 
@@ -125,6 +126,20 @@ class AwsCredentialsProvidersTest {
     assertThatThrownBy(() -> AwsCredentialsProviders.from(aws))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("only one");
+  }
+
+  @Test
+  void shouldBuildWebIdentityProviderWithExplicitStsRegion() {
+    // given
+    final var aws = new AwsConfiguration();
+    aws.setRoleArn("arn:aws:iam::111:role/some-role");
+    aws.setWebIdentityTokenFile("/var/run/secrets/token");
+    aws.setRegion("eu-west-1");
+
+    // when / then -- provider is constructed without throwing and uses the STS-aware type with
+    // explicit region so STS assume-role calls are deterministic
+    assertThat(AwsCredentialsProviders.from(aws))
+        .isInstanceOf(StsWebIdentityTokenFileCredentialsProvider.class);
   }
 
   @Test
