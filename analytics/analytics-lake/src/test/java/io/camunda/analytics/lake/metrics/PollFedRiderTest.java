@@ -223,6 +223,197 @@ final class PollFedRiderTest {
         .hasMessageContaining("count()");
   }
 
+  @Test
+  void shouldIncrementANamedCounterOnlyWhenArmed() {
+    // given a declaration with count() plus two independent named counters
+    final CompiledEntityMetrics countersCompiled =
+        EntityMetrics.declare("flows_counters_test", virtualFlowSchema())
+            .dims("process_id", "flow_id")
+            .window(Duration.ofMinutes(1), "taken_at")
+            .count()
+            .counter("type_a_cnt")
+            .counter("type_b_cnt")
+            .build();
+    final RecordingEncoderFactory countersEncoders = new RecordingEncoderFactory();
+    final PollFedRider countersRider = new PollFedRider(countersCompiled, countersEncoders, 128);
+
+    // when: three records into the same group, two arming counter 0, one arming counter 1
+    countersRider.putDict(PROCESS_ID, "order").putDict(FLOW_ID, "flow-a");
+    countersRider.incrementCounter(0);
+    countersRider.fold(SLOT_A + 1);
+    countersRider.putDict(PROCESS_ID, "order").putDict(FLOW_ID, "flow-a");
+    countersRider.incrementCounter(0);
+    countersRider.fold(SLOT_A + 2);
+    countersRider.putDict(PROCESS_ID, "order").putDict(FLOW_ID, "flow-a");
+    countersRider.incrementCounter(1);
+    countersRider.fold(SLOT_A + 3);
+    countersRider.onPollBoundary();
+    countersRider.onWindowClose();
+
+    // then: the total count is 3, counter 0 is 2, counter 1 is 1
+    final List<Map<String, Object>> rows = countersEncoders.rows("flows_counters_test_metrics");
+    assertThat(rows).hasSize(1);
+    assertThat(rows.get(0))
+        .containsEntry("cnt", 3L)
+        .containsEntry("type_a_cnt", 2L)
+        .containsEntry("type_b_cnt", 1L);
+  }
+
+  @Test
+  void shouldWriteZeroForACounterNeverArmedInAGroup() {
+    // given a declaration with a counter that is never incremented at all
+    final CompiledEntityMetrics countersCompiled =
+        EntityMetrics.declare("flows_unused_counter_test", virtualFlowSchema())
+            .dims("process_id", "flow_id")
+            .window(Duration.ofMinutes(1), "taken_at")
+            .count()
+            .counter("never_used_cnt")
+            .build();
+    final RecordingEncoderFactory countersEncoders = new RecordingEncoderFactory();
+    final PollFedRider countersRider = new PollFedRider(countersCompiled, countersEncoders, 128);
+
+    // when
+    countersRider.putDict(PROCESS_ID, "order").putDict(FLOW_ID, "flow-a");
+    countersRider.fold(SLOT_A + 1);
+    countersRider.onPollBoundary();
+    countersRider.onWindowClose();
+
+    // then: the never-armed counter reports an honest zero, not null (it's non-nullable)
+    final List<Map<String, Object>> rows =
+        countersEncoders.rows("flows_unused_counter_test_metrics");
+    assertThat(rows).hasSize(1);
+    assertThat(rows.get(0)).containsEntry("never_used_cnt", 0L);
+  }
+
+  @Test
+  void shouldFoldADoubleMeasureThroughScalarStatsAndHistogram() {
+    // given a declaration with a DOUBLE measure folded through both algebras -- the exact pairing
+    // variable_profiles uses
+    final CompiledEntityMetrics measureCompiled =
+        EntityMetrics.declare("flows_measure_test", virtualFlowMeasureSchema())
+            .dims("process_id", "flow_id")
+            .window(Duration.ofMinutes(1), "taken_at")
+            .count()
+            .measure("value", Algebras.doubleScalarStats(), Algebras.signedDoubleExpHistogram(3))
+            .build();
+    final RecordingEncoderFactory measureEncoders = new RecordingEncoderFactory();
+    final PollFedRider measureRider = new PollFedRider(measureCompiled, measureEncoders, 128);
+
+    // when: three records, one with a non-finite value
+    measureRider.putDict(0, "order").putDict(1, "flow-a").putDoubleMeasure(0, 10.0);
+    measureRider.fold(SLOT_A + 1);
+    measureRider.putDict(0, "order").putDict(1, "flow-a").putDoubleMeasure(0, 30.0);
+    measureRider.fold(SLOT_A + 2);
+    measureRider
+        .putDict(0, "order")
+        .putDict(1, "flow-a")
+        .putDoubleMeasure(0, Double.POSITIVE_INFINITY);
+    measureRider.fold(SLOT_A + 3);
+    measureRider.onPollBoundary();
+    final Map<String, List<DataFileResult>> derived = measureRider.onWindowClose();
+
+    // then: both the wide metrics row and tall histogram rows are emitted
+    assertThat(derived).containsOnlyKeys("flows_measure_test_metrics", "flows_measure_test_hist");
+    final List<Map<String, Object>> metricsRows =
+        measureEncoders.rows("flows_measure_test_metrics");
+    assertThat(metricsRows).hasSize(1);
+    assertThat(metricsRows.get(0))
+        .containsEntry("cnt", 3L)
+        .containsEntry("value_cnt", 2L)
+        .containsEntry("value_sum", 40.0)
+        .containsEntry("value_min", 10.0)
+        .containsEntry("value_max", 30.0)
+        .containsEntry("value_nonfinite_cnt", 1L);
+
+    final List<Map<String, Object>> histRows = measureEncoders.rows("flows_measure_test_hist");
+    assertThat(histRows).isNotEmpty();
+    final long totalBinCount = histRows.stream().mapToLong(row -> (Long) row.get("cnt")).sum();
+    assertThat(totalBinCount).isEqualTo(2L); // the two finite values only
+    assertThat(histRows)
+        .allSatisfy(
+            row -> {
+              assertThat(row.get("measure")).isEqualTo("value");
+              assertThat(row.get("scheme")).isEqualTo("dexp2ll-3");
+            });
+  }
+
+  @Test
+  void shouldSkipOnlyTheMeasureNotTheRowWhenNeverStagedForARecord() {
+    // given the same measure declaration as above
+    final CompiledEntityMetrics measureCompiled =
+        EntityMetrics.declare("flows_measure_skip_test", virtualFlowMeasureSchema())
+            .dims("process_id", "flow_id")
+            .window(Duration.ofMinutes(1), "taken_at")
+            .count()
+            .measure("value", Algebras.doubleScalarStats())
+            .build();
+    final RecordingEncoderFactory measureEncoders = new RecordingEncoderFactory();
+    final PollFedRider measureRider = new PollFedRider(measureCompiled, measureEncoders, 128);
+
+    // when: one record stages the measure, one does not (e.g. the variable's value was not
+    // numeric that time)
+    measureRider.putDict(0, "order").putDict(1, "flow-a").putDoubleMeasure(0, 5.0);
+    measureRider.fold(SLOT_A + 1);
+    measureRider.putDict(0, "order").putDict(1, "flow-a"); // no putDoubleMeasure this time
+    measureRider.fold(SLOT_A + 2);
+    measureRider.onPollBoundary();
+    measureRider.onWindowClose();
+
+    // then: the row is counted twice, but the measure only folded once -- never dropped
+    final List<Map<String, Object>> rows = measureEncoders.rows("flows_measure_skip_test_metrics");
+    assertThat(rows).hasSize(1);
+    assertThat(rows.get(0)).containsEntry("cnt", 2L).containsEntry("value_cnt", 1L);
+  }
+
+  @Test
+  void shouldRejectALongValuedMeasure() {
+    // given a declaration whose measure folds through a LONG-valued algebra
+    final TableSchema schema =
+        new TableSchema(
+            "flows_long_measure_test",
+            List.of(
+                new TableSchema.Column("process_id", ColumnType.STRING_DICT, 1, false, -1, false),
+                new TableSchema.Column("duration_ms", ColumnType.LONG, 2, false, -1, false),
+                new TableSchema.Column(
+                    "taken_at",
+                    ColumnType.LONG,
+                    3,
+                    false,
+                    -1,
+                    true,
+                    TableSchema.LogicalType.TIMESTAMPTZ)));
+    final CompiledEntityMetrics longMeasureCompiled =
+        EntityMetrics.declare("flows_long_measure_test", schema)
+            .dims("process_id")
+            .window(Duration.ofMinutes(1), "taken_at")
+            .count()
+            .measure("duration_ms", Algebras.scalarStats())
+            .build();
+
+    // when / then
+    assertThatThrownBy(() -> new PollFedRider(longMeasureCompiled, encoders, 128))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("DOUBLE-valued measures")
+        .hasMessageContaining("MetricsRider");
+  }
+
+  private static TableSchema virtualFlowMeasureSchema() {
+    return new TableSchema(
+        "flows_measure_test",
+        List.of(
+            new TableSchema.Column("process_id", ColumnType.STRING_DICT, 1, false, -1, false),
+            new TableSchema.Column("flow_id", ColumnType.STRING_DICT, 2, false, -1, false),
+            new TableSchema.Column(
+                "taken_at",
+                ColumnType.LONG,
+                3,
+                false,
+                -1,
+                true,
+                TableSchema.LogicalType.TIMESTAMPTZ),
+            new TableSchema.Column("value", ColumnType.DOUBLE, 4, true, -1, false)));
+  }
+
   private void fold(final String processId, final String flowId, final long eventMicros) {
     rider.putDict(PROCESS_ID, processId).putDict(FLOW_ID, flowId);
     rider.fold(eventMicros);
@@ -262,6 +453,8 @@ final class PollFedRiderTest {
                 row.put(column.name(), run.stringAt(c, i));
               } else if (column.type() == ColumnType.INT) {
                 row.put(column.name(), run.intAt(c, i));
+              } else if (column.type() == ColumnType.DOUBLE) {
+                row.put(column.name(), run.doubleAt(c, i));
               } else {
                 row.put(column.name(), run.longAt(c, i));
               }
