@@ -111,7 +111,9 @@ public final class RestoreValidator
                 .formatted(instantFrom, instantTo));
         Preconditions.test(
             !hasBackupIds && exportedPositionSupplier == null,
-            "Expected either backupIds or exportedPositionSupplier to be registered");
+            "Cannot resolve a restore point: no backupId was specified and no exported-position "
+                + "data is available. Configure RDBMS as the secondary storage to enable "
+                + "time-range restores, or specify a backupId.");
       }
       case "elasticsearch", "opensearch" -> {
         Preconditions.test(

@@ -266,7 +266,7 @@ final class RestoreValidatorResolverTest {
       assertThat(assertInvalid(result))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
-              "Expected either backupIds or exportedPositionSupplier to be registered");
+              "no backupId was specified and no exported-position data is available");
       verifyNoInteractions(backupStore);
     }
 
