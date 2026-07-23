@@ -1,10 +1,18 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { type CommentApi, type IssueComment, renderStickyComment, STICKY_MARKER, syncStickyComment } from '../src/comment';
-import type { PolicyDecision } from '../src/types';
+import type { GateOutcome } from '../src/types';
 
-const FAIL: PolicyDecision = { outcome: 'fail', code: 'unlinked-undeclared', reasons: ['No linked issue found.', 'Add "closes #1234".'] };
-const PASS: PolicyDecision = { outcome: 'pass', code: 'section-closing', reasons: ['Linked to issue #1234.'] };
+const FAIL: GateOutcome = {
+  outcome: 'fail',
+  deliveryPath: 'direct',
+  checks: [{ label: 'PR-issue link', outcome: 'fail', reasons: ['No linked issue found.', 'Add "closes #1234".'] }],
+};
+const PASS: GateOutcome = {
+  outcome: 'pass',
+  deliveryPath: 'direct',
+  checks: [{ label: 'PR-issue link', outcome: 'pass', reasons: ['Linked to issue #1234.'] }],
+};
 
 /** Records every call so a test can assert what the sync did. */
 class FakeApi implements CommentApi {
@@ -51,7 +59,7 @@ test('pass with an existing marked comment flips it to resolved', async () => {
   assert.equal(action, 'resolved');
   assert.equal(api.created.length, 0);
   assert.equal(api.updated[0]?.id, 7);
-  assert.ok(api.updated[0]?.body.includes('resolved'));
+  assert.ok(api.updated[0]?.body.includes('passed'));
 });
 
 test('pass with no existing comment does nothing — never-failed PRs stay clean', async () => {

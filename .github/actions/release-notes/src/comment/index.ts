@@ -1,4 +1,4 @@
-import type { PolicyDecision } from '../types';
+import type { GateOutcome } from '../types';
 
 /**
  * The single sticky PR comment the gate maintains. One marked comment per PR,
@@ -34,32 +34,34 @@ export interface CommentApi {
 export type StickyAction = 'created' | 'updated' | 'resolved' | 'noop';
 
 /** Build the comment body (pure). Always carries the marker on the first line. */
-export function renderStickyComment(decision: PolicyDecision): string {
-  const title =
-    decision.outcome === 'pass'
-      ? '### ✅ Release-notes: PR-issue link resolved'
-      : '### ❌ Release-notes: PR-issue link check';
-  const reasons = decision.reasons.map((reason) => `- ${reason}`).join('\n');
+export function renderStickyComment(gate: GateOutcome): string {
+  if (gate.outcome === 'pass') {
+    return `${STICKY_MARKER}\n### ✅ Release-notes checks passed\n\n_These checks now pass — no action needed._\n`;
+  }
+
+  // One block per failing check, each naming the reasons and the fix.
+  const blocks = gate.checks
+    .filter((check) => check.outcome === 'fail')
+    .map((check) => `**${check.label}**\n${check.reasons.map((reason) => `- ${reason}`).join('\n')}`)
+    .join('\n\n');
   const footer =
-    decision.outcome === 'pass'
-      ? '_This check now passes — no action needed._'
-      : '_Warn-only during rollout: this does not block merge yet. Fix the link (or tick the opt-out) so release notes attribute this change._';
-  return `${STICKY_MARKER}\n${title}\n\n${reasons}\n\n${footer}\n`;
+    '_Warn-only during rollout: this does not block merge yet. Addressing it keeps release notes accurate._';
+  return `${STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${footer}\n`;
 }
 
 /**
- * Idempotently reconcile the PR's single sticky comment against the decision.
+ * Idempotently reconcile the PR's single sticky comment against the outcome.
  *
  *  - fail: update the existing comment, or create one if none exists.
  *  - pass: if a comment exists (the PR failed earlier), update it to the
  *          resolved body; if none exists, do nothing — a PR that never failed
  *          stays comment-free, so the gate adds no noise across ~800 PRs.
  */
-export async function syncStickyComment(api: CommentApi, decision: PolicyDecision): Promise<StickyAction> {
+export async function syncStickyComment(api: CommentApi, gate: GateOutcome): Promise<StickyAction> {
   const existing = (await api.list()).find((comment) => comment.body.includes(STICKY_MARKER));
-  const body = renderStickyComment(decision);
+  const body = renderStickyComment(gate);
 
-  if (decision.outcome === 'fail') {
+  if (gate.outcome === 'fail') {
     if (existing) {
       await api.update(existing.id, body);
       return 'updated';

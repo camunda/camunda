@@ -25,7 +25,9 @@ Do not fork the parser logic — extend it in `src/` and both consumers benefit.
 
 ## What the gate does
 
-Given a PR body:
+The gate runs two checks (`gate.evaluateGate`) and reports a combined outcome.
+
+**PR-issue link** — given a PR body:
 
 1. Slice the `## Related issues` section (`extractSection`).
 2. Extract every reference in it (`parseRefs`): closing keywords
@@ -35,19 +37,44 @@ Given a PR body:
 3. Resolve each ref against the API (`resolver`): is it an issue, a PR, or
    missing? Is it cross-repo?
 4. Decide PASS/FAIL (`policy`).
-5. Reconcile a single sticky PR comment (`comment`) explaining the decision.
 
-### Decision table
+**Title** — lint the PR title against the active `commitlint.config.cjs` rules
+(`title`): `type: subject` shape, `type` in the enum, lower-case, no scope,
+header ≤ length. Skipped for bot authors (D16); their link/marker is still
+validated. See [Title lint](#title-lint).
+
+Then it reconciles a single sticky PR comment (`comment`) covering both checks.
+
+### Decision table (PR-issue link)
 
 |                            Situation                             | Result |
 |------------------------------------------------------------------|--------|
 | Section links a **live issue** via a closing or contributor ref  | ✅ pass |
 | Opt-out checkbox ticked (`This PR does not need a linked issue`) | ✅ pass |
+| **Backport** whose original PR is properly attributed (hop)      | ✅ pass |
 | Section links a **pull request** (message names it)              | ❌ fail |
 | No satisfying ref **and** no opt-out                             | ❌ fail |
 
-Cross-repo refs (`owner/repo#N`) and the `Backport of #N` marker never satisfy
-the requirement on their own. A bare `#N` **does** count (contributor ref).
+Cross-repo refs (`owner/repo#N`) never satisfy on their own. A bare `#N` **does**
+count (contributor ref).
+
+### Backport hop
+
+A backport PR passes on its own `## Related issues` section if it has one
+(manual backport template). Otherwise — the backport **bot** body carries only
+`⤵️ Backport of #N`, no section — the gate follows that marker to the **original
+PR** and validates *its* attribution (`deliveryPath: backportHop`). The backport
+inherits the original's linked issue (C7); the `Backport of #N` marker is never
+removed (the stale-backport tracker depends on it).
+
+### Title lint
+
+The title check reimplements the **active** `commitlint.config.cjs` rules
+(`type-empty`, `type-case`, `type-enum`, `scope-empty`, `header-max-length`) as
+a pure regex, so the action keeps **zero runtime dependencies** rather than
+vendoring `@commitlint` into the committed bundle. `TITLE_TYPES` and `HEADER_MAX`
+in `src/title` are the source of truth, and the action CI greps
+`commitlint.config.cjs` to fail if they ever drift.
 
 ### Sticky comment
 
@@ -85,8 +112,10 @@ ParsedRef  ──►  ResolvedRef  ──►  PolicyDecision
 |-----------------|--------------------------------------------------------------------------------|
 | `src/types.ts`  | The `ParsedRef → ResolvedRef → PolicyDecision` contract + `Resolver` interface |
 | `src/parser/`   | Pure section-scoped reference extraction (shared with the generator)           |
+| `src/resolver/` | GitHub-API adapter (issue vs PR vs missing, cross-repo, backport-hop PR fetch) |
 | `src/policy/`   | Pure PASS/FAIL decision from resolved refs + opt-out state                     |
-| `src/resolver/` | GitHub-API adapter (issue vs PR vs missing, cross-repo)                        |
+| `src/title/`    | Pure title lint (commitlint active rules) + bot-author exemption               |
+| `src/gate/`     | Orchestrates link (+ backport hop) + title into one `GateOutcome`              |
 | `src/comment/`  | Sticky-comment render + idempotent upsert (pure logic + `fetch` adapter)       |
 | `src/gha.ts`    | Minimal `@actions/core` replacement                                            |
 | `src/lint.ts`   | The gate entrypoint (warn-only)                                                |
