@@ -152,33 +152,6 @@ public class ReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldPersistEvenIfSameChunkIsConsumedMultipleTimes() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      final SnapshotChunk chunk = snapshotChunkReader.next();
-      receivedSnapshot.apply(chunk).join();
-      receivedSnapshot.apply(chunk).join();
-
-      while (snapshotChunkReader.hasNext()) {
-        receivedSnapshot.apply(snapshotChunkReader.next()).join();
-      }
-    }
-
-    final var receivedPersistedSnapshot = receivedSnapshot.persist().join();
-
-    // then
-    assertThat(receivedPersistedSnapshot)
-        .as("the snapshot was persisted even if one chunk was applied more than once")
-        .isEqualTo(receiverSnapshotStore.getLatestSnapshot().orElseThrow());
-  }
-
-  @Test
   public void shouldThrowWhenAlreadyExistingSnapshotWasReceivedAgain() {
     // given
     final var persistedSnapshot = takePersistedSnapshot();

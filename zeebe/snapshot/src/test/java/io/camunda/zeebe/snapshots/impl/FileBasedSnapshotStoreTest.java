@@ -555,6 +555,54 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
+  public void shouldRestartWithAChunkedReceivedSnapshot() throws IOException {
+    // given
+    final Map<String, Long> fileChecksums = new HashMap<>();
+    final var fileContentChecksum = new CRC32C();
+    fileContentChecksum.update(SNAPSHOT_CONTENT.getBytes(StandardCharsets.UTF_8));
+    fileChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, fileContentChecksum.getValue());
+    final var receiverStorePath = temporaryFolder.newFolder("receiver").toPath();
+
+    final var store =
+        new FileBasedSnapshotStore(
+            0,
+            PARTITION_ID,
+            receiverStorePath,
+            new TestSnapshotFileInfoProvider(fileChecksums),
+            new SimpleMeterRegistry());
+    scheduler.submitActor(store);
+
+    // when
+    final var persistedSnapshot = takeTransientSnapshot().persist().join();
+    final var receivedSnapshot = store.newReceivedSnapshot(persistedSnapshot.getId()).join();
+    try (final var reader = persistedSnapshot.newChunkReader()) {
+      reader.setMaximumChunkSize(2);
+      while (reader.hasNext()) {
+        receivedSnapshot.apply(reader.next()).join();
+      }
+    }
+
+    receivedSnapshot.persist().join();
+
+    store.close();
+
+    final var restartedStore =
+        new FileBasedSnapshotStore(
+            0,
+            PARTITION_ID,
+            receiverStorePath,
+            new TestSnapshotFileInfoProvider(fileChecksums),
+            new SimpleMeterRegistry());
+    scheduler.submitActor(restartedStore).join();
+
+    // then
+    assertThat(restartedStore.getLatestSnapshot())
+        .describedAs(
+            "The latest snapshot is not detected as corrupted and should be loaded after restart")
+        .hasValueSatisfying(s -> assertThat(s.getId()).isEqualTo(persistedSnapshot.getId()));
+  }
+
+  @Test
   public void shouldCreateASnapshotForBootstrap() throws IOException {
     // given
     final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
