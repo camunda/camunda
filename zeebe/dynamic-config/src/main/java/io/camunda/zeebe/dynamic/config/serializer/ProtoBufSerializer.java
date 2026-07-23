@@ -1588,14 +1588,21 @@ public class ProtoBufSerializer
   // Additive encode/decode for CurrentClusterConfiguration and its sub-types. These are not yet
   // wired into gossip or persistence; they exist for the Phase-3 handoff.
 
+  @Override
   public byte[] encodeCurrentClusterConfiguration(final CurrentClusterConfiguration configuration) {
     return encodeCurrentClusterConfigurationProto(configuration).toByteArray();
   }
 
   public CurrentClusterConfiguration decodeCurrentClusterConfiguration(final byte[] encoded) {
+    return decodeCurrentClusterConfiguration(encoded, 0, encoded.length);
+  }
+
+  @Override
+  public CurrentClusterConfiguration decodeCurrentClusterConfiguration(
+      final byte[] encoded, final int offset, final int length) {
     try {
       return decodeCurrentClusterConfiguration(
-          Topology.CurrentClusterConfiguration.parseFrom(encoded));
+          Topology.CurrentClusterConfiguration.parseFrom(ByteBuffer.wrap(encoded, offset, length)));
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
