@@ -110,19 +110,19 @@ final class PhysicalTenantOverridePolicyValidation {
   private PhysicalTenantOverridePolicyValidation() {}
 
   static void validate(final Environment environment) {
-    try {
-      PhysicalTenantIdDiscovery.discover(environment);
-    } catch (final InvalidPhysicalTenantIdException e) {
-      throw new UnifiedConfigurationException(e);
-    }
     // tenant id -> the forbidden relative property names it declares
     final Map<String, List<String>> violationsByTenant = new LinkedHashMap<>();
-    for (final ConfigurationPropertySource source : ConfigurationPropertySources.get(environment)) {
-      if (source instanceof final IterableConfigurationPropertySource iter) {
-        iter.stream()
-            .filter(PHYSICAL_TENANTS_NAME::isAncestorOf)
-            .forEach(name -> collectViolation(name, violationsByTenant));
+    try {
+      for (final ConfigurationPropertySource source :
+          ConfigurationPropertySources.get(environment)) {
+        if (source instanceof final IterableConfigurationPropertySource iter) {
+          iter.stream()
+              .filter(PHYSICAL_TENANTS_NAME::isAncestorOf)
+              .forEach(name -> collectViolation(name, violationsByTenant));
+        }
       }
+    } catch (final InvalidPhysicalTenantIdException e) {
+      throw new UnifiedConfigurationException(e);
     }
     if (!violationsByTenant.isEmpty()) {
       final String detail =
@@ -145,6 +145,7 @@ final class PhysicalTenantOverridePolicyValidation {
       return;
     }
     final String tenantId = name.getElement(tenantIdIndex, Form.UNIFORM);
+    PhysicalTenantIdDiscovery.validateTenantId(tenantId);
     final ConfigurationPropertyName relative = name.subName(tenantIdIndex + 1);
     if (isNonOverridable(relative)) {
       violationsByTenant.computeIfAbsent(tenantId, k -> new ArrayList<>()).add(relative.toString());
