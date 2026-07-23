@@ -226,6 +226,35 @@ export async function expectProcessInstanceCanBeFound(
   });
 }
 
+export async function expectProcessState(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  expectedState: string,
+) {
+  await expect(async () => {
+    const statusRes = await request.get(
+      buildUrl(`/process-instances/${processInstanceKey}`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertStatusCode(statusRes, 200);
+    await validateResponse(
+      {
+        path: '/process-instances/{processInstanceKey}',
+        method: 'GET',
+        status: '200',
+      },
+      statusRes,
+    );
+    const json = await statusRes.json();
+    expect(json.state).toBe(expectedState);
+  }).toPass({
+    intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
+    timeout: 180_000,
+  });
+}
+
 async function countProcessInstances(
   request: APIRequestContext,
   state: string,
