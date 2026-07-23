@@ -57,6 +57,19 @@ class SecretStoreRegistryTest {
   }
 
   @Test
+  void shouldUseProvidedCaches() {
+    // given
+    final var cache = new InMemorySecretCache();
+    cache.put("token", "value");
+
+    // when
+    final var registry = new SecretStoreRegistry(Map.of("default", NOOP), Map.of("default", cache));
+
+    // then
+    assertThat(registry.getCaches().get("default")).isSameAs(cache);
+  }
+
+  @Test
   void shouldCreateOneCachePerConfiguredStore() {
     // given
     final var registry =
