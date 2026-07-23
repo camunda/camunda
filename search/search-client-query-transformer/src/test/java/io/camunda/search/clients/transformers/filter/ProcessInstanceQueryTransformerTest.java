@@ -331,6 +331,39 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
+  public void shouldQueryBySuspendedDate() {
+    // given
+    final var dateAfter = OffsetDateTime.of(2024, 3, 12, 10, 30, 15, 0, ZoneOffset.UTC);
+    final var dateBefore = OffsetDateTime.of(2024, 7, 15, 10, 30, 15, 0, ZoneOffset.UTC);
+    final var dateFilter = List.of(Operation.gte(dateAfter), Operation.lt(dateBefore));
+    final var processInstanceFilter =
+        FilterBuilders.processInstance(f -> f.suspendedDateOperations(dateFilter));
+
+    // when
+    final var searchRequest = transformQuery(processInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertIsSearchTermQuery(
+        ((SearchBoolQuery) queryVariant).must().get(0).queryOption(),
+        "joinRelation",
+        "processInstance");
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchRangeQuery.class,
+            (searchRangeQuery) -> {
+              assertThat(searchRangeQuery.field()).isEqualTo("suspendedDate");
+              assertThat(searchRangeQuery.gte()).isEqualTo("2024-03-12T10:30:15.000+0000");
+              assertThat(searchRangeQuery.lt()).isEqualTo("2024-07-15T10:30:15.000+0000");
+              assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+            });
+  }
+
+  @Test
   public void shouldQueryByTenantId() {
     // given
     final var processInstanceFilter = FilterBuilders.processInstance(f -> f.tenantIds("tenant"));

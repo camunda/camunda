@@ -23,6 +23,7 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
           builderFunction) {
     final var processInstanceKey = nextKey();
+    final var state = randomEnum(ProcessInstanceEntity.ProcessInstanceState.class);
     final var builder =
         new ProcessInstanceDbModelBuilder()
             .processInstanceKey(processInstanceKey)
@@ -31,13 +32,17 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
             .processDefinitionId("process-" + RANDOM.nextInt(10000))
             .parentProcessInstanceKey(nextKey())
             .parentElementInstanceKey(nextKey())
-            .state(randomEnum(ProcessInstanceEntity.ProcessInstanceState.class))
+            .state(state)
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .version(RANDOM.nextInt(10000))
             .tenantId("tenant-" + processInstanceKey)
             .partitionId(RANDOM.nextInt(10000))
-            .businessId("business-" + RANDOM.nextInt(10000));
+            .businessId("business-" + RANDOM.nextInt(10000))
+            .suspendedDate(
+                state == ProcessInstanceEntity.ProcessInstanceState.SUSPENDED
+                    ? NOW.plus(RANDOM.nextInt(100_000), ChronoUnit.MILLIS)
+                    : null);
 
     return builderFunction.apply(builder).build();
   }

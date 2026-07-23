@@ -79,6 +79,7 @@ public class CustomMcpModelPropertiesTest {
                 "processInstanceKey",
                 "startDate",
                 "state",
+                "suspendedDate",
                 "tags",
                 "variables",
                 "businessId")),

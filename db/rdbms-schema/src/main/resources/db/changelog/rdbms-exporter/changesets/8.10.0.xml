@@ -660,4 +660,34 @@
     </addColumn>
   </changeSet>
 
+  <changeSet id="create_process_instance_suspended_date_keyset_index" author="camunda">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <indexExists indexName="${prefix}IDX_PROCESS_INSTANCE_SUSP_DATE"
+          tableName="${prefix}PROCESS_INSTANCE"/>
+      </not>
+    </preConditions>
+    <!-- The orderBy overrides in Commons.xml append NULLS FIRST for ASC on
+         PostgreSQL and Oracle. PostgreSQL can encode that NULL ordering in the
+         index, so it gets a matching NULLS FIRST composite and the planner serves
+         the ORDER BY from it instead of a seq-scan + sort. The other vendors use a
+         plain composite: MySQL/MariaDB/H2/SQL Server emit no NULLS clause and sort
+         NULLs first for ASC by default (SQL Server also has no NULLS FIRST index
+         syntax), so a plain index matches their ORDER BY; Oracle emits NULLS FIRST
+         too but does not accept NULLS FIRST in CREATE INDEX (ORA-00907), so it
+         falls back to the plain composite. PROCESS_INSTANCE_KEY (PK, NOT NULL) is
+         the unique keyset tiebreaker; it carries NULLS FIRST on PostgreSQL so the
+         index matches the full ORDER BY — without it PostgreSQL adds an
+         incremental sort instead of a pure index scan, even though the column is
+         NOT NULL. Same regression shape as the WAIT_STATE fix (#56068). -->
+    <sql dbms="postgresql">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_SUSP_DATE
+      ON ${prefix}PROCESS_INSTANCE (SUSPENDED_DATE NULLS FIRST, PROCESS_INSTANCE_KEY NULLS FIRST)
+    </sql>
+    <sql dbms="mysql,mariadb,h2,oracle,mssql">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_SUSP_DATE
+      ON ${prefix}PROCESS_INSTANCE (SUSPENDED_DATE, PROCESS_INSTANCE_KEY)
+    </sql>
+  </changeSet>
+
 </databaseChangeLog>

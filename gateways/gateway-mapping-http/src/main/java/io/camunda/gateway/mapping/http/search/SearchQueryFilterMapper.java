@@ -726,6 +726,9 @@ public class SearchQueryFilterMapper {
               mapToStringOperations("state", validationErrors, new ProcessInstanceStateConverter()))
           .ifPresent(builder::stateOperations);
       ofNullable(filter.getHasIncident()).ifPresent(builder::hasIncident);
+      ofNullable(filter.getSuspendedDate())
+          .map(mapToOffsetDateTimeOperations("suspendedDate", validationErrors))
+          .ifPresent(builder::suspendedDateOperations);
       ofNullable(filter.getTenantId())
           .map(mapToStringOperations())
           .ifPresent(builder::tenantIdOperations);

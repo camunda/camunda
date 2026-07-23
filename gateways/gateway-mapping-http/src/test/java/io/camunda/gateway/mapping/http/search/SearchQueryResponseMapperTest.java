@@ -198,6 +198,67 @@ class SearchQueryResponseMapperTest {
   }
 
   @Test
+  void shouldMapSuspendedDateForProcessInstance() {
+    // given
+    final var suspendedDate = OffsetDateTime.parse("2025-01-15T11:53:00Z");
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.SUSPENDED, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            null, // businessId
+            suspendedDate); // suspendedDate
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getSuspendedDate()).isEqualTo("2025-01-15T11:53:00.000Z");
+  }
+
+  @Test
+  void shouldMapNullSuspendedDateForProcessInstance() {
+    // given
+    final var entity =
+        new ProcessInstanceEntity(
+            123L, // processInstanceKey
+            999L, // rootProcessInstanceKey
+            "demoProcess", // processDefinitionId
+            "Demo Process", // processDefinitionName
+            1, // processDefinitionVersion
+            null, // processDefinitionVersionTag
+            456L, // processDefinitionKey
+            null, // parentProcessInstanceKey
+            null, // parentFlowNodeInstanceKey
+            OffsetDateTime.now(), // startDate
+            null, // endDate
+            ProcessInstanceState.ACTIVE, // state
+            false, // hasIncident
+            "tenant", // tenantId
+            null, // treePath
+            null, // businessId
+            null); // suspendedDate
+
+    // when
+    final var response = SearchQueryResponseMapper.toProcessInstance(entity);
+
+    // then
+    assertThat(response.getSuspendedDate()).isNull();
+  }
+
+  @Test
   void shouldMapRootProcessInstanceKeyForUserTask() {
     // given
     final var entity =

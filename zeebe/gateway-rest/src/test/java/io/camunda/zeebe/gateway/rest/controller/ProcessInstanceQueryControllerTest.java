@@ -109,6 +109,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "startDate": "2024-01-01T00:00:00.000Z",
             "endDate": null,
             "state": "ACTIVE",
+            "suspendedDate": null,
             "hasIncident": false,
             "tenantId": "tenant",
             "tags": ["tag1", "tag2"],
@@ -132,6 +133,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "startDate": "2024-01-01T00:00:00.000Z",
                   "endDate": null,
                   "state": "ACTIVE",
+                  "suspendedDate": null,
                   "hasIncident": false,
                   "tenantId": "tenant",
                   "tags": ["tag1", "tag2"],
@@ -577,7 +579,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentElementInstanceKey, startDate, endDate, state, hasIncident, tenantId, businessId]",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [processInstanceKey, processDefinitionId, processDefinitionName, processDefinitionVersion, processDefinitionVersionTag, processDefinitionKey, parentProcessInstanceKey, parentElementInstanceKey, startDate, endDate, suspendedDate, state, hasIncident, tenantId, businessId]",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);
@@ -789,6 +791,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "startDate": "2024-01-01T00:00:00.000Z",
               "endDate": null,
               "state": "ACTIVE",
+              "suspendedDate": null,
               "hasIncident": false,
               "tenantId": "tenant",
               "tags": [],
