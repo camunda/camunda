@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.deployment.model.element.SecretReference;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.job.JobSecretInjector.DroppedJob;
@@ -32,9 +33,11 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.secretreference.SecretReferenceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
@@ -45,12 +48,20 @@ import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
+
+  /**
+   * Slack added to a RESOLUTION_REQUESTED event's value length when checking batch capacity, to
+   * cover the log entry's key, source index, and metadata framing (see {@code
+   * LogAppendEntry#getLength}), so a guarded append never overflows the record batch.
+   */
+  private static final int RESOLUTION_EVENT_FRAMING_SLACK = 512;
 
   /** Scratch copy of the batch that carries the injected secret values to the response only. */
   private final JobBatchRecord responseValue = new JobBatchRecord();
@@ -191,7 +202,41 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
                 raiseIncidentJobTooLargeForMessageSize(
                     largeJob.key(), largeJob.jobRecord(), largeJob.expectedEventLength()));
 
+    // capture before activateJobBatch: building the response injects the secret values, which
+    // resets the injector and clears the jobs registered for resolution
+    final var jobsWithNonCachedSecrets =
+        new LinkedHashMap<>(jobSecretInjector.jobsWithNonCachedSecrets());
+
     activateJobBatch(record, value, jobBatchKey);
+
+    requestSecretResolution(jobsWithNonCachedSecrets);
+  }
+
+  /**
+   * Requests the background resolution of the secret references that kept the collector from
+   * activating some jobs. Appends one {@code RESOLUTION_REQUESTED} event per reference with the
+   * keys of the jobs waiting on it; its applier records the pending reference and parks the jobs so
+   * a long poll does not collect them again until the secret is resolved.
+   *
+   * <p>Stops appending once the record batch is full instead of letting the append overflow and
+   * roll back the whole activation. The references left out keep their jobs activatable, so the
+   * next activation registers and parks them with a fresh batch budget.
+   */
+  private void requestSecretResolution(
+      final Map<SecretReference, List<Long>> jobsWithNonCachedSecrets) {
+    for (final var waiting : jobsWithNonCachedSecrets.entrySet()) {
+      final var reference = waiting.getKey();
+      final var event =
+          new SecretReferenceRecord()
+              .setStoreId(reference.storeId())
+              .setSecretReference(reference.name());
+      waiting.getValue().forEach(event::addJobKey);
+      if (!stateWriter.canWriteEventOfLength(event.getLength() + RESOLUTION_EVENT_FRAMING_SLACK)) {
+        return;
+      }
+      stateWriter.appendFollowUpEvent(
+          keyGenerator.nextKey(), SecretReferenceIntent.RESOLUTION_REQUESTED, event);
+    }
   }
 
   private void rejectCommand(final TypedRecord<JobBatchRecord> record, final Rejection rejection) {
@@ -238,8 +283,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   /** Raises the incident matching the reason the injection dropped the job from the activation. */
   private void raiseIncidentForDroppedJob(final DroppedJob droppedJob) {
     switch (droppedJob) {
-      case OversizedJob oversized -> raiseIncidentJobSecretValuesTooLargeForMessageSize(oversized);
-      case FailedInjectionJob failed -> raiseIncidentJobSecretInjectionFailed(failed);
+      case final OversizedJob oversized ->
+          raiseIncidentJobSecretValuesTooLargeForMessageSize(oversized);
+      case final FailedInjectionJob failed -> raiseIncidentJobSecretInjectionFailed(failed);
     }
   }
 

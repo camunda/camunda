@@ -23,12 +23,15 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.SecretReferenceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.SecretReferenceRecordValue;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -102,10 +105,11 @@ public final class JobSecretActivationInjectionTest {
   }
 
   @Test
-  public void shouldNotActivateJobWhenSecretIsNotCached() {
+  public void shouldParkJobAndRequestResolutionWhenSecretIsNotCached() {
     // given - the secret has no cached value (empty cache)
     deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
-    createInstanceAndAwaitJob();
+    final long processInstanceKey = createInstanceAndAwaitJob();
+    final long jobKey = jobKeyOf(processInstanceKey);
 
     // when
     final Record<JobBatchRecordValue> activated =
@@ -119,21 +123,85 @@ public final class JobSecretActivationInjectionTest {
         .untilAsserted(() -> assertThat(activationResponse).isNotNull());
     assertThat(activationResponse.getJobs()).isEmpty();
 
-    // and - the job stays activatable: once the secret value is cached, a later activation hands
-    // it out with the resolved value on the response
+    // and - a RESOLUTION_REQUESTED event is written for the missing reference with the job key
+    final Record<SecretReferenceRecordValue> requested =
+        RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+            .withSecretReference("token")
+            .getFirst();
+    assertThat(requested.getValue().getStoreId()).isEmpty();
+    assertThat(requested.getValue().getJobKeys()).containsExactly(jobKey);
+
+    // and - the job is parked: a later activation does not hand it out again, even once the value
+    // is cached (it is reactivated only after the background resolution completes, see #57852)
     cachedSecrets.put("token", "resolved-secret");
     final Record<JobBatchRecordValue> secondAttempt =
         engine.jobs().withType(JOB_TYPE).withRequestStreamId(2).withRequestId(2L).activate();
-    assertThat(secondAttempt.getValue().getJobs()).hasSize(1);
-    Awaitility.await("until the second activation response is written")
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(() -> assertThat(activationResponse.getJobs()).hasSize(1));
-    assertThat(activationResponse.getJobs().get(0).getVariables())
-        .containsEntry("authorization", "Bearer resolved-secret");
+    assertThat(secondAttempt.getValue().getJobs()).isEmpty();
 
     // and - no exported record (state, log) leaks the resolved secret value
     assertThat(RecordingExporter.getRecords())
         .noneMatch(record -> record.toString().contains("resolved-secret"));
+  }
+
+  @Test
+  public void shouldRequestResolutionOncePerReferenceForMultipleWaitingJobs() {
+    // given - two jobs of the same type waiting on the same uncached secret reference
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final long firstJobKey = jobKeyOf(createInstanceAndAwaitJob());
+    final long secondJobKey = jobKeyOf(createInstanceAndAwaitJob());
+
+    // when
+    engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
+
+    // then - a single RESOLUTION_REQUESTED event carries both waiting job keys
+    final Record<SecretReferenceRecordValue> requested =
+        RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+            .withSecretReference("token")
+            .getFirst();
+    assertThat(requested.getValue().getJobKeys())
+        .containsExactlyInAnyOrder(firstJobKey, secondJobKey);
+  }
+
+  @Test
+  public void shouldRequestResolutionForEachMissingReferenceOfAJob() {
+    // given - a job with two uncached secret references
+    deploy(
+        t ->
+            t.zeebeInputExpression("camunda.secrets.token", "a")
+                .zeebeInputExpression("camunda.secrets.apiKey", "b"));
+    final long jobKey = jobKeyOf(createInstanceAndAwaitJob());
+
+    // when
+    engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
+
+    // then - one RESOLUTION_REQUESTED event per reference, each carrying the job key
+    final var requested =
+        RecordingExporter.secretReferenceRecords(SecretReferenceIntent.RESOLUTION_REQUESTED)
+            .limit(2)
+            .asList();
+    assertThat(requested)
+        .extracting(record -> record.getValue().getSecretReference())
+        .containsExactlyInAnyOrder("token", "apiKey");
+    assertThat(requested)
+        .allSatisfy(record -> assertThat(record.getValue().getJobKeys()).containsExactly(jobKey));
+  }
+
+  @Test
+  public void shouldNotRequestResolutionWhenSecretIsCached() {
+    // given
+    cachedSecrets.put("token", "resolved-secret");
+    deploy(t -> t.zeebeInputExpression("\"Bearer \" + camunda.secrets.token", "authorization"));
+    final long processInstanceKey = createInstanceAndAwaitJob();
+
+    // when - the job is activated normally
+    final Record<JobBatchRecordValue> activated =
+        engine.jobs().withType(JOB_TYPE).withRequestStreamId(1).withRequestId(1L).activate();
+    assertThat(activated.getValue().getJobs()).hasSize(1);
+
+    // then - completing the job runs the process to the end without any RESOLUTION_REQUESTED event
+    engine.job().withKey(activated.getValue().getJobKeys().get(0)).complete();
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
+        .noneMatch(record -> record.getValueType() == ValueType.SECRET_REFERENCE);
   }
 
   @Test
@@ -307,6 +375,13 @@ public final class JobSecretActivationInjectionTest {
         .withProcessInstanceKey(processInstanceKey)
         .getFirst();
     return processInstanceKey;
+  }
+
+  private long jobKeyOf(final long processInstanceKey) {
+    return RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst()
+        .getKey();
   }
 
   private void deploy(final Consumer<ServiceTaskBuilder> modifier) {

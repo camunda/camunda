@@ -188,12 +188,12 @@ final class JobBatchCollectorTest {
     final Either<TooLargeJob, Map<JobKind, Integer>> result =
         collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
-    // then - collection stops at the skip limit, keeping the jobs collected before it; the plain
-    // job behind the skipped ones is not reached
+    // then - collection stops at the skip limit, keeping the jobs collected before it; the batch is
+    // marked truncated so the client re-polls right away for the jobs behind the cap
     EitherAssert.assertThat(result).right().isEqualTo(Map.of(JobKind.BPMN_ELEMENT, 1));
     JobBatchRecordValueAssert.assertThat(record.getValue())
         .hasOnlyJobKeys(firstPlainJob.key)
-        .isNotTruncated();
+        .isTruncated();
   }
 
   @Test

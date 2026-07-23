@@ -177,7 +177,8 @@ public final class EventAppliers implements EventApplier {
   private void registerSecretReferenceEventAppliers(final MutableProcessingState state) {
     register(
         SecretReferenceIntent.RESOLUTION_REQUESTED,
-        new SecretReferenceResolutionRequestedApplier(state.getSecretReferenceState()));
+        new SecretReferenceResolutionRequestedApplier(
+            state.getSecretReferenceState(), state.getJobState()));
     register(SecretReferenceIntent.RESOLUTION_COMPLETED, NOOP_EVENT_APPLIER);
     register(SecretReferenceIntent.RESOLUTION_FAILED, NOOP_EVENT_APPLIER);
     register(SecretReferenceIntent.BATCH_JOBS_REACTIVATED, NOOP_EVENT_APPLIER);
