@@ -196,8 +196,7 @@ final class RestoreParameterValidatorTest {
       assertThatExceptionOfType(IllegalArgumentException.class)
           .isThrownBy(
               () ->
-                  RestoreValidator.validateParameters(
-                      request(MULTIPLE_BACKUP_IDS, null, null, DB, false)))
+                  validator.validateParameters(request(MULTIPLE_BACKUP_IDS, null, null, DB, false)))
           .withMessage(MULTIPLE_BACKUP_IDS_MESSAGE);
     }
   }
