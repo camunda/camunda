@@ -37,6 +37,8 @@ public class TestApiController {
    */
   public static final String DUMMY_CLUSTER_ADMIN_ENDPOINT = "/cluster/v2/topology";
 
+  public static final String DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT = "/cluster/v2/status";
+
   /**
    * Isolated, additive endpoint used only by {@code SessionAuthenticationRefreshTest} to force a
    * real, Spring-Session-backed session to exist before the request under test runs. With CSL
@@ -135,6 +137,11 @@ public class TestApiController {
 
   @GetMapping(DUMMY_CLUSTER_ADMIN_ENDPOINT)
   public @ResponseBody String dummyClusterAdminEndpoint() {
+    return DEFAULT_RESPONSE;
+  }
+
+  @GetMapping(DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
+  public @ResponseBody String dummyClusterAdminStatusEndpoint() {
     return DEFAULT_RESPONSE;
   }
 }

@@ -8,13 +8,16 @@
 package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.clusteradmin.ClusterAdminSecurityConfiguration;
+import io.camunda.authentication.clusteradmin.ClusterAdminBasicSecurityConfiguration;
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpSession;
@@ -22,6 +25,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.BadJwtException;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
@@ -48,6 +53,8 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
     })
 public class ClusterAdminOidcChainIsolationTest extends AbstractWebSecurityConfigTest {
 
+  @Autowired private JwtDecoder jwtDecoder;
+
   @Test
   public void shouldRejectWebappSessionOnClusterAdminEndpoint() {
     // given — a session carrying an authenticated principal that even holds the cluster-admin
@@ -59,7 +66,7 @@ public class ClusterAdminOidcChainIsolationTest extends AbstractWebSecurityConfi
             null,
             List.of(
                 new SimpleGrantedAuthority(
-                    ClusterAdminSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY))));
+                    ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY))));
     final MockHttpSession session = new MockHttpSession();
     session.setAttribute(
         HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
@@ -77,5 +84,51 @@ public class ClusterAdminOidcChainIsolationTest extends AbstractWebSecurityConfi
     assertThat(result)
         .as("a webapp session cookie must not authenticate the OIDC cluster-admin API")
         .hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
+  public void shouldAllowPublicStatusEndpointWithoutToken() {
+    // when — the carved-out public status endpoint is hit with no bearer token
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
+            .exchange();
+
+    // then — permitAll lets it through (dummy returns 200; the real endpoint returns 204)
+    assertThat(result).hasStatus2xxSuccessful();
+  }
+
+  @Test
+  public void shouldRejectMalformedBearerOnPublicStatusEndpoint() {
+    // given — the decoder rejects this specific token, standing in for a real malformed/invalid
+    // JWT (this context's JwtDecoder is a no-op mock that never validates real tokens)
+    final String malformedToken = "not-a-valid-jwt";
+    when(jwtDecoder.decode(eq(malformedToken))).thenThrow(new BadJwtException("malformed token"));
+
+    // when — the public status endpoint is hit with that malformed bearer token
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .header("Authorization", "Bearer " + malformedToken)
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT)
+            .exchange();
+
+    // then — permitAll only waives a missing token; a bad one is still rejected by the bearer
+    // filter before the authorization decision is reached
+    assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
+  public void shouldRequireTokenForSiblingOfPublicStatusEndpoint() {
+    // when — a sibling of the public path (trailing slash) is hit with no bearer token
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_CLUSTER_ADMIN_STATUS_ENDPOINT + "/")
+            .exchange();
+
+    // then — only the exact path is public; everything else under /cluster/v2/** stays protected
+    assertThat(result).hasStatus(HttpStatus.UNAUTHORIZED);
   }
 }

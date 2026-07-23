@@ -19,7 +19,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
  *
  * <p>Registered ahead of CSL's DB-backed converter so cluster-admin principals do not pick up DB
  * memberships on name collision. It only claims authentications marked with {@link
- * ClusterAdminSecurityConfiguration#CLUSTER_ADMIN_AUTHORITY}.
+ * ClusterAdminBasicSecurityConfiguration#CLUSTER_ADMIN_AUTHORITY}.
  */
 public final class ClusterAdminAuthenticationConverter
     implements CamundaAuthenticationConverter<Authentication> {
@@ -31,7 +31,7 @@ public final class ClusterAdminAuthenticationConverter
         && authentication.getAuthorities().stream()
             .anyMatch(
                 authority ->
-                    ClusterAdminSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY.equals(
+                    ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY.equals(
                         authority.getAuthority()));
   }
 

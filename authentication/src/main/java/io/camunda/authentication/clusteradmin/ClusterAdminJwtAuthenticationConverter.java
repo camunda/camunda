@@ -23,8 +23,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 /**
- * Grants {@link ClusterAdminSecurityConfiguration#CLUSTER_ADMIN_AUTHORITY} to a validated bearer
- * token when it matches a configured cluster-admin OIDC claim: client id, group, or name/value.
+ * Grants {@link ClusterAdminBasicSecurityConfiguration#CLUSTER_ADMIN_AUTHORITY} to a validated
+ * bearer token when it matches a configured cluster-admin OIDC claim: client id, group, or
+ * name/value.
  *
  * <p>The resulting {@link JwtAuthenticationToken} is named after the resolved client id, or the
  * token subject if unavailable, so {@code ClusterAdminAuthenticationConverter} creates a
@@ -35,7 +36,8 @@ public final class ClusterAdminJwtAuthenticationConverter
 
   private static final Collection<GrantedAuthority> CLUSTER_ADMIN_AUTHORITIES =
       List.of(
-          new SimpleGrantedAuthority(ClusterAdminSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY));
+          new SimpleGrantedAuthority(
+              ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY));
 
   private final Set<String> clients;
   private final Set<String> groups;

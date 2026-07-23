@@ -10,7 +10,7 @@ package io.camunda.authentication.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.clusteradmin.ClusterAdminAuthenticationConverter;
-import io.camunda.authentication.clusteradmin.ClusterAdminSecurityConfiguration;
+import io.camunda.authentication.clusteradmin.ClusterAdminBasicSecurityConfiguration;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import io.camunda.security.api.context.CamundaAuthenticationConverter;
@@ -26,7 +26,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 
 /**
  * Verifies the OIDC leak-prevention path: a cluster-admin bearer token with {@link
- * ClusterAdminSecurityConfiguration#CLUSTER_ADMIN_AUTHORITY} is claimed first by {@link
+ * ClusterAdminBasicSecurityConfiguration#CLUSTER_ADMIN_AUTHORITY} is claimed first by {@link
  * ClusterAdminAuthenticationConverter}, which runs at {@code HIGHEST_PRECEDENCE} and returns a
  * client principal with no memberships.
  *
@@ -67,7 +67,7 @@ class ClusterAdminOidcConverterWiringTest extends AbstractWebSecurityConfigTest 
             jwt,
             List.of(
                 new SimpleGrantedAuthority(
-                    ClusterAdminSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY)),
+                    ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY)),
             COLLISION);
 
     // when — the converter chain dispatches to the first converter that claims the principal

@@ -34,7 +34,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * is granted access only if it matches a configured cluster-admin client id, group, or claim (see
  * {@link ClusterAdminJwtAuthenticationConverter}).
  *
- * <p>This chain and the Basic chain ({@link ClusterAdminSecurityConfiguration}) are mutually
+ * <p>This chain and the Basic chain ({@link ClusterAdminBasicSecurityConfiguration}) are mutually
  * exclusive by deployment method — only one is instantiated.
  *
  * <p><strong>Statelessness:</strong> the chain binds a request-scoped, session-free {@link
@@ -68,8 +68,11 @@ public class ClusterAdminOidcSecurityConfiguration {
     http.securityMatcher(CLUSTER_ADMIN_API_PATTERN)
         .authorizeHttpRequests(
             auth ->
-                auth.anyRequest()
-                    .hasAuthority(ClusterAdminSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY))
+                auth.requestMatchers(
+                        ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_STATUS_PATH)
+                    .permitAll()
+                    .anyRequest()
+                    .hasAuthority(ClusterAdminBasicSecurityConfiguration.CLUSTER_ADMIN_AUTHORITY))
         .oauth2ResourceServer(
             oauth2 ->
                 oauth2

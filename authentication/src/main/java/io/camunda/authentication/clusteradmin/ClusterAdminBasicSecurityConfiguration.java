@@ -60,7 +60,7 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  */
 @Configuration
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-public class ClusterAdminSecurityConfiguration {
+public class ClusterAdminBasicSecurityConfiguration {
 
   /**
    * Marker authority assigned to every cluster-admin principal. The chain does not check it
@@ -70,10 +70,18 @@ public class ClusterAdminSecurityConfiguration {
    */
   public static final String CLUSTER_ADMIN_AUTHORITY = "ROLE_CLUSTER_ADMIN";
 
+  /**
+   * The cluster-level status endpoint, exposed without authentication as the cluster equivalent of
+   * {@code /v2/status}. Carved out of the otherwise fully protected {@code /cluster/v2/**} chain
+   * with {@code permitAll}; a missing credential is allowed through, but a malformed one is still
+   * rejected by the auth filter, matching {@code /v2/status}.
+   */
+  public static final String CLUSTER_ADMIN_STATUS_PATH = "/cluster/v2/status";
+
   static final String CLUSTER_ADMIN_API_PATTERN = "/cluster/v2/**";
 
   private static final Logger LOG =
-      LoggerFactory.getLogger(ClusterAdminSecurityConfiguration.class);
+      LoggerFactory.getLogger(ClusterAdminBasicSecurityConfiguration.class);
 
   @Bean
   @Order(ORDER_API)
@@ -87,7 +95,12 @@ public class ClusterAdminSecurityConfiguration {
     http.authenticationManager(clusterAdminAuthenticationManager(environment, passwordEncoder));
 
     http.securityMatcher(CLUSTER_ADMIN_API_PATTERN)
-        .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+        .authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers(CLUSTER_ADMIN_STATUS_PATH)
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
         .httpBasic(Customizer.withDefaults())
         .exceptionHandling(
             eh ->
