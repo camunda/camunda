@@ -267,7 +267,7 @@ runs:
       timeout_seconds: 60
       shell: bash
       command: |
-        echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin
+        printf '%s' "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin
   - name: Logs on to Harbor
     # Harbor login is disabled for fork PRs
     if: >-
@@ -283,5 +283,5 @@ runs:
       timeout_seconds: 60
       shell: bash
       command: |
-        echo "${DOCKER_PASSWORD}" | docker login registry.camunda.cloud \
+        printf '%s' "${DOCKER_PASSWORD}" | docker login registry.camunda.cloud \
           --username "${DOCKER_USERNAME}" --password-stdin
