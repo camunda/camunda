@@ -13,15 +13,8 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.exporter.api.context.Context;
-import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.protocol.impl.encoding.RecordMetadataBlock;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
@@ -29,7 +22,6 @@ import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
-import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
@@ -40,52 +32,50 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.LangUtil;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
-public final class ExporterDirector extends Actor implements HealthMonitorable, LogRecordAwaiter {
+/**
+ * Coordinates exporting on a partition. Each configured exporter runs on its own {@link
+ * ExporterActor}: its own {@link LogStreamReader}, its own retry/backoff, and its own health,
+ * entirely decoupled from every other exporter. This class no longer reads the log or exports
+ * records itself; it owns exporter lifecycle (configure/open/close, enable/disable, pause/resume),
+ * aggregates the exporters' health into one report, and distributes their combined positions to
+ * followers.
+ */
+public final class ExporterDirector extends Actor implements HealthMonitorable {
 
-  private static final String ERROR_MESSAGE_DESERIALIZATION_ERROR_EXPORTING_ABORTED =
-      "Expected to export record '{}' successfully, but exception was thrown when deserializing the record.";
-  private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
-      "Expected to export record '{}' successfully, but exception was thrown.";
-  private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
-      "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
+  private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private static final String LEGACY_EXPORTER_STATE_TOPIC_FORMAT = "exporterState-%d";
   private static final String EXPORTER_STATE_TOPIC_FORMAT = "%s-exporterState-%d";
 
-  private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
-  // using primitive boolean since it is only used in actor
-  private boolean allExportersOpened;
 
   // Use concrete type because it must be modifiable
-  private final ArrayList<ExporterContainer> containers;
+  private final ArrayList<ExporterContainer> containers = new ArrayList<>();
+  private final Map<ExporterDescriptor, ExporterInitializationInfo> initialDescriptors;
   private final LogStream logStream;
-  private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
   private final ExporterMetrics metrics;
-  private final RetryStrategy exportingRetryStrategy;
   private final Set<FailureListener> listeners = new HashSet<>();
-  private LogStreamReader logStreamReader;
-  private EventFilter eventFilter;
+  private final Function<RecordExporter, RecordExporter> recordExporterWrapper;
   private ExportersState state;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
   private volatile HealthReport healthReport;
 
-  private boolean inExportingPhase;
   private ExporterPhase exporterPhase;
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterPositionsSendingSubject;
@@ -99,11 +89,17 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final EventFilter positionsToSkipFilter;
   private final MeterRegistry meterRegistry;
   private final @Nullable String licenseKey;
-  // When idle, exporter director is not exporting any records because no exporters are configured.
-  // The actor is still running, but it is not actively doing any work.
+  // When idle, no exporters are configured. The actor is still running, but it is not actively
+  // doing any work.
   private boolean idle;
   private final InstantSource clock;
-  private final RecordMetadataBlock skipRecordDecoder = new RecordMetadataBlock();
+
+  // one actor per configured exporter, keyed by exporter id
+  private final ConcurrentHashMap<String, ExporterActor> exporterActors = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, HealthReport> exporterHealthReports =
+      new ConcurrentHashMap<>();
+  private ActorSchedulingService actorSchedulingService;
+  private final Map<String, PendingContainer> pendingByExporterId = new HashMap<>();
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
@@ -114,7 +110,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   ExporterDirector(
       final ExporterDirectorContext context,
       final ExporterPhase exporterPhase,
-      final Function<RecordExporter, RecordExporter> recorderExporter) {
+      final Function<RecordExporter, RecordExporter> recordExporterWrapper) {
     super("Exporter", context.getPartitionId());
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = context.getPartitionId();
@@ -122,26 +118,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     licenseKey = context.getLicenseKey();
     meterRegistry = context.getMeterRegistry();
     clock = context.getClock();
-    containers =
-        context.getDescriptors().entrySet().stream()
-            .map(
-                descriptorEntry ->
-                    new ExporterContainer(
-                        descriptorEntry.getKey(),
-                        partitionId,
-                        clusterId,
-                        licenseKey,
-                        descriptorEntry.getValue(),
-                        meterRegistry,
-                        clock,
-                        this::onReplayRequested))
-            .collect(Collectors.toCollection(ArrayList::new));
+    this.recordExporterWrapper = recordExporterWrapper;
+    initialDescriptors = context.getDescriptors();
     metrics = new ExporterMetrics(meterRegistry);
     metrics.initializeExporterState(exporterPhase);
-    recordExporter =
-        recorderExporter.apply(
-            new RecordExporter(metrics, containers, partitionId.number(), clock));
-    exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     zeebeDb = context.getZeebeDb();
     this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
@@ -164,11 +144,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {
+    this.actorSchedulingService = actorSchedulingService;
     return actorSchedulingService.submitActor(this, SchedulingHints.ioBound());
   }
 
   public ActorFuture<Void> stopAsync() {
-    return actor.close();
+    return closeAsync();
   }
 
   /**
@@ -180,15 +161,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
    */
   public ActorFuture<Void> pauseExporting() {
     if (actor.isClosed()) {
-      // Actor can be closed when there are no exporters. In that case pausing is a no-op.
-      // This is safe because the pausing state is persisted and will be applied later if exporters
-      // are added.
       return CompletableActorFuture.completed(null);
     }
     return actor.call(
         () -> {
           metrics.setExporterPaused();
           exporterPhase = ExporterPhase.PAUSED;
+          exporterActors.values().forEach(ExporterActor::pauseExporting);
         });
   }
 
@@ -202,16 +181,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
    */
   public ActorFuture<Void> softPauseExporting() {
     if (actor.isClosed()) {
-      // Actor can be closed when there are no exporters. In that case pausing is a no-op.
-      // This is safe because the pausing state is persisted and will be applied later if exporters
-      // are added.
       return CompletableActorFuture.completed(null);
     }
     return actor.call(
         () -> {
-          containers.stream().forEach(ExporterContainer::softPauseExporter);
           exporterPhase = ExporterPhase.SOFT_PAUSED;
           metrics.setExporterSoftPaused();
+          exporterActors.values().forEach(ExporterActor::softPauseExporting);
         });
   }
 
@@ -222,22 +198,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
    */
   public ActorFuture<Void> resumeExporting() {
     if (actor.isClosed()) {
-      // Actor can be closed when there are no exporters. In that case resuming is a no-op.
-      // This is safe because adding exporters requires a restart where the persisted non-pause
-      // state will be applied and exporting "resumes".
       return CompletableActorFuture.completed(null);
     }
-
     return actor.call(
         () -> {
-          if (exporterPhase == ExporterPhase.SOFT_PAUSED) {
-            containers.stream().forEach(ExporterContainer::undoSoftPauseExporter);
-          }
           exporterPhase = ExporterPhase.EXPORTING;
           metrics.setExporterActive();
-          if (exporterMode == ExporterMode.ACTIVE) {
-            actor.submit(this::readNextEvent);
-          }
+          exporterActors.values().forEach(ExporterActor::resumeExporting);
         });
   }
 
@@ -268,12 +235,28 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void removeExporter(final String exporterId, final ExporterContainer container) {
-    container.close();
+    final var exporterActor = exporterActors.remove(exporterId);
+    exporterHealthReports.remove(exporterId);
     containers.remove(container);
+
+    if (exporterActor != null) {
+      // The actor closes its own container itself, from within its own close sequence (see
+      // ExporterActor#onActorCloseRequested) - closing it here too would close the exporter twice.
+      // Wait for that close to finish, then hop back onto this actor's own thread before touching
+      // the (not thread-safe) ExportersState.
+      exporterActor
+          .closeAsync()
+          .onComplete(
+              (ignored, error) -> actor.run(() -> finishRemovingExporter(exporterId)),
+              Runnable::run);
+    } else {
+      container.close();
+      finishRemovingExporter(exporterId);
+    }
+  }
+
+  private void finishRemovingExporter(final String exporterId) {
     state.removeExporterState(exporterId);
-    // After removing this exporter, the exporter index has changed. Reset it so that we don't
-    // miss to export the record to any of the exporters whose index has changed.
-    recordExporter.resetExporterIndex();
     LOG.debug("Exporter '{}' is removed.", exporterId);
 
     if (containers.isEmpty()) {
@@ -335,6 +318,36 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             this::isClosed);
   }
 
+  private PendingContainer createContainer(
+      final ExporterDescriptor descriptor, final ExporterInitializationInfo initializationInfo) {
+    final LogStreamReader reader =
+        exporterMode == ExporterMode.ACTIVE ? logStream.newLogStreamReader() : null;
+    final AtomicBoolean hasStartedExporting = new AtomicBoolean(false);
+
+    final ExporterContainer container =
+        new ExporterContainer(
+            descriptor,
+            partitionId,
+            clusterId,
+            licenseKey,
+            initializationInfo,
+            meterRegistry,
+            clock,
+            position -> {
+              // Replay may be requested at any time once the reader exists - both during the
+              // initial open handshake and while exporting is already under way, e.g. when
+              // ExporterContainer#reopenExporter reopens the exporter mid-stream to let it re-sync
+              // a wrong position. It is only ever invoked from this exporter's own actor thread
+              // (synchronously, as part of ExporterContainer#exportRecord), so seeking the reader
+              // here never races with that same actor's own read loop.
+              if (reader == null) {
+                return false;
+              }
+              return reader.seek(position);
+            });
+    return new PendingContainer(container, reader, hasStartedExporting);
+  }
+
   private void addExporter(
       final String exporterId,
       final ExporterInitializationInfo initializationInfo,
@@ -348,16 +361,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return;
     }
 
-    final ExporterContainer container =
-        new ExporterContainer(
-            descriptor,
-            partitionId,
-            clusterId,
-            licenseKey,
-            initializationInfo,
-            meterRegistry,
-            clock,
-            this::onReplayRequested);
+    final var pending = createContainer(descriptor, initializationInfo);
+    final ExporterContainer container = pending.container();
     container.initContainer(actor, metrics, state, exporterPhase);
     try {
       container.configureExporter();
@@ -368,14 +373,79 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     // initializes metadata and position in the runtime state
     container.initMetadata();
     if (exporterMode == ExporterMode.ACTIVE) {
+      if (container.getPosition() == ExportersState.VALUE_NOT_FOUND) {
+        // A brand new exporter enabled at runtime (no initializeFrom) must start from now, not
+        // from the beginning of the log: unlike an exporter configured at broker startup, this one
+        // was never meant to see history that predates it. Fast-forward its own reader to the log's
+        // current tail and persist that as its starting position, reusing the same
+        // seek+persist mechanism as an exporter-requested replay (just moving forward, not back).
+        final long tailPosition = pending.reader().seekToEnd();
+        container.requestReplay(tailPosition);
+      }
       container.openExporter();
     }
     containers.add(container);
     LOG.debug("Exporter '{}' is enabled.", exporterId);
 
+    if (exporterMode == ExporterMode.ACTIVE) {
+      scheduleExporterActor(pending);
+    }
+
     if (idle) {
       becomeLive();
     }
+  }
+
+  private void scheduleExporterActor(final PendingContainer pending) {
+    final ExporterContainer container = pending.container();
+    final var exporterActor =
+        new ExporterActor(
+            partitionId,
+            logStream,
+            container,
+            pending.reader(),
+            pending.hasStartedExporting(),
+            metrics,
+            positionsToSkipFilter,
+            clock,
+            exporterPhase,
+            zeebeDb,
+            recordExporterWrapper);
+    exporterActors.put(container.getId(), exporterActor);
+    exporterHealthReports.put(container.getId(), HealthReport.healthy(exporterActor));
+    // addFailureListener does actor.run(...) under the hood, which needs the actor to already be
+    // submitted to the scheduler - so this must come after startAsync, not before.
+    exporterActor.startAsync(actorSchedulingService);
+    exporterActor.addFailureListener(
+        new FailureListener() {
+          @Override
+          public void onFailure(final HealthReport report) {
+            handleExporterHealthChange(container.getId(), report);
+          }
+
+          @Override
+          public void onRecovered(final HealthReport report) {
+            handleExporterHealthChange(container.getId(), report);
+          }
+
+          @Override
+          public void onUnrecoverableFailure(final HealthReport report) {
+            handleExporterHealthChange(container.getId(), report);
+          }
+        });
+  }
+
+  private void handleExporterHealthChange(final String exporterId, final HealthReport report) {
+    exporterHealthReports.put(exporterId, report);
+    actor.run(this::recomputeAndNotifyHealth);
+  }
+
+  private void recomputeAndNotifyHealth() {
+    final var aggregated =
+        HealthReport.fromChildrenStatus(getName(), exporterHealthReports)
+            .orElse(HealthReport.healthy(this));
+    healthReport = aggregated;
+    listeners.forEach(l -> l.onHealthReport(aggregated));
   }
 
   public ActorFuture<ExporterPhase> getPhase() {
@@ -383,13 +453,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       return CompletableActorFuture.completed(ExporterPhase.CLOSED);
     }
     return actor.call(() -> exporterPhase);
-  }
-
-  @Override
-  protected void onActorStarting() {
-    if (exporterMode == ExporterMode.ACTIVE) {
-      logStreamReader = logStream.newLogStreamReader();
-    }
   }
 
   @Override
@@ -425,10 +488,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   @Override
   protected void onActorClosing() {
-    if (logStreamReader != null) {
-      logStreamReader.close();
-    }
-    logStream.removeRecordAvailableListener(this);
+    // nothing to do here; exporter actors and containers are torn down in closeAsync()
   }
 
   @Override
@@ -440,8 +500,70 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorCloseRequested() {
     isOpened.set(false);
-    containers.forEach(ExporterContainer::close);
-    exporterDistributionService.close();
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    // This orchestrates the close sequence across multiple actors (this director's own actor plus
+    // every child ExporterActor). Every callback here MUST use the explicit two-argument
+    // onComplete(consumer, executor) form: the single-argument overload auto-detects "am I
+    // currently running on an actor thread" and, if so, silently drops the registration once that
+    // specific actor is already CLOSE_REQUESTED/CLOSED - which is exactly the state a just-closed
+    // child actor's thread is in when it runs the next step of this chain. Using Runnable::run
+    // makes every step run synchronously wherever the previous step completed, avoiding that trap.
+    final ActorFuture<Void> result = new CompletableActorFuture<>();
+    final List<ActorFuture<Void>> childCloseFutures =
+        exporterActors.values().stream().map(ExporterActor::closeAsync).toList();
+
+    final Runnable finishClosing =
+        () -> {
+          final ActorFuture<Void> closeContainersFuture =
+              actor.isClosed()
+                  ? CompletableActorFuture.completed(null)
+                  : actor.call(
+                      () -> {
+                        // Containers with their own ExporterActor already closed themselves (from
+                        // within that actor's own close sequence, so that
+                        // Controller#updateLastExportedRecordPosition still works during close).
+                        // Only containers without an actor (e.g. passive-mode, or one that never
+                        // finished opening) need to be closed here.
+                        containers.stream()
+                            .filter(c -> !exporterActors.containsKey(c.getId()))
+                            .forEach(ExporterContainer::close);
+                        if (exporterDistributionService != null) {
+                          exporterDistributionService.close();
+                        }
+                      });
+          closeContainersFuture.onComplete(
+              (ignored, ignoredError) ->
+                  super.closeAsync()
+                      .onComplete(
+                          (v, closeErr) -> {
+                            if (closeErr != null) {
+                              result.completeExceptionally(closeErr);
+                            } else {
+                              result.complete(null);
+                            }
+                          },
+                          Runnable::run),
+              Runnable::run);
+        };
+
+    if (childCloseFutures.isEmpty()) {
+      finishClosing.run();
+    } else {
+      final var remaining = new AtomicInteger(childCloseFutures.size());
+      childCloseFutures.forEach(
+          f ->
+              f.onComplete(
+                  (v, err) -> {
+                    if (remaining.decrementAndGet() == 0) {
+                      finishClosing.run();
+                    }
+                  },
+                  Runnable::run));
+    }
+    return result;
   }
 
   @Override
@@ -459,7 +581,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void updateHealthStatusWithError(final Throwable failure) {
     if (failure instanceof UnrecoverableException) {
       healthReport = HealthReport.dead(this).withIssue(failure, clock.instant());
-
       for (final var listener : listeners) {
         listener.onUnrecoverableFailure(healthReport);
       }
@@ -498,13 +619,14 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void initContainers() throws Exception {
-    for (final ExporterContainer container : containers) {
+    for (final var entry : initialDescriptors.entrySet()) {
+      final var pending = createContainer(entry.getKey(), entry.getValue());
+      final ExporterContainer container = pending.container();
       container.initContainer(actor, metrics, state, exporterPhase);
       container.configureExporter();
+      containers.add(container);
+      pendingByExporterId.put(container.getId(), pending);
     }
-
-    eventFilter = positionsToSkipFilter.and(createEventFilter(containers));
-    LOG.debug("Set event filter for exporters: {}", eventFilter);
   }
 
   private void recoverFromSnapshot() {
@@ -516,36 +638,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         snapshotPosition);
   }
 
-  private ExporterEventFilter createEventFilter(final List<ExporterContainer> containers) {
-
-    final List<Context.RecordFilter> recordFilters =
-        containers.stream().map(c -> c.getContext().getFilter()).toList();
-
-    final Map<RecordType, Boolean> acceptRecordTypes =
-        Arrays.stream(RecordType.values())
-            .collect(
-                Collectors.toMap(
-                    Function.identity(),
-                    type -> recordFilters.stream().anyMatch(f -> f.acceptType(type))));
-
-    final Map<ValueType, Boolean> acceptValueTypes =
-        Arrays.stream(ValueType.values())
-            .collect(
-                Collectors.toMap(
-                    Function.identity(),
-                    type -> recordFilters.stream().anyMatch(f -> f.acceptValue(type))));
-
-    final Map<Intent, Boolean> acceptIntents =
-        Intent.INTENT_CLASSES.stream()
-            .flatMap(i -> Arrays.stream(i.getEnumConstants()))
-            .collect(
-                Collectors.toMap(
-                    Function.identity(),
-                    intent -> recordFilters.stream().anyMatch(f -> f.acceptIntent(intent))));
-
-    return new ExporterEventFilter(acceptRecordTypes, acceptValueTypes, acceptIntents);
-  }
-
   private void onFailure() {
     isOpened.set(false);
     actor.close();
@@ -554,17 +646,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private void becomeIdle() {
     idle = true;
     LOG.debug("No exporters are configured. Going idle.");
-    logStream.removeRecordAvailableListener(this);
-    exporterDistributionService.close();
+    if (exporterDistributionService != null) {
+      exporterDistributionService.close();
+    }
     if (exporterDistributionTimer != null) {
       // closing the service do not stop the repeated timer task scheduled in this actor
       exporterDistributionTimer.cancel();
       exporterDistributionTimer = null;
-    }
-    if (logStreamReader != null) {
-      // We have to close it, otherwise it will prevent journal segment deletion
-      logStreamReader.close();
-      logStreamReader = null;
     }
   }
 
@@ -579,105 +667,67 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void startActiveExportingMode() {
-    final var containerOpenFutures = new ArrayList<ActorFuture<Boolean>>();
     for (final ExporterContainer container : containers) {
       container.initMetadata();
-      final var openFuture =
-          new BackOffRetryStrategy(actor, Duration.ofSeconds(10), Duration.ofMillis(150))
-              .runWithRetry(
-                  () -> {
-                    try {
-                      // If the exporter was disable or removed concurrently, then don't retry
-                      // opening.
-                      if (containers.contains(container)) {
-                        container.openExporter();
-                      } else {
-                        LOG.debug(
-                            "Exporter '{}' was disabled or removed before it could be opened.",
-                            container.getId());
-                      }
-                      return true;
-                    } catch (final Exception e) {
-                      LOG.warn("Failed to open exporter '{}'. Retrying...", container.getId());
-                      LOG.debug(
-                          "Failed to open exporter '{}' => Stacktrace:", container.getId(), e);
-                      return false;
-                    }
-                  },
-                  this::isClosed);
-
-      containerOpenFutures.add(openFuture);
     }
 
-    // Don't need to handle error as any are caught within the runWithRetry try catch
+    if (!state.hasExporters()) {
+      becomeIdle();
+      return;
+    }
+
+    for (final ExporterContainer container : containers) {
+      final var pending = pendingByExporterId.remove(container.getId());
+      openWithRetryAndSchedule(container, pending);
+    }
+
+    exporterDistributionTimer =
+        actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
+  }
+
+  /**
+   * Opens the given container's exporter, retrying indefinitely (with backoff) until it succeeds or
+   * this exporter is disabled/removed while opening. Once open, schedules an {@link ExporterActor}
+   * for it that reads and exports independently of every other exporter.
+   */
+  private void openWithRetryAndSchedule(
+      final ExporterContainer container, final PendingContainer pending) {
+    final var openFuture =
+        new BackOffRetryStrategy(actor, Duration.ofSeconds(10), Duration.ofMillis(150))
+            .runWithRetry(
+                () -> {
+                  try {
+                    // If the exporter was disabled or removed concurrently, don't retry opening.
+                    if (containers.contains(container)) {
+                      container.openExporter();
+                    } else {
+                      LOG.debug(
+                          "Exporter '{}' was disabled or removed before it could be opened.",
+                          container.getId());
+                    }
+                    return true;
+                  } catch (final Exception e) {
+                    LOG.warn("Failed to open exporter '{}'. Retrying...", container.getId());
+                    LOG.debug("Failed to open exporter '{}' => Stacktrace:", container.getId(), e);
+                    return false;
+                  }
+                },
+                this::isClosed);
+
     actor.runOnCompletion(
-        containerOpenFutures,
-        (error) -> {
-          allExportersOpened = true;
-          if (state.hasExporters()) {
-            final long snapshotPosition = state.getLowestPosition();
-            // start reading and exporting
-            startActiveExportingFrom(snapshotPosition);
-          } else {
-            becomeIdle();
+        openFuture,
+        (ok, error) -> {
+          if (error != null || isClosed() || !containers.contains(container)) {
+            if (pending.reader() != null) {
+              pending.reader().close();
+            }
+            return;
           }
+          scheduleExporterActor(pending);
         });
   }
 
   private void restartActiveExportingMode() {
-    logStreamReader = logStream.newLogStreamReader();
-    startActiveExportingFrom(-1);
-  }
-
-  /**
-   * Handles a replay request from an exporter container. Seeks the log reader to {@code
-   * lastExportedPosition} so that records from that position onward will be re-exported.
-   *
-   * <p>Replay may be requested at any time once the log stream reader has been created, both during
-   * the initial startup handshake and while exporting is already under way, e.g. when an exporter
-   * reopens after detecting that its secondary storage has fallen behind (an automatic failover to
-   * a lagging async replica). If a request is accepted while a record is currently mid-export
-   * ({@code inExportingPhase == true}), the container's {@link ExporterContainer#exportRecord}
-   * caller abandons that record instead of retrying it in place, so the rewound reader redelivers
-   * it - and everything the requesting exporter missed before it - strictly in order on the next
-   * read.
-   *
-   * @param lastExportedPosition the position to seek the log reader to for replay
-   * @return {@code true} if the seek succeeded, {@code false} if the request was rejected or the
-   *     required log segments are no longer available
-   */
-  private boolean onReplayRequested(final long lastExportedPosition) {
-    if (logStreamReader == null) {
-      LOG.warn(
-          "Cannot process replay request at position {}: log stream reader is not available.",
-          lastExportedPosition);
-      return false;
-    }
-
-    LOG.info("Replay requested: seeking log reader to position {}", lastExportedPosition);
-
-    final boolean sought = logStreamReader.seek(lastExportedPosition);
-    if (!sought) {
-      LOG.warn(
-          "Could not seek log reader to replay position {}. Log segments may have been deleted.",
-          lastExportedPosition);
-      return false;
-    }
-
-    return true;
-  }
-
-  private void startActiveExportingFrom(final long snapshotPosition) {
-    final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
-    if (failedToRecoverReader) {
-      throw new IllegalStateException(
-          String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
-    }
-    logStream.registerRecordAvailableListener(this);
-    if (!exporterPhase.equals(ExporterPhase.PAUSED)) {
-      actor.submit(this::readNextEvent);
-    }
-
     exporterDistributionTimer =
         actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
   }
@@ -706,82 +756,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             exporterStateMessage.putExporter(
                 exporterId, exporterStateEntry.getPosition(), exporterStateEntry.getMetadata()));
     exporterDistributionService.distributeExporterState(exporterStateMessage);
-  }
-
-  private void skipRecord(final LoggedEvent currentEvent) {
-    final long eventPosition = currentEvent.getPosition();
-
-    skipRecordDecoder.wrap(currentEvent.getMetadata(), currentEvent.getMetadataOffset());
-    metrics.eventSkipped(skipRecordDecoder.valueType());
-
-    // increase position of all up to date exporters - an up to date exporter is one which has
-    // acknowledged the last record we passed to it
-    for (final ExporterContainer container : containers) {
-      container.updatePositionOnSkipIfUpToDate(eventPosition);
-    }
-
-    actor.submit(this::readNextEvent);
-  }
-
-  private void readNextEvent() {
-    if (shouldExport()) {
-      final LoggedEvent currentEvent = logStreamReader.next();
-      if (eventFilter == null || eventFilter.applies(currentEvent)) {
-        inExportingPhase = true;
-        exportEvent(currentEvent);
-      } else {
-        skipRecord(currentEvent);
-      }
-    }
-  }
-
-  private boolean shouldExport() {
-    return isOpened.get()
-        && allExportersOpened
-        && !idle
-        && logStreamReader.hasNext()
-        && !inExportingPhase
-        && !exporterPhase.equals(ExporterPhase.PAUSED);
-  }
-
-  private void exportEvent(final LoggedEvent event) {
-    try {
-      recordExporter.wrap(event);
-    } catch (final Exception exception) {
-      LOG.warn(ERROR_MESSAGE_DESERIALIZATION_ERROR_EXPORTING_ABORTED, event, exception);
-      updateHealthStatusWithError(new UnrecoverableException(exception));
-      onFailure();
-      return;
-    }
-
-    final AtomicReference<ExportOutcome> lastOutcome = new AtomicReference<>();
-    final ActorFuture<Boolean> retryFuture =
-        exportingRetryStrategy.runWithRetry(
-            () -> {
-              final ExportOutcome outcome = recordExporter.export();
-              lastOutcome.set(outcome);
-              return outcome != ExportOutcome.RETRY;
-            },
-            this::isClosed);
-
-    actor.runOnCompletion(
-        retryFuture,
-        (bool, throwable) -> {
-          if (throwable != null) {
-            LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
-            onFailure();
-          } else if (lastOutcome.get() == ExportOutcome.ABORT_REPLAY) {
-            // the record was abandoned because a reopened exporter's replay request rewound the
-            // log reader; it will be redelivered, in order, once reading resumes below
-            inExportingPhase = false;
-            actor.submit(this::readNextEvent);
-          } else {
-            logStream.getFlowControl().onExported(recordExporter.getTypedEvent().getPosition());
-            metrics.eventExported(recordExporter.getTypedEvent().getValueType());
-            inExportingPhase = false;
-            actor.submit(this::readNextEvent);
-          }
-        });
   }
 
   private void clearExporterState() {
@@ -823,11 +797,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     actor.run(() -> listeners.remove(failureListener));
   }
 
-  @Override
-  public void onRecordAvailable() {
-    actor.run(this::readNextEvent);
-  }
-
   public ActorFuture<Long> getLowestPosition() {
     if (actor.isClosed()) {
       return CompletableActorFuture.completed(ExportersState.VALUE_NOT_FOUND);
@@ -841,74 +810,14 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
    */
   public record ExporterInitializationInfo(long metadataVersion, String initializeFrom) {}
 
-  private static class ExporterEventFilter implements EventFilter {
-
-    private final RecordMetadataBlock decoder = new RecordMetadataBlock();
-    private final Map<RecordType, Boolean> acceptRecordTypes;
-    private final Map<ValueType, Boolean> acceptValueTypes;
-    private final Map<Intent, Boolean> acceptIntents;
-
-    ExporterEventFilter(
-        final Map<RecordType, Boolean> acceptRecordTypes,
-        final Map<ValueType, Boolean> acceptValueTypes,
-        final Map<Intent, Boolean> acceptIntents) {
-      this.acceptRecordTypes = acceptRecordTypes;
-      this.acceptValueTypes = acceptValueTypes;
-      this.acceptIntents = acceptIntents;
-    }
-
-    @Override
-    public boolean applies(final LoggedEvent event) {
-      decoder.wrap(event.getMetadata(), event.getMetadataOffset());
-
-      final RecordType recordType = decoder.recordType();
-      final ValueType valueType = decoder.valueType();
-      final Intent intent = decoder.intent();
-
-      try {
-        return acceptRecordTypes.get(recordType)
-            && acceptValueTypes.get(valueType)
-            && acceptIntents.get(intent);
-      } catch (final NullPointerException e) {
-        // Log added to root cause https://github.com/camunda/camunda/issues/36621
-        LOG.error(
-            """
-                NPE when applying event filter for event: {}
-                - recordType={}, valueType={}, intent={}
-                - acceptRecordTypes: {}
-                - acceptValueTypes: {}
-                - acceptIntents: {}""",
-            event,
-            recordType,
-            valueType,
-            intent,
-            acceptRecordTypes,
-            acceptValueTypes,
-            acceptIntents.entrySet().stream()
-                .map(
-                    entry -> {
-                      final var key = entry.getKey();
-                      if (key == null) {
-                        return "null: %s".formatted(entry.getValue());
-                      }
-                      return String.format(
-                          "%s.%s: %s", key.getClass().getSimpleName(), key, entry.getValue());
-                    })
-                .toList());
-        throw e;
-      }
-    }
-
-    @Override
-    public String toString() {
-      return "ExporterEventFilter{"
-          + "acceptRecordTypes="
-          + acceptRecordTypes
-          + ", acceptValueTypes="
-          + acceptValueTypes
-          + ", acceptIntents="
-          + acceptIntents
-          + '}';
-    }
-  }
+  /**
+   * Bundles a freshly-created container together with the reader (if any, i.e. in {@link
+   * ExporterMode#ACTIVE}) and the flag that tracks whether {@link ExporterActor} has begun its own
+   * read loop. The reader/flag are handed off to the new {@link ExporterActor} by {@link
+   * #scheduleExporterActor}, which then owns them for the rest of the exporter's lifetime.
+   */
+  private record PendingContainer(
+      ExporterContainer container,
+      @Nullable LogStreamReader reader,
+      AtomicBoolean hasStartedExporting) {}
 }

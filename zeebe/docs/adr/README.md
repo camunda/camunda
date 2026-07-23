@@ -17,3 +17,9 @@ process-execution data path). These are module-scoped decisions; see the
 | [0005](0005-810-job-lease.md)                                       | Job lease: opt-in random opaque fencing token per activation, monotonic, fencing worker lifecycle commands    |
 | [0006](0006-810-late-business-id-assignment.md)                     | Late Business ID assignment: one irreversible forward-only assignment on a running instance (uniqueness off)  |
 
+### Proposed
+
+|                   ADR                    |                                 Decision                                 |
+|------------------------------------------|--------------------------------------------------------------------------|
+| [0007](0007-TBD-concurrent-exporters.md) | One actor per exporter: decouple readers, positions, and failure domains |
+
