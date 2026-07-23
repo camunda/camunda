@@ -259,7 +259,6 @@ public interface ClusterConfigurationInitializer {
       implements ClusterConfigurationInitializer, ClusterConfigurationUpdateListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SyncInitializer.class);
-    private static final Duration DEFAULT_BOOTSTRAP_TIMEOUT = Duration.ofSeconds(30);
     private final Duration syncDelay;
     private final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier;
     private final ActorFuture<ClusterConfiguration> initialized;
@@ -271,21 +270,6 @@ public interface ClusterConfigurationInitializer {
     private ScheduledTimer bootstrapTimeoutTimer;
     private final ConcurrencyControl executor;
     private final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester;
-
-    public SyncInitializer(
-        final Duration syncDelay,
-        final ClusterConfigurationUpdateNotifier clusterConfigurationUpdateNotifier,
-        final Supplier<List<MemberId>> knownMembersToSync,
-        final ConcurrencyControl executor,
-        final Function<MemberId, ActorFuture<ClusterConfiguration>> syncRequester) {
-      this(
-          syncDelay,
-          clusterConfigurationUpdateNotifier,
-          knownMembersToSync,
-          executor,
-          syncRequester,
-          DEFAULT_BOOTSTRAP_TIMEOUT);
-    }
 
     SyncInitializer(
         final Duration syncDelay,

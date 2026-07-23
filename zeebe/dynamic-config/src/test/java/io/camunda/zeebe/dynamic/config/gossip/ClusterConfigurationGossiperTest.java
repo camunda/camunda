@@ -62,7 +62,11 @@ final class ClusterConfigurationGossiperTest {
     // given
     final var config =
         new ClusterConfigurationGossiperConfig(
-            Duration.ofMillis(100), Duration.ofSeconds(1), 0, Duration.ofSeconds(1));
+            Duration.ofMillis(100),
+            Duration.ofSeconds(1),
+            0,
+            Duration.ofSeconds(1),
+            ClusterConfigurationGossiperConfig.DEFAULT_BOOTSTRAP_TIMEOUT);
     node1 =
         new TestGossiper(
             createClusterNode(clusterNodes.get(0), clusterNodes), config, topologyMetrics);

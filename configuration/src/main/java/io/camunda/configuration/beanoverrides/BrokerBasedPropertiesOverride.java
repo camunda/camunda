@@ -578,9 +578,10 @@ public class BrokerBasedPropertiesOverride {
     final var syncTimeout = metadata.getSyncRequestTimeout();
     final var gossipFanout = metadata.getGossipFanout();
     final var syncInitializerDelay = metadata.getSyncInitializerDelay();
+    final var bootstrapTimeout = metadata.getBootstrapTimeout();
     final var configManagerGossipConfig =
         new ClusterConfigurationGossiperConfig(
-            syncDelay, syncTimeout, gossipFanout, syncInitializerDelay);
+            syncDelay, syncTimeout, gossipFanout, syncInitializerDelay, bootstrapTimeout);
     override.getCluster().setConfigManager(new ConfigManagerCfg(configManagerGossipConfig));
   }
 
