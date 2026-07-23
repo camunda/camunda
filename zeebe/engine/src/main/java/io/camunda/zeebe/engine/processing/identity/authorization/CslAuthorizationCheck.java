@@ -267,8 +267,7 @@ public final class CslAuthorizationCheck {
       }
       return Either.left(noPrincipalRejection);
     }
-    final var auth = claimsConverter.resolve(claims);
-    final var result = authzService.check(auth, required);
+    final var result = authzService.check(claims, required);
     if (result.isLeft()) {
       return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
     }
