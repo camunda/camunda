@@ -215,6 +215,12 @@ jobs:
           # Bounds each individual `snyk` call so a single stuck/slow call to the Snyk API cannot
           # consume the whole job's 15m timeout and take the remaining projects down with it (see
           # INC-6630 for the same class of issue with unbounded external network calls in CI).
+          #
+          # snyk exit codes: 0 = no issues, 1 = vulnerabilities found (a valid result),
+          # 2 = error / re-run recommended, 3 = no supported projects. `timeout` returns 124 when
+          # it kills a stuck call. Only 2 and 124 are transient, so we retry those and pass every
+          # other code straight through - retrying a legitimate vuln finding (1) would needlessly
+          # double every scan that has findings and defeat the purpose of this bound.
           function runSnykWithRetry() {
             local maxAttempts=2
             local perAttemptTimeoutSecs=120
@@ -222,15 +228,16 @@ jobs:
             local attempt=1
 
             while true; do
-              if timeout "${perAttemptTimeoutSecs}s" snyk "$@"; then
-                return 0
-              fi
+              timeout "${perAttemptTimeoutSecs}s" snyk "$@"
               local status=$?
-              if [ "${attempt}" -ge "${maxAttempts}" ]; then
-                echo "::error::snyk $* failed after ${maxAttempts} attempts (exit ${status})"
+              if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ]; then
                 return "${status}"
               fi
-              echo "snyk $* failed or timed out (attempt ${attempt}/${maxAttempts}), retrying in ${retryDelaySecs}s..."
+              if [ "${attempt}" -ge "${maxAttempts}" ]; then
+                echo "::error::snyk $* still failing after ${maxAttempts} attempts (exit ${status})"
+                return "${status}"
+              fi
+              echo "snyk $* transient failure (exit ${status}), retry ${attempt}/${maxAttempts} in ${retryDelaySecs}s..."
               sleep "${retryDelaySecs}"
               attempt=$((attempt + 1))
             done
