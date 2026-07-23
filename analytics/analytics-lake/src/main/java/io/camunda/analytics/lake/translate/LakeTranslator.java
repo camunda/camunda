@@ -8,9 +8,13 @@
 package io.camunda.analytics.lake.translate;
 
 import io.camunda.analytics.lake.metrics.PollFedRider;
+import io.camunda.analytics.lake.objects.CompiledObjectType;
+import io.camunda.analytics.lake.objects.CompiledObjectTypes;
 import io.camunda.analytics.lake.sink.RowAppender;
 import io.camunda.analytics.lake.state.TranslatorState;
 import io.camunda.analytics.lake.state.TranslatorState.FlowEndpoints;
+import io.camunda.analytics.lake.state.TranslatorState.ObjectSighting;
+import io.camunda.analytics.lake.state.TranslatorState.ObjectSightingList;
 import io.camunda.analytics.lake.state.TranslatorState.OpenElement;
 import io.camunda.analytics.lake.state.TranslatorState.OpenInstance;
 import io.camunda.analytics.lake.state.TranslatorState.VariantAccumulator;
@@ -18,6 +22,9 @@ import io.camunda.analytics.lake.state.TranslatorState.VariantElementKind;
 import io.camunda.analytics.lake.state.TranslatorState.VariantName;
 import io.camunda.analytics.lake.translate.RawTableSchemas.ActivityColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.InstanceColumns;
+import io.camunda.analytics.lake.translate.RawTableSchemas.InstanceLinkColumns;
+import io.camunda.analytics.lake.translate.RawTableSchemas.ObjectColumns;
+import io.camunda.analytics.lake.translate.RawTableSchemas.ObjectRelationColumns;
 import io.camunda.analytics.lake.translate.RawTableSchemas.VariantColumns;
 import io.camunda.eventbridge.zeebe.connector.ZeebeRecord;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -28,11 +35,15 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.io.ByteArrayInputStream;
@@ -193,6 +204,68 @@ import org.slf4j.LoggerFactory;
  * folded as the {@code value} measure. See {@link #foldVariableProfiles} for the fold itself. No
  * string variable <em>value</em> is ever persisted, only its classification and (when numeric) its
  * parsed number — a deliberate privacy boundary, not an oversight.
+ *
+ * <h2>Object fabric capture (OCPM: object types, sightings, links, relations)</h2>
+ *
+ * <p>Capture-only: this class recognizes declared {@link CompiledObjectType}s in the record stream
+ * and lands four dictionary tables — {@code objects} (sightings), {@code instance_links}
+ * (call-activity parent/child), {@code object_relations} (derived containment edges) — plus {@code
+ * activities}' own {@code flow_scope_key} column (schema v4). Object <em>lifecycle</em>/metrics are
+ * a follow-up lane's concern, not this one's; nothing here interprets what a sighting means beyond
+ * recording it.
+ *
+ * <p><b>Sightings</b> (see {@link #foldObjectSightingFromVariable}/{@link
+ * #onProcessMessageSubscriptionCorrelated}/{@link #onMessageStartEventSubscriptionCorrelated}) come
+ * from three sources, each folded through the shared {@link #foldObjectSighting} core, deduped by
+ * {@link #objectSightingSeenCache} per distinct (type, id, instance, scope) — duplicates are
+ * harmless (deterministic content), mirroring the variant dictionary's own seen-cache judgment
+ * call:
+ *
+ * <ul>
+ *   <li><b>{@code VARIABLE CREATED}/{@code UPDATED}</b>, ALL scopes (deliberately not root-only —
+ *       see {@link #onVariable}'s own note): a declared {@link
+ *       io.camunda.analytics.lake.objects.IdentifierSource.VariableIdentifier} names the variable;
+ *       its value sights only when it is a JSON scalar <b>string or number</b> (never boolean,
+ *       null, object, or array — see {@link #scalarObjectId}), using the raw token unquoted as the
+ *       object id. {@code scope_key} is the variable's own {@code getScopeKey()}, {@code null} when
+ *       it equals the instance key (root).
+ *   <li><b>{@code PROCESS_MESSAGE_SUBSCRIPTION CORRELATED}</b>: the single object type declaring
+ *       {@link io.camunda.analytics.lake.objects.IdentifierSource.CorrelationKeyIdentifier}
+ *       identity (see {@link CompiledObjectTypes#correlationKeyIdentifiedType}), if any, sights the
+ *       correlated message's own correlation key. <b>Documented v1 imprecision</b>: the record
+ *       carries the key's value but never which BPMN scope the catching element lives in (its own
+ *       {@code elementInstanceKey} names the catching element itself, not a flow scope), so this
+ *       sighting is conservatively recorded at root scope ({@code scope_key = null}) even when the
+ *       true scope is a nested subprocess/multi-instance iteration — a correlation-identified
+ *       object may in fact belong to a non-root scope this capture cannot see.
+ *   <li><b>{@code MESSAGE_START_EVENT_SUBSCRIPTION CORRELATED}</b>: same declared type, same
+ *       treatment, {@code scope_key = null} — here that is not an approximation: this event is what
+ *       creates the process instance, so its correlation key genuinely belongs to that instance's
+ *       root.
+ * </ul>
+ *
+ * <p><b>Instance links</b> ({@link #emitInstanceLinkIfNew}): a root {@code ELEMENT_ACTIVATED} whose
+ * {@code getParentProcessInstanceKey() > 0} is a call-activity child — this does <em>not</em> sight
+ * an object (a child's own objects reach it through its own propagated variables), it emits one
+ * {@code instance_links} row, deduped by {@link #instanceLinkSeenCache} keyed by the child instance
+ * key alone (at most one parent per child, ever).
+ *
+ * <p><b>Object relations</b> ({@link #emitObjectRelationsAtCompletion}): derived at instance
+ * completion from that instance's accumulated sightings (kept in {@link TranslatorState}'s {@code
+ * OBJECT_SIGHTINGS} column family, capped at {@link #MAX_OBJECT_SIGHTINGS_PER_INSTANCE} with an
+ * overflow flag, deleted on eviction like every other per-instance state). <b>v1 rule shipped</b>:
+ * a relation (parent contains child) is emitted for every (root-scope sighting, non-root-scope
+ * sighting) pair of the same instance whose (type, id) differ — the declared-parent-type variant
+ * the design allowed skipping was skipped, for simplicity; root⊇non-root alone is the whole rule.
+ * Deduped by {@link #objectRelationSeenCache} per distinct (parent type, parent id, child type,
+ * child id) edge, across the whole translator lifetime, not just one instance.
+ *
+ * <p>Every new appender ({@link #objectsAppender}, {@link #instanceLinksAppender}, {@link
+ * #objectRelationsAppender}) follows the variants dictionary's own backpressure judgment call:
+ * {@code null} disables that table's emission entirely (detection/state bookkeeping still runs),
+ * and a ring-full {@code begin()} is absorbed (seen-cache entry unmarked, record fold still reports
+ * success) rather than propagated as {@link #onRecord}-level backpressure — these are small,
+ * dedicated dictionary pipelines that must never hold back the primary instances/activities row.
  */
 public final class LakeTranslator {
 
@@ -228,6 +301,51 @@ public final class LakeTranslator {
    * class's "Variant capture" javadoc section.
    */
   private static final int VARIANT_DICTIONARY_CACHE_CAPACITY = 4096;
+
+  /**
+   * Capacity of {@link #objectSightingSeenCache} — mirrors {@link
+   * #VARIANT_DICTIONARY_CACHE_CAPACITY}'s own precedent and the same "a false negative costs one
+   * harmless duplicate write" reasoning (see this class's "Object fabric capture" javadoc section).
+   */
+  private static final int OBJECT_SIGHTING_SEEN_CACHE_CAPACITY = 4096;
+
+  /**
+   * Capacity of {@link #instanceLinkSeenCache} — see {@link #OBJECT_SIGHTING_SEEN_CACHE_CAPACITY}.
+   */
+  private static final int INSTANCE_LINK_SEEN_CACHE_CAPACITY = 4096;
+
+  /**
+   * Capacity of {@link #objectRelationSeenCache} — see {@link
+   * #OBJECT_SIGHTING_SEEN_CACHE_CAPACITY}.
+   */
+  private static final int OBJECT_RELATION_SEEN_CACHE_CAPACITY = 4096;
+
+  /**
+   * Soft cap on the number of distinct object sightings tracked per open instance for relations
+   * derivation (see {@link #recordObjectSightingForRelations}) — a PoC-tuned guess, deliberately
+   * well below {@code ObjectSightingListValue}'s own 16-bit hard encoding ceiling. An instance that
+   * sights more than this many distinct objects has its list frozen at the cap with the overflow
+   * flag set: further sightings are dropped from the relations-derivation list (not from the {@code
+   * objects} dictionary table, which is uncapped and keeps recording every sighting regardless).
+   * Chosen small (relative to the variant dictionary's own 65535-entry technical ceiling) because
+   * relations derivation is O(roots × non-roots) per completed instance (see {@link
+   * #emitObjectRelationsAtCompletion}) — worst case {@code MAX_OBJECT_SIGHTINGS_PER_INSTANCE}
+   * squared pairs considered on one instance's completion, budgeted per-completion like the variant
+   * dictionary decode already is.
+   */
+  private static final int MAX_OBJECT_SIGHTINGS_PER_INSTANCE = 64;
+
+  /**
+   * Guardrail against a pathological blob masquerading as a scalar identifier value (mirrors {@link
+   * #MAX_VARIABLE_VALUE_CHARS}'s own precedent, just far smaller — real object ids are short).
+   */
+  private static final int MAX_OBJECT_ID_CHARS = 512;
+
+  private static final String OBJECT_QUALIFIER_VARIABLE = "VARIABLE";
+  private static final String OBJECT_QUALIFIER_MESSAGE = "MESSAGE";
+  private static final String OBJECT_QUALIFIER_MESSAGE_START = "MESSAGE_START";
+
+  private static final String INSTANCE_LINK_TYPE_CALL_ACTIVITY = "CALL_ACTIVITY";
 
   private static final Logger LOG = LoggerFactory.getLogger(LakeTranslator.class);
 
@@ -299,6 +417,46 @@ public final class LakeTranslator {
   private final PollFedRider profilesRider;
 
   /**
+   * The {@code objects} sightings dictionary table's {@link RowAppender}, or {@code null} to
+   * disable that table's row emission (detection/CF-7 bookkeeping still runs regardless) — see this
+   * class's "Object fabric capture" javadoc section and {@link #variantsAppender}'s own precedent
+   * for what {@code null} means here.
+   */
+  private final RowAppender objectsAppender;
+
+  /**
+   * The {@code instance_links} dictionary table's {@link RowAppender} — see {@link
+   * #objectsAppender}.
+   */
+  private final RowAppender instanceLinksAppender;
+
+  /**
+   * The {@code object_relations} dictionary table's {@link RowAppender} — see {@link
+   * #objectsAppender}.
+   */
+  private final RowAppender objectRelationsAppender;
+
+  /**
+   * The validated registry of every declared {@link CompiledObjectType}, or {@code null} to disable
+   * object-sighting detection entirely (call-activity instance links are unaffected — they do not
+   * depend on any object-type declaration). See this class's "Object fabric capture" javadoc
+   * section.
+   */
+  private final CompiledObjectTypes objectTypes;
+
+  /** See this class's "Object fabric capture" javadoc section. */
+  private final BoundedSeenCache<ObjectSightingKey> objectSightingSeenCache =
+      new BoundedSeenCache<>(OBJECT_SIGHTING_SEEN_CACHE_CAPACITY);
+
+  /** See this class's "Object fabric capture" javadoc section. */
+  private final BoundedSeenCache<Long> instanceLinkSeenCache =
+      new BoundedSeenCache<>(INSTANCE_LINK_SEEN_CACHE_CAPACITY);
+
+  /** See this class's "Object fabric capture" javadoc section. */
+  private final BoundedSeenCache<ObjectRelationKey> objectRelationSeenCache =
+      new BoundedSeenCache<>(OBJECT_RELATION_SEEN_CACHE_CAPACITY);
+
+  /**
    * Heap cache of {@link #onProcess}'s own persisted state, warmed two ways: eagerly, in full, the
    * moment a definition's own {@code PROCESS}/{@code CREATED} record is folded; lazily, one flow at
    * a time, on a cache miss in {@link #resolveFlowEndpoints} (the path a restart takes — the
@@ -359,10 +517,11 @@ public final class LakeTranslator {
   }
 
   /**
-   * The full constructor: raw-row appenders plus every optional metric hook — the variants
-   * dictionary appender (see its field javadoc), the two poll-fed riders (see theirs), and the
-   * variable profiles rider (see {@link #profilesRider}). Any of the four may be {@code null} to
-   * disable that capture without disturbing the others.
+   * Same as the 7-arg constructor (raw-row appenders plus every optional metric hook), with every
+   * object-fabric capture hook ({@link #objectsAppender}, {@link #instanceLinksAppender}, {@link
+   * #objectRelationsAppender}, {@link #objectTypes}) disabled — kept so every pre-existing 7-arg
+   * caller (and, transitively, every shorter overload above) keeps compiling and behaving
+   * unchanged. See the 11-arg constructor below for the full picture.
    */
   public LakeTranslator(
       final TranslatorState state,
@@ -372,6 +531,39 @@ public final class LakeTranslator {
       final PollFedRider flowCountsRider,
       final PollFedRider startedCountsRider,
       final PollFedRider profilesRider) {
+    this(
+        state,
+        instanceAppender,
+        activityAppender,
+        variantsAppender,
+        flowCountsRider,
+        startedCountsRider,
+        profilesRider,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /**
+   * The full constructor: every raw-row appender, every optional metric hook, and every
+   * object-fabric capture hook — the sightings/instance-links/object-relations dictionary appenders
+   * (see their own field javadocs) and the declared {@link CompiledObjectTypes} registry driving
+   * sighting detection (see {@link #objectTypes}). Any of the eleven may be {@code null} (where
+   * nullable) to disable that capture without disturbing the others.
+   */
+  public LakeTranslator(
+      final TranslatorState state,
+      final RowAppender instanceAppender,
+      final RowAppender activityAppender,
+      final RowAppender variantsAppender,
+      final PollFedRider flowCountsRider,
+      final PollFedRider startedCountsRider,
+      final PollFedRider profilesRider,
+      final RowAppender objectsAppender,
+      final RowAppender instanceLinksAppender,
+      final RowAppender objectRelationsAppender,
+      final CompiledObjectTypes objectTypes) {
     this.state = state;
     this.instanceAppender = instanceAppender;
     this.activityAppender = activityAppender;
@@ -379,6 +571,10 @@ public final class LakeTranslator {
     this.flowCountsRider = flowCountsRider;
     this.startedCountsRider = startedCountsRider;
     this.profilesRider = profilesRider;
+    this.objectsAppender = objectsAppender;
+    this.instanceLinksAppender = instanceLinksAppender;
+    this.objectRelationsAppender = objectRelationsAppender;
+    this.objectTypes = objectTypes;
     zeebeWatermarks = newWatermarkArray(INITIAL_WATERMARK_CAPACITY);
   }
 
@@ -436,6 +632,14 @@ public final class LakeTranslator {
       // Deployment metadata, not instance data -- never touches a RowAppender, so it never reports
       // backpressure; see #onProcess's own javadoc for what this feeds.
       onProcess(record);
+    } else if (valueType == ValueType.PROCESS_MESSAGE_SUBSCRIPTION
+        && record.getIntent() == ProcessMessageSubscriptionIntent.CORRELATED) {
+      // Object fabric capture (see class javadoc): backpressure on this path is absorbed, never
+      // propagated -- see #onProcessMessageSubscriptionCorrelated's own callees.
+      onProcessMessageSubscriptionCorrelated(record);
+    } else if (valueType == ValueType.MESSAGE_START_EVENT_SUBSCRIPTION
+        && record.getIntent() == MessageStartEventSubscriptionIntent.CORRELATED) {
+      onMessageStartEventSubscriptionCorrelated(record);
     }
     return true;
   }
@@ -555,6 +759,15 @@ public final class LakeTranslator {
           startedCountsRider.fold(millisToMicros(timestamp));
         }
         // ---- end poll-fed metrics: started counters ----
+        // Object fabric capture: a call-activity child's root activation emits an instance LINK,
+        // never an object sighting -- see class javadoc's "Object fabric capture" section.
+        if (value.getParentProcessInstanceKey() > 0) {
+          emitInstanceLinkIfNew(
+              value.getParentProcessInstanceKey(),
+              processInstanceKey,
+              value.getParentElementInstanceKey(),
+              timestamp);
+        }
       } else {
         final OpenInstance owner = state.getInstance(processInstanceKey);
         // Replay edge where the owner is unknown (e.g. resuming past the instance's own evict but
@@ -622,12 +835,15 @@ public final class LakeTranslator {
     if (root) {
       return emitInstance(processInstanceKey, timestamp, finalState);
     } else {
-      return emitElement(elementInstanceKey, timestamp, finalState);
+      return emitElement(elementInstanceKey, timestamp, finalState, value.getFlowScopeKey());
     }
   }
 
   private boolean emitElement(
-      final long elementInstanceKey, final long timestamp, final String finalState) {
+      final long elementInstanceKey,
+      final long timestamp,
+      final String finalState,
+      final long flowScopeKey) {
     final OpenElement element = state.getElement(elementInstanceKey);
     if (element == null) {
       return true; // replay past evict — expected, not an error
@@ -648,6 +864,13 @@ public final class LakeTranslator {
         .putLong(ActivityColumns.ENDED_AT, millisToMicros(timestamp))
         .putLong(ActivityColumns.DURATION_MS, timestamp - element.startMs())
         .putLong(ActivityColumns.INSTANCE_STARTED_AT, millisToMicros(element.instanceStartMs()));
+    // Schema v4 -- NULL when the element's own flow scope is its owning instance (a top-level
+    // element's immediate parent scope is the root), see RawTableSchemas#activities's own javadoc.
+    if (flowScopeKey == element.instanceKey()) {
+      activityAppender.putNull(ActivityColumns.FLOW_SCOPE_KEY);
+    } else {
+      activityAppender.putLong(ActivityColumns.FLOW_SCOPE_KEY, flowScopeKey);
+    }
     activityAppender.endRow();
     state.deleteElement(elementInstanceKey);
     return true;
@@ -702,6 +925,10 @@ public final class LakeTranslator {
       state.deleteVariantAccumulator(processInstanceKey);
       emitVariantDictionaryRowIfNew(instance, variantAccumulator, variantHashHex, timestamp);
     }
+    // Object fabric capture: derive and emit this instance's relations from its accumulated
+    // sightings, then evict the sighting list -- see class javadoc's "Object fabric capture"
+    // section. Runs regardless of whether object-fabric capture is wired at all (a no-op then).
+    emitObjectRelationsAtCompletion(processInstanceKey, timestamp);
     return true;
   }
 
@@ -711,6 +938,9 @@ public final class LakeTranslator {
       return;
     }
     final VariableRecordValue value = (VariableRecordValue) record.getValue();
+    // Object fabric capture: ALL scopes, deliberately independent of the root-only rule below --
+    // see class javadoc's "Object fabric capture" section for why sightings differ from vars_json.
+    foldObjectSightingFromVariable(record, value);
     // Root scope only: a variable belongs to the instance row only when its scope is the process
     // instance itself. Non-root (subprocess-/element-scoped) variables are ignored by design.
     if (value.getScopeKey() != value.getProcessInstanceKey()) {
@@ -1109,6 +1339,407 @@ public final class LakeTranslator {
      */
     boolean checkAndMarkSeen(final VariantDictKey key) {
       return put(key, Boolean.TRUE) == null;
+    }
+  }
+
+  // ===========================================================================================
+  // Object fabric capture -- see class javadoc's own section. Grouped as one block, mirroring the
+  // variant-capture block above for the same isolate-for-merge reason.
+  // ===========================================================================================
+
+  /**
+   * Sighting source 1 (see class javadoc): a {@code VARIABLE CREATED}/{@code UPDATED} record whose
+   * name matches a declared {@link
+   * io.camunda.analytics.lake.objects.IdentifierSource.VariableIdentifier} and whose value is a
+   * JSON scalar string or number. Runs for every scope, not just root -- {@code scope_key} is the
+   * variable's own {@code getScopeKey()}.
+   */
+  private void foldObjectSightingFromVariable(
+      final Record<?> record, final VariableRecordValue value) {
+    if (objectTypes == null) {
+      return;
+    }
+    final CompiledObjectType type = objectTypes.variableIdentifiedType(value.getName());
+    if (type == null) {
+      return;
+    }
+    final String objectId = scalarObjectId(value.getValue());
+    if (objectId == null) {
+      return; // non-scalar value, or oversized -- never sights (see #scalarObjectId's own javadoc)
+    }
+    foldObjectSighting(
+        value.getProcessInstanceKey(),
+        type.name(),
+        objectId,
+        value.getScopeKey(),
+        OBJECT_QUALIFIER_VARIABLE,
+        record.getTimestamp());
+  }
+
+  /**
+   * Sighting source 2 (see class javadoc): the instance-side of a message rendezvous. {@code
+   * scope_key} is conservatively recorded as root ({@code instanceKey} itself) -- this is a
+   * documented v1 approximation, not a precise scope, see class javadoc.
+   */
+  private void onProcessMessageSubscriptionCorrelated(final Record<?> record) {
+    if (objectTypes == null) {
+      return;
+    }
+    final CompiledObjectType type = objectTypes.correlationKeyIdentifiedType();
+    if (type == null) {
+      return;
+    }
+    final ProcessMessageSubscriptionRecordValue value =
+        (ProcessMessageSubscriptionRecordValue) record.getValue();
+    final String correlationKey = value.getCorrelationKey();
+    if (correlationKey == null || correlationKey.isBlank()) {
+      return;
+    }
+    final long instanceKey = value.getProcessInstanceKey();
+    foldObjectSighting(
+        instanceKey,
+        type.name(),
+        correlationKey,
+        instanceKey,
+        OBJECT_QUALIFIER_MESSAGE,
+        record.getTimestamp());
+  }
+
+  /**
+   * Sighting source 3 (see class javadoc): a message start event correlation, which is what creates
+   * the new process instance -- {@code scope_key = instanceKey} (root) here is exact, not an
+   * approximation.
+   */
+  private void onMessageStartEventSubscriptionCorrelated(final Record<?> record) {
+    if (objectTypes == null) {
+      return;
+    }
+    final CompiledObjectType type = objectTypes.correlationKeyIdentifiedType();
+    if (type == null) {
+      return;
+    }
+    final MessageStartEventSubscriptionRecordValue value =
+        (MessageStartEventSubscriptionRecordValue) record.getValue();
+    final long instanceKey = value.getProcessInstanceKey();
+    if (instanceKey <= 0) {
+      return; // defensive -- CORRELATED implies this is set, per the record value's own javadoc
+    }
+    final String correlationKey = value.getCorrelationKey();
+    if (correlationKey == null || correlationKey.isBlank()) {
+      return;
+    }
+    foldObjectSighting(
+        instanceKey,
+        type.name(),
+        correlationKey,
+        instanceKey,
+        OBJECT_QUALIFIER_MESSAGE_START,
+        record.getTimestamp());
+  }
+
+  /**
+   * Extracts a scalar object id from a variable's raw JSON value token, per class javadoc's rule:
+   * only a JSON string or number sights (never boolean, null, object, or array), the raw token used
+   * unquoted. Also enforces {@link #MAX_OBJECT_ID_CHARS} as a guardrail against a pathological blob
+   * masquerading as a scalar.
+   *
+   * @return the unquoted/unescaped id, or {@code null} when {@code valueJson} does not qualify
+   */
+  private static String scalarObjectId(final String valueJson) {
+    if (valueJson.isEmpty()) {
+      return null;
+    }
+    final char first = valueJson.charAt(0);
+    final String id;
+    if (first == '"') {
+      id = unescapeJsonString(valueJson);
+    } else if (first == '-' || (first >= '0' && first <= '9')) {
+      id = valueJson; // raw numeric token, unquoted by construction
+    } else {
+      return null; // boolean/null/object/array -- never an identifier (see class javadoc)
+    }
+    if (id == null || id.isBlank() || id.length() > MAX_OBJECT_ID_CHARS) {
+      return null;
+    }
+    return id;
+  }
+
+  /**
+   * Unescapes a JSON string token's surrounding quotes and escape sequences — the inverse of {@link
+   * #escapeJson}, supporting the same repertoire. {@code null} on a malformed token (missing
+   * closing quote); never expected for validated JSON, but not this method's job to assume.
+   */
+  private static String unescapeJsonString(final String valueJson) {
+    if (valueJson.length() < 2 || valueJson.charAt(valueJson.length() - 1) != '"') {
+      return null;
+    }
+    final StringBuilder out = new StringBuilder(valueJson.length() - 2);
+    for (int i = 1; i < valueJson.length() - 1; i++) {
+      final char c = valueJson.charAt(i);
+      if (c != '\\') {
+        out.append(c);
+        continue;
+      }
+      if (i + 1 >= valueJson.length() - 1) {
+        return null; // trailing backslash with nothing to escape -- malformed
+      }
+      i++;
+      final char escaped = valueJson.charAt(i);
+      switch (escaped) {
+        case '"' -> out.append('"');
+        case '\\' -> out.append('\\');
+        case '/' -> out.append('/');
+        case 'b' -> out.append('\b');
+        case 'f' -> out.append('\f');
+        case 'n' -> out.append('\n');
+        case 'r' -> out.append('\r');
+        case 't' -> out.append('\t');
+        case 'u' -> {
+          if (i + 4 >= valueJson.length() - 1) {
+            return null;
+          }
+          out.append((char) Integer.parseInt(valueJson.substring(i + 1, i + 5), 16));
+          i += 4;
+        }
+        default -> out.append(escaped); // lenient: an unrecognized escape passes its char through
+      }
+    }
+    return out.toString();
+  }
+
+  /**
+   * The shared sighting fold every source above calls: seen-cache check, per-instance CF-7
+   * bookkeeping (always, regardless of {@link #objectsAppender} wiring), then the dictionary row
+   * itself (only if wired). See class javadoc's "Object fabric capture" section.
+   */
+  private void foldObjectSighting(
+      final long instanceKey,
+      final String objectType,
+      final String objectId,
+      final long scopeKey,
+      final String qualifier,
+      final long timestamp) {
+    final ObjectSightingKey key =
+        new ObjectSightingKey(objectType, objectId, instanceKey, scopeKey);
+    if (!objectSightingSeenCache.checkAndMarkSeen(key)) {
+      return; // already sighted this translator lifetime -- see the cache's own javadoc
+    }
+    recordObjectSightingForRelations(instanceKey, objectType, objectId, scopeKey);
+    emitObjectDictionaryRowIfWired(
+        key, instanceKey, objectType, objectId, scopeKey, qualifier, timestamp);
+  }
+
+  /**
+   * Appends {@code (objectType, objectId, scopeKey)} to {@code instanceKey}'s accumulated sighting
+   * list (read-modify-write, mirroring {@link #foldVariant}'s own accumulator pattern), capped at
+   * {@link #MAX_OBJECT_SIGHTINGS_PER_INSTANCE} with an overflow flag once hit — see that constant's
+   * own javadoc. Runs unconditionally: relations derivation needs this regardless of whether the
+   * {@code objects}/{@code object_relations} dictionary appenders are even wired.
+   */
+  private void recordObjectSightingForRelations(
+      final long instanceKey, final String objectType, final String objectId, final long scopeKey) {
+    final ObjectSightingList existing = state.getObjectSightings(instanceKey);
+    if (existing != null && existing.overflowed()) {
+      return; // already capped -- see MAX_OBJECT_SIGHTINGS_PER_INSTANCE's own javadoc
+    }
+    final List<ObjectSighting> current = existing == null ? List.of() : existing.sightings();
+    if (current.size() >= MAX_OBJECT_SIGHTINGS_PER_INSTANCE) {
+      state.putObjectSightings(instanceKey, new ObjectSightingList(current, true));
+      return;
+    }
+    final List<ObjectSighting> grown = new ArrayList<>(current.size() + 1);
+    grown.addAll(current);
+    grown.add(new ObjectSighting(objectType, objectId, scopeKey));
+    state.putObjectSightings(instanceKey, new ObjectSightingList(grown, false));
+  }
+
+  /**
+   * Emits one {@code objects} dictionary row for a first-sighted (objectType, objectId, instance,
+   * scope), unless {@link #objectsAppender} is unwired. Looks up the owning instance's process
+   * id/version from {@link TranslatorState#getInstance} (not carried by every sighting source's own
+   * record) — a missing instance (state loss, or a message-start correlation racing ahead of its
+   * own root activation) skips the row (the sighting is still recorded for relations) and un-marks
+   * the seen-cache entry so a later retry (e.g. after a crash-restart re-delivers this record) gets
+   * another chance, mirroring the backpressure-absorb path below.
+   */
+  private void emitObjectDictionaryRowIfWired(
+      final ObjectSightingKey key,
+      final long instanceKey,
+      final String objectType,
+      final String objectId,
+      final long scopeKey,
+      final String qualifier,
+      final long timestamp) {
+    if (objectsAppender == null) {
+      return;
+    }
+    final OpenInstance instance = state.getInstance(instanceKey);
+    if (instance == null) {
+      objectSightingSeenCache.unmark(key);
+      return;
+    }
+    if (!objectsAppender.begin()) {
+      // Ring backpressure on this small, dedicated dictionary pipeline: absorbed, not propagated --
+      // see class javadoc's "Object fabric capture" section for the judgment call this mirrors.
+      objectSightingSeenCache.unmark(key);
+      return;
+    }
+    objectsAppender
+        .putDict(ObjectColumns.OBJECT_TYPE, objectType)
+        .putDict(ObjectColumns.OBJECT_ID, objectId)
+        .putLong(ObjectColumns.INSTANCE_KEY, instanceKey)
+        .putDict(ObjectColumns.PROCESS_ID, instance.processId())
+        .putInt(ObjectColumns.VERSION, instance.version());
+    if (scopeKey == instanceKey) {
+      objectsAppender.putNull(ObjectColumns.SCOPE_KEY);
+    } else {
+      objectsAppender.putLong(ObjectColumns.SCOPE_KEY, scopeKey);
+    }
+    objectsAppender
+        .putDict(ObjectColumns.QUALIFIER, qualifier)
+        .putLong(ObjectColumns.FIRST_SEEN, millisToMicros(timestamp));
+    objectsAppender.endRow();
+  }
+
+  /**
+   * Emits one {@code instance_links} row for {@code childInstanceKey}'s call-activity parent,
+   * unless {@link #instanceLinksAppender} is unwired or this child instance already has a link row
+   * (see {@link #instanceLinkSeenCache}: at most one parent per child, ever).
+   */
+  private void emitInstanceLinkIfNew(
+      final long parentInstanceKey,
+      final long childInstanceKey,
+      final long viaElementInstanceKey,
+      final long timestamp) {
+    if (instanceLinksAppender == null) {
+      return;
+    }
+    if (!instanceLinkSeenCache.checkAndMarkSeen(childInstanceKey)) {
+      return;
+    }
+    if (!instanceLinksAppender.begin()) {
+      instanceLinkSeenCache.unmark(childInstanceKey);
+      return;
+    }
+    instanceLinksAppender
+        .putLong(InstanceLinkColumns.PARENT_INSTANCE_KEY, parentInstanceKey)
+        .putLong(InstanceLinkColumns.CHILD_INSTANCE_KEY, childInstanceKey)
+        .putDict(InstanceLinkColumns.LINK_TYPE, INSTANCE_LINK_TYPE_CALL_ACTIVITY);
+    if (viaElementInstanceKey > 0) {
+      instanceLinksAppender.putLong(
+          InstanceLinkColumns.VIA_ELEMENT_INSTANCE_KEY, viaElementInstanceKey);
+    } else {
+      instanceLinksAppender.putNull(InstanceLinkColumns.VIA_ELEMENT_INSTANCE_KEY);
+    }
+    instanceLinksAppender.putLong(InstanceLinkColumns.LINKED_AT, millisToMicros(timestamp));
+    instanceLinksAppender.endRow();
+  }
+
+  /**
+   * Derives and emits {@code object_relations} rows from {@code instanceKey}'s accumulated
+   * sightings, then evicts the sighting list — called once per completed instance, regardless of
+   * whether object-fabric capture is wired at all (the eviction must always happen, mirroring every
+   * other per-instance state's evict-after-emit rule).
+   *
+   * <p><b>v1 rule</b> (see class javadoc): a relation (parent contains child) is emitted for every
+   * (root-scope sighting, non-root-scope sighting) pair whose (type, id) differ — a sighting at
+   * both root and non-root scope with the identical (type, id) is a self-relation and is skipped.
+   */
+  private void emitObjectRelationsAtCompletion(final long instanceKey, final long completedAtMs) {
+    final ObjectSightingList sightings = state.getObjectSightings(instanceKey);
+    state.deleteObjectSightings(instanceKey);
+    if (sightings == null || objectRelationsAppender == null) {
+      return;
+    }
+    final List<ObjectSighting> roots = new ArrayList<>();
+    final List<ObjectSighting> nonRoots = new ArrayList<>();
+    for (final ObjectSighting sighting : sightings.sightings()) {
+      (sighting.scopeKey() == instanceKey ? roots : nonRoots).add(sighting);
+    }
+    for (final ObjectSighting parent : roots) {
+      for (final ObjectSighting child : nonRoots) {
+        if (parent.objectType().equals(child.objectType())
+            && parent.objectId().equals(child.objectId())) {
+          continue; // self-relation -- skip (see this method's own javadoc)
+        }
+        emitObjectRelationRowIfNew(parent, child, completedAtMs);
+      }
+    }
+  }
+
+  /**
+   * Emits one {@code object_relations} row for {@code (parent, child)}, unless already emitted (see
+   * {@link #objectRelationSeenCache}: deduped across the whole translator lifetime, not just one
+   * instance, since the same edge can recur across many completed instances).
+   */
+  private void emitObjectRelationRowIfNew(
+      final ObjectSighting parent, final ObjectSighting child, final long completedAtMs) {
+    final ObjectRelationKey key =
+        new ObjectRelationKey(
+            parent.objectType(), parent.objectId(), child.objectType(), child.objectId());
+    if (!objectRelationSeenCache.checkAndMarkSeen(key)) {
+      return;
+    }
+    if (!objectRelationsAppender.begin()) {
+      // Absorbed, not propagated -- same judgment call as every other dictionary appender in this
+      // class (see class javadoc's "Object fabric capture" section).
+      objectRelationSeenCache.unmark(key);
+      return;
+    }
+    objectRelationsAppender
+        .putDict(ObjectRelationColumns.PARENT_TYPE, parent.objectType())
+        .putDict(ObjectRelationColumns.PARENT_ID, parent.objectId())
+        .putDict(ObjectRelationColumns.CHILD_TYPE, child.objectType())
+        .putDict(ObjectRelationColumns.CHILD_ID, child.objectId())
+        .putLong(ObjectRelationColumns.FIRST_SEEN, millisToMicros(completedAtMs));
+    objectRelationsAppender.endRow();
+  }
+
+  /** Dedup key for {@link #objectSightingSeenCache}. */
+  private record ObjectSightingKey(
+      String objectType, String objectId, long instanceKey, long scopeKey) {}
+
+  /** Dedup key for {@link #objectRelationSeenCache}. */
+  private record ObjectRelationKey(
+      String parentType, String parentId, String childType, String childId) {}
+
+  /**
+   * Generic bounded (LRU-evicted, access-order) seen-cache backing the object-fabric capture paths'
+   * dictionary emission (sightings/links/relations) — same shape and same "a false negative costs
+   * one harmless duplicate write" reasoning as {@link VariantDictionarySeenCache}, kept as a
+   * separate, reusable, generic class rather than retrofitting that one (which predates this and is
+   * scoped to the variant-k1 scheme specifically).
+   */
+  private static final class BoundedSeenCache<K> extends LinkedHashMap<K, Boolean> {
+
+    private static final int INITIAL_CAPACITY = 16;
+    private static final float LOAD_FACTOR = 0.75f;
+
+    private final int capacity;
+
+    BoundedSeenCache(final int capacity) {
+      super(INITIAL_CAPACITY, LOAD_FACTOR, true);
+      this.capacity = capacity;
+    }
+
+    @Override
+    protected boolean removeEldestEntry(final Map.Entry<K, Boolean> eldest) {
+      return size() > capacity;
+    }
+
+    /**
+     * @return {@code true} the first time {@code key} is checked (caller should emit); {@code
+     *     false} on a repeat
+     */
+    boolean checkAndMarkSeen(final K key) {
+      return put(key, Boolean.TRUE) == null;
+    }
+
+    /**
+     * Un-marks {@code key}, letting a later call re-emit — see call sites for when this applies.
+     */
+    void unmark(final K key) {
+      remove(key);
     }
   }
 }
