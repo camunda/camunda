@@ -105,6 +105,32 @@ class DefaultMembershipServiceTest {
   }
 
   @Test
+  void groupIdsReturnsEmptyWhenGroupsClaimIsMalformed() {
+    // given — groups-claim configured, but this token's groups claim is a scalar number, not a
+    // string or a list of strings
+    final var serviceWithGroupsClaim = serviceWithGroupsClaim("groups");
+    final var query = new MembershipQuery(Map.of("groups", 123), "alice", PrincipalType.USER);
+
+    // when/then — extraction fails safely; no exception, no DB lookup either
+    assertThat(serviceWithGroupsClaim.groupIds(query)).isEmpty();
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
+  void groupIdsReturnsEmptyWhenGroupsClaimResolvesToNestedObject() {
+    // given — groups-claim misconfigured one level too shallow ("realm_access" instead of
+    // "realm_access.roles"), resolving to a Map rather than a string/list
+    final var serviceWithGroupsClaim = serviceWithGroupsClaim("realm_access");
+    final var query =
+        new MembershipQuery(
+            Map.of("realm_access", Map.of("roles", List.of("eng"))), "alice", PrincipalType.USER);
+
+    // when/then
+    assertThat(serviceWithGroupsClaim.groupIds(query)).isEmpty();
+    verifyNoInteractions(groupServices);
+  }
+
+  @Test
   void roleIdsIncludesGroupsInOwnerMap() {
     when(roleServices.getRolesByMemberTypeAndMemberIds(any(), any()))
         .thenReturn(List.of(new RoleEntity(1L, "r1", "role", null)));
@@ -189,5 +215,18 @@ class DefaultMembershipServiceTest {
     // then
     assertThat(result).containsExactly("mra1");
     verifyNoInteractions(mappingRuleServices);
+  }
+
+  private DefaultMembershipService serviceWithGroupsClaim(final String claim) {
+    final var config = new CamundaSecurityLibraryProperties();
+    config.getAuthentication().getOidc().setGroupsClaim(claim);
+    final var serviceRegistry =
+        DefaultServiceRegistry.of(
+            b ->
+                b.mappingRuleServices("default", mappingRuleServices)
+                    .groupServices("default", groupServices)
+                    .roleServices("default", roleServices)
+                    .tenantServices("default", tenantServices));
+    return new DefaultMembershipService(serviceRegistry, config);
   }
 }
