@@ -28,6 +28,7 @@ public final class RawTableSchemas {
 
   public static final String INSTANCES_TABLE = "instances";
   public static final String ACTIVITIES_TABLE = "activities";
+  public static final String VARIANTS_TABLE = "variants";
 
   private RawTableSchemas() {}
 
@@ -64,7 +65,40 @@ public final class RawTableSchemas {
             timestamptzColumn(icebergSchema, "started_at", -1, true),
             timestamptzColumn(icebergSchema, "ended_at", -1, false),
             column(icebergSchema, "duration_ms", ColumnType.LONG, -1, false),
-            column(icebergSchema, "vars_json", ColumnType.BINARY, -1, false)));
+            column(icebergSchema, "vars_json", ColumnType.BINARY, -1, false),
+            // Schema v3 -- see IcebergLakeWriter#INSTANCE_SCHEMA's javadoc: nullable (an instance
+            // completing with no accumulator -- e.g. state loss -- writes null, never fails).
+            column(icebergSchema, "variant_hash", ColumnType.STRING_DICT, -1, false, true)));
+  }
+
+  /**
+   * The variant-k1 dictionary table's {@link TableSchema}: one row per distinct (process id,
+   * version, variant hash) triple ever seen, holding its sorted element/flow id lists. Not a
+   * partials table (no declaration fingerprint) — see {@code
+   * io.camunda.analytics.lake.write.IcebergLakeWriter#variantsTable()}'s javadoc. Sort key {@code
+   * (process_id, variant_hash)}; family day source is {@code first_seen} (the completion time of
+   * whichever instance first produced this row).
+   */
+  public static TableSchema variants(final Schema icebergSchema) {
+    return new TableSchema(
+        VARIANTS_TABLE,
+        List.of(
+            column(
+                icebergSchema,
+                "process_id",
+                ColumnType.STRING_DICT,
+                VariantColumns.SORT_PROCESS_ID,
+                false),
+            column(icebergSchema, "version", ColumnType.INT, -1, false),
+            column(
+                icebergSchema,
+                "variant_hash",
+                ColumnType.STRING_DICT,
+                VariantColumns.SORT_VARIANT_HASH,
+                false),
+            column(icebergSchema, "elements", ColumnType.BINARY, -1, false),
+            column(icebergSchema, "flows", ColumnType.BINARY, -1, false),
+            timestamptzColumn(icebergSchema, "first_seen", -1, true)));
   }
 
   /**
@@ -117,8 +151,20 @@ public final class RawTableSchemas {
       final ColumnType type,
       final int sortOrder,
       final boolean familyDaySource) {
+    return column(icebergSchema, name, type, sortOrder, familyDaySource, false);
+  }
+
+  /** Same as the 5-arg overload, additionally accepting {@code nullable} explicitly. */
+  private static TableSchema.Column column(
+      final Schema icebergSchema,
+      final String name,
+      final ColumnType type,
+      final int sortOrder,
+      final boolean familyDaySource,
+      final boolean nullable) {
     final Types.NestedField field = findField(icebergSchema, name);
-    return new TableSchema.Column(name, type, field.fieldId(), false, sortOrder, familyDaySource);
+    return new TableSchema.Column(
+        name, type, field.fieldId(), nullable, sortOrder, familyDaySource);
   }
 
   /** Same as {@link #column}, but for a {@code timestamptz} column (see the class javadoc). */
@@ -164,6 +210,9 @@ public final class RawTableSchemas {
     public static final int DURATION_MS = 8;
     public static final int VARS_JSON = 9;
 
+    /** Schema v3 -- see {@code IcebergLakeWriter#INSTANCE_SCHEMA}'s javadoc; nullable. */
+    public static final int VARIANT_HASH = 10;
+
     /** Sort-key position of {@code process_id} (primary, after the implicit family-day lead). */
     private static final int SORT_PROCESS_ID = 0;
 
@@ -203,5 +252,23 @@ public final class RawTableSchemas {
     private static final int SORT_ELEMENT_KEY = 2;
 
     private ActivityColumns() {}
+  }
+
+  /**
+   * See {@link InstanceColumns}; same idea for the {@code variants} dictionary table — {@code
+   * LakeTranslator} appends dictionary rows by these positions.
+   */
+  public static final class VariantColumns {
+    public static final int PROCESS_ID = 0;
+    public static final int VERSION = 1;
+    public static final int VARIANT_HASH = 2;
+    public static final int ELEMENTS = 3;
+    public static final int FLOWS = 4;
+    public static final int FIRST_SEEN = 5;
+
+    private static final int SORT_PROCESS_ID = 0;
+    private static final int SORT_VARIANT_HASH = 1;
+
+    private VariantColumns() {}
   }
 }
