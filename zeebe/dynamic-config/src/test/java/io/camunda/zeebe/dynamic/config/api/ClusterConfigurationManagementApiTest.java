@@ -15,10 +15,12 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse.ErrorCode;
@@ -35,7 +37,10 @@ import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOp
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.PreScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.UpdatePartitionDistributorConfigOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneAwareConfig;
+import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
@@ -461,6 +466,78 @@ final class ClusterConfigurationManagementApiTest {
             new PartitionForceReconfigureOperation(id2, 2, Set.of(id2)),
             new MemberRemoveOperation(id0, id1),
             new MemberRemoveOperation(id0, id3));
+  }
+
+  @Test
+  void shouldForceRemoveZone() {
+    // given
+    // id0 is a bare (non-zoned) member so that the request is routed to the coordinator that the
+    // test's real communicationService actually knows about; the zone members below are the ones
+    // exercised by the force-remove-zone logic itself.
+    final var zoneA0 = MemberId.from("zone-a", 0);
+    final var zoneA1 = MemberId.from("zone-a", 1);
+    final var zoneB0 = MemberId.from("zone-b", 0);
+    final var zoneB1 = MemberId.from("zone-b", 1);
+    final var currentTopology =
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .addMember(zoneA0, MemberState.initializeAsActive(Map.of()))
+            .addMember(zoneA1, MemberState.initializeAsActive(Map.of()))
+            .addMember(zoneB0, MemberState.initializeAsActive(Map.of()))
+            .addMember(zoneB1, MemberState.initializeAsActive(Map.of()))
+            .updateMember(zoneB0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(zoneA0, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .updateMember(zoneB1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)))
+            .updateMember(zoneA1, m -> m.addPartition(2, PartitionState.active(2, partitionConfig)))
+            .setPartitionDistributorConfig(
+                new ZoneAwareConfig(
+                    List.of(new ZoneSpec("zone-a", 2, 1), new ZoneSpec("zone-b", 2, 2))));
+    recordingCoordinator.setCurrentTopology(currentTopology);
+    final var request = new ForceZoneRemoveRequest("zone-a", false);
+
+    // when
+    final var changeStatus = clientApi.forceRemoveZone(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges())
+        .containsExactlyInAnyOrder(
+            new PartitionForceReconfigureOperation(zoneB0, 1, Set.of(zoneB0)),
+            new PartitionForceReconfigureOperation(zoneB1, 2, Set.of(zoneB1)),
+            new MemberRemoveOperation(id0, zoneA0),
+            new MemberRemoveOperation(id0, zoneA1),
+            new UpdatePartitionDistributorConfigOperation(
+                id0, new ZoneAwareConfig(List.of(new ZoneSpec("zone-b", 2, 2)))));
+  }
+
+  @Test
+  void shouldAddZone() {
+    // given
+    // id0 and id1 are bare (non-zoned) members so that the request is routed to the coordinator
+    // that the test's real communicationService actually knows about; the cluster is mid zone
+    // migration, with a zone-aware distribution config persisted but brokers not yet re-tagged.
+    final var zoneB0 = MemberId.from("zone-b", 0);
+    final var currentTopology =
+        ClusterConfiguration.init()
+            .addMember(id0, MemberState.initializeAsActive(Map.of()))
+            .addMember(id1, MemberState.initializeAsActive(Map.of()))
+            .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
+            .updateMember(id1, m -> m.addPartition(1, PartitionState.active(2, partitionConfig)))
+            .setPartitionDistributorConfig(
+                new ZoneAwareConfig(List.of(new ZoneSpec("zone-a", 1, 1))));
+    recordingCoordinator.setCurrentTopology(currentTopology);
+    final var request = new AddZoneRequest("zone-b", 1, 2, Set.of(zoneB0), false);
+
+    // when
+    final var changeStatus = clientApi.addZone(request).join().get();
+
+    // then
+    assertThat(changeStatus.plannedChanges()).contains(new MemberJoinOperation(zoneB0));
+    assertThat(changeStatus.plannedChanges())
+        .filteredOn(UpdatePartitionDistributorConfigOperation.class::isInstance)
+        .extracting(op -> ((UpdatePartitionDistributorConfigOperation) op).config())
+        .containsExactly(
+            new ZoneAwareConfig(
+                List.of(new ZoneSpec("zone-a", 1, 1), new ZoneSpec("zone-b", 1, 2))));
   }
 
   @Test
