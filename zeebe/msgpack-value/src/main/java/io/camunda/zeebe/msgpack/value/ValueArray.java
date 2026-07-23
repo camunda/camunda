@@ -15,5 +15,21 @@ public interface ValueArray<T> extends Iterable<T>, RandomAccess {
 
   T add(final int index);
 
+  /**
+   * Returns the element at the given index.
+   *
+   * @throws IndexOutOfBoundsException if the index is out of range
+   */
+  T get(final int index);
+
+  /**
+   * Removes and returns the element at the given index; subsequent elements shift left.
+   *
+   * @throws IndexOutOfBoundsException if the index is out of range
+   */
+  T remove(final int index);
+
+  int size();
+
   Stream<T> stream();
 }
