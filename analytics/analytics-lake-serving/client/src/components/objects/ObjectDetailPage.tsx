@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Badge, Card, CardContent, CardHeader, CardTitle } from "@camunda/design-system";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@camunda/design-system";
 import {
   api,
   type JourneyActivity,
@@ -17,6 +17,8 @@ import {
 } from "../../lib/api";
 import { formatDateTime, formatDuration } from "../../lib/format";
 import { EmptyTile, LoadingTile } from "../common/EmptyTile";
+import { EgoGraphCard } from "./EgoGraphCard";
+import { distinctElementCount, JourneyMiniMap, MAX_MINI_MAP_NODES } from "./JourneyMiniMap";
 
 /** "Activity_ManualCreditReview" / "manual-credit-review" -> "Manual Credit Review": strips the
  * modeler's element-kind prefixes and turns the id's word breaks into a readable label. The raw id
@@ -267,11 +269,14 @@ function JourneyLane({ lane }: { lane: Lane }) {
   );
 }
 
+type JourneyView = "timeline" | "map";
+
 export function ObjectDetailPage() {
   const { type = "", id = "" } = useParams<{ type: string; id: string }>();
   const [journey, setJourney] = useState<ObjectJourneyResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [journeyView, setJourneyView] = useState<JourneyView>("timeline");
 
   useEffect(() => {
     if (!type || !id) {
@@ -299,6 +304,9 @@ export function ObjectDetailPage() {
 
   const lanes = journey ? groupByInstance(journey.activities) : [];
   const firstSeen = journey?.sightings.find((s) => s.firstSeen != null)?.firstSeen ?? null;
+  const elementCount = useMemo(() => (journey ? distinctElementCount(journey.activities) : 0), [journey]);
+  const mapTooLarge = elementCount > MAX_MINI_MAP_NODES;
+  const showMap = journeyView === "map" && !mapTooLarge;
 
   return (
     <div className="flex flex-col gap-4">
@@ -324,20 +332,49 @@ export function ObjectDetailPage() {
         <EmptyTile heading="Not available yet" description={error ?? "No journey data."} />
       ) : (
         <>
+          <EgoGraphCard type={type} id={id} />
+
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <RelationsCard type={type} id={id} relations={journey.relations} />
             <InstanceChainCard links={journey.links} lanes={lanes} />
           </div>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
               <CardTitle>Journey</CardTitle>
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant={journeyView === "timeline" ? "default" : "ghost"}
+                  onClick={() => setJourneyView("timeline")}
+                >
+                  Timeline
+                </Button>
+                <Button
+                  size="sm"
+                  variant={journeyView === "map" ? "default" : "ghost"}
+                  onClick={() => setJourneyView("map")}
+                >
+                  Map
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {lanes.length === 0 ? (
                 <p className="text-sm text-neutral-foreground-muted">No activities recorded.</p>
+              ) : showMap ? (
+                <JourneyMiniMap activities={journey.activities} />
               ) : (
-                lanes.map((lane) => <JourneyLane key={lane.instanceKey} lane={lane} />)
+                <>
+                  {journeyView === "map" && mapTooLarge && (
+                    <p className="text-xs text-neutral-foreground-muted">
+                      Too many elements ({elementCount}) for a readable map -- showing the timeline instead.
+                    </p>
+                  )}
+                  {lanes.map((lane) => (
+                    <JourneyLane key={lane.instanceKey} lane={lane} />
+                  ))}
+                </>
               )}
             </CardContent>
           </Card>
