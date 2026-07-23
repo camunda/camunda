@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.agenthistory;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.agenthistory.AgentHistoryRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AgentHistoryIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -27,25 +30,28 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<AgentHistoryRecord> {
 
+  private static final String ERROR_MSG_AGENT_INSTANCE_NOT_FOUND =
+      "Expected to create agent history entry for agent instance with key '%d', but no such agent instance was found.";
+
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AgentInstanceState agentInstanceState;
   private final JobState jobState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final KeyGenerator keyGenerator;
 
   public AgentHistoryCreateProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final KeyGenerator keyGenerator) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     agentInstanceState = processingState.getAgentInstanceState();
     jobState = processingState.getJobState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.keyGenerator = keyGenerator;
   }
 
@@ -59,23 +65,32 @@ public final class AgentHistoryCreateProcessor implements TypedRecordProcessor<A
       writeRejection(
           command,
           RejectionType.NOT_FOUND,
-          "Expected to create agent history entry for agent instance with key '%d', but no such agent instance was found."
-              .formatted(agentInstanceKey));
+          ERROR_MSG_AGENT_INSTANCE_NOT_FOUND.formatted(agentInstanceKey));
       return;
     }
 
     final var bpmnProcessId = agentInstanceRecord.getBpmnProcessId();
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(agentInstanceRecord.getTenantId())
-            .addResourceId(bpmnProcessId)
-            .build();
-    final var authResult = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (authResult.isLeft()) {
-      final var rejection = authResult.getLeft();
+    final var isAuthorized =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(bpmnProcessId)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            agentInstanceRecord.getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_MSG_AGENT_INSTANCE_NOT_FOUND.formatted(agentInstanceKey)));
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
       writeRejection(command, rejection.type(), rejection.reason());
       return;
     }

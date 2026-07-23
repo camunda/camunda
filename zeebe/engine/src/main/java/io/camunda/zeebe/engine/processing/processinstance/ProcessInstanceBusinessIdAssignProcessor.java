@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.security.core.auth.RequiredAuthorization;
+import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBusinessIdIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -37,22 +40,24 @@ public class ProcessInstanceBusinessIdAssignProcessor
       "Expected to assign a business id to process instance with key '%d', but no such process instance was found";
   private static final String ERROR_NOT_A_PROCESS_INSTANCE =
       "Expected to assign a business id to process instance with key '%d', but the element with this key is not a process instance";
+  private static final String ERROR_NOT_FOUND_FOR_TENANT =
+      "Expected to assign a business id to a process instance with key '%d', but no such process instance was found";
 
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final ElementInstanceState elementInstanceState;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final ProcessInstanceBusinessIdAssignmentBehavior assignmentBehavior;
 
   public ProcessInstanceBusinessIdAssignProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final boolean businessIdUniquenessEnabled) {
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     elementInstanceState = processingState.getElementInstanceState();
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     assignmentBehavior =
         new ProcessInstanceBusinessIdAssignmentBehavior(
             writers.state(), businessIdUniquenessEnabled);
@@ -101,29 +106,33 @@ public class ProcessInstanceBusinessIdAssignProcessor
   private boolean isAuthorized(
       final TypedRecord<ProcessInstanceBusinessIdRecord> command,
       final ProcessInstanceRecord processInstanceRecord) {
-    final var authorizationRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-            .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
-            .tenantId(processInstanceRecord.getTenantId())
-            .addResourceId(processInstanceRecord.getBpmnProcessId())
-            .build();
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authorizationRequest);
+    final var isAuthorized =
+        cslCheck.checkAuthorizationAndTenant(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.PROCESS_DEFINITION))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_PROCESS_INSTANCE))
+                        .resourceId(processInstanceRecord.getBpmnProcessId())),
+            processInstanceRecord,
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                AuthorizationResourceType.PROCESS_DEFINITION),
+            processInstanceRecord.getTenantId(),
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                ERROR_NOT_FOUND_FOR_TENANT.formatted(
+                    processInstanceRecord.getProcessInstanceKey())));
     if (isAuthorized.isRight()) {
       return true;
     }
 
     final var rejection = isAuthorized.getLeft();
-    final String errorMessage =
-        RejectionType.NOT_FOUND.equals(rejection.type())
-            ? AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                "assign a business id to a process instance",
-                processInstanceRecord.getProcessInstanceKey(),
-                "such process instance")
-            : rejection.reason();
     enrichRejectionCommand(command, processInstanceRecord);
-    reject(command, rejection.type(), errorMessage);
+    reject(command, rejection.type(), rejection.reason());
     return false;
   }
 

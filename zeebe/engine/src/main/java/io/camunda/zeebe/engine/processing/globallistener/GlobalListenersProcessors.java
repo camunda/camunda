@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.globallistener;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -26,7 +26,7 @@ public class GlobalListenersProcessors {
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration engineConfiguration,
       final ProcessingState processingState,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     typedRecordProcessors
         .onCommand(
             ValueType.GLOBAL_LISTENER_BATCH,
@@ -37,17 +37,17 @@ public class GlobalListenersProcessors {
             ValueType.GLOBAL_LISTENER,
             GlobalListenerIntent.CREATE,
             new GlobalListenerCreateProcessor(
-                keyGenerator, writers, distributionBehavior, authCheckBehavior, processingState))
+                keyGenerator, writers, distributionBehavior, cslCheck, processingState))
         .onCommand(
             ValueType.GLOBAL_LISTENER,
             GlobalListenerIntent.UPDATE,
             new GlobalListenerUpdateProcessor(
-                keyGenerator, writers, distributionBehavior, authCheckBehavior, processingState))
+                keyGenerator, writers, distributionBehavior, cslCheck, processingState))
         .onCommand(
             ValueType.GLOBAL_LISTENER,
             GlobalListenerIntent.DELETE,
             new GlobalListenerDeleteProcessor(
-                keyGenerator, writers, distributionBehavior, authCheckBehavior, processingState))
+                keyGenerator, writers, distributionBehavior, cslCheck, processingState))
         .withListener(new GlobalListenersInitializer(engineConfiguration, processingState));
   }
 }

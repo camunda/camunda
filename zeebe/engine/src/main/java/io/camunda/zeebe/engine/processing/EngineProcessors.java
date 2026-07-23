@@ -23,7 +23,6 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.el.ExpressionLanguageMetrics;
 import io.camunda.zeebe.el.impl.ExpressionLanguageMetricsImpl;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.IncidentMetrics;
@@ -63,7 +62,6 @@ import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.identity.adapter.AuthorizationScopeStateAdapter;
 import io.camunda.zeebe.engine.processing.identity.adapter.MembershipStateAdapter;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -163,8 +161,6 @@ public final class EngineProcessors {
     final var processDefinitionMetrics =
         new ProcessDefinitionMetrics(
             typedRecordProcessorContext.getMeterRegistry(), processingState.getProcessState());
-    final var authorizationCheckMetrics =
-        new AuthorizationCheckMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var tenantMetrics = new TenantMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
@@ -172,9 +168,6 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
-    final var authCheckBehavior =
-        new AuthorizationCheckBehavior(
-            processingState, securityConfig, config, authorizationCheckMetrics);
     final var asyncRequestBehavior =
         new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
     final var transientProcessMessageSubscriptionState =
@@ -331,9 +324,7 @@ public final class EngineProcessors {
             clock,
             config,
             asyncRequestBehavior,
-            permissionsBehavior,
             cslCheck,
-            authCheckBehavior,
             transientProcessMessageSubscriptionState,
             processEngineMetrics);
 
@@ -403,12 +394,7 @@ public final class EngineProcessors {
         permissionsBehavior);
 
     ClockProcessors.addClockProcessors(
-        typedRecordProcessors,
-        writers,
-        keyGenerator,
-        clock,
-        commandDistributionBehavior,
-        authCheckBehavior);
+        typedRecordProcessors, writers, keyGenerator, clock, commandDistributionBehavior, cslCheck);
 
     addIdentityProcessors(
         keyGenerator,
@@ -416,7 +402,6 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
-        authCheckBehavior,
         securityConfig,
         cslCheck,
         authorizationScopeStateAdapter,
@@ -438,7 +423,6 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         securityConfig,
-        authCheckBehavior,
         authorizationScopeStateAdapter,
         membershipStateAdapter);
 
@@ -459,7 +443,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         commandDistributionBehavior,
-        authCheckBehavior,
+        cslCheck,
         scheduledTaskStateFactory,
         searchClientsProxy,
         processingState,
@@ -476,7 +460,7 @@ public final class EngineProcessors {
         processingState.getTenantState(),
         writers,
         commandDistributionBehavior,
-        authCheckBehavior,
+        cslCheck,
         config);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
@@ -489,7 +473,7 @@ public final class EngineProcessors {
         tenantMetrics);
 
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
-        typedRecordProcessors, writers, processingState, authCheckBehavior);
+        typedRecordProcessors, writers, processingState, cslCheck);
     GlobalListenersProcessors.addGlobalListenersProcessors(
         keyGenerator,
         typedRecordProcessors,
@@ -497,7 +481,7 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         config,
         processingState,
-        authCheckBehavior);
+        cslCheck);
 
     ExpressionProcessors.addProcessors(
         keyGenerator,
@@ -517,10 +501,10 @@ public final class EngineProcessors {
         clock);
 
     AgentInstanceProcessors.addAgentInstanceProcessors(
-        keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
+        keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     AgentHistoryProcessors.addAgentHistoryProcessors(
-        keyGenerator, typedRecordProcessors, writers, authCheckBehavior, processingState);
+        keyGenerator, typedRecordProcessors, writers, cslCheck, processingState);
 
     SecretReferenceProcessors.addSecretReferenceProcessors(
         typedRecordProcessors, writers, keyGenerator, processingState);
@@ -539,7 +523,6 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final EngineSecurityConfig securityConfig,
       final CslAuthorizationCheck cslCheck,
       final AuthorizationScopeStateAdapter authorizationScopeStateAdapter,
@@ -551,7 +534,6 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior,
         cslCheck,
-        authCheckBehavior,
         securityConfig,
         authorizationScopeStateAdapter);
 
@@ -648,9 +630,7 @@ public final class EngineProcessors {
       final InstantSource clock,
       final EngineConfiguration config,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final PermissionsBehavior permissionsBehavior,
       final CslAuthorizationCheck cslCheck,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ProcessEngineMetrics processEngineMetrics) {
     return BpmnProcessors.addBpmnStreamProcessor(
@@ -668,7 +648,6 @@ public final class EngineProcessors {
         config,
         asyncRequestBehavior,
         cslCheck,
-        authCheckBehavior,
         transientProcessMessageSubscriptionState,
         processEngineMetrics);
   }

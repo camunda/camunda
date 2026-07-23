@@ -7,10 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.globallistener;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -20,7 +21,9 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -32,7 +35,7 @@ public final class GlobalListenerUpdateProcessor
   private final KeyGenerator keyGenerator;
   private final Writers writers;
   private final CommandDistributionBehavior distributionBehavior;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final GlobalListenersState globalListenersState;
   private final GlobalListenerValidator globalListenerValidator;
 
@@ -40,12 +43,12 @@ public final class GlobalListenerUpdateProcessor
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final ProcessingState processingState) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
     this.distributionBehavior = distributionBehavior;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     globalListenersState = processingState.getGlobalListenersState();
     globalListenerValidator = new GlobalListenerValidator();
   }
@@ -90,16 +93,20 @@ public final class GlobalListenerUpdateProcessor
 
   private Either<Rejection, GlobalListenerRecord> validateCommand(
       final TypedRecord<GlobalListenerRecord> command) {
-
-    final AuthorizationRequest authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.GLOBAL_LISTENER)
-            .permissionType(PermissionType.UPDATE_TASK_LISTENER)
-            .build();
-    return authCheckBehavior
-        .isAuthorizedOrInternalCommand(authRequest)
-        .map(unused -> command.getValue())
+    return cslCheck
+        .check(
+            command,
+            RequiredAuthorization.of(
+                b ->
+                    b.resourceType(
+                            AuthzModelMapper.fromProtocol(
+                                AuthorizationResourceType.GLOBAL_LISTENER))
+                        .permissionType(
+                            AuthzModelMapper.fromProtocol(PermissionType.UPDATE_TASK_LISTENER))
+                        .resourceId(AuthorizationScope.WILDCARD_CHAR)),
+            command.getValue(),
+            AuthorizationRejectionMapper.forbidden(
+                PermissionType.UPDATE_TASK_LISTENER, AuthorizationResourceType.GLOBAL_LISTENER))
         .flatMap(globalListenerValidator::idProvided)
         .flatMap(
             record -> globalListenerValidator.resolveExistingListener(record, globalListenersState))

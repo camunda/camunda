@@ -7,15 +7,17 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
+import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationRejectionMapper;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.mapper.AuthzModelMapper;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -30,21 +32,24 @@ public class ClusterVariableUpdateProcessor
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ClusterVariableUpdateProcessor.class);
+  private static final String NOT_FOUND_FOR_TENANT_MESSAGE =
+      "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
+
   private final KeyGenerator keyGenerator;
   private final Writers writers;
-  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final CslAuthorizationCheck cslCheck;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final ClusterVariableRecordValidator clusterVariableRecordValidator;
 
   public ClusterVariableUpdateProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final CommandDistributionBehavior commandDistributionBehavior,
       final ClusterVariableRecordValidator clusterVariableRecordValidator) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
-    this.authCheckBehavior = authCheckBehavior;
+    this.cslCheck = cslCheck;
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.clusterVariableRecordValidator = clusterVariableRecordValidator;
   }
@@ -105,8 +110,8 @@ public class ClusterVariableUpdateProcessor
       final ClusterVariableRecord record, final TypedRecord<ClusterVariableRecord> command) {
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
     return switch (clusterVariableRecord.getScope()) {
-      case GLOBAL -> checkAuthorizationForGlobalScope(command).map(unused -> record);
-      case TENANT -> checkAuthorizationForTenantScope(command).map(unused -> record);
+      case GLOBAL -> checkPermission(command, record);
+      case TENANT -> checkAuthorizationForTenantScope(command, record);
       default ->
       // should never happen as scope is validated earlier
       {
@@ -118,28 +123,40 @@ public class ClusterVariableUpdateProcessor
     };
   }
 
-  private Either<Rejection, Void> checkAuthorizationForTenantScope(
-      final TypedRecord<ClusterVariableRecord> command) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
-            .permissionType(PermissionType.UPDATE)
-            .tenantId(command.getValue().getTenantId())
-            .addResourceId(command.getValue().getName())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+  private Either<Rejection, ClusterVariableRecord> checkAuthorizationForTenantScope(
+      final TypedRecord<ClusterVariableRecord> command, final ClusterVariableRecord record) {
+    return cslCheck.checkAuthorizationAndTenant(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(
+                        AuthzModelMapper.fromProtocol(AuthorizationResourceType.CLUSTER_VARIABLE))
+                    .permissionType(AuthzModelMapper.fromProtocol(PermissionType.UPDATE))
+                    .resourceId(record.getName())),
+        record,
+        AuthorizationRejectionMapper.forbidden(
+            PermissionType.UPDATE, AuthorizationResourceType.CLUSTER_VARIABLE),
+        record.getTenantId(),
+        new Rejection(
+            RejectionType.NOT_FOUND,
+            NOT_FOUND_FOR_TENANT_MESSAGE.formatted(
+                PermissionType.UPDATE,
+                AuthorizationResourceType.CLUSTER_VARIABLE,
+                record.getTenantId())));
   }
 
-  private Either<Rejection, Void> checkAuthorizationForGlobalScope(
-      final TypedRecord<ClusterVariableRecord> command) {
-    final var authRequest =
-        AuthorizationRequest.builder()
-            .command(command)
-            .resourceType(AuthorizationResourceType.CLUSTER_VARIABLE)
-            .permissionType(PermissionType.UPDATE)
-            .addResourceId(command.getValue().getName())
-            .build();
-    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+  private Either<Rejection, ClusterVariableRecord> checkPermission(
+      final TypedRecord<ClusterVariableRecord> command, final ClusterVariableRecord record) {
+    return cslCheck.check(
+        command,
+        RequiredAuthorization.of(
+            b ->
+                b.resourceType(
+                        AuthzModelMapper.fromProtocol(AuthorizationResourceType.CLUSTER_VARIABLE))
+                    .permissionType(AuthzModelMapper.fromProtocol(PermissionType.UPDATE))
+                    .resourceId(record.getName())),
+        record,
+        AuthorizationRejectionMapper.forbidden(
+            PermissionType.UPDATE, AuthorizationResourceType.CLUSTER_VARIABLE));
   }
 }

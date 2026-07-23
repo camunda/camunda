@@ -24,13 +24,9 @@ import io.camunda.security.core.auth.RequiredAuthorization;
 import io.camunda.security.core.authz.AuthorizationService;
 import io.camunda.security.core.port.in.AuthorizationCheckPort;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
-import io.camunda.zeebe.engine.processing.resource.ResourceDeletionAuthorizationBehavior;
-import io.camunda.zeebe.engine.processing.resource.TenantAwareDeletionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
@@ -91,28 +87,12 @@ public class AuthorizationArchTest {
     return new ArchCondition<>("check authorization") {
       @Override
       public void check(final JavaClass item, final ConditionEvents events) {
-        // The processor should directly check authorizations
+        // The processor should have delegated authorization to one of the supported pathways
+        // (JobUpdateBehaviour, PermissionsBehavior, ProcessInstanceCreationHelper,
+        // AuthorizationCheckPort/AuthorizationService, CslAuthorizationCheck, or
+        // UserTaskAuthorizationCheck)
         ArchConditions.callMethod(
-                AuthorizationCheckBehavior.class, "isAuthorized", AuthorizationRequest.class)
-            .or(
-                ArchConditions.callMethod(
-                    AuthorizationCheckBehavior.class,
-                    "isAnyAuthorized",
-                    AuthorizationRequest[].class))
-            .or(
-                ArchConditions.callMethod(
-                    AuthorizationCheckBehavior.class,
-                    "isAuthorizedOrInternalCommand",
-                    AuthorizationRequest.class))
-            .or(
-                ArchConditions.callMethod(
-                    AuthorizationCheckBehavior.class,
-                    "isAnyAuthorizedOrInternalCommand",
-                    AuthorizationRequest[].class))
-            // Or the processor should have delegated authorization to the JobUpdateBehaviour
-            .or(
-                ArchConditions.callMethod(
-                    JobUpdateBehaviour.class, "isAuthorized", TypedRecord.class, JobRecord.class))
+                JobUpdateBehaviour.class, "isAuthorized", TypedRecord.class, JobRecord.class)
             // Or the processor should have delegate authorization to the PermissionsBehavior
             .or(
                 ArchConditions.callMethod(
@@ -152,17 +132,6 @@ public class AuthorizationArchTest {
                     "isAuthorized",
                     TypedRecord.class,
                     DeployedProcess.class))
-            .or(
-                ArchConditions.callMethod(
-                    TenantAwareDeletionBehavior.class,
-                    "forEachAuthorizedTenantUntilDeleted",
-                    TypedRecord.class,
-                    Function.class))
-            .or(
-                ArchConditions.callMethod(
-                    ResourceDeletionAuthorizationBehavior.class,
-                    "checkAuthorizationForHistoryDeletion",
-                    TypedRecord.class))
             .or(
                 ArchConditions.callMethod(
                     AuthorizationCheckPort.class,

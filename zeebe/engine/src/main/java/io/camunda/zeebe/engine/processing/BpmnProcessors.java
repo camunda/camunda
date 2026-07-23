@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.conditional.ConditionalSubscriptionTriggerProcessor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionCheckScheduler;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
@@ -83,7 +82,6 @@ public final class BpmnProcessors {
       final EngineConfiguration config,
       final AsyncRequestBehavior asyncRequestBehavior,
       final CslAuthorizationCheck cslCheck,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ProcessEngineMetrics processEngineMetrics) {
     final MutableProcessMessageSubscriptionState subscriptionState =
@@ -91,12 +89,7 @@ public final class BpmnProcessors {
     final var keyGenerator = processingState.getKeyGenerator();
 
     addProcessInstanceCommandProcessor(
-        writers,
-        typedRecordProcessors,
-        processingState,
-        asyncRequestBehavior,
-        cslCheck,
-        authCheckBehavior);
+        writers, typedRecordProcessors, processingState, asyncRequestBehavior, cslCheck);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
@@ -124,7 +117,7 @@ public final class BpmnProcessors {
         writers,
         processingState.getUserTaskState(),
         asyncRequestBehavior,
-        authCheckBehavior);
+        cslCheck);
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
         processingState,
@@ -146,7 +139,7 @@ public final class BpmnProcessors {
         cslCheck,
         keyGenerator);
     addProcessInstanceBusinessIdStreamProcessors(
-        typedRecordProcessors, processingState, writers, authCheckBehavior, config);
+        typedRecordProcessors, processingState, writers, cslCheck, config);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
     addAdHocSubProcessActivityStreamProcessors(
         typedRecordProcessors, processingState, writers, cslCheck, bpmnBehaviors);
@@ -170,8 +163,7 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final CslAuthorizationCheck cslCheck,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
@@ -180,11 +172,11 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.RESUME,
-        new ProcessInstanceResumeProcessor(processingState, writers, authCheckBehavior));
+        new ProcessInstanceResumeProcessor(processingState, writers, cslCheck));
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.SUSPEND,
-        new ProcessInstanceSuspendProcessor(processingState, writers, authCheckBehavior));
+        new ProcessInstanceSuspendProcessor(processingState, writers, cslCheck));
   }
 
   private static void addBpmnStepProcessor(
@@ -266,7 +258,7 @@ public final class BpmnProcessors {
       final Writers writers,
       final MutableUserTaskState userTaskState,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final CslAuthorizationCheck cslCheck) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
@@ -277,7 +269,7 @@ public final class BpmnProcessors {
             writers,
             userTaskState,
             asyncRequestBehavior,
-            authCheckBehavior));
+            cslCheck));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
@@ -360,13 +352,13 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final Writers writers,
-      final AuthorizationCheckBehavior authCheckBehavior,
+      final CslAuthorizationCheck cslCheck,
       final EngineConfiguration config) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_BUSINESS_ID,
         ProcessInstanceBusinessIdIntent.ASSIGN,
         new ProcessInstanceBusinessIdAssignProcessor(
-            writers, processingState, authCheckBehavior, config.isBusinessIdUniquenessEnabled()));
+            writers, processingState, cslCheck, config.isBusinessIdUniquenessEnabled()));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(
