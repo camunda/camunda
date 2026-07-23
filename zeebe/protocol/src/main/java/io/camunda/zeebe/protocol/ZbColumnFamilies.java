@@ -338,7 +338,11 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   SECRET_REFERENCES_BY_JOB(154, PARTITION_LOCAL),
   // secondary index: (storeId, secretReference, jobKey) → ∅; supports prefix iteration by (storeId,
   // secretReference)
-  JOBS_BY_SECRET_REFERENCE(155, PARTITION_LOCAL);
+  JOBS_BY_SECRET_REFERENCE(155, PARTITION_LOCAL),
+
+  // (processDefinitionKey, partitionId) → ∅: partitions that still owe a drain report for a
+  // definition being deleted while it has running instances. Lives on the aggregating partition.
+  DRAINING_PROCESS_DELETE(156, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

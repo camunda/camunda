@@ -10,16 +10,20 @@ package io.camunda.zeebe.engine.processing.resource;
 import static io.camunda.zeebe.protocol.record.RecordAssert.assertThat;
 
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceCreationHelper;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ConditionalEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -45,6 +49,8 @@ import org.junit.Test;
  * state.
  */
 public class DrainingProcessDefinitionTest {
+
+  private static final String JOB_TYPE = "task";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -446,6 +452,232 @@ public class DrainingProcessDefinitionTest {
             ProcessInstanceCreationHelper.ERROR_MESSAGE_PROCESS_IS_DRAINING.formatted(
                 processId, metadata.getVersion(), metadata.getProcessDefinitionKey()));
     assertNoInstanceSpawned(metadata.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldReportDrainedWhenLastDrainingInstanceCompletes() {
+    // given - a draining definition with a single active instance
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(processInstanceKey);
+    drain(metadata);
+
+    // when - the last active instance completes
+    engine.job().ofInstance(processInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - this partition physically removes the definition locally (DELETING/DELETED) and then
+    // reports it has finished draining (DELETE_COMPLETE) so ProcessDeleteCompleteProcessor can
+    // aggregate the per-partition reports cluster-wide.
+    assertDeletedLocally(metadata.getProcessDefinitionKey());
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withRecordType(RecordType.COMMAND)
+                .withIntent(ProcessIntent.DELETE_COMPLETE)
+                .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+                .exists())
+        .describedAs("this partition reports drained once its last instance completes")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldReportDrainedWhenLastDrainingInstanceTerminates() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(processInstanceKey);
+    drain(metadata);
+
+    // when - the last active instance is terminated
+    engine.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then - the definition is removed locally and this partition reports drained
+    assertDeletedLocally(metadata.getProcessDefinitionKey());
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withRecordType(RecordType.COMMAND)
+                .withIntent(ProcessIntent.DELETE_COMPLETE)
+                .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+                .exists())
+        .describedAs("this partition reports drained once its last instance terminates")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldKeepDrainingWhileOtherInstancesStillRunning() {
+    // given - a draining definition with two active instances
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deployWithJob(processId);
+    final long firstInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final long secondInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    awaitJobCreated(firstInstanceKey);
+    awaitJobCreated(secondInstanceKey);
+    drain(metadata);
+
+    // when - only the first instance completes
+    engine.job().ofInstance(firstInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - the definition is still draining, not yet reported drained (a new instance is still
+    // rejected, which proves it has not been reported drained)
+    engine.processInstance().ofBpmnProcessId(processId).expectRejection().create();
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords().onlyCommandRejections().getFirst();
+    assertThat(rejection).hasRejectionType(RejectionType.INVALID_STATE);
+
+    // when - the last instance completes
+    engine.job().ofInstance(secondInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - this partition reports drained only after the last instance completes
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withRecordType(RecordType.COMMAND)
+                .withIntent(ProcessIntent.DELETE_COMPLETE)
+                .withProcessDefinitionKey(metadata.getProcessDefinitionKey())
+                .exists())
+        .describedAs("this partition reports drained only after the last instance completes")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldReportDrainedWhenLastDrainingCallActivityChildCompletes() {
+    // given - a draining child definition kept alive by a running call-activity child instance
+    final var childId = helper.getBpmnProcessId() + "-child";
+    final var parentId = helper.getBpmnProcessId() + "-parent";
+    final var child = deployWithJob(childId);
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parentId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(childId))
+                .endEvent()
+                .done())
+        .deploy();
+    engine.processInstance().ofBpmnProcessId(parentId).create();
+    final long childInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withBpmnProcessId(childId)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+    awaitJobCreated(childInstanceKey);
+    drain(child);
+
+    // when - the child instance completes
+    engine.job().ofInstance(childInstanceKey).withType(JOB_TYPE).complete();
+
+    // then - the draining child definition is reported drained (finalize fires for child processes
+    // too)
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withRecordType(RecordType.COMMAND)
+                .withIntent(ProcessIntent.DELETE_COMPLETE)
+                .withProcessDefinitionKey(child.getProcessDefinitionKey())
+                .exists())
+        .describedAs(
+            "draining child definition is reported drained when its call-activity instance"
+                + " completes")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldFullyDeleteWhenAllPartitionsReportDrained() {
+    // given - a draining definition whose per-partition drain reports are outstanding for three
+    // partitions. Seeding the aggregation set happens at delete time (out of this change's scope),
+    // so it is injected here directly to drive the deployment-partition aggregation.
+    final var processId = helper.getBpmnProcessId();
+    final var metadata = deploy(processId);
+    drain(metadata);
+    final long processDefinitionKey = metadata.getProcessDefinitionKey();
+
+    engine.pauseProcessing(Protocol.DEPLOYMENT_PARTITION);
+    final var drainState =
+        ((MutableProcessingState) engine.getProcessingState()).getProcessDeleteDrainState();
+    drainState.addDrainingPartition(processDefinitionKey, 1);
+    drainState.addDrainingPartition(processDefinitionKey, 2);
+    drainState.addDrainingPartition(processDefinitionKey, 3);
+    engine.resumeProcessing(Protocol.DEPLOYMENT_PARTITION);
+
+    // when - each partition reports it has finished draining (as the deployment partition receives
+    // them: a locally-keyed report for partition 1 and forwarded reports for partitions 2 and 3)
+    engine.writeRecords(
+        drainReport(processDefinitionKey, metadata, 1),
+        drainReport(processDefinitionKey, metadata, 2),
+        drainReport(processDefinitionKey, metadata, 3));
+
+    // then - each report clears its reporting partition (DELETE_COMPLETED) and, once the last one
+    // arrives, the definition is reported gone cluster-wide exactly once (FULLY_DELETED)
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.FULLY_DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(1)
+                .count())
+        .describedAs("the definition is reported fully deleted exactly once")
+        .isEqualTo(1);
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.DELETE_COMPLETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(3)
+                .count())
+        .describedAs("each of the three reporting partitions is cleared")
+        .isEqualTo(3);
+  }
+
+  private RecordToWrite drainReport(
+      final long processDefinitionKey,
+      final ProcessMetadataValue metadata,
+      final int reportingPartitionId) {
+    // the report key encodes the reporting partition; the in-partition portion is irrelevant, the
+    // processor only decodes the partition from it
+    final long reportKey =
+        Protocol.encodePartitionId(
+            reportingPartitionId, Protocol.decodeKeyInPartition(processDefinitionKey));
+    return RecordToWrite.command()
+        .key(reportKey)
+        .process(
+            ProcessIntent.DELETE_COMPLETE,
+            new ProcessRecord()
+                .setKey(processDefinitionKey)
+                .setBpmnProcessId(metadata.getBpmnProcessId())
+                .setVersion(metadata.getVersion())
+                .setResourceName(metadata.getResourceName())
+                .setTenantId(metadata.getTenantId()));
+  }
+
+  private void assertDeletedLocally(final long processDefinitionKey) {
+    Assertions.assertThat(
+            RecordingExporter.processRecords()
+                .withIntent(ProcessIntent.DELETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .exists())
+        .describedAs("the definition is physically removed on this partition (DELETED event)")
+        .isTrue();
+  }
+
+  private void awaitJobCreated(final long processInstanceKey) {
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withType(JOB_TYPE)
+        .await();
+  }
+
+  private ProcessMetadataValue deployWithJob(final String processId) {
+    return engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+                .endEvent()
+                .done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0);
   }
 
   private ProcessMetadataValue deploy(final String processId) {
