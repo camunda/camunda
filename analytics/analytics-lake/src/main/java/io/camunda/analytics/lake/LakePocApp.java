@@ -640,6 +640,22 @@ public final class LakePocApp {
         ObjectTypes.declare("dispute")
             .identifiedBy(ObjectTypes.variable("correlationKey"))
             .closes(ObjectTypes.onProcessCompletion("bankDisputeHandling"))
+            .build(),
+        // The order-to-cash OCPM showcase's object model (see
+        // event-bridge/event-bridge-examples/docs/ocpm-showcase.md for the planted ground truth
+        // these two are asserted against). Both close when the top-level order-intake instance
+        // completes: the intake instance is the root of the whole call-activity chain
+        // (intake -> fulfillment -> invoicing), so its completion is exactly the moment the order
+        // — and every item registered under it — is done. `item` demonstrates the non-root
+        // sighting case: itemId only ever appears in a multi-instance body's per-iteration scope,
+        // never at a process root.
+        ObjectTypes.declare("order")
+            .identifiedBy(ObjectTypes.variable("orderId"))
+            .closes(ObjectTypes.onProcessCompletion("order-intake"))
+            .build(),
+        ObjectTypes.declare("item")
+            .identifiedBy(ObjectTypes.variable("itemId"))
+            .closes(ObjectTypes.onProcessCompletion("order-intake"))
             .build());
   }
 
