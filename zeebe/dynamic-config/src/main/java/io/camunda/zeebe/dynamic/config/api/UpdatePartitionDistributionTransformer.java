@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
@@ -19,8 +20,10 @@ import io.camunda.zeebe.dynamic.config.state.PartitionDistributorConfig.ZoneSpec
 import io.camunda.zeebe.util.CollectionUtil;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Computes the operations needed to apply a new {@link ZoneAwareConfig}. It persists the new config
@@ -34,9 +37,21 @@ import java.util.Optional;
 public class UpdatePartitionDistributionTransformer implements ConfigurationChangeRequest {
 
   private final PartitionDistributorConfig newConfig;
+  private final Set<MemberId> extraMembers;
 
   public UpdatePartitionDistributionTransformer(final PartitionDistributorConfig newConfig) {
+    this(newConfig, Set.of());
+  }
+
+  /**
+   * @param extraMembers members that are not part of the current configuration yet but must be
+   *     included in the partition reassignment (e.g. brokers joining in the same change). Callers
+   *     are responsible for emitting the corresponding member-join operations.
+   */
+  public UpdatePartitionDistributionTransformer(
+      final PartitionDistributorConfig newConfig, final Set<MemberId> extraMembers) {
     this.newConfig = newConfig;
+    this.extraMembers = Set.copyOf(extraMembers);
   }
 
   @Override
@@ -92,7 +107,8 @@ public class UpdatePartitionDistributionTransformer implements ConfigurationChan
     // computation; the real version bump happens when the config-set operation is applied.
     final var updatedConfiguration = currentConfiguration.setPartitionDistributorConfig(newConfig);
 
-    final var members = currentConfiguration.members().keySet();
+    final var members = new HashSet<>(currentConfiguration.members().keySet());
+    members.addAll(extraMembers);
 
     return new PartitionReassignRequestTransformer(
             members, Optional.of(zoneAwareConfig.replicationFactor()), Optional.empty())
