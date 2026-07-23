@@ -35,6 +35,26 @@ export function formatWindow(ms: number | string): string {
   return `${hh}:${mm}`;
 }
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Range-aware chart x-axis label: for ranges of a day or less, {@link formatWindow}'s plain
+ * "HH:MM" reads fine since every point falls on the same day; past a day, "HH:MM" alone is
+ * ambiguous (a 7d chart's points all collapse to the same handful of clock times) -- so spans over
+ * 24h get the date prefixed ("Jul 21 14:00"). `spanMs` is the selected range's total width
+ * (`to - from`), not the grain -- it decides the *format*, independent of how many points there are.
+ */
+export function formatWindowForSpan(ms: number | string, spanMs: number): string {
+  if (spanMs <= ONE_DAY_MS) {
+    return formatWindow(ms);
+  }
+  const d = new Date(ms);
+  const month = d.toLocaleString("en-US", { month: "short" });
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${month} ${d.getDate()} ${hh}:${mm}`;
+}
+
 /** A fraction in [0, 1] as a whole-number percentage. */
 export function formatPercent(ratio: number): string {
   return `${Math.round(ratio * 100)}%`;
