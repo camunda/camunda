@@ -133,6 +133,12 @@ operate:
     # https://docs.camunda.io/docs/8.7/self-managed/operate-deployment/operate-configuration/#settings-for-shards-and-replicas
     - name: CAMUNDA_OPERATE_ELASTICSEARCH_NUMBER_OF_REPLICAS
       value: "1"
+    # Archive completed process instances by ID instead of the default date-histogram
+    # bucket query. Reduces archiver query cost against Elasticsearch and prevents the
+    # archiver backlog from growing unbounded under sustained load.
+    # See INC-5704 / INC-6250 (c8-release-8-7-x Elasticsearch disk growth from archiver backlog).
+    - name: CAMUNDA_OPERATE_ARCHIVER_ARCHIVEBYIDENABLED
+      value: "true"
   nodeSelector:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
   tolerations:
