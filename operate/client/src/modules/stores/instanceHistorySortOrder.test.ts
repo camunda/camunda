@@ -7,7 +7,11 @@
  */
 
 import {instanceHistorySortOrderStore} from './instanceHistorySortOrder';
-import {getStateLocally, clearStateLocally} from 'modules/utils/localStorage';
+import {
+  getStateLocally,
+  clearStateLocally,
+  storeStateLocally,
+} from 'modules/utils/localStorage';
 
 describe('stores/instanceHistorySortOrder', () => {
   beforeEach(() => {
@@ -42,10 +46,13 @@ describe('stores/instanceHistorySortOrder', () => {
     expect(instanceHistorySortOrderStore.order).toBe('desc');
   });
 
-  it('should fall back to the default when the persisted value is invalid', () => {
-    clearStateLocally();
-    instanceHistorySortOrderStore.reset();
+  it('should fall back to the default when the persisted value is invalid', async () => {
+    storeStateLocally({instanceHistorySortOrder: 'not-a-real-order'});
 
-    expect(instanceHistorySortOrderStore.order).toBe('desc');
+    vi.resetModules();
+    const {instanceHistorySortOrderStore: freshStore} =
+      await import('./instanceHistorySortOrder');
+
+    expect(freshStore.order).toBe('desc');
   });
 });
