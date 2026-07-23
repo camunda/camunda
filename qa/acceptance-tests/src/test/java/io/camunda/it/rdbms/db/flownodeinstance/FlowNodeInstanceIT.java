@@ -17,11 +17,13 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.FlowNodeInstanceQuery;
@@ -311,6 +313,83 @@ public class FlowNodeInstanceIT {
     // an already-set name must survive a second write (the multi-entry / re-activation case)
     final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
     assertThat(actual.flowNodeName()).isEqualTo("Existing");
+  }
+
+  @TestTemplate
+  public void shouldKeepInnerInstanceNameOnMigration(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    // a flow node instance whose inner-instance name was already resolved to "List users"
+    final var instance =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters,
+            b -> b.flowNodeName("List users").type(FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE));
+
+    // when
+    // ELEMENT_MIGRATED handling writes the full model via update(); the migrated model carries no
+    // resolved inner-instance name (null). The update mapper must not clobber the existing name.
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .update(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName(null)));
+    rdbmsWriters.flush();
+
+    // then
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName()).isEqualTo("List users");
+  }
+
+  @TestTemplate
+  public void shouldClearNormalElementNameOnMigrationWhenNull(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var instance =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.flowNodeName("Old").type(FlowNodeType.SERVICE_TASK));
+
+    // when
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .update(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName(null)));
+    rdbmsWriters.flush();
+
+    // then
+    // a null name during migration must still clear an ordinary (non-inner-instance) element's
+    // name; the null-skip guard is scoped to AD_HOC_SUB_PROCESS_INNER_INSTANCE and must not
+    // overreach to other flow node types
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldUpdateNameOnMigrationWhenProvided(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var instance =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.flowNodeName("Old"));
+
+    // when
+    rdbmsWriters
+        .getFlowNodeInstanceWriter()
+        .update(instance.copy(b -> ((FlowNodeInstanceDbModelBuilder) b).flowNodeName("New")));
+    rdbmsWriters.flush();
+
+    // then
+    // a legitimate non-null name update must not be blocked by the null-skip guard
+    final var actual = reader.findOne(instance.flowNodeInstanceKey()).orElseThrow();
+    assertThat(actual.flowNodeName()).isEqualTo("New");
   }
 
   @TestTemplate
