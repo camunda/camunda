@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+                  id="Definitions_region-shipping"
+                  targetNamespace="http://camunda.org/analytics/ocpm-showcase"
+                  modeler:executionPlatform="Camunda Cloud"
+                  modeler:executionPlatformVersion="8.10.0">
+  <bpmn:process id="region-shipping" name="Region shipping" isExecutable="true">
+    <bpmn:documentation>Order-to-cash OCPM showcase — the convergence process. One long-running
+      instance per region (EU/US/APAC/LATAM), started once at scenario startup by a dedicated
+      per-region starter and restarted by the driver whenever a batch completes. Loops on the
+      `ship-order` message (correlationKey = region), so MANY order-fulfillment instances converge
+      onto ONE region-shipping instance. See
+      event-bridge/event-bridge-examples/docs/ocpm-showcase.md.
+
+      KNOWN GAP (see order-fulfillment.bpmn documentation and the ground-truth doc): the
+      load-tester's Worker publishes `ship-order` with no variable payload, so today this catch
+      event only proves the correlation/convergence mechanic, not the "orderId re-sighting per
+      catch" ground-truth line item. No output mapping is attached to the catch event for that
+      reason — mapping a nonexistent message variable would silently null out orderId on every
+      catch, which is worse than omitting it. Once Worker.java is extended to publish message
+      variables, add `zeebe:output source="=orderId" target="orderId"` here (last-write-wins on
+      the shared instance is fine for the demo: each write is still its own VARIABLE record, so
+      sightings capture every value even though only the latest is visible on the instance).</bpmn:documentation>
+    <bpmn:startEvent id="StartEvent_1" name="Region shipping opened">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=0" target="parcelsLoaded" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_ToAwaitShipOrder</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToAwaitShipOrder" sourceRef="StartEvent_1" targetRef="Event_AwaitShipOrder" />
+    <bpmn:intermediateCatchEvent id="Event_AwaitShipOrder" name="Await ship order">
+      <bpmn:incoming>Flow_ToAwaitShipOrder</bpmn:incoming>
+      <bpmn:incoming>Flow_LoopBack</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToLoadParcel</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_ShipOrder" messageRef="Message_ShipOrder" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_ToLoadParcel" sourceRef="Event_AwaitShipOrder" targetRef="Activity_LoadParcel" />
+    <bpmn:serviceTask id="Activity_LoadParcel" name="Load parcel">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="region_shipping_load_parcel" />
+        <zeebe:ioMapping>
+          <zeebe:output source="=parcelsLoaded + 1" target="parcelsLoaded" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_ToLoadParcel</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToMoreParcels</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToMoreParcels" sourceRef="Activity_LoadParcel" targetRef="Gateway_MoreParcels" />
+    <bpmn:exclusiveGateway id="Gateway_MoreParcels" name="More parcels?" default="Flow_ToBatchEnd">
+      <bpmn:incoming>Flow_ToMoreParcels</bpmn:incoming>
+      <bpmn:outgoing>Flow_LoopBack</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ToBatchEnd</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_LoopBack" name="parcelsLoaded &#60; 20" sourceRef="Gateway_MoreParcels" targetRef="Event_AwaitShipOrder">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=parcelsLoaded &#60; 20</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_ToBatchEnd" sourceRef="Gateway_MoreParcels" targetRef="EndEvent_1" />
+    <bpmn:endEvent id="EndEvent_1" name="Region shipment batch complete">
+      <bpmn:incoming>Flow_ToBatchEnd</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_ShipOrder" name="ship-order">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=region" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_region-shipping">
+    <bpmndi:BPMNPlane id="BPMNPlane_region-shipping" bpmnElement="region-shipping">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="126" y="245" width="90" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_AwaitShipOrder_di" bpmnElement="Event_AwaitShipOrder">
+        <dc:Bounds x="260" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="238" y="245" width="82" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_LoadParcel_di" bpmnElement="Activity_LoadParcel">
+        <dc:Bounds x="370" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_MoreParcels_di" bpmnElement="Gateway_MoreParcels" isMarkerVisible="true">
+        <dc:Bounds x="535" y="195" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="520" y="165" width="80" height="27" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="642" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="614" y="245" width="92" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToAwaitShipOrder_di" bpmnElement="Flow_ToAwaitShipOrder">
+        <di:waypoint x="188" y="220" /><di:waypoint x="260" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToLoadParcel_di" bpmnElement="Flow_ToLoadParcel">
+        <di:waypoint x="296" y="220" /><di:waypoint x="370" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToMoreParcels_di" bpmnElement="Flow_ToMoreParcels">
+        <di:waypoint x="470" y="220" /><di:waypoint x="535" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_LoopBack_di" bpmnElement="Flow_LoopBack">
+        <di:waypoint x="560" y="195" /><di:waypoint x="560" y="120" /><di:waypoint x="278" y="120" /><di:waypoint x="278" y="202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToBatchEnd_di" bpmnElement="Flow_ToBatchEnd">
+        <di:waypoint x="585" y="220" /><di:waypoint x="642" y="220" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
