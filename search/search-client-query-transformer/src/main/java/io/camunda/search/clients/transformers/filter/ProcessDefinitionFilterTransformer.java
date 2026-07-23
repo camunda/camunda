@@ -86,11 +86,20 @@ public class ProcessDefinitionFilterTransformer
     if (state == null) {
       return null;
     }
-    if (state == ProcessDefinitionState.DELETED) {
-      return term(STATE, ProcessDefinitionState.DELETED.name());
+    // ACTIVE is the implicit default for documents indexed before this field existed, so a missing
+    // field also counts as ACTIVE. Every other state requires an exact match.
+    if (state != ProcessDefinitionState.ACTIVE) {
+      return term(STATE, state.name());
     }
     return bool(b -> {
-          b.mustNot(List.of(term(STATE, ProcessDefinitionState.DELETED.name())));
+          b.should(
+              List.of(
+                  term(STATE, ProcessDefinitionState.ACTIVE.name()),
+                  bool(nb -> {
+                        nb.mustNot(List.of(SearchQueryBuilders.exists(STATE)));
+                        return nb;
+                      })
+                      .toSearchQuery()));
           return b;
         })
         .toSearchQuery();

@@ -126,12 +126,14 @@
         </if>
       </if>
       <if test="filter.state != null">
-        <if test="filter.state.name() == 'DELETED'">
-          AND STATE = #{filter.state}
-        </if>
-        <if test="filter.state.name() == 'ACTIVE'">
-          AND (STATE = #{filter.state} OR STATE IS NULL)
-        </if>
+        <choose>
+          <when test="filter.state.name() == 'ACTIVE'">
+            AND (STATE = #{filter.state} OR STATE IS NULL)
+          </when>
+          <otherwise>
+            AND STATE = #{filter.state}
+          </otherwise>
+        </choose>
       </if>
     </where>
   </sql>
