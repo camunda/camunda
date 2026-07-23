@@ -179,6 +179,11 @@ public class InvestigateService {
         continue;
       }
       final DecomposeRow top = decomposeResult.rows().get(0);
+      if (top.delta() == null) {
+        // Present only in the current window -- a level, not a change; no driver finding (its
+        // contributionShare is 0 anyway, but be explicit: the claim below needs baseline/delta).
+        continue;
+      }
       final double effect = Math.abs(top.contributionShare());
       if (effect < MIN_EFFECT) {
         continue;

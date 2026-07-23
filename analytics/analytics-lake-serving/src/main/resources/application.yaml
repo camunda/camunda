@@ -14,6 +14,18 @@
 server:
   port: 8092
 
+spring:
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          # Static resources (index.html + hashed assets) revalidate on every load: without this
+          # there is no Cache-Control at all, browsers cache index.html heuristically off
+          # Last-Modified, and after a redeploy they keep referencing old hashed bundles that no
+          # longer exist -- a blank page that survives normal reloads. Revalidation is cheap
+          # (304s); the hashed assets change name per build anyway.
+          no-cache: true
+
 management:
   endpoints:
     web:

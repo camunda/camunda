@@ -40,11 +40,13 @@ import org.springframework.stereotype.Service;
  * _cnt} column — for a {@code measure == null} (bare count) query, {@code weightColumn} is {@code
  * cnt} and doubles as the value itself.
  *
- * <p>A dim value present in only one of the two periods has no {@code delta} and is skipped (not
- * reported as a zero) — appearing/disappearing entirely is a different kind of finding than "this
- * subgroup's average shifted", and folding it in would silently misattribute contribution share.
- * {@code aggregateDelta == 0} makes every {@code contributionShare} {@code 0.0} rather than a
- * division artifact (NaN/Infinity).
+ * <p>A dim value present only in the current window is still reported (level-style consumers — the
+ * dashboard's ranked-breakdown tiles — read {@code current} and would otherwise starve on any
+ * warehouse younger than the baseline span), but with a {@code null} baseline/delta and a zero
+ * {@code contributionShare}: appearing entirely is a different kind of finding than "this
+ * subgroup's average shifted", so it never counts toward change attribution. {@code aggregateDelta
+ * == 0} likewise makes every {@code contributionShare} {@code 0.0} rather than a division artifact
+ * (NaN/Infinity).
  */
 @Service
 public class DecomposeService {
@@ -118,16 +120,18 @@ public class DecomposeService {
 
       final List<DecomposeRow> rows = new ArrayList<>();
       for (final String dimValue : currentByDim.keySet()) {
-        if (!baselineByDim.containsKey(dimValue)) {
-          continue; // present only in the current window -- see class javadoc.
-        }
         final double current = currentByDim.get(dimValue);
-        final double baseline = baselineByDim.get(dimValue);
-        final double delta = current - baseline;
+        // A dim value with no baseline presence still gets a row (level-style consumers -- the
+        // dashboard's ranked-breakdown tiles -- read `current` and would otherwise starve on any
+        // warehouse younger than the baseline span), but with a null baseline/delta and a zero
+        // contributionShare so the change-attribution math never counts it -- appearing entirely
+        // is a different kind of finding than "this subgroup's average shifted".
+        final Double baseline = baselineByDim.get(dimValue);
+        final Double delta = baseline == null ? null : current - baseline;
         final double weight =
             totalWeight == 0 ? 0.0 : weightByDim.getOrDefault(dimValue, 0.0) / totalWeight;
         final double contributionShare =
-            aggregateDelta == 0 ? 0.0 : (delta * weight) / aggregateDelta;
+            delta == null || aggregateDelta == 0 ? 0.0 : (delta * weight) / aggregateDelta;
         rows.add(new DecomposeRow(dimValue, current, baseline, delta, contributionShare, weight));
       }
       rows.sort(
@@ -282,8 +286,8 @@ public class DecomposeService {
   public record DecomposeRow(
       String value,
       double current,
-      double baseline,
-      double delta,
+      Double baseline,
+      Double delta,
       double contributionShare,
       double weight) {}
 

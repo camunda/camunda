@@ -126,8 +126,10 @@ export interface DecomposeRequest {
 export interface DecomposeRow {
   value: string;
   current: number;
-  baseline: number;
-  delta: number;
+  /** null when the dim value has no baseline presence (e.g. a warehouse younger than the
+   * baseline span) -- such rows carry a level (`current`) but no change attribution. */
+  baseline: number | null;
+  delta: number | null;
   contributionShare: number;
 }
 
