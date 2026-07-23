@@ -26,6 +26,7 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
@@ -100,6 +101,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
   private final Map<String, ExponentialBackoffRetryDelay> groupBackoffRetry = new HashMap<>();
   private final Duration minRetryDelay;
   private final Duration maxRetryDelay;
+  private ScheduledTimer advancePhaseRetryTimer;
 
   ClusterConfigurationManagerImpl(
       final ConcurrencyControl executor,
@@ -511,35 +513,6 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     return future;
   }
 
-  /**
-   * Seeds a partition group configuration (e.g. a non-default physical tenant) if it does not exist
-   * yet. Existing groups are left untouched.
-   */
-  ActorFuture<Void> setPartitionGroupConfig(
-      final String groupId, final PartitionGroupConfiguration groupConfiguration) {
-    final var future = executor.<Void>createFuture();
-    executor.run(
-        () -> {
-          final var current = persistedCurrentConfiguration.getConfiguration();
-          if (current.hasPartitionGroup(groupId)) {
-            future.complete(null);
-            return;
-          }
-          final Map<String, PartitionGroupConfiguration> groups =
-              new HashMap<>(current.partitionGroups());
-          groups.put(groupId, groupConfiguration);
-          final var updated =
-              new CurrentClusterConfiguration(
-                  current.version(),
-                  current.globalConfiguration(),
-                  groups,
-                  current.phasedChangeState());
-          updateLocalCurrentConfiguration(updated)
-              .ifRightOrLeft(applied -> future.complete(null), future::completeExceptionally);
-        });
-    return future;
-  }
-
   void registerGlobalChangeAppliers(final GlobalConfigurationChangeAppliers appliers) {
     executor.run(
         () -> {
@@ -605,9 +578,36 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     }
 
     if (plan.hasNextPhase()) {
-      updateMultiConfiguration(CurrentClusterConfiguration::activateNextPhase);
+      updateMultiConfiguration(CurrentClusterConfiguration::activateNextPhase)
+          .onComplete(
+              (ignore, error) -> {
+                if (error != null) {
+                  LOG.warn("Failed to advance phased change plan to next phase", error);
+                  scheduleAdvancePhase();
+                } else {
+                  advancePhaseRetryTimer = null;
+                }
+              });
     } else {
-      updateMultiConfiguration(c -> c.completePlan(PhasedChangePlanStatus.COMPLETED));
+      updateMultiConfiguration(c -> c.completePlan(PhasedChangePlanStatus.COMPLETED))
+          .onComplete(
+              (ignore, error) -> {
+                if (error != null) {
+                  LOG.warn("Failed to complete phased change plan", error);
+                  scheduleAdvancePhase();
+                } else {
+                  advancePhaseRetryTimer = null;
+                }
+              });
+    }
+  }
+
+  private void scheduleAdvancePhase() {
+    if (advancePhaseRetryTimer == null) {
+      advancePhaseRetryTimer =
+          executor.schedule(
+              backoffRetry.nextDelay(),
+              () -> maybeAdvancePhase(persistedCurrentConfiguration.getConfiguration()));
     }
   }
 
@@ -795,7 +795,7 @@ public final class ClusterConfigurationManagerImpl implements ClusterConfigurati
     if (currentGroup == null
         || currentGroup.version()
             != configurationOnWhichOperationIsApplied.partitionGroup(groupId).version()) {
-      LOG.debug(
+      LOG.warn(
           "Partition group '{}' changed while applying operation {}. Most likely the change was cancelled.",
           groupId,
           operation);

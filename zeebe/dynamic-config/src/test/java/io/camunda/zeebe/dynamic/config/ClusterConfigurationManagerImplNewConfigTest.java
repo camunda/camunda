@@ -11,10 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor.NoopClusterChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.ClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.GlobalConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor.NoopModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionGroupConfigurationChangeAppliersImpl;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
@@ -35,14 +37,18 @@ import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.GlobalPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangePlanStatus;
 import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -290,5 +296,254 @@ final class ClusterConfigurationManagerImplNewConfigTest {
     final var lastChange = config.phasedChangeState().lastChange();
     assertThat(lastChange).isPresent();
     assertThat(lastChange.get().status()).isEqualTo(PhasedChangePlanStatus.COMPLETED);
+  }
+
+  @Test
+  void shouldRetryPendingOperationInPartitionGroupIfFailed() {
+    // given — member 0 is the coordinator; it is part of the cluster and the default group, which
+    // has member 1 holding partition 1; a plan is initiated to add member 0 as a replica of
+    // partition 1, but the operation fails (e.g., due to a network error)
+    final var manager = newManager(MEMBER_0);
+    final var group =
+        new PartitionGroupConfiguration(
+            1,
+            0,
+            Map.of(
+                MEMBER_0,
+                BrokerPartitionState.initialize(Map.of()),
+                MEMBER_1,
+                BrokerPartitionState.initialize(
+                    Map.of(1, PartitionState.active(1, partitionConfig)))),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.empty());
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            new GlobalConfiguration(
+                1,
+                Optional.empty(),
+                Map.of(
+                    MEMBER_0, new BrokerState(0, Instant.EPOCH, State.ACTIVE),
+                    MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()),
+            Map.of(CurrentClusterConfiguration.DEFAULT_GROUP, group),
+            PhasedChangeState.empty());
+    manager.updateMultiConfiguration(ignored -> seeded).join();
+
+    // Simulate failure of the operation (e.g., due to network error)
+    manager.registerPartitionGroupChangeAppliers(
+        CurrentClusterConfiguration.DEFAULT_GROUP,
+        new PartitionGroupConfigurationChangeAppliersImpl(
+            new FailingExecutor(1),
+            new NoopPartitionScalingChangeExecutor(),
+            new NoopClusterChangeExecutor(),
+            new NoopModeChangeExecutor()));
+
+    // when — a partition-group phase adds member 0 as a replica of partition 1, but the operation
+    // fails; then the plan is retried
+    manager
+        .updateMultiConfiguration(
+            c ->
+                c.initPlan(
+                    List.of(
+                        new PartitionGroupParallelPhase(
+                            Map.of(
+                                CurrentClusterConfiguration.DEFAULT_GROUP,
+                                List.of(new PartitionJoinOperation(MEMBER_0, 1, 1)))))))
+        .join();
+
+    // then — the operation was retried and completed successfully
+    Awaitility.await("Pending operation should be retried and completed")
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () -> {
+              final var config = configuration(manager);
+              assertThat(
+                      config
+                          .partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP)
+                          .hasPendingChanges())
+                  .isFalse();
+              assertThat(config.phasedChangeState().pending()).isEmpty();
+            });
+    final var config = configuration(manager);
+    final var defaultGroup = config.partitionGroup(CurrentClusterConfiguration.DEFAULT_GROUP);
+    assertThat(defaultGroup.hasMember(MEMBER_0))
+        .describedAs("Member 0 is added to the default group")
+        .isTrue();
+    assertThat(defaultGroup.hasPendingChanges()).isFalse();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+  }
+
+  @Test
+  void shouldRetryPendingOperationInGlobalPhaseIfFailed() {
+    // given — member 0 is the coordinator; it is not yet part of the cluster; a plan is initiated
+    // to add member 0 to the cluster, but the operation fails (e.g., due to a network error)
+    final var manager = newManager(MEMBER_0);
+    final var seeded =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            new GlobalConfiguration(
+                1,
+                Optional.empty(),
+                Map.of(MEMBER_1, new BrokerState(0, Instant.EPOCH, State.ACTIVE)),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()),
+            Map.of(),
+            PhasedChangeState.empty());
+    manager.updateMultiConfiguration(ignored -> seeded).join();
+
+    // Simulate failure of the operation (e.g., due to network error)
+    manager.registerGlobalChangeAppliers(
+        new GlobalConfigurationChangeAppliersImpl(
+            new FailingExecutor(1), new NoopClusterChangeExecutor()));
+
+    // when — a global phase adds member 0 to the cluster, but the operation fails; then the plan is
+    // retried
+    manager
+        .updateMultiConfiguration(
+            c -> c.initPlan(List.of(new GlobalPhase(List.of(new MemberJoinOperation(MEMBER_0))))))
+        .join();
+
+    // then — the operation was retried and completed successfully
+    Awaitility.await("Pending operation should be retried and completed")
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () -> {
+              final var config = configuration(manager);
+              assertThat(config.globalConfiguration().hasPendingChanges()).isFalse();
+              assertThat(config.phasedChangeState().pending()).isEmpty();
+            });
+    final var config = configuration(manager);
+    assertThat(config.globalConfiguration().getMember(MEMBER_0).state())
+        .describedAs("Member 0 is added to the cluster")
+        .isEqualTo(State.ACTIVE);
+    assertThat(config.globalConfiguration().hasPendingChanges()).isFalse();
+    assertThat(config.phasedChangeState().pending()).isEmpty();
+  }
+
+  private static class FailingExecutor
+      implements ClusterMembershipChangeExecutor, PartitionChangeExecutor {
+
+    private int numFailures;
+
+    private FailingExecutor(final int numFailures) {
+      this.numFailures = numFailures;
+    }
+
+    @Override
+    public ActorFuture<Void> addBroker(final MemberId memberId) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
+
+    @Override
+    public ActorFuture<Void> removeBroker(final MemberId memberId) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
+
+    @Override
+    public ActorFuture<Void> join(
+        final int partitionId,
+        final Map<MemberId, Integer> membersWithPriority,
+        final DynamicPartitionConfig partitionConfig) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
+
+    @Override
+    public ActorFuture<Void> leave(final int partitionId) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
+
+    @Override
+    public ActorFuture<Void> bootstrap(
+        final int partitionId,
+        final int priority,
+        final DynamicPartitionConfig partitionConfig,
+        final boolean initializeFromConfig) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
+
+    @Override
+    public ActorFuture<Void> reconfigurePriority(final int partitionId, final int newPriority) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
+
+    @Override
+    public ActorFuture<Void> forceReconfigure(
+        final int partitionId, final Collection<MemberId> members) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
+
+    @Override
+    public ActorFuture<Void> disableExporter(final int partitionId, final String exporterId) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
+
+    @Override
+    public ActorFuture<Void> deleteExporter(final int partitionId, final String exporterId) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
+
+    @Override
+    public ActorFuture<Void> enableExporter(
+        final int partitionId,
+        final String exporterId,
+        final long metadataVersion,
+        final String initializeFrom) {
+      if (numFailures > 0) {
+        numFailures--;
+        return TestActorFuture.failedFuture(new RuntimeException("Simulated failure"));
+      } else {
+        return TestActorFuture.completedFuture(null);
+      }
+    }
   }
 }
