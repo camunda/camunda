@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -174,6 +175,125 @@ class DataExportersTest {
           .containsEntry("arg1", "value1") // unified taken as-is
           .doesNotContainKey("arg2") // legacy dropped: no merger ⇒ whole-map replace
           .doesNotContainKey("mergedby"); // merger did not run
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        // no secondary-storage type set ⇒ default (elasticsearch, document-based) autoconfigures
+        // "camundaexporter" (base args) BEFORE populateFromExporters runs. Declaring the same
+        // exporter here with a matching class-name makes it also flow through the unified/legacy
+        // merge path, with the real io.camunda.exporter.config.CamundaExporterConfigMerger
+        // (on the classpath via camunda-exporter) claiming "io.camunda.exporter.CamundaExporter".
+        "camunda.data.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
+        "camunda.data.exporters.camundaexporter.args.connect.cluster-name=my-custom-cluster",
+      })
+  class WithCamundaExporterAutoconfigAndUnifiedOverride {
+    final BrokerBasedProperties brokerCfg;
+
+    WithCamundaExporterAutoconfigAndUnifiedOverride(
+        @Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldMergeAutoconfiguredArgsWithUnifiedOverrideInsteadOfReplacing() {
+      final ExporterCfg exporterCfg = brokerCfg.getExporters().get("camundaexporter");
+      assertThat(exporterCfg).isNotNull();
+
+      final Map<String, Object> args = exporterCfg.getArgs();
+      // proves it's a merge, not a wholesale replace: the autoconfigured args carry many more
+      // top-level keys (index, bulk, history, ...) than the single one the override declares
+      assertThat(args.size()).isGreaterThan(1);
+      assertThat(args).containsKey("connect");
+
+      @SuppressWarnings("unchecked")
+      final Map<String, Object> connect = (Map<String, Object>) args.get("connect");
+      assertThat(connect)
+          .containsEntry("clustername", "my-custom-cluster") // unified (overlay) wins
+          .containsEntry("type", "elasticsearch"); // autoconfig-derived key survives the merge
+    }
+  }
+
+  @Nested
+  class WithMultipleMergersClaimingSameExporterClass {
+
+    private final ApplicationContextRunner brokerRunner =
+        new ApplicationContextRunner()
+            .withUserConfiguration(
+                UnifiedConfiguration.class,
+                BrokerBasedPropertiesOverride.class,
+                UnifiedConfigurationHelper.class)
+            .withPropertyValues(
+                "spring.profiles.active=broker",
+                // unified
+                "camunda.data.exporters.foo.class-name=io.camunda.configuration.test.DuplicateClaimedExporter",
+                "camunda.data.exporters.foo.args.arg1=value1",
+                // legacy
+                "zeebe.broker.exporters.foo.className=io.camunda.configuration.test.DuplicateClaimedExporter",
+                "zeebe.broker.exporters.foo.args.arg2=value2");
+
+    @Test
+    void shouldFailFastWhenMultipleMergersClaimTheSameExporterClass() {
+      brokerRunner.run(
+          context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure())
+                .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
+                .rootCause()
+                .hasMessageContaining("Multiple ExporterConfigMerger")
+                .hasMessageContaining("io.camunda.configuration.test.DuplicateClaimedExporter");
+          });
+    }
+  }
+
+  @Nested
+  class WithMergerThatThrows {
+
+    private final ApplicationContextRunner brokerRunner =
+        new ApplicationContextRunner()
+            .withUserConfiguration(
+                UnifiedConfiguration.class,
+                BrokerBasedPropertiesOverride.class,
+                UnifiedConfigurationHelper.class)
+            .withPropertyValues(
+                "spring.profiles.active=broker",
+                // unified
+                "camunda.data.exporters.foo.class-name=io.camunda.configuration.test.FailingMergeExporter",
+                "camunda.data.exporters.foo.args.arg1=value1",
+                // legacy
+                "zeebe.broker.exporters.foo.className=io.camunda.configuration.test.FailingMergeExporter",
+                "zeebe.broker.exporters.foo.args.arg2=value2");
+
+    @Test
+    void shouldWrapMergerRuntimeExceptionInUnifiedConfigurationException() {
+      brokerRunner.run(
+          context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure())
+                .hasRootCauseInstanceOf(IllegalStateException.class)
+                .rootCause()
+                .hasMessageContaining("intentional test merge failure");
+
+            final Throwable unifiedConfigurationException =
+                findThrowableOfType(
+                    context.getStartupFailure(), UnifiedConfigurationException.class);
+            assertThat(unifiedConfigurationException)
+                .isNotNull()
+                .hasMessageContaining("Failed to merge exporter args for exporter 'foo'");
+          });
+    }
+
+    private Throwable findThrowableOfType(final Throwable root, final Class<?> type) {
+      Throwable current = root;
+      while (current != null) {
+        if (type.isInstance(current)) {
+          return current;
+        }
+        current = current.getCause();
+      }
+      return null;
     }
   }
 }
