@@ -80,6 +80,9 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>io.camunda:camunda-zeebe</dep>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <dep>io.camunda:zeebe-protocol-impl</dep>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>
