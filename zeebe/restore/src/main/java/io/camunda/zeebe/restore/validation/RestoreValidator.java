@@ -176,8 +176,8 @@ public final class RestoreValidator
                     .orElseThrow(
                         () ->
                             new NoSuchElementException(
-                                "Could not find a completed backup with id %d for partition %d."
-                                    .formatted(backupId, partitionId))));
+                                "No completed backup found for partition %d with backup id %d"
+                                    .formatted(partitionId, backupId))));
   }
 
   private Map<Integer, long[]> resolveRdbmsRangeBackups(final RestoreRequest request) {
