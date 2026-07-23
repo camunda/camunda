@@ -51,7 +51,7 @@ spec:
         []
       containers:
         - name: tasklist
-          image: camunda/tasklist:8.7.29
+          image: camunda/tasklist:8.7.35
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
