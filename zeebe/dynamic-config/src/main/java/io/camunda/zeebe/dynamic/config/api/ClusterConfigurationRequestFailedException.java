@@ -20,6 +20,35 @@ public sealed interface ClusterConfigurationRequestFailedException {
     }
   }
 
+  /**
+   * Signals that the request is well-formed but cannot be satisfied given the current state of the
+   * system (e.g. no backup covers the requested restore point). Distinct from {@link
+   * InvalidRequest}, which signals a malformed request, and {@link InternalError}, which signals an
+   * unexpected failure.
+   */
+  final class InvalidState extends RuntimeException
+      implements ClusterConfigurationRequestFailedException {
+    public InvalidState(final String message) {
+      super(message);
+    }
+
+    public InvalidState(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  /** Signals that the requested resource (e.g. a backup) does not exist. */
+  final class NotFound extends RuntimeException
+      implements ClusterConfigurationRequestFailedException {
+    public NotFound(final String message) {
+      super(message);
+    }
+
+    public NotFound(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
+
   final class OperationNotAllowed extends RuntimeException
       implements ClusterConfigurationRequestFailedException {
     public OperationNotAllowed(final String message) {

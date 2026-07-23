@@ -12,6 +12,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
+import io.camunda.db.rdbms.write.RdbmsMapperBundle;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.api.model.config.AuthenticationConfiguration;
@@ -31,6 +32,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.IntFunction;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -71,6 +74,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final ScopedJwtDecoderFactory scopedJwtDecoderFactory;
   private final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory;
   private final SearchClientsProxy searchClientsProxy;
+  private final @Nullable IntFunction<Long> rdbmsExportedPositionSupplier;
   private final NodeIdProvider nodeIdProvider;
   private final WorkingDirectory workingDirectory;
 
@@ -94,6 +98,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false)
           final ScopedOidcClaimsProviderFactory scopedOidcClaimsProviderFactory,
       @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
+      @Autowired(required = false) final RdbmsMapperBundle rdbmsMapperBundle,
       final NodeIdProvider nodeIdProvider,
       final WorkingDirectory workingDirectory) {
     this.configuration = configuration;
@@ -110,6 +115,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.scopedJwtDecoderFactory = scopedJwtDecoderFactory;
     this.scopedOidcClaimsProviderFactory = scopedOidcClaimsProviderFactory;
     this.searchClientsProxy = searchClientsProxy;
+    rdbmsExportedPositionSupplier = exportedPositionSupplier(rdbmsMapperBundle);
     this.nodeIdProvider = nodeIdProvider;
     this.workingDirectory = workingDirectory;
   }
@@ -142,6 +148,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             .withNodeIdProvider(nodeIdProvider)
             .withWorkingDirectory(workingDirectory.path())
             .withExporterDescriptors(exporterDescriptors)
+            .withExportedPositionSupplier(rdbmsExportedPositionSupplier)
             .createSystemContext();
     springBrokerBridge.registerShutdownHelper(shutdownHelper::initiateShutdown);
     broker = new Broker(systemContext, springBrokerBridge, Collections.emptyList());
@@ -167,6 +174,18 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     } finally {
       cleanupWorkingDirectory();
     }
+  }
+
+  private static @Nullable IntFunction<Long> exportedPositionSupplier(
+      final @Nullable RdbmsMapperBundle rdbmsMapperBundle) {
+    if (rdbmsMapperBundle == null) {
+      return null;
+    }
+    final var exporterPositionMapper = rdbmsMapperBundle.exporterPositionMapper();
+    return partition -> {
+      final var position = exporterPositionMapper.findOne(partition);
+      return position == null ? null : position.lastExportedPosition();
+    };
   }
 
   private void cleanupWorkingDirectory() {

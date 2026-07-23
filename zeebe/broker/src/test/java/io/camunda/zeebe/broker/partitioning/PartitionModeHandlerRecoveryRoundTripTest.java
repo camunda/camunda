@@ -107,6 +107,8 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
     final var clusterConfigurationService = mock(ClusterConfigurationService.class);
     when(clusterConfigurationService.getPartitionDistribution())
         .thenReturn(new PartitionDistribution(Set.of(metadata1, metadata2)));
+    when(clusterConfigurationService.getCurrentClusterConfiguration())
+        .thenReturn(ClusterConfiguration.uninitialized());
 
     final var brokerInfo = new BrokerInfo(0, null, "localhost:26501").setPartitionGroup(GROUP);
     topologyManager = new TopologyManagerImpl(membershipService, brokerInfo);
@@ -154,6 +156,7 @@ final class PartitionModeHandlerRecoveryRoundTripTest {
             new FailingActorSchedulingService(actorScheduler, PARTITION_ID_2),
             new SimpleMeterRegistry(),
             transport,
+            (ignored) -> 0L,
             topologyManager);
 
     // exit manager: a lightweight fake standing in for a real Raft-based PartitionManagerImpl -

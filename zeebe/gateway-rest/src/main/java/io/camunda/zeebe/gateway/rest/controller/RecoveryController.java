@@ -124,8 +124,9 @@ public final class RecoveryController {
     return switch (code) {
       case INVALID_REQUEST -> Status.INVALID_ARGUMENT;
       case OPERATION_NOT_ALLOWED -> Status.FORBIDDEN;
-      case CONCURRENT_MODIFICATION -> Status.INVALID_STATE;
+      case CONCURRENT_MODIFICATION, INVALID_STATE -> Status.INVALID_STATE;
       case INTERNAL_ERROR -> Status.INTERNAL;
+      case NOT_FOUND -> Status.NOT_FOUND;
     };
   }
 

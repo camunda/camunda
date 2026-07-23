@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -279,7 +280,10 @@ public class PartitionRestoreService {
         statuses.stream()
             .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
             .findAny()
-            .orElseThrow(() -> new BackupNotFoundException(checkpointId));
+            .orElseThrow(
+                () ->
+                    new NoSuchElementException(
+                        "Could not find a completed backup with id %d.".formatted(checkpointId)));
     validator.validateStatus(validStatus);
     return validStatus.id();
   }

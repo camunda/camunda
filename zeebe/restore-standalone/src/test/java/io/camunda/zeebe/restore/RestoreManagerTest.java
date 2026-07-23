@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.NoSuchElementException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -63,7 +64,7 @@ final class RestoreManagerTest {
               () ->
                   restoreManager.restore(
                       1L, false, List.of("lost+found", ".DS_Store", "Thumbs.db")))
-          .hasRootCauseInstanceOf(BackupNotFoundException.class);
+          .hasRootCauseInstanceOf(NoSuchElementException.class);
     }
   }
 

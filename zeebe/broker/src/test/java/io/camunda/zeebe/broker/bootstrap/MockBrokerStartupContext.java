@@ -52,6 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -65,6 +66,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private ConcurrencyControl concurrencyControl = mock(ConcurrencyControl.class);
   private BrokerHealthCheckService healthCheckService = mock(BrokerHealthCheckService.class);
   private SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
+  private IntFunction<Long> exportedPositionSupplier;
   private List<PartitionListener> partitionListeners = List.of();
   private List<PartitionRaftListener> partitionRaftListeners = List.of();
   private ClusterServicesImpl clusterServices = mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS);
@@ -162,6 +164,15 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
 
   public void setSearchClientsProxy(final SearchClientsProxy searchClientsProxy) {
     this.searchClientsProxy = searchClientsProxy;
+  }
+
+  @Override
+  public IntFunction<Long> getExportedPositionSupplier() {
+    return exportedPositionSupplier;
+  }
+
+  public void setExportedPositionSupplier(final IntFunction<Long> exportedPositionSupplier) {
+    this.exportedPositionSupplier = exportedPositionSupplier;
   }
 
   @Override

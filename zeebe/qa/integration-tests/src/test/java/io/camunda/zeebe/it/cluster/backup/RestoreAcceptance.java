@@ -19,8 +19,8 @@ import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.restore.BackupNotFoundException;
 import java.time.Duration;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -42,7 +42,8 @@ public interface RestoreAcceptance {
   default void shouldFailForNonExistingBackup() {
     // then -- restore application exits with an error code
     assertThatCode(() -> restoreBackup(1234))
-        .hasRootCauseExactlyInstanceOf(BackupNotFoundException.class);
+        .hasMessageContaining("No completed backup found for partition 1 with backup id 1234")
+        .isInstanceOf(NoSuchElementException.class);
   }
 
   private void takeBackup(final long backupId) {

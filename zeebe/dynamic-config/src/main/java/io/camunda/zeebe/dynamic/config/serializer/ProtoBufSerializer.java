@@ -1547,6 +1547,8 @@ public class ProtoBufSerializer
       case OPERATION_NOT_ALLOWED -> ErrorCode.OPERATION_NOT_ALLOWED;
       case CONCURRENT_MODIFICATION -> ErrorCode.CONCURRENT_MODIFICATION;
       case INTERNAL_ERROR -> ErrorCode.INTERNAL_ERROR;
+      case INVALID_STATE -> ErrorCode.INVALID_STATE;
+      case NOT_FOUND -> ErrorCode.NOT_FOUND;
     };
   }
 
@@ -1555,6 +1557,8 @@ public class ProtoBufSerializer
       case INVALID_REQUEST -> ErrorResponse.ErrorCode.INVALID_REQUEST;
       case OPERATION_NOT_ALLOWED -> ErrorResponse.ErrorCode.OPERATION_NOT_ALLOWED;
       case CONCURRENT_MODIFICATION -> ErrorResponse.ErrorCode.CONCURRENT_MODIFICATION;
+      case INVALID_STATE -> ErrorResponse.ErrorCode.INVALID_STATE;
+      case NOT_FOUND -> ErrorResponse.ErrorCode.NOT_FOUND;
       case INTERNAL_ERROR, UNRECOGNIZED -> ErrorResponse.ErrorCode.INTERNAL_ERROR;
     };
   }

@@ -21,6 +21,7 @@ import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.write.RdbmsMapperBundle;
+import io.camunda.db.rdbms.write.domain.ExporterPositionModel;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
@@ -34,7 +35,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.function.IntFunction;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -242,7 +245,9 @@ public class RestoreApp implements ApplicationRunner {
             databaseType,
             continuousBackups,
             false);
-    final RestoreValidator validator = new RestoreValidator(backupStore);
+    final var partitionCount = camunda.getCluster().getPartitionCount();
+    final RestoreValidator validator =
+        new RestoreValidator(partitionCount, backupStore, exportedPositionSupplier());
     final var result = validator.validate(restoreRequest);
     if (result.isLeft()) {
       throw (RuntimeException) result.getLeft();
@@ -251,6 +256,16 @@ public class RestoreApp implements ApplicationRunner {
 
   private boolean hasTimeRange() {
     return from != null || to != null;
+  }
+
+  private @Nullable IntFunction<@Nullable Long> exportedPositionSupplier() {
+    if (exporterPositionMapper == null) {
+      return null;
+    }
+    return partition ->
+        Optional.ofNullable(exporterPositionMapper.findOne(partition))
+            .map(ExporterPositionModel::lastExportedPosition)
+            .orElse(null);
   }
 
   private boolean hasBackupId() {
