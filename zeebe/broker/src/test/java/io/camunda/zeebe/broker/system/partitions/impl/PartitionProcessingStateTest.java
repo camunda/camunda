@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -44,16 +44,14 @@ class PartitionProcessingStateTest {
 
     // then
     assertThat(persistedProcessorPauseState).describedAs("Processor State file exists.").exists();
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.isProcessingPaused())
-        .isTrue();
+    assertThat(partitionProcessingState.isProcessingPaused()).isTrue();
 
     partitionProcessingState.resumeProcessing();
 
     assertThat(persistedProcessorPauseState)
         .describedAs("Processor State file does not exist.")
         .doesNotExist();
-    org.assertj.core.api.Assertions.assertThat(partitionProcessingState.isProcessingPaused())
-        .isFalse();
+    assertThat(partitionProcessingState.isProcessingPaused()).isFalse();
   }
 
   @Test
