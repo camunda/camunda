@@ -385,7 +385,7 @@ public final class RecoveryPartitionManager
 
           CompletableFuture.runAsync(() -> restorePartition(metadata, store, ids), executor)
               .thenRunAsync(() -> verifyRestoredPartition(metadata), executor)
-              .whenCompleteAsync(
+              .handleAsync(
                   (ok, error) -> {
                     if (error != null) {
                       LOG.error(
@@ -398,7 +398,19 @@ public final class RecoveryPartitionManager
                       } catch (final Exception cleanupError) {
                         error.addSuppressed(cleanupError);
                       }
-                      result.completeExceptionally(unwrapCompletionException(error));
+                    }
+                    return error;
+                  },
+                  executor)
+              .whenCompleteAsync(
+                  (error, handlerError) -> {
+                    // error is the restore/verification failure (if any), carried over as the
+                    // returned value of the handleAsync stage above, which already ran the
+                    // cleanup delete on the restoreExecutor; handlerError would only be set if
+                    // that stage's own logic threw unexpectedly
+                    final var failure = error != null ? error : handlerError;
+                    if (failure != null) {
+                      result.completeExceptionally(unwrapCompletionException(failure));
                     } else {
                       LOG.info("Restored partition {} from backups {}", partitionId, backupIds);
                       result.complete(null);
