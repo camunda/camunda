@@ -43,6 +43,16 @@
       <artifactId>spring-boot-autoconfigure</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <!-- Used by DeclaredPropertiesCountArchTest to read the int literal passed to
+         UnifiedRecordValue(int) from compiled bytecode, since ArchUnit's own API does not expose
+         constant call arguments. -->
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm</artifactId>
+      <version>9.10.1</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -70,6 +80,9 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>io.camunda:camunda-zeebe</dep>
           </ignoredUnusedDeclaredDependencies>
+          <ignoredUsedUndeclaredDependencies>
+            <dep>io.camunda:zeebe-protocol-impl</dep>
+          </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>
     </plugins>

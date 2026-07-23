@@ -97,7 +97,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final MsgPackReader commandValueReader = new MsgPackReader();
 
   public CommandDistributionRecord() {
-    super(5);
+    super(6);
     declareProperty(partitionIdProperty)
         .declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
