@@ -288,6 +288,11 @@ processing.engine.job.timeout-checker-polling-interval
 processing.engine.max-process-depth
 processing.engine.messages.ttl-checker-batch-limit
 processing.engine.messages.ttl-checker-interval
+processing.engine.secrets.interval
+processing.engine.secrets.retry-backoff-factor
+processing.engine.secrets.retry-initial-delay
+processing.engine.secrets.retry-max-attempts
+processing.engine.secrets.retry-max-delay
 processing.engine.usage-metrics.export-interval
 processing.engine.validators.results-output-max-size
 processing.flow-control.request.aimd.backoff-ratio

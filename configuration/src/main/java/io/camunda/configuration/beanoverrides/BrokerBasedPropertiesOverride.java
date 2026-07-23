@@ -261,6 +261,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromMessages(override, camunda);
     populateFromUsageMetrics(override, camunda);
     populateFromValidators(override, camunda);
+    populateFromSecretResolution(override, camunda);
 
     override
         .getExperimental()
@@ -1254,5 +1255,16 @@ public class BrokerBasedPropertiesOverride {
     jobsCfg.setIncludeVariablesInJobCompletedEvent(job.isIncludeVariablesInJobCompletedEvent());
     jobsCfg.setTimeoutCheckerBatchLimit(job.getTimeoutCheckerBatchLimit());
     jobsCfg.setTimeoutCheckerPollingInterval(job.getTimeoutCheckerPollingInterval());
+  }
+
+  private static void populateFromSecretResolution(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var engineSecrets = camunda.getProcessing().getEngine().getSecrets();
+    final var secretResolutionCfg = override.getExperimental().getEngine().getSecretResolution();
+    secretResolutionCfg.setInterval(engineSecrets.getInterval());
+    secretResolutionCfg.setRetryMaxAttempts(engineSecrets.getRetryMaxAttempts());
+    secretResolutionCfg.setRetryInitialDelay(engineSecrets.getRetryInitialDelay());
+    secretResolutionCfg.setRetryMaxDelay(engineSecrets.getRetryMaxDelay());
+    secretResolutionCfg.setRetryBackoffFactor(engineSecrets.getRetryBackoffFactor());
   }
 }
