@@ -247,8 +247,13 @@ public class CohortCompareService {
       if (q1 == null || q2 == null || q3 == null) {
         continue;
       }
+      // decode(), not CAST(blob AS VARCHAR): vars_json is a BLOB in production, and DuckDB's
+      // blob-to-varchar rendering escapes bytes (including quotes) as \xHH literals, corrupting
+      // the JSON before json_extract sees it. typeof-guarded so VARCHAR fixture warehouses still
+      // read as-is (same idiom as ProcessDefinitionsService/ConditionsService).
       final String valueExpr =
-          "TRY_CAST(json_extract(CAST(vars_json AS VARCHAR), '$."
+          "TRY_CAST(json_extract(CASE WHEN typeof(vars_json) = 'BLOB'"
+              + " THEN decode(CAST(vars_json AS BLOB)) ELSE CAST(vars_json AS VARCHAR) END, '$."
               + varName.replace("'", "''")
               + "') AS DOUBLE)";
       final String bucketExpr =
