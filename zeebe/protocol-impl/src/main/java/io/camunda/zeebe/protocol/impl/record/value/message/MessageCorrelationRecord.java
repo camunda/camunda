@@ -36,7 +36,7 @@ public final class MessageCorrelationRecord extends UnifiedRecordValue
   private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
 
   public MessageCorrelationRecord() {
-    super(7);
+    super(8);
     declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(variablesProp)
