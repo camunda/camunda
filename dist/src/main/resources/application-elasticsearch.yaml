@@ -86,10 +86,6 @@ zeebe:
               verifyHostname: true
               selfSigned: false
 
-          bulk:
-            delay: 5
-            size: 1000
-
           index:
             prefix:
             zeebeIndexPrefix: zeebe-record
