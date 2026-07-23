@@ -9,6 +9,7 @@ package io.camunda.analytics.lake.state;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import io.camunda.analytics.lake.state.TranslatorState.ObjectSightingList;
 import io.camunda.analytics.lake.state.TranslatorState.VariantAccumulator;
 import io.camunda.analytics.lake.state.TranslatorState.VariantName;
 import io.camunda.eventbridge.streaming.state.api.KeyValueStore;
@@ -50,6 +51,7 @@ public final class RocksDbTranslatorState implements TranslatorState {
   private final KeyValueStore<DbBytes, VariantNameValue> variantNames;
 
   private final KeyValueStore<DbBytes, FlowEndpointsValue> flowEndpoints;
+  private final KeyValueStore<DbLong, ObjectSightingListValue> objectSightings;
 
   // Mutation flyweights — reused across calls on the single translator thread.
   private final DbLong instanceKey = new DbLong();
@@ -66,6 +68,8 @@ public final class RocksDbTranslatorState implements TranslatorState {
 
   private final DbBytes flowEndpointsKey = new DbBytes();
   private final FlowEndpointsValue flowEndpointsValue = new FlowEndpointsValue();
+  private final DbLong objectSightingsInstanceKey = new DbLong();
+  private final ObjectSightingListValue objectSightingListValue = new ObjectSightingListValue();
 
   public RocksDbTranslatorState(final Path stateDir) {
     provider = RocksDbStateStoreProvider.open(stateDir.toFile(), new SimpleMeterRegistry());
@@ -87,6 +91,9 @@ public final class RocksDbTranslatorState implements TranslatorState {
     flowEndpoints =
         provider.keyValueStore(
             LakeColumnFamilies.FLOW_ENDPOINTS, new DbBytes(), new FlowEndpointsValue());
+    objectSightings =
+        provider.keyValueStore(
+            LakeColumnFamilies.OBJECT_SIGHTINGS, new DbLong(), new ObjectSightingListValue());
   }
 
   @Override
@@ -199,6 +206,27 @@ public final class RocksDbTranslatorState implements TranslatorState {
   public FlowEndpoints flowEndpoints(final long processDefinitionKey, final String flowId) {
     flowEndpointsKey.wrapBytes(flowEndpointsKey(processDefinitionKey, flowId));
     return flowEndpoints.get(flowEndpointsKey).map(FlowEndpointsValue::toRecord).orElse(null);
+  }
+
+  @Override
+  public void putObjectSightings(final long instanceKey, final ObjectSightingList sightings) {
+    objectSightingsInstanceKey.wrapLong(instanceKey);
+    objectSightings.put(objectSightingsInstanceKey, objectSightingListValue.set(sightings));
+  }
+
+  @Override
+  public ObjectSightingList getObjectSightings(final long instanceKey) {
+    objectSightingsInstanceKey.wrapLong(instanceKey);
+    return objectSightings
+        .get(objectSightingsInstanceKey)
+        .map(ObjectSightingListValue::toRecord)
+        .orElse(null);
+  }
+
+  @Override
+  public void deleteObjectSightings(final long instanceKey) {
+    objectSightingsInstanceKey.wrapLong(instanceKey);
+    objectSightings.delete(objectSightingsInstanceKey);
   }
 
   @Override

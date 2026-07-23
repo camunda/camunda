@@ -29,6 +29,9 @@ public final class RawTableSchemas {
   public static final String INSTANCES_TABLE = "instances";
   public static final String ACTIVITIES_TABLE = "activities";
   public static final String VARIANTS_TABLE = "variants";
+  public static final String OBJECTS_TABLE = "objects";
+  public static final String INSTANCE_LINKS_TABLE = "instance_links";
+  public static final String OBJECT_RELATIONS_TABLE = "object_relations";
 
   private RawTableSchemas() {}
 
@@ -111,6 +114,14 @@ public final class RawTableSchemas {
    * <em>is</em> activation order, and, being unique, leaves no tie for {@code started_at} to break.
    * See {@link #instances(Schema)}'s javadoc for why that makes the sorter's equal-keys worst case
    * unreachable here too.
+   *
+   * <p>Schema v4 adds {@code flow_scope_key} (nullable {@code LONG}): the element's immediate BPMN
+   * flow scope's element instance key ({@code ProcessInstanceRecordValue#getFlowScopeKey()}),
+   * {@code null} when it equals the owning instance key (a top-level element's own flow scope) —
+   * the subtree-attribution enabler journey reads need, e.g. "every element inside this
+   * multi-instance body". See {@code
+   * io.camunda.analytics.lake.write.IcebergLakeWriter#ACTIVITY_SCHEMA}'s own javadoc for the
+   * field-id side of this.
    */
   public static TableSchema activities(final Schema icebergSchema) {
     return new TableSchema(
@@ -142,7 +153,107 @@ public final class RawTableSchemas {
             timestamptzColumn(icebergSchema, "started_at", -1, false),
             timestamptzColumn(icebergSchema, "ended_at", -1, false),
             column(icebergSchema, "duration_ms", ColumnType.LONG, -1, false),
-            timestamptzColumn(icebergSchema, "instance_started_at", -1, true)));
+            timestamptzColumn(icebergSchema, "instance_started_at", -1, true),
+            // Schema v4 -- see this method's own javadoc paragraph above.
+            column(icebergSchema, "flow_scope_key", ColumnType.LONG, -1, false, true)));
+  }
+
+  /**
+   * The object-fabric sightings dictionary table: one row per distinct (object type, object id,
+   * instance, scope) ever sighted (see {@code io.camunda.analytics.lake.translate.LakeTranslator}'s
+   * "Object fabric capture" javadoc section). Not a partials table (no declaration fingerprint) —
+   * same reasoning as {@link #variants(Schema)}: a row's content is fully determined by its key, so
+   * there is nothing for a fingerprint to guard against. Sort key {@code (object_type, object_id)};
+   * family day source is {@code first_seen}.
+   */
+  public static TableSchema objects(final Schema icebergSchema) {
+    return new TableSchema(
+        OBJECTS_TABLE,
+        List.of(
+            column(
+                icebergSchema,
+                "object_type",
+                ColumnType.STRING_DICT,
+                ObjectColumns.SORT_OBJECT_TYPE,
+                false),
+            column(
+                icebergSchema,
+                "object_id",
+                ColumnType.STRING_DICT,
+                ObjectColumns.SORT_OBJECT_ID,
+                false),
+            column(icebergSchema, "instance_key", ColumnType.LONG, -1, false),
+            column(icebergSchema, "process_id", ColumnType.STRING_DICT, -1, false),
+            column(icebergSchema, "version", ColumnType.INT, -1, false),
+            // NULL == root scope -- see LakeTranslator's own scope-key convention.
+            column(icebergSchema, "scope_key", ColumnType.LONG, -1, false, true),
+            column(icebergSchema, "qualifier", ColumnType.STRING_DICT, -1, false),
+            timestamptzColumn(icebergSchema, "first_seen", -1, true)));
+  }
+
+  /**
+   * The call-activity instance-link dictionary table: one row per child instance ever created via a
+   * call activity (see {@code LakeTranslator}'s "Object fabric capture" javadoc section). Not a
+   * partials table, same reasoning as {@link #objects(Schema)}. Sort key {@code
+   * (parent_instance_key, child_instance_key)}; family day source is {@code linked_at}.
+   */
+  public static TableSchema instanceLinks(final Schema icebergSchema) {
+    return new TableSchema(
+        INSTANCE_LINKS_TABLE,
+        List.of(
+            column(
+                icebergSchema,
+                "parent_instance_key",
+                ColumnType.LONG,
+                InstanceLinkColumns.SORT_PARENT_INSTANCE_KEY,
+                false),
+            column(
+                icebergSchema,
+                "child_instance_key",
+                ColumnType.LONG,
+                InstanceLinkColumns.SORT_CHILD_INSTANCE_KEY,
+                false),
+            column(icebergSchema, "link_type", ColumnType.STRING_DICT, -1, false),
+            column(icebergSchema, "via_element_instance_key", ColumnType.LONG, -1, false, true),
+            timestamptzColumn(icebergSchema, "linked_at", -1, true)));
+  }
+
+  /**
+   * The object-relations dictionary table: one row per distinct (parent type, parent id, child
+   * type, child id) edge ever derived at instance completion (see {@code LakeTranslator}'s "Object
+   * fabric capture" javadoc section for the v1 root⊇non-root rule this backs). Not a partials
+   * table, same reasoning as {@link #objects(Schema)}. Sort key {@code (parent_type, parent_id,
+   * child_type, child_id)}; family day source is {@code first_seen}.
+   */
+  public static TableSchema objectRelations(final Schema icebergSchema) {
+    return new TableSchema(
+        OBJECT_RELATIONS_TABLE,
+        List.of(
+            column(
+                icebergSchema,
+                "parent_type",
+                ColumnType.STRING_DICT,
+                ObjectRelationColumns.SORT_PARENT_TYPE,
+                false),
+            column(
+                icebergSchema,
+                "parent_id",
+                ColumnType.STRING_DICT,
+                ObjectRelationColumns.SORT_PARENT_ID,
+                false),
+            column(
+                icebergSchema,
+                "child_type",
+                ColumnType.STRING_DICT,
+                ObjectRelationColumns.SORT_CHILD_TYPE,
+                false),
+            column(
+                icebergSchema,
+                "child_id",
+                ColumnType.STRING_DICT,
+                ObjectRelationColumns.SORT_CHILD_ID,
+                false),
+            timestamptzColumn(icebergSchema, "first_seen", -1, true)));
   }
 
   private static TableSchema.Column column(
@@ -241,6 +352,9 @@ public final class RawTableSchemas {
     public static final int DURATION_MS = 10;
     public static final int INSTANCE_STARTED_AT = 11;
 
+    /** Schema v4 -- see {@link #activities(Schema)}'s own javadoc; nullable. */
+    public static final int FLOW_SCOPE_KEY = 12;
+
     private static final int SORT_PROCESS_ID = 0;
     private static final int SORT_INSTANCE_KEY = 1;
 
@@ -270,5 +384,61 @@ public final class RawTableSchemas {
     private static final int SORT_VARIANT_HASH = 1;
 
     private VariantColumns() {}
+  }
+
+  /**
+   * See {@link InstanceColumns}; same idea for the {@code objects} dictionary table — {@code
+   * LakeTranslator} appends sighting rows by these positions.
+   */
+  public static final class ObjectColumns {
+    public static final int OBJECT_TYPE = 0;
+    public static final int OBJECT_ID = 1;
+    public static final int INSTANCE_KEY = 2;
+    public static final int PROCESS_ID = 3;
+    public static final int VERSION = 4;
+    public static final int SCOPE_KEY = 5;
+    public static final int QUALIFIER = 6;
+    public static final int FIRST_SEEN = 7;
+
+    private static final int SORT_OBJECT_TYPE = 0;
+    private static final int SORT_OBJECT_ID = 1;
+
+    private ObjectColumns() {}
+  }
+
+  /**
+   * See {@link InstanceColumns}; same idea for the {@code instance_links} dictionary table — {@code
+   * LakeTranslator} appends link rows by these positions.
+   */
+  public static final class InstanceLinkColumns {
+    public static final int PARENT_INSTANCE_KEY = 0;
+    public static final int CHILD_INSTANCE_KEY = 1;
+    public static final int LINK_TYPE = 2;
+    public static final int VIA_ELEMENT_INSTANCE_KEY = 3;
+    public static final int LINKED_AT = 4;
+
+    private static final int SORT_PARENT_INSTANCE_KEY = 0;
+    private static final int SORT_CHILD_INSTANCE_KEY = 1;
+
+    private InstanceLinkColumns() {}
+  }
+
+  /**
+   * See {@link InstanceColumns}; same idea for the {@code object_relations} dictionary table —
+   * {@code LakeTranslator} appends relation rows by these positions.
+   */
+  public static final class ObjectRelationColumns {
+    public static final int PARENT_TYPE = 0;
+    public static final int PARENT_ID = 1;
+    public static final int CHILD_TYPE = 2;
+    public static final int CHILD_ID = 3;
+    public static final int FIRST_SEEN = 4;
+
+    private static final int SORT_PARENT_TYPE = 0;
+    private static final int SORT_PARENT_ID = 1;
+    private static final int SORT_CHILD_TYPE = 2;
+    private static final int SORT_CHILD_ID = 3;
+
+    private ObjectRelationColumns() {}
   }
 }

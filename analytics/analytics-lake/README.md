@@ -47,6 +47,42 @@ into that day's own single output file, never mixing two family days into one fi
 table's data file must carry exactly one partition tuple). `DirectCommitSink` registers each file
 with its day's partition tuple, derived from the encoder's own `DataFileResult#epochDay()`.
 
+## Schema v4 — object-centric process mining (OCPM) fabric
+
+Capture-only (no object lifecycle/metrics yet — a follow-up lane builds those on this output).
+**Old warehouses are incompatible; start from a fresh `lake.dir`.**
+
+- `activities` gains a nullable `flow_scope_key` `LONG` column: the element's immediate BPMN flow
+  scope's element instance key (`ProcessInstanceRecordValue#getFlowScopeKey()`), `null` when it
+  equals the owning instance key (a top-level element's own flow scope is the root) — the
+  subtree-attribution enabler journey reads need (e.g. "every element inside this multi-instance
+  body").
+- Three new dictionary-kind tables (day-partitioned on `first_seen`/`linked_at`, no declaration
+  fingerprint — same arrangement as `variants`):
+  - **`objects`** — one row per distinct (object type, object id, instance, scope) sighted: `
+    object_type`/`object_id` (`STRING_DICT`), `instance_key`, `process_id`, `version`, `scope_key`
+    (nullable `LONG`, `null` = root scope), `qualifier` (`VARIABLE`/`MESSAGE`/`MESSAGE_START`).
+  - **`instance_links`** — one row per child instance created via a call activity: `
+    parent_instance_key`/`child_instance_key`, `link_type` (`CALL_ACTIVITY`), nullable `
+    via_element_instance_key`.
+  - **`object_relations`** — one row per distinct (parent type, parent id, child type, child id)
+    containment edge, derived at instance completion from that instance's own accumulated
+    sightings: a relation is emitted for every (root-scope sighting, non-root-scope sighting) pair
+    whose (type, id) differ.
+
+Object types are declared as configuration-as-code — `io.camunda.analytics.lake.objects.ObjectTypes`
+mirrors `EntityMetrics`'s own declaration style:
+
+```java
+ObjectTypes.declare("customer").identifiedBy(ObjectTypes.variable("customerId")).build();
+```
+
+See `io.camunda.analytics.lake.objects.CompiledObjectTypes`'s own class javadoc for the cross-type
+validation rules (at most one declared type may claim message-correlation identity — a documented
+v1 limitation) and `LakeTranslator`'s own "Object fabric capture" class javadoc section for the full
+sighting/link/relation scheme, including the documented scope-key approximation for
+message-correlated sightings and the per-instance sighting-list cap.
+
 ## Running it against a local stack
 
 You need a running Event Bridge gateway with a `zeebe-records` topic being fed by a Zeebe exporter

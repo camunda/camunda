@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.lake.state;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -86,6 +87,30 @@ public interface TranslatorState extends AutoCloseable {
    */
   record FlowEndpoints(String sourceElementId, String targetElementId) {}
 
+  /**
+   * One object sighting accumulated for an open instance — see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator}'s "Object fabric capture" javadoc section.
+   *
+   * @param scopeKey the Zeebe scope key the sighting occurred at; equal to the owning instance key
+   *     for a root-scope sighting (there is no separate boolean — root-ness is always derived by
+   *     comparing this against the instance key the sighting is stored under)
+   */
+  record ObjectSighting(String objectType, String objectId, long scopeKey) {}
+
+  /**
+   * The compact list of {@link ObjectSighting}s accumulated so far for one open instance, capped at
+   * a documented maximum (see {@code LakeTranslator#MAX_OBJECT_SIGHTINGS_PER_INSTANCE}'s own
+   * javadoc) — {@code overflowed} records that the cap was hit, so further sightings for this
+   * instance are silently dropped from the list (not from the {@code objects} dictionary table,
+   * which is uncapped) rather than growing it unbounded.
+   */
+  record ObjectSightingList(List<ObjectSighting> sightings, boolean overflowed) {
+
+    public ObjectSightingList {
+      sightings = List.copyOf(sightings);
+    }
+  }
+
   void putInstance(long instanceKey, OpenInstance instance);
 
   /** Returns the open instance or {@code null} when unknown (e.g. replay of a finished one). */
@@ -145,6 +170,17 @@ public interface TranslatorState extends AutoCloseable {
    * bootstrap offset). Never guessed, never inferred — {@code null} is the honest answer.
    */
   FlowEndpoints flowEndpoints(long processDefinitionKey, String flowId);
+
+  /** Stores (replaces) the open instance's accumulated object-sighting list. */
+  void putObjectSightings(long instanceKey, ObjectSightingList sightings);
+
+  /**
+   * Returns the instance's accumulated object-sighting list, or {@code null} when none recorded.
+   */
+  ObjectSightingList getObjectSightings(long instanceKey);
+
+  /** Removes the instance's object-sighting list (called on instance eviction). */
+  void deleteObjectSightings(long instanceKey);
 
   /**
    * Full scan of the open instance set, keyed by process instance key. The caller is the single

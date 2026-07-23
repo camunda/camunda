@@ -12,6 +12,8 @@ import io.camunda.analytics.lake.metrics.CompiledEntityMetrics;
 import io.camunda.analytics.lake.metrics.EntityMetrics;
 import io.camunda.analytics.lake.metrics.MetricsRider;
 import io.camunda.analytics.lake.metrics.PollFedRider;
+import io.camunda.analytics.lake.objects.CompiledObjectTypes;
+import io.camunda.analytics.lake.objects.ObjectTypes;
 import io.camunda.analytics.lake.sink.BackpressureGate;
 import io.camunda.analytics.lake.sink.BatchEncoder;
 import io.camunda.analytics.lake.sink.ColumnType;
@@ -123,26 +125,34 @@ public final class LakePocApp {
   private static final int VARS_JSON_AVG_BYTES_PER_ROW = 512;
 
   /**
-   * Ring geometry for the variants dictionary pipeline (see {@code RawTableSchemas#variants}) —
-   * deliberately much smaller than {@link #SEGMENT_ROWS}/{@link #RING_SEGMENTS} above: rows are one
-   * per distinct (process id, version, variant hash) triple ever seen, bounded by the number of
-   * distinct process variants rather than by instance volume, and {@code LakeTranslator}'s own
-   * per-translator seen-cache already suppresses most repeat writes before a row is even attempted
-   * (see its javadoc). {@link SinkConfig#ringSegments()} still requires at least 2 (one FILLING
-   * slot, one SEALED slot for backpressure to have room to bite).
+   * Ring geometry shared by every small, dedicated <b>dictionary-kind</b> pipeline — {@code
+   * variants} (see {@code RawTableSchemas#variants}), and the OCPM object fabric's {@code objects}/
+   * {@code instance_links}/{@code object_relations} (see {@code RawTableSchemas#objects}/{@code
+   * #instanceLinks}/{@code #objectRelations}) — deliberately much smaller than {@link
+   * #SEGMENT_ROWS}/{@link #RING_SEGMENTS} above: rows are one per distinct key ever seen, bounded
+   * by the number of distinct keys rather than by instance volume, and {@code LakeTranslator}'s own
+   * per-translator seen-caches already suppress most repeat writes before a row is even attempted
+   * (see their javadocs). {@link SinkConfig#ringSegments()} still requires at least 2 (one FILLING
+   * slot, one SEALED slot for backpressure to have room to bite). One shared constant set (rather
+   * than one per table) since every dictionary-kind pipeline has the same tiny-row, low-volume
+   * shape — see this class's own {@code buildPartitionPipelines}/{@code buildSinkWiring} for where
+   * each pipeline is built.
    */
-  private static final int VARIANT_SEGMENT_ROWS = 1024;
+  private static final int DICTIONARY_SEGMENT_ROWS = 1024;
 
-  /** See {@link #VARIANT_SEGMENT_ROWS}. */
-  private static final int VARIANT_RING_SEGMENTS = 2;
+  /** See {@link #DICTIONARY_SEGMENT_ROWS}. */
+  private static final int DICTIONARY_RING_SEGMENTS = 2;
 
   /**
-   * Bytes budgeted per row for the {@code variants} table's {@code elements}/{@code flows} BINARY
-   * columns (see {@code SegmentFactory#createSegments}'s {@code binaryAvgBytesPerRow} parameter) —
-   * a PoC-tuned guess sized for a moderately large process's joined, newline-separated id list; see
-   * {@link #VARS_JSON_AVG_BYTES_PER_ROW}'s own javadoc for the same caveat.
+   * Bytes budgeted per row for a dictionary-kind table's own BINARY column(s), if any (see {@code
+   * SegmentFactory#createSegments}'s {@code binaryAvgBytesPerRow} parameter) — only {@code
+   * variants} has any (its {@code elements}/{@code flows} columns); the OCPM object-fabric
+   * dictionary tables have none, so this value is simply unused for their pipelines (harmless —
+   * {@code newPipeline} only applies it to columns actually typed {@code BINARY}). A PoC-tuned
+   * guess sized for a moderately large process's joined, newline-separated id list; see {@link
+   * #VARS_JSON_AVG_BYTES_PER_ROW}'s own javadoc for the same caveat.
    */
-  private static final int VARIANT_ELEMENTS_AVG_BYTES_PER_ROW = 2048;
+  private static final int DICTIONARY_BINARY_AVG_BYTES_PER_ROW = 2048;
 
   private static final long PARK_NANOS_ON_BACKPRESSURE = 1_000_000L; // 1ms
 
@@ -298,9 +308,22 @@ public final class LakePocApp {
     final Table instancesTable = writer.instancesTable();
     final Table activitiesTable = writer.activitiesTable();
     final Table variantsTable = writer.variantsTable();
+    final Table objectsTable = writer.objectsTable();
+    final Table instanceLinksTable = writer.instanceLinksTable();
+    final Table objectRelationsTable = writer.objectRelationsTable();
     final TableSchema instancesSchema = RawTableSchemas.instances(instancesTable.schema());
     final TableSchema activitiesSchema = RawTableSchemas.activities(activitiesTable.schema());
     final TableSchema variantsSchema = RawTableSchemas.variants(variantsTable.schema());
+    final TableSchema objectsSchema = RawTableSchemas.objects(objectsTable.schema());
+    final TableSchema instanceLinksSchema =
+        RawTableSchemas.instanceLinks(instanceLinksTable.schema());
+    final TableSchema objectRelationsSchema =
+        RawTableSchemas.objectRelations(objectRelationsTable.schema());
+
+    // OCPM object-type declarations for this demo -- configuration-as-code, mirroring the
+    // EntityMetrics declarations below. See ObjectTypes' own javadoc and the "customer"/"dispute"
+    // declarations' own comment for what the bank-dispute-handling load driver actually carries.
+    final CompiledObjectTypes objectTypes = demoObjectTypes();
 
     // The metrics declarations -- dims, window, measures; everything downstream (partials
     // schemas, tables, rider plans, merge/finalize SQL, fingerprint) derives from them.
@@ -396,7 +419,16 @@ public final class LakePocApp {
             Set.of("instance_key", "element_key"));
     final IcebergParquetEncoderFactory variantsEncoderFactory =
         new IcebergParquetEncoderFactory(
-            variantsTable.schema(), fileSink, VARIANT_SEGMENT_ROWS, Set.of());
+            variantsTable.schema(), fileSink, DICTIONARY_SEGMENT_ROWS, Set.of());
+    final IcebergParquetEncoderFactory objectsEncoderFactory =
+        new IcebergParquetEncoderFactory(
+            objectsTable.schema(), fileSink, DICTIONARY_SEGMENT_ROWS, Set.of());
+    final IcebergParquetEncoderFactory instanceLinksEncoderFactory =
+        new IcebergParquetEncoderFactory(
+            instanceLinksTable.schema(), fileSink, DICTIONARY_SEGMENT_ROWS, Set.of());
+    final IcebergParquetEncoderFactory objectRelationsEncoderFactory =
+        new IcebergParquetEncoderFactory(
+            objectRelationsTable.schema(), fileSink, DICTIONARY_SEGMENT_ROWS, Set.of());
 
     // Every pipeline commits through the one coordinator: raw-only descriptors are a batch of one,
     // rider-carrying descriptors fan out atomically -- a single commit path either way.
@@ -405,6 +437,9 @@ public final class LakePocApp {
     tablesByName.put("instances", instancesTable);
     tablesByName.put("activities", activitiesTable);
     tablesByName.put("variants", variantsTable);
+    tablesByName.put("objects", objectsTable);
+    tablesByName.put("instance_links", instanceLinksTable);
+    tablesByName.put("object_relations", objectRelationsTable);
     // The rider's one factory dispatches by generated-schema table name -- each partials table has
     // its own iceberg schema and thus its own underlying encoder factory.
     final Map<String, BatchEncoder.Factory> partialsFactories = new HashMap<>();
@@ -425,9 +460,18 @@ public final class LakePocApp {
         instancesSchema,
         activitiesSchema,
         variantsSchema,
+        objectsSchema,
+        instanceLinksSchema,
+        objectRelationsSchema,
         instancesEncoderFactory,
         activitiesEncoderFactory,
         variantsEncoderFactory,
+        objectsEncoderFactory,
+        instanceLinksEncoderFactory,
+        objectRelationsEncoderFactory,
+        commitSink,
+        commitSink,
+        commitSink,
         commitSink,
         commitSink,
         commitSink,
@@ -441,7 +485,41 @@ public final class LakePocApp {
         partialsEncoderFactory,
         coordinator,
         config.flushIntervalMs(),
-        new SimpleMeterRegistry());
+        new SimpleMeterRegistry(),
+        objectTypes);
+  }
+
+  /**
+   * The demo OCPM object-type declaration for this app's driver load ({@code
+   * bankCustomerComplaintDisputeHandling.bpmn}, run via {@code analytics/run-realistic-load.sh}):
+   *
+   * <ul>
+   *   <li><b>{@code customer}</b>, identified by the root-scope {@code customerId} variable — a
+   *       plain numeric field the starter's own payload ({@code realisticPayload.json}) sets on
+   *       every instance at creation, so it is always root-scoped.
+   *   <li><b>{@code dispute}</b>, identified by the {@code correlationKey} variable — this process
+   *       never sets it at root: it is computed by two separate embedded-subprocess start-event
+   *       output mappings (the "Document Request Process" subprocess: {@code disputeId + "-" +
+   *       customerId}; the nested "Vendor fraud claim validation" multi-instance subprocess, once
+   *       per {@code disputePosition}: {@code customerId + "-" + disputePosition.name}), so every
+   *       sighting of it is non-root. Paired with {@code customer}'s always-root sighting, one
+   *       instance genuinely exercises the v1 relations rule (root {@code customer} ⊇ non-root
+   *       {@code dispute}) end to end against real driver data, with no synthetic setup.
+   * </ul>
+   *
+   * <p>The correlation-key identifier source ({@code IdentifierSource.CorrelationKeyIdentifier},
+   * sighting sources 2/3 — message correlation) is deliberately NOT exercised by this demo
+   * declaration: nothing here declares it, so those two sighting sources are simply no-ops against
+   * this particular driver (see {@code CompiledObjectTypes#correlationKeyIdentifiedType}'s own
+   * javadoc) — covered instead by {@code LakeTranslator}'s own unit tests with a synthetic
+   * declaration.
+   */
+  private static CompiledObjectTypes demoObjectTypes() {
+    return CompiledObjectTypes.of(
+        ObjectTypes.declare("customer").identifiedBy(ObjectTypes.variable("customerId")).build(),
+        ObjectTypes.declare("dispute")
+            .identifiedBy(ObjectTypes.variable("correlationKey"))
+            .build());
   }
 
   /**
@@ -774,7 +852,7 @@ public final class LakePocApp {
             SEGMENT_ROWS,
             RING_SEGMENTS,
             VARS_JSON_AVG_BYTES_PER_ROW);
-    // Small, dedicated ring (see VARIANT_SEGMENT_ROWS/VARIANT_RING_SEGMENTS' own javadoc); no
+    // Small, dedicated ring (see DICTIONARY_SEGMENT_ROWS/DICTIONARY_RING_SEGMENTS' own javadoc); no
     // riders -- the variants table is a plain dictionary, not a metrics source.
     final SinkPipeline variantsPipeline =
         newPipeline(
@@ -786,12 +864,58 @@ public final class LakePocApp {
             List.of(),
             wiring.flushIntervalMs(),
             wiring.meterRegistry(),
-            VARIANT_SEGMENT_ROWS,
-            VARIANT_RING_SEGMENTS,
-            VARIANT_ELEMENTS_AVG_BYTES_PER_ROW);
+            DICTIONARY_SEGMENT_ROWS,
+            DICTIONARY_RING_SEGMENTS,
+            DICTIONARY_BINARY_AVG_BYTES_PER_ROW);
+    // OCPM object fabric: three more small, dedicated dictionary-kind rings -- no riders, same
+    // reasoning as variantsPipeline above (see RawTableSchemas#objects/#instanceLinks/
+    // #objectRelations' own javadocs).
+    final SinkPipeline objectsPipeline =
+        newPipeline(
+            wiring.objectsSchema(),
+            partition,
+            gate,
+            wiring.objectsEncoderFactory(),
+            wiring.objectsSink(),
+            List.of(),
+            wiring.flushIntervalMs(),
+            wiring.meterRegistry(),
+            DICTIONARY_SEGMENT_ROWS,
+            DICTIONARY_RING_SEGMENTS,
+            DICTIONARY_BINARY_AVG_BYTES_PER_ROW);
+    final SinkPipeline instanceLinksPipeline =
+        newPipeline(
+            wiring.instanceLinksSchema(),
+            partition,
+            gate,
+            wiring.instanceLinksEncoderFactory(),
+            wiring.instanceLinksSink(),
+            List.of(),
+            wiring.flushIntervalMs(),
+            wiring.meterRegistry(),
+            DICTIONARY_SEGMENT_ROWS,
+            DICTIONARY_RING_SEGMENTS,
+            DICTIONARY_BINARY_AVG_BYTES_PER_ROW);
+    final SinkPipeline objectRelationsPipeline =
+        newPipeline(
+            wiring.objectRelationsSchema(),
+            partition,
+            gate,
+            wiring.objectRelationsEncoderFactory(),
+            wiring.objectRelationsSink(),
+            List.of(),
+            wiring.flushIntervalMs(),
+            wiring.meterRegistry(),
+            DICTIONARY_SEGMENT_ROWS,
+            DICTIONARY_RING_SEGMENTS,
+            DICTIONARY_BINARY_AVG_BYTES_PER_ROW);
     final RowAppender instanceAppender = new SegmentRowAppender(instancesPipeline.ring());
     final RowAppender activityAppender = new SegmentRowAppender(activitiesPipeline.ring());
     final RowAppender variantsAppender = new SegmentRowAppender(variantsPipeline.ring());
+    final RowAppender objectsAppender = new SegmentRowAppender(objectsPipeline.ring());
+    final RowAppender instanceLinksAppender = new SegmentRowAppender(instanceLinksPipeline.ring());
+    final RowAppender objectRelationsAppender =
+        new SegmentRowAppender(objectRelationsPipeline.ring());
     final LakeTranslator translator =
         new LakeTranslator(
             state,
@@ -800,9 +924,19 @@ public final class LakePocApp {
             variantsAppender,
             flowCountsRider,
             startedCountsRider,
-            profilesRider);
+            profilesRider,
+            objectsAppender,
+            instanceLinksAppender,
+            objectRelationsAppender,
+            wiring.objectTypes());
     return new PartitionPipelines(
-        instancesPipeline, activitiesPipeline, variantsPipeline, translator);
+        instancesPipeline,
+        activitiesPipeline,
+        variantsPipeline,
+        objectsPipeline,
+        instanceLinksPipeline,
+        objectRelationsPipeline,
+        translator);
   }
 
   private static SinkPipeline newPipeline(
@@ -877,12 +1011,21 @@ public final class LakePocApp {
       TableSchema instancesSchema,
       TableSchema activitiesSchema,
       TableSchema variantsSchema,
+      TableSchema objectsSchema,
+      TableSchema instanceLinksSchema,
+      TableSchema objectRelationsSchema,
       IcebergParquetEncoderFactory instancesEncoderFactory,
       IcebergParquetEncoderFactory activitiesEncoderFactory,
       IcebergParquetEncoderFactory variantsEncoderFactory,
+      IcebergParquetEncoderFactory objectsEncoderFactory,
+      IcebergParquetEncoderFactory instanceLinksEncoderFactory,
+      IcebergParquetEncoderFactory objectRelationsEncoderFactory,
       DescriptorSink instancesSink,
       DescriptorSink activitiesSink,
       DescriptorSink variantsSink,
+      DescriptorSink objectsSink,
+      DescriptorSink instanceLinksSink,
+      DescriptorSink objectRelationsSink,
       CompiledEntityMetrics instanceMetrics,
       CompiledEntityMetrics activityMetrics,
       CompiledEntityMetrics instanceVariantMetrics,
@@ -893,7 +1036,8 @@ public final class LakePocApp {
       BatchEncoder.Factory partialsEncoderFactory,
       LakeCommitCoordinator coordinator,
       long flushIntervalMs,
-      MeterRegistry meterRegistry) {}
+      MeterRegistry meterRegistry,
+      CompiledObjectTypes objectTypes) {}
 
   /**
    * One owned partition's L0 sink wiring: the three per-table {@link SinkPipeline}s (one per
@@ -904,16 +1048,25 @@ public final class LakePocApp {
     private final SinkPipeline instancesPipeline;
     private final SinkPipeline activitiesPipeline;
     private final SinkPipeline variantsPipeline;
+    private final SinkPipeline objectsPipeline;
+    private final SinkPipeline instanceLinksPipeline;
+    private final SinkPipeline objectRelationsPipeline;
     private final LakeTranslator translator;
 
     private PartitionPipelines(
         final SinkPipeline instancesPipeline,
         final SinkPipeline activitiesPipeline,
         final SinkPipeline variantsPipeline,
+        final SinkPipeline objectsPipeline,
+        final SinkPipeline instanceLinksPipeline,
+        final SinkPipeline objectRelationsPipeline,
         final LakeTranslator translator) {
       this.instancesPipeline = instancesPipeline;
       this.activitiesPipeline = activitiesPipeline;
       this.variantsPipeline = variantsPipeline;
+      this.objectsPipeline = objectsPipeline;
+      this.instanceLinksPipeline = instanceLinksPipeline;
+      this.objectRelationsPipeline = objectRelationsPipeline;
       this.translator = translator;
     }
 
@@ -921,6 +1074,9 @@ public final class LakePocApp {
       instancesPipeline.start();
       activitiesPipeline.start();
       variantsPipeline.start();
+      objectsPipeline.start();
+      instanceLinksPipeline.start();
+      objectRelationsPipeline.start();
     }
 
     boolean translate(final ZeebeRecord record) {
@@ -935,6 +1091,9 @@ public final class LakePocApp {
       instancesPipeline.onPollTick(lastOffset, frontierMs, watermarks);
       activitiesPipeline.onPollTick(lastOffset, frontierMs, watermarks);
       variantsPipeline.onPollTick(lastOffset, frontierMs, watermarks);
+      objectsPipeline.onPollTick(lastOffset, frontierMs, watermarks);
+      instanceLinksPipeline.onPollTick(lastOffset, frontierMs, watermarks);
+      objectRelationsPipeline.onPollTick(lastOffset, frontierMs, watermarks);
     }
 
     /** See {@code LakePocApp#seedWatermarks}. */
@@ -945,13 +1104,19 @@ public final class LakePocApp {
     boolean isFailed() {
       return instancesPipeline.isFailed()
           || activitiesPipeline.isFailed()
-          || variantsPipeline.isFailed();
+          || variantsPipeline.isFailed()
+          || objectsPipeline.isFailed()
+          || instanceLinksPipeline.isFailed()
+          || objectRelationsPipeline.isFailed();
     }
 
     void close() {
       instancesPipeline.close();
       activitiesPipeline.close();
       variantsPipeline.close();
+      objectsPipeline.close();
+      instanceLinksPipeline.close();
+      objectRelationsPipeline.close();
     }
   }
 
