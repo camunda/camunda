@@ -25,6 +25,19 @@ class PhysicalTenantRequiredOverrideValidationTest {
   }
 
   @Test
+  void shouldRejectTenantIdExceeding64Characters() {
+    // given a tenant id one character over the shared length limit
+    final String tooLong = "a".repeat(65);
+    final MockEnvironment environment =
+        environmentWith(Map.of("camunda.physical-tenants." + tooLong + ".cluster.size", 4));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantRequiredOverrideValidation.validate(environment))
+        .withMessageContaining("Invalid physical tenant id");
+  }
+
+  @Test
   void shouldRejectTenantWithoutInitializationBlock() {
     // given a non-default tenant that only overrides an unrelated property
     final MockEnvironment environment =

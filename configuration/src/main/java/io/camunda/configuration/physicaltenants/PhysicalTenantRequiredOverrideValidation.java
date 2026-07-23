@@ -10,6 +10,8 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
+import io.camunda.spring.utils.PhysicalTenantIdDiscovery;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -63,6 +65,11 @@ final class PhysicalTenantRequiredOverrideValidation {
   private PhysicalTenantRequiredOverrideValidation() {}
 
   static void validate(final Environment environment) {
+    try {
+      PhysicalTenantIdDiscovery.discover(environment);
+    } catch (final InvalidPhysicalTenantIdException e) {
+      throw new UnifiedConfigurationException(e);
+    }
     final Set<String> declaredTenants = new LinkedHashSet<>();
     final Set<String> tenantsWithInitialization = new LinkedHashSet<>();
     final int tenantIdIndex = PHYSICAL_TENANTS_NAME.getNumberOfElements();
