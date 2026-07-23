@@ -188,6 +188,32 @@ public class JobBatchActivateAuthorizationTest {
   }
 
   @Test
+  public void shouldRejectWhenUserNotAssignedToDefaultTenantAndNoTenantsProvided() {
+    // given
+    final var user = createUser();
+    addPermissionsToUser(
+        user, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE_PROCESS_INSTANCE);
+
+    // when
+    // no tenant IDs provided: an empty list must not vacuously pass tenant authorization for the
+    // default tenant that determineTenantIds() would otherwise default to
+    final var rejection =
+        engine
+            .jobs()
+            .withType(JOB_TYPE)
+            .withMaxJobsToActivate(2)
+            .withTenantFilter(TenantFilter.PROVIDED)
+            .expectRejection()
+            .activate(user.getUsername());
+
+    // then
+    Assertions.assertThat(rejection).hasRejectionType(RejectionType.UNAUTHORIZED);
+    assertThat(rejection.getRejectionReason())
+        .contains("Expected to activate job batch for tenants")
+        .contains("but user is not authorized");
+  }
+
+  @Test
   public void shouldActivateEmptyBatchForAnonymousCallerWithProvidedTenantFilter() {
     // given
     final var authInfo =
