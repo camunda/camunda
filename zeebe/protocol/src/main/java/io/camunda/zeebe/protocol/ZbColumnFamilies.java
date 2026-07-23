@@ -338,7 +338,18 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   SECRET_REFERENCES_BY_JOB(154, PARTITION_LOCAL),
   // secondary index: (storeId, secretReference, jobKey) → ∅; supports prefix iteration by (storeId,
   // secretReference)
-  JOBS_BY_SECRET_REFERENCE(155, PARTITION_LOCAL);
+  JOBS_BY_SECRET_REFERENCE(155, PARTITION_LOCAL),
+  // suspension marker: processInstanceKey -> State (SUSPENDED/RESUMING); presence of an entry
+  // means the process instance has a suspension marker (either SUSPENDED or still draining as
+  // RESUMING) — the marker is only removed once resuming has fully completed
+  SUSPENDED_PROCESS_INSTANCES(156, PARTITION_LOCAL),
+  // commands diverted while their target process instance is suspended, keyed by a
+  // KeyGenerator-issued bufferedCommandKey -> ProcessInstanceBufferedCommandRecord
+  BUFFERED_PROCESS_INSTANCE_COMMANDS(157, PARTITION_LOCAL),
+  // secondary index: (processInstanceKey, bufferedCommandKey) → ∅; supports FIFO prefix iteration
+  // of buffered commands for a process instance (bufferedCommandKey is KeyGenerator-issued and
+  // therefore monotonically increasing, so key order == FIFO insertion order)
+  BUFFERED_PROCESS_INSTANCE_COMMANDS_BY_PROCESS_INSTANCE_KEY(158, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
