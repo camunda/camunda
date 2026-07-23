@@ -39,7 +39,7 @@ function agentMockResponses(mock: InstanceMock) {
 }
 
 test.describe('AI agent details', () => {
-  // Taller viewport is needed to fix all agent details into the page.
+  // Taller viewport is needed to fit all agent details into the page.
   test.use({viewport: {width: 1280, height: 1400}});
 
   test.beforeEach(async ({context}) => {
