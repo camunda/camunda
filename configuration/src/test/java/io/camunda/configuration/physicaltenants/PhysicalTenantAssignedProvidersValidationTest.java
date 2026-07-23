@@ -556,9 +556,9 @@ class PhysicalTenantAssignedProvidersValidationTest {
 
   @Test
   void shouldRejectTenantIdExceeding64Characters() {
-    // given a tenant id one character over the shared length limit — the only discovery-reachable
-    // invalid case, since Form.UNIFORM normalizes any format-invalid segment (e.g. dashes/upper
-    // case) into a valid id before the shared validation runs
+    // given a tenant id one character over the shared length limit — the only invalid form
+    // reachable through discovery, since ids surface from the property-name walk already
+    // lowercased with dashes stripped, leaving length as the only unnormalized property
     final String tooLong = "a".repeat(MAX_TENANT_ID_LENGTH + 1);
     final Environment environment =
         environmentWith(Map.of("camunda.physical-tenants." + tooLong + ".cluster.size", 4));
