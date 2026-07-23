@@ -5,6 +5,12 @@
 #   -Dlake.serving.warehouse-dir=/tmp/eb-demo/lake-preserved/warehouse
 # lake.serving.state-dir is optional, reserved for the open-state snapshot views a follow-up lane
 # adds. Neither is set here on purpose -- LakeServingProperties fails fast at startup without one.
+#
+# One-backend shape: set lake.serving.ingest.enabled=true to host the lake ingest engine
+# (consume/fold/commit/compact, from analytics-lake) in this process, writing to the same
+# warehouse this app serves. All knobs under lake.serving.ingest.* (contact-point, topic, group,
+# state-dir, flush-rows, flush-interval-ms, ...) default to the standalone runner's values --
+# see LakeIngestProperties. Off by default: tests and the plain serving deployment stay read-only.
 server:
   port: 8092
 

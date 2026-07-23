@@ -19,10 +19,11 @@
   <artifactId>analytics-lake-serving</artifactId>
   <packaging>jar</packaging>
   <name>Analytics Lake Serving</name>
-  <description>Read-only serving application (REST + React UI) over the analytics lake warehouse:
-    an embedded DuckDB instance discovers and queries the Parquet tables the lake writer produces.
-    Ingest, folding and compaction live entirely in analytics-lake; this module never writes to the
-    warehouse.</description>
+  <description>Serving application (REST + React UI) over the analytics lake warehouse: an embedded
+    DuckDB instance discovers and queries the Parquet tables the lake writer produces. Ingest,
+    folding and compaction are implemented entirely in analytics-lake; this application can host
+    that ingest in-process (lake.serving.ingest.enabled) for the one-backend deployment shape, but
+    its own read layer never writes to the warehouse.</description>
 
   <properties>
     <!-- The design-system engine requires Node >= 24.15.0; pin above the repo-wide version.node,
@@ -36,6 +37,14 @@
   </properties>
 
   <dependencies>
+    <!-- The lake engine this application can host in-process (see LakeIngestLifecycle): consume,
+         fold, commit, compact. Optional at runtime via lake.serving.ingest.enabled; the read layer
+         below never touches these classes. -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>analytics-lake</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
