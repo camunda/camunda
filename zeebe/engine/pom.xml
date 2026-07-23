@@ -252,8 +252,12 @@
 
     <dependency>
       <groupId>org.msgpack</groupId>
+      <artifactId>jackson-dataformat-msgpack</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.msgpack</groupId>
       <artifactId>msgpack-core</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -344,6 +348,17 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredNonTestScopedDependencies>
+            <!-- only tests reference msgpack-core classes directly, but jackson-dataformat-msgpack
+              requires it at runtime, so it must stay on the compile scope -->
+            <dependency>org.msgpack:msgpack-core</dependency>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
       </plugin>
     </plugins>
   </build>
