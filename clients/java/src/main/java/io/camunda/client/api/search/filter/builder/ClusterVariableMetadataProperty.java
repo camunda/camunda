@@ -15,38 +15,22 @@
  */
 package io.camunda.client.api.search.filter.builder;
 
-import java.util.List;
-
 /** Advanced filter on a single metadata value. Values are strings or numbers. */
-public interface MetadataValueProperty {
-
-  /** The metadata value equals the given value. */
-  MetadataValueProperty eq(final Object value);
-
-  /** The metadata value does not equal the given value. */
-  MetadataValueProperty neq(final Object value);
-
-  /** The metadata key exists (or not). */
-  MetadataValueProperty exists(final boolean value);
+public interface ClusterVariableMetadataProperty
+    extends PropertyBase<Object, ClusterVariableMetadataProperty> {
 
   /** The metadata value is greater than the given value. */
-  MetadataValueProperty gt(final Number value);
+  ClusterVariableMetadataProperty gt(final Number value);
 
   /** The metadata value is greater than or equal to the given value. */
-  MetadataValueProperty gte(final Number value);
+  ClusterVariableMetadataProperty gte(final Number value);
 
   /** The metadata value is lower than the given value. */
-  MetadataValueProperty lt(final Number value);
+  ClusterVariableMetadataProperty lt(final Number value);
 
   /** The metadata value is lower than or equal to the given value. */
-  MetadataValueProperty lte(final Number value);
-
-  /** The metadata value matches any of the given values. */
-  MetadataValueProperty in(final List<Object> values);
-
-  /** The metadata value matches any of the given values. */
-  MetadataValueProperty in(final Object... values);
+  ClusterVariableMetadataProperty lte(final Number value);
 
   /** The metadata value matches the given pattern. */
-  MetadataValueProperty like(final String value);
+  ClusterVariableMetadataProperty like(final String value);
 }

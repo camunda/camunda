@@ -10,6 +10,7 @@ package io.camunda.gateway.mapping.http.validator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.gateway.protocol.model.CreateClusterVariableRequest;
+import io.camunda.gateway.protocol.model.UpdateClusterVariableRequest;
 import io.camunda.security.validation.ClusterVariableValidator;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +25,12 @@ class ClusterVariableRequestValidatorTest {
   private final ClusterVariableRequestValidator validator =
       new ClusterVariableRequestValidator(
           new ClusterVariableValidator(null) {
+            @Override
+            public List<String> validateTenantClusterVariableRequestWithValue(
+                final String name, final Object value, final String tenantId) {
+              return List.of();
+            }
+
             @Override
             public List<String> validateGlobalClusterVariableRequestWithValue(
                 final String name, final Object value) {
@@ -45,11 +52,14 @@ class ClusterVariableRequestValidatorTest {
             .build();
 
     // when
-    final var result = validator.validateGlobalClusterVariableCreateRequest(request);
+    final var globalResult = validator.validateGlobalClusterVariableCreateRequest(request);
+    final var tenantResult = validator.validateTenantClusterVariableCreateRequest(request, "");
 
     // then
-    assertThat(result).isPresent();
-    assertThat(result.get().getDetail()).contains("must not contain a null key");
+    assertThat(globalResult).isPresent();
+    assertThat(globalResult.get().getDetail()).contains("must not contain a null key");
+    assertThat(tenantResult).isPresent();
+    assertThat(tenantResult.get().getDetail()).contains("must not contain a null key");
   }
 
   @Test
@@ -63,9 +73,50 @@ class ClusterVariableRequestValidatorTest {
             .build();
 
     // when
-    final var result = validator.validateGlobalClusterVariableCreateRequest(request);
+    final var globalResult = validator.validateGlobalClusterVariableCreateRequest(request);
+    final var tenantResult = validator.validateTenantClusterVariableCreateRequest(request, "");
 
     // then
-    assertThat(result).isEmpty();
+    assertThat(globalResult).isEmpty();
+    assertThat(tenantResult).isEmpty();
+  }
+
+  @Test
+  void shouldRejectUpdateMetadataWithNullKey() {
+    // given
+    final Map<String, Object> metadata = new HashMap<>();
+    metadata.put(null, "value");
+    final var request =
+        UpdateClusterVariableRequest.Builder.create().value("bar").metadata(metadata).build();
+
+    // when
+    final var globalResult = validator.validateGlobalClusterVariableUpdateRequest("foo", request);
+    final var tenantResult =
+        validator.validateTenantClusterVariableUpdateRequest("foo", request, "");
+
+    // then
+    assertThat(globalResult).isPresent();
+    assertThat(globalResult.get().getDetail()).contains("must not contain a null key");
+    assertThat(tenantResult).isPresent();
+    assertThat(tenantResult.get().getDetail()).contains("must not contain a null key");
+  }
+
+  @Test
+  void shouldAcceptUpdateMetadataWithNonNullKeys() {
+    // given
+    final var request =
+        UpdateClusterVariableRequest.Builder.create()
+            .value("bar")
+            .metadata(Map.of("key", "value", "", "value2"))
+            .build();
+
+    // when
+    final var globalResult = validator.validateGlobalClusterVariableUpdateRequest("foo", request);
+    final var tenantResult =
+        validator.validateTenantClusterVariableUpdateRequest("foo", request, "");
+
+    // then
+    assertThat(globalResult).isEmpty();
+    assertThat(tenantResult).isEmpty();
   }
 }

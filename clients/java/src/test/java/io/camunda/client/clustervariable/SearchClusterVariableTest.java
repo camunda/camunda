@@ -286,4 +286,65 @@ public class SearchClusterVariableTest extends ClientRestTest {
     assertThat(request.getFilter().getMetadata().get("region").get$In())
         .containsExactly("eu", "us");
   }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataExists() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("env", m -> m.exists(true)))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("env").get$Exists()).isTrue();
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataGte() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("count", m -> m.gte(5)))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("count").get$Gte()).isEqualByComparingTo("5");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataLte() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("count", m -> m.lte(100)))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("count").get$Lte())
+        .isEqualByComparingTo("100");
+  }
+
+  @Test
+  void shouldSearchClusterVariablesByMetadataLike() {
+    // when
+    client
+        .newClusterVariableSearchRequest()
+        .filter(f -> f.metadata("region", m -> m.like("eu-*")))
+        .send()
+        .join();
+
+    // then
+    final ClusterVariableSearchQueryRequest request =
+        gatewayService.getLastRequest(ClusterVariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getMetadata().get("region").get$Like()).isEqualTo("eu-*");
+  }
 }

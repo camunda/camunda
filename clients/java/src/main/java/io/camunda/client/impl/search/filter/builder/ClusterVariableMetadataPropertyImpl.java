@@ -15,73 +15,73 @@
  */
 package io.camunda.client.impl.search.filter.builder;
 
-import io.camunda.client.api.search.filter.builder.MetadataValueProperty;
+import io.camunda.client.api.search.filter.builder.ClusterVariableMetadataProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.protocol.rest.AdvancedMetadataValueFilter;
 import java.math.BigDecimal;
 import java.util.List;
 
-public class MetadataValuePropertyImpl
+public class ClusterVariableMetadataPropertyImpl
     extends TypedSearchRequestPropertyProvider<AdvancedMetadataValueFilter>
-    implements MetadataValueProperty {
+    implements ClusterVariableMetadataProperty {
   private final AdvancedMetadataValueFilter filterProperty = new AdvancedMetadataValueFilter();
 
   @Override
-  public MetadataValueProperty eq(final Object value) {
+  public ClusterVariableMetadataProperty eq(final Object value) {
     filterProperty.set$Eq(value);
     return this;
   }
 
   @Override
-  public MetadataValueProperty neq(final Object value) {
+  public ClusterVariableMetadataProperty neq(final Object value) {
     filterProperty.set$Neq(value);
     return this;
   }
 
   @Override
-  public MetadataValueProperty exists(final boolean value) {
+  public ClusterVariableMetadataProperty exists(final boolean value) {
     filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
-  public MetadataValueProperty gt(final Number value) {
-    filterProperty.set$Gt(toBigDecimal(value));
-    return this;
-  }
-
-  @Override
-  public MetadataValueProperty gte(final Number value) {
-    filterProperty.set$Gte(toBigDecimal(value));
-    return this;
-  }
-
-  @Override
-  public MetadataValueProperty lt(final Number value) {
-    filterProperty.set$Lt(toBigDecimal(value));
-    return this;
-  }
-
-  @Override
-  public MetadataValueProperty lte(final Number value) {
-    filterProperty.set$Lte(toBigDecimal(value));
-    return this;
-  }
-
-  @Override
-  public MetadataValueProperty in(final List<Object> values) {
+  public ClusterVariableMetadataProperty in(final List<Object> values) {
     filterProperty.set$In(values);
     return this;
   }
 
   @Override
-  public MetadataValueProperty in(final Object... values) {
+  public ClusterVariableMetadataProperty in(final Object... values) {
     return in(CollectionUtil.toList(values));
   }
 
   @Override
-  public MetadataValueProperty like(final String value) {
+  public ClusterVariableMetadataProperty gt(final Number value) {
+    filterProperty.set$Gt(toBigDecimal(value));
+    return this;
+  }
+
+  @Override
+  public ClusterVariableMetadataProperty gte(final Number value) {
+    filterProperty.set$Gte(toBigDecimal(value));
+    return this;
+  }
+
+  @Override
+  public ClusterVariableMetadataProperty lt(final Number value) {
+    filterProperty.set$Lt(toBigDecimal(value));
+    return this;
+  }
+
+  @Override
+  public ClusterVariableMetadataProperty lte(final Number value) {
+    filterProperty.set$Lte(toBigDecimal(value));
+    return this;
+  }
+
+  @Override
+  public ClusterVariableMetadataProperty like(final String value) {
     filterProperty.set$Like(value);
     return this;
   }
