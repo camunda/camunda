@@ -50,8 +50,8 @@ export function PerformanceTab({
           valueFormatter={formatDuration}
         />
         <DecomposeByDimTile
-          title="Slowest variants (top 10)"
-          description="p95 duration by execution variant"
+          title="Slowest paths (top 10)"
+          description="p95 duration by execution path"
           entity="instance_variants"
           quantile={0.95}
           dimCandidates={["variantHash", "variant_hash", "variant"]}

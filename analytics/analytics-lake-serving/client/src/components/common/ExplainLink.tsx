@@ -8,19 +8,21 @@
 import { Button } from "@camunda/design-system";
 import { useExplainNavigate, type ExplainPrefill } from "../../lib/explainNav";
 
-/** The "⌕" header action every dashboard tile carries: routes to Explain pre-filled with this
- * tile's own entity/measure/window, so "why did this move" is always one click away. */
+/** The "why?" header action every dashboard tile carries: routes to Ask why pre-filled with this
+ * tile's own entity/measure/filters/window, so "why did this move" is always one click away (see
+ * the design sketch's "every number can be asked why" principle). Visible label per that sketch --
+ * previously an icon-only "⌕" glyph with no on-screen text. */
 export function ExplainLink({ prefill }: { prefill: ExplainPrefill }) {
   const goToExplain = useExplainNavigate();
   return (
     <Button
-      size="icon-sm"
+      size="sm"
       variant="ghost"
-      title="Explain this"
-      aria-label="Explain this"
+      title="Ask why this moved"
+      aria-label="Ask why this moved"
       onClick={() => goToExplain(prefill)}
     >
-      ⌕
+      why?
     </Button>
   );
 }

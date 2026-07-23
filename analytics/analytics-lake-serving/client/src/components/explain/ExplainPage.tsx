@@ -42,14 +42,17 @@ import { ExemplarsPanel } from "./tools/ExemplarsPanel";
 import { ScreenPanel } from "./tools/ScreenPanel";
 import { SeriesPanel } from "./tools/SeriesPanel";
 
+// User-facing tool names, per the design sketch's language map (internal tool/kind names --
+// "decompose", "changepoint", "cohort-compare", "screen", "exemplars", "conditions" -- stay as-is
+// in the API and in code; only the on-screen label changes).
 const TOOL_LABELS: Record<ToolName, string> = {
   series: "Series",
-  changepoint: "Changepoint",
-  decompose: "Decompose",
-  screen: "Screen",
-  "cohort-compare": "Cohort compare",
-  exemplars: "Exemplars",
-  conditions: "Conditions",
+  changepoint: "Shift",
+  decompose: "Breakdown",
+  screen: "Related signals",
+  "cohort-compare": "Slow-vs-fast comparison",
+  exemplars: "Sample cases",
+  conditions: "Path footprint",
 };
 
 /**
@@ -91,7 +94,7 @@ export function ExplainPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold">Explain</h1>
+      <h1 className="text-xl font-semibold">Ask why</h1>
 
       <Card>
         <CardHeader>

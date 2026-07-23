@@ -79,7 +79,7 @@ export function ExemplarsPanel({ prefill }: { prefill?: Partial<ExemplarsRequest
                 <TableHead>Instance</TableHead>
                 <TableHead>Started</TableHead>
                 <TableHead className="text-right">Duration</TableHead>
-                <TableHead>Variant</TableHead>
+                <TableHead>Path</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
