@@ -22,17 +22,36 @@ export class GithubResolver implements Resolver {
     return Promise.all(refs.map((ref) => this.resolveOne(ref)));
   }
 
+  /**
+   * Fetch a same-repo pull request's body for backport-hop validation, or null
+   * if it does not exist. Used to follow `Backport of #N` to the original PR and
+   * validate that PR's attribution (the backport inherits it — C7).
+   */
+  async fetchPullBody(number: number): Promise<string | null> {
+    const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/pulls/${number}`, {
+      headers: this.headers(),
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
+    const data = (await res.json()) as { body?: string | null };
+    return data.body ?? '';
+  }
+
+  private headers(): Record<string, string> {
+    return {
+      authorization: `Bearer ${this.token}`,
+      accept: 'application/vnd.github+json',
+      'x-github-api-version': '2022-11-28',
+      'user-agent': 'camunda-release-notes-gate',
+    };
+  }
+
   private async resolveOne(ref: ParsedRef): Promise<ResolvedRef> {
     const crossRepo = ref.repo !== null && ref.repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
     if (crossRepo) return { ...ref, target: 'missing', crossRepo: true };
 
     const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/issues/${ref.number}`, {
-      headers: {
-        authorization: `Bearer ${this.token}`,
-        accept: 'application/vnd.github+json',
-        'x-github-api-version': '2022-11-28',
-        'user-agent': 'camunda-release-notes-gate',
-      },
+      headers: this.headers(),
     });
     if (res.status === 404) return { ...ref, target: 'missing', crossRepo: false };
     if (!res.ok) throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);

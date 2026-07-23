@@ -22,28 +22,30 @@ exports.syncStickyComment = syncStickyComment;
  * every future run finds the comment it already posted. */
 exports.STICKY_MARKER = '<!-- release-notes-pr-gate -->';
 /** Build the comment body (pure). Always carries the marker on the first line. */
-function renderStickyComment(decision) {
-    const title = decision.outcome === 'pass'
-        ? '### ✅ Release-notes: PR-issue link resolved'
-        : '### ❌ Release-notes: PR-issue link check';
-    const reasons = decision.reasons.map((reason) => `- ${reason}`).join('\n');
-    const footer = decision.outcome === 'pass'
-        ? '_This check now passes — no action needed._'
-        : '_Warn-only during rollout: this does not block merge yet. Fix the link (or tick the opt-out) so release notes attribute this change._';
-    return `${exports.STICKY_MARKER}\n${title}\n\n${reasons}\n\n${footer}\n`;
+function renderStickyComment(gate) {
+    if (gate.outcome === 'pass') {
+        return `${exports.STICKY_MARKER}\n### ✅ Release-notes checks passed\n\n_These checks now pass — no action needed._\n`;
+    }
+    // One block per failing check, each naming the reasons and the fix.
+    const blocks = gate.checks
+        .filter((check) => check.outcome === 'fail')
+        .map((check) => `**${check.label}**\n${check.reasons.map((reason) => `- ${reason}`).join('\n')}`)
+        .join('\n\n');
+    const footer = '_Warn-only during rollout: this does not block merge yet. Addressing it keeps release notes accurate._';
+    return `${exports.STICKY_MARKER}\n### ❌ Release-notes checks\n\n${blocks}\n\n${footer}\n`;
 }
 /**
- * Idempotently reconcile the PR's single sticky comment against the decision.
+ * Idempotently reconcile the PR's single sticky comment against the outcome.
  *
  *  - fail: update the existing comment, or create one if none exists.
  *  - pass: if a comment exists (the PR failed earlier), update it to the
  *          resolved body; if none exists, do nothing — a PR that never failed
  *          stays comment-free, so the gate adds no noise across ~800 PRs.
  */
-async function syncStickyComment(api, decision) {
+async function syncStickyComment(api, gate) {
     const existing = (await api.list()).find((comment) => comment.body.includes(exports.STICKY_MARKER));
-    const body = renderStickyComment(decision);
-    if (decision.outcome === 'fail') {
+    const body = renderStickyComment(gate);
+    if (gate.outcome === 'fail') {
         if (existing) {
             await api.update(existing.id, body);
             return 'updated';
@@ -111,6 +113,68 @@ class GithubCommentApi {
     }
 }
 exports.GithubCommentApi = GithubCommentApi;
+
+
+/***/ }),
+
+/***/ 155:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.evaluateGate = evaluateGate;
+const parser_1 = __nccwpck_require__(883);
+const policy_1 = __nccwpck_require__(86);
+const title_1 = __nccwpck_require__(150);
+/** Evaluate the PR-issue link for one PR body: section refs + opt-out. */
+async function evaluateLink(resolver, body) {
+    const section = (0, parser_1.extractSection)(body);
+    const optOut = (0, parser_1.isOptOutTicked)(body);
+    const refs = section ? (0, parser_1.parseRefs)(section) : [];
+    const resolved = await resolver.resolve(refs);
+    return (0, policy_1.decide)(resolved, optOut);
+}
+async function evaluateGate(resolver, input) {
+    // --- PR-issue link, with a backport-hop fallback (C7/V2) ---
+    // A backport PR passes on its own section if it has one (manual template);
+    // otherwise (bot backports carry only `Backport of #N`, no section) it passes
+    // by inheriting the ORIGINAL PR's attribution.
+    let deliveryPath = 'direct';
+    let link = await evaluateLink(resolver, input.body);
+    if (link.outcome === 'fail') {
+        const backport = (0, parser_1.parseRefs)(input.body).find((ref) => ref.kind === 'backport');
+        if (backport) {
+            const originalBody = await resolver.fetchPullBody(backport.number);
+            if (originalBody !== null) {
+                const original = await evaluateLink(resolver, originalBody);
+                deliveryPath = 'backportHop';
+                link =
+                    original.outcome === 'pass'
+                        ? {
+                            outcome: 'pass',
+                            code: original.code,
+                            reasons: [`Backport of #${backport.number} — inherits that PR's attribution (${original.code}).`],
+                        }
+                        : {
+                            outcome: 'fail',
+                            code: 'unlinked-undeclared',
+                            reasons: [
+                                `Backport of #${backport.number}, but that PR does not link a tracked issue either.`,
+                                ...original.reasons,
+                            ],
+                        };
+            }
+        }
+    }
+    const checks = [{ label: 'PR-issue link', outcome: link.outcome, reasons: [...link.reasons] }];
+    // --- Title lint (D16: skipped for bot authors; link/marker still checked) ---
+    if (!(0, title_1.isTitleExemptAuthor)(input.authorLogin)) {
+        const title = (0, title_1.lintTitle)(input.title);
+        checks.push({ label: 'Title', outcome: title.outcome, reasons: [...title.reasons] });
+    }
+    const outcome = checks.every((check) => check.outcome === 'pass') ? 'pass' : 'fail';
+    return { outcome, checks, deliveryPath };
+}
 
 
 /***/ }),
@@ -219,21 +283,21 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const node_fs_1 = __nccwpck_require__(24);
 const comment_1 = __nccwpck_require__(573);
+const gate_1 = __nccwpck_require__(155);
 const core = __importStar(__nccwpck_require__(93));
-const parser_1 = __nccwpck_require__(883);
-const policy_1 = __nccwpck_require__(86);
 const resolver_1 = __nccwpck_require__(306);
 /**
  * PR-gate lint entrypoint (warn-only rollout).
  *
- * Security: runs on pull_request_target, metadata-only. The PR body is read
- * from the event payload — never by checking out the PR head. The privileged
- * token comes in as an input (reused MONOREPO_RELEASE_APP).
+ * Security: runs on pull_request_target, metadata-only. The PR body/title are
+ * read from the event payload — never by checking out the PR head. The
+ * privileged token comes in as an input (reused MONOREPO_RELEASE_APP).
  *
- * ponytail: warn-only for now — reports the decision to the job summary, the
- * outputs, and a single sticky PR comment (created only when the check fails,
- * flipped to resolved once fixed). Label sync and enforce mode ship in
- * follow-up PRs. `enforce=true` flips a fail into a non-zero exit.
+ * ponytail: warn-only for now — reports the combined gate outcome (PR-issue
+ * link + title lint, with a backport hop) to the job summary, the outputs, and
+ * a single sticky PR comment (created only on failure, flipped to resolved once
+ * fixed). Label sync and enforce mode ship in follow-up PRs. `enforce=true`
+ * flips a fail into a non-zero exit.
  */
 async function run() {
     const token = core.getInput('token', { required: true });
@@ -247,42 +311,42 @@ async function run() {
         core.info('No pull_request in payload; nothing to lint.');
         return;
     }
-    const body = pr.body ?? '';
-    const section = (0, parser_1.extractSection)(body);
-    const optOut = (0, parser_1.isOptOutTicked)(body);
-    const refs = section ? (0, parser_1.parseRefs)(section) : [];
     const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
     const resolver = new resolver_1.GithubResolver(token, owner ?? '', repo ?? '');
-    const resolved = await resolver.resolve(refs);
-    const decision = (0, policy_1.decide)(resolved, optOut);
-    core.setOutput('outcome', decision.outcome);
-    core.setOutput('code', decision.code);
-    const heading = decision.outcome === 'pass' ? '✅ PR-issue link check passed' : '❌ PR-issue link check failed';
-    await core.summary
-        .addHeading(heading, 3)
-        .addList(decision.reasons.slice())
-        .write();
+    const gate = await (0, gate_1.evaluateGate)(resolver, {
+        body: pr.body ?? '',
+        title: pr.title ?? '',
+        authorLogin: pr.user?.login,
+    });
+    const failed = gate.checks.filter((check) => check.outcome === 'fail');
+    const reasons = failed.flatMap((check) => check.reasons.map((reason) => `${check.label}: ${reason}`));
+    core.setOutput('outcome', gate.outcome);
+    core.setOutput('delivery-path', gate.deliveryPath);
+    core.setOutput('failed-checks', failed.map((check) => check.label).join(','));
+    const heading = gate.outcome === 'pass' ? '✅ Release-notes checks passed' : '❌ Release-notes checks failed';
+    const summaryLines = gate.checks.map((check) => `${check.outcome === 'pass' ? '✅' : '❌'} ${check.label}: ${check.reasons.join(' ')}`);
+    await core.summary.addHeading(heading, 3).addList(summaryLines).write();
     // Sticky PR comment (D24: comments from day one). A comment sync failure must
-    // never fail the gate — warn or not, the decision above stands.
+    // never fail the gate — warn or not, the outcome above stands.
     if (pr.number) {
         try {
             const comments = new comment_1.GithubCommentApi(token, owner ?? '', repo ?? '', pr.number);
-            const action = await (0, comment_1.syncStickyComment)(comments, decision);
+            const action = await (0, comment_1.syncStickyComment)(comments, gate);
             core.info(`Sticky comment: ${action}.`);
         }
         catch (err) {
             core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
         }
     }
-    if (decision.outcome === 'fail') {
-        const msg = decision.reasons.join(' ');
+    if (gate.outcome === 'fail') {
+        const msg = reasons.join(' ');
         if (enforce)
             core.setFailed(msg);
         else
             core.warning(`[warn-only] ${msg}`);
     }
     else {
-        core.info(decision.reasons.join(' '));
+        core.info('All release-notes checks passed.');
     }
 }
 run().catch((err) => core.setFailed(err instanceof Error ? err.message : String(err)));
@@ -470,17 +534,36 @@ class GithubResolver {
     async resolve(refs) {
         return Promise.all(refs.map((ref) => this.resolveOne(ref)));
     }
+    /**
+     * Fetch a same-repo pull request's body for backport-hop validation, or null
+     * if it does not exist. Used to follow `Backport of #N` to the original PR and
+     * validate that PR's attribution (the backport inherits it — C7).
+     */
+    async fetchPullBody(number) {
+        const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/pulls/${number}`, {
+            headers: this.headers(),
+        });
+        if (res.status === 404)
+            return null;
+        if (!res.ok)
+            throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
+        const data = (await res.json());
+        return data.body ?? '';
+    }
+    headers() {
+        return {
+            authorization: `Bearer ${this.token}`,
+            accept: 'application/vnd.github+json',
+            'x-github-api-version': '2022-11-28',
+            'user-agent': 'camunda-release-notes-gate',
+        };
+    }
     async resolveOne(ref) {
         const crossRepo = ref.repo !== null && ref.repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
         if (crossRepo)
             return { ...ref, target: 'missing', crossRepo: true };
         const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/issues/${ref.number}`, {
-            headers: {
-                authorization: `Bearer ${this.token}`,
-                accept: 'application/vnd.github+json',
-                'x-github-api-version': '2022-11-28',
-                'user-agent': 'camunda-release-notes-gate',
-            },
+            headers: this.headers(),
         });
         if (res.status === 404)
             return { ...ref, target: 'missing', crossRepo: false };
@@ -491,6 +574,106 @@ class GithubResolver {
     }
 }
 exports.GithubResolver = GithubResolver;
+
+
+/***/ }),
+
+/***/ 150:
+/***/ ((__unused_webpack_module, exports) => {
+
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.BOT_TITLE_EXEMPT = exports.HEADER_MAX = exports.TITLE_TYPES = void 0;
+exports.lintTitle = lintTitle;
+exports.isTitleExemptAuthor = isTitleExemptAuthor;
+/**
+ * PR-title lint — the active rules of `commitlint.config.cjs`, reimplemented as
+ * a pure check so the action keeps zero runtime deps (pulling @commitlint +
+ * config-conventional would vendor hundreds of kB into the committed bundle for
+ * a handful of trivial rules). The config's other rules are disabled ([0,...]).
+ *
+ * DRIFT GUARD: TITLE_TYPES and HEADER_MAX are the single source of truth here,
+ * and the action CI greps commitlint.config.cjs to assert they still match —
+ * so a change to the repo's commit rules fails CI until this is updated.
+ *
+ * Active rules mirrored (see commitlint.config.cjs):
+ *   type-empty:never · type-case:lower-case · type-enum · scope-empty:always ·
+ *   header-max-length:120. Subject/body/footer rules are disabled there.
+ */
+/** commitlint.config.cjs `type-enum`. Keep in sync — CI enforces it. */
+exports.TITLE_TYPES = [
+    'build',
+    'ci',
+    'deps',
+    'docs',
+    'feat',
+    'fix',
+    'merge',
+    'perf',
+    'refactor',
+    'revert',
+    'style',
+    'test',
+];
+/** commitlint.config.cjs `header-max-length`. Keep in sync — CI enforces it. */
+exports.HEADER_MAX = 120;
+// `type` + optional `(scope)` + optional `!` + `: ` + subject. Mirrors the
+// conventional-commit header shape config-conventional parses.
+const HEADER = /^(?<type>[^\s():!]+)(?<scope>\([^)]*\))?!?:[ ](?<subject>.+)$/;
+/** Lint a PR title. Pure — no IO, no bot logic (the caller decides bot skips). */
+function lintTitle(title) {
+    if (title.length > exports.HEADER_MAX) {
+        return {
+            outcome: 'fail',
+            code: 'title-length',
+            reasons: [`The title is ${title.length} characters; keep it within ${exports.HEADER_MAX}.`],
+        };
+    }
+    const match = HEADER.exec(title);
+    if (!match?.groups) {
+        return {
+            outcome: 'fail',
+            code: 'title-format',
+            reasons: [
+                'The title must follow Conventional Commits: `type: summary` (e.g. "fix: correct retry backoff").',
+                `Allowed types: ${exports.TITLE_TYPES.join(', ')}.`,
+            ],
+        };
+    }
+    const { type, scope } = match.groups;
+    if (scope) {
+        return {
+            outcome: 'fail',
+            code: 'title-scope',
+            reasons: [`Scopes are not used in this repo — drop "${scope}" and write "${type}: …".`],
+        };
+    }
+    if (type !== type?.toLowerCase()) {
+        return { outcome: 'fail', code: 'title-type', reasons: [`The type "${type}" must be lower-case.`] };
+    }
+    if (!exports.TITLE_TYPES.includes(type)) {
+        return {
+            outcome: 'fail',
+            code: 'title-type',
+            reasons: [`"${type}" is not an allowed type. Use one of: ${exports.TITLE_TYPES.join(', ')}.`],
+        };
+    }
+    return { outcome: 'pass', code: 'title-ok', reasons: [`Title type "${type}" is valid.`] };
+}
+/**
+ * Bot authors whose titles are machine-generated and exempt from title lint
+ * (D16). Their PR-issue link / backport marker is still validated — only the
+ * title check is skipped.
+ */
+exports.BOT_TITLE_EXEMPT = new Set([
+    'backport-action',
+    'monorepo-devops-automation[bot]',
+    'renovate[bot]',
+    'dependabot[bot]',
+]);
+function isTitleExemptAuthor(login) {
+    return login !== undefined && exports.BOT_TITLE_EXEMPT.has(login);
+}
 
 
 /***/ }),
