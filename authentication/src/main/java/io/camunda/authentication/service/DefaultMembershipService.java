@@ -81,6 +81,9 @@ public class DefaultMembershipService implements MembershipPort {
   @Override
   public List<String> groupIds(final MembershipQuery query) {
     if (isGroupsClaimConfigured) {
+      // OIDC groups-claim path: groups come from the token directly, with no DB lookup. distinct()
+      // removes duplicates, keeping parity with NoDBMembershipService and the original Set-based
+      // result.
       return OidcClaimExtractor.extractOrFallback(
               () -> oidcGroupsExtractor.extract(query.tokenClaims()),
               List.<String>of(),
