@@ -7,6 +7,7 @@
  */
 package io.camunda.analytics.lake.objects;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,12 +38,15 @@ public final class CompiledObjectTypes {
 
   private final Map<String, CompiledObjectType> byVariableName;
   private final CompiledObjectType correlationKeyType;
+  private final Map<String, List<CompiledObjectType>> closingTypesByProcessId;
 
   private CompiledObjectTypes(
       final Map<String, CompiledObjectType> byVariableName,
-      final CompiledObjectType correlationKeyType) {
+      final CompiledObjectType correlationKeyType,
+      final Map<String, List<CompiledObjectType>> closingTypesByProcessId) {
     this.byVariableName = byVariableName;
     this.correlationKeyType = correlationKeyType;
+    this.closingTypesByProcessId = closingTypesByProcessId;
   }
 
   public static CompiledObjectTypes of(final CompiledObjectType... types) {
@@ -93,7 +97,21 @@ public final class CompiledObjectTypes {
         }
       }
     }
-    return new CompiledObjectTypes(Map.copyOf(byVariableName), correlationKeyType);
+    final Map<String, List<CompiledObjectType>> closingTypesByProcessId = new HashMap<>();
+    for (final CompiledObjectType type : types) {
+      for (final ClosingRule rule : type.closingRules()) {
+        final String processId =
+            switch (rule) {
+              case ClosingRule.OnProcessCompletion c -> c.bpmnProcessId();
+            };
+        closingTypesByProcessId.computeIfAbsent(processId, ignored -> new ArrayList<>()).add(type);
+      }
+    }
+    final Map<String, List<CompiledObjectType>> frozenClosingTypes = new HashMap<>();
+    closingTypesByProcessId.forEach(
+        (processId, closingTypes) -> frozenClosingTypes.put(processId, List.copyOf(closingTypes)));
+    return new CompiledObjectTypes(
+        Map.copyOf(byVariableName), correlationKeyType, Map.copyOf(frozenClosingTypes));
   }
 
   /**
@@ -107,5 +125,17 @@ public final class CompiledObjectTypes {
   /** The single object type declaring correlation-key identity, or {@code null} if none does. */
   public CompiledObjectType correlationKeyIdentifiedType() {
     return correlationKeyType;
+  }
+
+  /**
+   * Every declared object type that {@link ObjectTypes.Builder#closes(ClosingRule)} names {@code
+   * bpmnProcessId} as one of its closing processes — empty (never {@code null}) when no type
+   * declares one, which is the common case for most processes in a deployment (see {@code
+   * LakeTranslator}'s "Object lifecycle capture" javadoc section for how this lookup gates the
+   * closing-emission hot path so a non-closing process's completion costs one cheap map lookup and
+   * nothing more).
+   */
+  public List<CompiledObjectType> closingTypesForProcess(final String bpmnProcessId) {
+    return closingTypesByProcessId.getOrDefault(bpmnProcessId, List.of());
   }
 }

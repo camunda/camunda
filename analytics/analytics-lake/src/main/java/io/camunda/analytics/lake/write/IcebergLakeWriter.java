@@ -341,6 +341,26 @@ public final class IcebergLakeWriter implements LakeWriter {
               Types.NestedField.required(4, "child_id", Types.StringType.get()),
               Types.NestedField.required(5, "first_seen", Types.TimestampType.withZone())));
 
+  /**
+   * The object-lifecycle fact table's schema — one row per object closing (see {@code
+   * io.camunda.analytics.lake.translate.LakeTranslator}'s "Object lifecycle capture" javadoc
+   * section and {@code RawTableSchemas#objectLifecycle}'s own javadoc). Created via the same plain
+   * {@link #tableOrCreate} path as {@link #OBJECT_SCHEMA} — no declaration fingerprint: unlike a
+   * generated partials table, this table's rows are not derived from a windowed fold that could
+   * drift under a changed declaration, they are one-time facts written directly by the translator.
+   */
+  private static final Schema OBJECT_LIFECYCLE_SCHEMA =
+      new Schema(
+          List.of(
+              Types.NestedField.required(1, "object_type", Types.StringType.get()),
+              Types.NestedField.required(2, "object_id", Types.StringType.get()),
+              Types.NestedField.required(3, "birth_qualifier", Types.StringType.get()),
+              Types.NestedField.required(4, "birth_ts", Types.TimestampType.withZone()),
+              Types.NestedField.required(5, "closed_at", Types.TimestampType.withZone()),
+              Types.NestedField.required(6, "duration_ms", Types.LongType.get()),
+              Types.NestedField.required(7, "outcome", Types.StringType.get()),
+              Types.NestedField.required(8, "n_sightings", Types.IntegerType.get())));
+
   private static final Logger LOG = LoggerFactory.getLogger(IcebergLakeWriter.class);
 
   private final JdbcCatalog catalog;
@@ -351,6 +371,7 @@ public final class IcebergLakeWriter implements LakeWriter {
   private final Table objectsTable;
   private final Table instanceLinksTable;
   private final Table objectRelationsTable;
+  private final Table objectLifecycleTable;
   private final Connection duckdb;
 
   // One commit mutex per raw table (never a single shared lock across both) -- see #commitLock's
@@ -419,6 +440,11 @@ public final class IcebergLakeWriter implements LakeWriter {
             TableIdentifier.of(namespace, "object_relations"),
             OBJECT_RELATIONS_SCHEMA,
             PartitionSpec.builderFor(OBJECT_RELATIONS_SCHEMA).day("first_seen").build());
+    objectLifecycleTable =
+        tableOrCreate(
+            TableIdentifier.of(namespace, "object_lifecycle"),
+            OBJECT_LIFECYCLE_SCHEMA,
+            PartitionSpec.builderFor(OBJECT_LIFECYCLE_SCHEMA).day("birth_ts").build());
 
     try {
       // One embedded, in-process DuckDB instance for the life of this writer. It never persists
@@ -906,6 +932,14 @@ public final class IcebergLakeWriter implements LakeWriter {
    */
   public Table objectRelationsTable() {
     return objectRelationsTable;
+  }
+
+  /**
+   * The object-lifecycle fact table — see {@link #OBJECT_LIFECYCLE_SCHEMA}'s own javadoc; same
+   * commit arrangement as {@link #variantsTable()}.
+   */
+  public Table objectLifecycleTable() {
+    return objectLifecycleTable;
   }
 
   /**

@@ -298,8 +298,10 @@ public final class LakePocApp {
         stateSnapshotDumper,
         compactor,
         wiring.coordinator(),
+        state,
         config.stateDumpIntervalMs(),
-        config.compactIntervalMs());
+        config.compactIntervalMs(),
+        config.objectTombstoneRetentionMs());
   }
 
   /** Builds the per-table plumbing shared by every partition's {@link SinkPipeline} pair. */
@@ -311,6 +313,7 @@ public final class LakePocApp {
     final Table objectsTable = writer.objectsTable();
     final Table instanceLinksTable = writer.instanceLinksTable();
     final Table objectRelationsTable = writer.objectRelationsTable();
+    final Table objectLifecycleTable = writer.objectLifecycleTable();
     final TableSchema instancesSchema = RawTableSchemas.instances(instancesTable.schema());
     final TableSchema activitiesSchema = RawTableSchemas.activities(activitiesTable.schema());
     final TableSchema variantsSchema = RawTableSchemas.variants(variantsTable.schema());
@@ -319,6 +322,8 @@ public final class LakePocApp {
         RawTableSchemas.instanceLinks(instanceLinksTable.schema());
     final TableSchema objectRelationsSchema =
         RawTableSchemas.objectRelations(objectRelationsTable.schema());
+    final TableSchema objectLifecycleSchema =
+        RawTableSchemas.objectLifecycle(objectLifecycleTable.schema());
 
     // OCPM object-type declarations for this demo -- configuration-as-code, mirroring the
     // EntityMetrics declarations below. See ObjectTypes' own javadoc and the "customer"/"dispute"
@@ -404,6 +409,26 @@ public final class LakePocApp {
             .counter("type_object_or_array_cnt")
             .measure("value", Algebras.doubleScalarStats(), Algebras.signedDoubleExpHistogram(3))
             .build();
+    // Object lifecycle capture: record-fed, same idea as flowMetrics/instanceStartMetrics -- an
+    // object's first-ever sighting (LakeTranslator#foldObjectLifecycleSighting) produces no raw
+    // row of its own, only a birth counter. count()-only: a birth carries nothing worth measuring,
+    // only counting.
+    final CompiledEntityMetrics objectsBornMetrics =
+        EntityMetrics.declare("objects_born", objectsBornVirtualSchema())
+            .dims("object_type")
+            .window(Duration.ofMinutes(1), "birth_ts")
+            .count()
+            .build();
+    // Row-fed, same MetricsRider machinery as instanceMetrics/instanceCohortMetrics above -- rides
+    // the object_lifecycle table's own closing rows, keyed by birth_ts (not closed_at, mirroring
+    // instanceCohortMetrics's own started_at-keyed cohort choice): closed counts per cohort = this
+    // entity's own cnt; survival = objects_born's born count minus this entity's cnt, at read time.
+    final CompiledEntityMetrics objectCohortMetrics =
+        EntityMetrics.declare("object_cohorts", objectLifecycleSchema)
+            .dims("object_type")
+            .window(Duration.ofMinutes(1), "birth_ts")
+            .measure("duration_ms", Algebras.scalarStats(), Algebras.expHistogram(3))
+            .build();
 
     // Mirrors the "<table.location()>/data/<fileName>" convention IcebergLakeWriter's own legacy
     // path uses -- see LocalFileSink's javadoc.
@@ -429,6 +454,12 @@ public final class LakePocApp {
     final IcebergParquetEncoderFactory objectRelationsEncoderFactory =
         new IcebergParquetEncoderFactory(
             objectRelationsTable.schema(), fileSink, DICTIONARY_SEGMENT_ROWS, Set.of());
+    // Small, dedicated ring like every other object-fabric table -- see DICTIONARY_SEGMENT_ROWS'
+    // own javadoc; object_lifecycle rows are one per object closing, bounded by distinct-object
+    // count, not instance volume.
+    final IcebergParquetEncoderFactory objectLifecycleEncoderFactory =
+        new IcebergParquetEncoderFactory(
+            objectLifecycleTable.schema(), fileSink, DICTIONARY_SEGMENT_ROWS, Set.of());
 
     // Every pipeline commits through the one coordinator: raw-only descriptors are a batch of one,
     // rider-carrying descriptors fan out atomically -- a single commit path either way.
@@ -440,6 +471,7 @@ public final class LakePocApp {
     tablesByName.put("objects", objectsTable);
     tablesByName.put("instance_links", instanceLinksTable);
     tablesByName.put("object_relations", objectRelationsTable);
+    tablesByName.put("object_lifecycle", objectLifecycleTable);
     // The rider's one factory dispatches by generated-schema table name -- each partials table has
     // its own iceberg schema and thus its own underlying encoder factory.
     final Map<String, BatchEncoder.Factory> partialsFactories = new HashMap<>();
@@ -450,6 +482,8 @@ public final class LakePocApp {
     registerPartials(writer, instanceStartMetrics, fileSink, tablesByName, partialsFactories);
     registerPartials(writer, instanceCohortMetrics, fileSink, tablesByName, partialsFactories);
     registerPartials(writer, profileMetrics, fileSink, tablesByName, partialsFactories);
+    registerPartials(writer, objectsBornMetrics, fileSink, tablesByName, partialsFactories);
+    registerPartials(writer, objectCohortMetrics, fileSink, tablesByName, partialsFactories);
     final BatchEncoder.Factory partialsEncoderFactory =
         (schema, epochDay) -> partialsFactories.get(schema.table()).newFile(schema, epochDay);
 
@@ -463,12 +497,15 @@ public final class LakePocApp {
         objectsSchema,
         instanceLinksSchema,
         objectRelationsSchema,
+        objectLifecycleSchema,
         instancesEncoderFactory,
         activitiesEncoderFactory,
         variantsEncoderFactory,
         objectsEncoderFactory,
         instanceLinksEncoderFactory,
         objectRelationsEncoderFactory,
+        objectLifecycleEncoderFactory,
+        commitSink,
         commitSink,
         commitSink,
         commitSink,
@@ -482,6 +519,8 @@ public final class LakePocApp {
         instanceStartMetrics,
         instanceCohortMetrics,
         profileMetrics,
+        objectsBornMetrics,
+        objectCohortMetrics,
         partialsEncoderFactory,
         coordinator,
         config.flushIntervalMs(),
@@ -504,8 +543,19 @@ public final class LakePocApp {
    *       per {@code disputePosition}: {@code customerId + "-" + disputePosition.name}), so every
    *       sighting of it is non-root. Paired with {@code customer}'s always-root sighting, one
    *       instance genuinely exercises the v1 relations rule (root {@code customer} ⊇ non-root
-   *       {@code dispute}) end to end against real driver data, with no synthetic setup.
+   *       {@code dispute}) end to end against real driver data, with no synthetic setup. {@code
+   *       dispute} also {@link ObjectTypes.Builder#closes closes} on {@code bankDisputeHandling}'s
+   *       own completion — the driver BPMN's own {@code bpmnProcessId} (see {@code
+   *       bankCustomerComplaintDisputeHandling.bpmn}): every embedded subprocess this process
+   *       contains shares its root process instance, so the top-level process's own completion is
+   *       exactly the moment a dispute's handling is done, one way or another (see {@code
+   *       LakeTranslator}'s "Object lifecycle capture" javadoc section for the full scheme this
+   *       exercises against real driver data).
    * </ul>
+   *
+   * <p>{@code customer} deliberately declares NO closing rule — the default-open case: every
+   * customer sighted by this driver simply never emits a lifecycle fact, demonstrating that a type
+   * with nothing declared is left alone rather than defaulting to some inferred closing behavior.
    *
    * <p>The correlation-key identifier source ({@code IdentifierSource.CorrelationKeyIdentifier},
    * sighting sources 2/3 — message correlation) is deliberately NOT exercised by this demo
@@ -519,6 +569,7 @@ public final class LakePocApp {
         ObjectTypes.declare("customer").identifiedBy(ObjectTypes.variable("customerId")).build(),
         ObjectTypes.declare("dispute")
             .identifiedBy(ObjectTypes.variable("correlationKey"))
+            .closes(ObjectTypes.onProcessCompletion("bankDisputeHandling"))
             .build());
   }
 
@@ -594,6 +645,25 @@ public final class LakePocApp {
   }
 
   /**
+   * Same idea as {@link #flowsVirtualSchema()}, for one object's first-ever sighting (see {@code
+   * LakeTranslator#foldObjectLifecycleSighting}'s own javadoc).
+   */
+  private static TableSchema objectsBornVirtualSchema() {
+    return new TableSchema(
+        "objects_born",
+        List.of(
+            new TableSchema.Column("object_type", ColumnType.STRING_DICT, 1, false, -1, false),
+            new TableSchema.Column(
+                "birth_ts",
+                ColumnType.LONG,
+                2,
+                false,
+                -1,
+                true,
+                TableSchema.LogicalType.TIMESTAMPTZ)));
+  }
+
+  /**
    * Same idea as {@link #flowsVirtualSchema()}, for one completed instance's own final root
    * variable — see {@code LakeTranslator#foldVariableProfiles}'s own javadoc for the fold. {@code
    * value} is the only {@code DOUBLE} column any virtual schema in this app declares: nullable,
@@ -625,8 +695,10 @@ public final class LakePocApp {
       final StateSnapshotDumper stateSnapshotDumper,
       final LakeCompactor compactor,
       final LakeCommitCoordinator coordinator,
+      final TranslatorState state,
       final long stateDumpIntervalMs,
-      final long compactIntervalMs) {
+      final long compactIntervalMs,
+      final long objectTombstoneRetentionMs) {
     // Single-threaded: only this loop mutates these, so plain HashMaps (not the ConcurrentHashMaps
     // used for cachedCommittedOffset/partitionPipelines, which the rebalance-listener thread also
     // touches) suffice.
@@ -699,6 +771,18 @@ public final class LakePocApp {
           if (swept > 0) {
             LOG.info("Swept {} orphaned files queued by the commit coordinator", swept);
           }
+        }
+        // Object lifecycle capture: same housekeeping cadence, same poll-thread-between-polls
+        // placement as the two sweeps above -- a bounded full scan of the OBJECT_LIFECYCLE column
+        // family (see TranslatorState#sweepObjectLifecycleTombstones's own javadoc), costing one
+        // pause proportional to the number of distinct objects ever sighted (open + tombstoned),
+        // the same class of cost StateSnapshotDumper's own forEachOpenInstance scan already pays on
+        // this same thread.
+        final int tombstonesSwept =
+            state.sweepObjectLifecycleTombstones(
+                System.currentTimeMillis() - objectTombstoneRetentionMs);
+        if (tombstonesSwept > 0) {
+          LOG.info("Swept {} closed object-lifecycle tombstone(s)", tombstonesSwept);
         }
         lastCompactAtMs = System.currentTimeMillis();
       }
@@ -815,6 +899,13 @@ public final class LakePocApp {
             wiring.instanceStartMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS);
     final PollFedRider profilesRider =
         new PollFedRider(wiring.profileMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS);
+    // Object lifecycle capture: a fourth poll-fed rider, same reasoning as the three above -- an
+    // object's birth (LakeTranslator#foldObjectLifecycleSighting) produces no raw row of its own.
+    // Rides the instances pipeline too, purely for its flush-tick heartbeat -- like every other
+    // poll-fed rider here, it has no logical connection to the instances TABLE itself.
+    final PollFedRider objectsBornRider =
+        new PollFedRider(
+            wiring.objectsBornMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS);
     final SinkPipeline instancesPipeline =
         newPipeline(
             wiring.instancesSchema(),
@@ -831,7 +922,8 @@ public final class LakePocApp {
                     wiring.instanceCohortMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS),
                 flowCountsRider,
                 startedCountsRider,
-                profilesRider),
+                profilesRider,
+                objectsBornRider),
             wiring.flushIntervalMs(),
             wiring.meterRegistry(),
             SEGMENT_ROWS,
@@ -909,6 +1001,24 @@ public final class LakePocApp {
             DICTIONARY_SEGMENT_ROWS,
             DICTIONARY_RING_SEGMENTS,
             DICTIONARY_BINARY_AVG_BYTES_PER_ROW);
+    // Object lifecycle capture: a fourth small, dedicated dictionary-kind ring, same reasoning as
+    // objectsPipeline/instanceLinksPipeline/objectRelationsPipeline above -- but, unlike those
+    // three, this one DOES carry a rider (object_cohorts rides its own closing rows).
+    final SinkPipeline objectLifecyclePipeline =
+        newPipeline(
+            wiring.objectLifecycleSchema(),
+            partition,
+            gate,
+            wiring.objectLifecycleEncoderFactory(),
+            wiring.objectLifecycleSink(),
+            List.of(
+                new MetricsRider(
+                    wiring.objectCohortMetrics(), wiring.partialsEncoderFactory(), SEGMENT_ROWS)),
+            wiring.flushIntervalMs(),
+            wiring.meterRegistry(),
+            DICTIONARY_SEGMENT_ROWS,
+            DICTIONARY_RING_SEGMENTS,
+            DICTIONARY_BINARY_AVG_BYTES_PER_ROW);
     final RowAppender instanceAppender = new SegmentRowAppender(instancesPipeline.ring());
     final RowAppender activityAppender = new SegmentRowAppender(activitiesPipeline.ring());
     final RowAppender variantsAppender = new SegmentRowAppender(variantsPipeline.ring());
@@ -916,6 +1026,8 @@ public final class LakePocApp {
     final RowAppender instanceLinksAppender = new SegmentRowAppender(instanceLinksPipeline.ring());
     final RowAppender objectRelationsAppender =
         new SegmentRowAppender(objectRelationsPipeline.ring());
+    final RowAppender objectLifecycleAppender =
+        new SegmentRowAppender(objectLifecyclePipeline.ring());
     final LakeTranslator translator =
         new LakeTranslator(
             state,
@@ -928,7 +1040,9 @@ public final class LakePocApp {
             objectsAppender,
             instanceLinksAppender,
             objectRelationsAppender,
-            wiring.objectTypes());
+            wiring.objectTypes(),
+            objectLifecycleAppender,
+            objectsBornRider);
     return new PartitionPipelines(
         instancesPipeline,
         activitiesPipeline,
@@ -936,6 +1050,7 @@ public final class LakePocApp {
         objectsPipeline,
         instanceLinksPipeline,
         objectRelationsPipeline,
+        objectLifecyclePipeline,
         translator);
   }
 
@@ -996,7 +1111,9 @@ public final class LakePocApp {
         Long.getLong("lake.stateDumpIntervalMs", 30000L),
         Long.getLong("lake.compactIntervalMs", 300000L),
         Integer.getInteger("lake.uiPort", 8091),
-        bpmnDirProperty == null ? null : Path.of(bpmnDirProperty));
+        bpmnDirProperty == null ? null : Path.of(bpmnDirProperty),
+        Long.getLong(
+            "lake.objectTombstoneRetentionMs", LakeConfig.DEFAULT_OBJECT_TOMBSTONE_RETENTION_MS));
   }
 
   /**
@@ -1014,18 +1131,21 @@ public final class LakePocApp {
       TableSchema objectsSchema,
       TableSchema instanceLinksSchema,
       TableSchema objectRelationsSchema,
+      TableSchema objectLifecycleSchema,
       IcebergParquetEncoderFactory instancesEncoderFactory,
       IcebergParquetEncoderFactory activitiesEncoderFactory,
       IcebergParquetEncoderFactory variantsEncoderFactory,
       IcebergParquetEncoderFactory objectsEncoderFactory,
       IcebergParquetEncoderFactory instanceLinksEncoderFactory,
       IcebergParquetEncoderFactory objectRelationsEncoderFactory,
+      IcebergParquetEncoderFactory objectLifecycleEncoderFactory,
       DescriptorSink instancesSink,
       DescriptorSink activitiesSink,
       DescriptorSink variantsSink,
       DescriptorSink objectsSink,
       DescriptorSink instanceLinksSink,
       DescriptorSink objectRelationsSink,
+      DescriptorSink objectLifecycleSink,
       CompiledEntityMetrics instanceMetrics,
       CompiledEntityMetrics activityMetrics,
       CompiledEntityMetrics instanceVariantMetrics,
@@ -1033,6 +1153,8 @@ public final class LakePocApp {
       CompiledEntityMetrics instanceStartMetrics,
       CompiledEntityMetrics instanceCohortMetrics,
       CompiledEntityMetrics profileMetrics,
+      CompiledEntityMetrics objectsBornMetrics,
+      CompiledEntityMetrics objectCohortMetrics,
       BatchEncoder.Factory partialsEncoderFactory,
       LakeCommitCoordinator coordinator,
       long flushIntervalMs,
@@ -1051,6 +1173,7 @@ public final class LakePocApp {
     private final SinkPipeline objectsPipeline;
     private final SinkPipeline instanceLinksPipeline;
     private final SinkPipeline objectRelationsPipeline;
+    private final SinkPipeline objectLifecyclePipeline;
     private final LakeTranslator translator;
 
     private PartitionPipelines(
@@ -1060,6 +1183,7 @@ public final class LakePocApp {
         final SinkPipeline objectsPipeline,
         final SinkPipeline instanceLinksPipeline,
         final SinkPipeline objectRelationsPipeline,
+        final SinkPipeline objectLifecyclePipeline,
         final LakeTranslator translator) {
       this.instancesPipeline = instancesPipeline;
       this.activitiesPipeline = activitiesPipeline;
@@ -1067,6 +1191,7 @@ public final class LakePocApp {
       this.objectsPipeline = objectsPipeline;
       this.instanceLinksPipeline = instanceLinksPipeline;
       this.objectRelationsPipeline = objectRelationsPipeline;
+      this.objectLifecyclePipeline = objectLifecyclePipeline;
       this.translator = translator;
     }
 
@@ -1077,6 +1202,7 @@ public final class LakePocApp {
       objectsPipeline.start();
       instanceLinksPipeline.start();
       objectRelationsPipeline.start();
+      objectLifecyclePipeline.start();
     }
 
     boolean translate(final ZeebeRecord record) {
@@ -1094,6 +1220,7 @@ public final class LakePocApp {
       objectsPipeline.onPollTick(lastOffset, frontierMs, watermarks);
       instanceLinksPipeline.onPollTick(lastOffset, frontierMs, watermarks);
       objectRelationsPipeline.onPollTick(lastOffset, frontierMs, watermarks);
+      objectLifecyclePipeline.onPollTick(lastOffset, frontierMs, watermarks);
     }
 
     /** See {@code LakePocApp#seedWatermarks}. */
@@ -1107,7 +1234,8 @@ public final class LakePocApp {
           || variantsPipeline.isFailed()
           || objectsPipeline.isFailed()
           || instanceLinksPipeline.isFailed()
-          || objectRelationsPipeline.isFailed();
+          || objectRelationsPipeline.isFailed()
+          || objectLifecyclePipeline.isFailed();
     }
 
     void close() {
@@ -1117,6 +1245,7 @@ public final class LakePocApp {
       objectsPipeline.close();
       instanceLinksPipeline.close();
       objectRelationsPipeline.close();
+      objectLifecyclePipeline.close();
     }
   }
 

@@ -38,6 +38,9 @@ import java.nio.file.Path;
  *     /process-map} page (see {@link io.camunda.analytics.lake.ui.BpmnCatalog}'s javadoc for the
  *     default resolution order used when this is {@code null}); {@code null} means "use the default
  *     resolution"
+ * @param objectTombstoneRetentionMs how long a {@code CLOSED_TOMBSTONE} object-lifecycle
+ *     accumulator is kept before {@code LakePocApp}'s own housekeeping tick sweeps it (see {@code
+ *     TranslatorState#sweepObjectLifecycleTombstones}'s own javadoc); default 24h
  */
 public record LakeConfig(
     String contactPoint,
@@ -50,4 +53,43 @@ public record LakeConfig(
     long stateDumpIntervalMs,
     long compactIntervalMs,
     int uiPort,
-    Path bpmnDir) {}
+    Path bpmnDir,
+    long objectTombstoneRetentionMs) {
+
+  /** Default {@link #objectTombstoneRetentionMs}: 24 hours. */
+  public static final long DEFAULT_OBJECT_TOMBSTONE_RETENTION_MS = 24L * 60 * 60 * 1000;
+
+  /**
+   * Convenience constructor matching this record's shape before {@link #objectTombstoneRetentionMs}
+   * was added — defaults it to {@link #DEFAULT_OBJECT_TOMBSTONE_RETENTION_MS}. Kept so every
+   * pre-existing 11-arg positional construction (test fixtures that build an {@link
+   * io.camunda.analytics.lake.write.IcebergLakeWriter} directly and never touch object-lifecycle
+   * capture) keeps compiling unchanged.
+   */
+  public LakeConfig(
+      final String contactPoint,
+      final String topic,
+      final String consumerGroup,
+      final Path warehouseDir,
+      final Path stateDir,
+      final int flushRows,
+      final long flushIntervalMs,
+      final long stateDumpIntervalMs,
+      final long compactIntervalMs,
+      final int uiPort,
+      final Path bpmnDir) {
+    this(
+        contactPoint,
+        topic,
+        consumerGroup,
+        warehouseDir,
+        stateDir,
+        flushRows,
+        flushIntervalMs,
+        stateDumpIntervalMs,
+        compactIntervalMs,
+        uiPort,
+        bpmnDir,
+        DEFAULT_OBJECT_TOMBSTONE_RETENTION_MS);
+  }
+}

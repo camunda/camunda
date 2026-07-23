@@ -127,4 +127,76 @@ class CompiledObjectTypesTest {
     assertThat(registry.variableIdentifiedType("customerId")).isEqualTo(customer);
     assertThat(registry.variableIdentifiedType("correlationKey")).isEqualTo(dispute);
   }
+
+  // ---- closing-type lookup ---------------------------------------------------------------------
+
+  @Test
+  void shouldReturnEmptyClosingTypesForANonDeclaredProcess() {
+    // given: a type declaring no closing rule at all (the default-open case)
+    final CompiledObjectType customer =
+        ObjectTypes.declare("customer").identifiedBy(ObjectTypes.variable("customerId")).build();
+
+    // when
+    final CompiledObjectTypes registry = CompiledObjectTypes.of(customer);
+
+    // then
+    assertThat(registry.closingTypesForProcess("anyProcess")).isEmpty();
+  }
+
+  @Test
+  void shouldResolveTheDeclaringTypeForItsClosingProcess() {
+    // given
+    final CompiledObjectType dispute =
+        ObjectTypes.declare("dispute")
+            .identifiedBy(ObjectTypes.variable("correlationKey"))
+            .closes(ObjectTypes.onProcessCompletion("disputeHandling"))
+            .build();
+
+    // when
+    final CompiledObjectTypes registry = CompiledObjectTypes.of(dispute);
+
+    // then
+    assertThat(registry.closingTypesForProcess("disputeHandling")).containsExactly(dispute);
+    assertThat(registry.closingTypesForProcess("someOtherProcess")).isEmpty();
+  }
+
+  @Test
+  void shouldResolveMultipleTypesClosingOnTheSameProcess() {
+    // given: two independently declared types both closing on the same process completion
+    final CompiledObjectType order =
+        ObjectTypes.declare("order")
+            .identifiedBy(ObjectTypes.variable("orderId"))
+            .closes(ObjectTypes.onProcessCompletion("orderFulfillment"))
+            .build();
+    final CompiledObjectType shipment =
+        ObjectTypes.declare("shipment")
+            .identifiedBy(ObjectTypes.variable("shipmentId"))
+            .closes(ObjectTypes.onProcessCompletion("orderFulfillment"))
+            .build();
+
+    // when
+    final CompiledObjectTypes registry = CompiledObjectTypes.of(order, shipment);
+
+    // then
+    assertThat(registry.closingTypesForProcess("orderFulfillment"))
+        .containsExactlyInAnyOrder(order, shipment);
+  }
+
+  @Test
+  void shouldResolveATypeDeclaringMultipleClosingProcessesUnderEachOne() {
+    // given
+    final CompiledObjectType dispute =
+        ObjectTypes.declare("dispute")
+            .identifiedBy(ObjectTypes.variable("correlationKey"))
+            .closes(ObjectTypes.onProcessCompletion("processA"))
+            .closes(ObjectTypes.onProcessCompletion("processB"))
+            .build();
+
+    // when
+    final CompiledObjectTypes registry = CompiledObjectTypes.of(dispute);
+
+    // then
+    assertThat(registry.closingTypesForProcess("processA")).containsExactly(dispute);
+    assertThat(registry.closingTypesForProcess("processB")).containsExactly(dispute);
+  }
 }
