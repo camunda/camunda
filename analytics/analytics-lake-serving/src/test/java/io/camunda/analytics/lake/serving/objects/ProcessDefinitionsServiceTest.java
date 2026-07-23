@@ -107,11 +107,13 @@ class ProcessDefinitionsServiceTest {
     ParquetFixtures.writeTableFromQuery(
         warehouseDir,
         "process_definitions",
+        // encode(): the lake writer stores bpmn_xml as BINARY (BLOB in the view), so the fixture
+        // matches production; the service's typeof guard covers the legacy VARCHAR shape.
         "SELECT CAST(5001 AS BIGINT) AS process_definition_key, '"
             + ObjectFabricFixtures.PROCESS_ID
-            + "' AS process_id, 1 AS version, 'default' AS tenant_id, '"
+            + "' AS process_id, 1 AS version, 'default' AS tenant_id, encode('"
             + BPMN_XML.replace("'", "''")
-            + "' AS bpmn_xml, CAST(TIMESTAMP '2024-01-01 00:00:00' AS TIMESTAMPTZ) AS deployed_at, "
+            + "') AS bpmn_xml, CAST(TIMESTAMP '2024-01-01 00:00:00' AS TIMESTAMPTZ) AS deployed_at, "
             + "DATE '2024-01-01' AS day");
     registry.add("lake.serving.warehouse-dir", () -> warehouseDir.toString());
   }

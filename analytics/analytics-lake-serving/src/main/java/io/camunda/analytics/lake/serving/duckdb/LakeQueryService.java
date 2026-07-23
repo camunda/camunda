@@ -16,14 +16,21 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.duckdb.DuckDBConnection;
 import org.springframework.stereotype.Service;
 
 /**
- * Executes plain SQL against the embedded DuckDB connection, enforcing a hard row cap ({@link
+ * Executes plain SQL against the embedded DuckDB instance, enforcing a hard row cap ({@link
  * LakeServingProperties#maxRows()}) and a best-effort per-statement timeout ({@link
  * LakeServingProperties#queryTimeoutSeconds()}) so a runaway free-form query can never hang a
- * request indefinitely. Reimplements, in this module, the read pattern {@code analytics-lake}'s own
- * demo UI (LakeUiServer) uses today.
+ * request indefinitely.
+ *
+ * <p><b>One connection per statement:</b> a DuckDB JDBC connection is not safe for concurrent
+ * statement execution — parallel dashboard tile queries racing the background view refresher on the
+ * shared root connection fail with "Attempting to execute an unsuccessful or closed pending query
+ * result". Every execution therefore runs on its own short-lived {@link
+ * DuckDBConnection#duplicate() duplicated} connection: same in-memory database and catalog (all
+ * views visible), independent execution state, closed when the statement finishes.
  */
 @Service
 public class LakeQueryService {
@@ -59,7 +66,8 @@ public class LakeQueryService {
    * other than {@link #maxRows} must document why in its own javadoc.
    */
   public QueryResult execute(final String sql, final int rowCap) throws SQLException {
-    try (Statement statement = connection.createStatement()) {
+    try (Connection session = ((DuckDBConnection) connection).duplicate();
+        Statement statement = session.createStatement()) {
       try {
         statement.setQueryTimeout(queryTimeoutSeconds);
       } catch (final SQLException ignored) {
@@ -83,7 +91,8 @@ public class LakeQueryService {
    * /api/tables}.
    */
   public Optional<Object> executeScalar(final String sql) throws SQLException {
-    try (Statement statement = connection.createStatement();
+    try (Connection session = ((DuckDBConnection) connection).duplicate();
+        Statement statement = session.createStatement();
         ResultSet resultSet = statement.executeQuery(sql)) {
       return resultSet.next() ? Optional.ofNullable(resultSet.getObject(1)) : Optional.empty();
     }

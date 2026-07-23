@@ -51,8 +51,13 @@ public class ProcessDefinitionsService {
       throw new NoSuchElementException(
           "No process definitions are available in this warehouse yet");
     }
+    // The lake stores bpmn_xml as BINARY (unique-per-row blobs must not be dictionary-encoded);
+    // decode() reads the UTF-8 bytes back as text. CAST(blob AS VARCHAR) would NOT be equivalent:
+    // it renders non-ASCII bytes as literal \xHH escapes (see ConditionsService for the same
+    // lesson). typeof-guarded so a VARCHAR column (older fixture warehouses) still reads as-is.
     final String sql =
-        "SELECT bpmn_xml FROM "
+        "SELECT CASE WHEN typeof(bpmn_xml) = 'BLOB' THEN decode(CAST(bpmn_xml AS BLOB))"
+            + " ELSE CAST(bpmn_xml AS VARCHAR) END FROM "
             + SqlText.identifier(PROCESS_DEFINITIONS)
             + " WHERE process_id = "
             + SqlText.literal(processId)

@@ -38,6 +38,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.exceptions.NoSuchNamespaceException;
 import org.apache.iceberg.io.CloseableIterable;
 import org.apache.iceberg.jdbc.JdbcCatalog;
+import org.duckdb.DuckDBConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -259,7 +260,8 @@ public class LakeViewRegistry {
               + " AS SELECT * FROM read_parquet(["
               + fileList
               + "])";
-      try (Statement statement = connection.createStatement()) {
+      try (Connection session = ((DuckDBConnection) connection).duplicate();
+          Statement statement = session.createStatement()) {
         statement.execute(sql);
         discovered.add(identifier.name());
       } catch (final SQLException e) {
@@ -343,7 +345,8 @@ public class LakeViewRegistry {
             + " AS SELECT * FROM read_parquet('"
             + escapeSqlLiteral(glob)
             + "')";
-    try (Statement statement = connection.createStatement()) {
+    try (Connection session = ((DuckDBConnection) connection).duplicate();
+        Statement statement = session.createStatement()) {
       statement.execute(sql);
       discovered.add(tableName);
     } catch (final SQLException e) {
