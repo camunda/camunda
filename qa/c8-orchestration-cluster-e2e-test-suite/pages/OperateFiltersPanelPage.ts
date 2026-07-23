@@ -175,6 +175,11 @@ export class OperateFiltersPanelPage {
 
   async selectFlowNode(option: string) {
     await this.flowNodeFilter.click();
+    // The combobox filters its option list by the current input text, so a
+    // previously selected flow node (e.g. one set via a flowNodeId URL filter)
+    // hides every other node. Fill the target text to replace it before
+    // selecting.
+    await this.flowNodeFilter.fill(option);
     await this.page.getByRole('option', {name: option}).click();
   }
 
