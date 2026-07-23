@@ -7,11 +7,11 @@
  */
 package io.camunda.optimize.rest.security.csl;
 
+import io.camunda.security.core.port.out.MembershipPort;
 import io.camunda.security.core.port.out.SecurityPathPort;
 import io.camunda.security.spring.CamundaSecurityAutoConfiguration;
 import io.camunda.security.spring.spi.OidcAuthenticationEntryPoint;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,14 +46,20 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 public class OptimizeCamundaSecurityConfig {
 
   @Bean
-  @ConditionalOnMissingBean
   public SecurityPathPort securityPathPort() {
     return new OptimizeSecurityPathAdapter();
   }
 
+  /**
+   * Stub membership port CSL's claim converters depend on; see {@link OptimizeMembershipAdapter}.
+   */
+  @Bean
+  public MembershipPort membershipPort() {
+    return new OptimizeMembershipAdapter();
+  }
+
   /** Overrides CSL's default OIDC entry point; see {@link OptimizeOidcAuthenticationEntryPoint}. */
   @Bean
-  @ConditionalOnMissingBean
   public OidcAuthenticationEntryPoint oidcAuthenticationEntryPoint(
       final ClientRegistrationRepository clientRegistrationRepository) {
     return new OptimizeOidcAuthenticationEntryPoint(
