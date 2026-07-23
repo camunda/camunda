@@ -12,7 +12,6 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 import static java.time.format.DateTimeFormatter.ISO_ZONED_DATE_TIME;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import org.agrona.DirectBuffer;
@@ -84,7 +83,7 @@ public class FeelToMessagePackTransformer {
   private void writeContextEntry(final Tuple2<String, Object> entry, final Deque<Object> pending) {
     final var entryKey = entry._1();
     final var entryValue = entry._2();
-    stringWrapper.wrap(entryKey.getBytes(StandardCharsets.UTF_8));
+    stringWrapper.wrap(entryKey.getBytes());
     writer.writeString(stringWrapper);
 
     switch (entryValue) {
@@ -148,7 +147,7 @@ public class FeelToMessagePackTransformer {
   }
 
   private void writeStringValue(final String value) {
-    stringWrapper.wrap(value.getBytes(StandardCharsets.UTF_8));
+    stringWrapper.wrap(value.getBytes());
     writer.writeString(stringWrapper);
   }
 
