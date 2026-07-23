@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -83,6 +84,38 @@ class LakeTranslatorObjectFabricTest {
 
   private static final CompiledObjectTypes OBJECT_TYPES =
       CompiledObjectTypes.of(CUSTOMER_TYPE, DISPUTE_TYPE);
+
+  /**
+   * Mirrors the OCPM showcase's {@code order}/{@code item} declaration ({@code LakePocApp}'s own
+   * {@code demoObjectTypes}): {@code order} is root-scoped ({@code orderId}), {@code item} is
+   * declared non-root by construction ({@code itemId}, only ever written inside a multi-instance
+   * body's per-iteration scope) — both close on the SAME process completion, exactly like the real
+   * driver's {@code order-intake}.
+   */
+  private static final CompiledObjectType ORDER_TYPE =
+      ObjectTypes.declare("order")
+          .identifiedBy(ObjectTypes.variable("orderId"))
+          .closes(ObjectTypes.onProcessCompletion(PROCESS_ID))
+          .build();
+
+  private static final CompiledObjectType ITEM_TYPE =
+      ObjectTypes.declare("item")
+          .identifiedBy(ObjectTypes.variable("itemId"))
+          .closes(ObjectTypes.onProcessCompletion(PROCESS_ID))
+          .build();
+
+  private static final CompiledObjectTypes ORDER_ITEM_OBJECT_TYPES =
+      CompiledObjectTypes.of(ORDER_TYPE, ITEM_TYPE);
+
+  /**
+   * The FULL demo registry ({@code LakePocApp#demoObjectTypes}'s own four types together): both
+   * drivers' declarations share one {@link CompiledObjectTypes} in production, so {@code
+   * customerId} (declared for the dispute driver) is ALSO a root sighting on every order-intake
+   * instance (its start event sets {@code customerId} too) -- see this class's reproduction test
+   * using this registry for why that matters.
+   */
+  private static final CompiledObjectTypes FULL_DEMO_OBJECT_TYPES =
+      CompiledObjectTypes.of(CUSTOMER_TYPE, DISPUTE_TYPE, ORDER_TYPE, ITEM_TYPE);
 
   // ---- sightings: VARIABLE source ------------------------------------------------------------
 
@@ -542,6 +575,94 @@ class LakeTranslatorObjectFabricTest {
 
     // then
     assertThat(relations.rows).isEmpty();
+  }
+
+  @Test
+  void shouldEmitOrderContainsItemRelationWhenTheItemsMultiInstanceScopeEvictsBeforeCompletion() {
+    // given: mirrors the OCPM showcase's order-intake (see LakePocApp#demoObjectTypes) --
+    // "order" is sighted at root (orderId), "item" is sighted deep inside a multi-instance body's
+    // per-iteration scope (itemId, written by an inner script task). The MI body element AND its
+    // iteration scope both ACTIVATE, get their variable sighted, then COMPLETE AND EVICT (their
+    // OpenElement rows are deleted from state) long before the owning order-intake instance
+    // itself completes -- exactly the shape the real driver's "Register items" subprocess produces
+    // (it runs early, well before the credit-check branch and the call activity to fulfillment).
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final CapturingRowAppender relations = new CapturingRowAppender();
+    final LakeTranslator translator =
+        newTranslator(state, null, null, relations, ORDER_ITEM_OBJECT_TYPES);
+
+    long position = 1L;
+    translator.onRecord(activateRoot(1L, 100L, position++));
+    translator.onRecord(variableRecord(1L, "orderId", "\"ORD-1\"", 1L, 101L, position++));
+
+    // the multi-instance body itself (direct child of the root instance)
+    translator.onRecord(activateElement(1L, 10L, "Activity_RegisterItems", 1L, 102L, position++));
+    // one iteration's own subprocess scope (child of the MI body element)
+    translator.onRecord(activateElement(1L, 20L, "Activity_RegisterItems", 10L, 103L, position++));
+    // the inner script task's output mapping lands itemId in the ITERATION's scope (20L), never
+    // at the process root -- see class javadoc's "Object fabric capture" section, sighting source 1
+    translator.onRecord(variableRecord(1L, "itemId", "\"ITM-1\"", 20L, 104L, position++));
+    // the iteration scope and the MI body both complete and evict well before the root does
+    translator.onRecord(completeElement(20L, 10L, 105L, position++));
+    translator.onRecord(completeElement(10L, 1L, 106L, position++));
+    assertThat(state.getElement(20L)).isNull(); // evicted
+    assertThat(state.getElement(10L)).isNull(); // evicted
+
+    // when: the owning order-intake instance completes long after both scopes were evicted
+    translator.onRecord(completeRoot(1L, 200L, position));
+
+    // then: the root order sighting and the (evicted-scope) item sighting still pair up
+    assertThat(relations.rows).hasSize(1);
+    final Map<Integer, Object> row = relations.rows.get(0);
+    assertThat(row.get(ObjectRelationColumns.PARENT_TYPE)).isEqualTo("order");
+    assertThat(row.get(ObjectRelationColumns.PARENT_ID)).isEqualTo("ORD-1");
+    assertThat(row.get(ObjectRelationColumns.CHILD_TYPE)).isEqualTo("item");
+    assertThat(row.get(ObjectRelationColumns.CHILD_ID)).isEqualTo("ITM-1");
+  }
+
+  @Test
+  void shouldEmitOrderAndCustomerRelationsToMultipleItemsWithTheFullDemoRegistry() {
+    // given: the FULL demo registry (customer/dispute/order/item together, as production wires
+    // them into ONE LakeTranslator) -- order-intake's start event ALSO sets customerId at root
+    // (shared with the dispute driver's declaration), and two items are registered via the MI
+    // subprocess, each its own iteration scope, matching the k=2 case from the showcase's ground
+    // truth ("k items yields exactly k order-item relations").
+    final InMemoryTranslatorState state = new InMemoryTranslatorState();
+    final CapturingRowAppender relations = new CapturingRowAppender();
+    final LakeTranslator translator =
+        newTranslator(state, null, null, relations, FULL_DEMO_OBJECT_TYPES);
+
+    long position = 1L;
+    translator.onRecord(activateRoot(1L, 100L, position++));
+    translator.onRecord(variableRecord(1L, "orderId", "\"ORD-1\"", 1L, 101L, position++));
+    translator.onRecord(variableRecord(1L, "customerId", "\"CUST-1\"", 1L, 101L, position++));
+
+    translator.onRecord(activateElement(1L, 10L, "Activity_RegisterItems", 1L, 102L, position++));
+    translator.onRecord(activateElement(1L, 20L, "Activity_RegisterItems", 10L, 103L, position++));
+    translator.onRecord(variableRecord(1L, "itemId", "\"ITM-1-1\"", 20L, 104L, position++));
+    translator.onRecord(completeElement(20L, 10L, 105L, position++));
+
+    translator.onRecord(activateElement(1L, 21L, "Activity_RegisterItems", 10L, 106L, position++));
+    translator.onRecord(variableRecord(1L, "itemId", "\"ITM-1-2\"", 21L, 107L, position++));
+    translator.onRecord(completeElement(21L, 10L, 108L, position++));
+
+    translator.onRecord(completeElement(10L, 1L, 109L, position++));
+
+    // when
+    translator.onRecord(completeRoot(1L, 200L, position));
+
+    // then: order⊃item (x2) and customer⊃item (x2) -- four relations, no fewer
+    assertThat(relations.rows)
+        .extracting(
+            row -> row.get(ObjectRelationColumns.PARENT_TYPE),
+            row -> row.get(ObjectRelationColumns.PARENT_ID),
+            row -> row.get(ObjectRelationColumns.CHILD_TYPE),
+            row -> row.get(ObjectRelationColumns.CHILD_ID))
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("order", "ORD-1", "item", "ITM-1-1"),
+            Tuple.tuple("order", "ORD-1", "item", "ITM-1-2"),
+            Tuple.tuple("customer", "CUST-1", "item", "ITM-1-1"),
+            Tuple.tuple("customer", "CUST-1", "item", "ITM-1-2"));
   }
 
   @Test
