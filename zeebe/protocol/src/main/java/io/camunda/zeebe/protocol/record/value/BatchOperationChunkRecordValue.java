@@ -38,7 +38,7 @@ public interface BatchOperationChunkRecordValue extends BatchOperationRelated, R
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableBatchOperationItemValue.Builder.class)
-  interface BatchOperationItemValue {
+  interface BatchOperationItemValue extends StorageOrdinalKeyRelated {
     long getItemKey();
 
     long getProcessInstanceKey();
