@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
+import java.util.regex.Pattern;
 
 /**
  * Shared SQL-text building blocks for every tool/planner service in this module: identifier
@@ -27,6 +28,9 @@ import java.time.format.DateTimeParseException;
  * it slightly differently.
  */
 public final class SqlText {
+
+  /** See {@link #parseInstant}: 12+ digits reads as epoch milliseconds. */
+  private static final Pattern EPOCH_MILLIS = Pattern.compile("\\d{12,}");
 
   private SqlText() {}
 
@@ -52,10 +56,21 @@ public final class SqlText {
     return "TIMESTAMPTZ " + literal(instant.toString());
   }
 
-  /** Parses an ISO-8601 instant or offset date-time string into an {@link Instant}. */
+  /**
+   * Parses an ISO-8601 instant or offset date-time string into an {@link Instant}. Also accepts an
+   * epoch-milliseconds digit string (12+ digits, e.g. {@code "1784723383499"}): the webapp keeps
+   * time internally as {@code Date.now()} millis and JSON carries them as bare numbers, which
+   * Jackson binds to these {@code String} fields as digit strings — accepted here, at every
+   * endpoint's one shared parse choke point, rather than chased through each of the client's nested
+   * request shapes. Shorter digit runs (e.g. {@code "2026"}) still fall through to the ISO parse
+   * and its rejection, so a malformed date never silently becomes a 1970 instant.
+   */
   public static Instant parseInstant(final String isoInstant) {
     if (isoInstant == null || isoInstant.isBlank()) {
       throw new IllegalArgumentException("Missing required ISO-8601 timestamp");
+    }
+    if (EPOCH_MILLIS.matcher(isoInstant).matches()) {
+      return Instant.ofEpochMilli(Long.parseLong(isoInstant));
     }
     try {
       return OffsetDateTime.parse(isoInstant).toInstant();
@@ -63,7 +78,8 @@ public final class SqlText {
       try {
         return Instant.parse(isoInstant);
       } catch (final DateTimeParseException e2) {
-        throw new IllegalArgumentException("Not a valid ISO-8601 timestamp: " + isoInstant, e2);
+        throw new IllegalArgumentException(
+            "Not a valid ISO-8601 timestamp or epoch-milliseconds value: " + isoInstant, e2);
       }
     }
   }
