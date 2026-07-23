@@ -370,8 +370,7 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         bpmnBehaviors,
         permissionsBehavior,
-        claimsConverter,
-        securityConfig,
+        cslCheck,
         processDefinitionMetrics);
     addSignalBroadcastProcessors(
         typedRecordProcessors,
@@ -801,8 +800,7 @@ public final class EngineProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
       final PermissionsBehavior permissionsBehavior,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig,
+      final CslAuthorizationCheck cslCheck,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     final var resourceDeletionProcessor =
         new ResourceDeletionDeleteProcessor(
@@ -812,8 +810,7 @@ public final class EngineProcessors {
             commandDistributionBehavior,
             bpmnBehaviors,
             permissionsBehavior,
-            claimsConverter,
-            securityConfig,
+            cslCheck,
             processDefinitionMetrics);
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);

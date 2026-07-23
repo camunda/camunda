@@ -14,9 +14,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.api.model.CamundaAuthentication;
-import io.camunda.security.configuration.EngineSecurityConfig;
-import io.camunda.security.core.authz.LazyTokenClaimsConverter;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.metrics.ProcessDefinitionMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -24,8 +21,8 @@ import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManag
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenantsAdapter;
 import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.CslAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.identity.authorization.exception.ForbiddenException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -105,8 +102,7 @@ public class ResourceDeletionDeleteProcessor
   private final CatchEventBehavior catchEventBehavior;
   private final StartEventSubscriptions startEventSubscriptions;
   private final PermissionsBehavior permissionsBehavior;
-  private final LazyTokenClaimsConverter claimsConverter;
-  private final EngineSecurityConfig securityConfig;
+  private final CslAuthorizationCheck cslCheck;
   private final StartEventSubscriptionManager startEventSubscriptionManager;
   private final FormState formState;
   private final ResourceState resourceState;
@@ -120,8 +116,7 @@ public class ResourceDeletionDeleteProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final BpmnBehaviors bpmnBehaviors,
       final PermissionsBehavior permissionsBehavior,
-      final LazyTokenClaimsConverter claimsConverter,
-      final EngineSecurityConfig securityConfig,
+      final CslAuthorizationCheck cslCheck,
       final ProcessDefinitionMetrics processDefinitionMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -136,8 +131,7 @@ public class ResourceDeletionDeleteProcessor
     bannedInstanceState = processingState.getBannedInstanceState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     this.permissionsBehavior = permissionsBehavior;
-    this.claimsConverter = claimsConverter;
-    this.securityConfig = securityConfig;
+    this.cslCheck = cslCheck;
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
     startEventSubscriptions =
@@ -580,9 +574,9 @@ public class ResourceDeletionDeleteProcessor
       final TypedRecord<ResourceDeletionRecord> command) {
     final String tenantId = command.getValue().getTenantId();
     if (tenantId.isEmpty()) {
-      return determineAuthorizedTenants(command);
+      return cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     }
-    final var userTenants = determineAuthorizedTenants(command);
+    final var userTenants = cslCheck.resolveAuthorizedTenants(command.getAuthorizations());
     if (!userTenants.isAuthorizedForTenantId(tenantId)) {
       throw new NoSuchResourceException(command.getValue().getResourceKey());
     }
@@ -635,21 +629,6 @@ public class ResourceDeletionDeleteProcessor
   private void setTenantId(
       final TypedRecord<ResourceDeletionRecord> command, final String tenantId) {
     command.getValue().setTenantId(tenantId);
-  }
-
-  private AuthorizedTenants determineAuthorizedTenants(final TypedRecord<?> command) {
-    final var authorizations = command.getAuthorizations();
-    if (Boolean.TRUE.equals(authorizations.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
-      return AuthorizedTenants.ANONYMOUS;
-    }
-    if (!securityConfig.isMultiTenancyChecksEnabled()) {
-      return AuthorizedTenants.DEFAULT_TENANTS;
-    }
-    if (authorizations.get(Authorization.AUTHORIZED_USERNAME) == null
-        && authorizations.get(Authorization.AUTHORIZED_CLIENT_ID) == null) {
-      return new AuthenticatedAuthorizedTenants(List.of());
-    }
-    return new AuthorizedTenantsAdapter(claimsConverter.convert(authorizations));
   }
 
   private void checkAuthorization(
