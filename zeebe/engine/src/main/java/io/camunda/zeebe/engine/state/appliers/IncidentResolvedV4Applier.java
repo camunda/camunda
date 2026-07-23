@@ -20,11 +20,6 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.EnumSet;
 import java.util.Set;
 
-/**
- * Owns the RESOLVED orchestration directly and inserts the resolved job into {@code
- * JOB_ACTIVATABLE_BY_PRIORITY} via {@link MutableJobState#makeJobActivatableByPriority}, instead of
- * going through the deprecated {@link MutableJobState#resolve}.
- */
 final class IncidentResolvedV4Applier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
 
   private static final Set<State> RESOLVABLE_JOB_STATES =
@@ -34,7 +29,7 @@ final class IncidentResolvedV4Applier implements TypedEventApplier<IncidentInten
   private final MutableJobState jobState;
   private final MutableElementInstanceState elementInstanceState;
 
-  IncidentResolvedV4Applier(
+  public IncidentResolvedV4Applier(
       final MutableIncidentState incidentState,
       final MutableJobState jobState,
       final MutableElementInstanceState elementInstanceState) {
@@ -48,32 +43,25 @@ final class IncidentResolvedV4Applier implements TypedEventApplier<IncidentInten
     if (value.getErrorType() == ErrorType.EXTRACT_VALUE_ERROR) {
       resetListenerIndices(value);
     }
-    reactivateJobIfNeeded(value);
-    incidentState.deleteIncident(incidentKey);
-  }
 
-  private void reactivateJobIfNeeded(final IncidentRecord value) {
     final var jobKey = value.getJobKey();
-    if (jobKey <= 0) {
-      return; // not a job-related incident
+    final boolean isJobRelatedIncident = jobKey > 0;
+
+    if (isJobRelatedIncident) {
+      if (value.getErrorType() == ErrorType.SECRET_RESOLUTION_ERROR) {
+        // job state reactivates the job only if it is still parked, so a job that this error type
+        // was raised for without parking it (a failed secret value injection) is left alone
+        jobState.makeActivatableAfterSecretResolution(jobKey);
+      } else {
+        final var stateOfJob = jobState.getState(jobKey);
+        if (RESOLVABLE_JOB_STATES.contains(stateOfJob)) {
+          final var job = jobState.getJob(jobKey);
+          resetElementId(job, value.getElementId());
+          jobState.resolve(jobKey, job);
+        }
+      }
     }
-    if (value.getErrorType() == ErrorType.SECRET_RESOLUTION_ERROR) {
-      // job state reactivates the job only if it is still parked, so a job that this error type was
-      // raised for without parking it (a failed secret value injection) is left alone
-      jobState.makeActivatableAfterSecretResolution(jobKey);
-      return;
-    }
-    final var stateOfJob = jobState.getState(jobKey);
-    if (!RESOLVABLE_JOB_STATES.contains(stateOfJob)) {
-      return;
-    }
-    final var job = jobState.getJob(jobKey);
-    resetElementId(job, value.getElementId());
-    jobState.updateJobRecord(jobKey, job);
-    jobState.updateJobState(jobKey, State.ACTIVATABLE);
-    jobState.removeJobDeadline(jobKey, job.getDeadline());
-    jobState.makeJobActivatableByPriority(
-        job.getTypeBuffer(), jobKey, job.getTenantId(), job.getPriority());
+    incidentState.deleteIncident(incidentKey);
   }
 
   private void resetListenerIndices(final IncidentRecord value) {
@@ -92,8 +80,7 @@ final class IncidentResolvedV4Applier implements TypedEventApplier<IncidentInten
   private void resetElementId(final JobRecord job, final String incidentRecordElementId) {
     if (JobThrowErrorProcessor.NO_CATCH_EVENT_FOUND.equals(job.getElementId())) {
 
-      // change the job object here, it will be persisted via the jobState.updateJobRecord call in
-      // applyState
+      // change the job object here, it will be persisted with the jobState.resolve call
       if (JobThrowErrorProcessor.NO_CATCH_EVENT_FOUND.equals(incidentRecordElementId)) {
         final var elementInstance = elementInstanceState.getInstance(job.getElementInstanceKey());
         if (elementInstance != null) {

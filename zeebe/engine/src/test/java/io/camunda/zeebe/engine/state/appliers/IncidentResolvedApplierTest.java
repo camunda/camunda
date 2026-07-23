@@ -77,7 +77,7 @@ public class IncidentResolvedApplierTest {
   }
 
   @Test
-  void shouldMakeJobActivatableByPriorityOnIncidentResolutionV4() {
+  void shouldResolveJobOnIncidentResolutionV4() {
     // given
     final var incidentKey = 1L;
     final var jobKey = 2L;
@@ -104,12 +104,7 @@ public class IncidentResolvedApplierTest {
     v4Applier.applyState(incidentKey, incidentRecord);
 
     // then
-    verify(jobStateMock).updateJobRecord(jobKey, job);
-    verify(jobStateMock).updateJobState(jobKey, State.ACTIVATABLE);
-    verify(jobStateMock).removeJobDeadline(jobKey, job.getDeadline());
-    verify(jobStateMock)
-        .makeJobActivatableByPriority(
-            job.getTypeBuffer(), jobKey, job.getTenantId(), job.getPriority());
+    verify(jobStateMock).resolve(jobKey, job);
   }
 
   @Test
@@ -133,7 +128,7 @@ public class IncidentResolvedApplierTest {
     // then - the reactivation is delegated to job state, which reactivates the job only if it is
     //        still waiting; the regular resolution path is not taken
     verify(jobStateMock).makeActivatableAfterSecretResolution(jobKey);
-    verify(jobStateMock, never()).updateJobState(anyLong(), any());
+    verify(jobStateMock, never()).resolve(anyLong(), any());
   }
 
   @Test
@@ -157,7 +152,7 @@ public class IncidentResolvedApplierTest {
 
     // then - the secret resolution reactivation is reserved for secret resolution incidents
     verify(jobStateMock, never()).makeActivatableAfterSecretResolution(anyLong());
-    verify(jobStateMock, never()).updateJobState(anyLong(), any());
+    verify(jobStateMock, never()).resolve(anyLong(), any());
   }
 
   @Test
