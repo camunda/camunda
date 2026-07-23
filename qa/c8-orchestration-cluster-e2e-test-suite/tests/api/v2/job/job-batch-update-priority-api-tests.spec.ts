@@ -26,18 +26,22 @@ import {expectBatchState} from '@requestHelpers';
 /* eslint-disable playwright/expect-expect */
 test.describe('Job Batch Update Priority API Tests', () => {
   const runSuffix = randomUUID().slice(0, 8);
-  const processId = `processWithJobPriority-${runSuffix}`;
+  const processId = `processWithJobPriorityForBatchUpdate-${runSuffix}`;
   const batchPriorityJobType = `batchPriorityJobType-${runSuffix}`;
   const state: Record<string, unknown> = {};
 
-  // Reuses the processWithJobPriority.bpmn fixture (3 service tasks of one
-  // job type with distinct static priorities) that already backs the job
-  // priority search/activation coverage.
+  // Dedicated fixture (3 service tasks of one job type with distinct static
+  // priorities) so this suite's batch-update deploys/instances can't
+  // interfere with the sibling job-priority search/activation coverage that
+  // uses its own processWithJobPriority.bpmn.
   test.beforeAll(async () => {
-    await deployWithSubstitutions('./resources/processWithJobPriority.bpmn', {
-      processWithJobPriority: processId,
-      priorityJobType: batchPriorityJobType,
-    });
+    await deployWithSubstitutions(
+      './resources/processWithJobPriorityForBatchUpdate.bpmn',
+      {
+        processWithJobPriorityForBatchUpdate: processId,
+        batchUpdatePriorityJobType: batchPriorityJobType,
+      },
+    );
     const [processInstance] = await createInstances(processId, 1, 1);
     state['processInstanceKey'] = processInstance.processInstanceKey;
   });
