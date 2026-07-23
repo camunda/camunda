@@ -253,6 +253,16 @@ public final class CslAuthorizationCheck {
       final RequiredAuthorization<?> required,
       final T value,
       final Rejection noPrincipalRejection) {
+    return checkWithClaims(
+        claims, required, value, noPrincipalRejection, AuthorizationRejectionMapper::toRejection);
+  }
+
+  private <T> Either<Rejection, T> checkWithClaims(
+      final Map<String, Object> claims,
+      final RequiredAuthorization<?> required,
+      final T value,
+      final Rejection noPrincipalRejection,
+      final Function<AuthorizationRejection, Rejection> denialMapper) {
     if (Boolean.TRUE.equals(claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER))) {
       return Either.right(value);
     }
@@ -267,10 +277,9 @@ public final class CslAuthorizationCheck {
       }
       return Either.left(noPrincipalRejection);
     }
-    final var auth = claimsConverter.resolve(claims);
-    final var result = authzService.check(auth, required);
+    final var result = authzService.check(claims, required);
     if (result.isLeft()) {
-      return Either.left(AuthorizationRejectionMapper.toRejection(result.leftValue()));
+      return Either.left(denialMapper.apply(result.leftValue()));
     }
     return Either.right(value);
   }
@@ -278,9 +287,9 @@ public final class CslAuthorizationCheck {
   /**
    * Full authorization check for single-check sites.
    *
-   * <p>Applies {@link #resolveForCheck} and, if a principal is present, delegates to {@link
-   * AuthorizationCheckPort#check}. Maps any CSL rejection to a {@link Rejection} via {@link
-   * AuthorizationRejectionMapper#toRejection}.
+   * <p>Applies the same skip-logic as {@link #checkWithClaims} using the command's claims,
+   * delegating to {@link AuthorizationCheckPort#check(Map, RequiredAuthorization)}. Maps any CSL
+   * rejection to a {@link Rejection} via {@link AuthorizationRejectionMapper#toRejection}.
    *
    * @param value the value to return on success
    * @param noPrincipalRejection the rejection to use when no principal claim is present and
@@ -314,21 +323,19 @@ public final class CslAuthorizationCheck {
       final T value,
       final Rejection noPrincipalRejection,
       final Function<AuthorizationRejection, Rejection> denialMapper) {
-    return resolveForCheck(command, noPrincipalRejection)
-        .flatMap(
-            maybeAuth -> {
-              if (maybeAuth.isEmpty()) {
-                return Either.right(value);
-              }
-              final var result = authzService.check(maybeAuth.get(), required);
-              if (result.isLeft()) {
-                LOG.debug(
-                    "Authorization check rejected for command {}: {}",
-                    command.getIntent(),
-                    result.leftValue());
-                return Either.left(denialMapper.apply(result.leftValue()));
-              }
-              return Either.right(value);
-            });
+    if (command.isInternalCommand()) {
+      LOG.trace("Skipping authorization check for internal command {}", command.getIntent());
+      return Either.right(value);
+    }
+    return checkWithClaims(
+        command.getAuthorizations(),
+        required,
+        value,
+        noPrincipalRejection,
+        rejection -> {
+          LOG.debug(
+              "Authorization check rejected for command {}: {}", command.getIntent(), rejection);
+          return denialMapper.apply(rejection);
+        });
   }
 }
