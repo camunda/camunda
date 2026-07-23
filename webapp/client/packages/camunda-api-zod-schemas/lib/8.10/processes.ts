@@ -12,7 +12,7 @@
 
 import {z} from 'zod';
 
-const processInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
+const processInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'SUSPENDED', 'TERMINATED']);
 type ProcessInstanceState = z.infer<typeof processInstanceStateSchema>;
 type StatisticName = 'element-instances';
 
