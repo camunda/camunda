@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.StorageOrdinalKeyRelated;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
@@ -37,6 +38,7 @@ final class BulkIndexRequest {
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
           .addMixIn(CommandDistributionRecordValue.class, CommandDistributionMixin.class)
+          .addMixIn(StorageOrdinalKeyRelated.class, StorageOrdinalKeyMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   private static final ObjectMapper PREVIOUS_VERSION_MAPPER =
@@ -48,6 +50,7 @@ final class BulkIndexRequest {
           .addMixIn(JobBatchRecordValue.class, JobBatchMixin.class)
           .addMixIn(UserTaskRecordValue.class, BusinessIdMixin.class)
           .addMixIn(DecisionEvaluationRecordValue.class, BusinessIdMixin.class)
+          .addMixIn(StorageOrdinalKeyRelated.class, StorageOrdinalKeyMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -65,6 +68,7 @@ final class BulkIndexRequest {
   private static final String LEASE_TOKEN_PROPERTY = "leaseToken";
   private static final String SECRET_REFERENCES_PROPERTY = "secretReferences";
   private static final String WITH_LEASE_PROPERTY = "withLease";
+  private static final String STORAGE_ORDINAL_KEY_PROPERTY = "storageOrdinalKey";
   private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
@@ -189,14 +193,25 @@ final class BulkIndexRequest {
     ELEMENT_TYPE_PROPERTY,
     BUSINESS_ID_PROPERTY,
     LEASE_TOKEN_PROPERTY,
-    SECRET_REFERENCES_PROPERTY
+    SECRET_REFERENCES_PROPERTY,
+    STORAGE_ORDINAL_KEY_PROPERTY
   })
   private static final class JobMixin {}
 
   @JsonIgnoreProperties({WITH_LEASE_PROPERTY})
   private static final class JobBatchMixin {}
 
-  /** Shared by record values that only need to strip {@code businessId} for previous versions. */
-  @JsonIgnoreProperties({BUSINESS_ID_PROPERTY})
+  /**
+   * Shared by record values that need to strip {@code businessId} and {@code storageOrdinalKey} for
+   * previous versions.
+   */
+  @JsonIgnoreProperties({BUSINESS_ID_PROPERTY, STORAGE_ORDINAL_KEY_PROPERTY})
   private static final class BusinessIdMixin {}
+
+  /**
+   * The storage ordinal key is only used to route a record's document to its storage location; it
+   * must not be stored in the document itself.
+   */
+  @JsonIgnoreProperties({STORAGE_ORDINAL_KEY_PROPERTY})
+  private static final class StorageOrdinalKeyMixin {}
 }
