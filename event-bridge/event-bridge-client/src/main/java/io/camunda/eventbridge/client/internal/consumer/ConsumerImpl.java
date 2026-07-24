@@ -9,6 +9,7 @@ package io.camunda.eventbridge.client.internal.consumer;
 
 import io.camunda.eventbridge.client.Consumer;
 import io.camunda.eventbridge.client.ConsumerClosedException;
+import io.camunda.eventbridge.client.ConsumerMetrics;
 import io.camunda.eventbridge.client.Event;
 import io.camunda.eventbridge.client.RebalanceListener;
 import io.camunda.eventbridge.client.TopicPartition;
@@ -214,6 +215,11 @@ public final class ConsumerImpl implements Consumer {
   @Override
   public void rebalanceListener(final RebalanceListener listener) {
     coordinator.setRebalanceListener(listener);
+  }
+
+  @Override
+  public void metrics(final ConsumerMetrics metrics) {
+    coordinator.setMetrics(metrics);
   }
 
   @Override

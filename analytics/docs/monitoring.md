@@ -62,6 +62,20 @@ instance.
 | `analytics.serving.batch.size` | distribution summary | backend | documents per bulk request (Elasticsearch/OpenSearch only; RDBMS batches via JDBC and records no sizes) | consistently at the 1000-item cap = flushes splitting; consider cut cadence |
 | `analytics.query.duration` | timer | dataset | end-to-end wall time of one dashboard read (`DatasetQueryExecutor.execute`: plan + fetch + app-merge + finalize) | p99 over the dashboard budget |
 
+## Consumer-client health — the takeover/rebalance pack
+
+Client-side (`event-bridge-client`'s `GroupCoordinator`), instrumented via the dependency-free
+`ConsumerMetrics` seam (no-op unless a caller configures one — see its javadoc); the
+Micrometer-backed adapter (`MicrometerConsumerMetrics`) lives in `event-bridge-streaming` and is
+wired in automatically by `StreamRuntime`, tagged `group` (the consumer group id) only.
+
+| meter | type | tags | meaning | alert on |
+|---|---|---|---|---|
+| `eb.consumer.rebalances` | counter | group | this consumer's owned partitions actually changed (a non-empty revoke/assign delta) | — (context for the wedge signature below) |
+| `eb.consumer.heartbeat.failures` | counter | group | a heartbeat attempt failed: transport error, HTTP 503, or an unusable non-200 reply | any sustained rate = coordinator or network trouble |
+| `eb.consumer.rejoins.rejected` | counter | group | a rejoin request ITSELF was rejected with HTTP 409 (e.g. a concurrent second join racing for the same static instance id) — distinct from a heartbeat fencing that successfully re-registers | a burst = the 409 storm observed live on 2026-07-16 (concurrent rejoins colliding) |
+| `eb.consumer.assignment.epoch` | gauge | group | this consumer's current fencing epoch (`memberEpoch`); strictly non-decreasing, jumps on a join/rejoin/full reconciliation | pinned while `rebalances` keeps climbing = the wedge signature (below) |
+
 ## Alerting story (documented, not implemented)
 
 - **Falling behind**: `eb.streaming.watermark.lag` growing monotonically WHILE the source end-offset moves — the clock holds during genuine idle, so lag alone also climbs when no data flows; gate the alert on source movement (or on `records.processed` still ticking).

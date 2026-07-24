@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.streaming;
 
 import io.camunda.eventbridge.client.Consumer;
+import io.camunda.eventbridge.client.ConsumerMetrics;
 import io.camunda.eventbridge.client.EventBridgeClient;
 import io.camunda.eventbridge.streaming.changelog.PartitionRoleControllerFactory;
 import io.camunda.eventbridge.streaming.internals.CutMetrics;
@@ -97,6 +98,10 @@ public final class StreamRuntime<R> implements AutoCloseable {
   private final ExecutorService injectedSinkExecutor;
   private final ThreadFactory sinkThreadFactory;
   private final PartitionRoleControllerFactory<R> roleControllerFactory;
+  // One instance for the whole runtime's lifetime (not per subscribe attempt): its epoch gauge is
+  // backed by an AtomicLong registered once, and re-registering the same gauge id+tags on a
+  // resubscribe would be silently ignored by Micrometer (see MicrometerConsumerMetrics's javadoc).
+  private final ConsumerMetrics consumerMetrics;
 
   private volatile boolean running;
   private volatile Consumer consumer;
@@ -130,6 +135,10 @@ public final class StreamRuntime<R> implements AutoCloseable {
             ? builder.sinkThreadFactory
             : defaultSinkThreadFactory(instanceId);
     roleControllerFactory = builder.roleControllerFactory;
+    consumerMetrics =
+        meterRegistry == null
+            ? ConsumerMetrics.noop()
+            : new MicrometerConsumerMetrics(meterRegistry, group);
   }
 
   public static <R> Builder<R> builder() {
@@ -148,7 +157,13 @@ public final class StreamRuntime<R> implements AutoCloseable {
     RuntimeException last = null;
     for (int attempt = 1; running && attempt <= maxAttempts; attempt++) {
       try {
-        return client.subscribe(group, instanceId, List.of(sourceTopic)).join();
+        final var subscribed = client.subscribe(group, instanceId, List.of(sourceTopic)).join();
+        // Set as early as this handle allows — before the caller's first explicit heartbeat in
+        // run() — so every epoch/rebalance update from then on is observed. The very first join's
+        // own epoch (set inside subscribe(), before this line runs) is the one gap, same as the
+        // pre-existing RebalanceListener wiring below in run().
+        subscribed.metrics(consumerMetrics);
+        return subscribed;
       } catch (final CompletionException | CancellationException e) {
         last = e;
         final Throwable cause = e.getCause() != null ? e.getCause() : e;

@@ -14,6 +14,7 @@ import io.camunda.eventbridge.api.proto.IntList;
 import io.camunda.eventbridge.api.proto.JoinRequest;
 import io.camunda.eventbridge.api.proto.JoinResponse;
 import io.camunda.eventbridge.api.proto.OffsetMap;
+import io.camunda.eventbridge.client.ConsumerMetrics;
 import io.camunda.eventbridge.client.ConsumerNotRegisteredException;
 import io.camunda.eventbridge.client.CoordinatorUnavailableException;
 import io.camunda.eventbridge.client.EventBridgeException;
@@ -60,6 +61,7 @@ public final class GroupCoordinator {
   private static final RebalanceListener NO_OP_REBALANCE_LISTENER = new RebalanceListener() {};
 
   private volatile RebalanceListener rebalanceListener = NO_OP_REBALANCE_LISTENER;
+  private volatile ConsumerMetrics metrics = ConsumerMetrics.noop();
   private final SubscriptionState subscription;
   private final PrefetchBuffer buffer;
   private final Prefetcher prefetcher;
@@ -174,10 +176,15 @@ public final class GroupCoordinator {
     return JoinRequest.newBuilder().addAllTopics(topics).setInstanceId(instanceId).build();
   }
 
-  /** Adopts the member id/epoch the coordinator assigned in a join/rejoin response. */
+  /**
+   * Adopts the member id/epoch the coordinator assigned in a join/rejoin response. Covers both the
+   * initial {@link #joinGroup()} and {@link #doRejoin()} (both call this), so a single {@code
+   * onEpochChanged} call site here observes the epoch set by either.
+   */
   private void applyJoinResponse(final JoinResponse body) {
     memberId = body.getMemberId();
     memberEpoch = body.getMemberEpoch();
+    metrics.onEpochChanged(memberEpoch);
   }
 
   public CompletableFuture<Void> leaveGroup() {
@@ -247,6 +254,7 @@ public final class GroupCoordinator {
                     .whenComplete(
                         (ignored, error) -> {
                           if (error != null) {
+                            metrics.onHeartbeatFailure();
                             LOG.warn("Heartbeat failed; will retry: {}", error.getMessage());
                             scheduleSendHeartbeat();
                           }
@@ -300,11 +308,13 @@ public final class GroupCoordinator {
       final BinaryResponse httpResponse,
       final Throwable error) {
     if (error != null || httpResponse == null) {
+      metrics.onHeartbeatFailure();
       throw new CoordinatorUnavailableException(
           "Heartbeat HTTP request failed: " + (error != null ? error.getMessage() : "no response"));
     }
 
     if (httpResponse.statusCode() == 503) {
+      metrics.onHeartbeatFailure();
       throw new CoordinatorUnavailableException("Heartbeat rejected — coordinator unavailable");
     }
     if (httpResponse.statusCode() == 409) {
@@ -329,6 +339,7 @@ public final class GroupCoordinator {
       }
       // Fenced or unknown member (stale epoch, or the coordinator failed over and lost in-memory
       // membership). Re-register instead of heartbeating forever as a ghost.
+      metrics.onFencedRejoin();
       LOG.warn(
           "[Heartbeat][Consumer={}] membership fenced/unknown (409); rejoining group {}",
           instanceId,
@@ -342,6 +353,7 @@ public final class GroupCoordinator {
           .whenComplete((ignored, ignoredError) -> scheduleSendHeartbeat());
     }
     if (httpResponse.statusCode() != 200) {
+      metrics.onHeartbeatFailure();
       throw new EventBridgeException("Heartbeat failed: HTTP " + httpResponse.statusCode());
     }
 
@@ -364,6 +376,7 @@ public final class GroupCoordinator {
       // Full reconciliation: replace owned partitions wholesale from the full assignment.
       applyOwnedPartitions(flatten(hb.getAssignmentMap()));
       memberEpoch = serverEpoch;
+      metrics.onEpochChanged(serverEpoch);
     } else {
       // Delta path (serverEpoch == snapshotEpoch).
       final var revoke = flatten(hb.getRevokeMap());
@@ -446,6 +459,13 @@ public final class GroupCoordinator {
                 throw new CoordinatorUnavailableException(
                     "Rejoin request failed: "
                         + (error != null ? error.getMessage() : "no response"));
+              }
+              if (response.statusCode() == 409) {
+                // Counted separately from onFencedRejoin(): this is the rejoin ITSELF losing —
+                // typically a concurrent second join for the same static instance id — not a
+                // member being fenced and successfully re-registering.
+                metrics.onRejoinRejected();
+                throw new EventBridgeException("Rejoin failed: HTTP 409");
               }
               if (response.statusCode() != 201) {
                 throw new EventBridgeException("Rejoin failed: HTTP " + response.statusCode());
@@ -569,6 +589,11 @@ public final class GroupCoordinator {
     rebalanceListener = listener == null ? NO_OP_REBALANCE_LISTENER : listener;
   }
 
+  /** Sets the metrics callbacks (never null); replaces any previous instance. */
+  void setMetrics(final ConsumerMetrics metrics) {
+    this.metrics = metrics == null ? ConsumerMetrics.noop() : metrics;
+  }
+
   /**
    * Applies a full standby-assignment target (event-bridge-streaming ADR 0009 decision 6 /
    * consumer-groups ADR 0006 decision 1): diffs it against the target last applied here and
@@ -615,6 +640,12 @@ public final class GroupCoordinator {
     }
     if (!assigned.isEmpty()) {
       rebalanceListener.onPartitionsAssigned(assigned);
+    }
+    // Only a genuine change counts as a rebalance: a static-membership takeover's successor
+    // resolves to the SAME owned set it already reports at reconnect (invariant 4 of the takeover
+    // spec — the assignment is inherited verbatim), so this is skipped, not fired with zero deltas.
+    if (!revoked.isEmpty() || !assigned.isEmpty()) {
+      metrics.onRebalance(revoked.size(), assigned.size());
     }
   }
 

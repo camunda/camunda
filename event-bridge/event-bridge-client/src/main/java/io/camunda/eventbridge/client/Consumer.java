@@ -96,6 +96,14 @@ public interface Consumer extends AutoCloseable {
   void rebalanceListener(RebalanceListener listener);
 
   /**
+   * Registers the observability callbacks for this consumer's group-membership lifecycle. Replaces
+   * any previously registered instance; pass {@code null} to clear (equivalent to {@link
+   * ConsumerMetrics#noop()}). Set it before the first heartbeat, same as {@link
+   * #rebalanceListener(RebalanceListener)}, so the initial epoch/assignment are observed.
+   */
+  void metrics(ConsumerMetrics metrics);
+
+  /**
    * Returns the next batch of prefetched events across all owned (topic, partition)s, in sorted
    * partition order, blocking up to {@code timeout} for the background prefetcher to deliver at
    * least one record.
