@@ -14,6 +14,7 @@ import type { ParsedRef, ResolvedRef, Resolver } from '../types';
  */
 export class GithubResolver implements Resolver {
   private readonly repoUrl: string;
+  private readonly headers: Record<string, string>;
 
   constructor(
     private readonly token: string,
@@ -21,6 +22,7 @@ export class GithubResolver implements Resolver {
     private readonly repo: string,
   ) {
     this.repoUrl = repoApiUrl(owner, repo);
+    this.headers = githubHeaders(token);
   }
 
   async resolve(refs: readonly ParsedRef[]): Promise<ResolvedRef[]> {
@@ -37,11 +39,10 @@ export class GithubResolver implements Resolver {
    * unrelated PR in THIS repo. We only inherit attribution from our own repo.
    */
   async fetchPullBody(number: number, repo: string | null): Promise<string | null> {
-    const crossRepo = repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
-    if (crossRepo) return null;
+    if (this.isCrossRepo(repo)) return null;
 
     const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
-      headers: githubHeaders(this.token),
+      headers: this.headers,
     });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
@@ -49,12 +50,16 @@ export class GithubResolver implements Resolver {
     return data.body ?? '';
   }
 
+  /** A ref points at a different repo than the one being gated (case-insensitive). */
+  private isCrossRepo(repo: string | null): boolean {
+    return repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
+  }
+
   private async resolveOne(ref: ParsedRef): Promise<ResolvedRef> {
-    const crossRepo = ref.repo !== null && ref.repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
-    if (crossRepo) return { ...ref, target: 'missing', crossRepo: true };
+    if (this.isCrossRepo(ref.repo)) return { ...ref, target: 'missing', crossRepo: true };
 
     const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
-      headers: githubHeaders(this.token),
+      headers: this.headers,
     });
     if (res.status === 404) return { ...ref, target: 'missing', crossRepo: false };
     if (!res.ok) throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);

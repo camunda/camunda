@@ -86,18 +86,16 @@ export async function syncStickyComment(api: CommentApi, gate: GateOutcome): Pro
  */
 export class GithubCommentApi implements CommentApi {
   private readonly repoUrl: string;
+  private readonly headers: Record<string, string>;
 
   constructor(
-    private readonly token: string,
+    token: string,
     owner: string,
     repo: string,
     private readonly issueNumber: number,
   ) {
     this.repoUrl = repoApiUrl(owner, repo);
-  }
-
-  private headers(): Record<string, string> {
-    return githubHeaders(this.token, { json: true });
+    this.headers = githubHeaders(token, { json: true });
   }
 
   async list(): Promise<IssueComment[]> {
@@ -110,7 +108,7 @@ export class GithubCommentApi implements CommentApi {
     for (let page = 1; ; page++) {
       const res = await fetch(
         `${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=${perPage}&page=${page}`,
-        { headers: this.headers() },
+        { headers: this.headers },
       );
       if (!res.ok) throw new Error(`GitHub API ${res.status} listing comments on #${this.issueNumber}`);
       const batch = (await res.json()) as IssueComment[];
@@ -123,7 +121,7 @@ export class GithubCommentApi implements CommentApi {
   async create(body: string): Promise<void> {
     const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments`, {
       method: 'POST',
-      headers: this.headers(),
+      headers: this.headers,
       body: JSON.stringify({ body }),
     });
     if (!res.ok) throw new Error(`GitHub API ${res.status} creating comment on #${this.issueNumber}`);
@@ -132,7 +130,7 @@ export class GithubCommentApi implements CommentApi {
   async update(commentId: number, body: string): Promise<void> {
     const res = await fetch(`${this.repoUrl}/issues/comments/${commentId}`, {
       method: 'PATCH',
-      headers: this.headers(),
+      headers: this.headers,
       body: JSON.stringify({ body }),
     });
     if (!res.ok) throw new Error(`GitHub API ${res.status} updating comment ${commentId}`);
