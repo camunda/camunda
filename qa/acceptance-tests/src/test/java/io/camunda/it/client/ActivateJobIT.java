@@ -75,6 +75,7 @@ public class ActivateJobIT {
     // authentication is ready. Deploying the same resource twice is idempotent.
     Awaitility.await("gRPC deploy succeeds once demo user is visible in secondary storage")
         .timeout(Duration.ofMinutes(2))
+        .pollInterval(Duration.ofMillis(500))
         .ignoreExceptions()
         .untilAsserted(
             () ->
