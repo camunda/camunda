@@ -21,11 +21,13 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.api.model.CamundaAuthentication;
+import io.camunda.security.api.model.authz.AuthorizationScope;
 import io.camunda.security.api.model.authz.PermissionType;
 import io.camunda.security.core.authz.AuthorizationChecker;
 import io.camunda.security.spring.CamundaSecurityLibraryProperties;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.ManagementServices;
+import io.camunda.service.SecretServices.SecretErrorCode;
 import io.camunda.service.license.CamundaLicense;
 import io.camunda.service.registry.ServiceRegistry;
 import io.camunda.service.security.SecurityContextProvider;
@@ -173,6 +175,52 @@ class CamundaServicesConfigurationTest {
                 .join())
         .isEmpty();
     verify(sharedAuthorizationChecker).collectPermissionTypes(any(), any(), any());
+  }
+
+  @Test
+  void shouldWireDistinctAuthorizationCheckerPerPhysicalTenantIntoSecretServices() {
+    // given
+    final var checkerA = mock(AuthorizationChecker.class);
+    final var checkerB = mock(AuthorizationChecker.class);
+    when(checkerA.retrieveAuthorizedAuthorizationScopes(any(), any()))
+        .thenReturn(List.of(AuthorizationScope.WILDCARD));
+    when(checkerB.retrieveAuthorizedAuthorizationScopes(any(), any()))
+        .thenReturn(Collections.emptyList());
+    final var registry =
+        buildRegistry(
+            twoTenants(),
+            Optional.of(
+                new PhysicalTenantAuthorizationCheckers(
+                    Map.of(TENANT_A, checkerA, TENANT_B, checkerB))));
+
+    // when / then: tenant A's checker grants a wildcard -- the reference resolves using only
+    // tenant A's checker.
+    final var resolutionA =
+        registry
+            .secretServices(TENANT_A)
+            .resolve(List.of("camunda.secrets.token"), authentication)
+            .join();
+    assertThat(resolutionA.resolved()).hasSize(1);
+    assertThat(resolutionA.errors()).isEmpty();
+    verify(checkerA).retrieveAuthorizedAuthorizationScopes(any(), any());
+    verifyNoInteractions(checkerB);
+
+    // when / then: tenant B's own checker grants nothing -- must be denied even though tenant A's
+    // checker (queried above) would have granted a wildcard. Unlike DocumentServices, a denial
+    // here is reported as an ACCESS_DENIED entry on a normally-completed future, not an
+    // exceptional one.
+    final var resolutionB =
+        registry
+            .secretServices(TENANT_B)
+            .resolve(List.of("camunda.secrets.token"), authentication)
+            .join();
+    assertThat(resolutionB.resolved()).isEmpty();
+    assertThat(resolutionB.errors()).hasSize(1);
+    assertThat(resolutionB.errors().get(0).code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
+    verify(checkerB).retrieveAuthorizedAuthorizationScopes(any(), any());
+    // re-verify checkerA's count is still exactly one -- catches a leak in the other direction,
+    // where querying tenant B would incorrectly also consult tenant A's checker.
+    verify(checkerA, times(1)).retrieveAuthorizedAuthorizationScopes(any(), any());
   }
 
   private static Map<String, Camunda> twoTenants() {
