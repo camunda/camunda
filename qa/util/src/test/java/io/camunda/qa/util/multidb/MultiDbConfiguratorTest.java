@@ -17,6 +17,7 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,30 @@ public class MultiDbConfiguratorTest {
     // secondary-storage configuration at startup so that physical tenants export to their own
     // storage instead of inheriting a root-pinned connection
     assertNoExplicitCamundaExporter(testSimpleCamundaApplication);
+  }
+
+  @Test
+  void shouldOverrideStandaloneBrokerDefaultSchemaCreationSetting() {
+    // given
+    final var broker = new TestStandaloneBroker();
+    final var multiDbConfigurator = new MultiDbConfigurator(broker);
+
+    // when
+    multiDbConfigurator.configureElasticsearchSupport(EXPECTED_URL, EXPECTED_PREFIX);
+
+    // then
+    assertThat(
+            broker
+                .unifiedConfig()
+                .getData()
+                .getSecondaryStorage()
+                .getElasticsearch()
+                .isCreateSchema())
+        .isTrue();
+    assertThat(
+            broker.property(
+                "camunda.data.secondary-storage.elasticsearch.create-schema", Boolean.class, true))
+        .isTrue();
   }
 
   @Test
