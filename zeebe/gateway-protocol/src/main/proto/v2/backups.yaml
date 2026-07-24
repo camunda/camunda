@@ -488,7 +488,7 @@ components:
     CheckpointId:
       title: Checkpoint ID
       description: |
-        The id of the checkpoint. Must be a positive numerical value. As checkpoints are
+        The id of the checkpoint. Must be a non-negative numerical value. As checkpoints are
         logically ordered by their ids (ascending), each successive checkpoint must use a
         higher id than the previous one.
       type: integer
