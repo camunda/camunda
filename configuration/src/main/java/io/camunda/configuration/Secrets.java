@@ -25,6 +25,10 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *   <li>{@code camunda.secrets.stores.aws.<id>.batch-enabled}
  *   <li>{@code camunda.secrets.stores.aws.<id>.batch-size}
  *   <li>{@code camunda.secrets.stores.aws.<id>.container-secret-id}
+ *   <li>{@code camunda.secrets.stores.gcp.<id>.project-id}
+ *   <li>{@code camunda.secrets.stores.gcp.<id>.path-prefix}
+ *   <li>{@code camunda.secrets.stores.gcp.<id>.endpoint}
+ *   <li>{@code camunda.secrets.stores.gcp.<id>.container-secret-id}
  * </ul>
  *
  * <p>Secrets configuration is overridable per physical tenant via {@code
@@ -47,6 +51,7 @@ public class Secrets {
 
     private Map<String, FileStore> file = new LinkedHashMap<>();
     private Map<String, AwsSecretsManagerStore> aws = new LinkedHashMap<>();
+    private Map<String, GcpSecretManagerStore> gcp = new LinkedHashMap<>();
 
     public Map<String, FileStore> getFile() {
       return file;
@@ -69,6 +74,14 @@ public class Secrets {
 
     public void setAws(final Map<String, AwsSecretsManagerStore> aws) {
       this.aws = aws;
+    }
+
+    public Map<String, GcpSecretManagerStore> getGcp() {
+      return gcp;
+    }
+
+    public void setGcp(final Map<String, GcpSecretManagerStore> gcp) {
+      this.gcp = gcp;
     }
   }
 
@@ -207,6 +220,66 @@ public class Secrets {
                 + ".batch-enabled and .container-secret-id are mutually exclusive, but both were "
                 + "configured");
       }
+    }
+  }
+
+  /**
+   * Configuration for a GCP Secret Manager store. Authentication is always identity-based (GCP
+   * Application Default Credentials chain): no static credentials are accepted here by design.
+   */
+  public static class GcpSecretManagerStore {
+
+    /** GCP project id owning the secrets. Required. */
+    private @Nullable String projectId;
+
+    /**
+     * Optional prefix prepended to every reference name to form the GCP secret id (e.g. {@code
+     * camunda-}). When omitted, references map to bare secret ids.
+     */
+    private @Nullable String pathPrefix;
+
+    /**
+     * Optional endpoint override, primarily for testing against an emulator. When omitted, the
+     * default Secret Manager endpoint is used.
+     */
+    private @Nullable String endpoint;
+
+    /**
+     * Opt-in: instead of one GCP secret per reference, treat every reference as a JSON key inside
+     * this one named secret (e.g. {@code app-config}, a JSON object of key-value pairs).
+     */
+    private @Nullable String containerSecretId;
+
+    public @Nullable String getProjectId() {
+      return projectId;
+    }
+
+    public void setProjectId(final @Nullable String projectId) {
+      this.projectId = projectId;
+    }
+
+    public @Nullable String getPathPrefix() {
+      return pathPrefix;
+    }
+
+    public void setPathPrefix(final @Nullable String pathPrefix) {
+      this.pathPrefix = pathPrefix;
+    }
+
+    public @Nullable String getEndpoint() {
+      return endpoint;
+    }
+
+    public void setEndpoint(final @Nullable String endpoint) {
+      this.endpoint = endpoint;
+    }
+
+    public @Nullable String getContainerSecretId() {
+      return containerSecretId;
+    }
+
+    public void setContainerSecretId(final @Nullable String containerSecretId) {
+      this.containerSecretId = containerSecretId;
     }
   }
 }
