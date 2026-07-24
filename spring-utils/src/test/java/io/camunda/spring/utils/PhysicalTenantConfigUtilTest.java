@@ -153,6 +153,26 @@ class PhysicalTenantConfigUtilTest {
   }
 
   @Test
+  void shouldPassEmptyRelativeNameWhenKeyIsOnlyTheTenantIdSegment() {
+    // given a value bound directly to the tenant-id segment, with no property beneath it
+    final MockEnvironment environment = new MockEnvironment();
+    environment
+        .getPropertySources()
+        .addFirst(new MapPropertySource("test", Map.of("camunda.physical-tenants.tenanta", "v")));
+
+    // when
+    final Map<String, Boolean> relativeEmptyByTenant = new LinkedHashMap<>();
+    PhysicalTenantConfigUtil.forEachTenantProperty(
+        environment,
+        (tenantId, relative) -> relativeEmptyByTenant.put(tenantId, relative.isEmpty()));
+
+    // then the consumer fires once for the id with an empty relative name — the boundary both
+    // validators rely on to skip the id-only key
+    assertThat(relativeEmptyByTenant).containsOnlyKeys("tenanta");
+    assertThat(relativeEmptyByTenant.get("tenanta")).isTrue();
+  }
+
+  @Test
   void shouldValidateIdsDuringForEachTenantProperty() {
     // given a tenant id over the length limit
     final MockEnvironment environment = new MockEnvironment();
