@@ -263,7 +263,7 @@ public final class ZeebeRocksDbFactory<
 
     // compaction
     props.setProperty("level_compaction_dynamic_level_bytes", RocksDbOptionsFormatter.format(true));
-    props.setProperty("compaction_pri", "kOldestSmallestSeqFirst");
+    props.setProperty("compaction_pri", "kOldestLargestSeqFirst");
     props.setProperty("compaction_style", "kCompactionStyleLevel");
 
     // L-0 means immediately flushed memtables
