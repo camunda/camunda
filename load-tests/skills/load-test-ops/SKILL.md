@@ -1,7 +1,8 @@
 ---
+
 name: load-test-ops
 description: Trigger, monitor, update, profile, and stop Camunda load tests using gh CLI and kubectl directly — no MCP server required
----
+--------------------------------------------------------------------------------------------------------------------------------------
 
 # Camunda Load Test Operations
 
@@ -95,12 +96,11 @@ workflow.
 - Example: `c8-ck-my-feature-20260427` (ck = ChrisKujawa)
 - `camunda-load-test.yml` input `name` may be passed with or without `c8-` (it will add the prefix if missing)
 - Metrics/profile/delete workflows take the full namespace and require it to start with `c8-`
-**Use a unique name for each new run.** Reusing a namespace mixes the new run's metrics with the
-prior run's data and makes comparisons ambiguous; for intentional in-place iteration (config
-tweak, image bump on the same cluster), use [Update / redeploy](#update--redeploy) instead. The
-date alone is not enough — it collides within a single day or across parallel investigations
-from different sessions. Add a disambiguator:
-
+  **Use a unique name for each new run.** Reusing a namespace mixes the new run's metrics with the
+  prior run's data and makes comparisons ambiguous; for intentional in-place iteration (config
+  tweak, image bump on the same cluster), use [Update / redeploy](#update--redeploy) instead. The
+  date alone is not enough — it collides within a single day or across parallel investigations
+  from different sessions. Add a disambiguator:
 - short Git SHA — `ck-feature-abc1234` — best when validating a specific commit
 - HHMM time — `ck-feature-20260508-1430` — best for ad-hoc iteration loops
 - role suffix — `ck-feature-20260508-baseline` / `-branch` — best for paired comparison runs
@@ -108,11 +108,11 @@ from different sessions. Add a disambiguator:
 
 Namespaces carry these labels (set by `newLoadTest.sh`):
 
-|        Label         |           Value           |
-|----------------------|---------------------------|
-| `camunda.io/purpose` | `load-test`               |
+|          Label          |           Value           |
+|-------------------------|---------------------------|
+| `camunda.io/purpose`    | `load-test`               |
 | `camunda.io/created-by` | GitHub actor (sanitized)  |
-| `deadline-date`      | `YYYY-MM-DD` (TTL expiry) |
+| `deadline-date`         | `YYYY-MM-DD` (TTL expiry) |
 
 ---
 
@@ -145,17 +145,17 @@ The full input list lives in the `inputs:` block of `.github/workflows/camunda-l
 
 > **Pick the right tag input — `reuse-tag` and `orchestration-tag` hit different registries:**
 > - `reuse-tag` pulls from the **internal Camunda registry**. Only works for tags built by a
->   prior GHA load-test run on this repo. Passing a public tag (`8.4.3`, `SNAPSHOT`, `latest`)
->   fails because the internal registry can't resolve them.
+> prior GHA load-test run on this repo. Passing a public tag (`8.4.3`, `SNAPSHOT`, `latest`)
+> fails because the internal registry can't resolve them.
 > - `orchestration-tag` pulls from the **public Docker Hub registry**. Required for released
->   versions (e.g. `8.4.3`), nightly `SNAPSHOT`, or any tag you didn't build via GHA yourself.
-
+> versions (e.g. `8.4.3`), nightly `SNAPSHOT`, or any tag you didn't build via GHA yourself.
+>
 > **Helm value typing — common gotchas:**
 > - Use `--set-string` for chart fields whose schema declares them as strings (e.g.
->   `orchestration.cpuThreadCount`, `orchestration.ioThreadCount`). Plain `--set` will pass an
->   integer and the chart's JSON-schema validation will reject the install.
+> `orchestration.cpuThreadCount`, `orchestration.ioThreadCount`). Plain `--set` will pass an
+> integer and the chart's JSON-schema validation will reject the install.
 > - Quote boolean-looking string env values: `--set-string 'orchestration.env[0].value=false'`,
->   not `--set 'orchestration.env[0].value=false'`.
+> not `--set 'orchestration.env[0].value=false'`.
 > - Quote any value that contains `,` `[` `]` `=` so Helm doesn't parse it as a list/key syntax.
 >
 > Full guidance with copy-paste examples in the
@@ -187,7 +187,7 @@ For example:
 Override individual keys by passing extra `--set` flags to the `make` calls (see Update / redeploy below). Full reference in
 `load-tests/setup/README.md`.
 
-Depending on the use case (clarify with the user) different scenarios can be started, e.g realistic, max. 
+Depending on the use case (clarify with the user) different scenarios can be started, e.g realistic, max.
 
 ```bash
 make realistic # Installs the camunda platform and load tester with the realistic scenario configuration, which is defined in the values file.
@@ -405,7 +405,7 @@ cd load-tests/docs/scripts
 ./loadTestMetrics.sh <full-namespace-with-c8-prefix> 1200 > /tmp/results.json
 ```
 
-Args: `<namespace> [duration_seconds] [endpoint] [extra_curl_opts]`. 
+Args: `<namespace> [duration_seconds] [endpoint] [extra_curl_opts]`.
 
 ### Additional metrics via Prometheus (kubectl required)
 
@@ -460,7 +460,6 @@ gh workflow run camunda-delete-load-test.yml --repo camunda/camunda \
 The workflow validates the `c8-` prefix and `camunda.io/purpose=load-test` label before deleting,
 and is idempotent if the namespace is already gone.
 
-
 ## Logs
 
 ### Default: Stackdriver (works without kubectl)
@@ -469,6 +468,7 @@ Stackdriver has the full structured logs from every pod in the namespace. Open t
 **GCP Logs Explorer**, pre-scoped to the load test namespace:
 
 Replace `<namespace>` with the full namespace name (e.g. `c8-ck-my-feature-20260427`).
+
 ```
 https://console.cloud.google.com/logs/query;query=resource.labels.namespace_name%3D%22<namespace>%22?project=camunda-benchmark
 ```

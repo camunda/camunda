@@ -39,4 +39,8 @@ ADR for that domain is written.
   path, remapping `camunda.client.*` to `camunda.clients.default.*`, with a
   `defaultCamundaClient` `@Primary` bean plus a `camundaClient` alias for
   backward compatibility (camunda/camunda#57344).
+- `gradle/001-gradle-experimental-ci-integration.md` — how the experimental
+  Gradle build is exercised in CI while requiring Maven tests for Java and Maven
+  changes, with a non-blocking PR-only Gradle parity job and deferred nightly
+  and automated-repair workflows.
 

@@ -47,20 +47,25 @@ IFS=' '; modules="${filtered_items[*]}"
 ### Add Extra modules to skip, these are not Zeebe/Operate/Tasklist/Optimize modules
 modules+=" $2"
 
-### Format with '-:<moduleName>' This format is used by maven to skip modules with the -pl argument
-# Initialize an empty array for formatted words
-formatted_modules=()
+### Format modules for Maven ('-:<moduleName>') and Gradle ('-x :<moduleName>:test')
+gradle_formatted_modules=()
+maven_formatted_modules=()
 
-# Loop through each word and format it
 for module in $modules; do
-  formatted_modules+=("'-:$module'")
+  # Skip aggregator parent modules — they have no source or test task
+  if [[ $module != *-parent ]]; then
+    gradle_formatted_modules+=("-x :$module:test")
+  fi
+  maven_formatted_modules+=("'-:$module'")
 done
 
-# Join the array into a comma-separated string
-ut_modules=$(IFS=','; echo "${formatted_modules[*]}")
+gradle_ut_modules=$(IFS=' '; echo "${gradle_formatted_modules[*]}")
+maven_ut_modules=$(IFS=','; echo "${maven_formatted_modules[*]}")
 
-# Print the result
-echo "Modules to be skipped: $ut_modules"
+echo "Gradle test exclusions: $gradle_ut_modules"
+echo "Maven module exclusions: $maven_ut_modules"
 
 # shellcheck disable=SC2086
-echo GENERAL_UT_MODULES=$ut_modules >> $GITHUB_ENV
+echo "GENERAL_UT_GRADLE_MODULES=$gradle_ut_modules" >> "$GITHUB_ENV"
+# shellcheck disable=SC2086
+echo "GENERAL_UT_MAVEN_MODULES=$maven_ut_modules" >> "$GITHUB_ENV"

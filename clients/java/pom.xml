@@ -444,6 +444,7 @@
                   </classpath>
                   <arg value="${openapi.dir}"/>
                   <arg value="${project.build.directory}/generated-sources/openapi/src/main/io/camunda/client/protocol/rest"/>
+                  <arg value="${project.build.directory}/generated-sources/openapi/src/main/io/camunda/client/protocol/rest"/>
                 </java>
               </target>
             </configuration>
