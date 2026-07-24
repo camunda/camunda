@@ -43,7 +43,8 @@ final class IncrementalChecksums {
           if (checksum == null) {
             return FileChecksum.of(chunk);
           } else {
-            return checksum.next(chunk);
+            checksum.update(chunk);
+            return checksum;
           }
         });
   }
@@ -65,7 +66,7 @@ final class IncrementalChecksums {
       if (!fileChecksum.isComplete()) {
         throw new IllegalStateException(
             "Checksum for file %s is not complete (had size %s, expected size %s)"
-                .formatted(fileName, fileChecksum.size, fileChecksum.totalSize));
+                .formatted(fileName, fileChecksum.currentSize, fileChecksum.totalSize));
       }
 
       checksums.put(fileName, fileChecksum.checksum.getValue());
@@ -76,12 +77,12 @@ final class IncrementalChecksums {
 
   private static final class FileChecksum {
     private final Checksum checksum;
-    private final long size;
+    private long currentSize;
     private final long totalSize;
 
-    private FileChecksum(final Checksum checksum, final long size, final long totalSize) {
+    private FileChecksum(final Checksum checksum, final long currentSize, final long totalSize) {
       this.checksum = checksum;
-      this.size = size;
+      this.currentSize = currentSize;
       this.totalSize = totalSize;
     }
 
@@ -92,18 +93,21 @@ final class IncrementalChecksums {
             "Expected first chunk at offset 0 but got %s".formatted(fileBlockPosition));
       }
 
-      return new FileChecksum(new CRC32C(), 0, chunk.getTotalFileSize()).next(chunk);
+      final var checksum = new FileChecksum(new CRC32C(), 0, chunk.getTotalFileSize());
+      checksum.update(chunk);
+      return checksum;
     }
 
     public boolean isComplete() {
-      return size == totalSize;
+      return currentSize == totalSize;
     }
 
-    public FileChecksum next(final SnapshotChunk chunk) {
+    public void update(final SnapshotChunk chunk) {
       final long fileBlockPosition = chunk.getFileBlockPosition();
-      if (fileBlockPosition != size) {
+      if (fileBlockPosition != currentSize) {
         throw new IllegalArgumentException(
-            "Expected next chunk at offset %s but got %s".formatted(size, fileBlockPosition));
+            "Expected next chunk at offset %s but got %s"
+                .formatted(currentSize, fileBlockPosition));
       }
 
       final long totalFileSize = chunk.getTotalFileSize();
@@ -113,16 +117,15 @@ final class IncrementalChecksums {
       }
 
       final byte[] content = chunk.getContent();
-      final long newSize = size + content.length;
+      final long newSize = currentSize + content.length;
       if (newSize > totalSize) {
         throw new IllegalArgumentException(
             "Chunk size %s + current size %s exceeds total size %s"
-                .formatted(content.length, size, totalSize));
+                .formatted(content.length, currentSize, totalSize));
       }
 
       checksum.update(content);
-
-      return new FileChecksum(checksum, newSize, totalSize);
+      currentSize = newSize;
     }
   }
 }
