@@ -91,7 +91,9 @@ export default function ReportView({report, error, loadReport}) {
     history.push(redirect);
   }
 
-  const isInstantPreview = data?.instantPreviewReport;
+  // System-generated reports (instant preview and agentic control) are read-only: their
+  // definitions are injected at query time, so editing/deleting/sharing them is not supported.
+  const isSystemGenerated = data?.instantPreviewReport || data?.agenticControlReport;
 
   return (
     <div className="ReportView Report">
@@ -102,7 +104,7 @@ export default function ReportView({report, error, loadReport}) {
             {description && <EntityDescription description={description} />}
           </div>
           <div className="tools">
-            {!isInstantPreview && (
+            {!isSystemGenerated && (
               <>
                 {currentUserRole === 'editor' && (
                   <Button
@@ -152,7 +154,7 @@ export default function ReportView({report, error, loadReport}) {
                 user={user}
               />
             )}
-            {!isInstantPreview && currentUserRole === 'editor' && (
+            {!isSystemGenerated && currentUserRole === 'editor' && (
               <Button
                 iconDescription={t('common.delete')}
                 kind="ghost"

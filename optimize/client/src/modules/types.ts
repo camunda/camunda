@@ -313,6 +313,7 @@ export interface SingleProcessReportData extends SingleReportData {
   visualization: ProcessReportVisualization | null;
   managementReport: boolean;
   instantPreviewReport: boolean;
+  agenticControlReport: boolean;
   userTaskReport: boolean;
 }
 
