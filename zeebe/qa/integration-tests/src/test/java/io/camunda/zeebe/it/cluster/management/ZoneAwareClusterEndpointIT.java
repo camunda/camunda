@@ -32,7 +32,11 @@ import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.util.Arrays;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 
 final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
@@ -298,6 +302,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // given - zoneA (brokers 0 and 2) is down; use the zoneB broker as the actuator, since it is
       // the only one that stays alive throughout the test
       cluster.awaitCompleteTopology();
+      // odd id means zoneB
       final var actuator = ClusterActuator.of(cluster.brokers().get(memberIdForBroker(1)));
       cluster.brokers().get(memberIdForBroker(0)).close();
       cluster.brokers().get(memberIdForBroker(2)).close();
@@ -340,49 +345,58 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     }
   }
 
-  @Test
-  void shouldRejectForceRemoveOfUnknownZone() {
-    try (final var cluster = createCluster(minReplicationFactor())) {
-      // given
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  final class ZoneManagementRejections {
+    @AutoClose private final TestCluster cluster = createCluster(minReplicationFactor());
+
+    @AutoClose
+    private final TestCluster clusterAfterZoneRemoval = createCluster(minReplicationFactor());
+
+    private ClusterActuator actuator;
+    private ClusterActuator actuatorAfterZoneRemoval;
+
+    @BeforeAll
+    void awaitCompleteTopology() {
       cluster.awaitCompleteTopology();
-      final var actuator = ClusterActuator.of(cluster.availableGateway());
+      actuator = ClusterActuator.of(cluster.availableGateway());
+
+      clusterAfterZoneRemoval.awaitCompleteTopology();
+      actuatorAfterZoneRemoval =
+          ClusterActuator.of(clusterAfterZoneRemoval.brokers().get(memberIdForBroker(1)));
+      clusterAfterZoneRemoval.brokers().get(memberIdForBroker(0)).close();
+      clusterAfterZoneRemoval.brokers().get(memberIdForBroker(2)).close();
+      final var forceRemoveResponse = actuatorAfterZoneRemoval.forceRemoveZone(ZONES[0], false);
+      Awaitility.await()
+          .untilAsserted(
+              () ->
+                  ClusterActuatorAssert.assertThat(actuatorAfterZoneRemoval)
+                      .hasAppliedChanges(forceRemoveResponse));
+    }
+
+    @Test
+    void shouldRejectForceRemoveOfUnknownZone() {
+      // given - the shared cluster is running with both zones present
 
       // when - then
       assertThatCode(() -> actuator.forceRemoveZone("zoneUnknown", false))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("unknown zone");
     }
-  }
 
-  @Test
-  void shouldRejectForceRemoveOfLastRemainingZone() {
-    try (final var cluster = createCluster(minReplicationFactor())) {
-      // given - force-remove zoneA first, leaving zoneB as the only zone. Use the zoneB broker as
-      // the actuator, since it is the only one that stays alive throughout the test
-      cluster.awaitCompleteTopology();
-      final var actuator = ClusterActuator.of(cluster.brokers().get(memberIdForBroker(1)));
-      cluster.brokers().get(memberIdForBroker(0)).close();
-      cluster.brokers().get(memberIdForBroker(2)).close();
-      final var forceRemoveResponse = actuator.forceRemoveZone(ZONES[0], false);
-      Awaitility.await()
-          .untilAsserted(
-              () ->
-                  ClusterActuatorAssert.assertThat(actuator)
-                      .hasAppliedChanges(forceRemoveResponse));
+    @Test
+    void shouldRejectForceRemoveOfLastRemainingZone() {
+      // given - zoneA has already been force-removed from the shared cluster
 
       // when - then - force-removing the last remaining zone is rejected
-      assertThatCode(() -> actuator.forceRemoveZone(ZONES[1], false))
+      assertThatCode(() -> actuatorAfterZoneRemoval.forceRemoveZone(ZONES[1], false))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("last remaining zone");
     }
-  }
 
-  @Test
-  void shouldRejectAddZoneOfExistingZone() {
-    try (final var cluster = createCluster(minReplicationFactor())) {
-      // given - zoneA is still present in the distribution config
-      cluster.awaitCompleteTopology();
-      final var actuator = ClusterActuator.of(cluster.availableGateway());
+    @Test
+    void shouldRejectAddZoneOfExistingZone() {
+      // given - zoneA is still present in the shared cluster's distribution config
 
       // when - then
       final var addZoneRequest =
@@ -391,35 +405,22 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("already present");
     }
-  }
 
-  @Test
-  void shouldRejectAddZoneWithMismatchedBrokers() {
-    try (final var cluster = createCluster(minReplicationFactor())) {
-      // given - zoneA is down and force-removed. Use the zoneB broker as the actuator, since it is
-      // the only one that stays alive throughout the test
-      cluster.awaitCompleteTopology();
-      final var actuator = ClusterActuator.of(cluster.brokers().get(memberIdForBroker(1)));
-      cluster.brokers().get(memberIdForBroker(0)).close();
-      cluster.brokers().get(memberIdForBroker(2)).close();
-      final var forceRemoveResponse = actuator.forceRemoveZone(ZONES[0], false);
-      Awaitility.await()
-          .untilAsserted(
-              () ->
-                  ClusterActuatorAssert.assertThat(actuator)
-                      .hasAppliedChanges(forceRemoveResponse));
+    @Test
+    void shouldRejectAddZoneWithMismatchedBrokers() {
+      // given - zoneA has already been force-removed from the shared cluster
 
       // when - then - empty brokers[] is rejected
       final var emptyBrokersRequest =
           new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of());
-      assertThatCode(() -> actuator.addZone(ZONES[0], emptyBrokersRequest, false))
+      assertThatCode(() -> actuatorAfterZoneRemoval.addZone(ZONES[0], emptyBrokersRequest, false))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("at least one broker");
 
       // when - then - fewer brokers than numberOfReplicas is rejected
       final var tooFewBrokersRequest =
           new AddZoneRequest().numberOfReplicas(2).priority(100).brokers(List.of(brokerId(0)));
-      assertThatCode(() -> actuator.addZone(ZONES[0], tooFewBrokersRequest, false))
+      assertThatCode(() -> actuatorAfterZoneRemoval.addZone(ZONES[0], tooFewBrokersRequest, false))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("less than the requested number of replicas");
     }
