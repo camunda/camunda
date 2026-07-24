@@ -10,4 +10,14 @@
 
 ## Related issues
 
+<!--
+Link the tracked ISSUE this PR delivers with a closing keyword:
+closes #1234        (also: fixes #1234, resolves #1234)
+A bare "#1234" or "relates to #1234" also counts. Link the issue, NOT a PR.
+No tracked issue (hotfix, dep bump, CI/refactor)? Tick the opt-out below instead.
+-->
+
 closes #
+
+- [ ] This PR does not need a linked issue
+

@@ -1,0 +1,64 @@
+# Release-notes PR-gate (epic #53605, work unit #53593).
+#
+# SECURITY MODEL (v1.1) — read before editing:
+#   * Runs on pull_request_target so the workflow + the local action resolve from
+#     the BASE ref, and a privileged token can post comments / sync labels on
+#     fork PRs. The PR body is read from the event payload only.
+#   * HARD RULE: never `actions/checkout` the PR head. The checkout below takes
+#     the default (base) ref — do not add `ref: ${{ github.event.pull_request.head.* }}`.
+#   * Warn-only during rollout (enforce=false). The flip to enforce + required
+#     status check is done later via branch protection (see epic #53605).
+#
+# SPIKE (AC#1): this workflow is also the harness for proving the required-check
+# mechanism against fork-PR head SHAs. On pull_request_target the job's check is
+# natively associated with the PR head SHA (mechanism a). If that proves
+# insufficient for fork PRs, publish an explicit Check Run via the app token on
+# github.event.pull_request.head.sha (mechanism b). See the PR description.
+name: Release-notes PR-gate
+
+on:
+  pull_request_target:
+    # Scope the privileged (app-token) flow to the branches whose release notes
+    # this gate governs — not every PR against any branch.
+    branches: [main, 'stable/**']
+    # Deliberately NOT labeled/unlabeled: the gate itself syncs the `no-issue`
+    # label, and each add/remove would re-trigger this workflow on its own label
+    # write (GitHub's push-loop protection does not cover label events), costing
+    # a full extra job per pass/fail transition. Body/title edits already re-run
+    # it via `edited`, which is the only signal that changes the outcome.
+    types: [opened, edited, synchronize]
+
+# One run per PR; newer events cancel older ones.
+concurrency:
+  group: release-notes-pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # checkout of the BASE ref only
+
+jobs:
+  pr-issue-link:
+    name: PR-issue link
+    runs-on: ubuntu-latest
+    steps:
+      # Base ref only — provides the local action. NEVER the PR head.
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@6c85c5de572dbc1790e5e7b4636c2ad9f5b614d8 # v1.1.0
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Lint PR-issue link
+        uses: ./.github/actions/release-notes/lint
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          enforce: 'false' # warn-only during rollout

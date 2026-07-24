@@ -1,0 +1,71 @@
+# CI for the release-notes TypeScript action package.
+# Guards the committed ncc bundle against drift and runs the parser/policy tests.
+name: Release-notes action CI
+
+on:
+  pull_request:
+    paths:
+      - .github/actions/release-notes/**
+      - .github/workflows/release-notes-action-ci.yml
+      - .github/pull_request_template.md
+      - commitlint.config.cjs
+  push:
+    branches: [main]
+    paths:
+      - .github/actions/release-notes/**
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: .github/actions/release-notes
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test (parser + policy)
+        run: npm test
+      - name: Rebuild bundle
+        run: npm run build
+      - name: Fail if committed dist is stale
+        run: |
+          if ! git diff --exit-code -- lint/dist; then
+            echo "::error::lint/dist is out of date. Run 'npm run build' in .github/actions/release-notes and commit the result."
+            exit 1
+          fi
+      - name: Repo-constant grep — PR template matches the parser opt-out phrase
+        run: |
+          # The parser is the single source of truth for the opt-out text; the PR
+          # template must carry the same phrase or the checkbox silently stops working.
+          phrase=$(sed -nE "s/.*OPT_OUT_PHRASE = '([^']+)'.*/\1/p" src/parser/index.ts)
+          test -n "$phrase" || { echo "::error::OPT_OUT_PHRASE not found in src/parser/index.ts"; exit 1; }
+          grep -iqF "$phrase" ../../pull_request_template.md \
+            || { echo "::error::PR template is missing the opt-out phrase: '$phrase'"; exit 1; }
+      - name: Drift guard — title-lint constants match commitlint.config.cjs
+        run: |
+          # The regex title lint reimplements the ACTIVE commitlint rules to keep
+          # the action dependency-free. This fails CI if the repo's type-enum or
+          # header-max-length changes without src/title being updated to match.
+          cfg=$(node -e 'const c=require("../../../commitlint.config.cjs");console.log(JSON.stringify({types:[...c.rules["type-enum"][2]].sort(),max:c.rules["header-max-length"][2]}))')
+          ours=$(node --import tsx -e 'import("./src/title/index.ts").then(m=>console.log(JSON.stringify({types:[...m.TITLE_TYPES].sort(),max:m.HEADER_MAX})))')
+          echo "commitlint.config.cjs: $cfg"
+          echo "src/title/index.ts:    $ours"
+          [ "$cfg" = "$ours" ] || { echo "::error::title-lint constants drifted from commitlint.config.cjs — update TITLE_TYPES/HEADER_MAX in src/title/index.ts"; exit 1; }
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
