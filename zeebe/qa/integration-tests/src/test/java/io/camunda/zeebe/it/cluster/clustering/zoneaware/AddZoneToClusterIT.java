@@ -8,12 +8,13 @@
 package io.camunda.zeebe.it.cluster.clustering.zoneaware;
 
 import static io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers.*;
+import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Zone;
 import io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers.AddZoneScenario;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
+import io.camunda.zeebe.management.cluster.AddZoneRequest;
+import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -62,35 +63,26 @@ final class AddZoneToClusterIT {
 
       // when - start a broker in the new zone, add it to the topology, then add the zone to the
       // partition distribution
-      closeables.manage(
-          addBrokerInZone(
-              cluster,
-              actuator,
-              scenario.clusterName(),
-              scenario.newZone(),
-              0,
-              3,
-              scenario.targetZones()));
+      final var broker =
+          closeables.manage(
+              startBrokerInZone(cluster, scenario.newZone(), 0, 3, scenario.targetZones()));
 
-      final var config =
-          new PartitionDistributionConfig()
-              .type(TypeEnum.ZONE_AWARE)
-              .zones(
-                  scenario.targetZones().stream()
-                      .map(
-                          z ->
-                              new ZoneSpec()
-                                  .name(z.name())
-                                  .numberOfReplicas(z.numberOfReplicas())
-                                  .priority(z.priority()))
-                      .toList());
-      final var response = actuator.patchPartitionDistribution(config, false);
+      final var priority = 1;
+      final var response =
+          actuator.addZone(
+              scenario.newZone(),
+              new AddZoneRequest()
+                  .brokers(List.of(BrokerId.of(broker.nodeId())))
+                  .numberOfReplicas(1)
+                  .priority(priority),
+              false);
 
       // then - the new distribution is applied and the new zone hosts partitions
       Awaitility.await()
           .untilAsserted(
               () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
-      assertThat(actuator.getTopology().getPartitionDistribution()).isEqualTo(config);
+      assertThat(actuator.getTopology().getPartitionDistribution().getZones())
+          .contains(new ZoneSpec(scenario.newZone(), 1, priority));
       assertZoneHostsPartitions(actuator, scenario.newZone(), 0);
     }
   }
@@ -100,17 +92,17 @@ final class AddZoneToClusterIT {
         Arguments.of(
             new AddZoneScenario(
                 "add-zone-single",
-                List.of(new Zone("zoneA", 2, 2, 100)),
-                List.of(new Zone("zoneA", 2, 2, 100), new Zone("zoneB", 1, 1, 10)),
-                "zoneB")),
+                List.of(new Zone(ZONE_A, 2, 2, 100)),
+                List.of(new Zone(ZONE_A, 2, 2, 100), new Zone(ZONE_B, 1, 1, 10)),
+                ZONE_B)),
         Arguments.of(
             new AddZoneScenario(
                 "add-zone-two",
-                List.of(new Zone("zoneA", 1, 1, 100), new Zone("zoneB", 1, 1, 10)),
+                List.of(new Zone(ZONE_A, 1, 1, 100), new Zone(ZONE_B, 1, 1, 10)),
                 List.of(
-                    new Zone("zoneA", 1, 1, 100),
-                    new Zone("zoneB", 1, 1, 10),
-                    new Zone("zoneC", 1, 1, 5)),
-                "zoneC")));
+                    new Zone(ZONE_A, 1, 1, 100),
+                    new Zone(ZONE_B, 1, 1, 10),
+                    new Zone(ZONE_C, 1, 1, 5)),
+                ZONE_C)));
   }
 }

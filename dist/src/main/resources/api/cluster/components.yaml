@@ -196,6 +196,31 @@ schemas:
         description: Preferred-leader ranking; higher value wins
         example: 1000
 
+  AddZoneRequest:
+    description: Request body for adding back a previously force-removed zone. The zone name is
+      given in the path.
+    type: object
+    required:
+      - numberOfReplicas
+      - priority
+      - brokers
+    properties:
+      numberOfReplicas:
+        type: integer
+        format: int32
+        description: Number of partition replicas placed in the zone
+        example: 2
+      priority:
+        type: integer
+        format: int32
+        description: Preferred-leader ranking; higher value wins
+        example: 1000
+      brokers:
+        type: array
+        description: The brokers to re-add to the zone
+        items:
+          $ref: "components.yaml#/schemas/BrokerId"
+
   ClusterZoneMigrationRequest:
     description: >
       Request to migrate one zone from a bare or partially zoned cluster. The complete zone order,
