@@ -123,6 +123,101 @@ public class MigrateAgentInstanceTest {
   }
 
   @Test
+  public void shouldKeepStaleElementIdWhenOwningElementIsRemovedFromTargetProcessDefinition() {
+    // given — service task "A" completes before a new version (v2) of the *same* process
+    // definition is deployed, dropping "A" entirely (a common case: requirements changed while
+    // instances were already running past it); since "A" has no active element instance at
+    // migration time, no mapping instruction is required or provided for it, and the target
+    // version does not define an element with this id either. This documents the current
+    // fallback behavior: the agent instance keeps its stale, no-longer-existing elementId
+    final String processId = helper.getBpmnProcessId();
+
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .versionTag("v1")
+                .startEvent()
+                .serviceTask("A", t -> t.zeebeJobType(AGENT_JOB_TYPE))
+                .userTask("B")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    final var agentTaskInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst();
+    final long agentInstanceKey =
+        engine
+            .agentInstances()
+            .withElementInstanceKey(agentTaskInstance.getKey())
+            .create()
+            .getKey();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED).withType(AGENT_JOB_TYPE).await();
+    engine.jobs().withType(AGENT_JOB_TYPE).activate();
+    engine.job().ofInstance(processInstanceKey).withType(AGENT_JOB_TYPE).complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .exists())
+        .describedAs("The owning service task has completed before migration")
+        .isTrue();
+
+    // deploy v2 of the same process definition only now, after "A" has already completed, to
+    // mirror the realistic sequence: the process model is corrected/simplified while instances
+    // are already running past the removed element
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .versionTag("v2")
+                    .startEvent()
+                    .userTask("B2")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, processId);
+
+    // when — no mapping instruction is provided for "A" since it has no active element instance;
+    // v2 of the process definition does not define an element with id "A" either
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("B", "B2")
+        .migrate();
+
+    // then — the agent instance still migrates to version 2 of the process definition, but its
+    // elementId is left unchanged and now refers to an element that no longer exists in v2
+    Assertions.assertThat(
+            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.MIGRATED)
+                .withRecordKey(agentInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Definition fields are updated to point at version 2 of the (same) process "
+                + "definition")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(processId)
+        .hasProcessDefinitionVersion(2)
+        .hasVersionTag("v2")
+        .describedAs(
+            "elementId keeps its stale value \"A\" since no mapping instruction was provided and "
+                + "v2 of the process definition no longer contains an element with this id")
+        .hasElementId("A");
+  }
+
+  @Test
   public void shouldMigrateMultipleAgentInstancesOfServiceTasksInSameProcessInstance() {
     // given — two service tasks in parallel, each with its own agent instance, both still active
     // (neither job completes) at migration time; "A" is remapped to "A2" while "B" keeps its id
