@@ -35,7 +35,7 @@ elasticsearch_version=""
 case "$target_version" in
   main)
     # renovate: version=camunda-platform-8.10
-    camunda_platform_helm_chart_version="15.0.0-alpha1"
+    camunda_platform_helm_chart_version="15.0.0-alpha3"
     allowed_storage=(elasticsearch opensearch postgresql mysql mariadb mssql oracle none)
     ;;
   stable-87)
