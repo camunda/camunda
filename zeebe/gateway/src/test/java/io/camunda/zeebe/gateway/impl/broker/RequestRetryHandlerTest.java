@@ -313,7 +313,7 @@ final class RequestRetryHandlerTest {
 
     @Override
     public void subscribeJobAvailableNotification(
-        final String topic, final Consumer<String> handler) {}
+        final String topic, final Object subscriber, final Consumer<String> handler) {}
   }
 
   private static class TestBrokerRequest extends BrokerExecuteCommand<String> {
