@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
@@ -123,10 +124,8 @@ class DataExportersTest {
       properties = {
         // class has a registered merger (TestExporterConfigMergers.RecordingMerger)
         "camunda.data.exporters.foo.class-name=io.camunda.configuration.test.MergeableExporter",
-        "camunda.data.exporters.foo.jar-path=jar-path",
         "camunda.data.exporters.foo.args.arg1=value1",
         "zeebe.broker.exporters.foo.className=io.camunda.configuration.test.MergeableExporter",
-        "zeebe.broker.exporters.foo.jarPath=jar-path",
         "zeebe.broker.exporters.foo.args.arg1=value1Legacy",
         "zeebe.broker.exporters.foo.args.arg2=value2",
       })
@@ -146,6 +145,53 @@ class DataExportersTest {
           .containsEntry("arg2", "value2") // legacy (base) fills the gap
           .containsEntry(
               "mergedby", "test-merger"); // proves the SPI merger ran, not a full replace
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.exporters.foo.class-name=io.camunda.configuration.test.MergeableExporter",
+        "camunda.data.exporters.foo.args.arg1=value1",
+        "zeebe.broker.exporters.foo.className=io.camunda.configuration.test.NoMergerExporter",
+        "zeebe.broker.exporters.foo.args.arg2=value2",
+      })
+  class WithChangedExporterClassReplacesArgsWholesale {
+    final BrokerBasedProperties brokerCfg;
+
+    WithChangedExporterClassReplacesArgsWholesale(
+        @Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldReplaceArgsWholesaleWhenExporterClassChanges() {
+      assertThat(brokerCfg.getExporters().get("foo").getArgs())
+          .containsOnly(entry("arg1", "value1"));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.exporters.foo.class-name=io.camunda.configuration.test.MergeableExporter",
+        "camunda.data.exporters.foo.jar-path=unified-exporter.jar",
+        "camunda.data.exporters.foo.args.arg1=value1",
+        "zeebe.broker.exporters.foo.className=io.camunda.configuration.test.MergeableExporter",
+        "zeebe.broker.exporters.foo.jarPath=legacy-exporter.jar",
+        "zeebe.broker.exporters.foo.args.arg2=value2",
+      })
+  class WithExternalJarExporterReplacesArgsWholesale {
+    final BrokerBasedProperties brokerCfg;
+
+    WithExternalJarExporterReplacesArgsWholesale(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldReplaceArgsWholesaleForExternalJarExporter() {
+      assertThat(brokerCfg.getExporters().get("foo").getArgs())
+          .containsOnly(entry("arg1", "value1"));
     }
   }
 
