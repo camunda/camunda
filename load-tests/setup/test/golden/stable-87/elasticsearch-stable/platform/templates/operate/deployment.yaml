@@ -49,7 +49,7 @@ spec:
         - name: harbor-registry
       initContainers:
         - name: migration
-          image: camunda/operate:8.7.29
+          image: camunda/operate:8.7.35
           command: ['/bin/sh', '/usr/local/operate/bin/migrate']
           securityContext:
             allowPrivilegeEscalation: false
@@ -83,7 +83,7 @@ spec:
               mountPath: /camunda
       containers:
         - name: operate
-          image: camunda/operate:8.7.29
+          image: camunda/operate:8.7.35
           imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false

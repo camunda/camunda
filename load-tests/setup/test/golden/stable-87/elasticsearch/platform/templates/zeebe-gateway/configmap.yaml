@@ -37,6 +37,8 @@ data:
     server:
       address: "0.0.0.0"
       port: "8080"
+      tomcat:
+        max-http-form-post-size: "10MB"
     camunda:
       identity:
         type: "KEYCLOAK"
@@ -58,6 +60,7 @@ data:
         network:
           host: 0.0.0.0
           port: "26500"
+          maxMessageSize: "10MB"
   application.yml: |
     zeebe.gateway.monitoring.enabled: "true"
     zeebe.gateway.threads.managementThreads: "1"
