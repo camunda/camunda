@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import org.jspecify.annotations.Nullable;
@@ -56,5 +57,16 @@ public class FuturesUtil {
         collection.stream().map(function).toArray(CompletableFuture[]::new);
     return CompletableFuture.allOf(futures)
         .thenApply(unused -> Arrays.stream(futures).map(CompletableFuture::join).toList());
+  }
+
+  /**
+   * Unwraps a {@link CompletionException} to its underlying cause so callers surface the original
+   * failure instead of the future-framework wrapper. Returns {@code error} unchanged when it is not
+   * a {@link CompletionException} or has no cause.
+   */
+  public static Throwable unwrapCompletionException(final Throwable error) {
+    return error instanceof CompletionException && error.getCause() != null
+        ? error.getCause()
+        : error;
   }
 }

@@ -45,6 +45,7 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
@@ -330,7 +331,7 @@ public final class RecoveryPartitionManager
               .whenCompleteAsync(
                   (ok, error) -> {
                     if (error != null) {
-                      result.completeExceptionally(unwrapCompletionException(error));
+                      result.completeExceptionally(FuturesUtil.unwrapCompletionException(error));
                     } else {
                       LOG.info("Dropped local data of partition {} for restore", partitionId);
                       result.complete(null);
@@ -396,7 +397,7 @@ public final class RecoveryPartitionManager
               .whenCompleteAsync(
                   (ok, error) -> {
                     if (error != null) {
-                      result.completeExceptionally(unwrapCompletionException(error));
+                      result.completeExceptionally(FuturesUtil.unwrapCompletionException(error));
                     } else {
                       LOG.info("Restored partition {} from backups {}", partitionId, backupIds);
                       result.complete(null);
@@ -538,12 +539,6 @@ public final class RecoveryPartitionManager
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-  }
-
-  private static Throwable unwrapCompletionException(final Throwable error) {
-    return error instanceof CompletionException && error.getCause() != null
-        ? error.getCause()
-        : error;
   }
 
   private MemberId localMemberId() {
