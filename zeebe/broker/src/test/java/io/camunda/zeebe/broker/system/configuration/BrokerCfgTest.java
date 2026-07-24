@@ -367,6 +367,33 @@ public final class BrokerCfgTest {
   }
 
   @Test
+  public void shouldEnableFlushByDefault() {
+    // given
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // when
+    final ClusterCfg clusterCfg = cfg.getCluster();
+
+    // then
+    assertThat(clusterCfg.getRaft().getFlush().enabled()).isTrue();
+    assertThat(clusterCfg.getRaft().getFlush().delayTime()).isEqualTo(Duration.ZERO);
+  }
+
+  @Test
+  public void shouldPreserveFlushEnabledWhenOnlyDelayTimeIsSet() {
+    // given
+    environment.put("zeebe.broker.cluster.raft.flush.delayTime", "15s");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ClusterCfg clusterCfg = cfg.getCluster();
+
+    // then
+    assertThat(clusterCfg.getRaft().getFlush().enabled()).isTrue();
+    assertThat(clusterCfg.getRaft().getFlush().delayTime()).isEqualTo(Duration.ofSeconds(15));
+  }
+
+  @Test
   public void shouldSetEnablePriorityElectionFromConfig() {
     // given
     final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
