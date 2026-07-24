@@ -1,6 +1,16 @@
 import { githubHeaders, repoApiUrl } from '../github';
 import type { ParsedRef, ResolvedRef, Resolver } from '../types';
 
+/** A PR body can carry at most this many refs to the API. A legitimate PR never
+ *  needs more than a handful — this bounds the worst case (a body stuffed with
+ *  hundreds of `#N` shorthands on `pull_request_target`) to a fixed cost. */
+const MAX_REFS = 20;
+
+/** How many classify calls run concurrently. Caps the fan-out against GitHub's
+ *  API even after dedup + the cap above, so a burst of distinct numbers cannot
+ *  open dozens of sockets at once. */
+const CONCURRENCY = 5;
+
 /**
  * GitHub-API resolver: the only part of the pipeline that touches the network.
  * Classifies each ref as issue vs PR vs missing and flags cross-repo refs.
@@ -25,8 +35,35 @@ export class GithubResolver implements Resolver {
     this.headers = githubHeaders(token);
   }
 
+  /**
+   * Resolve every ref, deduped (repeats of the same "#N" cost one API call),
+   * capped at MAX_REFS (a legitimate PR never needs more), and bounded to
+   * CONCURRENCY in flight — defense against a body engineered to fan out
+   * unbounded concurrent requests using the privileged gate token.
+   */
   async resolve(refs: readonly ParsedRef[]): Promise<ResolvedRef[]> {
-    return Promise.all(refs.map((ref) => this.resolveOne(ref)));
+    const capped = refs.slice(0, MAX_REFS);
+    const cache = new Map<string, Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>>>();
+    const classifyCached = (ref: ParsedRef): Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>> => {
+      const key = `${ref.repo ?? ''}#${ref.number}`;
+      let promise = cache.get(key);
+      if (!promise) {
+        promise = this.classify(ref);
+        cache.set(key, promise);
+      }
+      return promise;
+    };
+
+    const results: ResolvedRef[] = [];
+    for (let i = 0; i < capped.length; i += CONCURRENCY) {
+      const batch = capped.slice(i, i + CONCURRENCY);
+      const classified = await Promise.all(batch.map(classifyCached));
+      batch.forEach((ref, index) => {
+        const { target, crossRepo } = classified[index]!;
+        results.push({ ...ref, target, crossRepo });
+      });
+    }
+    return results;
   }
 
   /**
@@ -55,16 +92,20 @@ export class GithubResolver implements Resolver {
     return repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
   }
 
-  private async resolveOne(ref: ParsedRef): Promise<ResolvedRef> {
-    if (this.isCrossRepo(ref.repo)) return { ...ref, target: 'missing', crossRepo: true };
+  /** Classify one (repo, number) pair — the part of a ref that actually needs
+   *  an API call. Keyed independently of the ParsedRef's own fields (raw,
+   *  keyword, kind, index) so `resolve()` can cache and reuse it across every
+   *  ref that shares the same repo/number. */
+  private async classify(ref: ParsedRef): Promise<Pick<ResolvedRef, 'target' | 'crossRepo'>> {
+    if (this.isCrossRepo(ref.repo)) return { target: 'missing', crossRepo: true };
 
     const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
       headers: this.headers,
     });
-    if (res.status === 404) return { ...ref, target: 'missing', crossRepo: false };
+    if (res.status === 404) return { target: 'missing', crossRepo: false };
     if (!res.ok) throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);
 
     const data = (await res.json()) as { pull_request?: unknown };
-    return { ...ref, target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
+    return { target: data.pull_request ? 'pullRequest' : 'issue', crossRepo: false };
   }
 }
