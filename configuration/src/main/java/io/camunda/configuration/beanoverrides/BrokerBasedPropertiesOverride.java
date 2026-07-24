@@ -257,6 +257,15 @@ public class BrokerBasedPropertiesOverride {
     populateFromExpression(override, camunda);
     populateFromProcessInstanceCreation(override, camunda);
     populateFromJobs(override, camunda);
+    populateFromCaches(override, camunda);
+    populateFromMessages(override, camunda);
+    populateFromUsageMetrics(override, camunda);
+    populateFromValidators(override, camunda);
+
+    override
+        .getExperimental()
+        .getEngine()
+        .setMaxProcessDepth(camunda.getProcessing().getEngine().getMaxProcessDepth());
   }
 
   private static void populateFromDistribution(
@@ -266,6 +275,51 @@ public class BrokerBasedPropertiesOverride {
     final var distributionCfg = override.getExperimental().getEngine().getDistribution();
     distributionCfg.setMaxBackoffDuration(distribution.getMaxBackoffDuration());
     distributionCfg.setRedistributionInterval(distribution.getRedistributionInterval());
+    distributionCfg.setPauseCommandDistribution(distribution.isPauseCommandDistribution());
+  }
+
+  private static void populateFromCaches(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var caches = camunda.getProcessing().getEngine().getCaches();
+
+    final var cachesCfg = override.getExperimental().getEngine().getCaches();
+    cachesCfg.setDrgCacheCapacity(caches.getDrgCacheCapacity());
+    cachesCfg.setFormCacheCapacity(caches.getFormCacheCapacity());
+    cachesCfg.setProcessCacheCapacity(caches.getProcessCacheCapacity());
+    cachesCfg.setResourceCacheCapacity(caches.getResourceCacheCapacity());
+    cachesCfg.setAuthorizationsCacheCapacity(caches.getAuthorizationsCacheCapacity());
+    cachesCfg.setAuthorizationsCacheTtl(caches.getAuthorizationsCacheTtl());
+  }
+
+  private static void populateFromMessages(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var messages = camunda.getProcessing().getEngine().getMessages();
+
+    final var messagesCfg = override.getExperimental().getEngine().getMessages();
+    messagesCfg.setTtlCheckerBatchLimit(messages.getTtlCheckerBatchLimit());
+    messagesCfg.setTtlCheckerInterval(messages.getTtlCheckerInterval());
+  }
+
+  private static void populateFromUsageMetrics(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var usageMetrics = camunda.getProcessing().getEngine().getUsageMetrics();
+
+    override
+        .getExperimental()
+        .getEngine()
+        .getUsageMetrics()
+        .setExportInterval(usageMetrics.getExportInterval());
+  }
+
+  private static void populateFromValidators(
+      final BrokerBasedProperties override, final Camunda camunda) {
+    final var validators = camunda.getProcessing().getEngine().getValidators();
+
+    override
+        .getExperimental()
+        .getEngine()
+        .getValidators()
+        .setResultsOutputMaxSize(validators.getResultsOutputMaxSize());
   }
 
   private static void populateFromBatchOperations(
@@ -1193,11 +1247,10 @@ public class BrokerBasedPropertiesOverride {
 
   private static void populateFromJobs(
       final BrokerBasedProperties override, final Camunda camunda) {
-    override
-        .getExperimental()
-        .getEngine()
-        .getJobs()
-        .setIncludeVariablesInJobCompletedEvent(
-            camunda.getProcessing().getEngine().getJob().isIncludeVariablesInJobCompletedEvent());
+    final var job = camunda.getProcessing().getEngine().getJob();
+    final var jobsCfg = override.getExperimental().getEngine().getJobs();
+    jobsCfg.setIncludeVariablesInJobCompletedEvent(job.isIncludeVariablesInJobCompletedEvent());
+    jobsCfg.setTimeoutCheckerBatchLimit(job.getTimeoutCheckerBatchLimit());
+    jobsCfg.setTimeoutCheckerPollingInterval(job.getTimeoutCheckerPollingInterval());
   }
 }
