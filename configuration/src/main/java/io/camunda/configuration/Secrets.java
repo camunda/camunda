@@ -20,11 +20,11 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  *
  * <ul>
  *   <li>{@code camunda.secrets.stores.file.<id>.path}
- *   <li>{@code camunda.secrets.stores.aws-secrets-manager.<id>.region}
- *   <li>{@code camunda.secrets.stores.aws-secrets-manager.<id>.path-prefix}
- *   <li>{@code camunda.secrets.stores.aws-secrets-manager.<id>.batch-enabled}
- *   <li>{@code camunda.secrets.stores.aws-secrets-manager.<id>.batch-size}
- *   <li>{@code camunda.secrets.stores.aws-secrets-manager.<id>.container-secret-id}
+ *   <li>{@code camunda.secrets.stores.aws.<id>.region}
+ *   <li>{@code camunda.secrets.stores.aws.<id>.path-prefix}
+ *   <li>{@code camunda.secrets.stores.aws.<id>.batch-enabled}
+ *   <li>{@code camunda.secrets.stores.aws.<id>.batch-size}
+ *   <li>{@code camunda.secrets.stores.aws.<id>.container-secret-id}
  * </ul>
  *
  * <p>Secrets configuration is overridable per physical tenant via {@code
@@ -46,7 +46,7 @@ public class Secrets {
   public static class Stores {
 
     private Map<String, FileStore> file = new LinkedHashMap<>();
-    private Map<String, AwsSecretsManagerStore> awsSecretsManager = new LinkedHashMap<>();
+    private Map<String, AwsSecretsManagerStore> aws = new LinkedHashMap<>();
 
     public Map<String, FileStore> getFile() {
       return file;
@@ -62,13 +62,13 @@ public class Secrets {
      *     contradictory: batching fetches multiple distinct secrets in one call, while a container
      *     secret id means only one secret is ever fetched)
      */
-    public Map<String, AwsSecretsManagerStore> getAwsSecretsManager() {
-      awsSecretsManager.forEach((id, store) -> store.validate(id));
-      return awsSecretsManager;
+    public Map<String, AwsSecretsManagerStore> getAws() {
+      aws.forEach((id, store) -> store.validate(id));
+      return aws;
     }
 
-    public void setAwsSecretsManager(final Map<String, AwsSecretsManagerStore> awsSecretsManager) {
-      this.awsSecretsManager = awsSecretsManager;
+    public void setAws(final Map<String, AwsSecretsManagerStore> aws) {
+      this.aws = aws;
     }
   }
 
@@ -126,8 +126,12 @@ public class Secrets {
 
     /**
      * Opt-in: instead of one AWS secret per reference, treat every reference as a JSON key inside
-     * this one named secret (e.g. {@code app-config}, a JSON object of key-value pairs). Mutually
-     * exclusive with {@link #batchEnabled}, since only this single secret is ever fetched.
+     * this one named secret (e.g. {@code app-config}). Mutually exclusive with {@link
+     * #batchEnabled}, since only this single secret is ever fetched.
+     *
+     * <p>The named secret's string value must be a flat JSON object mapping each reference name to
+     * a JSON string value (e.g. {@code {"db-password": "s3cr3t"}}); nested objects/arrays are not
+     * supported, and a non-object value makes the store unusable.
      */
     private @Nullable String containerSecretId;
 
@@ -172,22 +176,33 @@ public class Secrets {
     }
 
     /**
-     * @throws IllegalArgumentException if batch-size is outside the 1..20 range AWS accepts, or if
-     *     both batch-enabled and container-secret-id are set (the two are contradictory: batching
-     *     fetches multiple distinct secrets in one call, while a container secret id means only one
-     *     secret is ever fetched)
+     * Mirrors the invariants of {@code io.camunda.secretstore.aws.AwsSecretsManagerStoreConfig}'s
+     * canonical constructor in the {@code secret-store-aws} module (not depended on from here, to
+     * keep this module free of the AWS SDK) — with property-path-aware messages instead of that
+     * record's generic ones. Keep both in sync: a new rule added to one but not the other leaves a
+     * gap for whichever path skips this one (Spring config binding here vs. any other caller of
+     * that record's constructor directly).
+     *
+     * @throws IllegalArgumentException if batch-size is outside the 1..20 range AWS accepts, if
+     *     container-secret-id is blank, or if both batch-enabled and container-secret-id are set
+     *     (the two are contradictory: batching fetches multiple distinct secrets in one call, while
+     *     a container secret id means only one secret is ever fetched)
      */
     void validate(final String storeId) {
       if (batchSize < 1 || batchSize > 20) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.aws-secrets-manager."
+            "camunda.secrets.stores.aws."
                 + storeId
                 + ".batch-size must be between 1 and 20, but was "
                 + batchSize);
       }
+      if (containerSecretId != null && containerSecretId.isBlank()) {
+        throw new IllegalArgumentException(
+            "camunda.secrets.stores.aws." + storeId + ".container-secret-id must not be blank");
+      }
       if (batchEnabled && containerSecretId != null) {
         throw new IllegalArgumentException(
-            "camunda.secrets.stores.aws-secrets-manager."
+            "camunda.secrets.stores.aws."
                 + storeId
                 + ".batch-enabled and .container-secret-id are mutually exclusive, but both were "
                 + "configured");
