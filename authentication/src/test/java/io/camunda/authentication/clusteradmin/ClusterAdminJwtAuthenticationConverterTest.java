@@ -152,6 +152,110 @@ class ClusterAdminJwtAuthenticationConverterTest {
     assertThat(token.getName()).isEqualTo("svc");
   }
 
+  @Test
+  void shouldNotGrantOrThrowWhenGroupsClaimIsMalformed() {
+    // given — groups configured, but this token's groups claim is a scalar number, not a string or
+    // a list of strings
+    final var converter = converter(env(Map.of("...oidc.groups[0]", "camunda-admins")));
+
+    // when
+    final JwtAuthenticationToken token =
+        (JwtAuthenticationToken)
+            converter.convert(jwt(Map.of("client_id", "some-client", "groups", 123)));
+
+    // then — extraction fails safely; converter doesn't throw, no cluster-admin via the group
+    // dimension (matchesClient/matchesClaim can still independently grant it)
+    assertThat(token.isAuthenticated()).isTrue();
+    assertThat(authorities(token)).doesNotContain(CLUSTER_ADMIN_AUTHORITY);
+  }
+
+  @Test
+  void shouldNotGrantOrThrowWhenGroupsClaimResolvesToNestedObject() {
+    // given — groups-claim misconfigured one level too shallow (points at "realm_access" itself,
+    // not "realm_access.roles"), so it resolves to a Map rather than a string/list
+    final var groupsClaimPath = "realm_access";
+    final var props =
+        ClusterAdminOidcProperties.loadAndValidate(
+            env(Map.of("...oidc.groups[0]", "camunda-admins")), CLIENT_ID_CLAIM, groupsClaimPath);
+    final var converter =
+        new ClusterAdminJwtAuthenticationConverter(props, CLIENT_ID_CLAIM, groupsClaimPath);
+
+    // when
+    final JwtAuthenticationToken token =
+        (JwtAuthenticationToken)
+            converter.convert(
+                jwt(
+                    Map.of(
+                        "client_id",
+                        "some-client",
+                        "realm_access",
+                        Map.of("roles", List.of("camunda-admins")))));
+
+    // then
+    assertThat(token.isAuthenticated()).isTrue();
+    assertThat(authorities(token)).doesNotContain(CLUSTER_ADMIN_AUTHORITY);
+  }
+
+  @Test
+  void shouldNotThrowAndFallBackToSubjectWhenClientIdClaimIsMalformed() {
+    // given — client-id-claim configured, but this token's client_id claim is a scalar number,
+    // not a string
+    final var converter = converter(env(Map.of("...oidc.clients[0]", "ops-client")));
+
+    // when
+    final JwtAuthenticationToken token =
+        (JwtAuthenticationToken) converter.convert(jwt(Map.of("client_id", 123, "sub", "svc")));
+
+    // then — extraction fails safely; clientId treated as absent, name falls back to subject
+    assertThat(token.isAuthenticated()).isTrue();
+    assertThat(authorities(token)).doesNotContain(CLUSTER_ADMIN_AUTHORITY);
+    assertThat(token.getName()).isEqualTo("svc");
+  }
+
+  @Test
+  void shouldNotThrowWhenClientIdClaimResolvesToNestedObject() {
+    // given — client-id-claim misconfigured to point at a claim that resolves to a Map, not a
+    // string
+    final var clientIdClaimPath = "azp_details";
+    final var props =
+        ClusterAdminOidcProperties.loadAndValidate(
+            env(Map.of("...oidc.clients[0]", "ops-client")), clientIdClaimPath, GROUPS_CLAIM);
+    final var converter =
+        new ClusterAdminJwtAuthenticationConverter(props, clientIdClaimPath, GROUPS_CLAIM);
+
+    // when
+    final JwtAuthenticationToken token =
+        (JwtAuthenticationToken)
+            converter.convert(jwt(Map.of("azp_details", Map.of("id", "ops-client"), "sub", "svc")));
+
+    // then
+    assertThat(token.isAuthenticated()).isTrue();
+    assertThat(authorities(token)).doesNotContain(CLUSTER_ADMIN_AUTHORITY);
+    assertThat(token.getName()).isEqualTo("svc");
+  }
+
+  @Test
+  void shouldGrantViaGroupWhenClientIdClaimIsMalformed() {
+    // given — client-id-claim configured but this token's client_id is malformed; group is also
+    // configured and matches
+    final var converter =
+        converter(
+            env(
+                Map.of(
+                    "...oidc.clients[0]", "ops-client",
+                    "...oidc.groups[0]", "camunda-admins")));
+
+    // when
+    final JwtAuthenticationToken token =
+        (JwtAuthenticationToken)
+            converter.convert(
+                jwt(Map.of("client_id", 123, "groups", List.of("camunda-admins"), "sub", "svc")));
+
+    // then — client-id extraction fails safely, but the group dimension still grants access
+    assertThat(authorities(token)).contains(CLUSTER_ADMIN_AUTHORITY);
+    assertThat(token.getName()).isEqualTo("svc");
+  }
+
   private static List<String> authorities(final JwtAuthenticationToken token) {
     return token.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
   }

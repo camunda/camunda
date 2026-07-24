@@ -36,6 +36,27 @@ class NoDBMembershipServiceTest {
   }
 
   @Test
+  void groupIdsReturnsEmptyWhenGroupsClaimIsMalformed() {
+    // given — groups-claim configured, but this token's groups claim is a scalar number, not a
+    // string or a list of strings
+    final var service = serviceWithGroupsClaim("groups");
+
+    // when/then — extraction fails safely; no exception
+    assertThat(service.groupIds(query(Map.of("groups", 123)))).isEmpty();
+  }
+
+  @Test
+  void groupIdsReturnsEmptyWhenGroupsClaimResolvesToNestedObject() {
+    // given — groups-claim misconfigured one level too shallow ("realm_access" instead of
+    // "realm_access.roles"), resolving to a Map rather than a string/list
+    final var service = serviceWithGroupsClaim("realm_access");
+
+    // when/then
+    assertThat(service.groupIds(query(Map.of("realm_access", Map.of("roles", List.of("eng"))))))
+        .isEmpty();
+  }
+
+  @Test
   void allOtherMethodsReturnEmpty() {
     final var service = new NoDBMembershipService(new CamundaSecurityLibraryProperties());
     final var q = query(Map.of());
