@@ -202,7 +202,9 @@ jobs:
             # ----------------------------------------------------------------
             # Build medic pings from failure-context artifacts on the latest run.
             # ----------------------------------------------------------------
-            MEDIC_PINGS="${MEDIC_ENGINEERING_OPERATIONS}"   # default owner: pipeline plumbing
+            # Default owner: this pipeline's TEST_OWNER is Distribution, not
+            # monorepo-ci-medic.
+            MEDIC_PINGS="${MEDIC_DISTRIBUTION}"
 
             if [[ "${IS_STREAK}" == "true" ]]; then
               WORK_DIR="${RUNNER_TEMP}/streak-context-${BASE_REF//\//-}"
@@ -224,7 +226,6 @@ jobs:
                   case "$owner" in
                     "@camunda/test-automation-team")   mentions+=("${MEDIC_TEST_AUTOMATION}") ;;
                     "@camunda/distribution")            mentions+=("${MEDIC_DISTRIBUTION}") ;;
-                    "@camunda/engineering-operations")    mentions+=("${MEDIC_ENGINEERING_OPERATIONS}") ;;
                     "@camunda/core-features")           mentions+=("${MEDIC_CORE_FEATURES}") ;;
                   esac
                 done <<<"$OWNERS"
