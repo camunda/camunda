@@ -30,7 +30,10 @@ public class AgentInstanceExportHandler implements RdbmsExportHandler<AgentInsta
 
   private static final Set<AgentInstanceIntent> EXPORTABLE_INTENTS =
       Set.of(
-          AgentInstanceIntent.CREATED, AgentInstanceIntent.UPDATED, AgentInstanceIntent.COMPLETED);
+          AgentInstanceIntent.CREATED,
+          AgentInstanceIntent.UPDATED,
+          AgentInstanceIntent.COMPLETED,
+          AgentInstanceIntent.MIGRATED);
 
   private final AgentInstanceWriter writer;
 

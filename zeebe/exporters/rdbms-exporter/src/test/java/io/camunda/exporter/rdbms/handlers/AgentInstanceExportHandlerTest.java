@@ -46,7 +46,10 @@ class AgentInstanceExportHandlerTest {
 
   private static final Set<AgentInstanceIntent> EXPORTABLE_INTENTS =
       EnumSet.of(
-          AgentInstanceIntent.CREATED, AgentInstanceIntent.UPDATED, AgentInstanceIntent.COMPLETED);
+          AgentInstanceIntent.CREATED,
+          AgentInstanceIntent.UPDATED,
+          AgentInstanceIntent.COMPLETED,
+          AgentInstanceIntent.MIGRATED);
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
@@ -167,6 +170,42 @@ class AgentInstanceExportHandlerTest {
     assertThat(model.completionDate()).isNull();
     // creationDate is only set on CREATED intent
     assertThat(model.creationDate()).isNull();
+  }
+
+  @Test
+  void shouldCallUpdateOnMigratedIntentWithTargetDefinition() {
+    // given
+    final long agentKey = 46L;
+    final var recordValue =
+        ImmutableAgentInstanceRecordValue.builder()
+            .from(buildRecordValue(agentKey))
+            .withBpmnProcessId("targetProcess")
+            .withProcessDefinitionKey(999L)
+            .withProcessDefinitionVersion(4)
+            .withVersionTag("v2.0")
+            .withElementId("targetElement")
+            .build();
+    final Record<AgentInstanceRecordValue> record =
+        factory.generateRecord(
+            ValueType.AGENT_INSTANCE,
+            r ->
+                r.withIntent(AgentInstanceIntent.MIGRATED)
+                    .withKey(agentKey)
+                    .withValue(recordValue));
+
+    // when
+    handler.export(record);
+
+    // then — MIGRATED is dispatched and the target definition carried by the record is mapped onto
+    // the model unconditionally
+    verify(writer).update(modelCaptor.capture());
+    final AgentInstanceDbModel model = modelCaptor.getValue();
+    assertThat(model.processDefinitionId()).isEqualTo("targetProcess");
+    assertThat(model.processDefinitionKey()).isEqualTo(999L);
+    assertThat(model.processDefinitionVersion()).isEqualTo(4);
+    assertThat(model.versionTag()).isEqualTo("v2.0");
+    assertThat(model.elementId()).isEqualTo("targetElement");
+    assertThat(model.completionDate()).isNull();
   }
 
   @ParameterizedTest(name = "[{index}] Should map protocol status ''{0}'' to entity status")
