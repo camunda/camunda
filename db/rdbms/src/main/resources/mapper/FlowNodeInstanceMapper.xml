@@ -233,19 +233,40 @@
     SELECT * FROM dual
   </insert>
 
+  <!--
+    Shared by `update` and `updateKeepingName`, which differ only in whether they also write
+    FLOW_NODE_NAME. Keeping the common columns in one place stops a newly added column from being
+    added to one statement and silently skipped by the other.
+  -->
+  <sql id="updateColumnsExceptName">
+    FLOW_NODE_ID             = #{flowNodeId},
+    FLOW_NODE_SCOPE_KEY      = #{flowNodeScopeKey},
+    PROCESS_INSTANCE_KEY     = #{processInstanceKey},
+    PROCESS_DEFINITION_ID    = #{processDefinitionId},
+    PROCESS_DEFINITION_KEY   = #{processDefinitionKey},
+    TYPE                     = #{type},
+    STATE                    = #{state},
+    START_DATE               = #{startDate, jdbcType=TIMESTAMP},
+    END_DATE                 = #{endDate, jdbcType=TIMESTAMP},
+    TENANT_ID                = #{tenantId}
+  </sql>
+
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
     UPDATE ${prefix}FLOW_NODE_INSTANCE
-    SET FLOW_NODE_ID             = #{flowNodeId},
-        FLOW_NODE_NAME           = #{flowNodeName},
-        FLOW_NODE_SCOPE_KEY      = #{flowNodeScopeKey},
-        PROCESS_INSTANCE_KEY     = #{processInstanceKey},
-        PROCESS_DEFINITION_ID    = #{processDefinitionId},
-        PROCESS_DEFINITION_KEY   = #{processDefinitionKey},
-        TYPE                     = #{type},
-        STATE                    = #{state},
-        START_DATE               = #{startDate, jdbcType=TIMESTAMP},
-        END_DATE                 = #{endDate, jdbcType=TIMESTAMP},
-        TENANT_ID                = #{tenantId}
+    SET FLOW_NODE_NAME = #{flowNodeName},
+        <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateColumnsExceptName"/>
+    WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+  </update>
+
+  <!--
+    Same as `update`, but leaves FLOW_NODE_NAME untouched. Used instead of `update` when the
+    incoming model is an ad-hoc-subprocess inner instance with no resolved name yet, so a
+    migration (ELEMENT_MIGRATED / ANCESTOR_MIGRATED) can't clobber an already-resolved inner
+    instance name back to null. See FlowNodeInstanceWriter#update for the selection logic.
+  -->
+  <update id="updateKeepingName" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
+    UPDATE ${prefix}FLOW_NODE_INSTANCE
+    SET <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateColumnsExceptName"/>
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
@@ -262,6 +283,14 @@
     UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET INCIDENT_KEY = #{incidentKey}
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+  </update>
+
+  <update id="updateNameIfNull"
+    parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$UpdateNameDto">
+    UPDATE ${prefix}FLOW_NODE_INSTANCE
+    SET FLOW_NODE_NAME = #{flowNodeName}
+    WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+      AND FLOW_NODE_NAME IS NULL
   </update>
 
   <update id="incrementSubprocessIncidentCount" parameterType="java.lang.Long">

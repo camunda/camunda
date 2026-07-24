@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.EndFlowNodeDto;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.UpdateIncidentDto;
+import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.UpdateNameDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
@@ -21,6 +22,7 @@ import io.camunda.db.rdbms.write.queue.ListParameterUpsertMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 
@@ -56,12 +58,23 @@ public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements 
   }
 
   public void update(final FlowNodeInstanceDbModel flowNode) {
+    // ELEMENT_MIGRATED / ANCESTOR_MIGRATED go through this full-row update, but the migrated
+    // record carries no resolved ad-hoc-subprocess inner-instance name (it's only known from the
+    // entry child's ELEMENT_ACTIVATING, handled separately by updateName). Route those rows
+    // through a statement that leaves FLOW_NODE_NAME untouched instead of expressing the guard as
+    // a cross-type SQL comparison/CASE against the NVARCHAR name column, which trips a charset
+    // mismatch on Oracle.
+    final var statementId =
+        flowNode.type() == FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
+                && flowNode.flowNodeName() == null
+            ? "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateKeepingName"
+            : "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.update";
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.FLOW_NODE,
             WriteStatementType.UPDATE,
             flowNode.flowNodeInstanceKey(),
-            "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.update",
+            statementId,
             flowNode));
   }
 
@@ -81,7 +94,21 @@ public class FlowNodeInstanceWriter extends ProcessInstanceDependant implements 
   }
 
   public void updateName(final long flowNodeInstanceKey, final String flowNodeName) {
-    // no-op stub; real set-if-null behavior added in the green step
+    final boolean wasMerged =
+        mergeToQueue(
+            flowNodeInstanceKey,
+            b -> b.flowNodeName(b.flowNodeName() == null ? flowNodeName : b.flowNodeName()));
+
+    if (!wasMerged) {
+      final var dto = new UpdateNameDto(flowNodeInstanceKey, flowNodeName);
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.FLOW_NODE,
+              WriteStatementType.UPDATE,
+              flowNodeInstanceKey,
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateNameIfNull",
+              dto));
+    }
   }
 
   public void createIncident(final long flowNodeInstanceKey, final long incidentKey) {

@@ -28,6 +28,7 @@ import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionRequirementsExportHandler;
 import io.camunda.exporter.rdbms.handlers.FlowNodeExportHandler;
 import io.camunda.exporter.rdbms.handlers.FlowNodeInstanceIncidentExportHandler;
+import io.camunda.exporter.rdbms.handlers.FlowNodeInstanceNameFromAdHocActivityHandler;
 import io.camunda.exporter.rdbms.handlers.FormExportHandler;
 import io.camunda.exporter.rdbms.handlers.GlobalListenerExportHandler;
 import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
@@ -289,6 +290,10 @@ public class RdbmsExporterWrapper implements Exporter {
             rdbmsWriters.getFlowNodeInstanceWriter(),
             cacheRegistry.processCache(),
             rdbmsWriters.getErrorMessageSize()));
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE,
+        new FlowNodeInstanceNameFromAdHocActivityHandler(
+            rdbmsWriters.getFlowNodeInstanceWriter(), cacheRegistry.processCache()));
     builder.withHandler(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriters.getVariableWriter()));
     builder.withHandler(
