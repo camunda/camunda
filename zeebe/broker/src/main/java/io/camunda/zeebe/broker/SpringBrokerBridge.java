@@ -33,6 +33,7 @@ public class SpringBrokerBridge {
   private Supplier<BrokerAdminService> adminServiceSupplier;
   private Function<String, BrokerAdminService> adminServiceByTenantLookup;
   private Supplier<Collection<JobStreamService>> jobStreamServicesSupplier;
+  private Function<String, JobStreamService> jobStreamServiceByTenantLookup;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
 
   private BiConsumer<Integer, String> shutdownHelper;
@@ -86,6 +87,18 @@ public class SpringBrokerBridge {
 
   public Optional<Collection<JobStreamService>> getJobStreamServices() {
     return Optional.ofNullable(jobStreamServicesSupplier).map(Supplier::get);
+  }
+
+  /** Registers a lookup function resolving the {@link JobStreamService} for a given tenant. */
+  public void registerJobStreamServiceByTenantLookup(
+      final Function<String, JobStreamService> jobStreamServiceByTenantLookup) {
+    this.jobStreamServiceByTenantLookup = jobStreamServiceByTenantLookup;
+  }
+
+  /** Returns the {@link JobStreamService} for the given physical tenant, if any. */
+  public Optional<JobStreamService> getJobStreamService(final String physicalTenantId) {
+    return Optional.ofNullable(jobStreamServiceByTenantLookup)
+        .map(lookup -> lookup.apply(physicalTenantId));
   }
 
   /**
