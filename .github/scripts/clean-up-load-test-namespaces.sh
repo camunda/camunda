@@ -41,6 +41,10 @@ do
       echo "[DRY-RUN] Would delete namespace: $ns (deadline: $deadlineDate)"
     else
       kubectl delete namespace "$ns" --wait=false
+      # Also delete the Keycloak instance and its Secrets in the keycloak-operator
+      # namespace. This could be removed once Keycloak instances can be part of
+      # the same namespace as the load test itself.
+      kubectl delete keycloak,secret --ignore-not-found --namespace keycloak-operator --selector "camunda.io/load-test-namespace=$ns"
     fi
     namespacesDeleted+=" * $ns (deadline: $deadlineDate)\n"
   else

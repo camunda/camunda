@@ -1,4 +1,4 @@
-{{- if .Values.keycloak.postgresql.enabled -}}
+{{- if .Values.keycloak.enabled -}}
 ---
 # Configure a CNPG-managed PostgreSQL cluster for Keycloak itself.
 #
@@ -65,7 +65,7 @@ spec:
       database: {{ .Values.keycloak.postgresql.databaseName }}
       owner: {{ .Values.keycloak.postgresql.databaseUser }}
       secret:
-        name: {{ include "load-test-setup.keycloak.postgresql.secret-name" . }}
+        name: {{ include "load-test-setup.keycloak.postgresql.cnpg-secret-name" . }}
 
   managed:
     services:

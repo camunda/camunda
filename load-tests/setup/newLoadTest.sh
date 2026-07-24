@@ -80,12 +80,13 @@ Examples:
   ./newLoadTest.sh ${prefix}demo
   ./newLoadTest.sh ${prefix}perf elasticsearch 3 true
 
-This script scaffolds the per-namespace folder including rendered Kubernetes
-manifests under resources/ (namespace + credentials). The cluster itself is
-unchanged by this script — namespace and secret are created on first
-\`make install\` via \`kubectl apply -f resources/...\`. Reruns of \`make install\`
-after a TTL deletion recreate both from the same baked manifests, so
-credentials stay in sync with \`load-tester-values-defaults.yaml\`.
+This script scaffolds the per-namespace folder (Makefile, values files). The
+cluster itself is unchanged by this script — the namespace and the
+\`camunda-credentials\` secret are created on first \`make install\`, via the
+\`load-test-setup\` Helm chart. Reruns of \`make install\` after a TTL deletion
+reinstall the same chart, so credentials are regenerated deterministically
+(same namespace name in, same values out) and the orchestration OIDC secret
+stays in sync with \`load-tester-values-defaults.yaml\`.
 EOF
 }
 
@@ -212,9 +213,9 @@ sed_inplace "s/__STORAGE_TYPE__/$secondary_storage/"   Makefile
 sed_inplace "s/__ENABLE_OPTIMIZE__/$enable_optimize/" Makefile
 
 # Bake values into the resource manifests and the platform/load-test values.
-sed_inplace "s/__NAMESPACE__/$namespace/" load-tester-values-defaults.yaml
 sed_targets=(*.yaml)
 [[ -d databases ]] && sed_targets+=(databases/*.yaml)
+sed_inplace "s/__NAMESPACE__/$namespace/" "${sed_targets[@]}"
 sed_inplace "s/__AVAILABILITY_ZONE__/$availability_zone/" "${sed_targets[@]}"
 sed_inplace "s/__AUTHOR__/$git_author/"                   "${sed_targets[@]}"
 
@@ -246,7 +247,6 @@ loadTest:
       # are overridden here.
       clientId: zeebe
       zeebeRestAddress: http://zeebe-gateway:8080
-      authServer: http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/token
       zeebeGrpcAddress: http://zeebe-gateway:26500
       authorizationAudience: zeebe-api
       secret:

@@ -40,7 +40,7 @@ data:
     camunda:
       identity:
         type: "KEYCLOAK"
-        issuerBackendUrl: "http://keycloak:80/auth/realms/camunda-platform"
+        issuerBackendUrl: "http://c8-golden-stable-87-elasticsearch-stable.keycloak-operator.svc:18080/auth/realms/camunda-platform"
         audience: "zeebe-api"
         baseUrl: "http://identity:80"
     zeebe:

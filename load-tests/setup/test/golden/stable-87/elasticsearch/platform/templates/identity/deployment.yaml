@@ -99,7 +99,7 @@ spec:
                   name: camunda-credentials
                   key: identity-zeebe-client-token
             - name: KEYCLOAK_URL
-              value: "http://keycloak:80/auth"
+              value: "http://c8-golden-stable-87-elasticsearch.keycloak-operator.svc:18080/auth"
             - name: KEYCLOAK_SETUP_USER
               value: "admin"
             - name: KEYCLOAK_SETUP_PASSWORD

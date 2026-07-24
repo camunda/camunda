@@ -69,7 +69,11 @@ loadTest:
     oidc:
       clientId: orchestration
       zeebeRestAddress: http://camunda:8080
-      authServer: http://keycloak/auth/realms/camunda-platform/protocol/openid-connect/token
+      # -- The complete "/token" URL endpoint of the authentication server.
+      # Either set the complete URL used to fetch OIDC token from the
+      # authentication server, or keep it at the default empty value to use the
+      # built-in Keycloak instance. (Keycloak *must* also be enabled in this case.)
+      authServer:
       zeebeGrpcAddress: http://camunda:26500
       authorizationAudience: orchestration-api
       # -- The name of the key used to generate credentials for the load test client applications.
@@ -137,15 +141,69 @@ elasticsearch:
 
 
 # -- Configure the Keycloak deployment.
-# Note: Keycloak itself is not yet deployed via this mechanism ; only the PostgreSQL
-# cluster used by Keycloak is currently configurable.
 keycloak:
+  # -- Whether to deploy Keycloak or not.
+  enabled: true
+
+  # -- The Keycloak image to be deployed.
+  image:
+    registry: europe-west1-docker.pkg.dev/camunda-benchmark
+    repository: dockerhub/camunda/keycloak
+    tag: quay-optimized-26.6.4
+
+  # -- CPU and memory resource requests and limits for the Keycloak instance.
+  resources:
+    requests:
+      cpu: "1"
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+  http:
+    # -- The port Keycloak listens on for HTTP traffic.
+    # Use a non-default port to avoid conflict with Zeebe Gateway on port 8080
+    # during port-forwarding.
+    port: 18080
+
+  # -- Node selector labels for Keycloak pod scheduling.
+  # The top-level `topologyZone` value is also applied as
+  # `topology.kubernetes.io/zone`.
+  nodeSelector:
+    component: benchmark-n2-standard-4
+
+  # -- Tolerations applied to the Keycloak pod.
+  tolerations:
+    - key: nodepool
+      operator: Equal
+      value: n2-standard-4
+      effect: NoSchedule
+
+  adminUser:
+    # -- The name of the initial "admin" user in Keycloak.
+    # This should be the same user as configured in Identity's `global.identity.keycloak.auth.adminUser`.
+    username: admin
+    secret:
+      # -- The name of the key used to generate credentials for the Keycloak admin user.
+      # This key is used:
+      # 1. To generate the "admin" password when creating the Keycloak instance
+      # 2. To configure the credentials used by Identity when connecting to Keycloak.
+      # It should match the key configured in Identity's
+      # `global.identity.keycloak.auth.secret.existingSecretKey`.
+      key: identity-keycloak-admin-password
+
+  # -- The namespace to host the Keycloak instance.
+  # We deploy Keycloak using the Keycloak Operator, which is currently limited
+  # to managed custom resources in a single namespace only.
+  # As such, we **have** to deploy Keycloak in the same namespace as the
+  # Keycloak Operator and we can't simply Keycloak in the load test namespace.
+  # This option allows to configure in which namespace Keycloak will be
+  # managed.
+  # This probably should not be changed.
+  namespace: keycloak-operator
 
   # -- Configure the PostgreSQL cluster to be used by Keycloak.
   postgresql:
-    # -- Enable the PostgreSQL cluster for Keycloak.
-    enabled: true
-
     # -- The name of the CNPG Cluster resource deployed for Keycloak.
     clusterName: postgresql-keycloak
 

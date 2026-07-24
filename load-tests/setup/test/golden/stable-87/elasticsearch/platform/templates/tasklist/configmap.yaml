@@ -29,8 +29,8 @@ data:
         oauth2:
           resourceserver:
             jwt:
-              issuer-uri: "http://keycloak:80/auth/realms/camunda-platform"
-              jwk-set-uri: "http://keycloak:80/auth/realms/camunda-platform/protocol/openid-connect/certs"
+              issuer-uri: "http://c8-golden-stable-87-elasticsearch.keycloak-operator.svc:18080/auth/realms/camunda-platform"
+              jwk-set-uri: "http://c8-golden-stable-87-elasticsearch.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
     camunda:
       identity:
         clientId: "tasklist"

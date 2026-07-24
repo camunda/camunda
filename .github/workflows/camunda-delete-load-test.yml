@@ -89,6 +89,10 @@ jobs:
         run: |
           set -euo pipefail
           kubectl delete namespace --wait=false --ignore-not-found "$NAMESPACE"
+          # Also delete the Keycloak instance and its Secrets in the keycloak-operator
+          # namespace. This could be removed once Keycloak instances can be part of
+          # the same namespace as the load test itself.
+          kubectl delete keycloak,secret --ignore-not-found --namespace keycloak-operator --selector "camunda.io/load-test-namespace=$NAMESPACE"
       - name: Write summary
         if: always()
         env:

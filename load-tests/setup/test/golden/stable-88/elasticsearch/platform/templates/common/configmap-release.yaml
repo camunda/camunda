@@ -27,7 +27,7 @@ data:
       - name: Keycloak
         id: keycloak
         version: 26.3.3
-        url: http://localhost:18080/auth
+        url: 
       - name: Identity
         id: identity
         version: 8.8.15

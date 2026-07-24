@@ -39,14 +39,25 @@ global:
     topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
 
   identity:
+    auth:
+      enabled: true
+
     keycloak:
       auth:
         adminUser: admin
         secret:
           existingSecret: camunda-credentials
           existingSecretKey: identity-keycloak-admin-password
-    auth:
-      enabled: true
+
+      # The address of the Keycloak deployed via the Keycloak Operator.
+      # Note that this instance of Keycloak **runs in a different namespace**
+      # than the namespace of the load test. This is on purpose, due to a
+      # limitation in how the Keycloak Operator works.
+      url:
+        protocol: http
+        host: __NAMESPACE__.keycloak-operator.svc
+        port: '18080'
+
   security:
     authentication:
       type: oidc
@@ -67,39 +78,6 @@ identity:
       operator: Equal
       value: n2-standard-4
       effect: NoSchedule
-
-identityKeycloak:
-  enabled: true
-  fullnameOverride: keycloak # we override the names for simplicity of the deployment
-  nodeSelector:
-    component: benchmark-n2-standard-4
-    topology.kubernetes.io/zone: __AVAILABILITY_ZONE__
-  tolerations:
-    - key: nodepool
-      operator: Equal
-      value: n2-standard-4
-      effect: NoSchedule
-  extraEnvVars:
-    # https://www.keycloak.org/server/logging#_console
-    - name: KC_LOG_CONSOLE_OUTPUT
-      value: json
-
-  # Disable the built-in PostgreSQL deployed by the Keycloak Helm Chart as we deploy our own.
-  postgresql:
-    enabled: false
-
-  # This Keycloak external database depends on the CNPG cluster deployed by
-  # the load-test-setup Helm Chart.
-  externalDatabase:
-    # The name of the Service deployed by the CNPG Cluster from the
-    # load-test-setup Helm Chart.
-    host: postgresql-keycloak-rw
-    database: keycloak
-
-    # Secret deployed via the load-test-setup Helm Chart.
-    existingSecret: postgresql-keycloak-user
-    existingSecretUserKey: username
-    existingSecretPasswordKey: password
 
 connectors:
   enabled: true

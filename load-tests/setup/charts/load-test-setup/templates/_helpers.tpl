@@ -28,10 +28,25 @@ The "derivePassword" function is not well documented, by conventions, we use:
 {{- end -}}
 
 {{/*
-The name of the Kubernetes Secret to store the username/password for the Keycloak user in PostgreSQL.
+The authentication server URL for the load test clients using OIDC.
+
+Either set a specific authentication server, or it assumes Keycloak is enabled
+and will build the URL to the Keycloak instance.
+
+Since we deploy Keycloak in a different namespace than the current load test
+namespace, the final URL to reach Keycloak requires computing Keycloak's full
+name.
 */}}
-{{- define "load-test-setup.keycloak.postgresql.secret-name" -}}
-postgresql-keycloak-user
+{{- define "load-test-setup.load-test.client.auth-server-url" -}}
+{{- if .Values.loadTest.client.oidc.authServer -}}
+  {{- .Values.loadTest.client.oidc.authServer -}}
+{{- else -}}
+  {{- if not .Values.keycloak.enabled -}}
+  {{/* Always fail this check in this case */}}
+  {{- required "If the load test client OIDC auth server is not specified, Keycloak must be enabled!" nil -}}
+  {{- end -}}
+http://{{ .Release.Namespace }}.{{ .Values.keycloak.namespace }}.svc.cluster.local:{{ .Values.keycloak.http.port }}/auth/realms/camunda-platform/protocol/openid-connect/token
+{{- end -}}
 {{- end -}}
 
 {{/* vim: set filetype=gotmpl: */}}
