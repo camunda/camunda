@@ -7,6 +7,7 @@
  */
 package io.camunda.secretstore.gcp;
 
+import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.cloud.secretmanager.v1.ListSecretsRequest;
 import com.google.cloud.secretmanager.v1.ProjectName;
 import com.google.cloud.secretmanager.v1.SecretManagerServiceClient;
@@ -15,6 +16,7 @@ import io.camunda.secretstore.SecretResolutionResult;
 import io.camunda.secretstore.SecretResolutionResult.Failed;
 import io.camunda.secretstore.SecretStore;
 import io.camunda.secretstore.SecretStoreUnavailableException;
+import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +89,15 @@ public final class GcpSecretManagerSecretStore implements SecretStore {
     final SecretManagerServiceClient client;
     try {
       final var settings = SecretManagerServiceSettings.newBuilder();
-      if (config.endpoint() != null && !config.endpoint().isBlank()) {
+      if (config.withoutAuthentication()) {
+        // Emulator/testing only: no credentials and a plaintext gRPC channel to a local endpoint.
+        settings.setCredentialsProvider(NoCredentialsProvider.create());
+        settings.setTransportChannelProvider(
+            SecretManagerServiceSettings.defaultGrpcTransportProviderBuilder()
+                .setEndpoint(config.endpoint())
+                .setChannelConfigurator(ManagedChannelBuilder::usePlaintext)
+                .build());
+      } else if (config.endpoint() != null && !config.endpoint().isBlank()) {
         settings.setEndpoint(config.endpoint());
       }
       client = SecretManagerServiceClient.create(settings.build());

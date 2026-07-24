@@ -25,12 +25,18 @@ import org.jspecify.annotations.Nullable;
  * @param containerSecretId opt-in: when set, every reference is treated as a JSON key inside this
  *     one named secret instead of its own GCP secret; {@code null} keeps the default one-secret
  *     per-reference behavior
+ * @param withoutAuthentication testing only: when {@code true}, the client connects to {@code
+ *     endpoint} over a plaintext channel with no credentials, so an integration test can point it
+ *     at a local Secret Manager emulator. Requires {@code endpoint} to be set and must never be
+ *     enabled against real GCP; production always leaves this {@code false} and authenticates via
+ *     the Application Default Credentials chain.
  */
 public record GcpSecretManagerStoreConfig(
     String projectId,
     @Nullable String pathPrefix,
     @Nullable String endpoint,
-    @Nullable String containerSecretId) {
+    @Nullable String containerSecretId,
+    boolean withoutAuthentication) {
 
   public GcpSecretManagerStoreConfig {
     Objects.requireNonNull(projectId, "projectId must not be null");
@@ -40,6 +46,22 @@ public record GcpSecretManagerStoreConfig(
     if (containerSecretId != null && containerSecretId.isBlank()) {
       throw new IllegalArgumentException("containerSecretId must not be blank, but was empty");
     }
+    if (withoutAuthentication && (endpoint == null || endpoint.isBlank())) {
+      throw new IllegalArgumentException(
+          "endpoint must be set when authentication is disabled (emulator testing only)");
+    }
+  }
+
+  /**
+   * Authenticated config (production default): connects to the given endpoint (or the default one
+   * when {@code null}) using the Application Default Credentials chain.
+   */
+  public GcpSecretManagerStoreConfig(
+      final String projectId,
+      final @Nullable String pathPrefix,
+      final @Nullable String endpoint,
+      final @Nullable String containerSecretId) {
+    this(projectId, pathPrefix, endpoint, containerSecretId, false);
   }
 
   /**
