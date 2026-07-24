@@ -13,7 +13,7 @@ import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {decisionDefinitionsOptions} from './decisions.queries';
-import {isSpecificTenant} from './decisionsFilter';
+import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';

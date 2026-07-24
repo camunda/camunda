@@ -9,6 +9,7 @@
 import type {DecisionInstanceState, QueryDecisionInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.10';
 import {parseIds} from '#/operate/shared/utils/parseIds';
 import {decodeAdvancedStringFilter} from '#/operate/shared/utils/advancedStringFilter';
+import {isSpecificTenant} from '#/operate/shared/utils/isSpecificTenant';
 
 type DecisionInstancesFilter = NonNullable<QueryDecisionInstancesRequestBody['filter']>;
 type DecisionInstancesSort = NonNullable<QueryDecisionInstancesRequestBody['sort']>;
@@ -27,11 +28,6 @@ type DecisionsSearch = {
 	evaluationDateTo?: string;
 	sort?: string;
 };
-
-/** The `TenantField` uses the literal `'all'` as its "All tenants" item id (see legacy parity). */
-function isSpecificTenant(tenantId: string | undefined): tenantId is string {
-	return tenantId !== undefined && tenantId !== 'all';
-}
 
 /**
  * Maps route search params into the decision-instances search request filter. Returns
@@ -107,5 +103,5 @@ function buildInstanceKeyCriterion(includeIds: string[], excludeIds: string[]) {
 	return undefined;
 }
 
-export {mapDecisionInstancesFilter, mapDecisionInstancesSort, buildInstanceKeyCriterion, isSpecificTenant};
+export {mapDecisionInstancesFilter, mapDecisionInstancesSort, buildInstanceKeyCriterion};
 export type {DecisionsSearch, DecisionInstancesFilter};
