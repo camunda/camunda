@@ -74,7 +74,7 @@ const AgentStatus = styled.span`
 
 const AGENT_STATUS_LABELS: Record<AgentInstanceStatus, string | null> = {
   UNKNOWN: null,
-  INITIALIZING: 'Starting...',
+  INITIALIZING: 'Initializing...',
   TOOL_DISCOVERY: 'Discovering tools...',
   THINKING: 'Thinking...',
   TOOL_CALLING: 'Calling tools...',
