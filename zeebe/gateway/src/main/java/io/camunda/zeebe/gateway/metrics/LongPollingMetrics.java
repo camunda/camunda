@@ -13,6 +13,7 @@ import static io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.RequestsQue
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayKeyNames;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayProtocol;
 import io.camunda.zeebe.util.micrometer.BoundedMeterCache;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
@@ -35,9 +36,9 @@ public sealed class LongPollingMetrics {
             .description(REQUESTS_QUEUED_CURRENT.getDescription())
             .tag(GatewayKeyNames.GATEWAY_PROTOCOL.asString(), gatewayProtocol.value())
             .tag(
-                GatewayKeyNames.PHYSICAL_TENANT_ID.asString(),
+                PartitionKeyNames.PHYSICAL_TENANT.asString(),
                 Objects.requireNonNull(
-                    physicalTenantId, GatewayKeyNames.PHYSICAL_TENANT_ID.asString()))
+                    physicalTenantId, PartitionKeyNames.PHYSICAL_TENANT.asString()))
             .withRegistry(registry);
 
     requestsQueued = BoundedMeterCache.of(registry, provider, TYPE);

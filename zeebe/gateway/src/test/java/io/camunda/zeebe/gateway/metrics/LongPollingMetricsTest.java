@@ -31,13 +31,13 @@ final class LongPollingMetricsTest {
     final var tenantAGauge =
         registry
             .find("zeebe.long.polling.queued.current")
-            .tag("physicalTenantId", "tenantA")
+            .tag("physicalTenant", "tenantA")
             .tag("type", "jobTypeX")
             .gauge();
     final var tenantBGauge =
         registry
             .find("zeebe.long.polling.queued.current")
-            .tag("physicalTenantId", "tenantB")
+            .tag("physicalTenant", "tenantB")
             .tag("type", "jobTypeX")
             .gauge();
 

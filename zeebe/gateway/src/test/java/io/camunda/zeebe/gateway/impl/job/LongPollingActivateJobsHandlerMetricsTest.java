@@ -125,7 +125,7 @@ final class LongPollingActivateJobsHandlerMetricsTest {
     final var gauge =
         meterRegistry
             .find(GAUGE_NAME)
-            .tag("physicalTenantId", physicalTenantId)
+            .tag("physicalTenant", physicalTenantId)
             .tag("type", TYPE)
             .gauge();
     assertThat(gauge).describedAs("gauge for tenant %s", physicalTenantId).isNotNull();
