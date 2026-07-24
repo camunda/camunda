@@ -37,6 +37,16 @@ const mockSsoUser = createUser({
 });
 
 describe('User info', () => {
+  beforeEach(() => {
+    // C3 sidebar schedules a real timer on open; fake timers ensure it is
+    // discarded on teardown instead of leaking past the test environment.
+    vi.useFakeTimers({shouldAdvanceTime: true});
+  });
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
   it('should render user display name', async () => {
     mockMe().withSuccess(mockUser);
 
