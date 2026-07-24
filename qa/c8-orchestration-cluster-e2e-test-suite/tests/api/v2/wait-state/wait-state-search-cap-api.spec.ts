@@ -144,3 +144,46 @@ test.describe
     });
   });
 });
+
+test.describe
+  .parallel('Wait State Statistics — Large Single-Element Cardinality', () => {
+  const processInstanceKeys: string[] = [];
+
+  test.afterAll(async () => {
+    for (const key of processInstanceKeys) {
+      await cancelProcessInstance(key);
+    }
+  });
+
+  test('reports the true waitingCount for an element with far more waiting tokens than the search endpoint returns in one page', async ({
+    request,
+  }) => {
+    const tokenCount = 1200;
+    const instance =
+      await createProcessInstanceWithManyWaitingTokens(tokenCount);
+    processInstanceKeys.push(instance.processInstanceKey);
+
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl(
+          '/process-instances/{processInstanceKey}/statistics/wait-states',
+          {processInstanceKey: instance.processInstanceKey},
+        ),
+        {headers: jsonHeaders()},
+      );
+      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances/{processInstanceKey}/statistics/wait-states',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
+      const body = await res.json();
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0].elementId).toBe('wait_task');
+      expect(body.items[0].waitingCount).toBe(tokenCount);
+    }).toPass(extendedAssertionOptions);
+  });
+});

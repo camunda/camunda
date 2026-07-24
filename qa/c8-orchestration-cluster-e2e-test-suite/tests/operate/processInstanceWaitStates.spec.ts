@@ -80,7 +80,9 @@ test.describe('Wait State Details Tab', () => {
     });
     await operateProcessInstancePage.clickTreeItem('task', true);
     await operateProcessInstancePage.clickDetailsTab();
-    await expect(operateProcessInstancePage.waitingStatus).toBeVisible();
+    await expect(operateProcessInstancePage.waitingStatus).toContainText(
+      'Waiting for job: task',
+    );
   });
 
   test('shows the MESSAGE wait reason without crashing', async ({
@@ -91,7 +93,9 @@ test.describe('Wait State Details Tab', () => {
     });
     await operateProcessInstancePage.clickTreeItem('Event_1idbbd5', true);
     await operateProcessInstancePage.clickDetailsTab();
-    await expect(operateProcessInstancePage.waitingStatus).toBeVisible();
+    await expect(operateProcessInstancePage.waitingStatus).toContainText(
+      'Waiting for message: Message_143t419',
+    );
   });
 
   test('shows the SIGNAL wait reason without crashing', async ({
@@ -102,7 +106,9 @@ test.describe('Wait State Details Tab', () => {
     });
     await operateProcessInstancePage.clickTreeItem(/receive test signal/i);
     await operateProcessInstancePage.clickDetailsTab();
-    await expect(operateProcessInstancePage.waitingStatus).toBeVisible();
+    await expect(operateProcessInstancePage.waitingStatus).toContainText(
+      'Waiting for signal: Signal_220k2ur',
+    );
   });
 
   test('shows the USER_TASK wait reason without crashing', async ({
@@ -113,7 +119,9 @@ test.describe('Wait State Details Tab', () => {
     });
     await operateProcessInstancePage.clickTreeItem(/test user task api/i);
     await operateProcessInstancePage.clickDetailsTab();
-    await expect(operateProcessInstancePage.waitingStatus).toBeVisible();
+    await expect(operateProcessInstancePage.waitingStatus).toContainText(
+      'Waiting for task completion',
+    );
   });
 
   test('shows the TIMER wait reason without crashing', async ({
@@ -124,7 +132,9 @@ test.describe('Wait State Details Tab', () => {
     });
     await operateProcessInstancePage.clickTreeItem(/wait for timer/i);
     await operateProcessInstancePage.clickDetailsTab();
-    await expect(operateProcessInstancePage.waitingStatus).toBeVisible();
+    await expect(operateProcessInstancePage.waitingStatus).toContainText(
+      /Waiting for timer/,
+    );
   });
 
   test('shows the CONDITIONAL wait reason without crashing', async ({
@@ -135,7 +145,9 @@ test.describe('Wait State Details Tab', () => {
     });
     await operateProcessInstancePage.clickTreeItem(/wait for condition/i);
     await operateProcessInstancePage.clickDetailsTab();
-    await expect(operateProcessInstancePage.waitingStatus).toBeVisible();
+    await expect(operateProcessInstancePage.waitingStatus).toContainText(
+      'Waiting for condition',
+    );
   });
 
   test('does not show a wait reason for a completed, non-waiting element', async ({
