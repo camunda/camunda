@@ -97,7 +97,8 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
       testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
-      testBrokerStartupContext.addBrokerAdminService(PHYSICAL_TENANT_ID, mock(BrokerAdminServiceImpl.class));
+      testBrokerStartupContext.addBrokerAdminService(
+          PHYSICAL_TENANT_ID, mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.addJobStreamService(
           PHYSICAL_TENANT_ID, mock(JobStreamService.class));
       final ClusterConfigurationService clusterConfigurationService =

@@ -68,7 +68,7 @@ public class SpringBrokerBridge {
   /** Returns the {@link BrokerAdminService} for the given physical tenant, if any. */
   public Optional<BrokerAdminService> getAdminService(final String physicalTenantId) {
     return Optional.ofNullable(adminServiceByTenantLookup)
-        .map(lookup -> lookup.apply(physicalTenantId));
+        .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
   }
 
   public void registerJobStreamClientSupplier(
@@ -98,7 +98,7 @@ public class SpringBrokerBridge {
   /** Returns the {@link JobStreamService} for the given physical tenant, if any. */
   public Optional<JobStreamService> getJobStreamService(final String physicalTenantId) {
     return Optional.ofNullable(jobStreamServiceByTenantLookup)
-        .map(lookup -> lookup.apply(physicalTenantId));
+        .flatMap(lookup -> Optional.ofNullable(lookup.apply(physicalTenantId)));
   }
 
   /**
