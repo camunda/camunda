@@ -9,37 +9,19 @@ package io.camunda.zeebe.it.cluster.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.configuration.Camunda;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
-import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -56,9 +38,6 @@ public interface InProcessRestoreAcceptance {
   String JOB_TYPE = "in-process-restore-job";
   String PROCESS_ID = "in-process-restore-process";
 
-  ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-
   @Test
   default void shouldRestoreClusterInProcess() {
     try (final var cluster =
@@ -74,7 +53,8 @@ public interface InProcessRestoreAcceptance {
         final var client = cluster.newClientBuilder().build()) {
 
       // given -- every partition has at least one process instance with a pending job
-      final var processInstanceKeys = deployProcessAndCreateInstances(client);
+      InProcessRestoreTestUtil.deployAndCreateInstancesOnEveryPartition(
+          client, PROCESS_ID, JOB_TYPE, PARTITIONS_COUNT);
 
       // and -- a completed backup, taken after a snapshot on every broker
       takeSnapshotOnAllBrokers(cluster);
@@ -93,7 +73,7 @@ public interface InProcessRestoreAcceptance {
                       .doesNotHavePendingChanges());
 
       // and -- a restore is triggered over the cluster's REST endpoint while recovering
-      final var changeId = triggerRestore(client, BACKUP_ID);
+      final var changeId = InProcessRestoreTestUtil.triggerRestore(client, BACKUP_ID);
 
       // then -- the restore change plan completes
       Awaitility.await("restore change plan completes")
@@ -116,64 +96,16 @@ public interface InProcessRestoreAcceptance {
                     .allMatch(state -> state == PartitionStateCode.ACTIVE);
               });
 
-      // and -- jobs from every partition are activated again, proving partition data was restored
-      // and not just topology/mode
-      assertJobsActivatedFromEveryPartition(client, processInstanceKeys.size());
+      // and -- jobs from every partition are activated and completed again, proving partition data
+      // was restored (not just topology/mode) and the spawned processes can run to completion
+      InProcessRestoreTestUtil.activateAndCompleteJobsFromEveryPartition(
+          client, JOB_TYPE, PARTITIONS_COUNT);
 
       // and -- the cluster accepts new work again after the restore
       final var newInstance =
           client.newCreateInstanceCommand().bpmnProcessId(PROCESS_ID).latestVersion().send().join();
       assertThat(newInstance.getProcessInstanceKey()).isPositive();
     }
-  }
-
-  private List<Long> deployProcessAndCreateInstances(final CamundaClient client) {
-    final var process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
-            .endEvent()
-            .done();
-    final var deploymentKey =
-        client
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .send()
-            .join()
-            .getKey();
-    new ZeebeResourcesHelper(client).waitUntilDeploymentIsDone(deploymentKey);
-
-    final var totalInstances = 2 * PARTITIONS_COUNT;
-    final List<Long> processInstanceKeys = new ArrayList<>();
-    Awaitility.await("every partition has at least one process instance with a pending job")
-        .timeout(Duration.ofSeconds(60))
-        // might throw exception when a partition has not yet received deployment distribution
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              while (processInstanceKeys.size() < totalInstances) {
-                final var result =
-                    client
-                        .newCreateInstanceCommand()
-                        .bpmnProcessId(PROCESS_ID)
-                        .latestVersion()
-                        .send()
-                        .join();
-                processInstanceKeys.add(result.getProcessInstanceKey());
-              }
-
-              final var partitionsWithInstance =
-                  processInstanceKeys.stream()
-                      .map(Protocol::decodePartitionId)
-                      .collect(Collectors.toSet());
-              assertThat(partitionsWithInstance)
-                  .describedAs(
-                      "every partition has at least one process instance with a pending job")
-                  .containsExactlyInAnyOrderElementsOf(
-                      IntStream.rangeClosed(1, PARTITIONS_COUNT).boxed().toList());
-            });
-
-    return processInstanceKeys;
   }
 
   private void takeSnapshotOnAllBrokers(final TestCluster cluster) {
@@ -204,56 +136,6 @@ public interface InProcessRestoreAcceptance {
               assertThat(status)
                   .extracting(BackupInfo::getBackupId, BackupInfo::getState)
                   .containsExactly(backupId, StateCode.COMPLETED);
-            });
-  }
-
-  private long triggerRestore(final CamundaClient client, final long backupId) {
-    try {
-      final var uri =
-          URI.create(
-              "%sv2/restore?dryRun=false".formatted(client.getConfiguration().getRestAddress()));
-      final var body = OBJECT_MAPPER.writeValueAsString(Map.of("backupIds", List.of(backupId)));
-      final var request =
-          HttpRequest.newBuilder(uri)
-              .header("Content-Type", "application/json")
-              .POST(HttpRequest.BodyPublishers.ofString(body))
-              .build();
-      final var response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-      assertThat(response.statusCode())
-          .describedAs("restore REST response: %s".formatted(response.body()))
-          .isEqualTo(202);
-      return OBJECT_MAPPER.readTree(response.body()).get("changeId").asLong();
-    } catch (final IOException | InterruptedException e) {
-      throw new RuntimeException("Failed to trigger restore via REST endpoint", e);
-    }
-  }
-
-  private void assertJobsActivatedFromEveryPartition(
-      final CamundaClient client, final int expectedJobCount) {
-    final Set<ActivatedJob> activatedJobs = new HashSet<>();
-    Awaitility.await("jobs from every partition are activated after restore")
-        .timeout(Duration.ofSeconds(30))
-        .untilAsserted(
-            () -> {
-              final var jobs =
-                  client
-                      .newActivateJobsCommand()
-                      .jobType(JOB_TYPE)
-                      .maxJobsToActivate(expectedJobCount)
-                      .send()
-                      .join();
-              activatedJobs.addAll(jobs.getJobs());
-
-              final var partitionsWithActivatedJob =
-                  activatedJobs.stream()
-                      .map(job -> Protocol.decodePartitionId(job.getKey()))
-                      .collect(Collectors.toSet());
-              assertThat(partitionsWithActivatedJob)
-                  .describedAs(
-                      "jobs are activated from every partition, proving partition data was"
-                          + " actually restored")
-                  .containsExactlyInAnyOrderElementsOf(
-                      IntStream.rangeClosed(1, PARTITIONS_COUNT).boxed().toList());
             });
   }
 

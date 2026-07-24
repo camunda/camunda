@@ -9,18 +9,11 @@ package io.camunda.zeebe.it.cluster.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.management.cluster.BrokerState;
 import io.camunda.zeebe.management.cluster.PartitionState;
 import io.camunda.zeebe.management.cluster.PartitionStateCode;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -33,9 +26,6 @@ import org.junit.jupiter.api.io.TempDir;
  * shared fixture and test cases, and {@link RdbmsRangeRestoreIT} for the standalone counterpart.
  */
 final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
-
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   private static @TempDir Path backupDir;
 
@@ -50,7 +40,7 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     final long changeId;
     try (final var client = broker.newClientBuilder().build()) {
       changeId =
-          triggerRestore(
+          InProcessRestoreTestUtil.triggerRestore(
               client, Map.of("from", interval.start().toString(), "to", interval.end().toString()));
     }
     awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
@@ -61,7 +51,7 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     final var clusterActuator = enterRecovering();
     final long changeId;
     try (final var client = broker.newClientBuilder().build()) {
-      changeId = triggerRestore(client, Map.of());
+      changeId = InProcessRestoreTestUtil.triggerRestore(client, Map.of());
     }
     awaitChangeCompletesAndBrokerActive(clusterActuator, changeId);
   }
@@ -71,7 +61,7 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
     enterRecovering();
     try (final var client = broker.newClientBuilder().build()) {
       final var response =
-          sendRestoreRequest(
+          InProcessRestoreTestUtil.sendRestoreRequest(
               client, Map.of("from", interval.start().toString(), "to", interval.end().toString()));
       assertThat(response.statusCode())
           .describedAs("restore REST response: %s".formatted(response.body()))
@@ -123,28 +113,5 @@ final class InProcessRdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
                   .hasCompletedChanges(changeId)
                   .doesNotHavePendingChanges();
             });
-  }
-
-  private long triggerRestore(final CamundaClient client, final Map<String, Object> body)
-      throws IOException, InterruptedException {
-    final var response = sendRestoreRequest(client, body);
-    assertThat(response.statusCode())
-        .describedAs("restore REST response: %s".formatted(response.body()))
-        .isEqualTo(202);
-    return OBJECT_MAPPER.readTree(response.body()).get("changeId").asLong();
-  }
-
-  private HttpResponse<String> sendRestoreRequest(
-      final CamundaClient client, final Map<String, Object> body)
-      throws IOException, InterruptedException {
-    final var uri =
-        URI.create(
-            "%sv2/restore?dryRun=false".formatted(client.getConfiguration().getRestAddress()));
-    final var request =
-        HttpRequest.newBuilder(uri)
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString(OBJECT_MAPPER.writeValueAsString(body)))
-            .build();
-    return HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
   }
 }
