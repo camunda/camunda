@@ -119,7 +119,7 @@
     "opn": "^6.0.0",
     "patch-package": "^8.0.0",
     "prettier": "^3.3.3",
-    "react-18": "npm:react@^18.3.1",
+    "react-18": "npm:react@^19.0.0",
     "react-dom-18": "npm:react-dom@^18.3.1",
     "react-is-18": "npm:react-is@^18.3.1",
     "react-scripts": "5.0.1",
