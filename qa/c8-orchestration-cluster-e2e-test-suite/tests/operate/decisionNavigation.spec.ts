@@ -275,11 +275,14 @@ test.describe('Decision Navigation', () => {
           // filters (no name/version) — this resets both the URL params and the
           // client-side React filter state deterministically. Then
           // give the importer time to make the instance queryable before
-          // re-applying the name filter from scratch.
+          // re-applying the name filter from scratch. Bumped from 3s: nightly
+          // run 30057312392 still exhausted all 8 retries with the same
+          // decisionPanel-not-visible failure, so the importer occasionally
+          // needs longer than 3s per cycle to catch up under nightly load.
           await operateDecisionsPage.gotoDecisionsPage({
             searchParams: {evaluated: 'true', failed: 'true'},
           });
-          await sleep(3000);
+          await sleep(6000);
           await operateDecisionsPage.selectDecisionName(
             'Assign Approver Group Navigation',
           );
