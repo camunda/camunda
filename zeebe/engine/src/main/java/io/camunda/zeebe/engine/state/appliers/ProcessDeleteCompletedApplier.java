@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessDeleteDrainState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -16,22 +16,21 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 
 /**
  * Applies {@link ProcessIntent#DELETE_COMPLETED}: clears the reporting partition's outstanding
- * drain report from {@link MutableProcessDeleteDrainState}. The reporting partition is decoded from
- * the event key.
+ * drain report from {@link MutableProcessState}. The reporting partition is decoded from the event
+ * key.
  */
 public final class ProcessDeleteCompletedApplier
     implements TypedEventApplier<ProcessIntent, ProcessRecord> {
 
-  private final MutableProcessDeleteDrainState processDeleteDrainState;
+  private final MutableProcessState processState;
 
   public ProcessDeleteCompletedApplier(final MutableProcessingState state) {
-    processDeleteDrainState = state.getProcessDeleteDrainState();
+    processState = state.getProcessState();
   }
 
   @Override
   public void applyState(final long key, final ProcessRecord value) {
     final int reportingPartitionId = Protocol.decodePartitionId(key);
-    processDeleteDrainState.removeDrainingPartition(
-        value.getProcessDefinitionKey(), reportingPartitionId);
+    processState.removePendingDeletion(value.getProcessDefinitionKey(), reportingPartitionId);
   }
 }

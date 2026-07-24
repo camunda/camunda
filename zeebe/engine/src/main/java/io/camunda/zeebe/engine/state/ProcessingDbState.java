@@ -33,7 +33,6 @@ import io.camunda.zeebe.engine.state.deployment.DbFormState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.deployment.DbResourceState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
-import io.camunda.zeebe.engine.state.drain.DbProcessDeleteDrainState;
 import io.camunda.zeebe.engine.state.globallistener.DbGlobalListenersState;
 import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
 import io.camunda.zeebe.engine.state.group.DbGroupState;
@@ -89,7 +88,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessDeleteDrainState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -150,7 +148,6 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableResourceState resourceState;
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
-  private final MutableProcessDeleteDrainState processDeleteDrainState;
   private final MutableUserTaskState userTaskState;
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
   private final MutableUserState userState;
@@ -227,7 +224,6 @@ public class ProcessingDbState implements MutableProcessingState {
     resourceState = new DbResourceState(zeebeDb, transactionContext, config);
     signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
-    processDeleteDrainState = new DbProcessDeleteDrainState(zeebeDb, transactionContext);
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     compensationSubscriptionState =
@@ -388,11 +384,6 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableDistributionState getDistributionState() {
     return distributionState;
-  }
-
-  @Override
-  public MutableProcessDeleteDrainState getProcessDeleteDrainState() {
-    return processDeleteDrainState;
   }
 
   @Override
