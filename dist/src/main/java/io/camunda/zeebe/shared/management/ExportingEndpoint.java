@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 public final class ExportingEndpoint {
   static final String PAUSE = "pause";
   static final String RESUME = "resume";
-  final ExportingRequestBroadcaster exportingService;
+  private final ExportingRequestBroadcaster exportingRequestBroadcaster;
 
-  public ExportingEndpoint(final ExportingRequestBroadcaster exportingService) {
-    this.exportingService = exportingService;
+  public ExportingEndpoint(final ExportingRequestBroadcaster exportingRequestBroadcaster) {
+    this.exportingRequestBroadcaster = exportingRequestBroadcaster;
   }
 
   @PostMapping(path = "/{operationKey}")
@@ -35,14 +35,13 @@ public final class ExportingEndpoint {
       @RequestParam(defaultValue = "false") final boolean soft) {
 
     try {
-      final boolean softPause = soft;
       final var result =
           switch (operationKey) {
-            case RESUME -> exportingService.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
+            case RESUME -> exportingRequestBroadcaster.resumeExporting(DEFAULT_PHYSICAL_TENANT_ID);
             case PAUSE ->
-                softPause
-                    ? exportingService.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
-                    : exportingService.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
+                soft
+                    ? exportingRequestBroadcaster.softPauseExporting(DEFAULT_PHYSICAL_TENANT_ID)
+                    : exportingRequestBroadcaster.pauseExporting(DEFAULT_PHYSICAL_TENANT_ID);
             default -> throw new UnsupportedOperationException();
           };
       result.join();
