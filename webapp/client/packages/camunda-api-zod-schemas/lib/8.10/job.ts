@@ -99,6 +99,7 @@ const queryJobsRequestBodySchema = getQueryRequestBodySchema({
 		'customHeaders',
 		'deadline',
 		'endTime',
+		'creationTime',
 		'processDefinitionId',
 		'processDefinitionKey',
 		'processInstanceKey',
