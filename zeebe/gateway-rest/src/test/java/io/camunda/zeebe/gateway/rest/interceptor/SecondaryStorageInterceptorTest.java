@@ -12,16 +12,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
+import io.camunda.cluster.SecondaryStorageReadiness;
+import io.camunda.service.exception.SecondaryStorageDegradedException;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
+import io.camunda.spring.utils.PhysicalTenantContext;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.method.HandlerMethod;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 class SecondaryStorageInterceptorTest {
+
+  private static final String PHYSICAL_TENANT_ID = "tenant-a";
 
   private HttpServletRequest request;
   private HttpServletResponse response;
@@ -32,6 +41,12 @@ class SecondaryStorageInterceptorTest {
     request = mock(HttpServletRequest.class);
     response = mock(HttpServletResponse.class);
     handlerMethod = mock(HandlerMethod.class);
+    when(request.getDispatcherType()).thenReturn(DispatcherType.REQUEST);
+  }
+
+  @AfterEach
+  void tearDown() {
+    RequestContextHolder.resetRequestAttributes();
   }
 
   @Test
@@ -39,17 +54,32 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(false);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
 
-    final var interceptor = new SecondaryStorageInterceptor("elasticsearch");
+    final var interceptor =
+        new SecondaryStorageInterceptor("elasticsearch", SecondaryStorageReadiness.ALWAYS_READY);
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
     assertThat(result).isTrue();
   }
 
   @Test
-  void shouldAllowWhenSecondaryStorageEnabled() {
+  void shouldNotConsultReadinessWhenNoAnnotation() {
+    when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(false);
+    when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
+    final var readiness = mock(SecondaryStorageReadiness.class);
+
+    final var interceptor = new SecondaryStorageInterceptor("elasticsearch", readiness);
+    interceptor.preHandle(request, response, handlerMethod);
+
+    verifyNoInteractions(readiness);
+  }
+
+  @Test
+  void shouldAllowWhenSecondaryStorageEnabledAndTenantServiceable() {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
 
-    final var interceptor = new SecondaryStorageInterceptor("elasticsearch");
+    final var interceptor =
+        new SecondaryStorageInterceptor("elasticsearch", SecondaryStorageReadiness.ALWAYS_READY);
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
     assertThat(result).isTrue();
   }
@@ -59,8 +89,59 @@ class SecondaryStorageInterceptorTest {
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
     when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
 
-    final var interceptor = new SecondaryStorageInterceptor(CAMUNDA_DATABASE_TYPE_NONE);
+    final var interceptor =
+        new SecondaryStorageInterceptor(
+            CAMUNDA_DATABASE_TYPE_NONE, SecondaryStorageReadiness.ALWAYS_READY);
     assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
         .isInstanceOf(SecondaryStorageUnavailableException.class);
+  }
+
+  @Test
+  void shouldRejectWithForbiddenEvenWhenTenantDegradedAndSecondaryStorageDisabled() {
+    when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
+    when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
+
+    final var interceptor =
+        new SecondaryStorageInterceptor(CAMUNDA_DATABASE_TYPE_NONE, degraded(PHYSICAL_TENANT_ID));
+    assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
+        .isInstanceOf(SecondaryStorageUnavailableException.class);
+  }
+
+  @Test
+  void shouldThrowWhenPhysicalTenantDegraded() {
+    when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
+    when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
+    bindPhysicalTenant(PHYSICAL_TENANT_ID);
+
+    final var interceptor =
+        new SecondaryStorageInterceptor("elasticsearch", degraded(PHYSICAL_TENANT_ID));
+    assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
+        .isInstanceOf(SecondaryStorageDegradedException.class);
+  }
+
+  @Test
+  void shouldSkipDegradedCheckOnAsyncDispatch() {
+    when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
+    when(handlerMethod.getBeanType()).thenReturn((Class) Object.class);
+    when(request.getDispatcherType()).thenReturn(DispatcherType.ASYNC);
+
+    final var interceptor =
+        new SecondaryStorageInterceptor("elasticsearch", degraded(PHYSICAL_TENANT_ID));
+    final boolean result = interceptor.preHandle(request, response, handlerMethod);
+    assertThat(result).isTrue();
+  }
+
+  private static void bindPhysicalTenant(final String physicalTenantId) {
+    final var mockRequest = mock(HttpServletRequest.class);
+    when(mockRequest.getAttribute(PhysicalTenantContext.REQUEST_ATTRIBUTE_PHYSICAL_TENANT_ID))
+        .thenReturn(physicalTenantId);
+    RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(mockRequest));
+  }
+
+  private static SecondaryStorageReadiness degraded(final String physicalTenantId) {
+    final var readiness = mock(SecondaryStorageReadiness.class);
+    when(readiness.isReady(physicalTenantId)).thenReturn(false);
+    return readiness;
   }
 }
