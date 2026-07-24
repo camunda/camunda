@@ -637,8 +637,10 @@ public class CamundaMultiDBExtension
       }
       Awaitility.await("until user '%s' can authenticate".formatted(user.username()))
           .timeout(Duration.ofSeconds(60))
-          .ignoreExceptions()
-          .untilAsserted(() -> client.newTopologyRequest().send().join());
+          .untilAsserted(
+              () ->
+                  org.assertj.core.api.Assertions.assertThatNoException()
+                      .isThrownBy(() -> client.newTopologyRequest().send().join()));
     }
   }
 
