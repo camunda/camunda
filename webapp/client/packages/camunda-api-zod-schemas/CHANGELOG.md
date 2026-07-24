@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.84
+
+### 🚀 Enhancements
+
+- Add `SECRET` authorization resource type and `REVEAL` permission ([#58391](https://github.com/camunda/camunda/pull/58391))
+
+### ❤️ Contributors
+
+- [@HeleneW-dot](https://github.com/HeleneW-dot)
+
 ## v0.0.83
 
 ### 🚀 Enhancements
