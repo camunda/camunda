@@ -56,6 +56,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private Duration maxBatchProcessingTime;
   private int maxRecoverableRetries = DEFAULT_MAX_RECOVERABLE_RETRIES;
   private EventFilter processingFilter = e -> true;
   private ControllableStreamClock clock;
@@ -236,6 +237,19 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public int getMaxCommandsInBatch() {
     return maxCommandsInBatch;
+  }
+
+  public StreamProcessorContext maxBatchProcessingTime(final Duration maxBatchProcessingTime) {
+    this.maxBatchProcessingTime = maxBatchProcessingTime;
+    return this;
+  }
+
+  /**
+   * Maximum time a processing batch is allowed to grow, or {@code null} if batching is only limited
+   * by {@link #getMaxCommandsInBatch()}.
+   */
+  public Duration getMaxBatchProcessingTime() {
+    return maxBatchProcessingTime;
   }
 
   public StreamProcessorContext maxRecoverableRetries(final int maxRecoverableRetries) {

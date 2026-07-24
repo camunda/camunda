@@ -148,10 +148,20 @@ public final class StreamProcessorBuilder {
           "maxRecoverableRetries must be >= 1 but was %s"
               .formatted(streamProcessorContext.getMaxRecoverableRetries()));
     }
+    final var maxBatchProcessingTime = streamProcessorContext.getMaxBatchProcessingTime();
+    if (maxBatchProcessingTime != null && !maxBatchProcessingTime.isPositive()) {
+      throw new IllegalArgumentException(
+          "maxBatchProcessingTime must be positive but was %s".formatted(maxBatchProcessingTime));
+    }
   }
 
   public StreamProcessorBuilder maxCommandsInBatch(final int maxCommandsInBatch) {
     streamProcessorContext.maxCommandsInBatch(maxCommandsInBatch);
+    return this;
+  }
+
+  public StreamProcessorBuilder maxBatchProcessingTime(final Duration maxBatchProcessingTime) {
+    streamProcessorContext.maxBatchProcessingTime(maxBatchProcessingTime);
     return this;
   }
 
