@@ -108,9 +108,17 @@ public interface PartitionsActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> pauseProcessing();
 
+  @RequestLine("POST /pauseProcessing?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<Integer, PartitionStatus> pauseProcessing(@feign.Param final String physicalTenant);
+
   @RequestLine("POST /resumeProcessing")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> resumeProcessing();
+
+  @RequestLine("POST /resumeProcessing?physicalTenant={physicalTenant}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<Integer, PartitionStatus> resumeProcessing(@feign.Param final String physicalTenant);
 
   @RequestLine("POST /takeSnapshot")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
