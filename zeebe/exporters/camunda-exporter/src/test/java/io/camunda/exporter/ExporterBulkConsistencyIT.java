@@ -8,7 +8,6 @@
 package io.camunda.exporter;
 
 import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas;
-import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,9 +61,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -72,7 +71,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * Verifies that the final indexed state produced by the CamundaExporter is identical regardless of
  * the bulk flush size.
  */
-@TestInstance(Lifecycle.PER_CLASS)
 final class ExporterBulkConsistencyIT {
 
   private static final int INSTANCE_COUNT = 20;
@@ -92,14 +90,21 @@ final class ExporterBulkConsistencyIT {
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
+  private String testPrefix;
+
+  @BeforeEach
+  void beforeEach() {
+    testPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+  }
+
   @AfterEach
   void afterEach() throws IOException {
     final var openSearchAwsInstanceUrl =
         Optional.ofNullable(System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL)).orElse("");
     if (openSearchAwsInstanceUrl.isEmpty()) {
-      SEARCH_DB.esClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+      SEARCH_DB.esClient().indices().delete(req -> req.index(testPrefix + "*"));
     }
-    SEARCH_DB.osClient().indices().delete(req -> req.index(CUSTOM_PREFIX + "*"));
+    SEARCH_DB.osClient().indices().delete(req -> req.index(testPrefix + "*"));
   }
 
   /**
@@ -135,9 +140,10 @@ final class ExporterBulkConsistencyIT {
 
     // when — export at bulk size 500 (exceeds total record count, so always a single flush)
     final var referenceConfig = configWithBulkSize(baseConfig, 500, "ref");
+    referenceConfig.getIndex().setNumberOfReplicas(0);
     createSchemas(referenceConfig);
     runExporter(allRecords, referenceConfig);
-    clientAdapter.refresh();
+    clientAdapter.refresh(testPrefix);
     final var referenceSnapshot =
         captureSnapshot(
             clientAdapter,
@@ -223,9 +229,12 @@ final class ExporterBulkConsistencyIT {
 
     // then — each test bulk size must produce documents identical to the reference;
     // indices are created once and reused across all test bulk sizes
-    createSchemas(configWithBulkSize(baseConfig, 500, "work"));
+    final var newConfig = configWithBulkSize(baseConfig, 500, "work");
+    newConfig.getIndex().setNumberOfReplicas(0);
+    createSchemas(newConfig);
     for (final int bulkSize : testBulkSizes) {
       final var config = configWithBulkSize(baseConfig, bulkSize, "work");
+      config.getIndex().setNumberOfReplicas(0);
       clientAdapter.deleteAllDocuments(config.getConnect().getIndexPrefix());
       clientAdapter.refresh(); // make deletions visible before the next exporter opens
       runExporter(allRecords, config);
@@ -359,6 +368,7 @@ final class ExporterBulkConsistencyIT {
 
     // when — reference run (bulk 500)
     final var referenceConfig = configWithBulkSize(baseConfig, 500, "ref-del");
+    referenceConfig.getIndex().setNumberOfReplicas(0);
     createSchemas(referenceConfig);
     runExporter(phase1Records, referenceConfig);
     runExporter(phase2Records, referenceConfig);
@@ -373,9 +383,12 @@ final class ExporterBulkConsistencyIT {
         .isEmpty();
 
     // then — identical result at every test bulk size
-    createSchemas(configWithBulkSize(baseConfig, 500, "work-del"));
+    final var newConfig = configWithBulkSize(baseConfig, 500, "work-del");
+    newConfig.getIndex().setNumberOfReplicas(0);
+    createSchemas(newConfig);
     for (final int bulkSize : testBulkSizes) {
       final var config = configWithBulkSize(baseConfig, bulkSize, "work-del");
+      config.getIndex().setNumberOfReplicas(0);
       clientAdapter.deleteAllDocuments(config.getConnect().getIndexPrefix());
       clientAdapter.refresh();
       runExporter(phase1Records, config);
@@ -791,7 +804,12 @@ final class ExporterBulkConsistencyIT {
     config.getConnect().setSecurity(base.getConnect().getSecurity());
     config.getConnect().setInterceptorPlugins(base.getConnect().getInterceptorPlugins());
     config.getConnect().setAwsEnabled(base.getConnect().isAwsEnabled());
+<<<<<<< HEAD
     config.getConnect().setIndexPrefix(CUSTOM_PREFIX + "-" + suffix);
+=======
+    config.getConnect().setProxy(base.getConnect().getProxy());
+    config.getConnect().setIndexPrefix(testPrefix + "-" + suffix);
+>>>>>>> 0ea77deb (fix: isolate index prefix and refresh scope per test across exporter ITs)
     config.getBulk().setSize(bulkSize);
     // Suppress IncidentUpdateTask for the duration of this test. The task runs in a background
     // thread and modifies incident/flow-node fields after ES auto-refreshes documents. This test
