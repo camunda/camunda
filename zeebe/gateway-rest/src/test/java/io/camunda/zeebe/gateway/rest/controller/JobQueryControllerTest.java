@@ -374,6 +374,7 @@ public class JobQueryControllerTest extends RestControllerTest {
       { "field": "errorMessage", "order": "desc" },
       { "field": "deadline", "order": "asc" },
       { "field": "endTime", "order": "desc" },
+      { "field": "creationTime", "order": "asc" },
       { "field": "processDefinitionId", "order": "asc" },
       { "field": "processDefinitionKey", "order": "desc" },
       { "field": "processInstanceKey", "order": "asc" },
@@ -435,6 +436,8 @@ public class JobQueryControllerTest extends RestControllerTest {
                                 .asc()
                                 .endTime()
                                 .desc()
+                                .creationTime()
+                                .asc()
                                 .processDefinitionId()
                                 .asc()
                                 .processDefinitionKey()

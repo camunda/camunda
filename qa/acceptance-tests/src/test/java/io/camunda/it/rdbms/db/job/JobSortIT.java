@@ -7,7 +7,9 @@
  */
 package io.camunda.it.rdbms.db.job;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
+import static io.camunda.it.rdbms.db.fixtures.JobFixtures.createAndSaveJob;
 import static io.camunda.it.rdbms.db.fixtures.JobFixtures.createAndSaveRandomJobs;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -114,6 +116,49 @@ public class JobSortIT {
         testApplication.getRdbmsService(),
         b -> b.processInstanceKey().desc(),
         Comparator.comparing(JobEntity::processInstanceKey).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByCreationTimeAsc(final CamundaRdbmsTestApplication testApplication) {
+    testCreationTimeSorting(
+        testApplication.getRdbmsService(),
+        b -> b.creationTime().asc(),
+        Comparator.comparing(JobEntity::creationTime));
+  }
+
+  @TestTemplate
+  public void shouldSortByCreationTimeDesc(final CamundaRdbmsTestApplication testApplication) {
+    testCreationTimeSorting(
+        testApplication.getRdbmsService(),
+        b -> b.creationTime().desc(),
+        Comparator.comparing(JobEntity::creationTime).reversed());
+  }
+
+  private void testCreationTimeSorting(
+      final RdbmsService rdbmsService,
+      final Function<Builder, ObjectBuilder<JobSort>> sortBuilder,
+      final Comparator<JobEntity> comparator) {
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader reader = rdbmsService.getJobReader();
+
+    final var processDefinitionId = nextStringId();
+    for (int i = 0; i < 20; i++) {
+      final var creationTime = NOW.plusSeconds(i);
+      createAndSaveJob(
+          rdbmsWriters, b -> b.processDefinitionId(processDefinitionId).creationTime(creationTime));
+    }
+
+    final var searchResult =
+        reader
+            .search(
+                new JobQuery(
+                    new JobFilter.Builder().processDefinitionIds(processDefinitionId).build(),
+                    JobSort.of(sortBuilder),
+                    SearchQueryPage.of(b -> b)))
+            .items();
+
+    assertThat(searchResult).hasSize(20);
+    assertThat(searchResult).isSortedAccordingTo(comparator);
   }
 
   private void testSorting(

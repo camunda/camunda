@@ -47,6 +47,22 @@ public class JobSortTest extends AbstractSortTransformerTest {
   }
 
   @Test
+  public void shouldSortByCreationTimeDesc() {
+    // given
+    final var request =
+        SearchQueryBuilders.jobSearchQuery(q -> q.sort(s -> s.creationTime().desc()));
+
+    // when
+    final var sort = transformRequest(request);
+
+    // then
+    assertThat(sort).hasSize(2); // [creationTime sort, default key sort]
+    assertThat(sort.getFirst().field().field()).isEqualTo("creationTime");
+    assertThat(sort.getFirst().field().order()).isEqualTo(SortOrder.DESC);
+    assertThat(sort.getFirst().field().missing()).isEqualTo("_last");
+  }
+
+  @Test
   public void shouldSortByOtherFieldsWithDefaultMissingLast() {
     // given — retries is a comparable int field on jobs; it should keep the _last default
     final var request = SearchQueryBuilders.jobSearchQuery(q -> q.sort(s -> s.retries().asc()));
