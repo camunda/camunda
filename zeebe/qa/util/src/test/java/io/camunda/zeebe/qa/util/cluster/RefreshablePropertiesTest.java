@@ -68,6 +68,27 @@ final class RefreshablePropertiesTest {
   }
 
   @Test
+  void shouldExposeExplicitDefaultCreateSchemaValue() {
+    // given a broker whose constructor disables schema creation
+    final var broker = new TestStandaloneBroker();
+
+    // when schema creation is explicitly restored to its model default
+    broker.withCreateSchema(true);
+    broker.withRefreshableProperties(
+        ExtendedConfigurationBuilder.flatPropertiesFor(broker.unifiedConfig()));
+
+    // then the explicit value remains available to override lower-priority profile properties
+    assertThat(
+            broker.property(
+                "camunda.data.secondary-storage.elasticsearch.create-schema", Boolean.class, false))
+        .isTrue();
+    assertThat(
+            broker.property(
+                "camunda.data.secondary-storage.opensearch.create-schema", Boolean.class, false))
+        .isTrue();
+  }
+
+  @Test
   void shouldOverrideStaleKeysWithNewValuesOnRefresh() {
     // given a broker with an initial cluster size
     final var broker = new TestStandaloneBroker();
