@@ -788,6 +788,32 @@ public class SchemaManagerIT {
     assertThatNoException().isThrownBy(schemaManager::startup);
   }
 
+  @RegressionTestTemplate("https://github.com/camunda/camunda/issues/58509")
+  void shouldAttachMissingAliasToExistingIndexOnStartup(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    searchClientAdapter.createIndex(index.getFullQualifiedName(), 0);
+    final var bareIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+    assertThat(bareIndex.get("aliases").fieldNames().hasNext()).isFalse();
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(index, metadataIndex),
+            Set.of(),
+            config,
+            objectMapper);
+
+    // when
+    assertThatNoException().isThrownBy(schemaManager::startup);
+
+    // then
+    final var repairedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
+    assertThat(repairedIndex.get("aliases").fieldNames().next()).isEqualTo(index.getAlias());
+    assertThat(schemaManager.isAliasIntegrityValid(false)).isTrue();
+  }
+
   @TestTemplate
   void shouldStartDifferentSchemaManagersWithRetention(
       final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
