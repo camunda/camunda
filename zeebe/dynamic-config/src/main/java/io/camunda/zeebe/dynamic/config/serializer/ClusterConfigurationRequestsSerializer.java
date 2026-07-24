@@ -71,7 +71,7 @@ public interface ClusterConfigurationRequestsSerializer {
 
   byte[] encodeForceRemoveZoneRequest(ForceZoneRemoveRequest request);
 
-  byte[] encodeForceRemoveZoneRequest(AddZoneRequest request);
+  byte[] encodeAddZoneRequest(AddZoneRequest request);
 
   ClusterConfigurationManagementRequest.AddMembersRequest decodeAddMembersRequest(
       byte[] encodedState);

@@ -13,6 +13,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddZoneRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterZoneMigrationRequest;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExportingStateChangeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceZoneRemoveRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
@@ -65,6 +67,34 @@ final class ProtoBufSerializerTest {
 
     // then
     final var decodedRequest = protoBufSerializer.decodeClusterZoneMigrationRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeForceRemoveZoneRequest() {
+    // given
+    final var request = new ForceZoneRemoveRequest("us-west-1", true);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeForceRemoveZoneRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeForceRemoveZoneRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(request);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeAddZoneRequest() {
+    // given
+    final var request =
+        new AddZoneRequest(
+            "us-west-1", 3, 1, Set.of(MemberId.from("1"), MemberId.from("2")), false);
+
+    // when
+    final var encodedRequest = protoBufSerializer.encodeAddZoneRequest(request);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeAddZoneRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(request);
   }
 

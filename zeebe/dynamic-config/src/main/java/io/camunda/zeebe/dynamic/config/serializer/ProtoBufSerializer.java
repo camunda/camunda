@@ -1120,7 +1120,7 @@ public class ProtoBufSerializer
   }
 
   @Override
-  public byte[] encodeForceRemoveZoneRequest(final AddZoneRequest request) {
+  public byte[] encodeAddZoneRequest(final AddZoneRequest request) {
     return Requests.AddZoneRequest.newBuilder()
         .setZoneId(request.zoneId())
         .setNumberOfReplicas(request.numberOfReplicas())

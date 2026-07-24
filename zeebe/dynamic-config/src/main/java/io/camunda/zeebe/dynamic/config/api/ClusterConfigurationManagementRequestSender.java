@@ -287,7 +287,7 @@ public final class ClusterConfigurationManagementRequestSender {
     return communicationService.send(
         ClusterConfigurationRequestTopics.ADD_ZONE.topic(),
         request,
-        serializer::encodeForceRemoveZoneRequest,
+        serializer::encodeAddZoneRequest,
         serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
