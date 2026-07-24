@@ -21,6 +21,7 @@ import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1.Complete
 import io.camunda.client.api.command.enums.JobResultType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class CompleteAdHocSubProcessJobResultImpl
     extends CommandWithVariables<CompleteAdHocSubProcessResultStep2>
@@ -47,6 +48,7 @@ public class CompleteAdHocSubProcessJobResultImpl
   @Override
   public CompleteAdHocSubProcessResultStep2 activateElement(final String elementId) {
     ArgumentUtil.ensureNotNull("elementId", elementId);
+    resetAccumulatedVariables();
     latestActivateElement = new ActivateElement().setElementId(elementId);
     activateElements.add(latestActivateElement);
     return this;
@@ -64,6 +66,16 @@ public class CompleteAdHocSubProcessJobResultImpl
       final boolean cancelRemainingInstances) {
     this.cancelRemainingInstances = cancelRemainingInstances;
     return this;
+  }
+
+  @Override
+  public CompleteAdHocSubProcessResultStep2 addVariable(final String key, final Object value) {
+    return super.addVariable(key, value);
+  }
+
+  @Override
+  public CompleteAdHocSubProcessResultStep2 addVariables(final Map<String, Object> variables) {
+    return super.addVariables(variables);
   }
 
   public boolean isCompletionConditionFulfilled() {
