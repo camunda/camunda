@@ -20,6 +20,7 @@ import io.camunda.search.clients.cache.ProcessCacheItem;
 import io.camunda.search.clients.cache.ProcessCacheResult;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -68,7 +69,7 @@ class IncidentProcessInstanceStatisticsByDefinitionDocumentReaderTest {
             null,
             "tenant1",
             null,
-            false);
+            ProcessDefinitionState.ACTIVE);
 
     when(executor.search(
             any(ProcessDefinitionQuery.class),

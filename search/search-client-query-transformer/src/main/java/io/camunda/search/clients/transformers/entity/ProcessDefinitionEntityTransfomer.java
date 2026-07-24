@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity.ProcessDefinitionState;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 
 public class ProcessDefinitionEntityTransfomer
@@ -26,6 +27,6 @@ public class ProcessDefinitionEntityTransfomer
         value.getVersionTag(),
         value.getTenantId(),
         value.getFormId(),
-        value.getIsDeleted());
+        value.getState() == null ? null : ProcessDefinitionState.valueOf(value.getState().name()));
   }
 }

@@ -15,6 +15,8 @@
  */
 package io.camunda.client.api.search.response;
 
+import io.camunda.client.api.search.enums.ProcessDefinitionState;
+
 public interface ProcessDefinition {
 
   /**
@@ -58,8 +60,7 @@ public interface ProcessDefinition {
   Boolean getHasStartForm();
 
   /**
-   * @return whether the process definition has been deleted from the engine but is still retained
-   *     in secondary storage
+   * @return the state of the process definition
    */
-  Boolean isDeleted();
+  ProcessDefinitionState getState();
 }
