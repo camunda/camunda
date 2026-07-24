@@ -161,6 +161,24 @@ final class CoordinatorProcessorTest {
   }
 
   @Test
+  void shouldNotMoveTheRebalanceDeadlineAcrossAChurnBurst() {
+    // given — preamble regression (#24 item 1): RebalanceDebounce.dueAt is arm-if-absent, so a
+    // burst of membership churn within the window must still resolve to ONE fixed deadline
+    // measured from the first change, not a sliding one each change could keep postponing.
+
+    // when — join, join, leave, join, all within the 2s window opened at t=0
+    join("g", "m1", 0L);
+    join("g", "m2", 500L);
+    leave("g", "m2", 2, 1000L);
+    join("g", "m3", 1500L);
+
+    // then — the due-ordered index still fires at firstChange (0) + debounce, unmoved by the burst
+    assertThat(state.getGroup("g").getRebalanceDueAt()).isEqualTo(DEBOUNCE.toMillis());
+    assertThat(groupIds(state.rebalancesDueBy(DEBOUNCE.toMillis() - 1))).isEmpty();
+    assertThat(groupIds(state.rebalancesDueBy(DEBOUNCE.toMillis()))).containsExactly("g");
+  }
+
+  @Test
   void shouldStampEmptyAndEmptySinceWhenLastMemberLeaves() {
     join("g", "m1");
 
