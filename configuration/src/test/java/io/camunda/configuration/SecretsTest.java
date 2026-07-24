@@ -282,4 +282,116 @@ class SecretsTest {
       assertThat(secrets.getStores().getAws()).isEmpty();
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.gcp.gcp-prod.project-id=my-gcp-project",
+        "camunda.secrets.stores.gcp.gcp-prod.path-prefix=camunda-",
+        "camunda.secrets.stores.gcp.gcp-prod.endpoint=secretmanager.example.com:443",
+        "camunda.secrets.stores.gcp.gcp-minimal.project-id=minimal-project"
+      })
+  class WithGcpStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindGcpStoreProperties() {
+      // given the camunda.secrets.stores.gcp.gcp-prod.* properties are set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the named store is present and its fields are bound
+      assertThat(secrets.getStores().getGcp().get("gcp-prod"))
+          .satisfies(
+              store -> {
+                assertThat(store.getProjectId()).isEqualTo("my-gcp-project");
+                assertThat(store.getPathPrefix()).isEqualTo("camunda-");
+                assertThat(store.getEndpoint()).isEqualTo("secretmanager.example.com:443");
+              });
+    }
+
+    @Test
+    void shouldDefaultContainerSecretIdToNull() {
+      // given container-secret-id is not set for gcp-prod (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it defaults to the flat one-secret-per-reference mode
+      assertThat(secrets.getStores().getGcp().get("gcp-prod").getContainerSecretId()).isNull();
+    }
+
+    @Test
+    void shouldBindMultipleStoresKeyedById() {
+      // given two gcp stores are configured (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then both store ids are present
+      assertThat(secrets.getStores().getGcp()).containsKeys("gcp-prod", "gcp-minimal");
+    }
+
+    @Test
+    void shouldAllowOptionalPathPrefixAndEndpoint() {
+      // given gcp-minimal has only project-id set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then project-id is bound while the optional fields stay null
+      assertThat(secrets.getStores().getGcp().get("gcp-minimal"))
+          .satisfies(
+              store -> {
+                assertThat(store.getProjectId()).isEqualTo("minimal-project");
+                assertThat(store.getPathPrefix()).isNull();
+                assertThat(store.getEndpoint()).isNull();
+              });
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.secrets.stores.gcp.bundled.project-id=my-gcp-project",
+        "camunda.secrets.stores.gcp.bundled.container-secret-id=app-config"
+      })
+  class WithGcpContainerSecretIdConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithGcpContainerSecretIdConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldBindContainerSecretId() {
+      // given container-secret-id is set (see @TestPropertySource)
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then it is bound onto the named store
+      assertThat(secrets.getStores().getGcp().get("bundled").getContainerSecretId())
+          .isEqualTo("app-config");
+    }
+  }
+
+  @Nested
+  class WithoutGcpStoreConfigured {
+    private final UnifiedConfiguration unifiedConfiguration;
+
+    WithoutGcpStoreConfigured(@Autowired final UnifiedConfiguration unifiedConfiguration) {
+      this.unifiedConfiguration = unifiedConfiguration;
+    }
+
+    @Test
+    void shouldDefaultToEmptyGcpMap() {
+      // given no camunda.secrets.* property is set
+      // when the unified configuration is bound
+      final Secrets secrets = unifiedConfiguration.getCamunda().getSecrets();
+
+      // then the gcp map is empty
+      assertThat(secrets.getStores().getGcp()).isEmpty();
+    }
+  }
 }
