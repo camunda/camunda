@@ -100,7 +100,14 @@ function buildFile(
   meta.push(' */');
   lines.push(meta.join('\n'));
   lines.push("import {test, expect} from '@playwright/test'");
-  lines.push(`import {jsonHeaders, buildUrl} from '${httpImport}'`);
+  const needsJsonHeaders = scenarios.some(
+    (s) => s.headersAuth && s.bodyEncoding !== 'multipart',
+  );
+  lines.push(
+    needsJsonHeaders
+      ? `import {jsonHeaders, buildUrl} from '${httpImport}'`
+      : `import {buildUrl} from '${httpImport}'`,
+  );
   lines.push('');
   lines.push(`test.describe('${describeTitle}', () => {`);
   // Pre-compute base titles and detect duplicates for uniqueness
