@@ -10,6 +10,8 @@ package io.camunda.configuration.physicaltenants;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
+import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
+import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -73,8 +75,6 @@ final class PhysicalTenantAssignedProvidersValidation {
   private static final String DEFAULT_SLOT_ASSIGNED_ID = OidcConfiguration.DEFAULT_REGISTRATION_ID;
 
   private static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
-  private static final ConfigurationPropertyName PHYSICAL_TENANTS_NAME =
-      ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
 
   private static final String ROOT_AUTH = Camunda.PREFIX + ".security.authentication";
   private static final ConfigurationPropertyName ROOT_DEFAULT_SLOT =
@@ -92,7 +92,12 @@ final class PhysicalTenantAssignedProvidersValidation {
     final Set<String> rootNamedIds = childSegments(environment, ROOT_NAMED_PROVIDERS);
     final boolean rootDefaultSlotPresent = hasDescendant(environment, ROOT_DEFAULT_SLOT);
 
-    final Set<String> discoveredTenantIds = childSegments(environment, PHYSICAL_TENANTS_NAME);
+    final Set<String> discoveredTenantIds;
+    try {
+      discoveredTenantIds = PhysicalTenantConfigUtil.discover(environment);
+    } catch (final InvalidPhysicalTenantIdException e) {
+      throw new UnifiedConfigurationException(e);
+    }
     boolean defaultTenantExplicitlyDiscovered = false;
 
     for (final String tenantId : discoveredTenantIds) {

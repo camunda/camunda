@@ -24,6 +24,15 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-cluster</artifactId>
     </dependency>
+    <!-- Only PhysicalTenantConfigUtil needs Spring Boot's ConfigurationPropertySources APIs, and
+         its consumers are Spring Boot applications that provide spring-boot at runtime. Kept
+         provided so it does not leak transitively to non-Boot library consumers of spring-utils
+         (e.g. camunda-search-domain). -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
