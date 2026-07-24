@@ -73,6 +73,7 @@ import io.camunda.zeebe.gateway.impl.configuration.KeyStoreCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.util.Preconditions;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -1301,9 +1302,7 @@ public class BrokerBasedPropertiesOverride {
       return merger.merge(legacyArgs, unifiedArgs);
     } catch (final RuntimeException e) {
       throw new UnifiedConfigurationException(
-          String.format(
-              "Failed to merge exporter args for exporter '%s': %s", exporterName, e.getMessage()),
-          e);
+          String.format("Failed to merge exporter args for exporter '%s'", exporterName), e);
     }
   }
 
@@ -1327,7 +1326,26 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private static Map<String, Object> immutableArgsCopy(final Map<String, Object> args) {
-    return args == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(args));
+    if (args == null) {
+      return Map.of();
+    }
+    final Map<String, Object> copy = new LinkedHashMap<>(args.size());
+    args.forEach((key, value) -> copy.put(key, immutableValueCopy(value)));
+    return Collections.unmodifiableMap(copy);
+  }
+
+  private static Object immutableValueCopy(final Object value) {
+    if (value instanceof final Map<?, ?> map) {
+      final Map<Object, Object> copy = new LinkedHashMap<>(map.size());
+      map.forEach((key, nestedValue) -> copy.put(key, immutableValueCopy(nestedValue)));
+      return Collections.unmodifiableMap(copy);
+    }
+    if (value instanceof final List<?> list) {
+      final List<Object> copy = new ArrayList<>(list.size());
+      list.forEach(item -> copy.add(immutableValueCopy(item)));
+      return Collections.unmodifiableList(copy);
+    }
+    return value;
   }
 
   private static boolean hasText(final String value) {

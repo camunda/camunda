@@ -381,7 +381,7 @@ class DataExportersTest {
                     context.getStartupFailure(), UnifiedConfigurationException.class);
             assertThat(unifiedConfigurationException)
                 .isNotNull()
-                .hasMessageContaining("Failed to merge exporter args for exporter 'foo'");
+                .hasMessage("Failed to merge exporter args for exporter 'foo'");
           });
     }
 
@@ -394,6 +394,33 @@ class DataExportersTest {
         current = current.getCause();
       }
       return null;
+    }
+  }
+
+  @Nested
+  class WithMergerThatMutatesNestedInput {
+
+    private final ApplicationContextRunner brokerRunner =
+        new ApplicationContextRunner()
+            .withUserConfiguration(
+                UnifiedConfiguration.class,
+                BrokerBasedPropertiesOverride.class,
+                UnifiedConfigurationHelper.class)
+            .withPropertyValues(
+                "spring.profiles.active=broker",
+                "camunda.data.exporters.foo.class-name=io.camunda.configuration.test.NestedMutatingMergeExporter",
+                "camunda.data.exporters.foo.args.arg1=value1",
+                "zeebe.broker.exporters.foo.className=io.camunda.configuration.test.NestedMutatingMergeExporter",
+                "zeebe.broker.exporters.foo.args.nested.arg2=value2");
+
+    @Test
+    void shouldPreventMergerFromMutatingNestedInputs() {
+      brokerRunner.run(
+          context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure())
+                .hasRootCauseInstanceOf(UnsupportedOperationException.class);
+          });
     }
   }
 }
