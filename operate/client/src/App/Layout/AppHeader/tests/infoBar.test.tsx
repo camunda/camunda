@@ -29,6 +29,7 @@ describe('Info bar', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
   });
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
