@@ -1009,6 +1009,18 @@
         <scope>import</scope>
       </dependency>
 
+      <!--
+        Override Spring Boot's netty version to resolve CVE-2026-55831.
+        Must be declared before spring-boot-dependencies so this version wins.
+      -->
+      <dependency>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-bom</artifactId>
+        <version>${version.netty}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
       <dependency>
         <!-- Import dependency management from Spring Boot -->
         <groupId>org.springframework.boot</groupId>
@@ -1286,14 +1298,6 @@
         <groupId>com.google.api.grpc</groupId>
         <artifactId>proto-google-common-protos</artifactId>
         <version>${version.protobuf-common}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty-bom</artifactId>
-        <version>${version.netty}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <dependency>
