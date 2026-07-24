@@ -198,6 +198,35 @@ class SecretStoreConfigurationTest {
         .withMessageContaining("only one is supported");
   }
 
+  @Test
+  void shouldThrowWhenGcpStoreHasBlankProjectId() {
+    // given a gcp store whose required project-id is blank
+    final var resolver =
+        resolverFor(Map.of("camunda.secrets.stores.gcp.gcp-store.path-prefix", "camunda-"));
+
+    // when / then — rejected before any GCP client is built
+    assertThatIllegalStateException()
+        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .withMessageContaining("gcp-store")
+        .withMessageContaining("no projectId configured");
+  }
+
+  @Test
+  void shouldThrowWhenFileAndGcpStoresCombinedExceedOne() {
+    // given one file store and one gcp store for the same tenant
+    final var resolver =
+        resolverFor(
+            Map.of(
+                "camunda.secrets.stores.file.file-store.path", "/etc/camunda/secrets",
+                "camunda.secrets.stores.gcp.gcp-store.project-id", "my-project"));
+
+    // when / then — the per-tenant cap is enforced before any GCP client is built
+    assertThatIllegalStateException()
+        .isThrownBy(() -> CONFIG.secretStoreRegistries(resolver))
+        .withMessageContaining(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID)
+        .withMessageContaining("only one is supported");
+  }
+
   private static PhysicalTenantResolver resolverFor(final Map<String, Object> properties) {
     final var env = new MockEnvironment();
     if (!properties.isEmpty()) {
