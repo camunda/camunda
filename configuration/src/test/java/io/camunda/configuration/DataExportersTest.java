@@ -217,6 +217,56 @@ class DataExportersTest {
   }
 
   @Nested
+  @TestPropertySource(
+      properties = {
+        "zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize=200",
+      })
+  class WithCamundaExporterLegacyArgsOnly {
+    final BrokerBasedProperties brokerCfg;
+
+    WithCamundaExporterLegacyArgsOnly(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetBuiltInClassNameWhenLegacyArgsCreateIncompleteExporter() {
+      final ExporterCfg exporterCfg = brokerCfg.getCamundaExporter();
+
+      assertThat(exporterCfg)
+          .isNotNull()
+          .extracting(ExporterCfg::getClassName)
+          .isEqualTo("io.camunda.exporter.CamundaExporter");
+      assertThat(
+              UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(exporterCfg.getArgs())
+                  .getHistory()
+                  .getRolloverBatchSize())
+          .isEqualTo(200);
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "zeebe.broker.exporters.camundaexporter.className=example.CustomCamundaExporter",
+        "zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize=200",
+      })
+  class WithExplicitLegacyCamundaExporterClass {
+    final BrokerBasedProperties brokerCfg;
+
+    WithExplicitLegacyCamundaExporterClass(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldPreserveExplicitLegacyClassName() {
+      assertThat(brokerCfg.getCamundaExporter())
+          .isNotNull()
+          .extracting(ExporterCfg::getClassName)
+          .isEqualTo("example.CustomCamundaExporter");
+    }
+  }
+
+  @Nested
   class WithMultipleMergersClaimingSameExporterClass {
 
     private final ApplicationContextRunner brokerRunner =

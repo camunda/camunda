@@ -883,9 +883,11 @@ public class BrokerBasedPropertiesOverride {
     ExporterCfg exporter = override.getCamundaExporter();
     if (exporter == null) {
       exporter = new ExporterCfg();
-      exporter.setClassName(CAMUNDA_EXPORTER_CLASS_NAME);
       exporter.setArgs(new LinkedHashMap<>());
       override.getExporters().put(CAMUNDA_EXPORTER_NAME, exporter);
+    }
+    if (exporter.getClassName() == null || exporter.getClassName().isBlank()) {
+      exporter.setClassName(CAMUNDA_EXPORTER_CLASS_NAME);
     }
 
     // https://github.com/camunda/camunda/issues/37880
