@@ -91,7 +91,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -127,7 +127,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -162,7 +162,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -198,7 +198,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -233,7 +233,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
@@ -271,7 +271,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - name: Check out repository code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
@@ -319,7 +319,7 @@ jobs:
       run:
         working-directory: ${{ env.CLIENT_DIR }}
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - name: Check out repository code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
@@ -455,7 +455,7 @@ jobs:
         ports:
           - 5000:5000
     steps:
-      - uses: camunda/infra-global-github-actions/start-build-monitor@f063d613a0c7eb6d1b5a155722f09f336e39ccb5 # main
+      - uses: camunda/infra-global-github-actions/start-build-monitor@70d16605cd2f7221bec743c5314c66b8862b4da2 # main
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Print metadata
         uses: ./.github/actions/print-metadata
