@@ -154,6 +154,11 @@ public class SchemaStartupIT extends AbstractSchemaIT {
   @Test
   public void shouldCreateMissingIndexTemplateWhenSchemaAlreadyExists() throws MigrationException {
     // given
+    // migration is disabled: this test invokes initializeSchemaOnDemand() twice (to simulate a
+    // restart) within a single Spring context, and the Migrator's ExecutorService is shut down
+    // after the first run, so a second migration would fail with a TaskRejectedException. Template
+    // recreation, which is what this test verifies, is independent of migration.
+    migrationProperties.setMigrationEnabled(false);
     // a fully created schema (indices, aliases and templates)
     schemaStartup.initializeSchemaOnDemand();
     assertThat(schemaHelper.getTemplateMappings(testTemplate)).isNotNull();

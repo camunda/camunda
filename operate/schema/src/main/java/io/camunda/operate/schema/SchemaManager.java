@@ -30,13 +30,17 @@ public interface SchemaManager {
 
   /**
    * Creates the ILM/ISM retention policies, the component template and the index templates that
-   * make up the schema, but not the data indices themselves.
+   * make up the schema. Creating an index template also bootstraps its initial backing index, so
+   * some indices are created as a side effect; this method does not, however, run the separate step
+   * that creates the remaining plain (non-template) indices.
    *
    * <p>Index templates and ILM/ISM policies are not included in Elasticsearch/OpenSearch snapshots.
    * After restoring a backup into an empty cluster the restored indices exist while the templates
    * and policies are missing; without them the archiver would later create indices with an
-   * incorrect structure. This method (re)creates any missing templates and policies. Templates are
-   * created idempotently: existing ones are left untouched (created with {@code overwrite=false}).
+   * incorrect structure. This method (re)creates any missing templates and policies. It is
+   * idempotent: existing templates are left untouched (created with {@code overwrite=false}) and a
+   * retention policy is created only when it does not already exist, so a restart never overwrites
+   * a pre-existing one.
    *
    * <p>This is only ever invoked when schema creation is enabled ({@code createSchema=true}), i.e.
    * when the application is permitted to manage the schema and its retention policies. Guarding on

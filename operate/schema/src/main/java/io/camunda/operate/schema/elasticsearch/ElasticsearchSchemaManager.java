@@ -35,8 +35,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indexlifecycle.DeleteAction;
+import org.elasticsearch.client.indexlifecycle.GetLifecyclePolicyRequest;
 import org.elasticsearch.client.indexlifecycle.LifecycleAction;
 import org.elasticsearch.client.indexlifecycle.LifecyclePolicy;
 import org.elasticsearch.client.indexlifecycle.Phase;
@@ -401,6 +404,14 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void createIndexLifeCycles() {
+    // Only create the policy when it is missing, so a restart never overwrites a (possibly
+    // customized) existing policy and never needs manage_ilm permissions when the policy is already
+    // there. This keeps createSchemaTemplatesAndPolicies() safe to run on every startup (#32806).
+    if (ilmPolicyExists(OPERATE_DELETE_ARCHIVED_INDICES)) {
+      LOGGER.info(
+          "ILM policy {} already exists, skipping creation.", OPERATE_DELETE_ARCHIVED_INDICES);
+      return;
+    }
     final TimeValue timeValue =
         TimeValue.parseTimeValue(
             operateProperties.getArchiver().getIlmMinAgeForDeleteArchivedIndices(),
@@ -417,6 +428,26 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     final LifecyclePolicy policy = new LifecyclePolicy(OPERATE_DELETE_ARCHIVED_INDICES, phases);
     final PutLifecyclePolicyRequest request = new PutLifecyclePolicyRequest(policy);
     retryElasticsearchClient.putLifeCyclePolicy(request);
+  }
+
+  private boolean ilmPolicyExists(final String policyName) {
+    try {
+      return retryElasticsearchClient
+          .getEsClient()
+          .indexLifecycle()
+          .getLifecyclePolicy(new GetLifecyclePolicyRequest(policyName), RequestOptions.DEFAULT)
+          .getPolicies()
+          .containsKey(policyName);
+    } catch (final ElasticsearchStatusException e) {
+      if (e.status().getStatus() == 404) {
+        return false;
+      }
+      throw new OperateRuntimeException(
+          "Failed to check whether ILM policy exists: " + policyName, e);
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(
+          "Failed to check whether ILM policy exists: " + policyName, e);
+    }
   }
 
   private void createIndices() {

@@ -383,6 +383,14 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   public void createIndexLifeCyclesIfNotExist() {
+    // Only manage the retention policy when the application is configured to do so, so a restart
+    // never recreates a policy a user chose to manage themselves. It is already created only when
+    // missing, so an existing policy is never overwritten. This keeps
+    // createSchemaTemplatesAndPolicies() safe to run on every startup (#32806).
+    if (!tasklistProperties.getArchiver().isIlmManagePolicy()) {
+      LOGGER.info("ISM policy is not managed by Tasklist, skipping creation.");
+      return;
+    }
     if (retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES).isPresent()) {
       LOGGER.info("{} ISM policy already exists", TASKLIST_DELETE_ARCHIVED_INDICES);
       return;
