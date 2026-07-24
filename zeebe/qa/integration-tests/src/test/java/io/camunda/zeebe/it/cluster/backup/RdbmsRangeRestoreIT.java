@@ -74,6 +74,7 @@ final class RdbmsRangeRestoreIT extends RdbmsRangeRestoreTestBase {
   }
 
   private void configureRestoreApp(final Camunda cfg) {
+    cfg.getCluster().setPartitionCount(PARTITION_COUNT);
     configureRdbms(cfg);
     // Filesystem backup store (same as broker)
     final var fsConfig = new Filesystem();

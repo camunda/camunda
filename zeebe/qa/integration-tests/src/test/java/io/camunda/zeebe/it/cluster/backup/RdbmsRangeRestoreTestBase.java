@@ -36,6 +36,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +63,7 @@ import org.springframework.util.unit.DataSize;
 @ZeebeIntegration
 abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
+  protected static final int PARTITION_COUNT = 2;
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsRangeRestoreTestBase.class);
 
   // H2 in-memory DB URL. DB_CLOSE_DELAY=-1 keeps the DB alive across a broker's stop/restart
@@ -69,7 +71,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
   protected final String h2Url =
       "jdbc:h2:mem:rdbms-restore-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
 
-  @TestZeebe
+  @TestZeebe(partitionCount = PARTITION_COUNT)
   protected final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.rdbms)
@@ -137,19 +139,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     final var exporterActuator = ExportersActuator.of(broker);
     exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
 
-    Awaitility.await("Until backup is greater or equal to exported position")
-        .pollDelay(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(300))
-        .untilAsserted(
-            () -> {
-              final var backup = takeAndAwaitBackup();
-              final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
-              final var details = backup.getDetails().getFirst();
-              assertThat(details)
-                  .returns(1, PartitionBackupInfo::getPartitionId)
-                  .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
-              assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
-            });
+    awaitBackupCoversExportedPositionsOnEveryPartition();
 
     // when - restore from the recorded time range
     restoreFromTimeRange(interval);
@@ -171,19 +161,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
     final var exporterActuator = ExportersActuator.of(broker);
     exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
 
-    Awaitility.await("Until backup is greater or equal to exported position")
-        .pollDelay(Duration.ofSeconds(2))
-        .atMost(Duration.ofSeconds(300))
-        .untilAsserted(
-            () -> {
-              final var backup = takeAndAwaitBackup();
-              final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
-              final var details = backup.getDetails().getFirst();
-              assertThat(details)
-                  .returns(1, PartitionBackupInfo::getPartitionId)
-                  .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
-              assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
-            });
+    awaitBackupCoversExportedPositionsOnEveryPartition();
 
     // when - restore without specifying a time range (resolves the latest common checkpoint)
     restoreWithoutArguments();
@@ -215,6 +193,38 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
    * directory.
    */
   protected abstract Path backupDir();
+
+  /**
+   * Waits until a freshly-taken backup exists whose per-partition checkpoint position is at or
+   * ahead of that partition's last exported (to RDBMS) position - for every partition. Only then
+   * does a time-range restore have a backup that covers the exported data on all partitions.
+   */
+  private void awaitBackupCoversExportedPositionsOnEveryPartition() {
+    Awaitility.await("backup covers the exported position on every partition")
+        .pollDelay(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(300))
+        .untilAsserted(
+            () -> {
+              final var backup = takeAndAwaitBackup();
+              assertThat(backup.getDetails())
+                  .extracting(PartitionBackupInfo::getPartitionId)
+                  .containsExactlyInAnyOrderElementsOf(
+                      IntStream.rangeClosed(1, PARTITION_COUNT).boxed().toList());
+              assertThat(backup.getDetails())
+                  .allSatisfy(
+                      details -> {
+                        final var exportedPosition =
+                            exporterPositionMapper.findOne(details.getPartitionId());
+                        assertThat(exportedPosition)
+                            .describedAs(
+                                "exported position for partition %d", details.getPartitionId())
+                            .isNotNull();
+                        assertThat(details.getState()).isEqualTo(StateCode.COMPLETED);
+                        assertThat(details.getCheckpointPosition())
+                            .isGreaterThanOrEqualTo(exportedPosition.lastExportedPosition());
+                      });
+            });
+  }
 
   protected void completeJobs(final int expectedJobCount) {
     try (final var client = broker.newClientBuilder().build()) {
@@ -299,6 +309,7 @@ abstract class RdbmsRangeRestoreTestBase implements ClockSupport {
 
   private void configureBroker(final Camunda cfg) {
     cfg.getSystem().setClockControlled(true);
+    cfg.getCluster().setPartitionCount(PARTITION_COUNT);
     configureRdbms(cfg);
     // Filesystem backup store
     final var fsConfig = new Filesystem();
