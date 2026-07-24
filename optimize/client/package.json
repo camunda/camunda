@@ -121,7 +121,7 @@
     "prettier": "^3.3.3",
     "react-18": "npm:react@^18.3.1",
     "react-dom-18": "npm:react-dom@^18.3.1",
-    "react-is-18": "npm:react-is@^18.3.1",
+    "react-is-18": "npm:react-is@^19.0.0",
     "react-scripts": "5.0.1",
     "sass": "^1.77.2",
     "styled-components": "^6.1.9",
