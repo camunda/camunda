@@ -20,11 +20,8 @@ import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import java.time.OffsetDateTime;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 
-@TestInstance(Lifecycle.PER_CLASS)
 public class StandaloneDecisionArchiverJobIT extends ArchiverJobIT<StandaloneDecisionArchiverJob> {
 
   @Override

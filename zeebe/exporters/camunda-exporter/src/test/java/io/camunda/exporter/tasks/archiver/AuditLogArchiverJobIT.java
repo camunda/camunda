@@ -23,11 +23,8 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
 
-@TestInstance(Lifecycle.PER_CLASS)
 public class AuditLogArchiverJobIT extends ArchiverJobIT<AuditLogArchiverJob> {
   @Override
   AuditLogArchiverJob createArchiveJob(
