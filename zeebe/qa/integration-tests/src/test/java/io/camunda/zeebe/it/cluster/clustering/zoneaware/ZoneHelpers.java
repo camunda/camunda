@@ -19,9 +19,7 @@ import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
-import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
 import java.util.List;
-import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 
 public class ZoneHelpers {
@@ -43,19 +41,16 @@ public class ZoneHelpers {
   }
 
   /**
-   * Starts a standalone broker in {@code zone} (static node id, joining the running cluster), adds
-   * it to the persisted topology, and waits for the change to be applied. The broker's blocking
-   * {@link TestStandaloneBroker#start()} runs on a virtual thread because it only returns once the
-   * broker has joined the topology (i.e. after {@code addBroker}).
+   * Starts a broker with id in a zone without adding it to the topology. The {@link
+   * TestStandaloneBroker#start} is run in a virtual thread as it returns only after it is able to
+   * join the topology
    */
-  public static TestStandaloneBroker addBrokerInZone(
+  public static TestStandaloneBroker startBrokerInZone(
       final TestCluster cluster,
-      final ClusterActuator actuator,
-      final String clusterName,
       final String zone,
       final int nodeId,
-      final int newTotalSize,
-      final List<Zone> targetZones) {
+      final int clusterSize,
+      final List<Zone> newZones) {
     final var contactPoint =
         cluster.brokers().values().iterator().next().address(TestZeebePort.CLUSTER);
     final var broker =
@@ -64,26 +59,17 @@ public class ZoneHelpers {
             .withUnifiedConfig(
                 cfg -> {
                   final var clusterCfg = cfg.getCluster();
-                  clusterCfg.setName(clusterName);
+                  clusterCfg.setName(cluster.name());
                   clusterCfg.setInitialContactPoints(List.of(contactPoint));
                   clusterCfg.setZone(zone);
+                  clusterCfg.setSize(clusterSize);
                   clusterCfg.setNodeId(nodeId);
-                  clusterCfg.setSize(newTotalSize);
                   clusterCfg.getPartitioning().setScheme(Scheme.ZONE_AWARE);
-                  clusterCfg.getPartitioning().setZoneAware(new ZoneAware(targetZones));
+                  clusterCfg.getPartitioning().setZoneAware(new ZoneAware(newZones));
                   cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
                 });
 
-    final var startThread =
-        Thread.ofVirtual().name("start-" + zone + "-" + nodeId).start(broker::start);
-
-    final var added = actuator.addBroker(MemberId.from(zone, nodeId).toString());
-    try {
-      Awaitility.await()
-          .untilAsserted(() -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(added));
-    } catch (final Exception e) {
-      CloseHelper.close(broker);
-    }
+    Thread.ofVirtual().name("start-" + zone + "-" + nodeId).start(broker::start);
 
     return broker;
   }

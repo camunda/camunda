@@ -20,6 +20,7 @@ import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.container.cluster.BrokerNode;
+import io.camunda.zeebe.management.cluster.AddZoneRequest;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterZoneMigrationRequest;
@@ -364,6 +365,27 @@ public interface ClusterActuator {
   @Headers({"Content-Type: application/json", "accept: application/json"})
   PlannedOperationsResponse migrateZone(
       @RequestBody final ClusterZoneMigrationRequest request, @Param boolean dryRun);
+
+  /**
+   * Force-removes the given zone: force-evicts the zone's brokers and drops the zone from the
+   * partition distribution config.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("DELETE /zones/{zoneId}?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse forceRemoveZone(@Param final String zoneId, @Param boolean dryRun);
+
+  /**
+   * Adds back the given zone: re-adds the given brokers and re-includes the zone in the partition
+   * distribution config.
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /zones/{zoneId}?dryRun={dryRun}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse addZone(
+      @Param final String zoneId, @RequestBody final AddZoneRequest request, @Param boolean dryRun);
 
   /**
    * Requests a cluster mode change.
