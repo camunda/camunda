@@ -7,7 +7,9 @@
  */
 package io.camunda.service;
 
+import static java.time.Duration.ofSeconds;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -28,6 +30,8 @@ import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -59,7 +63,7 @@ public class ExportingServicesTest {
   }
 
   @Test
-  public void pauseExportingShouldDelegateWhenAuthorizationsDisabled() {
+  public void shouldDelegatePauseWhenAuthorizationsDisabled() {
     // given
     when(exportingRequestBroadcaster.pauseExporting(PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedFuture(null));
@@ -68,12 +72,12 @@ public class ExportingServicesTest {
     final var future = services.pauseExporting(false, authentication);
 
     // then
-    assertThat(future).succeedsWithin(java.time.Duration.ofSeconds(1));
+    assertThat(future).succeedsWithin(ofSeconds(1));
     verify(exportingRequestBroadcaster).pauseExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
-  public void softPauseExportingShouldDelegateToSoftPause() {
+  public void shouldDelegateSoftPauseToSoftPause() {
     // given
     when(exportingRequestBroadcaster.softPauseExporting(PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedFuture(null));
@@ -82,12 +86,12 @@ public class ExportingServicesTest {
     final var future = services.pauseExporting(true, authentication);
 
     // then
-    assertThat(future).succeedsWithin(java.time.Duration.ofSeconds(1));
+    assertThat(future).succeedsWithin(ofSeconds(1));
     verify(exportingRequestBroadcaster).softPauseExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
-  public void resumeExportingShouldDelegate() {
+  public void shouldDelegateResume() {
     // given
     when(exportingRequestBroadcaster.resumeExporting(PHYSICAL_TENANT_ID))
         .thenReturn(CompletableFuture.completedFuture(null));
@@ -96,12 +100,12 @@ public class ExportingServicesTest {
     final var future = services.resumeExporting(authentication);
 
     // then
-    assertThat(future).succeedsWithin(java.time.Duration.ofSeconds(1));
+    assertThat(future).succeedsWithin(ofSeconds(1));
     verify(exportingRequestBroadcaster).resumeExporting(PHYSICAL_TENANT_ID);
   }
 
   @Test
-  public void pauseExportingShouldCompleteExceptionallyWhenUserHasNoAuthorizations() {
+  public void shouldFailPauseWithForbiddenWhenUserHasNoAuthorizations() {
     // given
     authorizationsConfig.setEnabled(true);
     when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
@@ -111,13 +115,19 @@ public class ExportingServicesTest {
     final var future = services.pauseExporting(false, authentication);
 
     // then
-    assertThat(future.isCompletedExceptionally()).isTrue();
+    assertThat(future)
+        .failsWithin(ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .asInstanceOf(type(ServiceException.class))
+        .extracting(ServiceException::getStatus)
+        .isEqualTo(Status.FORBIDDEN);
     verify(exportingRequestBroadcaster, never()).pauseExporting(any());
     verify(exportingRequestBroadcaster, never()).softPauseExporting(any());
   }
 
   @Test
-  public void resumeExportingShouldCompleteExceptionallyWhenUserIsNotAuthorized() {
+  public void shouldFailResumeWithForbiddenWhenUserIsNotAuthorized() {
     // given
     authorizationsConfig.setEnabled(true);
     when(authorizationChecker.collectPermissionTypes(any(), any(), any()))
@@ -127,13 +137,19 @@ public class ExportingServicesTest {
     final var future = services.resumeExporting(authentication);
 
     // then
-    assertThat(future.isCompletedExceptionally()).isTrue();
+    assertThat(future)
+        .failsWithin(ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .asInstanceOf(type(ServiceException.class))
+        .extracting(ServiceException::getStatus)
+        .isEqualTo(Status.FORBIDDEN);
     verify(exportingRequestBroadcaster, never()).resumeExporting(any());
   }
 
   @Test
-  public void pauseExportingShouldMapIncompleteTopologyExceptionToUnavailable() {
-    // given
+  public void shouldMapSynchronousIncompleteTopologyExceptionToUnavailable() {
+    // given - the broadcaster validates topology synchronously, throwing before it returns a future
     when(exportingRequestBroadcaster.pauseExporting(PHYSICAL_TENANT_ID))
         .thenThrow(new IncompleteTopologyException("Topology is incomplete"));
 
@@ -141,14 +157,17 @@ public class ExportingServicesTest {
     final var future = services.pauseExporting(false, authentication);
 
     // then
-    assertThat(future.isCompletedExceptionally()).isTrue();
-    final var exception = org.assertj.core.api.Assertions.catchThrowable(future::join).getCause();
-    assertThat(exception).isInstanceOf(ServiceException.class);
-    assertThat(((ServiceException) exception).getStatus()).isEqualTo(Status.UNAVAILABLE);
+    assertThat(future)
+        .failsWithin(ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .asInstanceOf(type(ServiceException.class))
+        .extracting(ServiceException::getStatus)
+        .isEqualTo(Status.UNAVAILABLE);
   }
 
   @Test
-  public void pauseExportingShouldMapAsyncFailureToServiceException() {
+  public void shouldMapAsyncFailureToServiceException() {
     // given - the broadcaster dispatches broker requests asynchronously, so failures surface as an
     // exceptionally-completed future rather than a synchronous throw
     when(exportingRequestBroadcaster.pauseExporting(PHYSICAL_TENANT_ID))
@@ -160,9 +179,35 @@ public class ExportingServicesTest {
     final var future = services.pauseExporting(false, authentication);
 
     // then
-    assertThat(future.isCompletedExceptionally()).isTrue();
-    final var exception = org.assertj.core.api.Assertions.catchThrowable(future::join).getCause();
-    assertThat(exception).isInstanceOf(ServiceException.class);
-    assertThat(((ServiceException) exception).getStatus()).isEqualTo(Status.UNAVAILABLE);
+    assertThat(future)
+        .failsWithin(ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .asInstanceOf(type(ServiceException.class))
+        .extracting(ServiceException::getStatus)
+        .isEqualTo(Status.UNAVAILABLE);
+  }
+
+  @Test
+  public void shouldMapCompletionExceptionWrappedAsyncFailureToServiceException() {
+    // given - CompletableFuture.allOf inside the broadcaster delivers the cause wrapped in a
+    // CompletionException; the ErrorMapper must still unwrap it to the correct status
+    when(exportingRequestBroadcaster.pauseExporting(PHYSICAL_TENANT_ID))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CompletionException(
+                    new IncompleteTopologyException("Topology is incomplete"))));
+
+    // when
+    final var future = services.pauseExporting(false, authentication);
+
+    // then
+    assertThat(future)
+        .failsWithin(ofSeconds(1))
+        .withThrowableOfType(ExecutionException.class)
+        .havingCause()
+        .asInstanceOf(type(ServiceException.class))
+        .extracting(ServiceException::getStatus)
+        .isEqualTo(Status.UNAVAILABLE);
   }
 }
