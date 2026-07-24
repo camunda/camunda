@@ -16,6 +16,7 @@
 package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UpdateClusterVariableResponse;
+import java.util.Map;
 
 /**
  * Represents a request to update a tenant-scoped cluster variable.
@@ -50,4 +51,12 @@ public interface TenantScopedClusterVariableUpdateCommandStep1
    * @return this builder for method chaining
    */
   TenantScopedClusterVariableUpdateCommandStep1 update(String name, Object value);
+
+  /**
+   * Sets the metadata bag of the cluster variable (optional). Values must be strings or numbers.
+   *
+   * @param metadata a map of metadata key to value
+   * @return this builder for method chaining
+   */
+  TenantScopedClusterVariableUpdateCommandStep1 metadata(Map<String, Object> metadata);
 }
