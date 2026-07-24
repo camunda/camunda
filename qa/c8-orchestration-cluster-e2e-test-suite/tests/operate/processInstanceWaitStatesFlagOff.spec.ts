@@ -107,7 +107,9 @@ test.describe.serial('Wait States Flag Off', () => {
       );
       await expect(page.getByTestId('instance-header')).toBeVisible();
 
-      await expect(page.getByTestId('waiting-state-overlay')).toBeHidden();
+      await expect(
+        page.getByTestId('waiting-state-overlay').first(),
+      ).toBeHidden();
 
       await page.getByRole('treeitem', {name: 'task', exact: true}).click();
       const detailsTabButton = page

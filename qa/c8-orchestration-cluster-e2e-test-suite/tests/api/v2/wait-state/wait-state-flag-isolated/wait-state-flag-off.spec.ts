@@ -80,24 +80,29 @@ test.describe.serial('Wait States Flag Off', () => {
       processInstanceKey = (await createRes.json()).processInstanceKey;
     });
 
-    await test.step('Confirm the wait state was never indexed', async () => {
-      // Fixed wait, not a retry loop — asserting an absence, not eventual presence.
-      await new Promise((resolve) => setTimeout(resolve, 15_000));
-
-      const res = await request.post(
-        `${ISOLATED_BASE_URL}/v2/element-instances/wait-states/search`,
-        {
-          headers: {
-            Authorization: authHeader,
-            'Content-Type': 'application/json',
+    await test.step('Confirm the wait state stays unindexed over a 15s observation window', async () => {
+      const checkEmpty = async () => {
+        const res = await request.post(
+          `${ISOLATED_BASE_URL}/v2/element-instances/wait-states/search`,
+          {
+            headers: {
+              Authorization: authHeader,
+              'Content-Type': 'application/json',
+            },
+            data: {filter: {processInstanceKey}},
           },
-          data: {filter: {processInstanceKey}},
-        },
-      );
-      expect(res.status()).toBe(200);
-      const body = await res.json();
-      expect(body.page.totalItems).toBe(0);
-      expect(body.items).toHaveLength(0);
+        );
+        expect(res.status()).toBe(200);
+        const body = await res.json();
+        expect(body.page.totalItems).toBe(0);
+        expect(body.items).toHaveLength(0);
+      };
+
+      const deadline = Date.now() + 15_000;
+      do {
+        await checkEmpty();
+        await new Promise((resolve) => setTimeout(resolve, 3_000));
+      } while (Date.now() < deadline);
     });
   });
 });
