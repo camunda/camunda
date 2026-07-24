@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.management;
 
-import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.ZONE_A;
-import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.ZONE_B;
+import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -26,8 +25,11 @@ import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.actuator.RebalanceActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -338,6 +340,76 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
         newZoneABroker.close();
       }
     }
+  }
+
+  @Test
+  void shouldSwapZonePrioritiesAndMoveLeaders() {
+    try (final var cluster = createCluster(brokerCount())) {
+      // given - a fully zone-aware cluster where zoneA (priority 100) is the preferred leader zone
+      cluster.awaitCompleteTopology();
+      final var actuator = ClusterActuator.of(cluster.availableGateway());
+
+      Awaitility.await()
+          .untilAsserted(
+              () -> {
+                for (int partitionId = 1; partitionId <= partitionCount(); partitionId++) {
+                  assertThat(leaderIsInZone(cluster, ZONES[0], partitionId)).isTrue();
+                }
+              });
+
+      // when - swap the order so zoneB becomes preferred
+      final var response = actuator.updateZonePriorities(List.of(ZONES[1], ZONES[0]), false);
+
+      // then - the change is accepted and plans operations
+      Awaitility.await()
+          .untilAsserted(
+              () -> ClusterActuatorAssert.assertThat(actuator).hasAppliedChanges(response));
+
+      // and - the distribution config now lists zoneB first with the higher priority
+      final var expectedDistribution =
+          new PartitionDistributionConfig()
+              .type(TypeEnum.ZONE_AWARE)
+              .zones(
+                  List.of(
+                      new ZoneSpec().name(ZONE_B).numberOfReplicas(1).priority(100),
+                      new ZoneSpec().name(ZONE_A).numberOfReplicas(2).priority(10)));
+      assertThat(actuator.getTopology().getPartitionDistribution()).isEqualTo(expectedDistribution);
+
+      // and - after a rebalance forces the now-lower-priority zoneA leaders to step down,
+      // partition leaders move to zoneB. A priority change alone does not displace a healthy
+      // sitting leader; the rebalance issues stepDownIfNotPrimary so the highest-priority
+      // (zoneB) node wins re-election. Rebalancing is best-effort, so re-trigger it each poll
+      // until every partition leader has moved.
+      final var rebalanceActuator = RebalanceActuator.of(cluster.availableGateway());
+      Awaitility.await()
+          .atMost(Duration.ofMinutes(1))
+          .untilAsserted(
+              () -> {
+                rebalanceActuator.rebalance();
+                for (int partitionId = 1; partitionId <= partitionCount(); partitionId++) {
+                  assertThat(leaderIsInZone(cluster, ZONE_B, partitionId)).isTrue();
+                }
+              });
+    }
+  }
+
+  /**
+   * Returns whether any broker in the given zone is the leader for the given partition, by querying
+   * each zone broker's partitions actuator directly.
+   */
+  private boolean leaderIsInZone(
+      final TestCluster cluster, final String zone, final int partitionId) {
+    for (int nodeIdx = 0; nodeIdx < brokerCount(); nodeIdx++) {
+      if (!zoneFor(nodeIdx).equals(zone)) {
+        continue;
+      }
+      final var broker = cluster.brokers().get(memberIdForBroker(nodeIdx));
+      final var status = PartitionsActuator.of(broker).query().get(partitionId);
+      if (status != null && "Leader".equalsIgnoreCase(status.role())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Nested
