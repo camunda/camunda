@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.secretstore.SecretResolutionResult.Failed;
@@ -164,5 +165,21 @@ class FlatSecretResolverTest {
 
     // then
     assertThat(names).containsExactly("db-password");
+  }
+
+  @Test
+  void shouldProbeConnectivityWithListSecretsOnly() {
+    // given
+    final var resolver = new FlatSecretResolver(client, "camunda/", false, 20);
+    when(client.listSecrets(any(ListSecretsRequest.class)))
+        .thenReturn(ListSecretsResponse.builder().build());
+
+    // when
+    resolver.validateConnectivity();
+
+    // then — flat mode probes with ListSecrets and never GetSecretValue, so the startup check
+    // matches the API this mode actually resolves with
+    verify(client).listSecrets(any(ListSecretsRequest.class));
+    verifyNoMoreInteractions(client);
   }
 }

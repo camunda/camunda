@@ -10,6 +10,8 @@ package io.camunda.secretstore.aws;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -675,5 +677,34 @@ class AwsSecretsManagerSecretStoreTest {
 
     // when / then — value must be masked in toString
     assertThat(resolved.toString()).doesNotContain("super-secret");
+  }
+
+  // ---- startup connectivity probe: warns and continues (keeps the client) when the probe fails --
+
+  @Test
+  void shouldReturnAfterSuccessfulProbeWithoutClosingClient() {
+    // given
+    final var resolver = mock(AwsSecretResolver.class);
+
+    // when
+    AwsSecretsManagerSecretStore.validateConnectivity(client, resolver);
+
+    // then — the probe ran and the client stays open for the store to use
+    verify(resolver).validateConnectivity();
+    verify(client, times(0)).close();
+  }
+
+  @Test
+  void shouldWarnAndContinueWithoutClosingClientWhenProbeFails() {
+    // given
+    final var resolver = mock(AwsSecretResolver.class);
+    doThrow(SdkClientException.create("no route to host")).when(resolver).validateConnectivity();
+
+    // when — a failing startup probe must not fail fast
+    AwsSecretsManagerSecretStore.validateConnectivity(client, resolver);
+
+    // then — the client is kept open so the error surfaces on first real use instead
+    verify(resolver).validateConnectivity();
+    verify(client, times(0)).close();
   }
 }
