@@ -482,7 +482,7 @@ public final class RecoveryPartitionManager
       snapshotStore.getAvailableSnapshots().join();
       verifyRocksDbOpens(metadata.id(), snapshotStore, partitionDir);
     } finally {
-      snapshotStore.closeAsync();
+      snapshotStore.close();
     }
   }
 
