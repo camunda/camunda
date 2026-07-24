@@ -24,8 +24,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Blank values are treated as unset. When no field is set, the AWS SDK default credentials
  * provider chain is used, preserving the previous environment-based behavior. AWS configuration is
- * overridable per physical tenant via {@code camunda.physical-tenants.<id>.aws.*}; a tenant that
- * declares no {@code aws} block inherits the root block.
+ * overridable per physical tenant via {@code camunda.physical-tenants.<id>.provider-auth.aws.*}; a
+ * tenant that declares no {@code aws} block inherits the root block.
  */
 @NullMarked
 public class Aws {
