@@ -32,6 +32,17 @@
     <spring-boot-starter-camunda-sdk.sourcedir>${project.basedir}/../spring-boot-starter-camunda-sdk/src</spring-boot-starter-camunda-sdk.sourcedir>
   </properties>
 
+  <!-- jackson-databind 3.1.4 is a vulnerable transitive dep from Spring Boot's BOM; pinning directly here is the only way to override it. -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>tools.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>3.1.5</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <!-- Base Spring Boot starter - will be shaded -->
     <dependency>

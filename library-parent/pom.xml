@@ -28,6 +28,11 @@
     Spring Boot version from the parent pom.xml, which is the reference for internal modules.
     This allows decoupled control of the Spring Boot version for this user facing artifact. -->
     <version.spring-boot>3.4.13</version.spring-boot>
+    <!-- Spring Framework 6.x is required for Spring Boot 3.x. Pinned explicitly for the same
+    reason as version.spring-boot above: the parent pom.xml value can be a HeroDevs NES patch
+    version that only resolves from Camunda's internal Nexus, which would break customer builds
+    resolving this user facing artifact from Maven Central. -->
+    <version.spring>6.2.19</version.spring>
   </properties>
 
   <profiles>
