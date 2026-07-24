@@ -48,5 +48,33 @@ class GcpSecretManagerStoreConfigTest {
     assertThat(config.pathPrefix()).isEqualTo("camunda-");
     assertThat(config.endpoint()).isNull();
     assertThat(config.containerSecretId()).isNull();
+    assertThat(config.withoutAuthentication()).isFalse();
+  }
+
+  @Test
+  void shouldRejectDisabledAuthenticationWithoutEndpoint() {
+    // when / then — no-auth mode is emulator-only and meaningless without a local endpoint
+    assertThatThrownBy(() -> new GcpSecretManagerStoreConfig("my-project", null, null, null, true))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("endpoint");
+  }
+
+  @Test
+  void shouldRejectDisabledAuthenticationWithBlankEndpoint() {
+    // when / then
+    assertThatThrownBy(() -> new GcpSecretManagerStoreConfig("my-project", null, " ", null, true))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("endpoint");
+  }
+
+  @Test
+  void shouldAllowDisabledAuthenticationWithEndpoint() {
+    // when
+    final var config =
+        new GcpSecretManagerStoreConfig("my-project", null, "localhost:9090", null, true);
+
+    // then
+    assertThat(config.withoutAuthentication()).isTrue();
+    assertThat(config.endpoint()).isEqualTo("localhost:9090");
   }
 }
