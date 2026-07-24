@@ -234,6 +234,7 @@ class DataExportersTest {
         // (on the classpath via camunda-exporter) claiming "io.camunda.exporter.CamundaExporter".
         "camunda.data.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter",
         "camunda.data.exporters.camundaexporter.args.connect.cluster-name=my-custom-cluster",
+        "camunda.data.secondary-storage.elasticsearch.create-schema=true",
       })
   class WithCamundaExporterAutoconfigAndUnifiedOverride {
     final BrokerBasedProperties brokerCfg;
@@ -259,6 +260,9 @@ class DataExportersTest {
       assertThat(connect)
           .containsEntry("clustername", "my-custom-cluster") // unified (overlay) wins
           .containsEntry("type", "elasticsearch"); // autoconfig-derived key survives the merge
+      assertThat(
+              UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args).isCreateSchema())
+          .isTrue();
     }
   }
 

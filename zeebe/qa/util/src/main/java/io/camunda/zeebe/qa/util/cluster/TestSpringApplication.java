@@ -34,7 +34,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -305,12 +304,13 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   public T withCreateSchema(final boolean createSchema) {
-    return withUnifiedConfig(
-        cfg ->
-            Stream.of(
-                    cfg.getData().getSecondaryStorage().getElasticsearch(),
-                    cfg.getData().getSecondaryStorage().getOpensearch())
-                .forEach(storage -> storage.setCreateSchema(createSchema)));
+    withUnifiedConfig(
+        cfg -> {
+          cfg.getData().getSecondaryStorage().getElasticsearch().setCreateSchema(createSchema);
+          cfg.getData().getSecondaryStorage().getOpensearch().setCreateSchema(createSchema);
+        });
+    withProperty("camunda.data.secondary-storage.elasticsearch.create-schema", createSchema);
+    return withProperty("camunda.data.secondary-storage.opensearch.create-schema", createSchema);
   }
 
   /**
