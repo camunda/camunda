@@ -53,6 +53,7 @@ const permissionTypeSchema = z.enum([
 	'SUSPEND_PROCESS_INSTANCE',
 	'CLAIM_USER_TASK',
 	'COMPLETE_USER_TASK',
+	'REVEAL',
 ]);
 type PermissionType = z.infer<typeof permissionTypeSchema>;
 
@@ -73,6 +74,7 @@ const resourceTypeSchema = z.enum([
 	'PROCESS_DEFINITION',
 	'RESOURCE',
 	'ROLE',
+	'SECRET',
 	'SYSTEM',
 	'TENANT',
 	'USER',
