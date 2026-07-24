@@ -432,7 +432,7 @@ Benchmark clusters have authentication enabled. Logging into Operate, Tasklist a
 
 ```sh
 kubectl -n <namespace> port-forward svc/camunda 8080:8080 &
-kubectl -n keycloak-operator port-forward svc/<namespace> 18080:8080 &
+kubectl -n keycloak-operator port-forward svc/<namespace> 18080:18080 &
 wait
 ```
 
@@ -486,11 +486,11 @@ make clean
 
 This uninstalls the Helm releases (Camunda Platform + load test + Elasticsearch exporter + load-test-setup), removes any secondary-storage chart/PVCs, and finally `kubectl delete namespace --ignore-not-found --wait` to drop the namespace itself. The namespace delete waits for finalization (can take a few minutes for a full load test) so that an immediate `make install` afterwards doesn't race a still-terminating namespace.
 
-`make clean`'s `helm uninstall` also cleans up the Keycloak CR and its Secrets, which live in the
-shared `keycloak-operator` namespace rather than this one — this only works because it goes through
-Helm. If you ever delete a load test namespace by hand (`kubectl delete namespace` directly, without
-`make clean`), you must also delete those separately, or they leak forever — see
-[Cleanup in the load test setup chart README](charts/load-test-setup/README.md#cleanup).
+`make clean` also explicitly deletes the Keycloak resources `keycloak-operator` namespace since they
+don't live in the namespace being torn down.
+If you ever delete a load test namespace by hand (`kubectl delete namespace` directly, without `make
+clean`), you must also delete those separately, or they leak forever — see [Cleanup in the load test
+setup chart README](charts/load-test-setup/README.md#cleanup).
 
 The local namespace folder is left in place — keep it if you may want to recreate the namespace later (`make install` will reinstall the load-test-setup chart, which recreates the namespace and credentials secret), or `rm -rf c8-my-load-test-name` from `load-tests/setup/` if you're truly done.
 

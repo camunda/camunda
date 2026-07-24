@@ -11,7 +11,7 @@ Keycloak is deployed using the [Keycloak Operator](https://www.keycloak.org/guid
 > watches and manages the resources deployed in its own namespace, instead of watching resources in
 > all the namespaces and deploying them in the same namespace as the original custom resource.
 
-This Helm Chart has to do additional to support multiple namespaces:
+This Helm Chart has to do additional work to support multiple namespaces:
 1. the namespace in which the load test is created
 2. the `keycloak-operator` namespace, in which the Keycloak Operator is deployed, and manages Keycloak resources.
 
@@ -35,7 +35,7 @@ Keycloak requires:
 to create the Keycloak PostgreSQL user inside the database.
 2. Its own "admin" credentials, which are also used by Identity to provision Keycloak.
 
-Each of these Secrets are duplicated into the oad test namespace and the `keycloak-operator`
+Each of these Secrets are duplicated into the load test namespace and the `keycloak-operator`
 namespaces.
 
 ##### Naming Collisions
@@ -69,9 +69,9 @@ specifically so they can be found and deleted together.
 
 Either use:
 
-* `helm uninstall` (through a load-test `make clean` command): this deletes every resource Helm
-  tracked as part of the release regardless of namespace, and correctly removes the Keycloak CR and
-  the other resources.
+* A load-test `make clean` command: this explicitly deletes the Keycloak CR and Secrets from the
+  `keycloak-operator` namespace before tearing down the load test namespace (see the `clean` target
+  in `common.mk`).
 * Delete the resources from the `keycloak-operator` namespace by targetting the specific `namespace`
   label with:
 
@@ -80,7 +80,7 @@ Either use:
   ```
 
 > [!NOTE]
-> These `keycloak-operator`namespace resources are also cleaned up by the various cleanup script
+> These `keycloak-operator` namespace resources are also cleaned up by the various cleanup scripts
 > from this repository.
 
 If you add a new raw (non-Helm) namespace-deletion path, remember to add the same
