@@ -26,7 +26,8 @@ public final class SecretReferenceProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_COMPLETE,
-        new SecretReferenceResolutionCompleteProcessor());
+        new SecretReferenceResolutionCompleteProcessor(
+            writers, keyGenerator, processingState.getSecretReferenceState()));
     typedRecordProcessors.onCommand(
         ValueType.SECRET_REFERENCE,
         SecretReferenceIntent.RESOLUTION_FAIL,

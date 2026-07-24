@@ -122,6 +122,15 @@ public final class DbSecretReferenceState implements MutableSecretReferenceState
     pendingSecretReferencesColumnFamily.upsert(storeIdAndSecretReference, DbNil.INSTANCE);
   }
 
+  /**
+   * Removes the pending marker for a resolved secret reference. This intentionally leaves any
+   * {@link #waitingJobsByJobKeyColumnFamily} / {@link #waitingJobsBySecretRefColumnFamily} rows for
+   * this reference in place, even though they declare a {@link DbForeignKey} to this column family:
+   * those rows are drained by the batch reactivation chain committed atomically with the
+   * RESOLUTION_COMPLETED event. The resulting dangling window is safe because foreign key checks
+   * only run on insert/upsert of the referencing row, never on delete of the referenced row, so it
+   * is never re-validated for jobs that were already waiting when the reference resolved.
+   */
   @Override
   public void removePendingSecretReference(final String storeId, final String secretReference) {
     this.storeId.wrapString(storeId);
