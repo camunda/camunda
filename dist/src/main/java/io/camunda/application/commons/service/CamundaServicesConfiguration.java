@@ -9,6 +9,7 @@ package io.camunda.application.commons.service;
 
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.document.CamundaDocumentStoreConfigurationLoader;
+import io.camunda.application.commons.security.PhysicalTenantAuthorizationCheckers;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.physicaltenants.PhysicalTenantResolver;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
@@ -65,6 +66,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -116,6 +118,7 @@ public class CamundaServicesConfiguration {
       final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
       final SearchClientsProxy searchClients,
       final AuthorizationChecker authorizationChecker,
+      final Optional<PhysicalTenantAuthorizationCheckers> physicalTenantAuthorizationCheckers,
       final CamundaSecurityLibraryProperties cslProperties,
       final GatewayRestConfiguration gatewayRestConfiguration,
       final BrokerTopologyManager brokerTopologyManager,
@@ -136,6 +139,17 @@ public class CamundaServicesConfiguration {
         .forEach(
             (tenantId, tenantConfig) -> {
               final var search = searchClients.withPhysicalTenant(tenantId);
+
+              // Per-tenant AuthorizationChecker for services that query it directly (bypassing
+              // ResourceAccessController), e.g. DocumentServices/SecretServices. Falls back to the
+              // shared, default-tenant-pinned bean only when secondary storage is disabled
+              // (SecondaryStorageType.none) and no PhysicalTenantAuthorizationCheckers bean exists
+              // at all -- in that mode there is exactly one (Noop) authorization source
+              // cluster-wide, so sharing it is correct.
+              final var tenantAuthorizationChecker =
+                  physicalTenantAuthorizationCheckers
+                      .map(checkers -> checkers.checkersByPhysicalTenant().get(tenantId))
+                      .orElse(authorizationChecker);
 
               // -- per-tenant BrokerRequestAuthorizationConverter --
               final var tenantSecurity = tenantConfig.getSecurity();
@@ -313,7 +327,7 @@ public class CamundaServicesConfiguration {
                           securityContextProvider,
                           new SimpleDocumentStoreRegistry(
                               new CamundaDocumentStoreConfigurationLoader(tenantConfig)),
-                          authorizationChecker,
+                          tenantAuthorizationChecker,
                           cslProperties.getAuthorizations(),
                           executor,
                           converter))
@@ -409,7 +423,7 @@ public class CamundaServicesConfiguration {
                           tenantId,
                           brokerClient,
                           securityContextProvider,
-                          authorizationChecker,
+                          tenantAuthorizationChecker,
                           cslProperties.getAuthorizations(),
                           executor,
                           converter))
