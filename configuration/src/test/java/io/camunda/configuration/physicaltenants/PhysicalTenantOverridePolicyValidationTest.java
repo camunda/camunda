@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.physicaltenants;
 
+import static io.camunda.spring.utils.PhysicalTenantConfigUtil.MAX_TENANT_ID_LENGTH;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -24,6 +25,19 @@ class PhysicalTenantOverridePolicyValidationTest {
     final MockEnvironment environment = new MockEnvironment();
     environment.getPropertySources().addFirst(new MapPropertySource("test", properties));
     return environment;
+  }
+
+  @Test
+  void shouldRejectTenantIdExceeding64Characters() {
+    // given a tenant id one character over the shared length limit
+    final String tooLong = "a".repeat(MAX_TENANT_ID_LENGTH + 1);
+    final MockEnvironment environment =
+        environmentWith(Map.of("camunda.physical-tenants." + tooLong + ".cluster.size", 4));
+
+    // when / then
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(() -> PhysicalTenantOverridePolicyValidation.validate(environment))
+        .withMessageContaining("Invalid physical tenant id");
   }
 
   @Test
