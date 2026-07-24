@@ -106,7 +106,7 @@ public final class GcpSecretManagerSecretStore implements SecretStore {
    * project/credentials/endpoint/network) to surface on the first real {@link #resolve} or {@link
    * #list} call.
    */
-  private static void validateConnectivity(
+  static void validateConnectivity(
       final SecretManagerServiceClient client, final String projectId) {
     try {
       // page size 1: we only need the RPC to round-trip, not the contents

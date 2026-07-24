@@ -8,8 +8,10 @@
 package io.camunda.secretstore.gcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -20,6 +22,7 @@ import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.StatusCode;
 import com.google.api.gax.rpc.StatusCode.Code;
 import com.google.cloud.secretmanager.v1.AccessSecretVersionResponse;
+import com.google.cloud.secretmanager.v1.ListSecretsRequest;
 import com.google.cloud.secretmanager.v1.ProjectName;
 import com.google.cloud.secretmanager.v1.Secret;
 import com.google.cloud.secretmanager.v1.SecretManagerServiceClient;
@@ -194,6 +197,19 @@ class GcpSecretManagerSecretStoreTest {
 
     // then — only prefixed secrets, with the prefix stripped
     assertThat(refs).containsExactlyInAnyOrder("db", "api");
+  }
+
+  @Test
+  void shouldSkipSecretWhoseIdEqualsPrefixWhenListing() {
+    // given — a secret named exactly like the prefix yields an empty logical name
+    final var store = new GcpSecretManagerSecretStore(client, PROJECT, "camunda-");
+    mockListSecrets("camunda-db", "camunda-");
+
+    // when
+    final var refs = store.list();
+
+    // then — the prefix-only secret is skipped, not returned as an empty ref
+    assertThat(refs).containsExactly("db");
   }
 
   @Test
@@ -375,6 +391,92 @@ class GcpSecretManagerSecretStoreTest {
     final var captor = ArgumentCaptor.forClass(SecretVersionName.class);
     verify(client).accessSecretVersion(captor.capture());
     assertThat(captor.getValue().getSecret()).isEqualTo("token");
+  }
+
+  @Test
+  void shouldFailAllKeysWithClassifiedCodeWhenContainerFetchThrowsApiException() {
+    // given — container mode; the access call itself fails with an API error
+    final var store = new GcpSecretManagerSecretStore(client, PROJECT, "", "app-config");
+    when(client.accessSecretVersion(any(SecretVersionName.class)))
+        .thenThrow(apiException(Code.PERMISSION_DENIED));
+
+    // when
+    final var result = store.resolve(Set.of("A", "B"));
+
+    // then — every requested key fails with the classified code
+    assertThat(((Failed) result.get("A")).code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
+    assertThat(((Failed) result.get("B")).code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
+  }
+
+  @Test
+  void shouldThrowUnavailableWhenContainerResolveFetchThrowsRuntimeException() {
+    // given — container mode; a non-API runtime failure during resolve is store-wide
+    final var store = new GcpSecretManagerSecretStore(client, PROJECT, "", "app-config");
+    when(client.accessSecretVersion(any(SecretVersionName.class)))
+        .thenThrow(new RuntimeException("boom"));
+
+    // when / then
+    assertThatThrownBy(() -> store.resolve(Set.of("A")))
+        .isInstanceOf(SecretStoreUnavailableException.class);
+  }
+
+  @Test
+  void shouldThrowUnavailableWhenContainerListIsNotValidJson() {
+    // given — container mode; list() over a syntactically invalid container
+    final var store = new GcpSecretManagerSecretStore(client, PROJECT, "", "app-config");
+    when(client.accessSecretVersion(any(SecretVersionName.class))).thenReturn(response("not json"));
+
+    // when / then
+    assertThatThrownBy(store::list).isInstanceOf(SecretStoreUnavailableException.class);
+  }
+
+  @Test
+  void shouldThrowUnavailableWhenContainerListFetchThrowsRuntimeException() {
+    // given — container mode; a non-API runtime failure during list is store-wide
+    final var store = new GcpSecretManagerSecretStore(client, PROJECT, "", "app-config");
+    when(client.accessSecretVersion(any(SecretVersionName.class)))
+        .thenThrow(new RuntimeException("boom"));
+
+    // when / then
+    assertThatThrownBy(store::list).isInstanceOf(SecretStoreUnavailableException.class);
+  }
+
+  // ---- startup connectivity validation ----
+
+  @Test
+  void shouldPassConnectivityValidationWhenListSecretsSucceeds() {
+    // given — a minimal list call round-trips successfully
+    when(client.listSecrets(any(ListSecretsRequest.class)))
+        .thenReturn(mock(ListSecretsPagedResponse.class, RETURNS_DEEP_STUBS));
+
+    // when / then — validation passes and does not close the client
+    assertThatCode(() -> GcpSecretManagerSecretStore.validateConnectivity(client, PROJECT))
+        .doesNotThrowAnyException();
+    verify(client, times(0)).close();
+  }
+
+  @Test
+  void shouldFailConnectivityValidationAndCloseClientWhenListSecretsFails() {
+    // given — the minimal list call fails
+    when(client.listSecrets(any(ListSecretsRequest.class)))
+        .thenThrow(apiException(Code.UNAVAILABLE));
+
+    // when / then — validation fails store-wide and releases the client
+    assertThatThrownBy(() -> GcpSecretManagerSecretStore.validateConnectivity(client, PROJECT))
+        .isInstanceOf(SecretStoreUnavailableException.class);
+    verify(client).close();
+  }
+
+  @Test
+  void shouldFailFastFromConfigWhenClientCannotBeInitialisedOrReached() {
+    // given — a bogus endpoint: with no ambient credentials the client cannot be built, and even
+    // if credentials exist the connectivity probe cannot reach it. Either path must surface a
+    // store-unavailable failure at startup rather than defer it to the first resolve.
+    final var config = new GcpSecretManagerStoreConfig(PROJECT, "camunda-", "localhost:1", null);
+
+    // when / then
+    assertThatThrownBy(() -> GcpSecretManagerSecretStore.fromConfig(config))
+        .isInstanceOf(SecretStoreUnavailableException.class);
   }
 
   private void mockListSecrets(final String... secretIds) {
