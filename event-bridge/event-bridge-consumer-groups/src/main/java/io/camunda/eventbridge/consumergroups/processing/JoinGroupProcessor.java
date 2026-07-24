@@ -23,15 +23,21 @@ import java.util.Map;
  * Handles the {@code JOIN_GROUP} command. Like every command processor here it always results in a
  * follow-up event (on success) or a rejection (on failure), then replies to the request.
  *
- * <p>A successful join is always a <em>new</em> member: it bumps the group epoch, sets the member
- * epoch to it, and appends a {@code MEMBER_JOINED} event. A static member whose {@code
- * group.instance.id} is already held by a live member is rejected upstream by {@link
- * CoordinationValidator#validateJoin} with {@code UNRELEASED_INSTANCE_ID} (the new joiner is
- * fenced); the incumbent's slot is freed only when it leaves or the eviction loop expires it. There
- * is therefore no idempotent "rejoin" path — and no no-op event.
+ * <p>A join is either a <em>normal</em> join (a fresh member id or a static instance id whose
+ * previous holder already left/was evicted) or, per {@link CoordinationValidator#validateJoin}'s
+ * classification, a static-membership <b>takeover</b> — the {@code group.instance.id} is already
+ * held by a live roster member. A normal join bumps the group epoch, sets the member epoch to it,
+ * and appends a {@code MEMBER_JOINED} event (a brand-new member). A takeover instead {@link
+ * #takeover appends} a {@code MEMBER_TAKEN_OVER} event that reuses the incumbent's memberId with a
+ * strictly higher memberEpoch and leaves the group untouched — no epoch bump, no rebalance; the
+ * incumbent's target/assigned partitions are inherited verbatim because the same row is kept, and
+ * every subsequent command presenting the incumbent's now-superseded (memberId, memberEpoch) is
+ * fenced by the existing epoch check ({@code CoordinationValidator#epochUpToDate}, and identically
+ * in the heartbeat handler) with no further change needed there.
  *
  * <p>The reply is {@code REBALANCE_IN_PROGRESS}: the member learns its assignment from the
- * subsequent heartbeats once the async assignor has computed a target.
+ * subsequent heartbeats once the async assignor has computed a target (unaffected by whether the
+ * assignor actually runs, which it does not for a takeover).
  */
 public final class JoinGroupProcessor implements TypedRecordProcessor<MembershipRecord> {
 
@@ -56,7 +62,37 @@ public final class JoinGroupProcessor implements TypedRecordProcessor<Membership
     validator
         .validateJoin(command.getValue())
         .ifRightOrLeft(
-            subscriptions -> join(command, subscriptions), rejection -> reject(command, rejection));
+            classification -> {
+              if (classification.isTakeover()) {
+                takeover(command, classification.takeoverOfMemberId());
+              } else {
+                join(command, classification.subscriptions());
+              }
+            },
+            rejection -> reject(command, rejection));
+  }
+
+  /**
+   * Replaces the incumbent's incarnation in place: the SAME memberId row is kept (only its
+   * memberEpoch changes), so its target/assigned partitions are inherited verbatim with no extra
+   * code, the group's epoch/state/rebalance-due bookkeeping is untouched (no rebalance), and the
+   * existing epoch-fencing check rejects the superseded incarnation's next command for free.
+   */
+  private void takeover(final TypedRecord<MembershipRecord> command, final String memberId) {
+    final var cmd = command.getValue();
+    final var groupId = cmd.getGroupId();
+    final var incumbent = state.getMember(groupId, memberId);
+    final var newMemberEpoch = incumbent.getMemberEpoch() + 1;
+    final var event =
+        new MembershipRecord()
+            .setGroupId(groupId)
+            .setMemberId(memberId)
+            .setInstanceId(cmd.getInstanceId())
+            .setMemberEpoch(newMemberEpoch);
+    writers
+        .state()
+        .appendFollowUpEvent(command.getKey(), CoordinatorIntent.MEMBER_TAKEN_OVER, event);
+    respondJoined(command, memberId, newMemberEpoch);
   }
 
   private void join(

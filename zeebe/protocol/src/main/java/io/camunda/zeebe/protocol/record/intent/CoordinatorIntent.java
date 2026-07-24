@@ -52,7 +52,16 @@ public enum CoordinatorIntent implements Intent {
   /** Command: reclaim an empty group after its retention elapses (EVENT_BRIDGE_MEMBERSHIP). */
   DELETE_GROUP((short) 10, false),
   /** Event: an empty group (and its offsets) has been removed. */
-  GROUP_DELETED((short) 11, true);
+  GROUP_DELETED((short) 11, true),
+  /**
+   * Event: a static member's slot was taken over by a fresh incarnation (a {@code JOIN_GROUP} whose
+   * {@code group.instance.id} matched a live roster member) — its memberId is reused, its
+   * memberEpoch strictly increased, and its target/assigned partitions are otherwise untouched; no
+   * {@code JOIN_GROUP}-triggered rebalance (group/assignment epoch unchanged). Rides {@code
+   * EVENT_BRIDGE_MEMBERSHIP} like {@code MEMBER_JOINED}; there is no dedicated command intent — the
+   * takeover is a processor-side classification of an ordinary {@code JOIN_GROUP}.
+   */
+  MEMBER_TAKEN_OVER((short) 12, true);
 
   private final short value;
   private final boolean isEvent;
@@ -88,6 +97,8 @@ public enum CoordinatorIntent implements Intent {
         return DELETE_GROUP;
       case 11:
         return GROUP_DELETED;
+      case 12:
+        return MEMBER_TAKEN_OVER;
       default:
         return Intent.UNKNOWN;
     }

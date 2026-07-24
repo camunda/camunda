@@ -31,6 +31,7 @@ import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedAppli
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberReconciledApplier;
+import io.camunda.eventbridge.consumergroups.state.appliers.MemberTakenOverApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
 import io.camunda.eventbridge.consumergroups.state.group.ConsumerGroupQueryService;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
@@ -171,6 +172,8 @@ public final class CoordinatorStream extends ReplicatedStream<EventBridgeColumnF
                 .withEventApplier(
                     CoordinatorIntent.MEMBER_JOINED, new MemberJoinedApplier(groupState))
                 .withEventApplier(CoordinatorIntent.MEMBER_LEFT, new MemberLeftApplier(groupState))
+                .withEventApplier(
+                    CoordinatorIntent.MEMBER_TAKEN_OVER, new MemberTakenOverApplier(groupState))
                 .withEventApplier(
                     CoordinatorIntent.MEMBER_RECONCILED, new MemberReconciledApplier(groupState))
                 .withEventApplier(

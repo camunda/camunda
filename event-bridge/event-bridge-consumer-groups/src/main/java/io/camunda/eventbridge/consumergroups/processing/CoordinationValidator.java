@@ -43,27 +43,29 @@ public final class CoordinationValidator {
    * A join needs a valid group id; a subscribed topic that this leader's registry view knows and
    * can serve (resolved <em>here</em>, at processing time, against the leader that produces the
    * durable event — not trusted from a value the requesting broker stamped, which a failover could
-   * leave a new leader rubber-stamping for a topic it has never observed); a topic that matches the
-   * one the group is already bound to (a group serves exactly one topic); and — for a static member
-   * — an instance id that is not already held by a live member. A duplicate {@code
-   * group.instance.id} fences the <em>new</em> joiner: the incumbent keeps the identity until it
-   * leaves or its session expires (the eviction loop then frees the slot). A new member id is
-   * minted by the processor.
+   * leave a new leader rubber-stamping for a topic it has never observed); and a topic that matches
+   * the one the group is already bound to (a group serves exactly one topic). There is no rejection
+   * left for a static member's instance id: a fresh or released one is a normal join, and one still
+   * held by a live roster member is a static-membership <b>takeover</b> — the processor replaces
+   * the incumbent's incarnation rather than fencing the new joiner (see {@link
+   * JoinGroupProcessor}).
    *
-   * <p>On success it yields the resolved subscription ({@code topic → partitionCount}), which the
-   * processor stamps onto the {@code MEMBER_JOINED} event.
+   * <p>On success it yields a {@link JoinClassification}: the resolved subscription ({@code topic →
+   * partitionCount}) every join carries, plus — only for a takeover — the memberId being taken
+   * over.
    */
-  public Either<Rejection, Map<String, Integer>> validateJoin(final MembershipRecord command) {
+  public Either<Rejection, JoinClassification> validateJoin(final MembershipRecord command) {
     return groupIdPresent(command.getGroupId())
         .flatMap(ok -> topicsServable(command.getTopics()))
         .flatMap(
             subscriptions ->
                 subscriptionMatchesGroup(command.getGroupId(), subscriptions.keySet())
                     .map(ok -> subscriptions))
-        .flatMap(
+        .map(
             subscriptions ->
-                instanceIdAvailable(command.getGroupId(), command.getInstanceId())
-                    .map(ok -> subscriptions));
+                new JoinClassification(
+                    subscriptions,
+                    state.findMemberByInstanceId(command.getGroupId(), command.getInstanceId())));
   }
 
   /** A leave must reference an existing member presenting a current epoch. */
@@ -82,22 +84,6 @@ public final class CoordinationValidator {
             member ->
                 ownsPartition(member, command.getTopic(), command.getPartitionId())
                     .map(ok -> member));
-  }
-
-  private Either<Rejection, Void> instanceIdAvailable(
-      final String groupId, final String instanceId) {
-    if (instanceId == null) {
-      return VALID; // dynamic member — no instance id to contend for
-    }
-    final var holder = state.findMemberByInstanceId(groupId, instanceId);
-    if (holder != null) {
-      return Either.left(
-          new Rejection(
-              CoordinationErrorCode.UNRELEASED_INSTANCE_ID,
-              "instance id '%s' is still in use by member '%s' in group '%s'; it must leave first"
-                  .formatted(instanceId, holder, groupId)));
-    }
-    return VALID;
   }
 
   private Either<Rejection, Map<String, Integer>> topicsServable(final List<String> topics) {

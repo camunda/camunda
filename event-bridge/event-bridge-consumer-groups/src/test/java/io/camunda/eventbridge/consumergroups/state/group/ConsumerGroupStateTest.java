@@ -19,6 +19,7 @@ import io.camunda.eventbridge.consumergroups.state.appliers.GroupDeletedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
+import io.camunda.eventbridge.consumergroups.state.appliers.MemberTakenOverApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
 import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
@@ -130,17 +131,19 @@ final class ConsumerGroupStateTest {
   }
 
   @Test
-  void shouldFenceDuplicateStaticInstanceIdOnJoin() {
+  void shouldClassifyAJoinForALiveInstanceIdAsATakeover() {
     // given — a static member already holds an instance id
     memberJoined.applyState(1, join("g", "m1", "instance-a", 1, 1, 4));
     final var validator = new CoordinationValidator(state, TOPIC_REGISTRY);
 
-    // then — a second join for that instance id is fenced (KIP-848 fences the new joiner)
-    assertThat(validator.validateJoin(join("g", "m2", "instance-a", 0, 0, 4)).getLeft().code())
-        .isEqualTo(CoordinationErrorCode.UNRELEASED_INSTANCE_ID);
-    // but a dynamic join (no instance id) and a join for a free instance id are allowed
-    assertThat(validator.validateJoin(join("g", "m2", null, 0, 0, 4)).isRight()).isTrue();
-    assertThat(validator.validateJoin(join("g", "m2", "instance-b", 0, 0, 4)).isRight()).isTrue();
+    // then — a second join for that instance id is classified as a takeover of "m1" (not fenced)
+    final var classification = validator.validateJoin(join("g", "m2", "instance-a", 0, 0, 4)).get();
+    assertThat(classification.isTakeover()).isTrue();
+    assertThat(classification.takeoverOfMemberId()).isEqualTo("m1");
+    // but a dynamic join (no instance id) and a join for a free instance id are normal joins
+    assertThat(validator.validateJoin(join("g", "m2", null, 0, 0, 4)).get().isTakeover()).isFalse();
+    assertThat(validator.validateJoin(join("g", "m2", "instance-b", 0, 0, 4)).get().isTakeover())
+        .isFalse();
   }
 
   @Test
@@ -259,6 +262,36 @@ final class ConsumerGroupStateTest {
     assertThat(state.getGroup("g").getEmptySince()).isZero();
     assertThat(groupIds(state.emptyGroups())).isEmpty();
     assertThat(groupIds(state.rebalancesDueBy(REBALANCE_DUE))).containsExactly("g");
+  }
+
+  @Test
+  void shouldApplyTakeoverInPlaceKeepingMemberIdAndInheritingAssignmentVerbatim() {
+    // given — a static member with a committed target
+    memberJoined.applyState(1, join("g", "m1", "instance-a", 1, 1, 4));
+    groupRebalanced.applyState(2, rebalance("g", 1, Map.of("m1", List.of(1, 2, 3, 4))));
+    final var memberTakenOver = new MemberTakenOverApplier(state);
+
+    // when — a takeover event applies (the memberId is reused, only the epoch differs)
+    memberTakenOver.applyState(3, takenOver("g", "m1", "instance-a", 2));
+
+    // then — the SAME row: memberId unchanged, epoch advanced, instanceId/assignment untouched
+    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m1");
+    assertThat(state.getMember("g", "m1").getMemberEpoch()).isEqualTo(2);
+    assertThat(state.getMember("g", "m1").getInstanceId()).isEqualTo("instance-a");
+    assertThat(state.getMember("g", "m1").getTargetPartitions())
+        .containsExactly(tp(1), tp(2), tp(3), tp(4));
+    // and the group row is completely untouched: no epoch bump, no lifecycle change
+    assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(1);
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.RECONCILING);
+
+    // determinism (invariant 5): replaying the same event sequence on a fresh replica (its own
+    // state view, no mirror) reconstructs the identical roster, epoch, and assignment
+    final var recovered = new DbConsumerGroupState(db, db.createContext());
+    final var snapshot = recovered.groupSnapshot("g");
+    assertThat(snapshot.members().get("m1").memberEpoch()).isEqualTo(2);
+    assertThat(snapshot.members().get("m1").instanceId()).isEqualTo("instance-a");
+    assertThat(snapshot.members().get("m1").targetPartitions())
+        .containsExactly(tp(1), tp(2), tp(3), tp(4));
   }
 
   @Test
@@ -383,6 +416,16 @@ final class ConsumerGroupStateTest {
         .setState(GroupLifecycle.PREPARING_REBALANCE)
         .setEmptySince(0L)
         .setRebalanceDueAt(REBALANCE_DUE);
+  }
+
+  /** The {@code MEMBER_TAKEN_OVER} event: only groupId/memberId/instanceId/memberEpoch matter. */
+  private static MembershipRecord takenOver(
+      final String group, final String member, final String instanceId, final long memberEpoch) {
+    return new MembershipRecord()
+        .setGroupId(group)
+        .setMemberId(member)
+        .setInstanceId(instanceId)
+        .setMemberEpoch(memberEpoch);
   }
 
   private static MembershipRecord leave(final String group, final String member, final long epoch) {

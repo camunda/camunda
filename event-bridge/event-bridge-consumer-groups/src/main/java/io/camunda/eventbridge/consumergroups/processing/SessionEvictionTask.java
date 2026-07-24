@@ -8,6 +8,7 @@
 package io.camunda.eventbridge.consumergroups.processing;
 
 import io.camunda.eventbridge.consumergroups.record.MembershipRecord;
+import io.camunda.eventbridge.consumergroups.session.GroupLiveness;
 import io.camunda.eventbridge.consumergroups.session.MemberLivenessMirror;
 import io.camunda.eventbridge.consumergroups.state.immutable.ConsumerGroupState;
 import io.camunda.zeebe.protocol.record.intent.CoordinatorIntent;
@@ -55,6 +56,19 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
    */
   private final Map<String, Instant> unseenSince = new HashMap<>();
 
+  /**
+   * The last replicated memberEpoch observed for each roster member (keyed {@code group#member}). A
+   * member's epoch only ever advances again, on an already-known memberId, via a static-membership
+   * takeover — so an increase since the last tick means this tick's liveness entry (if any) still
+   * belongs to the superseded incarnation. Excluding such an entry from {@link
+   * GroupLiveness#membersToEvict} for this tick is what keeps a just-taken-over member from being
+   * evicted for its predecessor's staleness (invariant 3): it is treated exactly like a freshly
+   * joined member — unseen, subject to the same grace — instead of blamed for a heartbeat it never
+   * sent. Task-local like {@link #unseenSince}; dropped together with the other ephemeral state
+   * when the node stops leading.
+   */
+  private final Map<String, Long> lastObservedMemberEpoch = new HashMap<>();
+
   public SessionEvictionTask(
       final Duration interval,
       final Duration sessionTimeout,
@@ -80,18 +94,21 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
   public void onClose() {
     liveness.clear();
     unseenSince.clear();
+    lastObservedMemberEpoch.clear();
   }
 
   @Override
   public void onFailed() {
     liveness.clear();
     unseenSince.clear();
+    lastObservedMemberEpoch.clear();
   }
 
   @Override
   public void onPaused() {
     liveness.clear();
     unseenSince.clear();
+    lastObservedMemberEpoch.clear();
   }
 
   @Override
@@ -99,6 +116,7 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
     final var now = clock.instant();
     final var liveGroups = new HashSet<String>();
     final var currentlyUnseen = new HashSet<String>();
+    final var currentMembers = new HashSet<String>();
 
     for (final var groupId : liveness.groupIds()) {
       final var group = state.groupSnapshot(groupId);
@@ -106,12 +124,33 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
         continue;
       }
       liveGroups.add(group.groupId());
-      final var groupLiveness = liveness.get(group.groupId());
-      if (groupLiveness == null) {
+      final var publishedLiveness = liveness.get(group.groupId());
+      if (publishedLiveness == null) {
         continue;
       }
-      // Record when a roster member without liveness was first observed — the grace baseline for
-      // the stalled-rebalance eviction of members that never heartbeated on this leader.
+
+      // A static-membership takeover reuses the incumbent's memberId, so its liveness entry (if
+      // any) still reflects the superseded incarnation until the successor's first heartbeat
+      // overwrites it. Detect that by tracking each member's last-observed replicated epoch: an
+      // increase since the previous tick can only be a takeover (nothing else ever advances an
+      // existing member's epoch), so strip that entry from this tick's view — the loops below then
+      // treat the member as unseen (freshly-joined grace), never as "went silent" (invariant 3).
+      final var effectiveMembers = new HashMap<>(publishedLiveness.members());
+      for (final var memberId : group.members().keySet()) {
+        final var key = unseenKey(group.groupId(), memberId);
+        currentMembers.add(key);
+        final var currentEpoch = group.members().get(memberId).memberEpoch();
+        final var previousEpoch = lastObservedMemberEpoch.put(key, currentEpoch);
+        if (previousEpoch != null && previousEpoch < currentEpoch) {
+          effectiveMembers.remove(memberId);
+        }
+      }
+      final var groupLiveness =
+          new GroupLiveness(publishedLiveness.rebalanceStartedAt(), effectiveMembers);
+
+      // Record when a roster member without (current-incarnation) liveness was first observed —
+      // the grace baseline for the stalled-rebalance eviction of members that never heartbeated on
+      // this leader, including a just-taken-over member that has not yet heartbeated either.
       for (final var memberId : group.members().keySet()) {
         if (!groupLiveness.members().containsKey(memberId)) {
           final var key = unseenKey(group.groupId(), memberId);
@@ -141,6 +180,7 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
 
     liveness.retain(liveGroups);
     unseenSince.keySet().retainAll(currentlyUnseen);
+    lastObservedMemberEpoch.keySet().retainAll(currentMembers);
     return taskResultBuilder.build();
   }
 

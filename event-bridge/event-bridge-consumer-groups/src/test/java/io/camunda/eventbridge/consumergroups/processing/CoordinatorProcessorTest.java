@@ -22,11 +22,13 @@ import io.camunda.eventbridge.consumergroups.state.appliers.GroupRebalancedAppli
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberJoinedApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberLeftApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.MemberReconciledApplier;
+import io.camunda.eventbridge.consumergroups.state.appliers.MemberTakenOverApplier;
 import io.camunda.eventbridge.consumergroups.state.appliers.OffsetCommittedApplier;
 import io.camunda.eventbridge.consumergroups.state.group.DbConsumerGroupState;
 import io.camunda.eventbridge.consumergroups.state.group.GroupLifecycle;
 import io.camunda.eventbridge.consumergroups.state.group.GroupSnapshot;
 import io.camunda.eventbridge.consumergroups.state.offset.DbOffsetState;
+import io.camunda.eventbridge.protocol.request.coordination.CoordinationErrorCode;
 import io.camunda.eventbridge.protocol.topic.TopicPartition;
 import io.camunda.eventbridge.stream.RecordProcessingEngine;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
@@ -70,6 +72,7 @@ final class CoordinatorProcessorTest {
   private DbConsumerGroupState state;
   private DbOffsetState offsetState;
   private RecordProcessingEngine engine;
+  private CoordinationValidator validator;
 
   @BeforeEach
   void setUp() {
@@ -83,7 +86,7 @@ final class CoordinatorProcessorTest {
     state = new DbConsumerGroupState(db, db.createContext());
     offsetState = new DbOffsetState(db, db.createContext());
 
-    final var validator = new CoordinationValidator(state, TOPIC_REGISTRY);
+    validator = new CoordinationValidator(state, TOPIC_REGISTRY);
     final var transitions = new TransitionValidator(state);
     engine =
         new RecordProcessingEngine(
@@ -118,6 +121,8 @@ final class CoordinatorProcessorTest {
                     .withEventApplier(
                         CoordinatorIntent.MEMBER_JOINED, new MemberJoinedApplier(state))
                     .withEventApplier(CoordinatorIntent.MEMBER_LEFT, new MemberLeftApplier(state))
+                    .withEventApplier(
+                        CoordinatorIntent.MEMBER_TAKEN_OVER, new MemberTakenOverApplier(state))
                     .withEventApplier(
                         CoordinatorIntent.MEMBER_RECONCILED, new MemberReconciledApplier(state))
                     .withEventApplier(
@@ -176,6 +181,185 @@ final class CoordinatorProcessorTest {
     assertThat(state.getGroup("g").getRebalanceDueAt()).isEqualTo(DEBOUNCE.toMillis());
     assertThat(groupIds(state.rebalancesDueBy(DEBOUNCE.toMillis() - 1))).isEmpty();
     assertThat(groupIds(state.rebalancesDueBy(DEBOUNCE.toMillis()))).containsExactly("g");
+  }
+
+  // --- static-membership takeover (task #24 item 2) ----------------------------------------------
+
+  @Test
+  void shouldTakeOverALiveStaticInstanceIdWithStrictlyHigherEpochAndVerbatimAssignment() {
+    // given — a static member joins and receives a target assignment
+    join("g", "m1", "inst-a", 0L);
+    rebalance("g", 1, Map.of("m1", List.of(1, 2, 3, 4)));
+    final var groupEpochBefore = state.getGroup("g").getGroupEpoch();
+    final var assignmentEpochBefore = state.getGroup("g").getAssignmentEpoch();
+    final var rebalanceDueAtBefore = state.getGroup("g").getRebalanceDueAt();
+    final var lifecycleBefore = state.getGroup("g").getState();
+    final var oldEpoch = state.getMember("g", "m1").getMemberEpoch();
+
+    // when — a fresh incarnation (a restart) joins with the SAME instance id
+    join("g", "restart-request-id", "inst-a", 1000L);
+
+    // then — the SAME memberId "m1" is kept (no new roster entry), its epoch strictly increased,
+    // its target is inherited verbatim, and the group is completely untouched (no rebalance: same
+    // groupEpoch/assignmentEpoch/rebalanceDueAt/lifecycle)
+    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m1");
+    assertThat(state.getMember("g", "m1").getMemberEpoch()).isGreaterThan(oldEpoch);
+    assertThat(state.getMember("g", "m1").getTargetPartitions())
+        .containsExactly(tp(1), tp(2), tp(3), tp(4));
+    assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(groupEpochBefore);
+    assertThat(state.getGroup("g").getAssignmentEpoch()).isEqualTo(assignmentEpochBefore);
+    assertThat(state.getGroup("g").getRebalanceDueAt()).isEqualTo(rebalanceDueAtBefore);
+    assertThat(state.getGroup("g").getState()).isEqualTo(lifecycleBefore);
+  }
+
+  @Test
+  void shouldFenceTheSupersededIncarnationsCommandsAfterTakeover() {
+    // given — m1 joins and is then taken over (its epoch strictly increases)
+    join("g", "m1", "inst-a", 0L);
+    final var oldEpoch = state.getMember("g", "m1").getMemberEpoch();
+    join("g", "restart-request-id", "inst-a", 1000L);
+    final var newEpoch = state.getMember("g", "m1").getMemberEpoch();
+    assertThat(newEpoch).isGreaterThan(oldEpoch);
+
+    // then — a heartbeat presenting the superseded epoch is fenced. There is no heartbeat command
+    // on this replicated stream (heartbeats are served off-actor by HeartbeatHandler, whose
+    // validateEpoch is byte-for-byte the same expected-vs-presented check CoordinationValidator
+    // applies here); exercising it via validateLeave — the closest command this harness can drive —
+    // proves the SAME memberId row (reused, not replaced) now reports FENCED_MEMBER_EPOCH for the
+    // old epoch instead of UNKNOWN_MEMBER_ID, with no change needed in HeartbeatHandler itself.
+    assertThat(
+            validator
+                .validateLeave(
+                    new MembershipRecord()
+                        .setGroupId("g")
+                        .setMemberId("m1")
+                        .setMemberEpoch(oldEpoch))
+                .getLeft()
+                .code())
+        .isEqualTo(CoordinationErrorCode.FENCED_MEMBER_EPOCH);
+
+    // and — an offset commit presenting the superseded epoch is fenced identically
+    assertThat(
+            validator
+                .validateCommit(
+                    new OffsetCommitRecord()
+                        .setGroupId("g")
+                        .setMemberId("m1")
+                        .setMemberEpoch(oldEpoch)
+                        .setTopic("t")
+                        .setPartitionId(1)
+                        .setOffset(5))
+                .getLeft()
+                .code())
+        .isEqualTo(CoordinationErrorCode.FENCED_MEMBER_EPOCH);
+
+    // while the NEW epoch is accepted
+    assertThat(
+            validator
+                .validateLeave(
+                    new MembershipRecord()
+                        .setGroupId("g")
+                        .setMemberId("m1")
+                        .setMemberEpoch(newEpoch))
+                .isRight())
+        .isTrue();
+  }
+
+  @Test
+  void shouldStrictlyIncreaseEpochAcrossTwoSuccessiveTakeoversAndFenceBothPriorIncarnations() {
+    // given — m1 joins, then is taken over twice in a row (double restart)
+    join("g", "m1", "inst-a", 0L);
+    final var epoch0 = state.getMember("g", "m1").getMemberEpoch();
+
+    join("g", "restart-1", "inst-a", 1000L);
+    final var epoch1 = state.getMember("g", "m1").getMemberEpoch();
+    assertThat(epoch1).isGreaterThan(epoch0);
+
+    join("g", "restart-2", "inst-a", 2000L);
+    final var epoch2 = state.getMember("g", "m1").getMemberEpoch();
+    assertThat(epoch2).isGreaterThan(epoch1);
+
+    // then — the roster still holds exactly one member, and BOTH prior incarnations are fenced
+    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m1");
+    assertThat(
+            validator
+                .validateLeave(
+                    new MembershipRecord().setGroupId("g").setMemberId("m1").setMemberEpoch(epoch0))
+                .getLeft()
+                .code())
+        .isEqualTo(CoordinationErrorCode.FENCED_MEMBER_EPOCH);
+    assertThat(
+            validator
+                .validateLeave(
+                    new MembershipRecord().setGroupId("g").setMemberId("m1").setMemberEpoch(epoch1))
+                .getLeft()
+                .code())
+        .isEqualTo(CoordinationErrorCode.FENCED_MEMBER_EPOCH);
+  }
+
+  @Test
+  void shouldInheritThePendingRebalanceStateAndNotRearmTheDebounceOnTakeoverWhilePreparing() {
+    // given — m1 joins (opens the debounce window at t=0), then a second (dynamic) member joins
+    // while it is still pending, keeping the group PREPARING_REBALANCE
+    join("g", "m1", "inst-a", 0L);
+    join("g", "m2", 500L);
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
+    final var dueAtBefore = state.getGroup("g").getRebalanceDueAt();
+
+    // when — m1 is taken over while the group is still PREPARING_REBALANCE
+    join("g", "restart-request-id", "inst-a", 1000L);
+
+    // then — the pending state and its deadline are inherited unmoved, not re-armed by the takeover
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
+    assertThat(state.getGroup("g").getRebalanceDueAt()).isEqualTo(dueAtBefore);
+    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m1", "m2");
+  }
+
+  @Test
+  void shouldInheritAnEmptyAssignmentOnTakeoverOfANeverAssignedMember() {
+    // given — m1 joins but is never rebalanced (owns nothing)
+    join("g", "m1", "inst-a", 0L);
+    assertThat(state.getMember("g", "m1").getTargetPartitions()).isEmpty();
+
+    // when — it is taken over before ever receiving a target
+    join("g", "restart-request-id", "inst-a", 500L);
+
+    // then — the inherited assignment is still exactly empty, and no rebalance was triggered
+    assertThat(state.getMember("g", "m1").getTargetPartitions()).isEmpty();
+    assertThat(state.getMember("g", "m1").getMemberEpoch()).isEqualTo(2);
+    assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldTreatAJoinForAReleasedInstanceIdAsANormalJoinNotATakeover() {
+    // given — m1 holds "inst-a", then leaves (the group empties, releasing the instance id)
+    join("g", "m1", "inst-a", 0L);
+    leave("g", "m1", 1, 500L);
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.EMPTY);
+
+    // when — a new member joins with the SAME (now-released) instance id
+    join("g", "m2", "inst-a", 1000L);
+
+    // then — this is a NORMAL join: a fresh member "m2" (not "m1"), with the usual epoch bump and
+    // rebalance — the boundary between takeover and fresh join
+    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m2");
+    assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(3);
+    assertThat(state.getGroup("g").getState()).isEqualTo(GroupLifecycle.PREPARING_REBALANCE);
+    assertThat(state.getMember("g", "m2").getMemberEpoch()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldTreatADynamicJoinAsANormalJoinRegardlessOfAnyExistingStaticMember() {
+    // given — a static member already holds an instance id
+    join("g", "m1", "inst-a", 0L);
+
+    // when — a dynamic member (no instance id) joins the same group
+    join("g", "m2", 500L);
+
+    // then — unaffected by the static member: a fresh member, epoch bump + rebalance, no takeover
+    assertThat(state.groupSnapshot("g").members()).containsOnlyKeys("m1", "m2");
+    assertThat(state.getMember("g", "m2").getMemberEpoch()).isEqualTo(2);
+    assertThat(state.getGroup("g").getGroupEpoch()).isEqualTo(2);
   }
 
   @Test
@@ -299,6 +483,29 @@ final class CoordinatorProcessorTest {
         EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
         CoordinatorIntent.JOIN_GROUP,
         new MembershipRecord().setGroupId(group).setMemberId(member).setTopics(List.of("t")),
+        timestamp);
+  }
+
+  /**
+   * A static-member join carrying {@code instanceId}. {@code requestedMemberId} is the id the
+   * coordinator's membership actor would have freshly minted before this command ever reaches the
+   * processor (see {@code ConsumerGroupCoordinator#handleJoinGroup}); a takeover discards it and
+   * keeps the incumbent's memberId instead, so passing an obviously-throwaway value for it on a
+   * takeover-triggering call documents that the processor never uses it in that case.
+   */
+  private void join(
+      final String group,
+      final String requestedMemberId,
+      final String instanceId,
+      final long timestamp) {
+    process(
+        EventBridgeRecordValues.MEMBERSHIP_VALUE_TYPE,
+        CoordinatorIntent.JOIN_GROUP,
+        new MembershipRecord()
+            .setGroupId(group)
+            .setMemberId(requestedMemberId)
+            .setInstanceId(instanceId)
+            .setTopics(List.of("t")),
         timestamp);
   }
 
