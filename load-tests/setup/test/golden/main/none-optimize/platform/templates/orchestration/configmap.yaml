@@ -53,6 +53,8 @@ data:
     server:
       address: 0.0.0.0
       port: 8080
+      tomcat:
+        max-http-form-post-size: "10MB"
     
     management:
       server:
@@ -79,6 +81,9 @@ data:
         size: "3"
         replication-factor: "3"
         partition-count: "3"
+        # Keep the unified Camunda and legacy Zeebe network limits aligned while supported versions bind both namespaces.
+        network:
+          max-message-size: "10MB"
         # zeebe.broker.cluster
         initial-contact-points:
           - camunda-0.${K8S_SERVICE_NAME}:26502
@@ -89,6 +94,7 @@ data:
         grpc:
           address: 0.0.0.0
           port: 26500
+          max-message-size: "10MB"
     
       # Database configuration - Separated syntax.
       database:
@@ -116,7 +122,7 @@ data:
               - "orchestration"
               - "orchestration-api"
               - "web-modeler-api"
-            authorization-uri: "http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/auth"
+            authorization-uri: "/protocol/openid-connect/auth"
             jwk-set-uri: "http://c8-golden-main-none-optimize.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/certs"
             token-uri: "http://c8-golden-main-none-optimize.keycloak-operator.svc:18080/auth/realms/camunda-platform/protocol/openid-connect/token"
             redirect-uri: "http://localhost:8080/sso-callback"
@@ -213,6 +219,8 @@ data:
         network:
           advertisedHost: "${K8S_NAME}.${K8S_SERVICE_NAME}"
           host: 0.0.0.0
+          # Legacy Zeebe namespace retained while supported versions still bind it; keep it aligned with camunda.cluster.network.
+          maxMessageSize: "10MB"
           commandApi:
             port: 26501
           internalApi:
