@@ -170,10 +170,13 @@ async function evaluateGate(resolver, input) {
             const originalBody = await resolver.fetchPullBody(backport.number, backport.repo);
             deliveryPath = 'backportHop';
             if (originalBody === null) {
+                // The marker is the PR's stated attribution path, so speak to the marker
+                // only — the generic "add a closing keyword / tick opt-out" section advice
+                // is irrelevant for a backport PR and would just be noise.
                 link = {
                     outcome: 'fail',
                     code: 'unlinked-undeclared',
-                    reasons: [await unresolvableBackportReason(resolver, backport), ...link.reasons],
+                    reasons: [await unresolvableBackportReason(resolver, backport)],
                 };
             }
             else {
@@ -707,7 +710,7 @@ function decide(refs, optOut) {
             code: 'pr-ref-in-section',
             reasons: [
                 `The "Related issues" section links a pull request (${list}), not an issue.`,
-                'Link the tracked issue this PR resolves (e.g. "closes #1234"), or tick the opt-out checkbox.',
+                'Link the tracked issue this PR resolves (e.g. `closes #1234`), or tick the opt-out checkbox.',
             ],
         };
     }
@@ -728,7 +731,7 @@ function decide(refs, optOut) {
     const crossRepo = refs.filter((ref) => ref.crossRepo).map((ref) => ref.raw);
     const reasons = [
         'No linked issue found in the "Related issues" section, and the opt-out checkbox is not ticked.',
-        'Add a closing keyword with the tracked issue (e.g. "closes #1234"), or tick the opt-out checkbox.',
+        'Add a closing keyword with the tracked issue (e.g. `closes #1234`), or tick the opt-out checkbox.',
     ];
     if (dead.length)
         reasons.push(`These refs do not resolve to an existing issue: ${dead.join(', ')}.`);
