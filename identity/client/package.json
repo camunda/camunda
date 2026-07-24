@@ -40,7 +40,6 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@cyclonedx/cyclonedx-library": "10.1.0",
     "@types/carbon__elements": "11.10.3",
     "@types/carbon-components-react": "7.55.13",
     "@types/event-source-polyfill": "1.0.5",

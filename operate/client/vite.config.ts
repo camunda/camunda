@@ -13,18 +13,11 @@ import {defineConfig, type PluginOption, type UserConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 import sbom from 'rollup-plugin-sbom';
-import {Spec} from '@cyclonedx/cyclonedx-library';
 import {configDefaults} from 'vitest/config';
 import {playwright} from '@vitest/browser-playwright';
 
 const plugins: PluginOption[] = [react(), svgr()];
 const outDir = 'build';
-
-// Pin the emitted CycloneDX specVersion to the newest version Snyk's `sbom test`
-// decoder actually supports (1.4/1.5/1.6 - see docs.snyk.io/developer-tools/snyk-cli/commands/sbom-test).
-// rollup-plugin-sbom v4 switched its own default to 1.7, which Snyk cannot decode
-// yet ("failed to decode CycloneDX input: invalid specification version", INC-6679/INC-6677).
-const sbomSpecVersion = Spec.Version.v1dot6;
 
 function getReporters(): Pick<
   NonNullable<UserConfig['test']>,
@@ -45,10 +38,7 @@ function getReporters(): Pick<
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
-  plugins:
-    mode === 'sbom'
-      ? [...plugins, sbom({specVersion: sbomSpecVersion})]
-      : plugins,
+  plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
   preview: {
     port: 3003,
     open: false,

@@ -11,15 +11,8 @@ import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
 import {readdirSync} from 'node:fs';
 import sbom from 'rollup-plugin-sbom';
-import {Spec} from '@cyclonedx/cyclonedx-library';
 
 const outDir = 'dist';
-
-// Pin the emitted CycloneDX specVersion to the newest version Snyk's `sbom test`
-// decoder actually supports (1.4/1.5/1.6 - see docs.snyk.io/developer-tools/snyk-cli/commands/sbom-test).
-// Also aligns optimize/client with identity/operate/tasklist, which all moved off the
-// abandoned "@vzeta/rollup-plugin-sbom" fork onto this same maintained package (INC-6679/INC-6677).
-const sbomSpecVersion = Spec.Version.v1dot6;
 
 const plugins: PluginOption[] = [
   {
@@ -61,8 +54,7 @@ export default defineConfig(({mode}) => ({
       },
     },
   },
-  plugins:
-    mode === 'sbom' ? [...plugins, sbom({specVersion: sbomSpecVersion}) as PluginOption] : plugins,
+  plugins: mode === 'sbom' ? [...plugins, sbom() as PluginOption] : plugins,
   optimizeDeps: {
     force: true,
     rolldownOptions: {
