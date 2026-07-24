@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ProcessDeleteDrainState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -20,39 +20,34 @@ import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
- * Aggregates per-partition drain reports on the deployment partition. Physical removal already
- * happened locally on each reporting partition (see {@code BpmnProcessDeletionBehavior}); this
- * processor only tracks which partitions have reported.
- *
- * <p>A non-deployment partition forwards its {@link ProcessIntent#DELETE_COMPLETE} report here via
- * unordered distribution. The deployment partition clears each reporting partition from {@link
- * ProcessDeleteDrainState} by emitting {@link ProcessIntent#DELETE_COMPLETED}, and once none remain
- * emits {@link ProcessIntent#FULLY_DELETED} — a NOOP-applier marker signalling the definition is
- * gone cluster-wide. It does not re-issue the resource deletion.
+ * Aggregates per-partition drain reports on the deployment partition. Each report clears the
+ * reporting partition ({@link ProcessIntent#DELETE_COMPLETED}); once none remain, the definition is
+ * marked gone cluster-wide ({@link ProcessIntent#FULLY_DELETED}). Physical removal already happened
+ * locally on each partition (see {@code BpmnProcessDeletionBehavior}).
  */
 @ExcludeAuthorizationCheck
 public final class ProcessDeleteCompleteProcessor
     implements DistributedTypedRecordProcessor<ProcessRecord> {
 
-  private final int partitionId;
+  private final int currentPartitionId;
   private final StateWriter stateWriter;
-  private final ProcessDeleteDrainState processDeleteDrainState;
+  private final ProcessState processState;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public ProcessDeleteCompleteProcessor(
-      final int partitionId,
+      final int currentPartitionId,
       final Writers writers,
       final MutableProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.partitionId = partitionId;
+    this.currentPartitionId = currentPartitionId;
     stateWriter = writers.state();
-    processDeleteDrainState = processingState.getProcessDeleteDrainState();
+    processState = processingState.getProcessState();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
   @Override
   public void processNewCommand(final TypedRecord<ProcessRecord> command) {
-    if (partitionId == Protocol.DEPLOYMENT_PARTITION) {
+    if (currentPartitionId == Protocol.DEPLOYMENT_PARTITION) {
       recordPartitionDrained(command);
     } else {
       commandDistributionBehavior
@@ -75,20 +70,23 @@ public final class ProcessDeleteCompleteProcessor
     final long processDefinitionKey = process.getProcessDefinitionKey();
     final int reportingPartitionId = Protocol.decodePartitionId(command.getKey());
 
-    if (!processDeleteDrainState.hasDrainingPartition(processDefinitionKey, reportingPartitionId)) {
-      // already cleared (redelivery) or never expected
-      return;
-    }
+    // whether this report is the one clearing an outstanding pending deletion; on redelivery the
+    // partition is already cleared, so no FULLY_DELETED must follow
+    final boolean wasPending =
+        processState.hasPendingDeletion(processDefinitionKey, reportingPartitionId);
 
+    // always emit DELETE_COMPLETED — a command must produce a follow-up, and the applier clears the
+    // partition idempotently (deleteIfExists), so a redelivery is a safe no-op
     // keyed with the report's key so the applier can decode the reporting partition to clear it
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessIntent.DELETE_COMPLETED, process);
 
-    if (!processDeleteDrainState.hasDrainingPartition(processDefinitionKey)) {
-      signalFullyDeleted(command, process);
+    // emit FULLY_DELETED exactly once: only when this report cleared the last outstanding partition
+    if (wasPending && !processState.hasPendingDeletion(processDefinitionKey)) {
+      finishProcessDelete(command, process);
     }
   }
 
-  private void signalFullyDeleted(
+  private void finishProcessDelete(
       final TypedRecord<ProcessRecord> command, final ProcessRecord process) {
     stateWriter.appendFollowUpEvent(command.getKey(), ProcessIntent.FULLY_DELETED, process);
 
