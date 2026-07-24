@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.it.cluster.management;
 
+import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.ZONE_A;
+import static io.camunda.zeebe.qa.util.cluster.util.ZoneFixtures.ZONE_B;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -36,7 +38,7 @@ import org.junit.jupiter.api.TestInstance;
 
 final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
-  private static final String[] ZONES = {"zoneA", "zoneB"};
+  private static final String[] ZONES = {ZONE_A, ZONE_B};
 
   @Override
   protected int brokerCount() {
@@ -69,7 +71,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
   @Override
   protected String zone() {
-    return ZONES[0];
+    return ZONE_A;
   }
 
   @Override
@@ -109,8 +111,8 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     final var brokersZoneB = brokerCount / ZONES.length;
     final var brokersZoneA = brokerCount - brokersZoneB;
     return List.of(
-        new Zone(ZONES[0], brokersZoneA, replicasZoneA, 100),
-        new Zone(ZONES[1], brokersZoneB, replicasZoneB, 10));
+        new Zone(ZONE_A, brokersZoneA, replicasZoneA, 100),
+        new Zone(ZONE_B, brokersZoneB, replicasZoneB, 10));
   }
 
   @Test
@@ -182,8 +184,8 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
               .type(PartitionDistributionConfig.TypeEnum.ZONE_AWARE)
               .zones(
                   List.of(
-                      new ZoneSpec().name(ZONES[0]).numberOfReplicas(2).priority(100),
-                      new ZoneSpec().name(ZONES[1]).numberOfReplicas(1).priority(10)));
+                      new ZoneSpec().name(ZONE_A).numberOfReplicas(2).priority(100),
+                      new ZoneSpec().name(ZONE_B).numberOfReplicas(1).priority(10)));
       final var response = actuator.patchPartitionDistribution(config, false);
 
       // then - exact planned operations.
@@ -300,7 +302,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       cluster.brokers().get(memberIdForBroker(2)).close();
 
       // when - force-remove zoneA: force-evict its brokers and drop it from the distribution config
-      final var forceRemoveResponse = actuator.forceRemoveZone(ZONES[0], false);
+      final var forceRemoveResponse = actuator.forceRemoveZone(ZONE_A, false);
       Awaitility.await()
           .untilAsserted(
               () ->
@@ -311,11 +313,11 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
 
       // when - start a fresh broker in zoneA and add the zone back with it
       final var newZoneABroker =
-          ZoneHelpers.startBrokerInZone(cluster, ZONES[0], 0, 3, cluster.getMultiZoneConfig());
+          ZoneHelpers.startBrokerInZone(cluster, ZONE_A, 0, 3, cluster.getMultiZoneConfig());
       try {
         final var addZoneRequest =
             new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of(brokerId(0)));
-        final var addZoneResponse = actuator.addZone(ZONES[0], addZoneRequest, false);
+        final var addZoneResponse = actuator.addZone(ZONE_A, addZoneRequest, false);
 
         // then - the cluster recovers: zoneA is back in the distribution and hosts partitions
         Awaitility.await()
@@ -328,8 +330,8 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
                 .type(TypeEnum.ZONE_AWARE)
                 .zones(
                     List.of(
-                        new ZoneSpec().name(ZONES[1]).numberOfReplicas(1).priority(10),
-                        new ZoneSpec().name(ZONES[0]).numberOfReplicas(1).priority(100)));
+                        new ZoneSpec().name(ZONE_B).numberOfReplicas(1).priority(10),
+                        new ZoneSpec().name(ZONE_A).numberOfReplicas(1).priority(100)));
         assertThat(actuator.getTopology().getPartitionDistribution())
             .isEqualTo(expectedDistribution);
       } finally {
@@ -359,7 +361,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           ClusterActuator.of(clusterAfterZoneRemoval.brokers().get(memberIdForBroker(1)));
       clusterAfterZoneRemoval.brokers().get(memberIdForBroker(0)).close();
       clusterAfterZoneRemoval.brokers().get(memberIdForBroker(2)).close();
-      final var forceRemoveResponse = actuatorAfterZoneRemoval.forceRemoveZone(ZONES[0], false);
+      final var forceRemoveResponse = actuatorAfterZoneRemoval.forceRemoveZone(ZONE_A, false);
       Awaitility.await()
           .untilAsserted(
               () ->
@@ -382,7 +384,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // given - zoneA has already been force-removed from the shared cluster
 
       // when - then - force-removing the last remaining zone is rejected
-      assertThatCode(() -> actuatorAfterZoneRemoval.forceRemoveZone(ZONES[1], false))
+      assertThatCode(() -> actuatorAfterZoneRemoval.forceRemoveZone(ZONE_B, false))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("last remaining zone");
     }
@@ -394,7 +396,7 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - then
       final var addZoneRequest =
           new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of(brokerId(0)));
-      assertThatCode(() -> actuator.addZone(ZONES[0], addZoneRequest, false))
+      assertThatCode(() -> actuator.addZone(ZONE_A, addZoneRequest, false))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("already present");
     }
@@ -406,14 +408,14 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       // when - then - empty brokers[] is rejected
       final var emptyBrokersRequest =
           new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of());
-      assertThatCode(() -> actuatorAfterZoneRemoval.addZone(ZONES[0], emptyBrokersRequest, false))
+      assertThatCode(() -> actuatorAfterZoneRemoval.addZone(ZONE_A, emptyBrokersRequest, false))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("at least one broker");
 
       // when - then - fewer brokers than numberOfReplicas is rejected
       final var tooFewBrokersRequest =
           new AddZoneRequest().numberOfReplicas(2).priority(100).brokers(List.of(brokerId(0)));
-      assertThatCode(() -> actuatorAfterZoneRemoval.addZone(ZONES[0], tooFewBrokersRequest, false))
+      assertThatCode(() -> actuatorAfterZoneRemoval.addZone(ZONE_A, tooFewBrokersRequest, false))
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("less than the requested number of replicas");
     }
