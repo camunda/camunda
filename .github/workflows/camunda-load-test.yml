@@ -416,6 +416,11 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+    env:
+      # Jib's default HTTP timeout (20s) for registry push/pull is too low and has caused
+      # intermittent failures pushing the load-test images; see discussion in
+      # https://camunda.slack.com/archives/C5AHF1D8T/p1784723160353049
+      JIB_HTTP_TIMEOUT: 60000
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -429,9 +434,13 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl load-tests/load-tester -am install
       - name: Build Starter Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P starter -P\!include-optimize -D image="${IMAGE_REPOSITORY}/starter:${IMAGE_TAG}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
+        env:
+          IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
       - name: Build Worker Image
-        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="${IMAGE_REPOSITORY}/worker:${IMAGE_TAG}" -X -Djib.serialize=true -Djib.httpTimeout="${JIB_HTTP_TIMEOUT}"
+        env:
+          IMAGE_TAG: ${{ needs.calculate-image-tag.outputs.image-tag }}
       - name: Observe build status
         if: always()
         continue-on-error: true
