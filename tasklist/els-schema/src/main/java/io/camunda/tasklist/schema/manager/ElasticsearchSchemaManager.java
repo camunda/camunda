@@ -94,12 +94,17 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   @Override
   public void createSchema() {
+    createSchemaTemplatesAndPolicies();
+    createIndices();
+  }
+
+  @Override
+  public void createSchemaTemplatesAndPolicies() {
     if (tasklistProperties.getArchiver().isIlmEnabled()) {
       createIndexLifeCycles();
     }
     createDefaults();
     createTemplates();
-    createIndices();
   }
 
   @Override

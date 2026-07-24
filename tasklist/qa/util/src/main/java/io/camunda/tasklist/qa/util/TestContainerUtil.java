@@ -577,4 +577,10 @@ public class TestContainerUtil {
       elsContainer.stop();
     }
   }
+
+  public void stopOpenSearch() {
+    if (osContainer != null) {
+      osContainer.stop();
+    }
+  }
 }

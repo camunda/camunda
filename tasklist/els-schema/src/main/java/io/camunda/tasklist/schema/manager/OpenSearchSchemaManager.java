@@ -100,12 +100,17 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   @Override
   public void createSchema() {
+    createSchemaTemplatesAndPolicies();
+    createIndices();
+  }
+
+  @Override
+  public void createSchemaTemplatesAndPolicies() {
     if (tasklistProperties.getArchiver().isIlmEnabled()) {
       createIndexLifeCyclesIfNotExist();
     }
     createDefaults();
     createTemplates();
-    createIndices();
   }
 
   @Override

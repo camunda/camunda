@@ -18,6 +18,26 @@ public interface SchemaManager {
 
   void createSchema();
 
+  /**
+   * Creates the ILM/ISM retention policies, the component template and the index templates that
+   * make up the schema, but not the data indices themselves.
+   *
+   * <p>Index templates and ILM/ISM policies are not included in Elasticsearch/OpenSearch snapshots.
+   * After restoring a backup into an empty cluster the restored indices exist while the templates
+   * and policies are missing; without them the archiver would later create indices with an
+   * incorrect structure. This method (re)creates any missing templates and policies. Templates are
+   * created idempotently: existing ones are left untouched (created with {@code overwrite=false}).
+   *
+   * <p>This is only ever invoked when schema creation is enabled ({@code createSchema=true}), i.e.
+   * when the application is permitted to manage the schema and its retention policies. Guarding on
+   * that flag is what makes touching ILM/ISM safe here: it avoids altering (or failing to alter,
+   * for lack of permissions) a pre-existing retention configuration on restart (see <a
+   * href="https://github.com/camunda/camunda/issues/28571">#28571</a>).
+   *
+   * @see <a href="https://github.com/camunda/camunda/issues/32806">#32806</a>
+   */
+  void createSchemaTemplatesAndPolicies();
+
   IndexMapping getExpectedIndexFields(IndexDescriptor indexDescriptor);
 
   Map<String, IndexMapping> getIndexMappings(String s) throws IOException;

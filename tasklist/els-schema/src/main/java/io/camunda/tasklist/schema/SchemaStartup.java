@@ -53,13 +53,27 @@ public class SchemaStartup {
           TasklistProperties.OPEN_SEARCH.equalsIgnoreCase(tasklistProperties.getDatabase())
               ? tasklistProperties.getOpenSearch().isUpdateSchemaSettings()
               : tasklistProperties.getElasticsearch().isUpdateSchemaSettings();
-      if (createSchema && !schemaValidator.schemaExists()) {
-        LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
-        schemaManager.createSchema();
-        LOGGER.info("SchemaStartup: update index mappings.");
+      if (createSchema) {
+        if (!schemaValidator.schemaExists()) {
+          LOGGER.info("SchemaStartup: schema is empty or not complete. Indices will be created.");
+          schemaManager.createSchema();
+          LOGGER.info("SchemaStartup: update index mappings.");
+        } else {
+          // Index templates and ILM/ISM retention policies are not part of a backup. After
+          // restoring a backup into an empty cluster, the restored indices exist (so the schema is
+          // considered to already exist) but the templates and policies are missing. Without them,
+          // the archiver would later create indices with an incorrect structure. Recreate the
+          // missing templates and policies. This runs only when schema creation is enabled
+          // (createSchema=true), so the application is permitted to manage them
+          // (https://github.com/camunda/camunda/issues/28571). See
+          // https://github.com/camunda/camunda/issues/32806
+          LOGGER.info(
+              "SchemaStartup: schema already exists. Ensuring index templates and policies are present.");
+          schemaManager.createSchemaTemplatesAndPolicies();
+        }
       } else {
         LOGGER.info(
-            "SchemaStartup: schema won't be created, it either already exist, or schema creation is disabled in configuration.");
+            "SchemaStartup: schema won't be created, as schema creation is disabled in configuration.");
       }
 
       if (!newFields.isEmpty()) {
