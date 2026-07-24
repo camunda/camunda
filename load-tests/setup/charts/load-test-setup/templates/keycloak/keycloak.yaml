@@ -12,6 +12,8 @@ metadata:
     # Same convention/key as the load test namespace's own deadline-date label,
     # so this CR can be found/cleaned up the same way.
     deadline-date: "{{ .Values.deadlineDate }}"
+    camunda.io/created-by: "{{ .Values.author }}"
+    camunda.io/purpose: load-test
 spec:
   {{- with .Values.keycloak.image }}
   image: "{{ .registry }}/{{ .repository }}:{{ .tag }}"

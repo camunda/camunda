@@ -12,6 +12,8 @@ metadata:
     # Same convention/key as the load test namespace's own deadline-date label,
     # so this CR can be found/cleaned up the same way.
     deadline-date: TEST_DATE
+    camunda.io/created-by: "golden-test"
+    camunda.io/purpose: load-test
 spec:
   image: "europe-west1-docker.pkg.dev/camunda-benchmark/dockerhub/camunda/keycloak:quay-optimized-26.6.4"
 

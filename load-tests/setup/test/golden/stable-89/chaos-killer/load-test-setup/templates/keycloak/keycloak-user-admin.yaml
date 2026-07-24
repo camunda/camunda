@@ -12,6 +12,8 @@ metadata:
     # namespace, not the load test's own namespace).
     camunda.io/load-test-namespace: "c8-golden-stable-89-chaos-killer"
     deadline-date: TEST_DATE
+    camunda.io/created-by: "golden-test"
+    camunda.io/purpose: load-test
 type: kubernetes.io/basic-auth
 data:
   username: "YWRtaW4="

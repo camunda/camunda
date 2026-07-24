@@ -12,6 +12,8 @@ metadata:
     # namespace, not the load test's own namespace).
     camunda.io/load-test-namespace: "{{ .Release.Namespace }}"
     deadline-date: "{{ .Values.deadlineDate }}"
+    camunda.io/created-by: "{{ .Values.author }}"
+    camunda.io/purpose: load-test
 type: kubernetes.io/basic-auth
 data:
 {{- $secretName := dict
