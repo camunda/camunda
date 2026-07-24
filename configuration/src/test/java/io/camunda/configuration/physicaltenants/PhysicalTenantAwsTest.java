@@ -89,8 +89,7 @@ class PhysicalTenantAwsTest {
     // given a root web identity, and a tenant overriding only the role
     setProperties(
         Map.of(
-            "camunda.provider-auth.provider-auth.aws.role-arn",
-                "arn:aws:iam::111:role/default-tenant",
+            "camunda.provider-auth.aws.role-arn", "arn:aws:iam::111:role/default-tenant",
             "camunda.provider-auth.aws.web-identity-token-file", "/var/run/secrets/default-token",
             "camunda.physical-tenants.tenantb.provider-auth.aws.role-arn",
                 "arn:aws:iam::222:role/tenant-b"),
