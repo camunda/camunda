@@ -72,10 +72,11 @@ removed (the stale-backport tracker depends on it).
 
 The hop only fires when the link is otherwise **undeclared** — a section that
 links a pull request is a hard error and is *not* rescued by an unrelated
-`Backport of #N`. A **cross-repo** marker (`owner/other#N`) cannot inherit
-attribution (this action only validates its own repo), and a marker whose target
-PR does not resolve is surfaced explicitly rather than folded into the generic
-"no linked issue" message.
+`Backport of #N`. When the marker cannot be followed to an original PR the
+message names why: it points at an **issue** (not a PR), it **doesn't resolve**
+to anything in this repo, or it's **cross-repo** (`owner/other#N`, which this
+action can't validate) — rather than folding into the generic "no linked issue"
+message.
 
 HTML comments are stripped before parsing, so the PR template's own instructional
 `<!-- … closes #1234 … -->` boilerplate is never mistaken for a real ref.

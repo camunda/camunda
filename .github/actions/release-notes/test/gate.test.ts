@@ -83,7 +83,7 @@ test('a PR ref in the section is NOT rescued by an unrelated Backport marker', a
   assert.ok(gate.checks[0]?.reasons.some((reason) => reason.includes('pull request')));
 });
 
-test('a cross-repo Backport marker cannot inherit attribution (resolves to null)', async () => {
+test('a cross-repo Backport marker cannot inherit attribution — says so explicitly', async () => {
   const resolver = new FakeResolver({ 10: 'issue' }, { 500: withSection('closes #10') });
   const gate = await evaluateGate(resolver, {
     body: '⤵️ Backport of other-org/other-repo#500\n',
@@ -92,13 +92,22 @@ test('a cross-repo Backport marker cannot inherit attribution (resolves to null)
   });
   assert.equal(gate.outcome, 'fail');
   assert.equal(gate.deliveryPath, 'backportHop');
-  assert.ok(gate.checks[0]?.reasons.some((reason) => reason.includes('could not be resolved')));
+  assert.ok(gate.checks[0]?.reasons.some((reason) => reason.includes('another repository')));
 });
 
-test('a dangling Backport target (404) is surfaced, not absorbed into a generic message', async () => {
-  const resolver = new FakeResolver({}, {}); // #500 has no body → fetchPullBody returns null
+test('a Backport marker pointing at an issue (not a PR) says exactly that', async () => {
+  // Mirrors gate-test-07: `Backport of #53593` where #53593 is an issue.
+  const resolver = new FakeResolver({ 500: 'issue' }, {}); // resolves as issue; no PR body
   const gate = await evaluateGate(resolver, { body: '⤵️ Backport of #500\n', title: 'fix: x', authorLogin: 'szpraat' });
   assert.equal(gate.outcome, 'fail');
   assert.equal(gate.deliveryPath, 'backportHop');
-  assert.ok(gate.checks[0]?.reasons.some((reason) => reason.includes('#500') && reason.includes('could not be resolved')));
+  assert.ok(gate.checks[0]?.reasons.some((reason) => reason.includes('#500') && reason.includes('issue, not a pull request')));
+});
+
+test('a dangling Backport target (missing) is surfaced, not absorbed into a generic message', async () => {
+  const resolver = new FakeResolver({}, {}); // #500 neither a PR body nor a known target → missing
+  const gate = await evaluateGate(resolver, { body: '⤵️ Backport of #500\n', title: 'fix: x', authorLogin: 'szpraat' });
+  assert.equal(gate.outcome, 'fail');
+  assert.equal(gate.deliveryPath, 'backportHop');
+  assert.ok(gate.checks[0]?.reasons.some((reason) => reason.includes('#500') && reason.includes('does not resolve to a pull request')));
 });

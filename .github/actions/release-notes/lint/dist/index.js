@@ -134,6 +134,22 @@ async function evaluateLink(resolver, body) {
     const resolved = await resolver.resolve(refs);
     return (0, policy_1.decide)(resolved, optOut);
 }
+/**
+ * Explain why a `Backport of #N` marker could not be followed to an original
+ * PR, so the author sees the actual problem rather than a generic "no linked
+ * issue". Only reached in the rare failure path, so the extra classify call
+ * (issue vs missing) never touches the hot bot-backport path.
+ */
+async function unresolvableBackportReason(resolver, backport) {
+    const [resolved] = await resolver.resolve([backport]);
+    if (resolved?.crossRepo) {
+        return `Backport of ${backport.repo}#${backport.number} points to another repository — attribution can only be inherited from a pull request in this repo.`;
+    }
+    if (resolved?.target === 'issue') {
+        return `Backport of #${backport.number} points to an issue, not a pull request — a backport marker must reference the original PR.`;
+    }
+    return `Backport of #${backport.number} does not resolve to a pull request in this repo — attribution cannot be inherited.`;
+}
 async function evaluateGate(resolver, input) {
     // --- PR-issue link, with a backport-hop fallback (C7/V2) ---
     // A backport PR passes on its own section if it has one (manual template);
@@ -157,10 +173,7 @@ async function evaluateGate(resolver, input) {
                 link = {
                     outcome: 'fail',
                     code: 'unlinked-undeclared',
-                    reasons: [
-                        `Backport of ${backport.repo ? `${backport.repo}#` : '#'}${backport.number}, but that PR could not be resolved in this repo — attribution cannot be inherited.`,
-                        ...link.reasons,
-                    ],
+                    reasons: [await unresolvableBackportReason(resolver, backport), ...link.reasons],
                 };
             }
             else {
