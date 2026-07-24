@@ -100,7 +100,7 @@ public class SearchEngineConnectPropertiesOverride {
             final Opensearch opensearch = (Opensearch) database;
             override.setAwsEnabled(opensearch.isAwsEnabled());
             populateAws(camunda.getProviderAuth().getAws(), override.aws());
-            override.aws().setRegion(opensearch.getRegion());
+            override.aws().setRegion(opensearch.getAwsRegion());
             break;
           }
         case rdbms:

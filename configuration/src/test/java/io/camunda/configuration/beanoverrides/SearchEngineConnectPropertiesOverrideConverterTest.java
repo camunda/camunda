@@ -98,7 +98,7 @@ class SearchEngineConnectPropertiesOverrideConverterTest {
     opensearch.setPassword("os-pass");
     opensearch.setClusterName("os-cluster");
     opensearch.setAwsEnabled(true);
-    opensearch.setRegion("eu-west-1");
+    opensearch.setAwsRegion("eu-west-1");
     camunda.getProviderAuth().getAws().setAccessKey("aws-key");
     camunda.getProviderAuth().getAws().setSecretKey("aws-secret");
 

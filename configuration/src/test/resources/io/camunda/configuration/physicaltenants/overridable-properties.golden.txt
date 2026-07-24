@@ -139,6 +139,7 @@ data.secondary-storage.elasticsearch.urls
 data.secondary-storage.elasticsearch.username
 data.secondary-storage.elasticsearch.variable-size-threshold
 data.secondary-storage.opensearch.aws-enabled
+data.secondary-storage.opensearch.aws-region
 data.secondary-storage.opensearch.backup.database-name
 data.secondary-storage.opensearch.batch-operation-cache.cache-name
 data.secondary-storage.opensearch.batch-operation-cache.database-name
@@ -175,7 +176,6 @@ data.secondary-storage.opensearch.proxy.ssl-enabled
 data.secondary-storage.opensearch.proxy.username
 data.secondary-storage.opensearch.refresh-interval
 data.secondary-storage.opensearch.refresh-interval-by-index-name
-data.secondary-storage.opensearch.region
 data.secondary-storage.opensearch.security.database-name
 data.secondary-storage.opensearch.socket-timeout
 data.secondary-storage.opensearch.template-priority
