@@ -38,11 +38,22 @@ async function run(): Promise<void> {
 
   const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
   const resolver = new GithubResolver(token, owner ?? '', repo ?? '');
-  const gate = await evaluateGate(resolver, {
-    body: pr.body ?? '',
-    title: pr.title ?? '',
-    authorLogin: pr.user?.login,
-  });
+
+  // A transient resolver error (403/500) must respect `enforce`: warn-only means
+  // the gate never hard-fails, so an API blip cannot turn a green check red.
+  let gate;
+  try {
+    gate = await evaluateGate(resolver, {
+      body: pr.body ?? '',
+      title: pr.title ?? '',
+      authorLogin: pr.user?.login,
+    });
+  } catch (err) {
+    const msg = `Release-notes gate could not be evaluated: ${err instanceof Error ? err.message : String(err)}`;
+    if (enforce) core.setFailed(msg);
+    else core.warning(`[warn-only] ${msg}`);
+    return;
+  }
 
   const failed = gate.checks.filter((check) => check.outcome === 'fail');
   const reasons = failed.flatMap((check) => check.reasons.map((reason) => `${check.label}: ${reason}`));
@@ -57,28 +68,33 @@ async function run(): Promise<void> {
   );
   await core.summary.addHeading(heading, 3).addList(summaryLines).write();
 
-  // Sticky PR comment (D24: comments from day one). A comment sync failure must
+  // Sticky PR comment (D24: comments from day one) + the display-only `no-issue`
+  // label. Both only need `gate` + the PR number and are independent, so run
+  // them concurrently. Each is best-effort: a sync failure is logged and must
   // never fail the gate — warn or not, the outcome above stands.
   if (pr.number) {
-    try {
-      const comments = new GithubCommentApi(token, owner ?? '', repo ?? '', pr.number);
-      const action = await syncStickyComment(comments, gate);
-      core.info(`Sticky comment: ${action}.`);
-    } catch (err) {
-      core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
-    }
-
-    // Display-only `no-issue` label, mirroring the PR-issue-link check. Runs
-    // during warn-only rollout too, so the label is already trustworthy by the
-    // time enforce mode lands — a sync failure never fails the gate.
-    try {
-      const labels = new GithubLabelApi(token, owner ?? '', repo ?? '', pr.number);
-      const action = await syncNoIssueLabel(labels, gate);
-      core.setOutput('label-action', action);
-      core.info(`no-issue label: ${action}.`);
-    } catch (err) {
-      core.warning(`Label sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
-    }
+    const prNumber = pr.number;
+    await Promise.allSettled([
+      (async () => {
+        try {
+          const comments = new GithubCommentApi(token, owner ?? '', repo ?? '', prNumber);
+          const action = await syncStickyComment(comments, gate);
+          core.info(`Sticky comment: ${action}.`);
+        } catch (err) {
+          core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+        }
+      })(),
+      (async () => {
+        try {
+          const labels = new GithubLabelApi(token, owner ?? '', repo ?? '', prNumber);
+          const action = await syncNoIssueLabel(labels, gate);
+          core.setOutput('label-action', action);
+          core.info(`no-issue label: ${action}.`);
+        } catch (err) {
+          core.warning(`Label sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+        }
+      })(),
+    ]);
   }
 
   if (gate.outcome === 'fail') {

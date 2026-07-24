@@ -1,3 +1,4 @@
+import { githubHeaders, repoApiUrl } from '../github';
 import type { ParsedRef, ResolvedRef, Resolver } from '../types';
 
 /**
@@ -12,11 +13,15 @@ import type { ParsedRef, ResolvedRef, Resolver } from '../types';
  * endpoint; octokit would inline the whole REST client into the bundle.
  */
 export class GithubResolver implements Resolver {
+  private readonly repoUrl: string;
+
   constructor(
     private readonly token: string,
     private readonly owner: string,
     private readonly repo: string,
-  ) {}
+  ) {
+    this.repoUrl = repoApiUrl(owner, repo);
+  }
 
   async resolve(refs: readonly ParsedRef[]): Promise<ResolvedRef[]> {
     return Promise.all(refs.map((ref) => this.resolveOne(ref)));
@@ -26,10 +31,17 @@ export class GithubResolver implements Resolver {
    * Fetch a same-repo pull request's body for backport-hop validation, or null
    * if it does not exist. Used to follow `Backport of #N` to the original PR and
    * validate that PR's attribution (the backport inherits it — C7).
+   *
+   * A cross-repo marker (`Backport of owner/other#N`) resolves to null: this
+   * resolver is hardcoded to its own owner/repo, so #N there would name an
+   * unrelated PR in THIS repo. We only inherit attribution from our own repo.
    */
-  async fetchPullBody(number: number): Promise<string | null> {
-    const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/pulls/${number}`, {
-      headers: this.headers(),
+  async fetchPullBody(number: number, repo: string | null): Promise<string | null> {
+    const crossRepo = repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
+    if (crossRepo) return null;
+
+    const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
+      headers: githubHeaders(this.token),
     });
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`GitHub API ${res.status} fetching PR #${number}`);
@@ -37,21 +49,12 @@ export class GithubResolver implements Resolver {
     return data.body ?? '';
   }
 
-  private headers(): Record<string, string> {
-    return {
-      authorization: `Bearer ${this.token}`,
-      accept: 'application/vnd.github+json',
-      'x-github-api-version': '2022-11-28',
-      'user-agent': 'camunda-release-notes-gate',
-    };
-  }
-
   private async resolveOne(ref: ParsedRef): Promise<ResolvedRef> {
     const crossRepo = ref.repo !== null && ref.repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
     if (crossRepo) return { ...ref, target: 'missing', crossRepo: true };
 
-    const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/issues/${ref.number}`, {
-      headers: this.headers(),
+    const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
+      headers: githubHeaders(this.token),
     });
     if (res.status === 404) return { ...ref, target: 'missing', crossRepo: false };
     if (!res.ok) throw new Error(`GitHub API ${res.status} resolving #${ref.number}`);

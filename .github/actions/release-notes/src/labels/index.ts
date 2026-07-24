@@ -1,3 +1,4 @@
+import { githubHeaders, repoApiUrl } from '../github';
 import type { GateOutcome, PolicyOutcome } from '../types';
 
 /**
@@ -40,15 +41,12 @@ export function decideLabelAction(currentLabels: readonly string[], linkOutcome:
 
 /**
  * Reconcile the no-issue label against the gate's PR-issue-link check.
- * Reads the check by label rather than gate.outcome so a title-only failure
- * never adds a label whose name specifically means "no linked issue".
+ * Reads the typed `gate.link` decision (not gate.outcome) so a title-only
+ * failure never adds a label whose name specifically means "no linked issue".
  */
 export async function syncNoIssueLabel(api: LabelApi, gate: GateOutcome): Promise<LabelAction> {
-  const link = gate.checks.find((check) => check.label === 'PR-issue link');
-  if (!link) return 'noop'; // defensive — the link check is always present today
-
   const current = await api.list();
-  const action = decideLabelAction(current, link.outcome);
+  const action = decideLabelAction(current, gate.link.outcome);
   if (action === 'added') await api.add(NO_ISSUE_LABEL);
   if (action === 'removed') await api.remove(NO_ISSUE_LABEL);
   return action;
@@ -68,17 +66,11 @@ export class GithubLabelApi implements LabelApi {
     repo: string,
     private readonly issueNumber: number,
   ) {
-    this.repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+    this.repoUrl = repoApiUrl(owner, repo);
   }
 
   private headers(): Record<string, string> {
-    return {
-      authorization: `Bearer ${this.token}`,
-      accept: 'application/vnd.github+json',
-      'content-type': 'application/json',
-      'x-github-api-version': '2022-11-28',
-      'user-agent': 'camunda-release-notes-gate',
-    };
+    return githubHeaders(this.token, { json: true });
   }
 
   async list(): Promise<string[]> {

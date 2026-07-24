@@ -1,17 +1,19 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type CommentApi, type IssueComment, renderStickyComment, STICKY_MARKER, syncStickyComment } from '../src/comment';
+import { type CommentApi, GithubCommentApi, type IssueComment, renderStickyComment, STICKY_MARKER, syncStickyComment } from '../src/comment';
 import type { GateOutcome } from '../src/types';
 
 const FAIL: GateOutcome = {
   outcome: 'fail',
   deliveryPath: 'direct',
   checks: [{ label: 'PR-issue link', outcome: 'fail', reasons: ['No linked issue found.', 'Add "closes #1234".'] }],
+  link: { outcome: 'fail', code: 'unlinked-undeclared', reasons: ['No linked issue found.', 'Add "closes #1234".'] },
 };
 const PASS: GateOutcome = {
   outcome: 'pass',
   deliveryPath: 'direct',
   checks: [{ label: 'PR-issue link', outcome: 'pass', reasons: ['Linked to issue #1234.'] }],
+  link: { outcome: 'pass', code: 'section-closing', reasons: ['Linked to issue #1234.'] },
 };
 
 /** Records every call so a test can assert what the sync did. */
@@ -75,4 +77,23 @@ test('unmarked comments are ignored when locating the sticky comment', async () 
   const action = await syncStickyComment(api, FAIL);
   assert.equal(action, 'created');
   assert.equal(api.updated.length, 0);
+});
+
+test('GithubCommentApi.list paginates so a sticky past page 1 is still found', async () => {
+  // A busy PR: page 1 is 100 unrelated comments, the sticky is comment #101.
+  const page1: IssueComment[] = Array.from({ length: 100 }, (_, i) => ({ id: i + 1, body: `noise ${i}` }));
+  const page2: IssueComment[] = [{ id: 101, body: `${STICKY_MARKER}\nfailure` }];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => {
+    const body = new URL(url).searchParams.get('page') === '2' ? page2 : page1;
+    return { ok: true, status: 200, json: async () => body } as Response;
+  }) as typeof fetch;
+  try {
+    const api = new GithubCommentApi('tok', 'camunda', 'camunda', 42);
+    const all = await api.list();
+    assert.equal(all.length, 101);
+    assert.ok(all.some((comment) => comment.body.includes(STICKY_MARKER)));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });

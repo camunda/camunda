@@ -1,3 +1,4 @@
+import { githubHeaders, repoApiUrl } from '../github';
 import type { GateOutcome } from '../types';
 
 /**
@@ -92,27 +93,31 @@ export class GithubCommentApi implements CommentApi {
     repo: string,
     private readonly issueNumber: number,
   ) {
-    this.repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+    this.repoUrl = repoApiUrl(owner, repo);
   }
 
   private headers(): Record<string, string> {
-    return {
-      authorization: `Bearer ${this.token}`,
-      accept: 'application/vnd.github+json',
-      'content-type': 'application/json',
-      'x-github-api-version': '2022-11-28',
-      'user-agent': 'camunda-release-notes-gate',
-    };
+    return githubHeaders(this.token, { json: true });
   }
 
   async list(): Promise<IssueComment[]> {
-    // The comment is posted on the first gate run and stays put, so the first
-    // page (100) always contains it — no pagination needed.
-    const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=100`, {
-      headers: this.headers(),
-    });
-    if (!res.ok) throw new Error(`GitHub API ${res.status} listing comments on #${this.issueNumber}`);
-    return (await res.json()) as IssueComment[];
+    // Paginate through ALL comments. If the gate first runs on a PR that already
+    // has >100 comments, its own sticky comment is the newest and lands past
+    // page 1 — a page-1-only read would miss it and create a duplicate on every
+    // rerun. GitHub caps per_page at 100; a short page marks the end.
+    const perPage = 100;
+    const all: IssueComment[] = [];
+    for (let page = 1; ; page++) {
+      const res = await fetch(
+        `${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=${perPage}&page=${page}`,
+        { headers: this.headers() },
+      );
+      if (!res.ok) throw new Error(`GitHub API ${res.status} listing comments on #${this.issueNumber}`);
+      const batch = (await res.json()) as IssueComment[];
+      all.push(...batch);
+      if (batch.length < perPage) break;
+    }
+    return all;
   }
 
   async create(body: string): Promise<void> {
