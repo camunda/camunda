@@ -17,6 +17,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+/**
+ * {@code GET /v2/status} is scoped to the default physical tenant only (ADR 001 D3): it is exposed
+ * unprefixed and at {@code /physical-tenants/default/v2/status}, both reaching this controller.
+ * {@code /physical-tenants/{id}/v2/status} for any other id gets a uniform 404 from {@link
+ * PhysicalTenantStatusScopeFilter}, before this controller — or Spring Security — is ever reached,
+ * so unauthenticated callers cannot enumerate physical tenant ids.
+ */
 @CamundaRestController
 @RequestMapping("/v2")
 public class StatusController {

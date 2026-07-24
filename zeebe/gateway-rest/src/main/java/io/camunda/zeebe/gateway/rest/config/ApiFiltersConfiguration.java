@@ -17,6 +17,7 @@ import io.camunda.security.spring.annotation.ConditionalOnAuthenticationMethod;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantFilter;
+import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantStatusScopeFilter;
 import io.camunda.zeebe.gateway.rest.controller.PhysicalTenantSwaggerFilter;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Arrays;
@@ -74,6 +75,21 @@ public class ApiFiltersConfiguration {
   public FilterRegistrationBean<PhysicalTenantFilter> physicalTenantFilter() {
     final FilterRegistrationBean<PhysicalTenantFilter> registration =
         new FilterRegistrationBean<>(new PhysicalTenantFilter());
+    registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
+    registration.setOrder(PHYSICAL_TENANT_FILTER_ORDER);
+    return registration;
+  }
+
+  /**
+   * Scopes {@code /v2/status} to the default physical tenant (ADR 001 D3): rejects every {@code
+   * /physical-tenants/{id}/v2/status} request for a non-default id with a uniform 404, before
+   * Spring Security selects a per-tenant chain, so a configured non-default tenant and an unknown
+   * one are indistinguishable to unauthenticated callers.
+   */
+  @Bean
+  public FilterRegistrationBean<PhysicalTenantStatusScopeFilter> physicalTenantStatusScopeFilter() {
+    final FilterRegistrationBean<PhysicalTenantStatusScopeFilter> registration =
+        new FilterRegistrationBean<>(new PhysicalTenantStatusScopeFilter());
     registration.addUrlPatterns(PHYSICAL_TENANTS_PATH_SEGMENT + "*");
     registration.setOrder(PHYSICAL_TENANT_FILTER_ORDER);
     return registration;
