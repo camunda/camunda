@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.regions.Region;
@@ -44,6 +46,8 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
  * class.
  */
 public final class AwsSecretsManagerSecretStore implements SecretStore {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AwsSecretsManagerSecretStore.class);
 
   private final SecretsManagerClient client;
   private final AwsSecretResolver resolver;
@@ -85,10 +89,12 @@ public final class AwsSecretsManagerSecretStore implements SecretStore {
   }
 
   /**
-   * Builds a store from configuration, eagerly constructing the underlying client. Building the
-   * client does not itself contact AWS, so a bad region, unreachable endpoint, or invalid
-   * credentials is not detected here — it only surfaces on the first real {@link #resolve} or
-   * {@link #list} call.
+   * Builds a store from configuration, eagerly constructing the underlying client and probing
+   * connectivity/credentials with a minimal AWS call. The probe is best-effort: a bad region,
+   * unreachable endpoint, or invalid/missing credentials is logged as a warning at startup but does
+   * not prevent the store from being built, so a transient AWS problem during boot cannot stop the
+   * whole application from starting. Such a misconfiguration then surfaces on the first real {@link
+   * #resolve} or {@link #list} call.
    */
   public static AwsSecretsManagerSecretStore fromConfig(final AwsSecretsManagerStoreConfig config) {
     final var builder =
@@ -116,11 +122,36 @@ public final class AwsSecretsManagerSecretStore implements SecretStore {
           "Failed to initialize AWS Secrets Manager client: " + e.getMessage(), e);
     }
     final var pathPrefix = normalize(config.pathPrefix());
+    final var containerSecretId = config.containerSecretId();
     final AwsSecretResolver resolver =
-        config.containerSecretId() != null
-            ? new ContainerSecretResolver(client, pathPrefix, config.containerSecretId())
+        containerSecretId != null
+            ? new ContainerSecretResolver(client, pathPrefix, containerSecretId)
             : new FlatSecretResolver(client, pathPrefix, config.batchEnabled(), config.batchSize());
+    validateConnectivity(resolver);
     return new AwsSecretsManagerSecretStore(client, resolver);
+  }
+
+  /**
+   * Probes AWS connectivity/credentials at startup, delegating to the resolver so it uses the exact
+   * API — and thus the minimal IAM policy — that mode resolves with. The probe is best-effort: on
+   * failure it logs a warning and lets the store be built anyway, so a transient AWS problem during
+   * boot cannot stop the application from starting. The misconfiguration then surfaces on the first
+   * real {@link #resolve} or {@link #list} call. The client is kept open on failure because the
+   * store retains it for those later calls.
+   *
+   * <p>Package-private so the warn-and-continue behaviour can be unit-tested with a stub resolver;
+   * the per-mode probe choice is tested on the resolvers themselves.
+   */
+  static void validateConnectivity(final AwsSecretResolver resolver) {
+    try {
+      resolver.validateConnectivity();
+    } catch (final RuntimeException e) {
+      LOG.warn(
+          "Failed to validate AWS Secrets Manager connectivity/credentials at startup; "
+              + "the store will still be created and the error will surface on first use: {}",
+          e.getMessage(),
+          e);
+    }
   }
 
   @Override

@@ -147,6 +147,13 @@ final class ContainerSecretResolver implements AwsSecretResolver {
     }
   }
 
+  @Override
+  public void validateConnectivity() {
+    // container mode reads exactly one secret at runtime, so GetSecretValue on it is both the
+    // minimal probe and the one that matches this mode's IAM footprint.
+    client.getSecretValue(GetSecretValueRequest.builder().secretId(containerId).build());
+  }
+
   /**
    * Raw {@code secretString} of the container secret. AWS returns exactly one of {@code
    * secretString}/{@code secretBinary} per secret; {@code null} here means the value lives in
