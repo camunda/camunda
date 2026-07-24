@@ -16,11 +16,6 @@ import {
   createProcessInstanceWithManyWaitingTokens,
 } from '@requestHelpers';
 
-// camunda/camunda#56239: verified live there's no 1000-item cap on this
-// endpoint — default page size is 100, page.totalItems is always the true
-// count, and page.limit above 1000 returns everything. Guards
-// data-completeness for large single-element cardinality instead.
-
 test.describe
   .parallel('Wait State Search — Large Single-Element Cardinality', () => {
   const processInstanceKeys: string[] = [];
