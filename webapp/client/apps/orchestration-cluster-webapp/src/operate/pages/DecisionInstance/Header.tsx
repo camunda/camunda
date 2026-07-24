@@ -16,7 +16,7 @@ import {queries} from '#/shared/http/queries';
 import {InstanceHeader, type Column} from '#/operate/shared/InstanceHeader/InstanceHeader';
 import {InstanceHeaderSkeleton} from '#/operate/shared/InstanceHeader/InstanceHeaderSkeleton';
 import {useDecisionInstance} from './decisionInstance.queries';
-import {formatEvaluationDate} from './utils';
+import {formatEvaluationDate} from '#/operate/shared/utils/formatEvaluationDate';
 import {getHeaderColumns} from './headerColumns';
 
 type Props = {

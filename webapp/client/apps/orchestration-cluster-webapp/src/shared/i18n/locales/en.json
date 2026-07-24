@@ -494,7 +494,61 @@
 				}
 			},
 			"decisions": {
-				"title": "Decisions"
+				"title": "Decisions",
+				"filters": {
+					"tenant": "Tenant",
+					"decisionSection": "Decision",
+					"name": "Name",
+					"searchByName": "Search by Decision Name",
+					"version": "Version",
+					"selectVersion": "Select a Decision Version",
+					"allVersions": "All versions",
+					"instancesStates": "Instances States",
+					"evaluated": "Evaluated",
+					"failed": "Failed",
+					"decisionInstanceKey": "Decision Instance Key(s)",
+					"decisionInstanceKeyPlaceholder": "separated by space or comma",
+					"processInstanceKey": "Process Instance Key",
+					"businessId": "Business ID",
+					"evaluationDateRange": "Evaluation Date Range",
+					"evaluationDatePopoverTitle": "Filter decisions by evaluation date",
+					"removeFilter": "Remove {{label}} Filter"
+				},
+				"instancesTable": {
+					"title": "Decision Instances",
+					"name": "Name",
+					"decisionInstanceKey": "Decision Instance Key",
+					"version": "Version",
+					"businessId": "Business ID",
+					"tenant": "Tenant",
+					"evaluationDate": "Evaluation Date",
+					"processInstanceKey": "Process Instance Key",
+					"none": "None",
+					"viewDecisionInstance": "View decision instance {{key}}",
+					"viewProcessInstance": "View process instance {{key}}",
+					"emptyMessage": "There are no Instances matching this filter set",
+					"emptyAdditionalInfo": "To see some results, select at least one Instance state",
+					"selectAll": "Select all rows",
+					"selectRow": "Select row {{key}}"
+				},
+				"toolbar": {
+					"delete": "Delete",
+					"discard": "Discard",
+					"itemsSelected": "{{count}} items selected",
+					"itemSelected": "{{count}} item selected",
+					"selectAll": "Select all items",
+					"deleteModalHeading": "Apply operation",
+					"deleteModalCancel": "Cancel",
+					"deleteModalBody": "{{count}} instances selected for delete operation. This permanently deletes the selected decision instances and their history. This cannot be undone.",
+					"deleteModalBody_one": "{{count}} instance selected for delete operation. This permanently deletes the selected decision instances and their history. This cannot be undone.",
+					"deleteModalBody_other": "{{count}} instances selected for delete operation. This permanently deletes the selected decision instances and their history. This cannot be undone.",
+					"deleteSuccessTitle": "The batch operation \"{{operationType}}\" has been started",
+					"deleteSuccessSubtitle": "You can track its progress in the Batch Operation page",
+					"deleteSuccessActionLabel": "Go to operation details",
+					"deleteErrorTitle": "Operation could not be created",
+					"forbiddenTitle": "You don't have permission to perform this operation",
+					"forbiddenSubtitle": "Please contact the administrator if you need access."
+				}
 			},
 			"decisionInstance": {
 				"title": "Operate Decision Instance",

@@ -483,7 +483,61 @@
 				}
 			},
 			"decisions": {
-				"title": "Décisions"
+				"title": "Décisions",
+				"filters": {
+					"tenant": "Locataire",
+					"decisionSection": "Décision",
+					"name": "Nom",
+					"searchByName": "Rechercher par nom de décision",
+					"version": "Version",
+					"selectVersion": "Sélectionner une version de décision",
+					"allVersions": "Toutes les versions",
+					"instancesStates": "États des instances",
+					"evaluated": "Évaluée",
+					"failed": "Échouée",
+					"decisionInstanceKey": "Clé(s) d'instance de décision",
+					"decisionInstanceKeyPlaceholder": "séparées par un espace ou une virgule",
+					"processInstanceKey": "Clé d'instance de processus",
+					"businessId": "ID métier",
+					"evaluationDateRange": "Plage de dates d'évaluation",
+					"evaluationDatePopoverTitle": "Filtrer les décisions par date d'évaluation",
+					"removeFilter": "Supprimer le filtre {{label}}"
+				},
+				"instancesTable": {
+					"title": "Instances de décision",
+					"name": "Nom",
+					"decisionInstanceKey": "Clé d'instance de décision",
+					"version": "Version",
+					"businessId": "ID métier",
+					"tenant": "Locataire",
+					"evaluationDate": "Date d'évaluation",
+					"processInstanceKey": "Clé d'instance de processus",
+					"none": "Aucune",
+					"viewDecisionInstance": "Afficher l'instance de décision {{key}}",
+					"viewProcessInstance": "Afficher l'instance de processus {{key}}",
+					"emptyMessage": "Aucune instance ne correspond à cet ensemble de filtres",
+					"emptyAdditionalInfo": "Pour voir des résultats, sélectionnez au moins un état d'instance",
+					"selectAll": "Sélectionner toutes les lignes",
+					"selectRow": "Sélectionner la ligne {{key}}"
+				},
+				"toolbar": {
+					"delete": "Supprimer",
+					"discard": "Annuler",
+					"itemsSelected": "{{count}} éléments sélectionnés",
+					"itemSelected": "{{count}} élément sélectionné",
+					"selectAll": "Sélectionner tous les éléments",
+					"deleteModalHeading": "Appliquer l'opération",
+					"deleteModalCancel": "Annuler",
+					"deleteModalBody": "{{count}} instances sélectionnées pour l'opération de suppression. Cela supprime définitivement les instances de décision sélectionnées et leur historique. Cette action est irréversible.",
+					"deleteModalBody_one": "{{count}} instance sélectionnée pour l'opération de suppression. Cela supprime définitivement les instances de décision sélectionnées et leur historique. Cette action est irréversible.",
+					"deleteModalBody_other": "{{count}} instances sélectionnées pour l'opération de suppression. Cela supprime définitivement les instances de décision sélectionnées et leur historique. Cette action est irréversible.",
+					"deleteSuccessTitle": "L'opération de lot « {{operationType}} » a été démarrée",
+					"deleteSuccessSubtitle": "Vous pouvez suivre son avancement dans la page Opérations par lot",
+					"deleteSuccessActionLabel": "Voir les détails de l'opération",
+					"deleteErrorTitle": "L'opération n'a pas pu être créée",
+					"forbiddenTitle": "Vous n'avez pas la permission d'effectuer cette opération",
+					"forbiddenSubtitle": "Veuillez contacter votre administrateur si vous avez besoin d'un accès."
+				}
 			},
 			"decisionInstance": {
 				"title": "Instance de décision Operate",

@@ -480,7 +480,61 @@
 				}
 			},
 			"decisions": {
-				"title": "Entscheidungen"
+				"title": "Entscheidungen",
+				"filters": {
+					"tenant": "Mandant",
+					"decisionSection": "Entscheidung",
+					"name": "Name",
+					"searchByName": "Nach Entscheidungsname suchen",
+					"version": "Version",
+					"selectVersion": "Entscheidungsversion auswählen",
+					"allVersions": "Alle Versionen",
+					"instancesStates": "Instanzstatus",
+					"evaluated": "Ausgewertet",
+					"failed": "Fehlgeschlagen",
+					"decisionInstanceKey": "Entscheidungsinstanzschlüssel",
+					"decisionInstanceKeyPlaceholder": "durch Leerzeichen oder Komma getrennt",
+					"processInstanceKey": "Prozessinstanzschlüssel",
+					"businessId": "Geschäfts-ID",
+					"evaluationDateRange": "Auswertungsdatumsbereich",
+					"evaluationDatePopoverTitle": "Entscheidungen nach Auswertungsdatum filtern",
+					"removeFilter": "Filter „{{label}}“ entfernen"
+				},
+				"instancesTable": {
+					"title": "Entscheidungsinstanzen",
+					"name": "Name",
+					"decisionInstanceKey": "Entscheidungsinstanzschlüssel",
+					"version": "Version",
+					"businessId": "Geschäfts-ID",
+					"tenant": "Mandant",
+					"evaluationDate": "Auswertungsdatum",
+					"processInstanceKey": "Prozessinstanzschlüssel",
+					"none": "Keine",
+					"viewDecisionInstance": "Entscheidungsinstanz {{key}} anzeigen",
+					"viewProcessInstance": "Prozessinstanz {{key}} anzeigen",
+					"emptyMessage": "Es gibt keine Instanzen, die diesem Filter entsprechen",
+					"emptyAdditionalInfo": "Um Ergebnisse zu sehen, wählen Sie mindestens einen Instanzstatus aus",
+					"selectAll": "Alle Zeilen auswählen",
+					"selectRow": "Zeile {{key}} auswählen"
+				},
+				"toolbar": {
+					"delete": "Löschen",
+					"discard": "Verwerfen",
+					"itemsSelected": "{{count}} Elemente ausgewählt",
+					"itemSelected": "{{count}} Element ausgewählt",
+					"selectAll": "Alle Elemente auswählen",
+					"deleteModalHeading": "Operation anwenden",
+					"deleteModalCancel": "Abbrechen",
+					"deleteModalBody": "{{count}} Instanzen für die Löschoperation ausgewählt. Dies löscht die ausgewählten Entscheidungsinstanzen und ihren Verlauf dauerhaft. Dies kann nicht widerrufen werden.",
+					"deleteModalBody_one": "{{count}} Instanz für die Löschoperation ausgewählt. Dies löscht die ausgewählten Entscheidungsinstanzen und ihren Verlauf dauerhaft. Dies kann nicht widerrufen werden.",
+					"deleteModalBody_other": "{{count}} Instanzen für die Löschoperation ausgewählt. Dies löscht die ausgewählten Entscheidungsinstanzen und ihren Verlauf dauerhaft. Dies kann nicht widerrufen werden.",
+					"deleteSuccessTitle": "Die Batch-Operation „{{operationType}}“ wurde gestartet",
+					"deleteSuccessSubtitle": "Sie können den Fortschritt auf der Seite Batch-Operationen verfolgen",
+					"deleteSuccessActionLabel": "Zu den Operationsdetails",
+					"deleteErrorTitle": "Operation konnte nicht erstellt werden",
+					"forbiddenTitle": "Sie haben keine Berechtigung, diese Operation auszuführen",
+					"forbiddenSubtitle": "Bitte kontaktieren Sie Ihren Administrator, wenn Sie Zugriff benötigen."
+				}
 			},
 			"decisionInstance": {
 				"title": "Operate Entscheidungsinstanz",

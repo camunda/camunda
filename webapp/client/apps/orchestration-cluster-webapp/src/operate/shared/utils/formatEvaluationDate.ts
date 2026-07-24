@@ -8,8 +8,8 @@
 
 import {format, parseISO} from 'date-fns';
 
-function formatEvaluationDate(dateString: string | null | undefined): string {
-	return dateString ? format(parseISO(dateString), 'yyyy-MM-dd HH:mm:ss') : '--';
+function formatEvaluationDate(value: string | null | undefined): string {
+	return value ? format(parseISO(value), 'yyyy-MM-dd HH:mm:ss') : '--';
 }
 
 export {formatEvaluationDate};

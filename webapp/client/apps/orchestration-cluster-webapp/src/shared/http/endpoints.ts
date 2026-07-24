@@ -16,6 +16,9 @@ import {
 	type GetIncidentProcessInstanceStatisticsByErrorRequestBody,
 	type GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 	type QueryBatchOperationsRequestBody,
+	type QueryDecisionDefinitionsRequestBody,
+	type QueryDecisionInstancesRequestBody,
+	type CreateDecisionInstancesDeletionBatchOperationRequestBody,
 	type AssignTaskRequestBody,
 	type CompleteTaskRequestBody,
 	type QueryUserTaskAuditLogsRequestBody,
@@ -132,6 +135,30 @@ const endpoints = {
 		new Request(getFullURL(unifiedAPIEndpoints.queryBatchOperations.getUrl()), {
 			...BASE_REQUEST_OPTIONS,
 			method: unifiedAPIEndpoints.queryBatchOperations.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryDecisionDefinitions: (body: QueryDecisionDefinitionsRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionDefinitions.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryDecisionDefinitions.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	queryDecisionInstances: (body: QueryDecisionInstancesRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.queryDecisionInstances.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.queryDecisionInstances.method,
+			body: JSON.stringify(body),
+			headers: {'Content-Type': 'application/json'},
+		}),
+
+	createDecisionInstancesDeletionBatchOperation: (body: CreateDecisionInstancesDeletionBatchOperationRequestBody) =>
+		new Request(getFullURL(unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.getUrl()), {
+			...BASE_REQUEST_OPTIONS,
+			method: unifiedAPIEndpoints.createDecisionInstancesDeletionBatchOperation.method,
 			body: JSON.stringify(body),
 			headers: {'Content-Type': 'application/json'},
 		}),

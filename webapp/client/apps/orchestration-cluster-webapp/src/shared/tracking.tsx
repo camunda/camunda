@@ -122,7 +122,17 @@ type Events =
 				| 'dashboard-process-incidents-by-error-message-all-processes'
 				| 'dashboard-process-incidents-by-error-message-single-version'
 				| 'decision-details-version'
-				| 'decision-details-parent-process-details';
+				| 'decision-details-parent-process-details'
+				| 'decision-instances-parent-process-details';
+	  }
+	| {
+			eventName: 'operate:decisions-loaded';
+			filters: string[];
+			sort: {field: string; order: 'asc' | 'desc'}[];
+	  }
+	| {
+			eventName: 'operate:batch-operation';
+			operationType: string;
 	  }
 	| {
 			eventName: 'operate:dashboard-link-clicked';

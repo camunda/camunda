@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.10';
+import type {
+	DecisionInstance,
+	GetDecisionInstanceResponseBody,
+	QueryDecisionInstancesResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.10';
 
 function createDecisionInstance(overrides?: Partial<GetDecisionInstanceResponseBody>): GetDecisionInstanceResponseBody {
 	return {
@@ -34,4 +38,21 @@ function createDecisionInstance(overrides?: Partial<GetDecisionInstanceResponseB
 	};
 }
 
-export {createDecisionInstance};
+function createQueryDecisionInstancesResponse(overrides?: {
+	items?: DecisionInstance[];
+	page?: Partial<QueryDecisionInstancesResponseBody['page']>;
+}): QueryDecisionInstancesResponseBody {
+	const items = overrides?.items ?? [];
+	return {
+		items,
+		page: {
+			totalItems: items.length,
+			startCursor: null,
+			endCursor: null,
+			hasMoreTotalItems: false,
+			...overrides?.page,
+		},
+	};
+}
+
+export {createDecisionInstance, createQueryDecisionInstancesResponse};
