@@ -33,20 +33,29 @@ import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
 import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.CurrentClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.GlobalChangeOperation.MemberLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.GlobalConfiguration;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangePlan.PartitionGroupParallelPhase;
+import io.camunda.zeebe.dynamic.config.state.PhasedChangeState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -275,7 +284,10 @@ final class ProtoBufSerializerTest {
                 new MemberLeaveOperation(MemberId.from("1")),
                 new PartitionJoinOperation(MemberId.from("2"), 1, 2),
                 new ModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
-                new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING)));
+                new AwaitModeChangeOperation(MemberId.from("2"), Mode.RECOVERING),
+                new PartitionPreRestoreOperation(MemberId.from("1"), 1),
+                new PartitionRestoreOperation(
+                    MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L)))));
 
     // when
     final var encodedResponse = protoBufSerializer.encodeResponse(topologyChangeResponse);
@@ -284,6 +296,66 @@ final class ProtoBufSerializerTest {
     final var decodedResponse =
         protoBufSerializer.decodeTopologyChangeResponse(encodedResponse).get();
     assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
+  }
+
+  @Test
+  void shouldEncodeAndDecodePartitionGroupChangeOperationForPartitionPreRestore() {
+    // given
+    final var groupId = "default";
+    final var plan =
+        new PhasedChangePlan(
+            1,
+            0,
+            List.of(
+                new PartitionGroupParallelPhase(
+                    Map.of(
+                        groupId,
+                        List.of(new PartitionPreRestoreOperation(MemberId.from("1"), 1))))),
+            Instant.now());
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(),
+            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+
+    // when
+    final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);
+
+    // then
+    final var decoded = protoBufSerializer.decodeCurrentClusterConfiguration(encoded);
+    assertThat(decoded).isEqualTo(configuration);
+  }
+
+  @Test
+  void shouldEncodeAndDecodePartitionGroupChangeOperationForPartitionRestore() {
+    // given
+    final var groupId = "default";
+    final var plan =
+        new PhasedChangePlan(
+            1,
+            0,
+            List.of(
+                new PartitionGroupParallelPhase(
+                    Map.of(
+                        groupId,
+                        List.of(
+                            new PartitionRestoreOperation(
+                                MemberId.from("1"), 1, new TreeSet<>(List.of(1L, 2L))))))),
+            Instant.now());
+    final var configuration =
+        new CurrentClusterConfiguration(
+            CurrentClusterConfiguration.INITIAL_VERSION,
+            GlobalConfiguration.init(),
+            Map.of(),
+            new PhasedChangeState(Optional.of(plan), Optional.empty()));
+
+    // when
+    final var encoded = protoBufSerializer.encodeCurrentClusterConfiguration(configuration);
+
+    // then
+    final var decoded = protoBufSerializer.decodeCurrentClusterConfiguration(encoded);
+    assertThat(decoded).isEqualTo(configuration);
   }
 
   @Test

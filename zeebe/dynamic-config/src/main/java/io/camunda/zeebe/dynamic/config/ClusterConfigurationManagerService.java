@@ -29,6 +29,7 @@ import io.camunda.zeebe.dynamic.config.changes.ModeChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.NoopClusterMembershipChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiper;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
@@ -265,6 +266,16 @@ public final class ClusterConfigurationManagerService
   public void registerPartitionChangeExecutors(
       final PartitionChangeExecutor partitionChangeExecutor,
       final PartitionScalingChangeExecutor partitionScalingChangeExecutor) {
+    registerPartitionChangeExecutors(
+        partitionChangeExecutor,
+        partitionScalingChangeExecutor,
+        new RestoreChangeExecutor.DeniedRestoreChangeExecutor());
+  }
+
+  public void registerPartitionChangeExecutors(
+      final PartitionChangeExecutor partitionChangeExecutor,
+      final PartitionScalingChangeExecutor partitionScalingChangeExecutor,
+      final RestoreChangeExecutor restoreChangeExecutor) {
     managerActor.run(
         () -> {
           Objects.requireNonNull(
@@ -276,7 +287,8 @@ public final class ClusterConfigurationManagerService
                   new NoopClusterMembershipChangeExecutor(),
                   partitionScalingChangeExecutor,
                   clusterChangeExecutor,
-                  modeChangeExecutor));
+                  modeChangeExecutor,
+                  restoreChangeExecutor));
         });
   }
 

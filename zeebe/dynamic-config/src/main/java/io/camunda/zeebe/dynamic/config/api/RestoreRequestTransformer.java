@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreResolvedRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.ConcurrentModificationException;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InternalError;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationRequestFailedException.InvalidRequest;
@@ -17,10 +19,20 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.Co
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
+import io.camunda.zeebe.dynamic.config.state.Mode;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.AwaitModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.ModeChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.util.RequestValidatorRegistry;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Validates a {@link RestoreRequest} against the current cluster configuration and produces the
@@ -60,8 +72,47 @@ public final class RestoreRequestTransformer implements ConfigurationChangeReque
     if (res.isLeft()) {
       return Either.left(mapFailure(res.getLeft()));
     }
-    // Restore sequence steps will be generated
-    return Either.right(List.of());
+    return Either.right(buildOperations(clusterConfiguration, (RestoreResolvedRequest) res.get()));
+  }
+
+  private static List<ClusterConfigurationChangeOperation> buildOperations(
+      final ClusterConfiguration clusterConfiguration, final RestoreResolvedRequest resolved) {
+    final var members =
+        clusterConfiguration.members().entrySet().stream()
+            .filter(entry -> entry.getValue().state() == State.RECOVERING)
+            .map(Entry::getKey)
+            .sorted(MemberId.ID_COMPARATOR)
+            .toList();
+
+    final var operations = new ArrayList<ClusterConfigurationChangeOperation>();
+    for (final var memberId : members) {
+      for (final var partitionId : clusterConfiguration.getMember(memberId).partitions().keySet()) {
+        operations.add(new PartitionPreRestoreOperation(memberId, partitionId));
+      }
+    }
+    for (final var memberId : members) {
+      for (final var partitionId : clusterConfiguration.getMember(memberId).partitions().keySet()) {
+        final var backupIds = resolved.backups().get(partitionId);
+        operations.add(
+            new PartitionRestoreOperation(memberId, partitionId, toSortedSet(backupIds)));
+      }
+    }
+    for (final var memberId : members) {
+      operations.add(new ModeChangeOperation(memberId, Mode.PROCESSING));
+    }
+    for (final var memberId : members) {
+      operations.add(new AwaitModeChangeOperation(memberId, Mode.PROCESSING));
+    }
+    operations.add(new UpdateIncarnationNumberOperation(members.getFirst()));
+    return operations;
+  }
+
+  private static SortedSet<Long> toSortedSet(final long[] backupIds) {
+    final var set = new TreeSet<Long>();
+    for (final long id : backupIds) {
+      set.add(id);
+    }
+    return set;
   }
 
   private static Exception mapFailure(final Exception exception) {

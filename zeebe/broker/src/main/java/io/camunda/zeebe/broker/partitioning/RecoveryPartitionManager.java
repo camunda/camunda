@@ -19,22 +19,40 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.changes.RestoreChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExportingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.restore.PartitionRestoreService;
+import io.camunda.zeebe.restore.ValidatePartitionCount;
 import io.camunda.zeebe.restore.validation.RestoreValidator;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.health.HealthStatus;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -43,6 +61,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.IntFunction;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -57,9 +80,22 @@ import org.slf4j.LoggerFactory;
  * mirroring the normal {@link Partition} bootstrapping approach.
  */
 public final class RecoveryPartitionManager
-    implements PartitionManager, PartitionChangeExecutor, PartitionScalingChangeExecutor {
+    implements PartitionManager,
+        PartitionChangeExecutor,
+        PartitionScalingChangeExecutor,
+        RestoreChangeExecutor {
 
   private static final Logger LOG = LoggerFactory.getLogger(RecoveryPartitionManager.class);
+
+  // Dedicated to the ephemeral open-and-close sanity check after restore: the restored partition
+  // is not yet running as a ZeebePartition, so there is no shared factory/resources to reuse here.
+  private static final ZeebeRocksDbFactory<?> SANITY_CHECK_DB_FACTORY =
+      new ZeebeRocksDbFactory<>(
+          new RocksDbConfiguration(),
+          new ConsistencyChecksSettings(true, true),
+          new AccessMetricsConfiguration(AccessMetricsConfiguration.Kind.NONE),
+          SimpleMeterRegistry::new);
+
   private final List<RecoveryPartition> recoveryPartitions = new ArrayList<>();
   private final List<Integer> failedPartitionIds = new ArrayList<>();
   private final String partitionGroup;
@@ -74,6 +110,7 @@ public final class RecoveryPartitionManager
   private final AtomixServerTransport gatewayBrokerTransport;
   private final @Nullable IntFunction<Long> exportedPositionSupplier;
   private @Nullable BackupStore backupStore;
+  private @Nullable ExecutorService restoreExecutor;
 
   public RecoveryPartitionManager(
       final String partitionGroup,
@@ -122,7 +159,7 @@ public final class RecoveryPartitionManager
     concurrencyControl.run(
         () -> {
           if (DEFAULT_GROUP_NAME.equals(partitionGroup)) {
-            clusterConfigurationService.registerPartitionChangeExecutors(this, this);
+            clusterConfigurationService.registerPartitionChangeExecutors(this, this, this);
           }
           startInternal(result);
         });
@@ -145,6 +182,8 @@ public final class RecoveryPartitionManager
   }
 
   private void startInternal(final ActorFuture<Void> result) {
+    restoreExecutor =
+        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("zeebe-restore-", 0).factory());
     final var localPartitions = localPartitions();
     if (localPartitions.isEmpty()) {
       LOG.info("No local partitions to recover for partition group {}", partitionGroup);
@@ -250,6 +289,10 @@ public final class RecoveryPartitionManager
         stopFutures,
         (ignored, stopError) -> {
           recoveryPartitions.clear();
+          if (restoreExecutor != null) {
+            restoreExecutor.shutdownNow();
+            restoreExecutor = null;
+          }
           if (stopError != null) {
             LOG.error("Failed to stop recovery partitions", stopError);
           }
@@ -268,6 +311,245 @@ public final class RecoveryPartitionManager
   private Path partitionDirectory(final PartitionId partitionId) {
     final var dataDirectory = brokerCfg.getData().getDirectory();
     return RaftPartitionFactory.getPartitionDirectory(partitionId, dataDirectory);
+  }
+
+  @Override
+  public ActorFuture<Void> preRestore(final int partitionId) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var executor = restoreExecutor;
+          if (executor == null) {
+            result.completeExceptionally(
+                new IllegalStateException("RecoveryPartitionManager is not started"));
+            return;
+          }
+          final var partitionDir = partitionDirectory(new PartitionId(partitionGroup, partitionId));
+          CompletableFuture.runAsync(() -> deleteDirectory(partitionDir), executor)
+              .whenCompleteAsync(
+                  (ok, error) -> {
+                    if (error != null) {
+                      result.completeExceptionally(unwrapCompletionException(error));
+                    } else {
+                      LOG.info("Dropped local data of partition {} for restore", partitionId);
+                      result.complete(null);
+                    }
+                  },
+                  concurrencyControl);
+        });
+    return result;
+  }
+
+  private static void deleteDirectory(final Path directory) {
+    try {
+      if (Files.exists(directory)) {
+        FileUtil.deleteFolderContents(directory);
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to delete directory " + directory, e);
+    }
+  }
+
+  @Override
+  public ActorFuture<Void> restore(final int partitionId, final SortedSet<Long> backupIds) {
+    final var result = concurrencyControl.<Void>createFuture();
+    concurrencyControl.run(
+        () -> {
+          final var executor = restoreExecutor;
+          if (executor == null) {
+            result.completeExceptionally(
+                new IllegalStateException("RecoveryPartitionManager is not started"));
+            return;
+          }
+          final var store = backupStore;
+          if (store == null) {
+            result.completeExceptionally(
+                new IllegalStateException(
+                    "No backup store available to restore partition " + partitionId));
+            return;
+          }
+          final var metadata =
+              localPartitions().stream()
+                  .filter(p -> p.id().number() == partitionId)
+                  .findFirst()
+                  .orElse(null);
+          if (metadata == null) {
+            result.completeExceptionally(
+                new IllegalStateException(
+                    "Cannot restore partition %d, it is not a local partition of group %s"
+                        .formatted(partitionId, partitionGroup)));
+            return;
+          }
+          final var ids = backupIds.stream().mapToLong(Long::longValue).toArray();
+          final var partitionDir = partitionDirectory(metadata.id());
+
+          CompletableFuture.runAsync(() -> restorePartition(metadata, store, ids), executor)
+              .thenRunAsync(() -> verifyRestoredPartition(metadata), executor)
+              .handleAsync(
+                  (ok, error) -> {
+                    if (error != null) {
+                      LOG.error(
+                          "Failed to restore partition {}, dropping partial data so the"
+                              + " operation can be retried",
+                          partitionId,
+                          error);
+                      try {
+                        deleteDirectory(partitionDir);
+                      } catch (final Exception cleanupError) {
+                        error.addSuppressed(cleanupError);
+                      }
+                    }
+                    return error;
+                  },
+                  executor)
+              .whenCompleteAsync(
+                  (error, handlerError) -> {
+                    // error is the restore/verification failure (if any), carried over as the
+                    // returned value of the handleAsync stage above, which already ran the
+                    // cleanup delete on the restoreExecutor; handlerError would only be set if
+                    // that stage's own logic threw unexpectedly
+                    final var failure = error != null ? error : handlerError;
+                    if (failure != null) {
+                      result.completeExceptionally(unwrapCompletionException(failure));
+                    } else {
+                      LOG.info("Restored partition {} from backups {}", partitionId, backupIds);
+                      result.complete(null);
+                    }
+                  },
+                  concurrencyControl);
+        });
+    return result;
+  }
+
+  private void restorePartition(
+      final PartitionMetadata metadata, final BackupStore store, final long[] backupIds) {
+    final var registry = MicrometerUtil.wrap(meterRegistry, PartitionKeyNames.tags(metadata.id()));
+    final var factory = new RaftPartitionFactory(brokerCfg);
+    try {
+      final var restoreService =
+          new PartitionRestoreService(
+              store,
+              factory.createRaftPartition(metadata, registry),
+              brokerInfo.getNodeId(),
+              new RocksDBSnapshotFileInfoProvider(),
+              registry);
+      restoreService.restore(
+          backupIds, new ValidatePartitionCount(brokerCfg.getCluster().getPartitionsCount()));
+    } catch (final Exception e) {
+      throw new CompletionException("Failed to restore partition %s".formatted(metadata.id()), e);
+    } finally {
+      MicrometerUtil.close(registry);
+    }
+  }
+
+  /** Blocks the calling thread; must only run on {@link #restoreExecutor}. */
+  private void verifyRestoredPartition(final PartitionMetadata metadata) {
+    final var partitionDir = partitionDirectory(metadata.id());
+    if (!directoryHasEntries(partitionDir)) {
+      throw new IllegalStateException(
+          "Expected restored partition %s to have data, but directory %s is empty or missing"
+              .formatted(metadata.id(), partitionDir));
+    }
+    verifyRestoredRocksDb(metadata);
+  }
+
+  private static boolean directoryHasEntries(final Path directory) {
+    final var files = directory.toFile().listFiles();
+    return directory.toFile().isDirectory() && files != null && files.length > 0;
+  }
+
+  /**
+   * Opens the restored partition's latest snapshot, if any, through {@link
+   * ZeebeRocksDbFactory#openSnapshotOnlyDb(java.io.File)} and immediately closes it. RocksDB
+   * validates the on-disk SST files as part of opening (paranoid checks), so this surfaces
+   * corruption that {@link #directoryHasEntries} cannot detect.
+   */
+  private void verifyRestoredRocksDb(final PartitionMetadata metadata) {
+    final var partitionDir = partitionDirectory(metadata.id());
+    final var snapshotStore =
+        new FileBasedSnapshotStore(
+            brokerInfo.getNodeId(),
+            metadata.id(),
+            partitionDir,
+            new RocksDBSnapshotFileInfoProvider(),
+            meterRegistry);
+    try {
+      actorSchedulingService.submitActor(snapshotStore, SchedulingHints.ioBound()).join();
+      // getLatestSnapshot() is a plain getter, not dispatched onto the store's actor; without
+      // this barrier it can race ahead of the store's own startup job, which populates it from
+      // disk. getAvailableSnapshots() runs via actor.call(), so joining it first forces correct
+      // ordering.
+      snapshotStore.getAvailableSnapshots().join();
+      verifyRocksDbOpens(metadata.id(), snapshotStore, partitionDir);
+    } finally {
+      snapshotStore.closeAsync();
+    }
+  }
+
+  private void verifyRocksDbOpens(
+      final PartitionId partitionId,
+      final FileBasedSnapshotStore snapshotStore,
+      final Path partitionDir) {
+    final var snapshot = snapshotStore.getLatestSnapshot();
+    if (snapshot.isEmpty()) {
+      if (hasSnapshotDirectoryEntries(partitionDir)) {
+        // The store itself already checksums every candidate on load (see
+        // FileBasedSnapshotStoreImpl#collectSnapshot) and silently excludes anything that
+        // doesn't match from getLatestSnapshot(). An empty result despite files on disk means
+        // every candidate failed that check, i.e. the restored snapshot is corrupted.
+        throw new IllegalStateException(
+            "Restored partition %s has snapshot files on disk that failed checksum validation; "
+                    .formatted(partitionId)
+                + "the restored data is likely corrupted");
+      }
+      // Nothing was ever flushed to a snapshot (e.g. restored purely from the log); nothing to
+      // verify here.
+      return;
+    }
+    final Path scratchRoot;
+    try {
+      scratchRoot = Files.createTempDirectory("restore-sanity-check-");
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    final var runtimeDir = scratchRoot.resolve("runtime");
+    try {
+      try (final var snapshotOnlyDb =
+          SANITY_CHECK_DB_FACTORY.openSnapshotOnlyDb(snapshot.get().getPath().toFile())) {
+        snapshotOnlyDb.createSnapshot(runtimeDir.toFile());
+      }
+      // The snapshot-only open above only parses the manifest; a full read-write open of the
+      // copy is what actually validates every on-disk SST file, surfacing corruption the
+      // earlier open does not (mirrors StateControllerImpl.recoverFromSnapshot() + openDb()).
+      SANITY_CHECK_DB_FACTORY.createDb(runtimeDir.toFile()).close();
+    } catch (final Exception e) {
+      throw new IllegalStateException(
+          "RocksDB sanity check failed for restored partition %s".formatted(partitionId), e);
+    } finally {
+      try {
+        FileUtil.deleteFolderIfExists(scratchRoot);
+      } catch (final IOException e) {
+        LOG.warn("Failed to delete RocksDB sanity check scratch directory {}", scratchRoot, e);
+      }
+    }
+  }
+
+  private static boolean hasSnapshotDirectoryEntries(final Path partitionDir) {
+    final var snapshotsDir = partitionDir.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY);
+    if (!Files.isDirectory(snapshotsDir)) {
+      return false;
+    }
+    try (final var entries = Files.list(snapshotsDir)) {
+      return entries.findAny().isPresent();
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static Throwable unwrapCompletionException(final Throwable error) {
+    return error instanceof CompletionException && error.getCause() != null
+        ? error.getCause()
+        : error;
   }
 
   private MemberId localMemberId() {

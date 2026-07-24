@@ -66,7 +66,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private ConcurrencyControl concurrencyControl = mock(ConcurrencyControl.class);
   private BrokerHealthCheckService healthCheckService = mock(BrokerHealthCheckService.class);
   private SearchClientsProxy searchClientsProxy = mock(SearchClientsProxy.class);
-  private IntFunction<Long> exportedPositionSupplier;
+  private final Map<String, IntFunction<Long>> exportedPositionSuppliers = new LinkedHashMap<>();
   private List<PartitionListener> partitionListeners = List.of();
   private List<PartitionRaftListener> partitionRaftListeners = List.of();
   private ClusterServicesImpl clusterServices = mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS);
@@ -167,12 +167,13 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public IntFunction<Long> getExportedPositionSupplier() {
-    return exportedPositionSupplier;
+  public IntFunction<Long> getExportedPositionSupplier(final String physicalTenantId) {
+    return exportedPositionSuppliers.get(physicalTenantId);
   }
 
-  public void setExportedPositionSupplier(final IntFunction<Long> exportedPositionSupplier) {
-    this.exportedPositionSupplier = exportedPositionSupplier;
+  public void setExportedPositionSupplier(
+      final String physicalTenantId, final IntFunction<Long> exportedPositionSupplier) {
+    exportedPositionSuppliers.put(physicalTenantId, exportedPositionSupplier);
   }
 
   @Override

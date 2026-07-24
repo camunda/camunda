@@ -24,9 +24,13 @@ import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionCh
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionLeaveOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionPreRestoreOperation;
 import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.PartitionGroupOperation.PartitionChangeOperation.PartitionRestoreOperation;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -40,7 +44,7 @@ final class ConfigurationChangeAppliersImplTest {
       final ClusterConfigurationChangeOperation operation, final Class<?> expectedClass) {
     // given
     final var topologyChangeAppliers =
-        new ConfigurationChangeAppliersImpl(null, null, null, null, null);
+        new ConfigurationChangeAppliersImpl(null, null, null, null, null, null);
 
     // when
     final var applier = topologyChangeAppliers.getApplier(operation);
@@ -82,6 +86,11 @@ final class ConfigurationChangeAppliersImplTest {
         Arguments.of(
             new ModeChangeOperation(localMemberId, Mode.RECOVERING), EnterRecoveryApplier.class),
         Arguments.of(
-            new ModeChangeOperation(localMemberId, Mode.PROCESSING), ExitRecoveryApplier.class));
+            new ModeChangeOperation(localMemberId, Mode.PROCESSING), ExitRecoveryApplier.class),
+        Arguments.of(
+            new PartitionPreRestoreOperation(localMemberId, 1), PartitionPreRestoreApplier.class),
+        Arguments.of(
+            new PartitionRestoreOperation(localMemberId, 1, new TreeSet<>(List.of(1L))),
+            PartitionRestoreApplier.class));
   }
 }

@@ -384,4 +384,139 @@ final class RecoveryPartitionManagerTest {
           .until(() -> startFuture.get() != null && startFuture.get().isDone());
     }
   }
+
+  @Nested
+  class PreRestore {
+
+    @Test
+    void shouldDeleteLocalPartitionData(@TempDir final Path tempDir) {
+      // given
+      final var brokerCfg = new BrokerCfg();
+      brokerCfg.getData().setDirectory(tempDir.toString());
+      partitionManager = buildManager(brokerCfg, actorScheduler);
+      controlActor.run(() -> partitionManager.start());
+      await().atMost(Duration.ofSeconds(10)).until(() -> true); // let start() settle
+      final var partitionDir =
+          tempDir.resolve(GROUP).resolve("partitions").resolve(String.valueOf(PARTITION_ID));
+      writeMarkerFile(partitionDir);
+
+      // when
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(() -> future.set(partitionManager.preRestore(PARTITION_ID)));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
+      assertThat(future.get().isCompletedExceptionally()).isFalse();
+      assertThat(partitionDir).isEmptyDirectory();
+    }
+
+    @Test
+    void shouldBeIdempotentWhenDirectoryIsAlreadyEmpty() {
+      // given: no local partitions, so preRestore's target directory is never created, and
+      // start() only needs to set up the restoreExecutor for this to be a no-op deletion
+      when(clusterConfigurationService.getPartitionDistribution())
+          .thenReturn(new PartitionDistribution(Set.of()));
+      controlActor.run(() -> partitionManager.start());
+      await().atMost(Duration.ofSeconds(10)).until(() -> true); // let start() settle
+
+      // when
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(() -> future.set(partitionManager.preRestore(PARTITION_ID)));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
+      assertThat(future.get().isCompletedExceptionally()).isFalse();
+    }
+
+    @Test
+    void shouldFailWhenNotStarted() {
+      // when
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(() -> future.set(partitionManager.preRestore(PARTITION_ID)));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
+      assertThat(future.get().isCompletedExceptionally()).isTrue();
+    }
+
+    private void writeMarkerFile(final Path partitionDir) {
+      try {
+        java.nio.file.Files.createDirectories(partitionDir);
+        java.nio.file.Files.writeString(partitionDir.resolve("marker.txt"), "data");
+      } catch (final java.io.IOException e) {
+        throw new java.io.UncheckedIOException(e);
+      }
+    }
+  }
+
+  @Nested
+  class Restore {
+
+    @Test
+    void shouldFailForUnknownPartition(@TempDir final Path tempDir) {
+      // given: a properly configured backup store, so start() succeeds and backupStore is
+      // genuinely non-null - this test must exercise the "not a local partition of group" branch,
+      // not the "no backup store configured" one
+      final var brokerCfg = new BrokerCfg();
+      brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
+      brokerCfg.getData().getBackup().getFilesystem().setBasePath(tempDir.toString());
+      partitionManager = buildManager(brokerCfg, actorScheduler);
+      assertThat(partitionManager.start()).succeedsWithin(Duration.ofSeconds(10));
+
+      // when: restoring a partition id that is not one of the manager's local partitions
+      // (only PARTITION_ID and PARTITION_ID_2 are local per this class's setup)
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(
+          () ->
+              future.set(
+                  partitionManager.restore(999, new java.util.TreeSet<>(java.util.List.of(1L)))));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
+      assertThat(future.get().isCompletedExceptionally()).isTrue();
+      assertThat(future.get().getException())
+          .hasMessageContaining("not a local partition of group");
+    }
+
+    @Test
+    void shouldDeletePartitionDataWhenRestoreFails(@TempDir final Path tempDir) {
+      // given: a filesystem backup store with no backups taken, so restore is guaranteed to fail
+      final var brokerCfg = new BrokerCfg();
+      brokerCfg.getData().setDirectory(tempDir.toString());
+      brokerCfg.getData().getBackup().setStore(BackupStoreType.FILESYSTEM);
+      brokerCfg
+          .getData()
+          .getBackup()
+          .getFilesystem()
+          .setBasePath(tempDir.resolve("backups").toString());
+      partitionManager = buildManager(brokerCfg, actorScheduler);
+      controlActor.run(() -> partitionManager.start());
+      await().atMost(Duration.ofSeconds(10)).until(() -> true);
+      final var partitionDir =
+          tempDir.resolve(GROUP).resolve("partitions").resolve(String.valueOf(PARTITION_ID));
+
+      // when
+      final var future = new AtomicReference<ActorFuture<Void>>();
+      controlActor.run(
+          () ->
+              future.set(
+                  partitionManager.restore(
+                      PARTITION_ID, new java.util.TreeSet<>(java.util.List.of(1L)))));
+
+      // then
+      await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(() -> assertThat(future.get().isDone()).isTrue());
+      assertThat(future.get().isCompletedExceptionally()).isTrue();
+      assertThat(partitionDir).isEmptyDirectory();
+    }
+  }
 }
