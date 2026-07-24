@@ -9,10 +9,10 @@ package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.impl.record.value.agentinstance.AgentInstanceDefinition;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AgentInstanceIntent;
@@ -23,6 +23,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -128,12 +130,15 @@ public class MigrateAgentInstanceTest {
     final String processId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "2";
     final String otherJobType = "other-agent-job";
+    final String firstSystemPrompt = "Summarize the incoming request for review.";
+    final String secondSystemPrompt = "Draft a polite acknowledgement email.";
 
     final var deployment =
         engine
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
+                    .versionTag("v1")
                     .startEvent()
                     .parallelGateway("fork")
                     .serviceTask("A", t -> t.zeebeJobType(AGENT_JOB_TYPE))
@@ -145,6 +150,7 @@ public class MigrateAgentInstanceTest {
                     .done())
             .withXmlResource(
                 Bpmn.createExecutableProcess(targetProcessId)
+                    .versionTag("v2")
                     .startEvent()
                     .parallelGateway("fork2")
                     .serviceTask("A2", t -> t.zeebeJobType(AGENT_JOB_TYPE))
@@ -174,12 +180,14 @@ public class MigrateAgentInstanceTest {
         engine
             .agentInstances()
             .withElementInstanceKey(firstTaskInstance.getKey())
+            .withDefinition("gpt-4o", "openai", firstSystemPrompt)
             .create()
             .getKey();
     final long secondAgentInstanceKey =
         engine
             .agentInstances()
             .withElementInstanceKey(secondTaskInstance.getKey())
+            .withDefinition("claude-sonnet-4-5", "anthropic", secondSystemPrompt)
             .create()
             .getKey();
 
@@ -194,21 +202,53 @@ public class MigrateAgentInstanceTest {
         .migrate();
 
     // then
-    assertThat(
-            RecordingExporter.agentInstanceRecords(AgentInstanceIntent.MIGRATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(2))
-        .extracting(Record::getValue)
-        .extracting(
-            AgentInstanceRecordValue::getAgentInstanceKey,
-            AgentInstanceRecordValue::getProcessDefinitionKey,
-            AgentInstanceRecordValue::getElementId)
+    final var migratedValuesByAgentInstanceKey =
+        RecordingExporter.agentInstanceRecords(AgentInstanceIntent.MIGRATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(2)
+            .map(Record::getValue)
+            .collect(
+                Collectors.toMap(
+                    AgentInstanceRecordValue::getAgentInstanceKey, Function.identity()));
+
+    assertThat(migratedValuesByAgentInstanceKey)
+        .describedAs("Both agent instances are migrated to the target process definition")
+        .containsOnlyKeys(firstAgentInstanceKey, secondAgentInstanceKey);
+
+    Assertions.assertThat(migratedValuesByAgentInstanceKey.get(firstAgentInstanceKey))
         .describedAs(
-            "Both agent instances move to the target process definition; \"A\"'s agent instance "
-                + "is remapped to \"A2\" while \"B\"'s keeps its unchanged id")
-        .containsExactlyInAnyOrder(
-            tuple(firstAgentInstanceKey, targetProcessDefinitionKey, "A2"),
-            tuple(secondAgentInstanceKey, targetProcessDefinitionKey, "B"));
+            "\"A\"'s agent instance moves to the target process definition and is remapped to \"A2\"")
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasProcessDefinitionVersion(1)
+        .hasVersionTag("v2")
+        .hasElementId("A2")
+        .describedAs(
+            "Properties migration must not touch stay exactly as they were before migration")
+        .hasDefinition(
+            new AgentInstanceDefinition()
+                .setModel("gpt-4o")
+                .setProvider("openai")
+                .setSystemPrompt(firstSystemPrompt));
+
+    Assertions.assertThat(migratedValuesByAgentInstanceKey.get(secondAgentInstanceKey))
+        .describedAs(
+            "\"B\"'s agent instance moves to the target process definition but keeps its "
+                + "unchanged id")
+        .hasProcessInstanceKey(processInstanceKey)
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasBpmnProcessId(targetProcessId)
+        .hasProcessDefinitionVersion(1)
+        .hasVersionTag("v2")
+        .hasElementId("B")
+        .describedAs(
+            "Properties migration must not touch stay exactly as they were before migration")
+        .hasDefinition(
+            new AgentInstanceDefinition()
+                .setModel("claude-sonnet-4-5")
+                .setProvider("anthropic")
+                .setSystemPrompt(secondSystemPrompt));
   }
 
   @Test
