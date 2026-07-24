@@ -7,71 +7,73 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
-import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.camunda.zeebe.broker.partitioning.PartitionManager;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import java.time.Duration;
-import java.util.function.Supplier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 final class BrokerAdminServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
-  private BrokerStartupContext mockBrokerStartupContext;
-  private ActorSchedulingService mockActorSchedulingService;
-  private SpringBrokerBridge mockSpringBrokerBridge;
-  private BrokerAdminServiceImpl mockBrokerAdminService;
-
+  private final List<CompletableActorFuture<Void>> scheduledActorFutures = new ArrayList<>();
+  private MockBrokerStartupContext ctx;
   private ActorFuture<BrokerStartupContext> future;
 
   private final BrokerAdminServiceStep sut = new BrokerAdminServiceStep();
 
   @BeforeEach
   void setUp() {
-    mockActorSchedulingService = mock(ActorSchedulingService.class);
+    scheduledActorFutures.clear();
+    ctx = new MockBrokerStartupContext();
+    ctx.setConcurrencyControl(CONCURRENCY_CONTROL);
+    ctx.addPartitionManager(DEFAULT_PHYSICAL_TENANT_ID, mock(PartitionManager.class));
 
-    when(mockActorSchedulingService.submitActor(any()))
-        .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
-
-    mockSpringBrokerBridge = mock(SpringBrokerBridge.class);
-
-    mockBrokerAdminService = mock(BrokerAdminServiceImpl.class);
-    when(mockBrokerAdminService.closeAsync()).thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
-
-    mockBrokerStartupContext = mock(BrokerStartupContext.class);
-
-    when(mockBrokerStartupContext.getConcurrencyControl()).thenReturn(CONCURRENCY_CONTROL);
-    when(mockBrokerStartupContext.getBrokerInfo()).thenReturn(mock(BrokerInfo.class));
-    when(mockBrokerStartupContext.getActorSchedulingService())
-        .thenReturn(mockActorSchedulingService);
-    when(mockBrokerStartupContext.getSpringBrokerBridge()).thenReturn(mockSpringBrokerBridge);
-    when(mockBrokerStartupContext.getBrokerAdminService()).thenReturn(mockBrokerAdminService);
-
-    when(mockBrokerStartupContext.getClusterServices())
-        .thenReturn(mock(ClusterServicesImpl.class, Mockito.RETURNS_DEEP_STUBS));
+    final var mockScheduler = mock(ActorSchedulingService.class);
+    when(mockScheduler.submitActor(any()))
+        .thenAnswer(
+            inv -> {
+              final var f = new CompletableActorFuture<Void>();
+              scheduledActorFutures.add(f);
+              return f;
+            });
+    ctx.setActorSchedulingService(mockScheduler);
+    ctx.setClusterServices(mock(ClusterServicesImpl.class, Mockito.RETURNS_DEEP_STUBS));
 
     future = CONCURRENCY_CONTROL.createFuture();
+  }
+
+  private void completeAllScheduledActors() {
+    for (int i = 0; i < scheduledActorFutures.size(); i++) {
+      final var f = scheduledActorFutures.get(i);
+      if (!f.isDone()) {
+        f.complete(null);
+      }
+    }
   }
 
   @Test
   void shouldCompleteFutureOnStartup() {
     // when
-    sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    sut.startupInternal(ctx, CONCURRENCY_CONTROL, future);
+    completeAllScheduledActors();
 
     // then
     assertThat(future).succeedsWithin(TIME_OUT);
@@ -79,39 +81,52 @@ final class BrokerAdminServiceStepTest {
   }
 
   @Test
-  void shouldScheduleBrokerAdminServiceOnStartup() {
+  void shouldRegisterBrokerAdminServiceForDefaultTenantOnStartup() {
     // when
-    sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
+    sut.startupInternal(ctx, CONCURRENCY_CONTROL, future);
+    completeAllScheduledActors();
 
     // then
-    final var argumentCaptor = ArgumentCaptor.forClass(BrokerAdminServiceImpl.class);
-    verify(mockActorSchedulingService).submitActor(argumentCaptor.capture());
-
-    verify(mockBrokerStartupContext).setBrokerAdminService(argumentCaptor.getValue());
+    assertThat(future).succeedsWithin(TIME_OUT);
+    assertThat(ctx.getBrokerAdminService(DEFAULT_PHYSICAL_TENANT_ID)).isNotNull();
   }
 
   @Test
-  void shouldRegisterBrokerAdminServiceInSpringBrokerBridgeOnStartup() {
+  void shouldCreateDistinctServicesForEachPhysicalTenant() {
+    // given
+    final var secondTenantId = "second";
+    ctx.setPhysicalTenantIds(() -> Set.of(DEFAULT_PHYSICAL_TENANT_ID, secondTenantId));
+    ctx.addPartitionManager(secondTenantId, mock(PartitionManager.class));
+
     // when
-    sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
+    sut.startupInternal(ctx, CONCURRENCY_CONTROL, future);
+    completeAllScheduledActors();
 
     // then
-    final var adminServiceCaptor = ArgumentCaptor.forClass(BrokerAdminServiceImpl.class);
-    verify(mockBrokerStartupContext).setBrokerAdminService(adminServiceCaptor.capture());
+    assertThat(future).succeedsWithin(TIME_OUT);
+    final var defaultService = ctx.getBrokerAdminService(DEFAULT_PHYSICAL_TENANT_ID);
+    final var secondService = ctx.getBrokerAdminService(secondTenantId);
+    assertThat(defaultService).isNotNull();
+    assertThat(secondService).isNotNull();
+    assertThat(defaultService).isNotSameAs(secondService);
+  }
 
-    final var adminServiceSupplierCaptor = ArgumentCaptor.forClass(Supplier.class);
-    verify(mockSpringBrokerBridge)
-        .registerBrokerAdminServiceSupplier(adminServiceSupplierCaptor.capture());
+  @Test
+  void shouldRegisterAdminServiceSupplierAndByTenantLookupWithSpringBrokerBridge() {
+    // when
+    sut.startupInternal(ctx, CONCURRENCY_CONTROL, future);
+    completeAllScheduledActors();
 
-    assertThat(adminServiceSupplierCaptor.getValue().get()).isSameAs(adminServiceCaptor.getValue());
+    // then
+    assertThat(future).succeedsWithin(TIME_OUT);
+    verify(ctx.getSpringBrokerBridge()).registerBrokerAdminServiceSupplier(notNull());
+    verify(ctx.getSpringBrokerBridge()).registerBrokerAdminServiceByTenantLookup(notNull());
   }
 
   @Test
   void shouldCompleteFutureOnShutdown() {
     // when
-    sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
+    sut.shutdownInternal(ctx, CONCURRENCY_CONTROL, future);
 
     // then
     assertThat(future).succeedsWithin(TIME_OUT);
@@ -120,12 +135,17 @@ final class BrokerAdminServiceStepTest {
 
   @Test
   void shouldStopBrokerAdminServiceOnShutdown() {
+    // given
+    sut.startupInternal(ctx, CONCURRENCY_CONTROL, future);
+    completeAllScheduledActors();
+    assertThat(future).succeedsWithin(TIME_OUT);
+
     // when
-    sut.shutdownInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-    await().until(future::isDone);
+    final var shutdownFuture = CONCURRENCY_CONTROL.<BrokerStartupContext>createFuture();
+    sut.shutdownInternal(ctx, CONCURRENCY_CONTROL, shutdownFuture);
 
     // then
-    verify(mockBrokerAdminService).closeAsync();
-    verify(mockBrokerStartupContext).setBrokerAdminService(null);
+    assertThat(shutdownFuture).succeedsWithin(TIME_OUT);
+    assertThat(ctx.getBrokerAdminService(DEFAULT_PHYSICAL_TENANT_ID)).isNull();
   }
 }

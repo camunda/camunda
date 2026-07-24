@@ -14,6 +14,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ public class SpringBrokerBridge {
 
   private Supplier<BrokerHealthCheckService> healthCheckServiceSupplier;
   private Supplier<BrokerAdminService> adminServiceSupplier;
+  private Function<String, BrokerAdminService> adminServiceByTenantLookup;
   private Supplier<Collection<JobStreamService>> jobStreamServicesSupplier;
   private Supplier<JobStreamClient> jobStreamClientSupplier;
 
@@ -51,6 +53,21 @@ public class SpringBrokerBridge {
 
   public Optional<BrokerAdminService> getAdminService() {
     return Optional.ofNullable(adminServiceSupplier).map(Supplier::get);
+  }
+
+  /**
+   * Registers a lookup function resolving the {@link BrokerAdminService} responsible for a given
+   * physical tenant's partitions.
+   */
+  public void registerBrokerAdminServiceByTenantLookup(
+      final Function<String, BrokerAdminService> adminServiceByTenantLookup) {
+    this.adminServiceByTenantLookup = adminServiceByTenantLookup;
+  }
+
+  /** Returns the {@link BrokerAdminService} for the given physical tenant, if any. */
+  public Optional<BrokerAdminService> getAdminService(final String physicalTenantId) {
+    return Optional.ofNullable(adminServiceByTenantLookup)
+        .map(lookup -> lookup.apply(physicalTenantId));
   }
 
   public void registerJobStreamClientSupplier(

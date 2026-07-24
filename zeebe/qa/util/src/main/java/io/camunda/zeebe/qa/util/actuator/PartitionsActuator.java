@@ -88,6 +88,10 @@ public interface PartitionsActuator {
   @Headers("Accept: application/json")
   Map<Integer, PartitionStatus> query();
 
+  @RequestLine("GET ?physicalTenant={physicalTenant}")
+  @Headers("Accept: application/json")
+  Map<Integer, PartitionStatus> query(@feign.Param final String physicalTenant);
+
   @RequestLine("POST /pauseExporting")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> pauseExporting();

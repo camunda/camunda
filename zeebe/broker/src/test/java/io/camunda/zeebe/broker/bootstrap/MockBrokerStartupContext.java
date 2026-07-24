@@ -79,7 +79,7 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   private final Map<String, JobStreamService> jobStreamServices = new LinkedHashMap<>();
   private final Map<String, PartitionManager> partitionManagers = new LinkedHashMap<>();
   private RocksDbResources sharedRocksDbResources;
-  private BrokerAdminServiceImpl brokerAdminService = mock(BrokerAdminServiceImpl.class);
+  private final Map<String, BrokerAdminServiceImpl> brokerAdminServices = new LinkedHashMap<>();
   private ClusterConfigurationService clusterConfigurationService =
       mock(ClusterConfigurationService.class);
   private BrokerClient brokerClient = mock(BrokerClient.class);
@@ -291,13 +291,19 @@ public class MockBrokerStartupContext implements BrokerStartupContext {
   }
 
   @Override
-  public BrokerAdminServiceImpl getBrokerAdminService() {
-    return brokerAdminService;
+  public BrokerAdminServiceImpl getBrokerAdminService(final String physicalTenantId) {
+    return brokerAdminServices.get(physicalTenantId);
   }
 
   @Override
-  public void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService) {
-    this.brokerAdminService = brokerAdminService;
+  public void addBrokerAdminService(
+      final String physicalTenantId, final BrokerAdminServiceImpl brokerAdminService) {
+    brokerAdminServices.put(physicalTenantId, brokerAdminService);
+  }
+
+  @Override
+  public void removeBrokerAdminService(final String physicalTenantId) {
+    brokerAdminServices.remove(physicalTenantId);
   }
 
   @Override

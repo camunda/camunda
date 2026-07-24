@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.broker.system.management;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
+
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +18,7 @@ import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -24,68 +27,54 @@ public class BrokerAdminServiceEndpoint {
 
   @Autowired private SpringBrokerBridge springBrokerBridge;
 
-  private final Map<String, Runnable> operations = new HashMap<>();
+  private final Map<String, java.util.function.Consumer<BrokerAdminService>> operations =
+      new HashMap<>();
 
   public BrokerAdminServiceEndpoint() {
-    operations.put("pauseProcessing", this::pauseProcessing);
-    operations.put("resumeProcessing", this::resumeProcessing);
-    operations.put("takeSnapshot", this::takeSnapshot);
-    operations.put("pauseExporting", this::pauseExporting);
-    operations.put("softPauseExporting", this::softPauseExporting);
-    operations.put("resumeExporting", this::resumeExporting);
+    operations.put("pauseProcessing", BrokerAdminService::pauseStreamProcessing);
+    operations.put("resumeProcessing", BrokerAdminService::resumeStreamProcessing);
+    operations.put("takeSnapshot", BrokerAdminService::takeSnapshot);
+    operations.put("pauseExporting", BrokerAdminService::pauseExporting);
+    operations.put("softPauseExporting", BrokerAdminService::softPauseExporting);
+    operations.put("resumeExporting", BrokerAdminService::resumeExporting);
   }
 
+  /**
+   * Triggers the given admin operation. Without the {@code physicalTenant} query parameter, this
+   * broker-local operation applies to the default physical tenant's partitions, matching today's
+   * behavior. With the parameter, it applies to the given physical tenant's partitions instead.
+   */
   @WriteOperation
-  public Map<Integer, PartitionStatus> trigger(@Selector final String operation) {
-    final var runnable = operations.get(operation);
-    if (runnable != null) {
-      runnable.run();
-      return partitionStatus();
+  public Map<Integer, PartitionStatus> trigger(
+      @Selector final String operation, @Nullable final String physicalTenant) {
+    final var consumer = operations.get(operation);
+    if (consumer == null) {
+      // Not a valid operation
+      return null;
     }
-    // Not a valid operation
-    return null;
-  }
-
-  private Map<Integer, PartitionStatus> pauseProcessing() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::pauseStreamProcessing);
-    return partitionStatus();
-  }
-
-  private Map<Integer, PartitionStatus> resumeProcessing() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::resumeStreamProcessing);
-    return partitionStatus();
-  }
-
-  private Map<Integer, PartitionStatus> pauseExporting() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::pauseExporting);
-    return partitionStatus();
-  }
-
-  private Map<Integer, PartitionStatus> softPauseExporting() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::softPauseExporting);
-    return partitionStatus();
-  }
-
-  private Map<Integer, PartitionStatus> resumeExporting() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::resumeExporting);
-    return partitionStatus();
-  }
-
-  private Map<Integer, PartitionStatus> takeSnapshot() {
-    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::takeSnapshot);
-    return partitionStatus();
+    final var adminService = resolveAdminService(physicalTenant);
+    adminService.ifPresent(consumer);
+    return partitionStatus(physicalTenant);
   }
 
   @ReadOperation
-  public Map<Integer, PartitionStatus> partitionStatus() {
-    return springBrokerBridge
-        .getAdminService()
+  public Map<Integer, PartitionStatus> partitionStatus(@Nullable final String physicalTenant) {
+    return resolveAdminService(physicalTenant)
         .map(BrokerAdminService::getPartitionStatus)
         .orElse(Map.of());
   }
 
   @ReadOperation
-  public Optional<PartitionStatus> singlePartition(@Selector final Integer partitionId) {
-    return Optional.ofNullable(partitionStatus().get(partitionId));
+  public Optional<PartitionStatus> singlePartition(
+      @Selector final Integer partitionId, @Nullable final String physicalTenant) {
+    return Optional.ofNullable(partitionStatus(physicalTenant).get(partitionId));
+  }
+
+  private Optional<BrokerAdminService> resolveAdminService(@Nullable final String physicalTenant) {
+    final var physicalTenantId =
+        physicalTenant != null && !physicalTenant.isBlank()
+            ? physicalTenant
+            : DEFAULT_PHYSICAL_TENANT_ID;
+    return springBrokerBridge.getAdminService(physicalTenantId);
   }
 }
