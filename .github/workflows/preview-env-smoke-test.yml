@@ -93,7 +93,7 @@ jobs:
           echo "✅ ref overrides valid (or empty)"
       - name: Checkout
         if: always()
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
       - name: Observe build status
@@ -191,7 +191,7 @@ jobs:
       # Sparse-checkout .github so local composite actions (npm-ci-with-retry,
       # observe-build-status) resolve.
       - name: Check out .github for local actions
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
           persist-credentials: false
@@ -278,7 +278,7 @@ jobs:
           repositories: c8-cross-component-e2e-tests
 
       - name: Checkout Smoke Tests
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: camunda/c8-cross-component-e2e-tests
           token: ${{ steps.github-token.outputs.token }}
@@ -415,7 +415,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github
           persist-credentials: false

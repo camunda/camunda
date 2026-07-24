@@ -64,7 +64,7 @@ jobs:
       checkout-ref: ${{ steps.resolve.outputs.checkout-ref }}
     steps:
     - name: Checkout
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         ref: ${{ inputs.ref || github.event.pull_request.head.sha || github.sha }}
 
@@ -91,7 +91,7 @@ jobs:
     timeout-minutes: 20
     steps:
     - name: Checkout
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
 
@@ -178,7 +178,7 @@ jobs:
     #########################################################################
     # Checkout the same ref used for image tagging to ensure chart files match
     - name: Checkout
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         ref: ${{ needs.resolve-image-tag.outputs.checkout-ref }}
         persist-credentials: false
@@ -302,7 +302,7 @@ jobs:
         pull-request-id: ${{ github.event.pull_request.number }}
 
     - name: Checkout
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - name: Observe build status
       if: always()
@@ -342,7 +342,7 @@ jobs:
     - uses: camunda/infra-global-github-actions/preview-env/comment@a362d3abeb1f550f0269d74adf2fe343e24517ef # preview-env: v1.0.8
 
     - name: Checkout
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - name: Observe build status
       if: always()
