@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -50,6 +51,65 @@ public final class SuspendProcessInstanceTest {
     Assertions.assertThat(suspended.getValue())
         .hasBpmnProcessId(processId)
         .hasProcessInstanceKey(processInstanceKey);
+  }
+
+  @Test
+  public void shouldRejectSuspendIfAlreadySuspended() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).suspend();
+
+    // when
+    final Record<ProcessInstanceRecordValue> rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectSuspendRejection()
+            .suspend();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(ProcessInstanceIntent.SUSPEND)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+  }
+
+  @Test
+  public void shouldRejectSuspendWhenKeyIsNotAProcessInstance() {
+    // given - a process instance with a user task, whose element instance key is NOT the process
+    // instance's own key
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().userTask("task").endEvent().done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+    final long userTaskElementInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst()
+            .getKey();
+
+    // when - try to suspend using the user task's element instance key, not the process instance's
+    final Record<ProcessInstanceRecordValue> rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(userTaskElementInstanceKey)
+            .onPartition(1)
+            .expectSuspendRejection()
+            .suspend();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasIntent(ProcessInstanceIntent.SUSPEND)
+        .hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   @Test

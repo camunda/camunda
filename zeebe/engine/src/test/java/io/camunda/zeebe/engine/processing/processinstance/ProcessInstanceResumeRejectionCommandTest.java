@@ -76,4 +76,29 @@ public class ProcessInstanceResumeRejectionCommandTest {
         .hasIntent(ProcessInstanceIntent.RESUME)
         .hasRejectionType(RejectionType.NOT_FOUND);
   }
+
+  @Test
+  public void shouldRejectResumeIfNotCurrentlySuspended() {
+    // given - a process instance that has never been suspended
+    final var processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId).startEvent().userTask().endEvent().done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
+
+    // when
+    final var rejectionRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .expectResumeRejection()
+            .resume();
+
+    // then
+    assertThat(rejectionRecord)
+        .hasIntent(ProcessInstanceIntent.RESUME)
+        .hasRejectionType(RejectionType.INVALID_STATE);
+  }
 }
