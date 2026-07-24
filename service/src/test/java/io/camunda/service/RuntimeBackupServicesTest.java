@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
 
 public class RuntimeBackupServicesTest {
 
-  private static final String PHYSICAL_TENANT_ID = "test-tenant";
+  private static final String PHYSICAL_TENANT_ID = "testtenant";
 
   private final BackupApi backupApi = mock(BackupApi.class);
   private final AuthorizationChecker authorizationChecker = mock(AuthorizationChecker.class);
