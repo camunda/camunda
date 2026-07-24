@@ -35,6 +35,34 @@
     <version.spring>6.2.19</version.spring>
   </properties>
 
+  <dependencyManagement>
+    <dependencies>
+      <!-- The version.spring-boot / version.spring property overrides above only take effect
+      for BOM imports declared in this POM: the ancestor parent/pom.xml already imports
+      spring-boot-dependencies and spring-framework-bom using its own property values (HeroDevs
+      NES tags), and those imports are expanded before these property overrides are visible to
+      them. Re-declaring the imports here, using this POM's own properties, produces managed
+      versions (spring-core, spring-context, spring-web, etc.) at the public OSS version, which
+      take precedence over the ancestor's entries per Maven's "nearest definition wins"
+      dependencyManagement merge rule. -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${version.spring-boot}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-framework-bom</artifactId>
+        <version>${version.spring}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <profiles>
     <profile>
       <id>spring-boot-3.5</id>
