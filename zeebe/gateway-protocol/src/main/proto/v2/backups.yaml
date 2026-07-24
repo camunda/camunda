@@ -328,8 +328,6 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/BackupId'
-      required:
-        - backupId
 
     TakeRuntimeBackupResponse:
       title: TakeRuntimeBackupResponse
