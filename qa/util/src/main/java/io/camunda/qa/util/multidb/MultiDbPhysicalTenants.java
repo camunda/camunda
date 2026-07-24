@@ -29,8 +29,8 @@ import org.junit.jupiter.api.Tag;
  * and is rejected by the production isolation check). See {@link PhysicalTenantSchemaProvisioner}
  * for the per-dialect details.
  *
- * <p>Only valid in combination with {@link MultiDbTest} and an RDBMS or Elasticsearch database type
- * (per-PT secondary-storage provisioning is not available for OpenSearch yet).
+ * <p>Only valid in combination with {@link MultiDbTest} and an RDBMS, Elasticsearch or OpenSearch
+ * database type.
  *
  * <p>The extension injects a {@code static MultiPhysicalTenantClients} field on the test class,
  * which provides per-PT admin clients via {@link MultiPhysicalTenantClients#admin(String)}.
