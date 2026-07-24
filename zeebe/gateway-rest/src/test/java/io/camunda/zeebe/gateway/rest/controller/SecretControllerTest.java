@@ -315,10 +315,12 @@ public class SecretControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectNullListRequestBody() {
-    // given a literal JSON null body (deserialized as a null request, bypassing the model @NotNull)
+  void shouldTreatNullListRequestBodyAsNoFilters() {
+    // given a literal JSON null body (deserialized as a null request)
+    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
 
-    // when / then it is a 400 rather than a 500 and never reaches the service
+    // when / then the body is optional, so a null body applies no filters and still reaches the
+    // service rather than being rejected
     webClient
         .post()
         .uri(LIST_URL)
@@ -327,8 +329,25 @@ public class SecretControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isBadRequest();
-    verifyNoInteractions(secretServices);
+        .isOk();
+    verify(secretServices).list(any());
+  }
+
+  @Test
+  void shouldTreatMissingListRequestBodyAsNoFilters() {
+    // given no request body at all
+    when(secretServices.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    // when / then the body is optional, so omitting it applies no filters and still reaches the
+    // service — clients need not send an empty object
+    webClient
+        .post()
+        .uri(LIST_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk();
+    verify(secretServices).list(any());
   }
 
   @Test

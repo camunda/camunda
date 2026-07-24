@@ -66,6 +66,23 @@ class SecretAuthorizationIT {
   // Not in SecretServices#MOCK_RESOLVABLE_REFERENCES, so a wildcard-authorized lookup misses.
   private static final String UNKNOWN_REFERENCE = "camunda.secrets.doesnotexist";
 
+  // The authorization resource id is the bare secret name (the segment after "camunda.secrets."),
+  // not the full reference: it matches how the connector runtime resolves {{secrets.X}} and how
+  // secrets are created in Console. Grants below are keyed by this, while requests and response
+  // assertions use the full GRANTED_REFERENCE.
+  private static final String GRANTED_NAME = "token";
+
+  // Under a physical tenant, secret authorization is resolved against root storage, so grants
+  // created for these test users are not visible in the tenant context and every authorized call
+  // is denied (same class of limitation as https://github.com/camunda/camunda/issues/58393). Tests
+  // that assert a granted or wildcard caller is authorized cannot pass there yet and are disabled
+  // in that mode; the unauthenticated and no-grant tests remain tenant-agnostic and still run.
+  private static final String PHYSICAL_TENANT_PROPERTY = "test.integration.camunda.physical-tenant";
+  private static final String PHYSICAL_TENANT_DISABLED_REASON =
+      "Secret authorization is resolved against root storage under a physical tenant, so grants for "
+          + "the test users are not visible in the tenant context; see "
+          + "https://github.com/camunda/camunda/issues/58393";
+
   private static final String REVEAL_USER = "revealUser";
   private static final String WILDCARD_USER = "wildcardUser";
   private static final String NO_PERMISSION_USER = "noPermissionUser";
@@ -77,8 +94,8 @@ class SecretAuthorizationIT {
       new TestUser(
           REVEAL_USER,
           "password",
-          // Granted REVEAL on GRANTED_REFERENCE only — not on OTHER_REFERENCE.
-          List.of(new Permissions(SECRET, REVEAL, List.of(GRANTED_REFERENCE))));
+          // Granted REVEAL on the GRANTED_REFERENCE secret name only — not on OTHER_REFERENCE.
+          List.of(new Permissions(SECRET, REVEAL, List.of(GRANTED_NAME))));
 
   @UserDefinition
   private static final TestUser WILDCARD_USER_DEF =
@@ -97,8 +114,9 @@ class SecretAuthorizationIT {
       new TestUser(
           READ_USER,
           "password",
-          // Granted READ on GRANTED_REFERENCE only — not on OTHER_REFERENCE, and no REVEAL.
-          List.of(new Permissions(SECRET, READ, List.of(GRANTED_REFERENCE))));
+          // Granted READ on the GRANTED_REFERENCE secret name only — not on OTHER_REFERENCE, and no
+          // REVEAL.
+          List.of(new Permissions(SECRET, READ, List.of(GRANTED_NAME))));
 
   @UserDefinition
   private static final TestUser WILDCARD_READ_USER_DEF =
@@ -109,6 +127,10 @@ class SecretAuthorizationIT {
           List.of(new Permissions(SECRET, READ, List.of("*"))));
 
   @Test
+  @DisabledIfSystemProperty(
+      named = PHYSICAL_TENANT_PROPERTY,
+      matches = ".+",
+      disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
   void shouldResolveReferenceWhenAuthorizedOnThatReference(
       @Authenticated(REVEAL_USER) final CamundaClient client) throws Exception {
     // when a user with SECRET:REVEAL on the reference resolves it
@@ -137,6 +159,10 @@ class SecretAuthorizationIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = PHYSICAL_TENANT_PROPERTY,
+      matches = ".+",
+      disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
   void shouldEnforceAuthorizationPerReferenceResourceId(
       @Authenticated(REVEAL_USER) final CamundaClient client) throws Exception {
     // when a user granted only on GRANTED_REFERENCE resolves a batch of both references
@@ -152,6 +178,10 @@ class SecretAuthorizationIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = PHYSICAL_TENANT_PROPERTY,
+      matches = ".+",
+      disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
   void shouldResolveAnyReferenceWithWildcardGrant(
       @Authenticated(WILDCARD_USER) final CamundaClient client) throws Exception {
     // when a user granted SECRET:REVEAL:* resolves a reference it was not explicitly granted
@@ -165,6 +195,10 @@ class SecretAuthorizationIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = PHYSICAL_TENANT_PROPERTY,
+      matches = ".+",
+      disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
   void shouldReportNotFoundForAuthorizedUnknownReference(
       @Authenticated(WILDCARD_USER) final CamundaClient client) throws Exception {
     // when a wildcard-authorized user resolves a reference the mock backend does not know
@@ -215,6 +249,10 @@ class SecretAuthorizationIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = PHYSICAL_TENANT_PROPERTY,
+      matches = ".+",
+      disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
   void shouldListAllReferencesWithWildcardReadGrant(
       @Authenticated(WILDCARD_READ_USER) final CamundaClient client) throws Exception {
     // when a user granted SECRET:READ:* lists references
@@ -228,6 +266,10 @@ class SecretAuthorizationIT {
   }
 
   @Test
+  @DisabledIfSystemProperty(
+      named = PHYSICAL_TENANT_PROPERTY,
+      matches = ".+",
+      disabledReason = PHYSICAL_TENANT_DISABLED_REASON)
   void shouldListOnlyAuthorizedReferenceWithScopedReadGrant(
       @Authenticated(READ_USER) final CamundaClient client) throws Exception {
     // when a user granted SECRET:READ on GRANTED_REFERENCE only lists references

@@ -61,7 +61,7 @@ public class SecretController {
   @CamundaPostMapping(path = "/list")
   public CompletableFuture<ResponseEntity<Object>> listSecrets(
       @PhysicalTenantId final String physicalTenantId,
-      @RequestBody final SecretListRequest request) {
+      @RequestBody(required = false) final SecretListRequest request) {
     return SecretRequestValidator.validateSecretListRequest(request)
         .<CompletableFuture<ResponseEntity<Object>>>map(
             RestErrorMapper::mapProblemToCompletedResponse)

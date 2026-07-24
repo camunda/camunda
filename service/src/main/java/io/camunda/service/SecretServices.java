@@ -242,6 +242,10 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
     return REFERENCE_NAME_PATTERN.matcher(name).matches();
   }
 
+  private static String bareName(final String reference) {
+    return reference.substring(REFERENCE_PREFIX.length());
+  }
+
   /**
    * Mocked secret lookup for Phase 1. Resolves only an explicit allow-list of references to a
    * deterministic placeholder value so dependent work (inbound connectors) can integrate against a
@@ -273,11 +277,14 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
   /**
    * The caller's authorization scopes for one {@code RequiredAuthorization}, either "authorizes
    * everything" (disabled cluster-wide authorization, or a wildcard grant) or a concrete set of
-   * authorized references.
+   * authorized bare secret names.
    *
-   * <p>Grants are keyed by the full {@code camunda.secrets.<name>} reference, matching the resource
-   * id callers grant {@code SECRET} permissions on (see the authorization docs), so a grant matches
-   * the same string this class receives from {@link #resolve} / {@link #list}.
+   * <p>Grants are keyed by the bare {@code <name>} segment, not the full {@code
+   * camunda.secrets.<name>} reference: the connector runtime resolves {@code {{secrets.X}}} by the
+   * bare name {@code X} against the store, and users create secrets as {@code X} in Console, so the
+   * authorization resource id must be the same bare name for the two to agree. Each reference this
+   * class receives from {@link #resolve} / {@link #list} is reduced to its bare name before being
+   * matched against the granted names.
    */
   private record AuthorizedScopes(boolean authorizesEverything, Set<String> authorizedNames) {
     static AuthorizedScopes everything() {
@@ -293,7 +300,7 @@ public class SecretServices extends PhysicalTenantScopedApiServices<SecretServic
     }
 
     boolean authorizes(final String reference) {
-      return authorizesEverything || authorizedNames.contains(reference);
+      return authorizesEverything || authorizedNames.contains(bareName(reference));
     }
   }
 

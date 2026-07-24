@@ -61,7 +61,11 @@ public class SecretServicesTest {
   private void grantReveal(final String... references) {
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
             any(), eq(SECRET_REVEAL_AUTHORIZATION)))
-        .thenReturn(Arrays.stream(references).map(AuthorizationScope::id).toList());
+        .thenReturn(
+            Arrays.stream(references)
+                .map(SecretServicesTest::bareName)
+                .map(AuthorizationScope::id)
+                .toList());
   }
 
   private void grantRevealWildcard() {
@@ -79,7 +83,20 @@ public class SecretServicesTest {
   private void grantRead(final String... references) {
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
             any(), eq(SECRET_READ_AUTHORIZATION)))
-        .thenReturn(Arrays.stream(references).map(AuthorizationScope::id).toList());
+        .thenReturn(
+            Arrays.stream(references)
+                .map(SecretServicesTest::bareName)
+                .map(AuthorizationScope::id)
+                .toList());
+  }
+
+  /**
+   * Grants are keyed by the bare {@code <name>} segment; strips the {@code camunda.secrets.} prefix
+   * so tests can keep expressing grants as full references.
+   */
+  private static String bareName(final String reference) {
+    final var prefix = "camunda.secrets.";
+    return reference.startsWith(prefix) ? reference.substring(prefix.length()) : reference;
   }
 
   private void grantReadWildcard() {
@@ -301,28 +318,9 @@ public class SecretServicesTest {
   }
 
   @Test
-  void shouldNotAuthorizeByBareSecretNameAlone() {
-    // given the checker grants only the bare name "token", not the full reference — this is not
-    // how SECRET grants are created (see SecretAuthorizationIT), but guards against silently
-    // reintroducing bare-name matching in authorizes()
-    authorizationsConfig.setEnabled(true);
-    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
-            any(), eq(SECRET_REVEAL_AUTHORIZATION)))
-        .thenReturn(List.of(AuthorizationScope.id("token")));
-
-    // when resolving the full reference for that name
-    final var resolution =
-        services.resolve(List.of("camunda.secrets.token"), authentication).join();
-
-    // then it is denied: the resource id is matched against the full reference, not the bare name
-    assertThat(resolution.resolved()).isEmpty();
-    assertThat(resolution.errors()).hasSize(1);
-    assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
-  }
-
-  @Test
-  void shouldNotListByBareSecretNameAlone() {
-    // given the checker grants only the bare name "a", not the full reference
+  void shouldListByBareSecretNameNotFullReference() {
+    // given the checker grants only the bare name "a" (as the connector runtime and Console key
+    // secrets), not the full camunda.secrets.a reference
     authorizationsConfig.setEnabled(true);
     when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
             any(), eq(SECRET_READ_AUTHORIZATION)))
@@ -331,9 +329,9 @@ public class SecretServicesTest {
     // when
     final var references = services.list(authentication).join();
 
-    // then nothing is listed: the resource id is matched against the full reference, not the bare
-    // name
-    assertThat(references).isEmpty();
+    // then the full reference for that bare name is listed: the resource id is matched against the
+    // bare name, not the full reference
+    assertThat(references).containsExactly("camunda.secrets.a");
   }
 
   @Test
@@ -365,6 +363,27 @@ public class SecretServicesTest {
     // allow once any grant exists
     assertThat(resolution.resolved()).isEmpty();
     assertThat(resolution.errors().get(0).code()).isEqualTo(SecretErrorCode.ACCESS_DENIED);
+  }
+
+  @Test
+  void shouldAuthorizeByBareSecretNameNotFullReference() {
+    // given the checker grants the bare name "token" (as the connector runtime and Console key
+    // secrets), not the full camunda.secrets.token reference
+    authorizationsConfig.setEnabled(true);
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(), eq(SECRET_REVEAL_AUTHORIZATION)))
+        .thenReturn(List.of(AuthorizationScope.id("token")));
+
+    // when the full reference for that name is resolved
+    final var resolution =
+        services.resolve(List.of("camunda.secrets.token"), authentication).join();
+
+    // then it is authorized: the resource id is matched against the bare name, not the full
+    // reference
+    assertThat(resolution.errors()).isEmpty();
+    assertThat(resolution.resolved())
+        .extracting(ResolvedSecret::reference)
+        .containsExactly("camunda.secrets.token");
   }
 
   @Test
