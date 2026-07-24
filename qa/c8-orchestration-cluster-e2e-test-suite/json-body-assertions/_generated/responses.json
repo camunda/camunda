@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "7859fb770109cdf7597d8aa4fd639b6407fb2e19",
-    "generatedAt": "2026-07-24T10:15:52.809Z",
+    "commit": "414a1be7b1a925811ccf2c316b0861d3a3d458e0",
+    "generatedAt": "2026-07-24T12:32:00.783Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "b9290d0c6d54d34d0bc959a2e8198be085726a7e57016fd1926b2e1c3f052f9f"
+    "specSha256": "672c6c7ba48365c0550c13f90f5e813d70424ac24ae13535df5a944d3ae8b4a3"
   },
   "responses": [
     {
@@ -3772,6 +3772,7 @@
                     "JOB_NO_RETRIES",
                     "MESSAGE_SIZE_EXCEEDED",
                     "RESOURCE_NOT_FOUND",
+                    "SECRET_RESOLUTION_ERROR",
                     "TASK_LISTENER_NO_RETRIES",
                     "UNHANDLED_ERROR_EVENT",
                     "UNKNOWN",
@@ -4527,6 +4528,7 @@
                     "JOB_NO_RETRIES",
                     "MESSAGE_SIZE_EXCEEDED",
                     "RESOURCE_NOT_FOUND",
+                    "SECRET_RESOLUTION_ERROR",
                     "TASK_LISTENER_NO_RETRIES",
                     "UNHANDLED_ERROR_EVENT",
                     "UNKNOWN",
@@ -4647,6 +4649,7 @@
               "JOB_NO_RETRIES",
               "MESSAGE_SIZE_EXCEEDED",
               "RESOURCE_NOT_FOUND",
+              "SECRET_RESOLUTION_ERROR",
               "TASK_LISTENER_NO_RETRIES",
               "UNHANDLED_ERROR_EVENT",
               "UNKNOWN",
@@ -7109,6 +7112,7 @@
                     "JOB_NO_RETRIES",
                     "MESSAGE_SIZE_EXCEEDED",
                     "RESOURCE_NOT_FOUND",
+                    "SECRET_RESOLUTION_ERROR",
                     "TASK_LISTENER_NO_RETRIES",
                     "UNHANDLED_ERROR_EVENT",
                     "UNKNOWN",
