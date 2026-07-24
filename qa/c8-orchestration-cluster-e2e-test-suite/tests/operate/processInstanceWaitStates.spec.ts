@@ -313,7 +313,7 @@ test.describe('Wait State Lifecycle', () => {
     operateProcessInstancePage,
     operateDiagramPage,
   }) => {
-    const instance = await createProcessInstanceWaitingOnTimer('PT2S');
+    const instance = await createProcessInstanceWaitingOnTimer('PT10S');
 
     await operateProcessInstancePage.gotoProcessInstancePage({
       id: instance.processInstanceKey,
