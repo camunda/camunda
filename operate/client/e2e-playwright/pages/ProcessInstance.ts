@@ -9,6 +9,7 @@
 import type {Page, Locator} from '@playwright/test';
 import {Diagram} from './components/Diagram';
 import {JSONEditor} from './components/JSONEditor';
+import {AiAgentDetails} from './components/AiAgentDetails';
 
 export class ProcessInstance {
   private page: Page;
@@ -18,6 +19,7 @@ export class ProcessInstance {
   readonly incidentsTable: Locator;
   readonly incidentsBanner: Locator;
   readonly diagram: InstanceType<typeof Diagram>;
+  readonly aiAgentDetails: AiAgentDetails;
   readonly variablePanelEmptyText: Locator;
   readonly addVariableButton: Locator;
   readonly saveVariableButton: Locator;
@@ -48,6 +50,7 @@ export class ProcessInstance {
     this.incidentsTable = page.getByTestId('data-list');
     this.incidentsBanner = page.getByTestId('incidents-banner');
     this.diagram = new Diagram(page);
+    this.aiAgentDetails = new AiAgentDetails(page);
     this.variablePanelEmptyText = page.getByText(
       /to view the variables, select a single element instance in the instance history./i,
     );
@@ -116,12 +119,21 @@ export class ProcessInstance {
 
   async gotoProcessInstancePage({
     key,
+    bottomPanel: bottomPanel,
+    selection,
     options,
   }: {
     key: string;
+    bottomPanel?: string;
+    selection?: string;
     options?: Parameters<Page['goto']>[1];
   }) {
-    await this.page.goto(`/operate/processes/${key}`, options);
+    await this.page.goto(
+      `/operate/processes/${key}${bottomPanel ? `/${bottomPanel}` : ''}${
+        selection ? `?${selection}` : ''
+      }`,
+      options,
+    );
   }
 
   async gotoProcessInstanceOperationsLogPage({
