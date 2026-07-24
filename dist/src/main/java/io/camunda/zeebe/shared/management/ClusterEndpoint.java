@@ -25,6 +25,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdatePartitionDistributorConfigRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateZonePrioritiesRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.state.Mode;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
@@ -38,10 +39,10 @@ import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
-import io.camunda.zeebe.management.cluster.PartitionDistributionConfig;
 import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
+import io.camunda.zeebe.management.cluster.UpdatePartitionDistributionRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -479,14 +480,22 @@ public class ClusterEndpoint {
 
   @PutMapping(path = "/partition-distribution", consumes = "application/json")
   public ResponseEntity<?> updatePartitionDistribution(
-      @RequestBody final PartitionDistributionConfig partitionDistributionConfig,
+      @RequestBody final UpdatePartitionDistributionRequest request,
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     try {
-      final var internalConfig =
-          ClusterApiUtils.toPartitionDistributorConfig(partitionDistributionConfig);
-      final var updateRequest = new UpdatePartitionDistributorConfigRequest(internalConfig, dryRun);
-      return ClusterApiUtils.mapOperationResponse(
-          requestSender.updatePartitionDistribution(updateRequest).join());
+      final var config = Optional.ofNullable(request.getConfig());
+      final var zonePriorities = Optional.ofNullable(request.getZonePriorities()).orElse(List.of());
+      if (config.isPresent() == !zonePriorities.isEmpty()) {
+        return invalidRequest("Exactly one of config and zonePriorities must be set.");
+      }
+      final var result =
+          config.isPresent()
+              ? requestSender.updatePartitionDistribution(
+                  new UpdatePartitionDistributorConfigRequest(
+                      ClusterApiUtils.toPartitionDistributorConfig(config.get()), dryRun))
+              : requestSender.updateZonePriorities(
+                  new UpdateZonePrioritiesRequest(zonePriorities, dryRun));
+      return ClusterApiUtils.mapOperationResponse(result.join());
     } catch (final Exception exception) {
       return ClusterApiUtils.mapError(exception);
     }
