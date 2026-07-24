@@ -23,6 +23,16 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('Info bar', () => {
+  beforeEach(() => {
+    // C3 sidebar schedules a real timer on open; fake timers ensure it is
+    // discarded on teardown instead of leaking past the test environment.
+    vi.useFakeTimers({shouldAdvanceTime: true});
+  });
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
   it('should render with correct links', async () => {
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     const mockOpenFn = vi.fn();
