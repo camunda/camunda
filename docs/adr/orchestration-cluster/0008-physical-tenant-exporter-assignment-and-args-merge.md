@@ -43,7 +43,8 @@ Two properties make the design non-trivial. The merge cannot be done generically
 - The configuration bar rises again: with a non-empty catalog, every tenant must declare `exporters-assigned`, on top of ADR-0007's required per-tenant keys. Intended, documented together with those.
 - `exporter-api` gains one public interface (revapi-guarded). Normalization has a single owner, so broker and merge cannot drift.
 - Merging is exactly as safe as it can be — only where the config class is known; the `className: null` binder pitfall is structurally impossible for assigned ids. Classes without a merger require operators to restate full `args` per tenant.
-- Assignment does **not by itself** guarantee target isolation: a tenant that assigns the root ES exporter without overriding its target still shares that target. Extending cross-tenant validation to generic-exporter targets (a sibling target-locator SPI) is a possible follow-up, not covered here.
+- Assignment does **not by itself** guarantee target isolation, so cross-tenant validation extends to the resources a generic exporter would occupy: each exporter declares its isolation claims — its index write target, and any cluster-global lifecycle policy it manages — and two physical tenants claiming the same resource are rejected at boot.
+- The isolation contract is store-agnostic (claims are grouped by an opaque domain), so new exporter kinds and new isolation concerns extend it without touching the configuration layer.
 - Assignment is gated on [#56652](https://github.com/camunda/camunda/issues/56652): until then the inherit-all interim stands, and PT deployments configured before it lands will fail loudly at boot on the newly-mandatory key — a deliberate migration for an isolation decision that was previously implicit.
 
 ## Source

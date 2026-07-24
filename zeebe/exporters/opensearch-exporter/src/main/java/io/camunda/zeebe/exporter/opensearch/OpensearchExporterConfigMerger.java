@@ -9,8 +9,14 @@ package io.camunda.zeebe.exporter.opensearch;
 
 import io.camunda.zeebe.exporter.api.ExporterConfigMerger;
 import io.camunda.zeebe.exporter.support.ExporterConfigMergeSupport;
+import io.camunda.zeebe.exporter.support.ExporterIsolationClaims;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Enables per-physical-tenant partial overrides of a root-declared OpenSearch exporter's {@code
@@ -19,6 +25,8 @@ import org.jspecify.annotations.NullMarked;
  */
 @NullMarked
 public final class OpensearchExporterConfigMerger implements ExporterConfigMerger {
+
+  private static final String ENGINE = "opensearch";
 
   @Override
   public boolean supports(final String className) {
@@ -30,5 +38,71 @@ public final class OpensearchExporterConfigMerger implements ExporterConfigMerge
       final Map<String, Object> rootArgs, final Map<String, Object> tenantArgs) {
     return ExporterConfigMergeSupport.merge(
         OpensearchExporterConfiguration.class, rootArgs, tenantArgs);
+  }
+
+  @Override
+  public Set<ExporterIsolationClaim> isolationClaims(final Map<String, Object> args) {
+    // an OpenSearch exporter occupies an index write target (cluster + index prefix) and, when
+    // retention is enabled and self-managed, a cluster-global ISM policy; read those from the
+    // normalized args and fall back to the config class's own defaults
+    final OpensearchExporterConfiguration defaults = new OpensearchExporterConfiguration();
+    final Map<String, Object> normalized =
+        ExporterConfigMergeSupport.normalize(OpensearchExporterConfiguration.class, args);
+    final List<String> urls = splitUrls(stringOrDefault(normalized.get("url"), defaults.url));
+    final String prefix =
+        nestedStringOrDefault(normalized.get("index"), "prefix", defaults.index.prefix);
+
+    final Set<ExporterIsolationClaim> claims = new LinkedHashSet<>();
+    claims.add(ExporterIsolationClaims.indexWriteTarget(ENGINE, urls, prefix));
+    final String policyName = managedLifecyclePolicy(normalized, defaults);
+    if (policyName != null) {
+      claims.add(ExporterIsolationClaims.lifecyclePolicy(ENGINE, urls, policyName));
+    }
+    return claims;
+  }
+
+  /**
+   * The ISM policy this exporter would create, or {@code null} if it manages none: only a
+   * retention-{@code enabled} exporter that also {@code managePolicy} creates the cluster-global
+   * policy; a disabled or externally-managed policy cannot collide.
+   */
+  private static @Nullable String managedLifecyclePolicy(
+      final Map<String, Object> normalized, final OpensearchExporterConfiguration defaults) {
+    final Map<?, ?> retention =
+        normalized.get("retention") instanceof final Map<?, ?> map ? map : Map.of();
+    final boolean enabled = boolOrDefault(retention.get("enabled"), defaults.retention.isEnabled());
+    final boolean managePolicy =
+        boolOrDefault(retention.get("managepolicy"), defaults.retention.isManagePolicy());
+    if (!enabled || !managePolicy) {
+      return null;
+    }
+    final Object policyName = retention.get("policyname");
+    return policyName instanceof final String s ? s : defaults.retention.getPolicyName();
+  }
+
+  private static List<String> splitUrls(final String commaSeparated) {
+    return Arrays.stream(commaSeparated.split(","))
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .toList();
+  }
+
+  private static String stringOrDefault(final @Nullable Object value, final String fallback) {
+    return value instanceof final String s ? s : fallback;
+  }
+
+  private static boolean boolOrDefault(final @Nullable Object value, final boolean fallback) {
+    return switch (value) {
+      case final Boolean b -> b;
+      case final String s -> Boolean.parseBoolean(s);
+      case null, default -> fallback;
+    };
+  }
+
+  private static String nestedStringOrDefault(
+      final @Nullable Object nested, final String key, final String fallback) {
+    return nested instanceof final Map<?, ?> map && map.get(key) instanceof final String s
+        ? s
+        : fallback;
   }
 }
