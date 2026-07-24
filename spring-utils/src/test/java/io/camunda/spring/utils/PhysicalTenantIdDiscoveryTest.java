@@ -88,7 +88,8 @@ class PhysicalTenantIdDiscoveryTest {
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
         .isThrownBy(() -> PhysicalTenantIdDiscovery.validateTenantId(tooLong))
         .withMessageContaining("Invalid physical tenant id")
-        .withMessageContaining("must not exceed " + MAX_TENANT_ID_LENGTH);
+        .withMessageContaining("must not exceed " + MAX_TENANT_ID_LENGTH)
+        .withMessageNotContaining(tooLong);
   }
 
   @Test

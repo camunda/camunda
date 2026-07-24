@@ -103,9 +103,9 @@ public final class PhysicalTenantIdDiscovery {
     if (tenantId.length() > MAX_TENANT_ID_LENGTH) {
       throw new InvalidPhysicalTenantIdException(
           String.format(
-              "Invalid physical tenant id '%s' under '%s.*'. "
-                  + "Tenant ids must not exceed %d characters.",
-              tenantId, PHYSICAL_TENANTS_PREFIX, MAX_TENANT_ID_LENGTH));
+              "Invalid physical tenant id under '%s.*'. "
+                  + "Tenant ids must not exceed %d characters (was %d).",
+              PHYSICAL_TENANTS_PREFIX, MAX_TENANT_ID_LENGTH, tenantId.length()));
     }
     if (!VALID_TENANT_ID.matcher(tenantId).matches()) {
       throw new InvalidPhysicalTenantIdException(
