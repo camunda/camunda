@@ -3,13 +3,14 @@
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 573:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GithubCommentApi = exports.STICKY_MARKER = void 0;
 exports.renderStickyComment = renderStickyComment;
 exports.syncStickyComment = syncStickyComment;
+const github_1 = __nccwpck_require__(631);
 /**
  * The single sticky PR comment the gate maintains. One marked comment per PR,
  * upserted by a hidden marker so re-runs never stack duplicates.
@@ -72,26 +73,28 @@ class GithubCommentApi {
     constructor(token, owner, repo, issueNumber) {
         this.token = token;
         this.issueNumber = issueNumber;
-        this.repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+        this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
     }
     headers() {
-        return {
-            authorization: `Bearer ${this.token}`,
-            accept: 'application/vnd.github+json',
-            'content-type': 'application/json',
-            'x-github-api-version': '2022-11-28',
-            'user-agent': 'camunda-release-notes-gate',
-        };
+        return (0, github_1.githubHeaders)(this.token, { json: true });
     }
     async list() {
-        // The comment is posted on the first gate run and stays put, so the first
-        // page (100) always contains it — no pagination needed.
-        const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=100`, {
-            headers: this.headers(),
-        });
-        if (!res.ok)
-            throw new Error(`GitHub API ${res.status} listing comments on #${this.issueNumber}`);
-        return (await res.json());
+        // Paginate through ALL comments. If the gate first runs on a PR that already
+        // has >100 comments, its own sticky comment is the newest and lands past
+        // page 1 — a page-1-only read would miss it and create a duplicate on every
+        // rerun. GitHub caps per_page at 100; a short page marks the end.
+        const perPage = 100;
+        const all = [];
+        for (let page = 1;; page++) {
+            const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments?per_page=${perPage}&page=${page}`, { headers: this.headers() });
+            if (!res.ok)
+                throw new Error(`GitHub API ${res.status} listing comments on #${this.issueNumber}`);
+            const batch = (await res.json());
+            all.push(...batch);
+            if (batch.length < perPage)
+                break;
+        }
+        return all;
     }
     async create(body) {
         const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/comments`, {
@@ -141,13 +144,30 @@ async function evaluateGate(resolver, input) {
     // by inheriting the ORIGINAL PR's attribution.
     let deliveryPath = 'direct';
     let link = await evaluateLink(resolver, input.body);
-    if (link.outcome === 'fail') {
+    // Only hop for a genuinely undeclared link. A `pr-ref-in-section` failure is a
+    // hard error (the section itself links a PR) — an unrelated `Backport of #N`
+    // marker must not silently discard it and flip the gate to pass.
+    if (link.outcome === 'fail' && link.code === 'unlinked-undeclared') {
         const backport = (0, parser_1.parseRefs)(input.body).find((ref) => ref.kind === 'backport');
         if (backport) {
-            const originalBody = await resolver.fetchPullBody(backport.number);
-            if (originalBody !== null) {
+            // fetchPullBody returns null for a 404 target OR a cross-repo marker — the
+            // resolver can only validate its own repo. Either way we cannot inherit
+            // attribution, so surface the dangling marker rather than absorbing it
+            // into the generic "no linked issue" message.
+            const originalBody = await resolver.fetchPullBody(backport.number, backport.repo);
+            deliveryPath = 'backportHop';
+            if (originalBody === null) {
+                link = {
+                    outcome: 'fail',
+                    code: 'unlinked-undeclared',
+                    reasons: [
+                        `Backport of ${backport.repo ? `${backport.repo}#` : '#'}${backport.number}, but that PR could not be resolved in this repo — attribution cannot be inherited.`,
+                        ...link.reasons,
+                    ],
+                };
+            }
+            else {
                 const original = await evaluateLink(resolver, originalBody);
-                deliveryPath = 'backportHop';
                 link =
                     original.outcome === 'pass'
                         ? {
@@ -173,7 +193,7 @@ async function evaluateGate(resolver, input) {
         checks.push({ label: 'Title', outcome: title.outcome, reasons: [...title.reasons] });
     }
     const outcome = checks.every((check) => check.outcome === 'pass') ? 'pass' : 'fail';
-    return { outcome, checks, deliveryPath };
+    return { outcome, checks, deliveryPath, link };
 }
 
 
@@ -243,14 +263,54 @@ exports.summary = new Summary();
 
 /***/ }),
 
-/***/ 855:
+/***/ 631:
 /***/ ((__unused_webpack_module, exports) => {
+
+
+/**
+ * Shared GitHub REST plumbing for the three fetch-based adapters (resolver,
+ * comment, labels). One definition of the bot's auth / API-version / user-agent
+ * headers and the per-repo base URL — previously copied verbatim into each
+ * adapter. The adapters stay octokit-free (a handful of endpoints each); this is
+ * just the common boilerplate, not a client.
+ */
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.GITHUB_API = void 0;
+exports.githubHeaders = githubHeaders;
+exports.repoApiUrl = repoApiUrl;
+exports.GITHUB_API = 'https://api.github.com';
+const USER_AGENT = 'camunda-release-notes-gate';
+const GITHUB_API_VERSION = '2022-11-28';
+/** Auth + content-negotiation headers for the reused MONOREPO_RELEASE_APP token.
+ *  Pass `json: true` for write requests that send a JSON body. */
+function githubHeaders(token, opts = {}) {
+    const headers = {
+        authorization: `Bearer ${token}`,
+        accept: 'application/vnd.github+json',
+        'x-github-api-version': GITHUB_API_VERSION,
+        'user-agent': USER_AGENT,
+    };
+    if (opts.json)
+        headers['content-type'] = 'application/json';
+    return headers;
+}
+/** `https://api.github.com/repos/<owner>/<repo>` — the common request prefix. */
+function repoApiUrl(owner, repo) {
+    return `${exports.GITHUB_API}/repos/${owner}/${repo}`;
+}
+
+
+/***/ }),
+
+/***/ 855:
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GithubLabelApi = exports.NO_ISSUE_LABEL_DESCRIPTION = exports.NO_ISSUE_LABEL_COLOR = exports.NO_ISSUE_LABEL = void 0;
 exports.decideLabelAction = decideLabelAction;
 exports.syncNoIssueLabel = syncNoIssueLabel;
+const github_1 = __nccwpck_require__(631);
 /**
  * Syncs the display-only `no-issue` label to mirror the PR-issue-link check
  * only (not the title check — the label answers one question: "does this PR
@@ -275,15 +335,12 @@ function decideLabelAction(currentLabels, linkOutcome) {
 }
 /**
  * Reconcile the no-issue label against the gate's PR-issue-link check.
- * Reads the check by label rather than gate.outcome so a title-only failure
- * never adds a label whose name specifically means "no linked issue".
+ * Reads the typed `gate.link` decision (not gate.outcome) so a title-only
+ * failure never adds a label whose name specifically means "no linked issue".
  */
 async function syncNoIssueLabel(api, gate) {
-    const link = gate.checks.find((check) => check.label === 'PR-issue link');
-    if (!link)
-        return 'noop'; // defensive — the link check is always present today
     const current = await api.list();
-    const action = decideLabelAction(current, link.outcome);
+    const action = decideLabelAction(current, gate.link.outcome);
     if (action === 'added')
         await api.add(exports.NO_ISSUE_LABEL);
     if (action === 'removed')
@@ -302,16 +359,10 @@ class GithubLabelApi {
     constructor(token, owner, repo, issueNumber) {
         this.token = token;
         this.issueNumber = issueNumber;
-        this.repoUrl = `https://api.github.com/repos/${owner}/${repo}`;
+        this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
     }
     headers() {
-        return {
-            authorization: `Bearer ${this.token}`,
-            accept: 'application/vnd.github+json',
-            'content-type': 'application/json',
-            'x-github-api-version': '2022-11-28',
-            'user-agent': 'camunda-release-notes-gate',
-        };
+        return (0, github_1.githubHeaders)(this.token, { json: true });
     }
     async list() {
         const res = await fetch(`${this.repoUrl}/issues/${this.issueNumber}/labels?per_page=100`, {
@@ -443,11 +494,24 @@ async function run() {
     }
     const [owner, repo] = (process.env.GITHUB_REPOSITORY ?? '/').split('/');
     const resolver = new resolver_1.GithubResolver(token, owner ?? '', repo ?? '');
-    const gate = await (0, gate_1.evaluateGate)(resolver, {
-        body: pr.body ?? '',
-        title: pr.title ?? '',
-        authorLogin: pr.user?.login,
-    });
+    // A transient resolver error (403/500) must respect `enforce`: warn-only means
+    // the gate never hard-fails, so an API blip cannot turn a green check red.
+    let gate;
+    try {
+        gate = await (0, gate_1.evaluateGate)(resolver, {
+            body: pr.body ?? '',
+            title: pr.title ?? '',
+            authorLogin: pr.user?.login,
+        });
+    }
+    catch (err) {
+        const msg = `Release-notes gate could not be evaluated: ${err instanceof Error ? err.message : String(err)}`;
+        if (enforce)
+            core.setFailed(msg);
+        else
+            core.warning(`[warn-only] ${msg}`);
+        return;
+    }
     const failed = gate.checks.filter((check) => check.outcome === 'fail');
     const reasons = failed.flatMap((check) => check.reasons.map((reason) => `${check.label}: ${reason}`));
     core.setOutput('outcome', gate.outcome);
@@ -456,29 +520,35 @@ async function run() {
     const heading = gate.outcome === 'pass' ? '✅ Release-notes checks passed' : '❌ Release-notes checks failed';
     const summaryLines = gate.checks.map((check) => `${check.outcome === 'pass' ? '✅' : '❌'} ${check.label}: ${check.reasons.join(' ')}`);
     await core.summary.addHeading(heading, 3).addList(summaryLines).write();
-    // Sticky PR comment (D24: comments from day one). A comment sync failure must
+    // Sticky PR comment (D24: comments from day one) + the display-only `no-issue`
+    // label. Both only need `gate` + the PR number and are independent, so run
+    // them concurrently. Each is best-effort: a sync failure is logged and must
     // never fail the gate — warn or not, the outcome above stands.
     if (pr.number) {
-        try {
-            const comments = new comment_1.GithubCommentApi(token, owner ?? '', repo ?? '', pr.number);
-            const action = await (0, comment_1.syncStickyComment)(comments, gate);
-            core.info(`Sticky comment: ${action}.`);
-        }
-        catch (err) {
-            core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
-        }
-        // Display-only `no-issue` label, mirroring the PR-issue-link check. Runs
-        // during warn-only rollout too, so the label is already trustworthy by the
-        // time enforce mode lands — a sync failure never fails the gate.
-        try {
-            const labels = new labels_1.GithubLabelApi(token, owner ?? '', repo ?? '', pr.number);
-            const action = await (0, labels_1.syncNoIssueLabel)(labels, gate);
-            core.setOutput('label-action', action);
-            core.info(`no-issue label: ${action}.`);
-        }
-        catch (err) {
-            core.warning(`Label sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
-        }
+        const prNumber = pr.number;
+        await Promise.allSettled([
+            (async () => {
+                try {
+                    const comments = new comment_1.GithubCommentApi(token, owner ?? '', repo ?? '', prNumber);
+                    const action = await (0, comment_1.syncStickyComment)(comments, gate);
+                    core.info(`Sticky comment: ${action}.`);
+                }
+                catch (err) {
+                    core.warning(`Sticky comment sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+                }
+            })(),
+            (async () => {
+                try {
+                    const labels = new labels_1.GithubLabelApi(token, owner ?? '', repo ?? '', prNumber);
+                    const action = await (0, labels_1.syncNoIssueLabel)(labels, gate);
+                    core.setOutput('label-action', action);
+                    core.info(`no-issue label: ${action}.`);
+                }
+                catch (err) {
+                    core.warning(`Label sync failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`);
+                }
+            })(),
+        ]);
     }
     if (gate.outcome === 'fail') {
         const msg = reasons.join(' ');
@@ -502,6 +572,7 @@ run().catch((err) => core.setFailed(err instanceof Error ? err.message : String(
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.SECTION_HEADING = exports.OPT_OUT_PHRASE = void 0;
+exports.stripHtmlComments = stripHtmlComments;
 exports.parseRefs = parseRefs;
 exports.extractSection = extractSection;
 exports.isOptOutTicked = isOptOutTicked;
@@ -535,8 +606,18 @@ function kindOf(keyword) {
         return 'closing';
     return 'contributor'; // bare "#N"
 }
+/**
+ * Strip HTML comments before any parsing. The PR template's own instructional
+ * `<!-- ... closes #1234 ... -->` block lives inside "## Related issues" and is
+ * invisible in GitHub's rendered body, so a PR that leaves the boilerplate
+ * untouched must NOT be attributed to whatever issue the comment names.
+ */
+function stripHtmlComments(text) {
+    return text.replace(/<!--[\s\S]*?-->/g, '');
+}
 /** Extract every reference from the given text (already scoped by the caller). */
 function parseRefs(text) {
+    text = stripHtmlComments(text);
     const refs = [];
     const seen = new Set(); // dedupe by match offset
     const push = (match, repo, num) => {
@@ -564,7 +645,7 @@ function parseRefs(text) {
  * to the next heading of any level (or EOF). Returns null if absent.
  */
 function extractSection(body, heading = exports.SECTION_HEADING) {
-    const lines = body.split(/\r?\n/);
+    const lines = stripHtmlComments(body).split(/\r?\n/);
     const headingRe = new RegExp(`^#{1,6}\\s+${escapeRe(heading)}\\s*$`, 'i');
     const start = lines.findIndex((line) => headingRe.test(line.trim()));
     if (start < 0)
@@ -576,7 +657,7 @@ function extractSection(body, heading = exports.SECTION_HEADING) {
 /** True when the opt-out checkbox is present and ticked. */
 function isOptOutTicked(body) {
     const re = new RegExp(String.raw `^\s*[-*]\s*\[x\]\s*.*${escapeRe(exports.OPT_OUT_PHRASE)}`, 'im');
-    return re.test(body);
+    return re.test(stripHtmlComments(body));
 }
 function escapeRe(literal) {
     return literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -648,11 +729,12 @@ function decide(refs, optOut) {
 /***/ }),
 
 /***/ 306:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GithubResolver = void 0;
+const github_1 = __nccwpck_require__(631);
 /**
  * GitHub-API resolver: the only part of the pipeline that touches the network.
  * Classifies each ref as issue vs PR vs missing and flags cross-repo refs.
@@ -668,10 +750,12 @@ class GithubResolver {
     token;
     owner;
     repo;
+    repoUrl;
     constructor(token, owner, repo) {
         this.token = token;
         this.owner = owner;
         this.repo = repo;
+        this.repoUrl = (0, github_1.repoApiUrl)(owner, repo);
     }
     async resolve(refs) {
         return Promise.all(refs.map((ref) => this.resolveOne(ref)));
@@ -680,10 +764,17 @@ class GithubResolver {
      * Fetch a same-repo pull request's body for backport-hop validation, or null
      * if it does not exist. Used to follow `Backport of #N` to the original PR and
      * validate that PR's attribution (the backport inherits it — C7).
+     *
+     * A cross-repo marker (`Backport of owner/other#N`) resolves to null: this
+     * resolver is hardcoded to its own owner/repo, so #N there would name an
+     * unrelated PR in THIS repo. We only inherit attribution from our own repo.
      */
-    async fetchPullBody(number) {
-        const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/pulls/${number}`, {
-            headers: this.headers(),
+    async fetchPullBody(number, repo) {
+        const crossRepo = repo !== null && repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
+        if (crossRepo)
+            return null;
+        const res = await fetch(`${this.repoUrl}/pulls/${number}`, {
+            headers: (0, github_1.githubHeaders)(this.token),
         });
         if (res.status === 404)
             return null;
@@ -692,20 +783,12 @@ class GithubResolver {
         const data = (await res.json());
         return data.body ?? '';
     }
-    headers() {
-        return {
-            authorization: `Bearer ${this.token}`,
-            accept: 'application/vnd.github+json',
-            'x-github-api-version': '2022-11-28',
-            'user-agent': 'camunda-release-notes-gate',
-        };
-    }
     async resolveOne(ref) {
         const crossRepo = ref.repo !== null && ref.repo.toLowerCase() !== `${this.owner}/${this.repo}`.toLowerCase();
         if (crossRepo)
             return { ...ref, target: 'missing', crossRepo: true };
-        const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/issues/${ref.number}`, {
-            headers: this.headers(),
+        const res = await fetch(`${this.repoUrl}/issues/${ref.number}`, {
+            headers: (0, github_1.githubHeaders)(this.token),
         });
         if (res.status === 404)
             return { ...ref, target: 'missing', crossRepo: false };
@@ -762,6 +845,16 @@ exports.HEADER_MAX = 120;
 // `type` + optional `(scope)` + optional `!` + `: ` + subject. Mirrors the
 // conventional-commit header shape config-conventional parses.
 const HEADER = /^(?<type>[^\s():!]+)(?<scope>\([^)]*\))?!?:[ ](?<subject>.+)$/;
+/**
+ * Wrap user-controlled title fragments before interpolating them into the
+ * sticky comment / job summary. The gate posts under a bot identity on
+ * `pull_request_target`, so a raw `@mention` in a malicious title would notify
+ * (spam) via the bot. Inline code neutralises mentions; stripping backticks
+ * stops the value breaking out of the span.
+ */
+function code(value) {
+    return `\`${(value ?? '').replace(/`/g, '')}\``;
+}
 /** Lint a PR title. Pure — no IO, no bot logic (the caller decides bot skips). */
 function lintTitle(title) {
     if (title.length > exports.HEADER_MAX) {
@@ -787,17 +880,17 @@ function lintTitle(title) {
         return {
             outcome: 'fail',
             code: 'title-scope',
-            reasons: [`Scopes are not used in this repo — drop "${scope}" and write "${type}: …".`],
+            reasons: [`Scopes are not used in this repo — drop ${code(scope)} and write "${code(type)}: …".`],
         };
     }
     if (type !== type?.toLowerCase()) {
-        return { outcome: 'fail', code: 'title-type', reasons: [`The type "${type}" must be lower-case.`] };
+        return { outcome: 'fail', code: 'title-type', reasons: [`The type ${code(type)} must be lower-case.`] };
     }
     if (!exports.TITLE_TYPES.includes(type)) {
         return {
             outcome: 'fail',
             code: 'title-type',
-            reasons: [`"${type}" is not an allowed type. Use one of: ${exports.TITLE_TYPES.join(', ')}.`],
+            reasons: [`${code(type)} is not an allowed type. Use one of: ${exports.TITLE_TYPES.join(', ')}.`],
         };
     }
     return { outcome: 'pass', code: 'title-ok', reasons: [`Title type "${type}" is valid.`] };

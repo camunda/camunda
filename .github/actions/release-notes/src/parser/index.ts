@@ -37,8 +37,19 @@ function kindOf(keyword: string | null): RefKind {
   return 'contributor'; // bare "#N"
 }
 
+/**
+ * Strip HTML comments before any parsing. The PR template's own instructional
+ * `<!-- ... closes #1234 ... -->` block lives inside "## Related issues" and is
+ * invisible in GitHub's rendered body, so a PR that leaves the boilerplate
+ * untouched must NOT be attributed to whatever issue the comment names.
+ */
+export function stripHtmlComments(text: string): string {
+  return text.replace(/<!--[\s\S]*?-->/g, '');
+}
+
 /** Extract every reference from the given text (already scoped by the caller). */
 export function parseRefs(text: string): ParsedRef[] {
+  text = stripHtmlComments(text);
   const refs: ParsedRef[] = [];
   const seen = new Set<number>(); // dedupe by match offset
 
@@ -67,7 +78,7 @@ export function parseRefs(text: string): ParsedRef[] {
  * to the next heading of any level (or EOF). Returns null if absent.
  */
 export function extractSection(body: string, heading = SECTION_HEADING): string | null {
-  const lines = body.split(/\r?\n/);
+  const lines = stripHtmlComments(body).split(/\r?\n/);
   const headingRe = new RegExp(`^#{1,6}\\s+${escapeRe(heading)}\\s*$`, 'i');
   const start = lines.findIndex((line) => headingRe.test(line.trim()));
   if (start < 0) return null;
@@ -79,7 +90,7 @@ export function extractSection(body: string, heading = SECTION_HEADING): string 
 /** True when the opt-out checkbox is present and ticked. */
 export function isOptOutTicked(body: string): boolean {
   const re = new RegExp(String.raw`^\s*[-*]\s*\[x\]\s*.*${escapeRe(OPT_OUT_PHRASE)}`, 'im');
-  return re.test(body);
+  return re.test(stripHtmlComments(body));
 }
 
 function escapeRe(literal: string): string {

@@ -89,4 +89,7 @@ export interface GateOutcome {
   readonly outcome: PolicyOutcome;
   readonly checks: readonly GateCheck[];
   readonly deliveryPath: DeliveryPath;
+  /** The PR-issue-link decision, threaded through directly so the no-issue label
+   *  sync reads it by type rather than by matching a check's label string. */
+  readonly link: PolicyDecision;
 }

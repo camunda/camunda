@@ -52,6 +52,20 @@ test('release-merge titles (D25) pass as merge type', () => {
   assert.equal(lintTitle('merge: release-8.8.0 back to stable/8.8').outcome, 'pass');
 });
 
+test('a malicious @mention in the type is neutralised (wrapped in inline code)', () => {
+  const d = lintTitle('@here: ship it');
+  assert.equal(d.outcome, 'fail');
+  // The raw "@here" must never appear un-escaped — it would notify via the bot identity.
+  assert.ok(d.reasons.every((reason) => !reason.includes('"@here"')));
+  assert.ok(d.reasons.some((reason) => reason.includes('`@here`')));
+});
+
+test('a mention in a scope is neutralised too', () => {
+  const d = lintTitle('feat(@channel): x');
+  assert.equal(d.code, 'title-scope');
+  assert.ok(d.reasons.some((reason) => reason.includes('`(@channel)`')));
+});
+
 test('bot authors are title-exempt (D16), humans are not', () => {
   assert.ok(isTitleExemptAuthor('renovate[bot]'));
   assert.ok(isTitleExemptAuthor('backport-action'));

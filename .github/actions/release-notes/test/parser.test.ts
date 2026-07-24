@@ -53,6 +53,19 @@ test('parseRefs ignores markdown headings and colon separators', () => {
   assert.equal(parseRefs('closes: #8')[0]?.number, 8);
 });
 
+test('HTML comments are stripped so template boilerplate is not parsed as a ref', () => {
+  // The PR template ships an instructional comment inside "## Related issues".
+  const body = ['## Related issues', '<!-- e.g. closes #1234 to auto-close on merge -->', ''].join('\n');
+  assert.equal(parseRefs(extractSection(body) ?? '').length, 0);
+  // A multi-line comment naming a ref is likewise ignored.
+  const multiline = 'closes #1234\nline\n-->';
+  assert.equal(parseRefs(`<!-- ${multiline}`).length, 0);
+});
+
+test('a commented-out opt-out checkbox does not count as ticked', () => {
+  assert.equal(isOptOutTicked('<!-- - [x] This PR does not need a linked issue -->'), false);
+});
+
 test('isOptOutTicked only fires on a ticked checkbox with the phrase', () => {
   assert.equal(isOptOutTicked('- [x] This PR does not need a linked issue'), true);
   assert.equal(isOptOutTicked('- [ ] This PR does not need a linked issue'), false);

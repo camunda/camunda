@@ -18,7 +18,15 @@ name: Release-notes PR-gate
 
 on:
   pull_request_target:
-    types: [opened, edited, synchronize, labeled, unlabeled]
+    # Scope the privileged (app-token) flow to the branches whose release notes
+    # this gate governs — not every PR against any branch.
+    branches: [main, 'stable/**']
+    # Deliberately NOT labeled/unlabeled: the gate itself syncs the `no-issue`
+    # label, and each add/remove would re-trigger this workflow on its own label
+    # write (GitHub's push-loop protection does not cover label events), costing
+    # a full extra job per pass/fail transition. Body/title edits already re-run
+    # it via `edited`, which is the only signal that changes the outcome.
+    types: [opened, edited, synchronize]
 
 # One run per PR; newer events cancel older ones.
 concurrency:

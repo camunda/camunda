@@ -38,6 +38,17 @@ export const HEADER_MAX = 120;
 // conventional-commit header shape config-conventional parses.
 const HEADER = /^(?<type>[^\s():!]+)(?<scope>\([^)]*\))?!?:[ ](?<subject>.+)$/;
 
+/**
+ * Wrap user-controlled title fragments before interpolating them into the
+ * sticky comment / job summary. The gate posts under a bot identity on
+ * `pull_request_target`, so a raw `@mention` in a malicious title would notify
+ * (spam) via the bot. Inline code neutralises mentions; stripping backticks
+ * stops the value breaking out of the span.
+ */
+function code(value: string | undefined): string {
+  return `\`${(value ?? '').replace(/`/g, '')}\``;
+}
+
 /** Lint a PR title. Pure — no IO, no bot logic (the caller decides bot skips). */
 export function lintTitle(title: string): TitleDecision {
   if (title.length > HEADER_MAX) {
@@ -66,19 +77,19 @@ export function lintTitle(title: string): TitleDecision {
     return {
       outcome: 'fail',
       code: 'title-scope',
-      reasons: [`Scopes are not used in this repo — drop "${scope}" and write "${type}: …".`],
+      reasons: [`Scopes are not used in this repo — drop ${code(scope)} and write "${code(type)}: …".`],
     };
   }
 
   if (type !== type?.toLowerCase()) {
-    return { outcome: 'fail', code: 'title-type', reasons: [`The type "${type}" must be lower-case.`] };
+    return { outcome: 'fail', code: 'title-type', reasons: [`The type ${code(type)} must be lower-case.`] };
   }
 
   if (!TITLE_TYPES.includes(type as (typeof TITLE_TYPES)[number])) {
     return {
       outcome: 'fail',
       code: 'title-type',
-      reasons: [`"${type}" is not an allowed type. Use one of: ${TITLE_TYPES.join(', ')}.`],
+      reasons: [`${code(type)} is not an allowed type. Use one of: ${TITLE_TYPES.join(', ')}.`],
     };
   }
 

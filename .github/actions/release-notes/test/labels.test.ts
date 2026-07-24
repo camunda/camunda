@@ -7,11 +7,13 @@ const LINK_FAIL: GateOutcome = {
   outcome: 'fail',
   deliveryPath: 'direct',
   checks: [{ label: 'PR-issue link', outcome: 'fail', reasons: ['No linked issue found.'] }],
+  link: { outcome: 'fail', code: 'unlinked-undeclared', reasons: ['No linked issue found.'] },
 };
 const LINK_PASS: GateOutcome = {
   outcome: 'pass',
   deliveryPath: 'direct',
   checks: [{ label: 'PR-issue link', outcome: 'pass', reasons: ['Linked to issue #1234.'] }],
+  link: { outcome: 'pass', code: 'section-closing', reasons: ['Linked to issue #1234.'] },
 };
 const TITLE_ONLY_FAIL: GateOutcome = {
   outcome: 'fail',
@@ -20,6 +22,7 @@ const TITLE_ONLY_FAIL: GateOutcome = {
     { label: 'PR-issue link', outcome: 'pass', reasons: ['Linked to issue #1234.'] },
     { label: 'Title', outcome: 'fail', reasons: ['bad title'] },
   ],
+  link: { outcome: 'pass', code: 'section-closing', reasons: ['Linked to issue #1234.'] },
 };
 
 /** Records every call so a test can assert what the sync did. */
