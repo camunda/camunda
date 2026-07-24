@@ -23,6 +23,7 @@ import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotFileInfoProvider;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbResources;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RestoreRequest;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
@@ -91,12 +92,14 @@ public final class RecoveryPartitionManager
 
   // Dedicated to the ephemeral open-and-close sanity check after restore: the restored partition
   // is not yet running as a ZeebePartition, so there is no shared factory/resources to reuse here.
+  private static final RocksDbConfiguration SANITY_CHECK_DB_CONFIG = new RocksDbConfiguration();
   private static final ZeebeRocksDbFactory<?> SANITY_CHECK_DB_FACTORY =
       new ZeebeRocksDbFactory<>(
-          new RocksDbConfiguration(),
+          SANITY_CHECK_DB_CONFIG,
           new ConsistencyChecksSettings(true, true),
           new AccessMetricsConfiguration(AccessMetricsConfiguration.Kind.NONE),
-          SimpleMeterRegistry::new);
+          SimpleMeterRegistry::new,
+          RocksDbResources.of(SANITY_CHECK_DB_CONFIG, new RocksDbResources.RuntimeInfo(1)));
 
   private final List<RecoveryPartition> recoveryPartitions = new ArrayList<>();
   private final List<Integer> failedPartitionIds = new ArrayList<>();
