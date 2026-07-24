@@ -856,7 +856,19 @@ test.describe.serial('Process Instance Migration', () => {
       });
 
       await operateProcessesPage.clickProcessInstanceLink();
-      await operateDiagramPage.resetDiagramZoomButton.click();
+      // The diagram can take longer than the suite's 10s actionTimeout to
+      // render after navigating in, which fails the very next action
+      // (clicking "Reset diagram zoom") with a locator timeout rather than
+      // a content assertion. Same recovery already used for the "Business
+      // rule task incident" flake above: reload and retry the click.
+      await waitForAssertion({
+        assertion: async () => {
+          await operateDiagramPage.resetDiagramZoomButton.click({timeout: 30_000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Verify signal intermediate catch event migration', async () => {
