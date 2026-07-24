@@ -56,6 +56,44 @@ final class ElasticsearchExporterConfigMergerTest {
   }
 
   @Test
+  void shouldPreserveCustomerLegacyIndexArgWhenHelmChartMigratesEsExporterToUnifiedConfig() {
+    // Reproduces the Helm migration that drives PR #55950: the chart moves the Elasticsearch
+    // exporter from the legacy zeebe.broker.exporters.* path to the unified
+    // camunda.data.exporters.* path. BrokerBasedPropertiesOverride.populateFromExporters merges
+    // these as merge(legacyArgs, unifiedArgs) — legacy is the base (root position), the chart's
+    // unified config is the overlay (tenant position).
+
+    // base = a customer's leftover LEGACY override (zeebe.broker.exporters.elasticsearch.args.*):
+    // they disabled ES template management via an env var; the chart does not set
+    // index.createTemplate.
+    final Map<String, Object> legacyCustomerArgs = Map.of("index", Map.of("createTemplate", false));
+
+    // overlay = the ACTUAL args the 8.10 chart emits for the Elasticsearch exporter
+    // (charts/camunda-platform-8.10/templates/orchestration/files/_application.yaml). Values are
+    // quoted in the template, so numeric/boolean args arrive as strings — kept as-is here to stay
+    // faithful.
+    final Map<String, Object> helmUnifiedArgs =
+        Map.of(
+            "url", "http://camunda-elasticsearch:9200",
+            "index", Map.of("prefix", "custom-prefix", "numberOfReplicas", "2"),
+            "retention", Map.of("enabled", "true", "minimumAge", "30d", "policyName", "zeebe-ilm"));
+
+    // when — exactly what populateFromExporters does
+    final Map<String, Object> merged = merger.merge(legacyCustomerArgs, helmUnifiedArgs);
+
+    // then — bind the merged args into the real config class and assert the resolved end state
+    final var config =
+        io.camunda.zeebe.broker.exporter.context.ExporterConfiguration.fromArgs(
+            ElasticsearchExporterConfiguration.class, merged);
+    assertThat(config.url).isEqualTo("http://camunda-elasticsearch:9200"); // chart value applied
+    assertThat(config.index.prefix).isEqualTo("custom-prefix"); // chart value applied
+    assertThat(config.index.getNumberOfReplicas()).isEqualTo(2); // chart-only index arg applied
+    assertThat(config.index.createTemplate).isFalse(); // CUSTOMER legacy sibling SURVIVES
+    assertThat(config.retention.isEnabled()).isTrue(); // chart-only nested block applied
+    assertThat(config.retention.getMinimumAge()).isEqualTo("30d");
+  }
+
+  @Test
   void shouldBeDiscoverableViaServiceLoader() {
     assertThat(ServiceLoader.load(ExporterConfigMerger.class))
         .anySatisfy(m -> assertThat(m).isInstanceOf(ElasticsearchExporterConfigMerger.class));
