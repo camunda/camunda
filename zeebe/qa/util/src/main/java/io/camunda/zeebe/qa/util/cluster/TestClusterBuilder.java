@@ -290,7 +290,12 @@ public final class TestClusterBuilder {
     createGateways();
 
     return new TestCluster(
-        name, replicationFactor, partitionsCount, new HashMap<>(brokers), new HashMap<>(gateways));
+        name,
+        replicationFactor,
+        partitionsCount,
+        new HashMap<>(brokers),
+        new HashMap<>(gateways),
+        multiZoneConfigs);
   }
 
   private void applyConfigFunctions(final MemberId id, final TestApplication<?> zeebe) {
