@@ -232,7 +232,7 @@
     <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.15.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.17.1</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.10.0</plugin.version.dependency>
+    <plugin.version.dependency>3.11.0</plugin.version.dependency>
     <plugin.version.enforcer>3.6.3</plugin.version.enforcer>
     <plugin.version.exec>3.6.3</plugin.version.exec>
     <plugin.version.failsafe>3.5.6</plugin.version.failsafe>
@@ -2863,6 +2863,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
           <version>${plugin.version.dependency}</version>
+          <configuration>
+            <excludeGroupIds>org.eclipse.m2e</excludeGroupIds>
+          </configuration>
           <!-- To run with Java 11 - https://issues.apache.org/jira/browse/MDEP-613-->
           <dependencies>
             <dependency>
