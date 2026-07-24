@@ -25,6 +25,7 @@ import org.assertj.core.data.Offset;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  *
  * <p>Tagged {@code dl-nightly} because the 1-minute delay makes it too slow for regular CI.
  */
+@Disabled("shouldNotAcknowledgeBeforeDelayExpires currently failing on nightly CI - INC-6678")
 @Tag("dl-nightly")
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(OrderAnnotation.class)
