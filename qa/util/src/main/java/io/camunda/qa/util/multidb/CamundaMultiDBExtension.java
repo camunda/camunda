@@ -16,6 +16,7 @@ import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.multidb.TestEntityCollector.TestEntityCollection;
 import io.camunda.qa.util.multidb.TestEntityConfigurer.ConfigurationTestEntities;
 import io.camunda.security.api.model.config.AuthenticationMethod;
@@ -628,6 +629,19 @@ public class CamundaMultiDBExtension
     }
   }
 
+  private void awaitTestUserClientsAuthenticated(final TestEntityCollection testEntities) {
+    for (final TestUser user : testEntities.users()) {
+      final CamundaClient client = authenticatedClientFactory.getCamundaClient(user.username());
+      if (client == null) {
+        continue;
+      }
+      Awaitility.await("until user '%s' can authenticate".formatted(user.username()))
+          .timeout(Duration.ofSeconds(60))
+          .ignoreExceptions()
+          .untilAsserted(() -> client.newTopologyRequest().send().join());
+    }
+  }
+
   private void injectStaticMultiPtClientsField(
       final Class<?> testClass, final MultiPhysicalTenantClients ptClients) {
     for (final Field field : testClass.getDeclaredFields()) {
@@ -930,6 +944,8 @@ public class CamundaMultiDBExtension
 
     createClientsForTestEntities(shouldSetupKeycloak, testEntities);
 
+    awaitTestUserClientsAuthenticated(testEntities);
+
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
     // We want to run tests in an efficient manner, and reduce setup time
@@ -1059,6 +1075,21 @@ public class CamundaMultiDBExtension
         .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)
         .pollInterval(Duration.ofMillis(500))
         .until(() -> setupHelper.validateSchemaCreation(testPrefix));
+
+    if ((physicalTenantId != null || multiPhysicalTenantIds != null)
+        && application
+            .clientAuthenticationMethod()
+            .map(AuthenticationMethod.BASIC::equals)
+            .orElse(false)) {
+      try (final var defaultScopeClient = application.newClientBuilder().build()) {
+        application.awaitCompleteTopology(
+            clusterCfg.getSize(),
+            clusterCfg.getPartitionCount(),
+            clusterCfg.getReplicationFactor(),
+            Duration.ofSeconds(30),
+            defaultScopeClient);
+      }
+    }
   }
 
   private ElasticsearchContainer setupElasticsearch() {
