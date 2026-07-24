@@ -164,8 +164,12 @@ class SecretStoreConfigurationTest {
   }
 
   @Test
-  void shouldBuildAwsSecretsManagerStoreWhenConfigured() {
-    // given
+  void shouldBuildAwsSecretsManagerStoreEvenWithoutReachableCredentials() {
+    // given — AwsSecretsManagerSecretStore.fromConfig() only probes connectivity/credentials
+    // best-effort, logging a warning rather than failing, so wiring an aws-secrets-manager store
+    // outside a real AWS/LocalStack environment still constructs successfully; the connectivity
+    // error would only surface on first use. Real resolution against credentials is covered at the
+    // integration level by AwsSecretsManagerSecretStoreIT, which runs against LocalStack.
     final var resolver =
         resolverFor(
             Map.of(
