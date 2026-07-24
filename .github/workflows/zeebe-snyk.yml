@@ -212,6 +212,37 @@ jobs:
             fi
           }
 
+          # Bounds each individual `snyk` call so a single stuck/slow call to the Snyk API cannot
+          # consume the whole job's 15m timeout and take the remaining projects down with it (see
+          # INC-6630 for the same class of issue with unbounded external network calls in CI).
+          #
+          # snyk exit codes: 0 = no issues, 1 = vulnerabilities found (a valid result),
+          # 2 = error / re-run recommended, 3 = no supported projects. `timeout` returns 124 when
+          # it kills a stuck call. Only 2 and 124 are transient, so we retry those and pass every
+          # other code straight through - retrying a legitimate vuln finding (1) would needlessly
+          # double every scan that has findings and defeat the purpose of this bound.
+          function runSnykWithRetry() {
+            local maxAttempts=2
+            local perAttemptTimeoutSecs=120
+            local retryDelaySecs=10
+            local attempt=1
+
+            while true; do
+              local status=0
+              timeout "${perAttemptTimeoutSecs}s" snyk "$@" || status=$?
+              if [ "${status}" -ne 2 ] && [ "${status}" -ne 124 ]; then
+                return "${status}"
+              fi
+              if [ "${attempt}" -ge "${maxAttempts}" ]; then
+                echo "::error::snyk $* still failing after ${maxAttempts} attempts (exit ${status})"
+                return "${status}"
+              fi
+              echo "snyk $* transient failure (exit ${status}), retry ${attempt}/${maxAttempts} in ${retryDelaySecs}s..."
+              sleep "${retryDelaySecs}"
+              attempt=$((attempt + 1))
+            done
+          }
+
           # Print out command if debug logging is enabled
           set -x
 
@@ -224,14 +255,14 @@ jobs:
             PROJECT_NAME="zeebe(${TARGET}):${project}/pom.xml"
             ensureExists "${project}/pom.xml"
             # shellcheck disable=SC2153
-            snyk "${SNYK_COMMAND}" --file="${project}/pom.xml" "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" "${project/\//-}")" || exitCode=1
+            runSnykWithRetry "${SNYK_COMMAND}" --file="${project}/pom.xml" "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" "${project/\//-}")" || exitCode=1
           done
 
           # The `container` command does not yet support setting a target reference, as this is a beta
           # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
           PROJECT_NAME="zeebe(${TARGET}):camunda.Dockerfile"
           ensureExists "camunda.Dockerfile"
-          snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=camunda.Dockerfile "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" 'docker')" || exitCode=1
+          runSnykWithRetry container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=camunda.Dockerfile "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" 'docker')" || exitCode=1
 
           # Only fail if we entirely failed to parse the projects
           if [[ $exitCode -gt 1 ]]; then
