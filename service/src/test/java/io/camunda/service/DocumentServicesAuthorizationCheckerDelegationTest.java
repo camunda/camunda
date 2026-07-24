@@ -160,7 +160,7 @@ class DocumentServicesAuthorizationCheckerDelegationTest {
   void shouldDenyDeleteFromWrongTenantGrant() {
     // given: tenant A's checker would grant DELETE, but this request is scoped to tenant B, whose
     // own checker grants nothing -- proves DocumentServices always defers to the checker it was
-    // constructed with, never a sibling instance's. 
+    // constructed with, never a sibling instance's.
     when(checkerA.collectPermissionTypes(any(), any(), any()))
         .thenReturn(Set.of(PermissionType.DELETE));
     when(checkerB.collectPermissionTypes(any(), any(), any())).thenReturn(Collections.emptySet());
