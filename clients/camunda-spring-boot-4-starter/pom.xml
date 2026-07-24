@@ -32,19 +32,9 @@
     <spring-boot-starter-camunda-sdk.sourcedir>${project.basedir}/../spring-boot-starter-camunda-sdk/src</spring-boot-starter-camunda-sdk.sourcedir>
   </properties>
 
-  <!-- Spring Boot 4.0.7's spring-boot-dependencies BOM manages tools.jackson:jackson-bom (Jackson
-  3.x) at 3.1.4 via its own internal "jackson-bom.version" property, which transitively pins
-  tools.jackson.core:jackson-databind@3.1.4. That version is affected by GHSA-5gvw-p9qm-jgwh
-  (improper @JsonView authorization bypass on @JsonUnwrapped properties during deserialization).
-
-  NOTE: redeclaring "jackson-bom.version" as a property here has NO effect: spring-boot-dependencies
-  is brought in via a <dependencyManagement>/<scope>import</scope> in parent/pom.xml (zeebe-parent),
-  not inherited via <parent>. Maven resolves an imported BOM's own dependencyManagement using that
-  BOM's own property defaults before merging it in, so a same-named property set anywhere in this
-  project's ancestry never reaches spring-boot-dependencies' internal jackson-bom import. The only
-  reliable override is a direct managed-dependency pin below, which always wins over an imported
-  BOM's managed version regardless of import order. Remove this once Spring Boot's own BOM ships
-  jackson-databind >= 3.1.5. -->
+  <!-- Spring Boot's dependency tree pulls in jackson-databind 3.1.4, vulnerable to
+  GHSA-5gvw-p9qm-jgwh. A "jackson-bom.version" property override doesn't reach the imported
+  spring-boot-dependencies BOM's managed versions, so we pin it directly here instead. -->
   <dependencyManagement>
     <dependencies>
       <dependency>
