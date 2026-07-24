@@ -60,6 +60,13 @@ public enum LongPollingMetricsDoc implements ExtendedMeterDocumentation {
       public String asString() {
         return "protocol";
       }
+    },
+    /** The physical tenant the blocked request belongs to */
+    PHYSICAL_TENANT_ID {
+      @Override
+      public String asString() {
+        return "physicalTenantId";
+      }
     }
   }
 

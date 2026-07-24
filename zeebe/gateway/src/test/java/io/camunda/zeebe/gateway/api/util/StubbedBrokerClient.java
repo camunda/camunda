@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 public final class StubbedBrokerClient implements BrokerClient {
 
   final BrokerTopologyManager topologyManager = new StubbedTopologyManager();
-  private Consumer<String> jobsAvailableHandler;
+  private final Map<String, Consumer<String>> jobsAvailableHandlers = new HashMap<>();
 
   private final Map<Class<?>, RequestHandler<?, ?>> requestHandlers = new HashMap<>();
 
@@ -116,7 +116,7 @@ public final class StubbedBrokerClient implements BrokerClient {
   @Override
   public void subscribeJobAvailableNotification(
       final String topic, final Consumer<String> handler) {
-    jobsAvailableHandler = handler;
+    jobsAvailableHandlers.put(topic, handler);
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
@@ -125,8 +125,16 @@ public final class StubbedBrokerClient implements BrokerClient {
     requestHandlers.put(requestType, requestHandler);
   }
 
+  /** Notifies on the legacy, prefix-less topic, as if raised by the default physical tenant. */
   public void notifyJobsAvailable(final String type) {
-    jobsAvailableHandler.accept(type);
+    notifyJobsAvailable("jobsAvailable", type);
+  }
+
+  public void notifyJobsAvailable(final String topic, final String type) {
+    final var handler = jobsAvailableHandlers.get(topic);
+    if (handler != null) {
+      handler.accept(type);
+    }
   }
 
   public <T extends BrokerRequest<?>> T getSingleBrokerRequest() {

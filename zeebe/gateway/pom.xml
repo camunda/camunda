@@ -105,7 +105,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-cluster</artifactId>
-      <scope>test</scope>
     </dependency>
 
     <dependency>

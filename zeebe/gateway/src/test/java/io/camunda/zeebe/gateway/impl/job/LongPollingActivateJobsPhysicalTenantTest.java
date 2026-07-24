@@ -9,32 +9,28 @@ package io.camunda.zeebe.gateway.impl.job;
 
 import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.util.unit.DataSize;
 
-final class LongPollingActivateJobsHandlerPurgeTest {
+/** Covers physical-tenant scoping of job-available notifications (issue #56224). */
+final class LongPollingActivateJobsPhysicalTenantTest {
 
   private static final String TYPE = "testJob";
   private static final long LONG_POLLING_TIMEOUT = 5000;
   private static final long PROBE_TIMEOUT = 20000;
-  // threshold of 3: after 3 failed attempts the next request goes pending immediately
   private static final int FAILED_RESPONSE_THRESHOLD = 3;
   private static final int MAX_JOBS_TO_ACTIVATE = 2;
   private static final long MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4).toBytes();
@@ -49,7 +45,7 @@ final class LongPollingActivateJobsHandlerPurgeTest {
   @BeforeEach
   void setUp() {
     handler =
-        LongPollingActivateJobsHandler.newBuilder()
+        LongPollingActivateJobsHandler.<Object>newBuilder()
             .setBrokerClient(brokerClient)
             .setMaxMessageSize(MAX_MESSAGE_SIZE)
             .setLongPollingTimeout(LONG_POLLING_TIMEOUT)
@@ -60,11 +56,11 @@ final class LongPollingActivateJobsHandlerPurgeTest {
                     new JobActivationResult<>() {
                       @Override
                       public int getJobsCount() {
-                        return 0;
+                        return response.brokerResponse().getJobKeys().size();
                       }
 
                       @Override
-                      public List<ActivatedJob> getJobs() {
+                      public List<JobActivationResult.ActivatedJob> getJobs() {
                         return Collections.emptyList();
                       }
 
@@ -74,7 +70,7 @@ final class LongPollingActivateJobsHandlerPurgeTest {
                       }
 
                       @Override
-                      public List<ActivatedJob> getJobsToDefer() {
+                      public List<JobActivationResult.ActivatedJob> getJobsToDefer() {
                         return Collections.emptyList();
                       }
                     })
@@ -82,52 +78,96 @@ final class LongPollingActivateJobsHandlerPurgeTest {
             .setRequestCanceledExceptionProvider(RuntimeException::new)
             .setMetricsFactory(LongPollingMetricsFactory.noop())
             .build();
+    submitHandlerActor(handler);
 
     activateJobsStub = new ActivateJobsStub();
     activateJobsStub.registerWith(brokerClient);
-    // no jobs available — all activate attempts return empty responses
     activateJobsStub.addAvailableJobs(TYPE, 0);
   }
 
   @Test
-  void shouldBeNoOpWhenActorNotStarted() {
-    // handler.actor is null because we never submitted it to the scheduler
-    assertThatCode(handler::onClusterIncarnationChanged).doesNotThrowAnyException();
+  void shouldNotWakeRequestOfAnotherPhysicalTenant() {
+    // given — one pending request per tenant, for the same job type
+    final var tenantACompletions = new AtomicInteger();
+    final var tenantBCompletions = new AtomicInteger();
+    submitPendingRequest("tenanta", tenantACompletions);
+    submitPendingRequest("tenantb", tenantBCompletions);
+
+    // when — a job becomes available and only tenanta's topic is notified
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    brokerClient.notifyJobsAvailable("tenanta-jobsAvailable", TYPE);
+    actorScheduler.workUntilDone();
+
+    // then — only the matching tenant's request is unblocked
+    assertThat(tenantACompletions.get()).isEqualTo(1);
+    assertThat(tenantBCompletions.get()).isEqualTo(0);
   }
 
   @Test
-  void shouldFailPendingRequestsOnPurge() throws Exception {
-    // Start the handler actor
-    submitHandlerActor(handler);
+  void shouldWakeDefaultTenantRequestViaLegacyTopic() {
+    // given — default tenant listens on both the scoped and the legacy prefix-less topic
+    final var completions = new AtomicInteger();
+    submitPendingRequest(DEFAULT_PHYSICAL_TENANT_ID, completions);
 
-    // Build a request and put it in pending state.
-    // We exhaust the failure threshold first so the next internalActivateJobsRetry
-    // enqueues the request as pending rather than trying the broker again.
-    final var errorRef = new AtomicReference<Throwable>();
-    final InflightActivateJobsRequest<Object> pendingRequest = buildRequest(errorRef);
-
-    // Exhaust the threshold via internalActivateJobsRetry calls
-    // (each call triggers tryToActivateJobsOnAllPartitions which returns 0 jobs and
-    //  increments the failed attempt counter)
-    for (int i = 0; i < FAILED_RESPONSE_THRESHOLD; i++) {
-      handler.internalActivateJobsRetry(pendingRequest);
-      actorScheduler.workUntilDone();
-    }
-
-    // After threshold is reached the next retry marks the request as pending
-    handler.internalActivateJobsRetry(pendingRequest);
+    // when
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    brokerClient.notifyJobsAvailable(TYPE);
     actorScheduler.workUntilDone();
 
-    // Trigger purge
-    handler.onClusterIncarnationChanged();
+    // then
+    assertThat(completions.get()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldWakeDefaultTenantRequestViaScopedTopic() {
+    // given — default tenant also listens on its own new, prefixed topic, not only the legacy one
+    final var completions = new AtomicInteger();
+    submitPendingRequest(DEFAULT_PHYSICAL_TENANT_ID, completions);
+
+    // when
+    activateJobsStub.addAvailableJobs(TYPE, 1);
+    brokerClient.notifyJobsAvailable("default-jobsAvailable", TYPE);
     actorScheduler.workUntilDone();
 
-    // The response observer should have received an error mentioning "purge"
-    assertThat(errorRef.get()).isNotNull();
-    assertThat(errorRef.get().getMessage()).containsIgnoringCase("purge");
+    // then
+    assertThat(completions.get()).isEqualTo(1);
   }
 
   // -- helpers --
+
+  private void submitPendingRequest(
+      final String physicalTenantId, final AtomicInteger completions) {
+    final var brokerRequest =
+        new BrokerActivateJobsRequest(TYPE)
+            .setMaxJobsToActivate(MAX_JOBS_TO_ACTIVATE)
+            .setTimeout(LONG_POLLING_TIMEOUT)
+            .setTenantIds(Collections.emptyList())
+            .setVariables(Collections.emptyList())
+            .setWorker("test-worker");
+    brokerRequest.setPartitionGroup(physicalTenantId);
+
+    final ResponseObserver<Object> observer =
+        new ResponseObserver<>() {
+          @Override
+          public void onCompleted() {
+            completions.incrementAndGet();
+          }
+
+          @Override
+          public void onNext(final Object element) {}
+
+          @Override
+          public boolean isCancelled() {
+            return false;
+          }
+
+          @Override
+          public void onError(final Throwable throwable) {}
+        };
+
+    handler.activateJobs(brokerRequest, observer, cancelHandler -> {}, LONG_POLLING_TIMEOUT);
+    actorScheduler.workUntilDone();
+  }
 
   private void submitHandlerActor(final LongPollingActivateJobsHandler<Object> handlerToSubmit) {
     final var ready = new CompletableFuture<Void>();
@@ -139,38 +179,5 @@ final class LongPollingActivateJobsHandlerPurgeTest {
     actorScheduler.submitActor(actor);
     actorScheduler.workUntilDone();
     ready.join();
-  }
-
-  private InflightActivateJobsRequest<Object> buildRequest(
-      final AtomicReference<Throwable> errorRef) {
-    final var brokerRequest = mock(BrokerActivateJobsRequest.class);
-    final var requestWriter = new JobBatchRecord();
-    requestWriter.setType(TYPE);
-    requestWriter.setWorker("test-worker");
-    requestWriter.setMaxJobsToActivate(MAX_JOBS_TO_ACTIVATE);
-    when(brokerRequest.getRequestWriter()).thenReturn(requestWriter);
-    when(brokerRequest.getPartitionId()).thenReturn(1);
-    when(brokerRequest.getPartitionGroup()).thenReturn(DEFAULT_PHYSICAL_TENANT_ID);
-
-    final ResponseObserver<Object> observer =
-        new ResponseObserver<>() {
-          @Override
-          public void onCompleted() {}
-
-          @Override
-          public void onNext(final Object element) {}
-
-          @Override
-          public boolean isCancelled() {
-            return false;
-          }
-
-          @Override
-          public void onError(final Throwable throwable) {
-            errorRef.set(throwable);
-          }
-        };
-
-    return new InflightActivateJobsRequest<>(1L, brokerRequest, observer, LONG_POLLING_TIMEOUT);
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import static io.camunda.cluster.PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_LONG_POLLING_TIMEOUT;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PROBE_TIMEOUT;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import java.time.Duration;
@@ -43,13 +45,14 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   private final RoundRobinActivateJobsHandler<T> activateJobsHandler;
   private final BrokerClient brokerClient;
 
-  private final Map<String, InFlightLongPollingActivateJobsRequestsState<T>> jobTypeState =
+  private final Map<JobTypeKey, InFlightLongPollingActivateJobsRequestsState<T>> jobTypeState =
       new ConcurrentHashMap<>();
   private final Duration longPollingTimeout;
   private final long probeTimeoutMillis;
   private final int failedAttemptThreshold;
 
-  private final LongPollingMetrics metrics;
+  private final LongPollingMetricsFactory metricsFactory;
+  private final Map<String, LongPollingMetrics> metricsByPhysicalTenant = new ConcurrentHashMap<>();
 
   private ActorControl actor;
 
@@ -64,7 +67,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
       final Function<String, Exception> resourceExhaustedExceptionProvider,
       final Function<String, Throwable> requestCanceledExceptionProvider,
-      final LongPollingMetrics metrics) {
+      final LongPollingMetricsFactory metricsFactory) {
     this.brokerClient = brokerClient;
     activateJobsHandler =
         new RoundRobinActivateJobsHandler<>(
@@ -73,7 +76,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
-    this.metrics = metrics;
+    this.metricsFactory = metricsFactory;
   }
 
   @Override
@@ -86,10 +89,37 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   void onActorStarted() {
     actor.run(
         () -> {
-          brokerClient.subscribeJobAvailableNotification(
-              JOBS_AVAILABLE_TOPIC, this::onJobAvailableNotification);
+          subscribeIfNeeded(DEFAULT_PHYSICAL_TENANT_ID);
           actor.runAtFixedRate(Duration.ofMillis(probeTimeoutMillis), this::probe);
         });
+  }
+
+  /**
+   * Subscribes to the job-available notifications of a physical tenant, so a notification only
+   * wakes long-poll requests of its own tenant. Safe to call on every request for a tenant: {@link
+   * BrokerClient#subscribeJobAvailableNotification} dedups by topic, so a repeat call for an
+   * already-subscribed tenant is a no-op. The default tenant also listens on the legacy,
+   * prefix-less topic for rolling-upgrade compat with 8.9 brokers; remove alongside the legacy
+   * topic in 8.11.
+   */
+  private void subscribeIfNeeded(final String physicalTenantId) {
+    brokerClient.subscribeJobAvailableNotification(
+        topic(physicalTenantId), jobType -> onJobAvailableNotification(physicalTenantId, jobType));
+    if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
+      brokerClient.subscribeJobAvailableNotification(
+          JOBS_AVAILABLE_TOPIC, jobType -> onJobAvailableNotification(physicalTenantId, jobType));
+    }
+  }
+
+  /** The physicalTenantId-scoped topic name, used for every physical tenant, including default. */
+  private static String topic(final String physicalTenantId) {
+    return physicalTenantId + "-" + JOBS_AVAILABLE_TOPIC;
+  }
+
+  /** Returns the {@link LongPollingMetrics} tagged for the given physical tenant. */
+  private LongPollingMetrics metricsFor(final String physicalTenantId) {
+    return metricsByPhysicalTenant.computeIfAbsent(
+        physicalTenantId, metricsFactory::forPhysicalTenant);
   }
 
   /**
@@ -173,34 +203,39 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
             responseObserver,
             requestTimeout);
     final String jobType = longPollingRequest.getType();
+    final String physicalTenantId = request.getPartitionGroup();
+    final var key = new JobTypeKey(physicalTenantId, jobType);
     // Eagerly removing the request on cancellation may free up some resources
     // We are not allowed to change the responseObserver after we completed this call
     // this means we can't do it async in the following actor call.
-    setCancelHandler.accept(() -> onRequestCancel(jobType, longPollingRequest));
+    setCancelHandler.accept(() -> onRequestCancel(key, longPollingRequest));
     actor.run(
         () -> {
           if (!longPollingRequest.isOpen()) {
             return;
           }
 
+          subscribeIfNeeded(physicalTenantId);
           final InFlightLongPollingActivateJobsRequestsState<T> state =
               jobTypeState.computeIfAbsent(
-                  jobType,
-                  type -> new InFlightLongPollingActivateJobsRequestsState<>(type, metrics));
+                  key,
+                  k ->
+                      new InFlightLongPollingActivateJobsRequestsState<>(
+                          jobType, metricsFor(physicalTenantId)));
 
           tryToActivateJobsOnAllPartitions(state, longPollingRequest);
         });
   }
 
   private void onRequestCancel(
-      final String type, final InflightActivateJobsRequest<T> longPollingRequest) {
+      final JobTypeKey key, final InflightActivateJobsRequest<T> longPollingRequest) {
     actor.run(
         () -> {
-          final var state = jobTypeState.get(type);
+          final var state = jobTypeState.get(key);
           if (state != null) {
             state.removeRequest(longPollingRequest);
             state.removeActiveRequest(longPollingRequest);
-            tryCleanupJobTypeState(type);
+            tryCleanupJobTypeState(key);
           }
         });
   }
@@ -235,7 +270,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
                     request.complete();
                     state.removeActiveRequest(request);
                     state.resetFailedAttempts();
-                    handlePendingRequests(state, request.getType());
+                    handlePendingRequests(state, keyOf(request));
                   });
             }
           });
@@ -286,10 +321,13 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       return;
     }
 
+    final var key = keyOf(request);
     final var state =
         jobTypeState.computeIfAbsent(
-            request.getType(),
-            type1 -> new InFlightLongPollingActivateJobsRequestsState<>(type1, metrics));
+            key,
+            k ->
+                new InFlightLongPollingActivateJobsRequestsState<>(
+                    request.getType(), metricsFor(key.physicalTenantId())));
 
     if (!request.hasScheduledTimer()) {
       scheduleLongPollingTimeout(state, request);
@@ -311,11 +349,13 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
             return;
           }
 
-          final String jobType = request.getType();
+          final var key = keyOf(request);
           final InFlightLongPollingActivateJobsRequestsState<T> state =
               jobTypeState.computeIfAbsent(
-                  jobType,
-                  type -> new InFlightLongPollingActivateJobsRequestsState<>(type, metrics));
+                  key,
+                  k ->
+                      new InFlightLongPollingActivateJobsRequestsState<>(
+                          request.getType(), metricsFor(key.physicalTenantId())));
 
           if (state.shouldAttempt(failedAttemptThreshold)) {
             tryToActivateJobsOnAllPartitions(state, request);
@@ -325,31 +365,35 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
         });
   }
 
-  private void onJobAvailableNotification(final String jobType) {
-    LOG.trace("Received jobs available notification for type {}.", jobType);
+  private void onJobAvailableNotification(final String physicalTenantId, final String jobType) {
+    LOG.trace(
+        "Received jobs available notification for type {} of physical tenant {}.",
+        jobType,
+        physicalTenantId);
 
+    final var key = new JobTypeKey(physicalTenantId, jobType);
     // instead of calling #getJobTypeState(), do only a
     // get to avoid the creation of a state instance.
-    final var state = jobTypeState.get(jobType);
+    final var state = jobTypeState.get(key);
 
     if (state != null) {
       LOG.trace("Handle jobs available notification for type {}.", jobType);
       actor.run(
           () -> {
             state.resetFailedAttempts();
-            handlePendingRequests(state, jobType);
+            handlePendingRequests(state, key);
           });
     }
   }
 
   private void handlePendingRequests(
-      final InFlightLongPollingActivateJobsRequestsState<T> state, final String jobType) {
+      final InFlightLongPollingActivateJobsRequestsState<T> state, final JobTypeKey key) {
     final var nextPending = getNextOpenPendingRequest(state);
     if (nextPending != null) {
       LOG.trace("Unblocking ActivateJobsRequest {}", nextPending.getRequest());
       internalActivateJobsRetry(nextPending);
     } else if (!state.hasActiveRequests()) {
-      jobTypeState.remove(jobType);
+      jobTypeState.remove(key);
     }
   }
 
@@ -376,14 +420,18 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
             () -> {
               request.timeout();
               state.removeRequest(request);
-              tryCleanupJobTypeState(request.getType());
+              tryCleanupJobTypeState(keyOf(request));
             });
     request.setScheduledTimer(timeout);
   }
 
-  private void tryCleanupJobTypeState(final String jobType) {
+  private void tryCleanupJobTypeState(final JobTypeKey key) {
     jobTypeState.computeIfPresent(
-        jobType, (k, s) -> s.hasActiveRequests() || s.hasPendingRequests() ? s : null);
+        key, (k, s) -> s.hasActiveRequests() || s.hasPendingRequests() ? s : null);
+  }
+
+  private static JobTypeKey keyOf(final InflightActivateJobsRequest<?> request) {
+    return new JobTypeKey(request.getRequest().getPartitionGroup(), request.getType());
   }
 
   private void probe() {
@@ -415,19 +463,21 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     return null;
   }
 
-  int activeRequestsCountForJobType(final String jobType) {
-    final var state = jobTypeState.get(jobType);
+  int activeRequestsCountForJobType(final String physicalTenantId, final String jobType) {
+    final var state = jobTypeState.get(new JobTypeKey(physicalTenantId, jobType));
     return state == null ? 0 : state.activeRequestsCount();
   }
 
-  int pendingRequestsCountForJobType(final String jobType) {
-    final var state = jobTypeState.get(jobType);
+  int pendingRequestsCountForJobType(final String physicalTenantId, final String jobType) {
+    final var state = jobTypeState.get(new JobTypeKey(physicalTenantId, jobType));
     return state == null ? 0 : state.pendingRequestsCount();
   }
 
   public static <T> Builder<T> newBuilder() {
     return new Builder<>();
   }
+
+  private record JobTypeKey(String physicalTenantId, String jobType) {}
 
   public static class Builder<T> {
 
@@ -440,7 +490,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
     private Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper;
     private Function<String, Exception> resourceExhaustedExceptionProvider;
     private Function<String, Throwable> requestCanceledExceptionProvider;
-    private LongPollingMetrics metrics;
+    private LongPollingMetricsFactory metricsFactory;
 
     public Builder<T> setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
@@ -485,8 +535,8 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
       return this;
     }
 
-    public Builder<T> setMetrics(final LongPollingMetrics metrics) {
-      this.metrics = metrics;
+    public Builder<T> setMetricsFactory(final LongPollingMetricsFactory metricsFactory) {
+      this.metricsFactory = metricsFactory;
       return this;
     }
 
@@ -501,7 +551,7 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
           activationResultMapper,
           resourceExhaustedExceptionProvider,
           requestCanceledExceptionProvider,
-          metrics);
+          metricsFactory);
     }
   }
 }

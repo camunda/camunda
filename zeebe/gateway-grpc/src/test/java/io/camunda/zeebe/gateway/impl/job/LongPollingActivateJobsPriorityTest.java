@@ -15,7 +15,7 @@ import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.api.job.ActivateJobsStub;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.scheduler.Actor;
@@ -53,7 +53,7 @@ final class LongPollingActivateJobsPriorityTest {
             .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
             .setResourceExhaustedExceptionProvider(Gateway.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-            .setMetrics(LongPollingMetrics.noop())
+            .setMetricsFactory(LongPollingMetricsFactory.noop())
             .build();
     submitHandlerActor(handler);
 
