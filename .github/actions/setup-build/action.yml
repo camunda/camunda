@@ -257,17 +257,69 @@ runs:
         inputs.dockerhub == 'true' ||
         inputs.dockerhub-readonly == 'true'
       )
+<<<<<<< HEAD
     uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+=======
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.dockerhub-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.dockerhub-token }}
+>>>>>>> e970ff2f (ci: retry docker login in setup-build to survive transient registry auth failures)
     with:
-      username: ${{ steps.secrets.outputs.dockerhub-username }}
-      password: ${{ steps.secrets.outputs.dockerhub-token }}
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        echo "${DOCKER_PASSWORD}" | docker login --username "${DOCKER_USERNAME}" --password-stdin
   - name: Logs on to Harbor
     # Harbor login is disabled for fork PRs
     if: >-
       steps.checks.outputs.is-fork != 'true' &&
       inputs.harbor == 'true'
+<<<<<<< HEAD
     uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
     with:
       registry: registry.camunda.cloud
       username: ${{ steps.secrets.outputs.ci-account-username }}
       password: ${{ steps.secrets.outputs.ci-account-password }}
+=======
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_USERNAME: ${{ steps.secrets.outputs.ci-account-username }}
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.ci-account-password }}
+    with:
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        echo "${DOCKER_PASSWORD}" | docker login registry.camunda.cloud \
+          --username "${DOCKER_USERNAME}" --password-stdin
+  - name: Logs on to Minimus
+    # Minimus login is disabled for fork PRs
+    if: >-
+      steps.is-fork.outputs.is-fork != 'true' &&
+      inputs.minimus == 'true'
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+    env:
+      DOCKER_PASSWORD: ${{ steps.secrets.outputs.minimus-token }}
+    with:
+      max_attempts: 3
+      retry_wait_seconds: 10
+      timeout_seconds: 60
+      shell: bash
+      command: |
+        echo "${DOCKER_PASSWORD}" | docker login reg.mini.dev \
+          --username minimus --password-stdin
+  - name: Authenticate to GCS build-cache
+    # GCS build-cache auth is disabled for fork PRs (no Vault access)
+    if: >-
+      steps.is-fork.outputs.is-fork != 'true' &&
+      inputs.gcs-build-cache-auth == 'true'
+    uses: ./.github/actions/gcs-build-cache-auth
+    with:
+      vault-addr: ${{ inputs.vault-address }}
+      vault-role-id: ${{ inputs.vault-role-id }}
+      vault-secret-id: ${{ inputs.vault-secret-id }}
+>>>>>>> e970ff2f (ci: retry docker login in setup-build to survive transient registry auth failures)
