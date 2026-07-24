@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {WarningFilled, CheckmarkOutline, RadioButtonChecked} from './styled';
+import {
+  WarningFilled,
+  CheckmarkOutline,
+  RadioButtonChecked,
+  PauseOutlineFilled,
+} from './styled';
 import {type CarbonIconType, Error, UnknownFilled} from '@carbon/react/icons';
 import type {
   DecisionInstanceState,
@@ -17,6 +22,7 @@ const stateIconsMap = {
   FAILED: WarningFilled,
   INCIDENT: WarningFilled,
   ACTIVE: RadioButtonChecked,
+  SUSPENDED: PauseOutlineFilled,
   COMPLETED: CheckmarkOutline,
   EVALUATED: CheckmarkOutline,
   TERMINATED: Error,

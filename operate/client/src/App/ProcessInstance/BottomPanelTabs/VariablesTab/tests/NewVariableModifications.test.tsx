@@ -175,6 +175,7 @@ describe('New Variable Modifications', () => {
     rootProcessInstanceKey: null,
     tags: [],
     businessId: null,
+    suspendedDate: null,
   };
 
   beforeEach(async () => {

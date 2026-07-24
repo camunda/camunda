@@ -150,6 +150,7 @@ const mockCalledProcessInstance = {
   processDefinitionVersionTag: null,
   endDate: null,
   businessId: null,
+  suspendedDate: null,
 } satisfies ProcessInstance;
 
 const mockProcessInstance = {
@@ -169,6 +170,7 @@ const mockProcessInstance = {
   processDefinitionVersionTag: null,
   endDate: null,
   businessId: null,
+  suspendedDate: null,
 } satisfies ProcessInstance;
 
 const mockCalledDecisionInstance = {

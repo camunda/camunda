@@ -93,6 +93,7 @@ const createProcessInstance = (
     rootProcessInstanceKey: null,
     tags: [],
     businessId: null,
+    suspendedDate: null,
     ...options,
   };
 };

@@ -51,6 +51,7 @@ describe('VariablesTab', () => {
       rootProcessInstanceKey: null,
       tags: [],
       businessId: null,
+      suspendedDate: null,
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
