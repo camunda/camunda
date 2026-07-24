@@ -58,6 +58,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     registerRestoreHandler();
     registerForceRemoveZoneHandler();
     registerAddZoneHandler();
+    registerUpdateZonePrioritiesHandler();
   }
 
   @Override
@@ -267,6 +268,14 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
         ClusterConfigurationRequestTopics.ADD_ZONE.topic(),
         serializer::decodeAddZoneRequest,
         request -> mapResponse(clusterConfigurationManagementApi.addZone(request)),
+        this::encodeResponse);
+  }
+
+  private void registerUpdateZonePrioritiesHandler() {
+    communicationService.replyTo(
+        ClusterConfigurationRequestTopics.UPDATE_ZONE_PRIORITIES.topic(),
+        serializer::decodeUpdateZonePrioritiesRequest,
+        request -> mapResponse(clusterConfigurationManagementApi.updateZonePriorities(request)),
         this::encodeResponse);
   }
 
