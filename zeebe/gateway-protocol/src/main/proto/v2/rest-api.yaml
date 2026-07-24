@@ -56,6 +56,7 @@ tags:
   - name: Decision requirements
   - name: Document
   - name: Element instance
+  - name: Exporting
   - name: Expression
   - name: Form
   - name: Global listener
@@ -207,6 +208,12 @@ paths:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1incidents~1search'
   /element-instances/{elementInstanceKey}/variables:
     $ref: 'element-instances.yaml#/paths/~1element-instances~1{elementInstanceKey}~1variables'
+
+  # Exporting endpoints
+  /exporting/pause:
+    $ref: 'exporting.yaml#/paths/~1exporting~1pause'
+  /exporting/resume:
+    $ref: 'exporting.yaml#/paths/~1exporting~1resume'
 
   # Expression endpoints
   /expression/evaluation:

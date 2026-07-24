@@ -5,45 +5,43 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.admin.exporting;
+package io.camunda.zeebe.gateway.admin;
 
 import io.atomix.cluster.BrokerMemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
-import io.camunda.zeebe.gateway.admin.BrokerAdminRequest;
-import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
-import java.util.Collections;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExportingControlService implements ExportingControlApi {
-  private static final Logger LOG = LoggerFactory.getLogger(ExportingControlService.class);
+/**
+ * Every operation targets a single physical tenant (partition group). The {@code physicalTenantId}
+ * selects the partition set the operation enumerates and is stamped on every outgoing broker
+ * request so that routing resolves leaders from that group's topology.
+ */
+public class ExportingRequestBroadcaster {
+  private static final Logger LOG = LoggerFactory.getLogger(ExportingRequestBroadcaster.class);
   final BrokerClient brokerClient;
 
-  public ExportingControlService(final BrokerClient brokerClient) {
+  public ExportingRequestBroadcaster(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
   }
 
-  @Override
   public CompletableFuture<Void> pauseExporting(final String physicalTenantId) {
     LOG.info("Pausing exporting on all partitions of physical tenant {}.", physicalTenantId);
     final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
     return broadcastOnTopology(physicalTenantId, topology, BrokerAdminRequest::pauseExporting);
   }
 
-  @Override
   public CompletableFuture<Void> softPauseExporting(final String physicalTenantId) {
     LOG.info("Soft Pausing exporting on all partitions of physical tenant {}.", physicalTenantId);
     final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
     return broadcastOnTopology(physicalTenantId, topology, BrokerAdminRequest::softPauseExporting);
   }
 
-  @Override
   public CompletableFuture<Void> resumeExporting(final String physicalTenantId) {
     LOG.info("Resuming exporting on all partitions of physical tenant {}.", physicalTenantId);
     final var topology = brokerClient.getTopologyManager().getTopology(physicalTenantId);
@@ -72,10 +70,8 @@ public class ExportingControlService implements ExportingControlApi {
       final Consumer<BrokerAdminRequest> configureRequest) {
 
     final var leader = topology.getLeaderForPartition(partitionId);
-    final var followers =
-        Optional.ofNullable(topology.getFollowersForPartition(partitionId)).orElseGet(Set::of);
-    final var inactive =
-        Optional.ofNullable(topology.getInactiveNodesForPartition(partitionId)).orElseGet(Set::of);
+    final var followers = topology.getFollowersForPartition(partitionId);
+    final var inactive = topology.getInactiveNodesForPartition(partitionId);
 
     final var members = new HashSet<BrokerMemberId>(topology.getReplicationFactor());
     if (leader != null) {
@@ -95,7 +91,7 @@ public class ExportingControlService implements ExportingControlApi {
                   configureRequest.accept(request);
                   return brokerClient
                       .sendRequest(request)
-                      .thenApply(response -> response.getResponseOrThrow());
+                      .thenApply(BrokerResponse::getResponseOrThrow);
                 })
             .toArray(CompletableFuture<?>[]::new);
     return CompletableFuture.allOf(requests);
@@ -121,17 +117,7 @@ public class ExportingControlService implements ExportingControlApi {
                 .formatted(partition, topology));
       }
 
-      final var followers =
-          Optional.ofNullable(topology.getFollowersForPartition(partition))
-              .orElse(Collections.emptySet());
-      for (final var follower : followers) {
-        if (follower == null) {
-          throw new IncompleteTopologyException(
-              "Follower of partition %s is not known, current topology: %s"
-                  .formatted(partition, topology));
-        }
-      }
-
+      final var followers = topology.getFollowersForPartition(partition);
       final var memberCount = followers.size() + 1;
       if (memberCount != replicationFactor) {
         throw new IncompleteTopologyException(

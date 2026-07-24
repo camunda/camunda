@@ -33,6 +33,7 @@ import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.ExportingServices;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.GlobalListenerServices;
@@ -62,6 +63,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.gateway.admin.ExportingRequestBroadcaster;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -122,7 +124,8 @@ public class CamundaServicesConfiguration {
       final MeterRegistry meterRegistry,
       final Environment environment,
       final ManagementServices managementServices,
-      final ApiServicesExecutorProvider executor) {
+      final ApiServicesExecutorProvider executor,
+      final ExportingRequestBroadcaster exportingRequestBroadcaster) {
 
     final int maxNameFieldLength = gatewayRestConfiguration.getMaxNameFieldLength();
     final boolean secondaryStorageEnabled =
@@ -318,6 +321,17 @@ public class CamundaServicesConfiguration {
                           executor,
                           converter))
                   .elementInstanceServices(tenantId, elementInstance)
+                  .exportingServices(
+                      tenantId,
+                      new ExportingServices(
+                          tenantId,
+                          brokerClient,
+                          securityContextProvider,
+                          exportingRequestBroadcaster,
+                          authorizationChecker,
+                          cslProperties.getAuthorizations(),
+                          executor,
+                          converter))
                   .expressionServices(
                       tenantId,
                       new ExpressionServices(
