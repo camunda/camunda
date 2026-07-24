@@ -687,11 +687,10 @@ class AwsSecretsManagerSecretStoreTest {
     final var resolver = mock(AwsSecretResolver.class);
 
     // when
-    AwsSecretsManagerSecretStore.validateConnectivity(client, resolver);
+    AwsSecretsManagerSecretStore.validateConnectivity(resolver);
 
     // then — the probe ran and the client stays open for the store to use
     verify(resolver).validateConnectivity();
-    verify(client, times(0)).close();
   }
 
   @Test
@@ -701,10 +700,9 @@ class AwsSecretsManagerSecretStoreTest {
     doThrow(SdkClientException.create("no route to host")).when(resolver).validateConnectivity();
 
     // when — a failing startup probe must not fail fast
-    AwsSecretsManagerSecretStore.validateConnectivity(client, resolver);
+    AwsSecretsManagerSecretStore.validateConnectivity(resolver);
 
     // then — the client is kept open so the error surfaces on first real use instead
     verify(resolver).validateConnectivity();
-    verify(client, times(0)).close();
   }
 }
