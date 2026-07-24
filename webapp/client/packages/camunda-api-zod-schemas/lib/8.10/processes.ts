@@ -23,6 +23,7 @@ const processInstanceSchema = z.object({
 	processDefinitionVersionTag: z.string().nullable(),
 	startDate: z.string(),
 	endDate: z.string().nullable(),
+	suspendedDate: z.string().nullable(),
 	state: processInstanceStateSchema,
 	hasIncident: z.boolean(),
 	tenantId: z.string(),
