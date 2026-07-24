@@ -123,6 +123,57 @@ final class SessionEvictionTaskTest {
     assertThat(run()).containsExactly("m1");
   }
 
+  @Test
+  void
+      shouldNotEvictAcrossMultipleTicksUntilTheSuccessorsFirstHeartbeatEvenPastTheSessionTimeout() {
+    // given — m1 joins and heartbeats normally (fresh liveness observed once, at epoch 1)
+    memberJoined.applyState(1, join("g", "m1", 1));
+    liveness.publish(
+        "g", new GroupLiveness(null, Map.of("m1", new MemberLiveness(clock.instant(), 1L))));
+    assertThat(run()).isEmpty();
+
+    // when — a takeover applies (epoch 1 -> 2); the mirror still carries the PREDECESSOR's stale
+    // liveness (the successor has not heartbeated yet) across SEVERAL eviction ticks, well past
+    // what would be the session timeout measured from the predecessor's last beat — the exact
+    // window a single-tick strip would miss: the predecessor's lastHeartbeat never changes, so a
+    // naive "strip only the tick the epoch-advance is detected" reintroduces the stale entry on
+    // every subsequent tick
+    memberTakenOver.applyState(2, takenOver("g", "m1", 2));
+    clock.advance(Duration.ofSeconds(2));
+    assertThat(run()).isEmpty(); // tick 1 after the takeover
+    clock.advance(SESSION_TIMEOUT); // now well past predecessor-beat + sessionTimeout
+    assertThat(run()).isEmpty(); // tick 2 — the bug window: must still not evict
+    clock.advance(Duration.ofSeconds(5));
+    assertThat(run()).isEmpty(); // tick 3 — still no heartbeat yet, still protected
+
+    // then — the successor was never evicted for a heartbeat it never sent, across every tick of
+    // the wait, not merely the tick the takeover was first observed on
+  }
+
+  @Test
+  void shouldEndTheGraceOnceTheSuccessorHeartbeatsThenEvictOnOrdinaryStaleness() {
+    // given — m1 joins and heartbeats normally, then is taken over (still no successor heartbeat)
+    memberJoined.applyState(1, join("g", "m1", 1));
+    liveness.publish(
+        "g", new GroupLiveness(null, Map.of("m1", new MemberLiveness(clock.instant(), 1L))));
+    assertThat(run()).isEmpty();
+    memberTakenOver.applyState(2, takenOver("g", "m1", 2));
+    clock.advance(Duration.ofSeconds(3));
+    assertThat(run()).isEmpty(); // grace: stripped, not evicted
+
+    // when — the successor's own first heartbeat lands (a fresh liveness entry at/after the
+    // takeover was observed)
+    clock.advance(Duration.ofSeconds(1));
+    liveness.publish(
+        "g", new GroupLiveness(null, Map.of("m1", new MemberLiveness(clock.instant(), 2L))));
+    assertThat(run()).isEmpty(); // fresh heartbeat — not evicted, and the grace marker is cleared
+
+    // then — grace does NOT persist forever: from here on ordinary session-timeout eviction
+    // applies again, exactly as if this had never been a takeover
+    clock.advance(SESSION_TIMEOUT.plusSeconds(1));
+    assertThat(run()).containsExactly("m1");
+  }
+
   private List<String> run() {
     final var builder = new CapturingTaskResultBuilder();
     task.execute(builder);

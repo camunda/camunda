@@ -59,15 +59,29 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
   /**
    * The last replicated memberEpoch observed for each roster member (keyed {@code group#member}). A
    * member's epoch only ever advances again, on an already-known memberId, via a static-membership
-   * takeover — so an increase since the last tick means this tick's liveness entry (if any) still
-   * belongs to the superseded incarnation. Excluding such an entry from {@link
-   * GroupLiveness#membersToEvict} for this tick is what keeps a just-taken-over member from being
-   * evicted for its predecessor's staleness (invariant 3): it is treated exactly like a freshly
-   * joined member — unseen, subject to the same grace — instead of blamed for a heartbeat it never
-   * sent. Task-local like {@link #unseenSince}; dropped together with the other ephemeral state
-   * when the node stops leading.
+   * takeover — so an increase since the last tick is exactly (and only) a takeover, and
+   * arms/refreshes {@link #takeoverObservedAt}. Task-local like {@link #unseenSince}; dropped
+   * together with the other ephemeral state when the node stops leading.
    */
   private final Map<String, Long> lastObservedMemberEpoch = new HashMap<>();
+
+  /**
+   * When a takeover was last observed for a member (keyed {@code group#member}) — armed the tick
+   * the epoch advance is detected, refreshed by a second takeover, and cleared the first tick a
+   * liveness entry with {@code lastHeartbeat} at or after this instant appears (the successor has
+   * heartbeated; ordinary session expiry applies from then on — no permanent immunity).
+   *
+   * <p>While armed, the member's {@link MemberLivenessMirror} entry — reused across incarnations
+   * along with its memberId, so it can still be the <em>predecessor's</em> — is stripped from every
+   * tick's effective view, not just the tick the advance was detected on: the predecessor's {@code
+   * lastHeartbeat} does not change merely because {@link #lastObservedMemberEpoch} did, so without
+   * this the very next tick would see it again and evict the successor for its predecessor's
+   * staleness before its own first heartbeat ever lands (invariant 3). A stripped member flows
+   * through the existing {@link #unseenSince} grace path — treated exactly like a freshly joined
+   * member. Task-local like {@link #unseenSince}; dropped together with the other ephemeral state
+   * when the node stops leading.
+   */
+  private final Map<String, Instant> takeoverObservedAt = new HashMap<>();
 
   public SessionEvictionTask(
       final Duration interval,
@@ -95,6 +109,7 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
     liveness.clear();
     unseenSince.clear();
     lastObservedMemberEpoch.clear();
+    takeoverObservedAt.clear();
   }
 
   @Override
@@ -102,6 +117,7 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
     liveness.clear();
     unseenSince.clear();
     lastObservedMemberEpoch.clear();
+    takeoverObservedAt.clear();
   }
 
   @Override
@@ -109,6 +125,7 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
     liveness.clear();
     unseenSince.clear();
     lastObservedMemberEpoch.clear();
+    takeoverObservedAt.clear();
   }
 
   @Override
@@ -131,10 +148,15 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
 
       // A static-membership takeover reuses the incumbent's memberId, so its liveness entry (if
       // any) still reflects the superseded incarnation until the successor's first heartbeat
-      // overwrites it. Detect that by tracking each member's last-observed replicated epoch: an
-      // increase since the previous tick can only be a takeover (nothing else ever advances an
-      // existing member's epoch), so strip that entry from this tick's view — the loops below then
-      // treat the member as unseen (freshly-joined grace), never as "went silent" (invariant 3).
+      // overwrites it. Detect the takeover by tracking each member's last-observed replicated
+      // epoch: an increase since the previous tick can only be a takeover (nothing else ever
+      // advances an existing member's epoch), which arms/refreshes takeoverObservedAt. Then, on
+      // EVERY tick while armed (not just the tick the advance was detected on — see
+      // takeoverObservedAt's javadoc for why that single-tick version was wrong), strip the
+      // member's entry from this tick's view unless its lastHeartbeat is at or after the
+      // observation instant, i.e. unless the successor itself has now heartbeated. The loops below
+      // then treat a stripped member as unseen (freshly-joined grace), never as "went silent"
+      // (invariant 3).
       final var effectiveMembers = new HashMap<>(publishedLiveness.members());
       for (final var memberId : group.members().keySet()) {
         final var key = unseenKey(group.groupId(), memberId);
@@ -142,7 +164,20 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
         final var currentEpoch = group.members().get(memberId).memberEpoch();
         final var previousEpoch = lastObservedMemberEpoch.put(key, currentEpoch);
         if (previousEpoch != null && previousEpoch < currentEpoch) {
-          effectiveMembers.remove(memberId);
+          takeoverObservedAt.put(key, now);
+        }
+        final var observedAt = takeoverObservedAt.get(key);
+        if (observedAt != null) {
+          final var currentLiveness = effectiveMembers.get(memberId);
+          if (currentLiveness != null && !currentLiveness.lastHeartbeat().isBefore(observedAt)) {
+            // The successor has spoken: a heartbeat at or after the takeover was observed. Ordinary
+            // session expiry applies from here on — no permanent immunity.
+            takeoverObservedAt.remove(key);
+          } else {
+            // Still no heartbeat under the new incarnation (or the entry present is still the
+            // predecessor's, from before the observation instant) — keep it stripped this tick too.
+            effectiveMembers.remove(memberId);
+          }
         }
       }
       final var groupLiveness =
@@ -181,6 +216,7 @@ public final class SessionEvictionTask implements Task, StreamProcessorLifecycle
     liveness.retain(liveGroups);
     unseenSince.keySet().retainAll(currentlyUnseen);
     lastObservedMemberEpoch.keySet().retainAll(currentMembers);
+    takeoverObservedAt.keySet().retainAll(currentMembers);
     return taskResultBuilder.build();
   }
 
