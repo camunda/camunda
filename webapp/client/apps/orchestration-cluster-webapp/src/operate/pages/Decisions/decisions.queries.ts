@@ -12,11 +12,13 @@ import {ForbiddenError} from '#/shared/errors';
 import {request} from '#/shared/http/request';
 import {endpoints} from '#/shared/http/endpoints';
 
-function decisionDefinitionsOptions() {
+function decisionDefinitionsOptions(tenantId?: string) {
 	return queryOptions({
-		queryKey: ['decisionDefinitions'] as const,
+		queryKey: ['decisionDefinitions', tenantId] as const,
 		queryFn: async (): Promise<QueryDecisionDefinitionsResponseBody> => {
-			const {response, error} = await request(endpoints.queryDecisionDefinitions({page: {limit: 1000}}));
+			const {response, error} = await request(
+				endpoints.queryDecisionDefinitions({page: {limit: 1000}, filter: tenantId ? {tenantId} : undefined}),
+			);
 			if (error !== null) {
 				if (error.variant === 'failed-response' && error.response.status === 403) {
 					throw new ForbiddenError();

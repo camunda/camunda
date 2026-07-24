@@ -13,6 +13,7 @@ import {useNavigate} from '@tanstack/react-router';
 import {Form} from 'react-final-form';
 import {Checkbox, ComboBox, Dropdown, Stack} from '@carbon/react';
 import {decisionDefinitionsOptions} from './decisions.queries';
+import {isSpecificTenant} from './decisionsFilter';
 import {getClientConfig} from '#/shared/config/getClientConfig';
 import {InstancesList} from '#/operate/shared/InstancesList/InstancesList';
 import {FiltersPanel} from '#/operate/shared/FiltersPanel/FiltersPanel';
@@ -50,7 +51,8 @@ const Decisions: React.FC<Props> = ({
 }) => {
 	const {t} = useTranslation();
 	const navigate = useNavigate();
-	const {data} = useSuspenseQuery(decisionDefinitionsOptions());
+	const specificTenantId = isSpecificTenant(tenantId) ? tenantId : undefined;
+	const {data} = useSuspenseQuery(decisionDefinitionsOptions(specificTenantId));
 	const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
 
 	const optionalFilterValues = useMemo<OptionalFilterValues>(
