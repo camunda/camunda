@@ -11,7 +11,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
-import io.camunda.spring.utils.PhysicalTenantIdDiscovery;
+import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -48,7 +48,7 @@ import org.springframework.core.env.Environment;
  */
 public final class PhysicalTenantResolver implements PhysicalTenantIds {
 
-  static final int MAX_TENANT_ID_LENGTH = PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH;
+  static final int MAX_TENANT_ID_LENGTH = PhysicalTenantConfigUtil.MAX_TENANT_ID_LENGTH;
   static final String PHYSICAL_TENANTS_PREFIX = Camunda.PREFIX + ".physical-tenants";
 
   /**
@@ -138,7 +138,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
    */
   private static Set<String> discover(final Environment environment) {
     try {
-      return PhysicalTenantIdDiscovery.discover(environment);
+      return PhysicalTenantConfigUtil.discover(environment);
     } catch (final InvalidPhysicalTenantIdException e) {
       throw new UnifiedConfigurationException(e);
     }
@@ -147,7 +147,7 @@ public final class PhysicalTenantResolver implements PhysicalTenantIds {
   @VisibleForTesting
   static void validateTenantId(final String tenantId) {
     try {
-      PhysicalTenantIdDiscovery.validateTenantId(tenantId);
+      PhysicalTenantConfigUtil.validateTenantId(tenantId);
     } catch (final InvalidPhysicalTenantIdException e) {
       throw new UnifiedConfigurationException(e);
     }

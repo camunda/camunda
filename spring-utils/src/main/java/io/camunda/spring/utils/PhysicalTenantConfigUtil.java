@@ -19,9 +19,10 @@ import org.springframework.boot.context.properties.source.IterableConfigurationP
 import org.springframework.core.env.Environment;
 
 /**
- * Shared discovery and validation of physical-tenant ids declared under {@code
- * camunda.physical-tenants.<id>.*}. Consolidates the environment walk previously duplicated across
- * {@code configuration} and {@code authentication} module call sites.
+ * Shared utilities over physical-tenant configuration declared under {@code
+ * camunda.physical-tenants.<id>.*}: discovering the declared tenant ids, iterating the properties
+ * each tenant declares, and validating tenant ids. Consolidates the environment walk previously
+ * duplicated across {@code configuration} and {@code authentication} module call sites.
  *
  * <p>Tenant ids must be lowercase alphanumeric ({@code [a-z0-9]+}) — no dashes. This keeps yaml and
  * environment-variable forms addressing the same tenant: Spring strips dashes when matching env var
@@ -29,7 +30,7 @@ import org.springframework.core.env.Environment;
  * CAMUNDA_PHYSICALTENANTS_TENANTA_*} (env) would otherwise resolve to two different ids ({@code
  * tenant-a} vs. {@code tenanta}). Forbidding dashes makes the two forms collapse into one id.
  */
-public final class PhysicalTenantIdDiscovery {
+public final class PhysicalTenantConfigUtil {
 
   public static final int MAX_TENANT_ID_LENGTH = 64;
 
@@ -38,7 +39,7 @@ public final class PhysicalTenantIdDiscovery {
       ConfigurationPropertyName.of(PHYSICAL_TENANTS_PREFIX);
   private static final Pattern VALID_TENANT_ID = Pattern.compile("[a-z0-9]+");
 
-  private PhysicalTenantIdDiscovery() {}
+  private PhysicalTenantConfigUtil() {}
 
   /**
    * Walks {@code environment} and returns the set of physical-tenant ids by collecting the distinct

@@ -11,7 +11,7 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
-import io.camunda.spring.utils.PhysicalTenantIdDiscovery;
+import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -94,7 +94,7 @@ final class PhysicalTenantAssignedProvidersValidation {
 
     final Set<String> discoveredTenantIds;
     try {
-      discoveredTenantIds = PhysicalTenantIdDiscovery.discover(environment);
+      discoveredTenantIds = PhysicalTenantConfigUtil.discover(environment);
     } catch (final InvalidPhysicalTenantIdException e) {
       throw new UnifiedConfigurationException(e);
     }

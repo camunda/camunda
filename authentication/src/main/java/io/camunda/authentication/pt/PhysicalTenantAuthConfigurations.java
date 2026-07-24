@@ -13,7 +13,7 @@ import io.camunda.security.api.model.config.AuthenticationConfiguration;
 import io.camunda.security.api.model.config.AuthenticationMethod;
 import io.camunda.security.api.model.config.oidc.OidcConfiguration;
 import io.camunda.security.api.model.config.oidc.OidcProvidersConfiguration;
-import io.camunda.spring.utils.PhysicalTenantIdDiscovery;
+import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -130,7 +130,7 @@ public final class PhysicalTenantAuthConfigurations {
    * tightened to {@code private}.
    */
   static Set<String> discoverExplicitTenantIds(final Environment environment) {
-    return PhysicalTenantIdDiscovery.discover(environment);
+    return PhysicalTenantConfigUtil.discover(environment);
   }
 
   /**

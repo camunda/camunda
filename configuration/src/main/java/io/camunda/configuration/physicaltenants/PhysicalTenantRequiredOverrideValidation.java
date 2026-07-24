@@ -11,7 +11,7 @@ import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.configuration.Camunda;
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
-import io.camunda.spring.utils.PhysicalTenantIdDiscovery;
+import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -61,7 +61,7 @@ final class PhysicalTenantRequiredOverrideValidation {
     final Set<String> declaredTenants = new LinkedHashSet<>();
     final Set<String> tenantsWithInitialization = new LinkedHashSet<>();
     try {
-      PhysicalTenantIdDiscovery.forEachTenantProperty(
+      PhysicalTenantConfigUtil.forEachTenantProperty(
           environment,
           (tenantId, relative) -> {
             declaredTenants.add(tenantId);

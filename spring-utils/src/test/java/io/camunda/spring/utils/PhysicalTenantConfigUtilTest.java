@@ -7,7 +7,7 @@
  */
 package io.camunda.spring.utils;
 
-import static io.camunda.spring.utils.PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH;
+import static io.camunda.spring.utils.PhysicalTenantConfigUtil.MAX_TENANT_ID_LENGTH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.mock.env.MockEnvironment;
 
-class PhysicalTenantIdDiscoveryTest {
+class PhysicalTenantConfigUtilTest {
 
   @Test
   void shouldReturnEmptySetWhenPrefixAbsent() {
@@ -28,7 +28,7 @@ class PhysicalTenantIdDiscoveryTest {
     final MockEnvironment environment = new MockEnvironment();
 
     // when
-    final Set<String> tenantIds = PhysicalTenantIdDiscovery.discover(environment);
+    final Set<String> tenantIds = PhysicalTenantConfigUtil.discover(environment);
 
     // then
     assertThat(tenantIds).isEmpty();
@@ -50,7 +50,7 @@ class PhysicalTenantIdDiscoveryTest {
                 "second", Map.of("camunda.physical-tenants.tenantb.cluster.size", 8)));
 
     // when
-    final Set<String> tenantIds = PhysicalTenantIdDiscovery.discover(environment);
+    final Set<String> tenantIds = PhysicalTenantConfigUtil.discover(environment);
 
     // then
     assertThat(tenantIds).containsExactlyInAnyOrder("tenanta", "tenantb");
@@ -61,13 +61,13 @@ class PhysicalTenantIdDiscoveryTest {
     // tenant ids must be lowercase alphanumeric — no underscores, no uppercase, no dashes
     // (dashes would make yaml and env-var forms address two different tenants).
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
-        .isThrownBy(() -> PhysicalTenantIdDiscovery.validateTenantId("Tenant_A"))
+        .isThrownBy(() -> PhysicalTenantConfigUtil.validateTenantId("Tenant_A"))
         .withMessageContaining("Invalid physical tenant id");
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
-        .isThrownBy(() -> PhysicalTenantIdDiscovery.validateTenantId("-leading-dash"))
+        .isThrownBy(() -> PhysicalTenantConfigUtil.validateTenantId("-leading-dash"))
         .withMessageContaining("Invalid physical tenant id");
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
-        .isThrownBy(() -> PhysicalTenantIdDiscovery.validateTenantId("tenant-a"))
+        .isThrownBy(() -> PhysicalTenantConfigUtil.validateTenantId("tenant-a"))
         .withMessageContaining("Invalid physical tenant id");
   }
 
@@ -75,7 +75,7 @@ class PhysicalTenantIdDiscoveryTest {
   void shouldRejectNullTenantIdWithoutNpe() {
     // given a null tenant id — must fail with the documented exception, not a NullPointerException
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
-        .isThrownBy(() -> PhysicalTenantIdDiscovery.validateTenantId(null))
+        .isThrownBy(() -> PhysicalTenantConfigUtil.validateTenantId(null))
         .withMessageContaining("Invalid physical tenant id");
   }
 
@@ -86,7 +86,7 @@ class PhysicalTenantIdDiscoveryTest {
 
     // when / then
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
-        .isThrownBy(() -> PhysicalTenantIdDiscovery.validateTenantId(tooLong))
+        .isThrownBy(() -> PhysicalTenantConfigUtil.validateTenantId(tooLong))
         .withMessageContaining("Invalid physical tenant id")
         .withMessageContaining("must not exceed " + MAX_TENANT_ID_LENGTH)
         .withMessageNotContaining(tooLong);
@@ -98,7 +98,7 @@ class PhysicalTenantIdDiscoveryTest {
     final String maxLength = "a".repeat(MAX_TENANT_ID_LENGTH);
 
     // when / then no exception
-    PhysicalTenantIdDiscovery.validateTenantId(maxLength);
+    PhysicalTenantConfigUtil.validateTenantId(maxLength);
   }
 
   @Test
@@ -118,7 +118,7 @@ class PhysicalTenantIdDiscoveryTest {
 
     // when / then
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
-        .isThrownBy(() -> PhysicalTenantIdDiscovery.discover(environment))
+        .isThrownBy(() -> PhysicalTenantConfigUtil.discover(environment))
         .withMessageContaining("Invalid physical tenant id");
   }
 
@@ -139,7 +139,7 @@ class PhysicalTenantIdDiscoveryTest {
 
     // when
     final Map<String, List<String>> relativesByTenant = new LinkedHashMap<>();
-    PhysicalTenantIdDiscovery.forEachTenantProperty(
+    PhysicalTenantConfigUtil.forEachTenantProperty(
         environment,
         (tenantId, relative) ->
             relativesByTenant
@@ -170,8 +170,7 @@ class PhysicalTenantIdDiscoveryTest {
     // when / then the walk validates each surfaced id and fails fast
     assertThatExceptionOfType(InvalidPhysicalTenantIdException.class)
         .isThrownBy(
-            () ->
-                PhysicalTenantIdDiscovery.forEachTenantProperty(environment, (id, relative) -> {}))
+            () -> PhysicalTenantConfigUtil.forEachTenantProperty(environment, (id, relative) -> {}))
         .withMessageContaining("Invalid physical tenant id");
   }
 }

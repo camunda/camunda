@@ -9,7 +9,7 @@ package io.camunda.configuration.physicaltenants;
 
 import io.camunda.configuration.UnifiedConfigurationException;
 import io.camunda.spring.utils.InvalidPhysicalTenantIdException;
-import io.camunda.spring.utils.PhysicalTenantIdDiscovery;
+import io.camunda.spring.utils.PhysicalTenantConfigUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -105,7 +105,7 @@ final class PhysicalTenantOverridePolicyValidation {
     // tenant id -> the forbidden relative property names it declares
     final Map<String, List<String>> violationsByTenant = new LinkedHashMap<>();
     try {
-      PhysicalTenantIdDiscovery.forEachTenantProperty(
+      PhysicalTenantConfigUtil.forEachTenantProperty(
           environment,
           (tenantId, relative) -> collectViolation(tenantId, relative, violationsByTenant));
     } catch (final InvalidPhysicalTenantIdException e) {

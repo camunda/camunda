@@ -7,7 +7,7 @@
  */
 package io.camunda.configuration.physicaltenants;
 
-import static io.camunda.spring.utils.PhysicalTenantIdDiscovery.MAX_TENANT_ID_LENGTH;
+import static io.camunda.spring.utils.PhysicalTenantConfigUtil.MAX_TENANT_ID_LENGTH;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
