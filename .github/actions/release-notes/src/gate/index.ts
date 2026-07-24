@@ -76,10 +76,13 @@ export async function evaluateGate(resolver: GateResolver, input: GateInput): Pr
       const originalBody = await resolver.fetchPullBody(backport.number, backport.repo);
       deliveryPath = 'backportHop';
       if (originalBody === null) {
+        // The marker is the PR's stated attribution path, so speak to the marker
+        // only — the generic "add a closing keyword / tick opt-out" section advice
+        // is irrelevant for a backport PR and would just be noise.
         link = {
           outcome: 'fail',
           code: 'unlinked-undeclared',
-          reasons: [await unresolvableBackportReason(resolver, backport), ...link.reasons],
+          reasons: [await unresolvableBackportReason(resolver, backport)],
         };
       } else {
         const original = await evaluateLink(resolver, originalBody);

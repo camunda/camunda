@@ -24,7 +24,7 @@ export function decide(refs: readonly ResolvedRef[], optOut: boolean): PolicyDec
       code: 'pr-ref-in-section',
       reasons: [
         `The "Related issues" section links a pull request (${list}), not an issue.`,
-        'Link the tracked issue this PR resolves (e.g. "closes #1234"), or tick the opt-out checkbox.',
+        'Link the tracked issue this PR resolves (e.g. `closes #1234`), or tick the opt-out checkbox.',
       ],
     };
   }
@@ -48,7 +48,7 @@ export function decide(refs: readonly ResolvedRef[], optOut: boolean): PolicyDec
   const crossRepo = refs.filter((ref) => ref.crossRepo).map((ref) => ref.raw);
   const reasons = [
     'No linked issue found in the "Related issues" section, and the opt-out checkbox is not ticked.',
-    'Add a closing keyword with the tracked issue (e.g. "closes #1234"), or tick the opt-out checkbox.',
+    'Add a closing keyword with the tracked issue (e.g. `closes #1234`), or tick the opt-out checkbox.',
   ];
   if (dead.length) reasons.push(`These refs do not resolve to an existing issue: ${dead.join(', ')}.`);
   if (crossRepo.length) reasons.push(`Cross-repo refs do not count toward this repo's release notes: ${crossRepo.join(', ')}.`);
