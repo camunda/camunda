@@ -471,6 +471,11 @@ public class TestContainerUtil {
       LOGGER.info("************ Starting StandaloneBroker ************");
       addConfig(broker, testContext);
       broker.withCreateSchema(testContext.isCreateSchema());
+      broker.withProperty(
+          "camunda.data.secondary-storage.elasticsearch.create-schema",
+          testContext.isCreateSchema());
+      broker.withProperty(
+          "camunda.data.secondary-storage.opensearch.create-schema", testContext.isCreateSchema());
       broker.start();
       LOGGER.info("************ StandaloneBroker started  ************");
 
