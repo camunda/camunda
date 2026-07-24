@@ -36,10 +36,10 @@ public final class BrokerClientImpl implements BrokerClient {
   private final BrokerRequestManager requestManager;
 
   private boolean isClosed;
-  // Keyed by topic so a repeated subscribe for the same topic is a no-op: ActivateJobsHandler#
-  // activateJobs can be called concurrently and lazily subscribes per physical tenant on every
-  // call, so the dedup here must be atomic (computeIfAbsent) rather than left to the caller.
-  private final Map<String, Subscription> jobAvailableSubscriptions = new ConcurrentHashMap<>();
+  // Keyed by (topic, subscriber), not topic alone: topic-only would collapse distinct callers
+  // (e.g. gRPC and REST gateways) onto one subscription, dropping every subscriber but the first.
+  private final Map<TopicSubscriber, Subscription> jobAvailableSubscriptions =
+      new ConcurrentHashMap<>();
   private final ClusterEventService eventService;
   private final ActorSchedulingService schedulingService;
   private final AtomixClientTransportAdapter atomixTransportAdapter;
@@ -141,13 +141,13 @@ public final class BrokerClientImpl implements BrokerClient {
 
   @Override
   public void subscribeJobAvailableNotification(
-      final String topic, final Consumer<String> handler) {
+      final String topic, final Object subscriber, final Consumer<String> handler) {
     jobAvailableSubscriptions.computeIfAbsent(
-        topic,
-        t ->
+        new TopicSubscriber(topic, subscriber),
+        k ->
             eventService
                 .subscribe(
-                    t,
+                    topic,
                     msg -> {
                       handler.accept((String) msg);
                       return CompletableFuture.completedFuture(null);
@@ -162,4 +162,8 @@ public final class BrokerClientImpl implements BrokerClient {
       LOG.error("Exception when closing client. Ignoring", e);
     }
   }
+
+  // Relies on subscriber's default (identity-based) equals/hashCode; a caller-side override to
+  // content-based equality would silently collapse distinct subscribers again.
+  private record TopicSubscriber(String topic, Object subscriber) {}
 }

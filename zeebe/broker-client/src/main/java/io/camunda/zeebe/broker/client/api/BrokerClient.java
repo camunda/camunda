@@ -94,5 +94,13 @@ public interface BrokerClient extends AutoCloseable {
 
   BrokerTopologyManager getTopologyManager();
 
-  void subscribeJobAvailableNotification(String topic, Consumer<String> handler);
+  /**
+   * Subscribes to job-available notifications on the given topic.
+   *
+   * @param topic the topic to subscribe to
+   * @param subscriber identifies the caller; deduped per (topic, subscriber) pair using identity
+   *     equality, so pass {@code this}, not a {@code String}
+   * @param handler invoked with the topic's payload on each notification
+   */
+  void subscribeJobAvailableNotification(String topic, Object subscriber, Consumer<String> handler);
 }

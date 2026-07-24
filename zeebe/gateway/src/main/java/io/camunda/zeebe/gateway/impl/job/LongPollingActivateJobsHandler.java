@@ -95,19 +95,21 @@ public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHand
   }
 
   /**
-   * Subscribes to the job-available notifications of a physical tenant, so a notification only
-   * wakes long-poll requests of its own tenant. Safe to call on every request for a tenant: {@link
-   * BrokerClient#subscribeJobAvailableNotification} dedups by topic, so a repeat call for an
-   * already-subscribed tenant is a no-op. The default tenant also listens on the legacy,
-   * prefix-less topic for rolling-upgrade compat with 8.9 brokers; remove alongside the legacy
-   * topic in 8.11.
+   * Safe to call on every request: {@link BrokerClient#subscribeJobAvailableNotification} dedups by
+   * (topic, subscriber), using {@code this} as the subscriber. The default tenant also listens on
+   * the legacy, prefix-less topic for rolling-upgrade compat with 8.9 brokers; remove alongside the
+   * legacy topic in 8.11.
    */
   private void subscribeIfNeeded(final String physicalTenantId) {
     brokerClient.subscribeJobAvailableNotification(
-        topic(physicalTenantId), jobType -> onJobAvailableNotification(physicalTenantId, jobType));
+        topic(physicalTenantId),
+        this,
+        jobType -> onJobAvailableNotification(physicalTenantId, jobType));
     if (DEFAULT_PHYSICAL_TENANT_ID.equals(physicalTenantId)) {
       brokerClient.subscribeJobAvailableNotification(
-          JOBS_AVAILABLE_TOPIC, jobType -> onJobAvailableNotification(physicalTenantId, jobType));
+          JOBS_AVAILABLE_TOPIC,
+          this,
+          jobType -> onJobAvailableNotification(physicalTenantId, jobType));
     }
   }
 
