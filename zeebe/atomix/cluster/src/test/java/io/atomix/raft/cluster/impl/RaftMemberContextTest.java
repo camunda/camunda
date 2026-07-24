@@ -20,6 +20,7 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -294,6 +295,20 @@ final class RaftMemberContextTest {
     assertThat(context.getSnapshotReplicationLag()).isZero();
     assertThat(context.getSnapshotChunkBytesInFlight()).isZero();
     assertThat(context.getReplicationLagBytes()).isZero();
+  }
+
+  @Test
+  void shouldCloseSnapshotChunkReaderOnClose() {
+    // given
+    final var context = newContext();
+    final var snapshotChunkReader = mock(SnapshotChunkReader.class);
+    context.setSnapshotChunkReader(snapshotChunkReader);
+
+    // when
+    context.close();
+
+    // then
+    verify(snapshotChunkReader).close();
   }
 
   private RaftMemberContext newContext() {

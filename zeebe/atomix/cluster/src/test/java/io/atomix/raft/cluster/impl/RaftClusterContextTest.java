@@ -109,7 +109,7 @@ final class RaftClusterContextTest {
   }
 
   @Test
-  void shouldRemoveContextsOnReconfiguration() {
+  void shouldKeepRemovedMembersAsReplicationTargetsUntilCommit() {
     // given -- stored configuration that contains all members
     final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
     final var remoteMembers =
@@ -123,15 +123,75 @@ final class RaftClusterContextTest {
     final var context = new RaftClusterContext(localMember.memberId(), raft);
     context.bootstrap(List.of()).join();
 
-    // when -- reconfigure with a new configuration only contains the local member
+    // when -- an uncommitted configuration is appended that drops both remote members (the mock
+    // RaftContext's commit index stays at its default of 0, below the new configuration's index)
     context.configure(new Configuration(2, 1, Instant.now().toEpochMilli(), List.of(localMember)));
 
-    // then -- new configuration is used
+    // then -- append-time membership bookkeeping already reflects the new configuration
     assertThat(context.getLocalMember().memberId()).isEqualTo(MemberId.from("1"));
-    assertThat(context.inJointConsensus()).isFalse();
     assertThat(context.getMembers()).containsExactly(localMember);
     assertThat(context.isSingleMemberCluster()).isTrue();
     assertThat(context.getVotingMembers()).isEmpty();
+    assertThat(remoteMembers).noneMatch(member -> context.isMember(member.memberId()));
+
+    // but -- the removed members are kept alive as replication targets until the removal commits
+    assertThat(
+            context.getReplicationTargets().stream()
+                .map(RaftMemberContext::getMember)
+                .map(RaftMember.class::cast))
+        .containsExactlyInAnyOrderElementsOf(remoteMembers);
+    assertThat(remoteMembers)
+        .allSatisfy(member -> assertThat(context.getMemberContext(member.memberId())).isNotNull());
+  }
+
+  @Test
+  void shouldRemoveContextsWhenConfigurationCommits() {
+    // given -- an uncommitted configuration that drops both remote members
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var remoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+    final var members = Stream.concat(Stream.of(localMember), remoteMembers.stream()).toList();
+
+    final var raft =
+        raftWithStoredConfiguration(new Configuration(1, 1, Instant.now().toEpochMilli(), members));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+    context.configure(new Configuration(2, 1, Instant.now().toEpochMilli(), List.of(localMember)));
+
+    // when -- the configuration commits
+    context.commitCurrentConfiguration();
+
+    // then -- the removed members' contexts are finally closed and removed
+    assertThat(context.getReplicationTargets()).isEmpty();
+    assertThat(remoteMembers)
+        .noneMatch(member -> context.isMember(member.memberId()))
+        .allSatisfy(member -> assertThat(context.getMember(member.memberId())).isNull())
+        .allSatisfy(member -> assertThat(context.getMemberContext(member.memberId())).isNull());
+  }
+
+  @Test
+  void shouldRemoveContextsImmediatelyOnForcedConfiguration() {
+    // given -- stored configuration that contains all members
+    final var localMember = new DefaultRaftMember(new MemberId("1"), Type.ACTIVE, Instant.now());
+    final var remoteMembers =
+        List.<RaftMember>of(
+            new DefaultRaftMember(new MemberId("2"), Type.ACTIVE, Instant.now()),
+            new DefaultRaftMember(new MemberId("3"), Type.ACTIVE, Instant.now()));
+    final var members = Stream.concat(Stream.of(localMember), remoteMembers.stream()).toList();
+
+    final var raft =
+        raftWithStoredConfiguration(new Configuration(1, 1, Instant.now().toEpochMilli(), members));
+    final var context = new RaftClusterContext(localMember.memberId(), raft);
+    context.bootstrap(List.of()).join();
+
+    // when -- a forced configuration drops both remote members, without ever committing
+    context.configure(
+        new Configuration(
+            2, 1, Instant.now().toEpochMilli(), List.of(localMember), List.of(), true));
+
+    // then -- the removed members' contexts are pruned immediately, at apply time
     assertThat(context.getReplicationTargets()).isEmpty();
     assertThat(remoteMembers)
         .noneMatch(member -> context.isMember(member.memberId()))

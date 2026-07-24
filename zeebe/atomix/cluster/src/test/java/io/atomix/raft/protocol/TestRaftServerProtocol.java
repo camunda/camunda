@@ -461,6 +461,30 @@ public class TestRaftServerProtocol implements RaftServerProtocol {
                 .thenCompose(ignore -> CompletableFuture.completedFuture(listener)));
   }
 
+  /**
+   * Intercepts the delivery of a request to a specific receiver, with the receiver's member id as
+   * the first argument. If the interceptor returns a failed future, the request is not delivered to
+   * the receiver. Otherwise, the request is forwarded to the receiver. Unlike the other overloads,
+   * this combines receiver visibility with the ability to block the request, which the {@link
+   * Consumer}/{@link BiConsumer} variants cannot do and the {@link Function} variant cannot see the
+   * receiver for. Named distinctly from {@code interceptRequest} rather than added as another
+   * overload: a same-arity {@link BiConsumer} overload already exists, and javac's overload
+   * resolution for implicitly-typed two-arg lambdas can find call sites ambiguous between the two
+   * even when only one is structurally compatible with the lambda body.
+   */
+  public <T> void interceptDelivery(
+      final Class<T> requestType,
+      final BiFunction<MemberId, T, CompletableFuture<Void>> interceptor) {
+    interceptors.put(
+        requestType,
+        (request, listener) -> {
+          final var receiver = listener != null ? listener.memberId : memberId;
+          return interceptor
+              .apply(receiver, (T) request)
+              .thenCompose(ignore -> CompletableFuture.completedFuture(listener));
+        });
+  }
+
   public <T extends RaftResponse> void interceptResponse(
       final Class<T> responseType, final ResponseInterceptor<T> interceptor) {
     responseInterceptors.put(responseType, interceptor);
