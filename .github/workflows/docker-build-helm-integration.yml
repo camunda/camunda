@@ -97,7 +97,11 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/engineering-operations"
+            # This whole workflow is owned by Distribution (see TEST_OWNER
+            # above) -- a should-run gate failure is this pipeline's own
+            # plumbing, not something the monorepo-ci-medic has a runbook
+            # for. Route to the actual owner instead.
+            OWNER_TEAM="@camunda/distribution"
             FAILURE_CATEGORY="orchestration_should_run"
           fi
           jq -n \
@@ -648,7 +652,9 @@ jobs:
           OWNER_TEAM="none"
           FAILURE_CATEGORY="none"
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            OWNER_TEAM="@camunda/engineering-operations"
+            # Same reasoning as should-run above: this pipeline's own
+            # plumbing is Distribution's to fix, not monorepo-ci-medic's.
+            OWNER_TEAM="@camunda/distribution"
             FAILURE_CATEGORY="orchestration_identifier"
           fi
           jq -n \
@@ -1119,13 +1125,14 @@ jobs:
                 # The artifact was unreachable. Distinguish this from a
                 # genuinely "unknown" categorisation so consumers don't
                 # confuse "we couldn't tell" with "we tried and the data
-                # was ambiguous". Routing falls to monorepo-ci-medic since
-                # this is an integration / permissions problem with the
-                # parent workflow, not a downstream test failure.
+                # was ambiguous". This is an integration / permissions
+                # problem with the parent workflow (owned by Distribution,
+                # see TEST_OWNER above) -- not a downstream test failure,
+                # and not something monorepo-ci-medic has a runbook for.
                 DOWNLOAD_ERR=$(tr '\n' ' ' < "$DOWNLOAD_LOG" 2>/dev/null | sed 's/  */ /g' | cut -c1-300)
                 echo "::warning::Could not download downstream json-report artifact: ${DOWNLOAD_ERR:-no stderr}" >&2
                 DOWNSTREAM_CATEGORY="unknown_artifact_unreachable"
-                DOWNSTREAM_OWNER="@camunda/engineering-operations"
+                DOWNSTREAM_OWNER="@camunda/distribution"
                 {
                   echo "### Downstream Category Unavailable"
                   echo ""
@@ -1192,13 +1199,11 @@ jobs:
           FAILURE_CATEGORY="none"
 
           if [[ "${{ job.status }}" == "failure" || "${{ job.status }}" == "cancelled" ]]; then
-            if [[ "${{ steps.wait-downstream.outputs.downstream_conclusion }}" == "failure" ]]; then
-              OWNER_TEAM="@camunda/test-automation-team"
-              FAILURE_CATEGORY="saas_e2e"
-            else
-              OWNER_TEAM="@camunda/engineering-operations"
-              FAILURE_CATEGORY="orchestration_dispatch_or_wait"
-            fi
+            # SaaS E2E is owned end-to-end by test-automation-team, including
+            # this job's own dispatch/wait mechanism -- always route here
+            # rather than splitting on downstream_conclusion.
+            OWNER_TEAM="@camunda/test-automation-team"
+            FAILURE_CATEGORY="saas_e2e"
           fi
 
           jq -n \

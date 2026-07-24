@@ -316,9 +316,6 @@ jobs:
               "@camunda/distribution")
                 mentions+=("${MEDIC_DISTRIBUTION}")
                 ;;
-              "@camunda/engineering-operations")
-                mentions+=("${MEDIC_ENGINEERING_OPERATIONS}")
-                ;;
               "@camunda/core-features")
                 mentions+=("${MEDIC_CORE_FEATURES}")
                 ;;
@@ -327,10 +324,9 @@ jobs:
 
           # If no failure context was attributable to a team (e.g. the
           # parent run died before any job emitted context), default to
-          # pinging the monorepo-ci-medic since they own the workflow
-          # plumbing itself.
+          # Distribution -- this pipeline's TEST_OWNER, not monorepo-ci-medic.
           if (( ${#mentions[@]} == 0 )); then
-            mentions+=("${MEDIC_ENGINEERING_OPERATIONS}")
+            mentions+=("${MEDIC_DISTRIBUTION}")
           fi
 
           # Dedup + join with spaces for the Slack message body.
