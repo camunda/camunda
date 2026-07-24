@@ -331,10 +331,17 @@ public class CamundaMultiDBExtension
 
   private static MultiDbSetupHelper physicalTenantSetupHelper() {
     final String ptElasticsearchUrl = getPhysicalTenantElasticsearchUrl();
+    final String ptOpensearchUrl = getPhysicalTenantOpensearchUrl();
+    if (ptElasticsearchUrl != null && ptOpensearchUrl != null) {
+      throw new IllegalStateException(
+          "Both %s and %s are set - the physical-tenant backend must be unambiguous, configure only one"
+              .formatted(
+                  TEST_INTEGRATION_PHYSICAL_TENANT_ELASTICSEARCH_URL,
+                  TEST_INTEGRATION_PHYSICAL_TENANT_OPENSEARCH_URL));
+    }
     if (ptElasticsearchUrl != null) {
       return new ElasticsearchSetupHelper(ptElasticsearchUrl, List.of());
     }
-    final String ptOpensearchUrl = getPhysicalTenantOpensearchUrl();
     if (ptOpensearchUrl != null) {
       return new OpenSearchSetupHelper(ptOpensearchUrl, List.of());
     }
