@@ -12,9 +12,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import feign.FeignException;
 import io.atomix.cluster.MemberId;
-import io.camunda.configuration.Partitioning.Scheme;
 import io.camunda.configuration.Zone;
-import io.camunda.configuration.ZoneAware;
+import io.camunda.zeebe.it.cluster.clustering.zoneaware.ZoneHelpers;
 import io.camunda.zeebe.management.cluster.AddZoneRequest;
 import io.camunda.zeebe.management.cluster.BrokerId;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
@@ -26,10 +25,7 @@ import io.camunda.zeebe.management.cluster.PartitionDistributionConfig.TypeEnum;
 import io.camunda.zeebe.management.cluster.ZoneSpec;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
-import java.util.Arrays;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -292,10 +288,6 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
     }
   }
 
-  private static List<MemberId> brokersInZone(final String zone, final int... ids) {
-    return Arrays.stream(ids).mapToObj(id -> MemberId.from(zone, id)).toList();
-  }
-
   @Test
   void shouldRecoverZoneAwareClusterAfterForceRemoveZone() {
     try (final var cluster = createCluster(minReplicationFactor())) {
@@ -318,7 +310,8 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
       ClusterActuatorAssert.assertThat(actuator).doesNotHaveBroker(brokerId(2));
 
       // when - start a fresh broker in zoneA and add the zone back with it
-      final var newZoneABroker = startBrokerInZone(cluster, ZONES[0], 0);
+      final var newZoneABroker =
+          ZoneHelpers.startBrokerInZone(cluster, ZONES[0], 0, 3, cluster.getMultiZoneConfig());
       try {
         final var addZoneRequest =
             new AddZoneRequest().numberOfReplicas(1).priority(100).brokers(List.of(brokerId(0)));
@@ -424,36 +417,5 @@ final class ZoneAwareClusterEndpointIT extends ClusterEndpointIT {
           .isInstanceOf(FeignException.BadRequest.class)
           .hasMessageContaining("less than the requested number of replicas");
     }
-  }
-
-  /**
-   * Starts a standalone broker in {@code zone} (static node id, joining the running cluster) and
-   * waits until it is part of the cluster's raft membership. The broker's blocking {@link
-   * TestStandaloneBroker#start()} runs on a virtual thread because it only returns once the broker
-   * has joined the topology (i.e. after {@code addZone} adds it as a member).
-   */
-  private TestStandaloneBroker startBrokerInZone(
-      final TestCluster cluster, final String zone, final int nodeId) {
-    final var contactPoint =
-        cluster.brokers().values().iterator().next().address(TestZeebePort.CLUSTER);
-    final var targetZones = List.of(new Zone(ZONES[0], 2, 1, 100), new Zone(ZONES[1], 1, 1, 10));
-    final var broker =
-        new TestStandaloneBroker()
-            .withUnauthenticatedAccess()
-            .withUnifiedConfig(
-                cfg -> {
-                  final var clusterCfg = cfg.getCluster();
-                  clusterCfg.setName("zeebe-cluster");
-                  clusterCfg.setInitialContactPoints(List.of(contactPoint));
-                  clusterCfg.setZone(zone);
-                  clusterCfg.setNodeId(nodeId);
-                  clusterCfg.setSize(brokerCount());
-                  clusterCfg.getPartitioning().setScheme(Scheme.ZONE_AWARE);
-                  clusterCfg.getPartitioning().setZoneAware(new ZoneAware(targetZones));
-                  cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
-                });
-
-    Thread.ofVirtual().name("start-" + zone + "-" + nodeId).start(broker::start);
-    return broker;
   }
 }
