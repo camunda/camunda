@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.SecretStoreRegistries;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
@@ -27,7 +28,11 @@ import org.junit.Test;
 
 public final class JobSecretReferenceTest {
 
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  /** Every reference resolves, so jobs with secret references stay activatable in these tests. */
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withSecretStoreRegistry(SecretStoreRegistries.resolveAll("cached"));
 
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";

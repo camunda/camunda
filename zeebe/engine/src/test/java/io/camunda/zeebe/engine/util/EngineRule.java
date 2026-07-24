@@ -11,6 +11,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
 import io.camunda.security.configuration.EngineSecurityConfigurations;
@@ -132,6 +133,7 @@ public final class EngineRule extends ExternalResource {
 
   private long lastProcessedPosition = -1L;
   private JobStreamer jobStreamer = JobStreamer.noop();
+  private SecretStoreRegistry secretStoreRegistry = new SecretStoreRegistry(Map.of());
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
@@ -245,6 +247,11 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
     this.jobStreamer = jobStreamer;
+    return this;
+  }
+
+  public EngineRule withSecretStoreRegistry(final SecretStoreRegistry secretStoreRegistry) {
+    this.secretStoreRegistry = secretStoreRegistry;
     return this;
   }
 
@@ -374,7 +381,8 @@ public final class EngineRule extends ExternalResource {
                         featureFlags,
                         jobStreamer,
                         searchClientsProxy,
-                        brokerRequestAuthorizationConverter)
+                        brokerRequestAuthorizationConverter,
+                        secretStoreRegistry)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

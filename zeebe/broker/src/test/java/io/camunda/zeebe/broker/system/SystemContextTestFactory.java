@@ -11,6 +11,7 @@ import io.atomix.cluster.AtomixCluster;
 import io.camunda.cluster.PhysicalTenantIds;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.secretstore.SecretStoreRegistry;
 import io.camunda.security.api.context.OidcClaimsProvider;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.EngineSecurityConfig;
@@ -124,7 +125,8 @@ public final class SystemContextTestFactory {
                 brokerRequestAuthorizationConverter,
                 featureFlags,
                 brokerCfg,
-                exporterRepository)),
+                exporterRepository,
+                new SecretStoreRegistry(Map.of()))),
         tenantId -> userServices,
         passwordEncoder,
         authConfig -> jwtDecoder,

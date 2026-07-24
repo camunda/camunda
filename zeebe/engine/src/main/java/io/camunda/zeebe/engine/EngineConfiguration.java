@@ -20,6 +20,10 @@ public final class EngineConfiguration {
   // message size.
   public static final int BATCH_SIZE_CALCULATION_BUFFER = 1024 * 8;
 
+  // Bounds the work of a single job activation command: once this many jobs were skipped for
+  // uncached secret references, the batch collection stops instead of scanning further.
+  public static final int MAX_UNCACHED_SECRET_JOBS_SKIPPED_PER_ACTIVATION = 100;
+
   public static final int DEFAULT_DRG_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_FORM_CACHE_CAPACITY = 1000;
   public static final int DEFAULT_PROCESS_CACHE_CAPACITY = 1000;

@@ -114,6 +114,7 @@
                   "JOB_NO_RETRIES",
                   "MESSAGE_SIZE_EXCEEDED",
                   "RESOURCE_NOT_FOUND",
+                  "SECRET_RESOLUTION_ERROR",
                   "TASK_LISTENER_NO_RETRIES",
                   "UNHANDLED_ERROR_EVENT",
                   "UNKNOWN",
