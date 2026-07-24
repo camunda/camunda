@@ -13,19 +13,32 @@ import static io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.RequestsQue
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayKeyNames;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc.GatewayProtocol;
 import io.camunda.zeebe.util.micrometer.BoundedMeterCache;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Objects;
 
-/** Metrics to monitor the health of the long polling requests per protocol. */
+/**
+ * Records the number of long polling requests blocked per job type, for one physical tenant. Every
+ * instance is tagged with its physical tenant; use {@link LongPollingMetricsFactory} to obtain one
+ * rather than constructing it directly.
+ */
 public sealed class LongPollingMetrics {
 
   private final BoundedMeterCache<StatefulGauge> requestsQueued;
 
-  public LongPollingMetrics(final MeterRegistry registry, final GatewayProtocol gatewayProtocol) {
+  LongPollingMetrics(
+      final MeterRegistry registry,
+      final GatewayProtocol gatewayProtocol,
+      final String physicalTenantId) {
     final var provider =
         StatefulGauge.builder(REQUESTS_QUEUED_CURRENT.getName())
             .description(REQUESTS_QUEUED_CURRENT.getDescription())
             .tag(GatewayKeyNames.GATEWAY_PROTOCOL.asString(), gatewayProtocol.value())
+            .tag(
+                PartitionKeyNames.PHYSICAL_TENANT.asString(),
+                Objects.requireNonNull(
+                    physicalTenantId, PartitionKeyNames.PHYSICAL_TENANT.asString()))
             .withRegistry(registry);
 
     requestsQueued = BoundedMeterCache.of(registry, provider, TYPE);

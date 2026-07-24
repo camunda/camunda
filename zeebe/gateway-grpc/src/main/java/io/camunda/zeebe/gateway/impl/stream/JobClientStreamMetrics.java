@@ -12,6 +12,7 @@ import io.camunda.zeebe.gateway.impl.stream.JobClientStreamMetricsDoc.PushResult
 import io.camunda.zeebe.transport.stream.api.ClientStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.camunda.zeebe.util.micrometer.StatefulGauge;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
@@ -21,7 +22,7 @@ import java.util.Map;
 
 final class JobClientStreamMetrics implements ClientStreamMetrics {
 
-  private static final String PHYSICAL_TENANT_ID_TAG = "physicalTenantId";
+  private static final String PHYSICAL_TENANT_ID_TAG = PartitionKeyNames.PHYSICAL_TENANT.asString();
 
   private final Map<ErrorCode, Counter> pushAttempts = new EnumMap<>(ErrorCode.class);
 

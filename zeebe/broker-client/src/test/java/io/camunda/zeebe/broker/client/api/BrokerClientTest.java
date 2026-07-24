@@ -389,7 +389,7 @@ public final class BrokerClientTest {
   void shouldReceiveJobAvailableNotification() {
     // given
     final AtomicReference<String> messageRef = new AtomicReference<>();
-    client.subscribeJobAvailableNotification("foo", messageRef::set);
+    client.subscribeJobAvailableNotification("foo", new Object(), messageRef::set);
 
     // when
     atomixCluster.getEventService().broadcast("foo", "bar");
@@ -397,6 +397,67 @@ public final class BrokerClientTest {
     // then
     Awaitility.await("until notification received")
         .untilAtomic(messageRef, Matchers.equalTo("bar"));
+  }
+
+  @Test
+  void shouldSubscribeToJobAvailableTopicOnlyOnceOnRepeatedCallsFromSameSubscriber() {
+    // given — a repeated subscribe for the same topic from the same subscriber, as happens when a
+    // physical-tenant-aware caller lazily (re-)subscribes on every request rather than tracking
+    // subscriptions itself
+    final var subscriber = new Object();
+    client.subscribeJobAvailableNotification("foo", subscriber, ignored -> {});
+    client.subscribeJobAvailableNotification("foo", subscriber, ignored -> {});
+
+    // then — only one subscription was registered with the event service, not two
+    Awaitility.await("subscription is registered")
+        .untilAsserted(
+            () -> assertThat(atomixCluster.getEventService().getSubscriptions("foo")).hasSize(1));
+  }
+
+  @Test
+  void shouldSubscribeIndependentlyPerSubscriberForTheSameTopic() {
+    // given — two distinct callers (e.g. the gRPC and REST gateways) subscribing to the same
+    // topic; neither should silently drop the other's handler
+    final AtomicReference<String> firstMessage = new AtomicReference<>();
+    final AtomicReference<String> secondMessage = new AtomicReference<>();
+    client.subscribeJobAvailableNotification("foo", new Object(), firstMessage::set);
+    client.subscribeJobAvailableNotification("foo", new Object(), secondMessage::set);
+
+    // when
+    atomixCluster.getEventService().broadcast("foo", "bar");
+
+    // then — both subscribers were registered and both were notified
+    Awaitility.await("both subscriptions are registered")
+        .untilAsserted(
+            () -> assertThat(atomixCluster.getEventService().getSubscriptions("foo")).hasSize(2));
+    Awaitility.await("first subscriber received notification")
+        .untilAtomic(firstMessage, Matchers.equalTo("bar"));
+    Awaitility.await("second subscriber received notification")
+        .untilAtomic(secondMessage, Matchers.equalTo("bar"));
+  }
+
+  @Test
+  void shouldCloseAllJobAvailableSubscriptionsOnClose() {
+    // given
+    client.subscribeJobAvailableNotification("foo", new Object(), ignored -> {});
+    client.subscribeJobAvailableNotification("bar", new Object(), ignored -> {});
+    Awaitility.await("both subscriptions are registered")
+        .untilAsserted(
+            () -> {
+              assertThat(atomixCluster.getEventService().getSubscriptions("foo")).isNotEmpty();
+              assertThat(atomixCluster.getEventService().getSubscriptions("bar")).isNotEmpty();
+            });
+
+    // when
+    client.close();
+
+    // then — every subscription is closed, not just the most recently registered one
+    Awaitility.await("both subscriptions are unregistered")
+        .untilAsserted(
+            () -> {
+              assertThat(atomixCluster.getEventService().getSubscriptions("foo")).isEmpty();
+              assertThat(atomixCluster.getEventService().getSubscriptions("bar")).isEmpty();
+            });
   }
 
   @Test

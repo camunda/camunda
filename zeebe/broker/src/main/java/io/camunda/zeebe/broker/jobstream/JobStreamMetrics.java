@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.jobstream;
 
 import io.camunda.zeebe.transport.stream.api.RemoteStreamMetrics;
 import io.camunda.zeebe.transport.stream.impl.messages.ErrorCode;
+import io.camunda.zeebe.util.micrometer.PartitionKeyNames;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class JobStreamMetrics implements RemoteStreamMetrics {
 
-  private static final String PHYSICAL_TENANT_ID_TAG = "physicalTenantId";
+  private static final String PHYSICAL_TENANT_ID_TAG = PartitionKeyNames.PHYSICAL_TENANT.asString();
   private final AtomicInteger streamCount = new AtomicInteger(0);
   private final Map<ErrorCode, Counter> pushTryFailedCount = new EnumMap<>(ErrorCode.class);
 

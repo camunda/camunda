@@ -17,8 +17,8 @@ import io.camunda.zeebe.gateway.impl.configuration.LongPollingCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
-import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetricsDoc;
+import io.camunda.zeebe.gateway.metrics.LongPollingMetricsFactory;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
 import io.camunda.zeebe.scheduler.Actor;
@@ -96,8 +96,9 @@ public class HttpJobHandlerConfiguration {
                 GatewayErrorMapper.RESOURCE_EXHAUSTED_EXCEPTION_PROVIDER)
             .setRequestCanceledExceptionProvider(
                 GatewayErrorMapper.REQUEST_CANCELED_EXCEPTION_PROVIDER)
-            .setMetrics(
-                new LongPollingMetrics(meterRegistry, LongPollingMetricsDoc.GatewayProtocol.REST))
+            .setMetricsFactory(
+                new LongPollingMetricsFactory(
+                    meterRegistry, LongPollingMetricsDoc.GatewayProtocol.REST))
             .build();
     // Register for purge notifications so pending long-poll requests are cancelled on cluster purge
     brokerClient
