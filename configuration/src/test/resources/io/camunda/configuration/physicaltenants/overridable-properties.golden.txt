@@ -189,6 +189,7 @@ data.secondary-storage.rdbms.async-replication.min-sync-replicas
 data.secondary-storage.rdbms.async-replication.pause-on-max-lag-exceeded
 data.secondary-storage.rdbms.async-replication.polling-interval
 data.secondary-storage.rdbms.auto-ddl
+data.secondary-storage.rdbms.aws-enabled
 data.secondary-storage.rdbms.batch-operation-cache
 data.secondary-storage.rdbms.batch-operation-item-insert-block-size
 data.secondary-storage.rdbms.connection-pool.connection-timeout

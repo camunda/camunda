@@ -8,6 +8,8 @@
 package io.camunda.application.commons.rdbms;
 
 import com.zaxxer.hikari.HikariDataSource;
+import io.camunda.configuration.Aws;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Rdbms;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
@@ -51,16 +53,17 @@ public final class RdbmsDataSources implements AutoCloseable {
     this.databaseIdProviders = databaseIdProviders;
   }
 
-  public static RdbmsDataSources of(final Map<String, Rdbms> physicalTenantConfigs)
+  public static RdbmsDataSources of(final Map<String, Camunda> physicalTenantConfigs)
       throws IOException {
     final var dataSources = new LinkedHashMap<String, HikariDataSource>();
     final var vendorProperties = new LinkedHashMap<String, VendorDatabaseProperties>();
     final var databaseIdProviders = new LinkedHashMap<String, DatabaseIdProvider>();
     for (final var entry : physicalTenantConfigs.entrySet()) {
       final var currentPhysicalTenantId = entry.getKey();
-      final var rdbms = entry.getValue();
+      final var camunda = entry.getValue();
+      final var rdbms = camunda.getData().getSecondaryStorage().getRdbms();
       try {
-        final var ds = buildDataSource(currentPhysicalTenantId, rdbms);
+        final var ds = buildDataSource(currentPhysicalTenantId, rdbms, camunda.getAws());
         dataSources.put(currentPhysicalTenantId, ds);
         final var databaseIdProvider = new RdbmsDatabaseIdProvider(rdbms.getDatabaseVendorId());
         databaseIdProviders.put(currentPhysicalTenantId, databaseIdProvider);
@@ -124,15 +127,19 @@ public final class RdbmsDataSources implements AutoCloseable {
   }
 
   private static HikariDataSource buildDataSource(
-      final String physicalTenantId, final Rdbms rdbms) {
+      final String physicalTenantId, final Rdbms rdbms, final Aws aws) {
     final var ds = new HikariDataSource();
     ds.setPoolName("camunda-rdbms-" + physicalTenantId);
-    ds.setJdbcUrl(rdbms.getUrl());
-    ds.setUsername(rdbms.getUsername());
-    ds.setPassword(rdbms.getPassword());
-    final var driverClassName = DatabaseDriver.fromJdbcUrl(rdbms.getUrl()).getDriverClassName();
-    if (driverClassName != null) {
-      ds.setDriverClassName(driverClassName);
+    if (rdbms.isAwsEnabled()) {
+      ds.setDataSource(RdsIamAuthDataSource.of(rdbms, aws));
+    } else {
+      ds.setJdbcUrl(rdbms.getUrl());
+      ds.setUsername(rdbms.getUsername());
+      ds.setPassword(rdbms.getPassword());
+      final var driverClassName = DatabaseDriver.fromJdbcUrl(rdbms.getUrl()).getDriverClassName();
+      if (driverClassName != null) {
+        ds.setDriverClassName(driverClassName);
+      }
     }
     final var pool = rdbms.getConnectionPool();
     ds.setMaximumPoolSize(pool.getMaximumPoolSize());

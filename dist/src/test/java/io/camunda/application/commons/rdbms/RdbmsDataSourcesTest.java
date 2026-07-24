@@ -15,6 +15,7 @@ import static org.mockito.Mockito.times;
 
 import com.zaxxer.hikari.HikariDataSource;
 import io.camunda.cluster.PhysicalTenantIds;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Rdbms;
 import io.camunda.configuration.RdbmsConnectionPool;
 import java.time.Duration;
@@ -36,11 +37,18 @@ class RdbmsDataSourcesTest {
     return rdbms;
   }
 
+  private static Camunda camundaWith(final Rdbms rdbms) {
+    final var camunda = new Camunda();
+    camunda.getData().getSecondaryStorage().setRdbms(rdbms);
+    return camunda;
+  }
+
   @Test
   void shouldBuildDataSourceForSinglePhysicalTenant() throws Exception {
     final var rdbms = h2Rdbms();
     try (final var registry =
-        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms))) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camundaWith(rdbms)))) {
 
       // then
       final var ds =
@@ -65,7 +73,8 @@ class RdbmsDataSourcesTest {
     rdbms.setConnectionPool(pool);
 
     try (final var registry =
-        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, rdbms))) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camundaWith(rdbms)))) {
 
       final var ds =
           (HikariDataSource) registry.dataSourceFor(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID);
@@ -80,9 +89,9 @@ class RdbmsDataSourcesTest {
 
   @Test
   void shouldDetectVendorPropertiesPerPhysicalTenant() throws Exception {
-    final var configs = new LinkedHashMap<String, Rdbms>();
-    configs.put("tenant-a", h2Rdbms());
-    configs.put("tenant-b", h2Rdbms());
+    final var configs = new LinkedHashMap<String, Camunda>();
+    configs.put("tenant-a", camundaWith(h2Rdbms()));
+    configs.put("tenant-b", camundaWith(h2Rdbms()));
 
     try (final var registry = RdbmsDataSources.of(configs)) {
       assertThat(registry.dataSourceFor("tenant-a")).isNotNull();
@@ -95,7 +104,8 @@ class RdbmsDataSourcesTest {
   @Test
   void shouldThrowWhenLookingUpUnknownPhysicalTenantDataSource() throws Exception {
     try (final var registry =
-        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()))) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camundaWith(h2Rdbms())))) {
       assertThatThrownBy(() -> registry.dataSourceFor("missing"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("missing");
@@ -105,7 +115,8 @@ class RdbmsDataSourcesTest {
   @Test
   void shouldThrowWhenLookingUpUnknownPhysicalTenantVendorProperties() throws Exception {
     try (final var registry =
-        RdbmsDataSources.of(Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, h2Rdbms()))) {
+        RdbmsDataSources.of(
+            Map.of(PhysicalTenantIds.DEFAULT_PHYSICAL_TENANT_ID, camundaWith(h2Rdbms())))) {
       assertThatThrownBy(() -> registry.vendorPropertiesFor("missing"))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("missing");
@@ -114,9 +125,9 @@ class RdbmsDataSourcesTest {
 
   @Test
   void shouldCloseAllDataSourcesOnClose() throws Exception {
-    final var configs = new LinkedHashMap<String, Rdbms>();
-    configs.put("tenant-a", h2Rdbms());
-    configs.put("tenant-b", h2Rdbms());
+    final var configs = new LinkedHashMap<String, Camunda>();
+    configs.put("tenant-a", camundaWith(h2Rdbms()));
+    configs.put("tenant-b", camundaWith(h2Rdbms()));
 
     final HikariDataSource dsA;
     final HikariDataSource dsB;
@@ -140,9 +151,9 @@ class RdbmsDataSourcesTest {
       final var tenantBRdbms = h2Rdbms();
       tenantBRdbms.setDatabaseVendorId("unsupported");
 
-      final var configs = new LinkedHashMap<String, Rdbms>();
-      configs.put("tenant-a", h2Rdbms());
-      configs.put("tenant-b", tenantBRdbms);
+      final var configs = new LinkedHashMap<String, Camunda>();
+      configs.put("tenant-a", camundaWith(h2Rdbms()));
+      configs.put("tenant-b", camundaWith(tenantBRdbms));
 
       // when / then
       assertThatThrownBy(() -> RdbmsDataSources.of(configs))
